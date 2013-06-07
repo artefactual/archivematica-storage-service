@@ -190,17 +190,17 @@ DJANGO_APPS = (
     # Admin panel and documentation:
     'django.contrib.admin',
     # 'django.contrib.admindocs',
-
-    'api',
 )
 
 THIRD_PARTY_APPS = (
     # Database migration helpers:
     'south',
+    'tastypie',
 )
 
 # Apps specific for this project go here.
 LOCAL_APPS = (
+    'locations',
 )
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
@@ -239,6 +239,12 @@ LOGGING = {
     }
 }
 ########## END LOGGING CONFIGURATION
+
+
+########## SESSION CONFIGURATION
+# So the cookies don't conflict with archivematica cookies
+SESSION_COOKIE_NAME = 'storageapi_sessionid'
+########## END SESSION CONFIGURATION
 
 
 ########## WSGI CONFIGURATION
