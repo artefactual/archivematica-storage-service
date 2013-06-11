@@ -1,9 +1,7 @@
-import uuid
-
+from django import forms
 from django.db import models
 
 from django_extensions.db.fields import UUIDField
-from south.modelsinspector import add_introspection_rules
 
 class Location(models.Model):
     """ Stores information about a location. """
@@ -36,9 +34,21 @@ class Location(models.Model):
                             choices=ACCESS_PROTOCOL_CHOICES)
 
     path = models.TextField()
+    # quota=0 -> unlimited
     quota = models.BigIntegerField(help_text="Size in bytes")
     used = models.BigIntegerField(default=0,
                                   help_text="Amount used in bytes")
 
     def __unicode__(self):
-        return self.path
+        return "{uuid}: {path} ({purpose}/{protocol})".format(
+            uuid=self.id,
+            path=self.path,
+            purpose=self.purpose,
+            protocol=self.access_protocol,
+            )
+
+
+# For validation of resources
+class LocationForm(forms.ModelForm):
+    class Meta:
+        model = Location
