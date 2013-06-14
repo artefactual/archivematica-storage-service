@@ -1,9 +1,62 @@
+import uuid
+
+from django.forms.models import model_to_dict
+
 from tastypie.authentication import BasicAuthentication, ApiKeyAuthentication, MultiAuthentication, Authentication
 from tastypie.authorization import DjangoAuthorization, Authorization
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.validation import CleanedDataFormValidation
 
-from ..models import Location, LocationForm
+from ..models import (File, LocalFilesystem, Location, LocationForm, Samba, Space, )
+
+class SpaceResource(ModelResource):
+    class Meta:
+        queryset = Space.objects.all()
+        authentication = Authentication()
+        # authentication = MultiAuthentication(BasicAuthentication, ApiKeyAuthentication())
+        authorization = Authorization()
+        # authorization = DjangoAuthorization()
+
+        fields = ['uuid', 'access_protocol', 'size', 'used', 'path', 'verified', 'location_set']
+        list_allowed_methods = ['get', 'post']
+        detail_allowed_methods = ['get']
+        detail_uri_name = 'uuid'
+        filtering = {
+            "uuid": ALL,
+            "access_protocol": ALL,
+            "quota": ALL,
+            "used": ALL,
+        }
+
+    # override hydrate/dehydrate to add full Space info?
+    # Is there a better place?
+    # alter_detail_data_to_serialize
+    # alter_deserialized_detail_data
+
+    # Mapping between access protocol and protocol specific fields
+    protocol = {}
+    protocol['FS'] = {'model': LocalFilesystem, 'fields': [''] }
+    protocol['SAMBA'] = {'model': Samba, 'fields': ['remote_name', 'username'] }
+
+    def dehydrate(self, bundle):
+        bundle = super(SpaceResource, self).dehydrate(bundle)
+        print 'dehydrate bundle', type(bundle), bundle
+        print 'access_protocol', bundle.obj.access_protocol
+        access_protocol = bundle.obj.access_protocol
+        model = self.protocol[access_protocol]['model']
+        print 'protocol', self.protocol[access_protocol]
+
+        try:
+            space = model.objects.get(space=bundle.obj.uuid)
+        except model.DoesNotExist:
+            print "Item doesn't exist :("
+            # TODO this should assert later once creation/deletion stuff works
+        else:
+            fields = self.protocol[access_protocol]['fields']
+            added_fields = model_to_dict(space, fields)
+            bundle.data.update(added_fields)
+        return bundle
+
 
 class LocationResource(ModelResource):
     class Meta:
@@ -12,14 +65,16 @@ class LocationResource(ModelResource):
         # authentication = MultiAuthentication(BasicAuthentication, ApiKeyAuthentication())
         authorization = Authorization()
         # authorization = DjangoAuthorization()
-        always_return_data = True
         validation = CleanedDataFormValidation(form_class=LocationForm)
 
+        fields = ['uuid', 'space', 'purpose', 'quota', 'used', 'disabled']
+        list_allowed_methods = ['get', 'post']
+        detail_allowed_methods = ['get']
+        detail_uri_name = 'uuid'
         filtering = {
-            "id": ALL,
+            "uuid": ALL,
             "purpose": ALL,
-            "access_protocol": ALL,
-            "path": ALL,
             "quota": ALL,
             "used": ALL,
+            "disabled": ALL,
         }
