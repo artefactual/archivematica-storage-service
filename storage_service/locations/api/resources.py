@@ -35,10 +35,12 @@ class SpaceResource(ModelResource):
 
     # Mapping between access protocol and protocol specific fields
     protocol = {}
-    protocol['FS'] = {'model': LocalFilesystem, 'fields': [''] }
+    # BUG: fields: [] works for obj_create, but includes everything in dehydrate
+    protocol['FS'] = {'model': LocalFilesystem, 'fields': [] }
     protocol['SAMBA'] = {'model': Samba, 'fields': ['remote_name', 'username'] }
 
     def dehydrate(self, bundle):
+        """ Add protocol specific fields to an entry. """
         bundle = super(SpaceResource, self).dehydrate(bundle)
         print 'dehydrate bundle', type(bundle), bundle
         print 'access_protocol', bundle.obj.access_protocol
@@ -55,6 +57,20 @@ class SpaceResource(ModelResource):
             fields = self.protocol[access_protocol]['fields']
             added_fields = model_to_dict(space, fields)
             bundle.data.update(added_fields)
+        return bundle
+
+    def obj_create(self, bundle, **kwargs):
+        """ Creates protocol specific class when creating a Space. """
+        # TODO should this be in the model?
+        bundle = super(SpaceResource, self).obj_create(bundle, **kwargs)
+        access_protocol = bundle.obj.access_protocol
+        model = self.protocol[access_protocol]['model']
+        fields = self.protocol[access_protocol]['fields']
+
+        # Make dict of fields in model and values from bundle.data
+        fields_dict = { key: bundle.data[key] for key in fields }
+        obj = model.objects.create(space=bundle.obj, **fields_dict)
+        obj.save()
         return bundle
 
 
