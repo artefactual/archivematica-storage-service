@@ -1,13 +1,14 @@
+import os
 import uuid
 
 from django.forms.models import model_to_dict
 
+from tastypie import fields
 from tastypie.authentication import BasicAuthentication, ApiKeyAuthentication, MultiAuthentication, Authentication
 from tastypie.authorization import DjangoAuthorization, Authorization
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.validation import CleanedDataFormValidation
-
-from ..models import (File, LocalFilesystem, Location, LocationForm, Samba, Space, )
+from ..models import (File, LocalFilesystem, Location, LocationForm, Samba, Space, SpaceForm)
 
 class SpaceResource(ModelResource):
     class Meta:
@@ -16,16 +17,20 @@ class SpaceResource(ModelResource):
         # authentication = MultiAuthentication(BasicAuthentication, ApiKeyAuthentication())
         authorization = Authorization()
         # authorization = DjangoAuthorization()
+        validation = CleanedDataFormValidation(form_class=SpaceForm)
 
-        fields = ['uuid', 'access_protocol', 'size', 'used', 'path', 'verified', 'location_set']
+        fields = ['access_protocol', 'location_set', 'path', 'size', 'used', 'uuid', 'verified']
         list_allowed_methods = ['get', 'post']
         detail_allowed_methods = ['get']
         detail_uri_name = 'uuid'
+        always_return_data = True
         filtering = {
-            "uuid": ALL,
-            "access_protocol": ALL,
-            "quota": ALL,
-            "used": ALL,
+            'access_protocol': ALL,
+            'path': ALL,
+            'size': ALL,
+            'used': ALL,
+            'uuid': ALL,
+            'verified': ALL,
         }
 
     # override hydrate/dehydrate to add full Space info?
@@ -36,7 +41,7 @@ class SpaceResource(ModelResource):
     # Mapping between access protocol and protocol specific fields
     protocol = {}
     # BUG: fields: [] works for obj_create, but includes everything in dehydrate
-    protocol['FS'] = {'model': LocalFilesystem, 'fields': [] }
+    protocol['FS'] = {'model': LocalFilesystem, 'fields': ['nothing'] }
     protocol['SAMBA'] = {'model': Samba, 'fields': ['remote_name', 'username'] }
 
     def dehydrate(self, bundle):
@@ -75,22 +80,31 @@ class SpaceResource(ModelResource):
 
 
 class LocationResource(ModelResource):
+    space = fields.ForeignKey(SpaceResource, 'storage_space')
     class Meta:
-        queryset = Location.objects.all()
+        queryset = Location.objects.filter(disabled=False)
         authentication = Authentication()
         # authentication = MultiAuthentication(BasicAuthentication, ApiKeyAuthentication())
         authorization = Authorization()
         # authorization = DjangoAuthorization()
         validation = CleanedDataFormValidation(form_class=LocationForm)
 
-        fields = ['uuid', 'space', 'purpose', 'quota', 'used', 'disabled']
+        fields = ['path', 'purpose', 'quota', 'storage_space', 'used', 'uuid']
         list_allowed_methods = ['get', 'post']
-        detail_allowed_methods = ['get']
+        detail_allowed_methods = ['get', 'patch']
         detail_uri_name = 'uuid'
+        always_return_data = True
         filtering = {
-            "uuid": ALL,
-            "purpose": ALL,
-            "quota": ALL,
-            "used": ALL,
-            "disabled": ALL,
+            'path': ALL,
+            'purpose': ALL,
+            'quota': ALL,
+            'storage_space': ALL,
+            'used': ALL,
+            'uuid': ALL,
         }
+
+    def dehydrate(self, bundle):
+        bundle = super(LocationResource, self).dehydrate(bundle)
+        # Include full path (space path + location path)
+        bundle.data['full_path'] = os.path.join(bundle.obj.storage_space.path, bundle.obj.path)
+        return bundle

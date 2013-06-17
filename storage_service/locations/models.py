@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from django_extensions.db.fields import UUIDField
@@ -6,6 +7,14 @@ from django_extensions.db.fields import UUIDField
 ########################## SPACES ##########################
 
 class Space(models.Model):
+
+    def validate_path(path):
+        # TODO make this work on Windows, eventually
+        if path[0] != '/':
+            raise ValidationError("Path must begin with a /")
+        if len(path) > 1 and path[-1] == '/':
+            raise ValidationError("Path cannot end with a /")
+
     uuid = UUIDField(editable=False, unique=True, help_text="Unique identifier")
 
     LOCAL_FILESYSTEM = 'FS'
@@ -24,7 +33,7 @@ class Space(models.Model):
                                   help_text="Size in bytes")
     used = models.BigIntegerField(default=0,
                                   help_text="Amount used in bytes")
-    path = models.TextField()
+    path = models.TextField(validators=[validate_path])
     verified = models.BooleanField(default=False,
                                    help_text="Whether or not the space has been verified to be accessible.")
 
@@ -50,14 +59,27 @@ class Samba(models.Model):
     password = models.CharField(max_length=256)
     remote_name = models.CharField(max_length=256)
 
+# For validation of resources
+class SpaceForm(forms.ModelForm):
+    class Meta:
+        model = Space
+
 
 ########################## LOCATIONS ##########################
 
 class Location(models.Model):
     """ Stores information about a location. """
 
+    def validate_path(path):
+        # TODO make this work on Windows, eventually
+        if path[0] == '/':
+            raise ValidationError("Path cannot begin with a /")
+
     uuid = UUIDField(editable=False, unique=True, help_text="Unique identifier")
-    space = models.ForeignKey('Space', to_field='uuid')
+    storage_space = models.ForeignKey('Space', to_field='uuid')
+    # storage_space cannot be called the same thing as the ForeignKey in 
+    # resources.py , because of iteractions with Tastypie, see 
+    # https://github.com/toastdriven/django-tastypie/issues/152 for details
 
     TRANSFER_SOURCE = 'TS'
     AIP_STORAGE = 'AS'
