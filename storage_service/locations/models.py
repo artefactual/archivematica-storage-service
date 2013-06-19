@@ -15,7 +15,7 @@ class Space(models.Model):
         if len(path) > 1 and path[-1] == '/':
             raise ValidationError("Path cannot end with a /")
 
-    uuid = UUIDField(editable=False, unique=True, help_text="Unique identifier")
+    uuid = UUIDField(editable=False, unique=True, version=4, help_text="Unique identifier")
 
     LOCAL_FILESYSTEM = 'FS'
     # NFS = 'NFS'
@@ -75,7 +75,7 @@ class Location(models.Model):
         if path[0] == '/':
             raise ValidationError("Path cannot begin with a /")
 
-    uuid = UUIDField(editable=False, unique=True, help_text="Unique identifier")
+    uuid = UUIDField(editable=False, unique=True, version=4, help_text="Unique identifier")
     storage_space = models.ForeignKey('Space', to_field='uuid')
     # storage_space cannot be called the same thing as the ForeignKey in 
     # resources.py , because of iteractions with Tastypie, see 
@@ -121,7 +121,7 @@ class LocationForm(forms.ModelForm):
 # Currently untested
 class File(models.Model):
     """ A file stored in a specific location. """
-    uuid = UUIDField(editable=False, unique=True)
+    uuid = UUIDField(editable=False, unique=True, version=4, help_text="Unique identifier")
     location = models.ForeignKey(Location, to_field='uuid')
     path = models.TextField()
     size = models.IntegerField()
