@@ -1,3 +1,6 @@
+import datetime
+import os.path
+
 from django import forms
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -9,11 +12,8 @@ from django_extensions.db.fields import UUIDField
 class Space(models.Model):
 
     def validate_path(path):
-        # TODO make this work on Windows, eventually
         if path[0] != '/':
             raise ValidationError("Path must begin with a /")
-        if len(path) > 1 and path[-1] == '/':
-            raise ValidationError("Path cannot end with a /")
 
     uuid = UUIDField(editable=False, unique=True, version=4, help_text="Unique identifier")
 
@@ -36,6 +36,8 @@ class Space(models.Model):
     path = models.TextField(validators=[validate_path])
     verified = models.BooleanField(default=False,
                                    help_text="Whether or not the space has been verified to be accessible.")
+    last_verified = models.DateTimeField(default=None, null=True, blank=True,
+        help_text="Time this location was last verified to be accessible.")
 
     def __unicode__(self):
         return "{uuid}: {path} ({access_protocol})".format(
@@ -49,6 +51,17 @@ class LocalFilesystem(models.Model):
     """ Spaces found in the local filesystem."""
     space = models.OneToOneField('Space', to_field='uuid')
     # Does not currently need any other information - delete?
+
+    def save(self, *args, **kwargs):
+        self.verify()
+        super(LocalFilesystem, self).save(*args, **kwargs)
+
+    def verify(self):
+        """ Verify that the space is accessible to the storage service. """
+        # TODO run script to verify that it works
+        verified = os.path.isdir(self.space.path)
+        self.space.verified = verified
+        self.space.last_verified = datetime.datetime.now()
 
 
 class Samba(models.Model):
@@ -71,7 +84,6 @@ class Location(models.Model):
     """ Stores information about a location. """
 
     def validate_path(path):
-        # TODO make this work on Windows, eventually
         if path[0] == '/':
             raise ValidationError("Path cannot begin with a /")
 
@@ -85,12 +97,14 @@ class Location(models.Model):
     AIP_STORAGE = 'AS'
     # QUARANTINE = 'QU'
     # BACKLOG = 'BL'
+    CURRENTLY_PROCESSING = 'CP'
 
     PURPOSE_CHOICES = (
         (TRANSFER_SOURCE, 'Transfer Source'),
         (AIP_STORAGE, 'AIP Storage'),
         # (QUARANTINE, 'Quarantine'),
         # (BACKLOG, 'Backlog Transfer'),
+        (CURRENTLY_PROCESSING, 'Currently Processing'),
     )
     purpose = models.CharField(max_length=2,
                                choices=PURPOSE_CHOICES,
@@ -110,6 +124,9 @@ class Location(models.Model):
             purpose=self.purpose,
             path=self.path,
             )
+
+    def full_path(self):
+        return os.path.join(self.storage_space.path, self.path)
 
 # For validation of resources
 class LocationForm(forms.ModelForm):

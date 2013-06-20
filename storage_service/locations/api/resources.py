@@ -19,7 +19,7 @@ class SpaceResource(ModelResource):
         # authorization = DjangoAuthorization()
         validation = CleanedDataFormValidation(form_class=SpaceForm)
 
-        fields = ['access_protocol', 'location_set', 'path', 'size', 'used', 'uuid', 'verified']
+        fields = ['access_protocol', 'last_verified', 'location_set', 'path', 'size', 'used', 'uuid', 'verified']
         list_allowed_methods = ['get', 'post']
         detail_allowed_methods = ['get']
         detail_uri_name = 'uuid'
@@ -33,25 +33,21 @@ class SpaceResource(ModelResource):
             'verified': ALL,
         }
 
-    # override hydrate/dehydrate to add full Space info?
-    # Is there a better place?
+    # Is there a better place to add protocol-specific space info?
     # alter_detail_data_to_serialize
     # alter_deserialized_detail_data
 
     # Mapping between access protocol and protocol specific fields
     protocol = {}
     # BUG: fields: [] works for obj_create, but includes everything in dehydrate
-    protocol['FS'] = {'model': LocalFilesystem, 'fields': ['nothing'] }
+    protocol['FS'] = {'model': LocalFilesystem, 'fields': [] }
     protocol['SAMBA'] = {'model': Samba, 'fields': ['remote_name', 'username'] }
 
     def dehydrate(self, bundle):
         """ Add protocol specific fields to an entry. """
         bundle = super(SpaceResource, self).dehydrate(bundle)
-        print 'dehydrate bundle', type(bundle), bundle
-        print 'access_protocol', bundle.obj.access_protocol
         access_protocol = bundle.obj.access_protocol
         model = self.protocol[access_protocol]['model']
-        print 'protocol', self.protocol[access_protocol]
 
         try:
             space = model.objects.get(space=bundle.obj.uuid)
@@ -66,7 +62,7 @@ class SpaceResource(ModelResource):
 
     def obj_create(self, bundle, **kwargs):
         """ Creates protocol specific class when creating a Space. """
-        # TODO should this be in the model?
+        # TODO How to move this to the model?
         bundle = super(SpaceResource, self).obj_create(bundle, **kwargs)
         access_protocol = bundle.obj.access_protocol
         model = self.protocol[access_protocol]['model']
@@ -77,6 +73,8 @@ class SpaceResource(ModelResource):
         obj = model.objects.create(space=bundle.obj, **fields_dict)
         obj.save()
         return bundle
+
+    # TODO only accept 'post's from dashboard for local filesystem
 
 
 class LocationResource(ModelResource):
@@ -89,7 +87,7 @@ class LocationResource(ModelResource):
         # authorization = DjangoAuthorization()
         validation = CleanedDataFormValidation(form_class=LocationForm)
 
-        fields = ['path', 'purpose', 'quota', 'storage_space', 'used', 'uuid']
+        fields = ['path', 'purpose', 'quota', 'used', 'uuid']
         list_allowed_methods = ['get', 'post']
         detail_allowed_methods = ['get', 'patch']
         detail_uri_name = 'uuid'
