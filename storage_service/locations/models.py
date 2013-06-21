@@ -110,7 +110,8 @@ class Location(models.Model):
                                choices=PURPOSE_CHOICES,
                                help_text="Purpose of the space.  Eg. AIP storage, Transfer source")
 
-    path = models.TextField()
+    relative_path = models.TextField()
+    description = models.CharField(max_length=256, default=None, null=True, blank=True)
     quota = models.BigIntegerField(default=None, null=True, blank=True,
                                    help_text="Size in bytes")
     used = models.BigIntegerField(default=0,
@@ -122,11 +123,14 @@ class Location(models.Model):
         return "{uuid}: {path} ({purpose})".format(
             uuid=self.uuid,
             purpose=self.purpose,
-            path=self.path,
+            path=self.relative_path,
             )
 
     def full_path(self):
-        return os.path.join(self.storage_space.path, self.path)
+        return os.path.join(self.storage_space.path, self.relative_path)
+
+    def get_description(self):
+        return self.description or self.full_path()
 
 # For validation of resources
 class LocationForm(forms.ModelForm):

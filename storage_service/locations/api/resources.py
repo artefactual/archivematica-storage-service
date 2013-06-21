@@ -63,13 +63,14 @@ class SpaceResource(ModelResource):
     def obj_create(self, bundle, **kwargs):
         """ Creates protocol specific class when creating a Space. """
         # TODO How to move this to the model?
-        bundle = super(SpaceResource, self).obj_create(bundle, **kwargs)
-        access_protocol = bundle.obj.access_protocol
-        model = self.protocol[access_protocol]['model']
-        fields = self.protocol[access_protocol]['fields']
-
         # Make dict of fields in model and values from bundle.data
+        access_protocol = bundle.data['access_protocol']
+        fields = self.protocol[access_protocol]['fields']
         fields_dict = { key: bundle.data[key] for key in fields }
+
+        bundle = super(SpaceResource, self).obj_create(bundle, **kwargs)
+
+        model = self.protocol[access_protocol]['model']
         obj = model.objects.create(space=bundle.obj, **fields_dict)
         obj.save()
         return bundle
@@ -87,24 +88,25 @@ class LocationResource(ModelResource):
         # authorization = DjangoAuthorization()
         validation = CleanedDataFormValidation(form_class=LocationForm)
 
-        fields = ['path', 'purpose', 'quota', 'used', 'uuid']
+        fields = ['relative_path', 'purpose', 'quota', 'used', 'uuid']
         list_allowed_methods = ['get', 'post']
         detail_allowed_methods = ['get', 'patch']
         detail_uri_name = 'uuid'
         always_return_data = True
         filtering = {
-            'path': ALL,
+            'relative_path': ALL,
             'purpose': ALL,
             'quota': ALL,
-            'storage_space': ALL,
+            'space': ALL,
             'used': ALL,
             'uuid': ALL,
         }
 
     def dehydrate(self, bundle):
         bundle = super(LocationResource, self).dehydrate(bundle)
-        # Include full path (space path + location path)
-        bundle.data['full_path'] = os.path.join(bundle.obj.storage_space.path, bundle.obj.path)
+        # Include full path (space path + location relative_path)
+        bundle.data['path'] = bundle.obj.full_path()
+        bundle.data['description'] = bundle.obj.get_description()
         return bundle
 
 
