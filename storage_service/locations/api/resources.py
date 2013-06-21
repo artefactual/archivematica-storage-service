@@ -106,3 +106,25 @@ class LocationResource(ModelResource):
         # Include full path (space path + location path)
         bundle.data['full_path'] = os.path.join(bundle.obj.storage_space.path, bundle.obj.path)
         return bundle
+
+
+class FileResource(ModelResource):
+    location = fields.ForeignKey(LocationResource, 'location')
+    class Meta:
+        queryset = File.objects.all()
+        authentication = Authentication()
+        # authentication = MultiAuthentication(BasicAuthentication, ApiKeyAuthentication())
+        authorization = Authorization()
+        # authorization = DjangoAuthorization()
+        # validation = CleanedDataFormValidation(form_class=FileForm)
+
+        fields = ['path', 'size', 'uuid']
+        list_allowed_methods = ['get']
+        detail_allowed_methods = ['get', 'put', 'post']
+        detail_uri_name = 'uuid'
+        always_return_data = True
+        filtering = {
+            'location': ALL,
+            'path': ALL,
+            'uuid': ALL,
+        }
