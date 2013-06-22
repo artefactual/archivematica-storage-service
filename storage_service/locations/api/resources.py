@@ -8,7 +8,7 @@ from tastypie.authentication import BasicAuthentication, ApiKeyAuthentication, M
 from tastypie.authorization import DjangoAuthorization, Authorization
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.validation import CleanedDataFormValidation
-from ..models import (File, LocalFilesystem, Location, LocationForm, Samba, Space, SpaceForm)
+from ..models import (File, LocalFilesystem, Location, LocationForm, NFS, Space, SpaceForm)
 
 class SpaceResource(ModelResource):
     class Meta:
@@ -41,7 +41,7 @@ class SpaceResource(ModelResource):
     protocol = {}
     # BUG: fields: [] works for obj_create, but includes everything in dehydrate
     protocol['FS'] = {'model': LocalFilesystem, 'fields': [] }
-    protocol['SAMBA'] = {'model': Samba, 'fields': ['remote_name', 'username'] }
+    protocol['NFS'] = {'model': NFS, 'fields': ['manually_mounted', 'remote_name', 'remote_path', 'version'] }
 
     def dehydrate(self, bundle):
         """ Add protocol specific fields to an entry. """
@@ -58,6 +58,7 @@ class SpaceResource(ModelResource):
             fields = self.protocol[access_protocol]['fields']
             added_fields = model_to_dict(space, fields)
             bundle.data.update(added_fields)
+
         return bundle
 
     def obj_create(self, bundle, **kwargs):
