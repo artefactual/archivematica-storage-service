@@ -10,6 +10,8 @@ from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.validation import CleanedDataFormValidation
 from ..models import (File, LocalFilesystem, Location, LocationForm, NFS, Space, SpaceForm)
 
+import common.constants
+
 class SpaceResource(ModelResource):
     class Meta:
         queryset = Space.objects.all()
@@ -37,17 +39,11 @@ class SpaceResource(ModelResource):
     # alter_detail_data_to_serialize
     # alter_deserialized_detail_data
 
-    # Mapping between access protocol and protocol specific fields
-    protocol = {}
-    # BUG: fields: [] works for obj_create, but includes everything in dehydrate
-    protocol['FS'] = {'model': LocalFilesystem, 'fields': [] }
-    protocol['NFS'] = {'model': NFS, 'fields': ['manually_mounted', 'remote_name', 'remote_path', 'version'] }
-
     def dehydrate(self, bundle):
         """ Add protocol specific fields to an entry. """
         bundle = super(SpaceResource, self).dehydrate(bundle)
         access_protocol = bundle.obj.access_protocol
-        model = self.protocol[access_protocol]['model']
+        model = common.constants.protocol[access_protocol]['model']
 
         try:
             space = model.objects.get(space=bundle.obj.uuid)
@@ -55,7 +51,7 @@ class SpaceResource(ModelResource):
             print "Item doesn't exist :("
             # TODO this should assert later once creation/deletion stuff works
         else:
-            fields = self.protocol[access_protocol]['fields']
+            fields = common.constants.protocol[access_protocol]['fields']
             added_fields = model_to_dict(space, fields)
             bundle.data.update(added_fields)
 
@@ -66,12 +62,12 @@ class SpaceResource(ModelResource):
         # TODO How to move this to the model?
         # Make dict of fields in model and values from bundle.data
         access_protocol = bundle.data['access_protocol']
-        fields = self.protocol[access_protocol]['fields']
+        fields = common.constants.protocol[access_protocol]['fields']
         fields_dict = { key: bundle.data[key] for key in fields }
 
         bundle = super(SpaceResource, self).obj_create(bundle, **kwargs)
 
-        model = self.protocol[access_protocol]['model']
+        model = common.constants.protocol[access_protocol]['model']
         obj = model.objects.create(space=bundle.obj, **fields_dict)
         obj.save()
         return bundle
