@@ -1,7 +1,7 @@
 
 from django.forms import ModelForm
 
-from .models import Space, LocalFilesystem, NFS
+from .models import Space, LocalFilesystem, NFS, Location
 
 class SpaceForm(ModelForm):
     class Meta:
@@ -17,3 +17,9 @@ class NFSForm(ModelForm):
     class Meta:
         model = NFS
         fields = ('remote_name', 'remote_path', 'version', 'manually_mounted')
+
+
+# For validation of resources
+class LocationForm(ModelForm):
+    class Meta:
+        model = Location

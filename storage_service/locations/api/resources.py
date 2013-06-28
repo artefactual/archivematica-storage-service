@@ -8,7 +8,8 @@ from tastypie.authentication import BasicAuthentication, ApiKeyAuthentication, M
 from tastypie.authorization import DjangoAuthorization, Authorization
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.validation import CleanedDataFormValidation
-from ..models import (File, LocalFilesystem, Location, LocationForm, NFS, Space, SpaceForm)
+from ..models import (File, LocalFilesystem, Location, NFS, Space)
+from ..forms import LocationForm, SpaceForm
 
 import common.constants
 

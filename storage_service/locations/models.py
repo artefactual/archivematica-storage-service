@@ -18,7 +18,6 @@ class Space(models.Model):
     uuid = UUIDField(editable=False, unique=True, version=4, help_text="Unique identifier")
 
     LOCAL_FILESYSTEM = 'FS'
-    # NFS = 'NFS'
     NFS = 'NFS'
     # LOCKSS = 'LOCKSS'
     # FEDORA = 'FEDORA'
@@ -100,12 +99,22 @@ class NFS(models.Model):
         # may need to tweak options
         pass
 
+# To add a new storage space the following places must be updated:
+#  locations/models.py (this file)
+#   Add constant for storage protocol
+#   Add constant to ACCESS_PROTOCOL_CHOICES
+#   Add class for protocol-specific fields using template below
+#  locations/forms.py
+#   Add ModelForm for new class
+#  common/constants.py
+#   Add entry to protocol with fields that should be added to GET resource 
+#     requests, the Model and ModelForm
 
-# For validation of resources
-class SpaceForm(forms.ModelForm):
-    class Meta:
-        model = Space
-
+# class Example(models.Model):
+#     space = models.OneToOneField('Space', to_field='uuid')
+#
+#     def verify(self):
+#         pass
 
 ########################## LOCATIONS ##########################
 
@@ -161,10 +170,6 @@ class Location(models.Model):
     def get_description(self):
         return self.description or self.full_path()
 
-# For validation of resources
-class LocationForm(forms.ModelForm):
-    class Meta:
-        model = Location
 
 ########################## FILES ##########################
 
