@@ -5,9 +5,10 @@ from django.shortcuts import render, redirect, get_object_or_404, get_list_or_40
 from django.views.decorators.csrf import csrf_exempt
 
 from common.constants import protocol
-from .models import Space
-from .forms import SpaceForm
+from .models import Space, Location
+from .forms import SpaceForm, LocationForm
 
+########################## SPACES ##########################
 
 def space_list(request):
     spaces = get_list_or_404(Space)
@@ -18,9 +19,13 @@ def space_list(request):
     map(add_child, spaces)
     return render(request, 'locations/space_list.html', locals())
 
-# def space_detail(request, uuid):
-#     space = get_object_or_404(Space, uuid=uuid)
-#     return render(request, 'locations/space_detail.html', locals())
+def space_detail(request, uuid):
+    space = get_object_or_404(Space, uuid=uuid)
+    model = protocol[space.access_protocol]['model']
+    child = model.objects.get(space=space)
+    space.child = model_to_dict(child, protocol[space.access_protocol]['fields']or [''])
+    locations = Location.objects.filter(storage_space=space)
+    return render(request, 'locations/space_detail.html', locals())
 
 def space_create(request):
     if request.method == 'POST':
@@ -67,3 +72,25 @@ def ajax_space_create_protocol_form(request):
             form = form_class(prefix='protocol')
             response_data = form.as_p()
     return HttpResponse(response_data, content_type="text/html")
+
+########################## LOCATIONS ##########################
+
+def location_create(request, space_uuid):
+    space = get_object_or_404(Space, uuid=space_uuid)
+    if request.method == 'POST':
+        form = LocationForm(request.POST)
+        if form.is_valid():
+            location = form.save(commit=False)
+            location.storage_space = space
+            location.save()
+            return redirect('space_detail', space.uuid)
+    else:
+        form = LocationForm()
+    return render(request, 'locations/location_form.html', locals())
+
+def location_list(request):
+    locations = Location.enabled.all()
+    # TODO sort by purpose?  Or should that be done in the template?
+    return render(request, 'locations/location_list.html', locals())
+
+

@@ -9,7 +9,7 @@
 {% for s in spaces %}
     <div class='space'>
         <dl>
-            <dt>Access Protocol</dt> <dd>{{ s.get_access_protocol_display }}</dd>
+            <dt>Access Protocol</dt> <dd><a href="{% url 'space_detail' s.uuid %}">{{ s.get_access_protocol_display }}</a></dd>
             <dt>Path</dt> <dd>{{ s.path }}</dd>
             <dt>Last Verified</dt> <dd>{{ s.last_verified }}</dd>
             {% for k, v in s.child.items %}

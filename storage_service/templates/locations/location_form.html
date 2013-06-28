@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block page_title %}Create Location{% endblock %}
+
+{% block content %}
+
+<div class='space'>
+    <form action="{% url 'location_create' space.uuid %}" method="post">{% csrf_token %}
+        <p>Space: {{ space }}</p>
+        {{ form.as_p }}
+        <input type="submit" value="Create Location" />
+    </form>
+</div>
+{% endblock %}

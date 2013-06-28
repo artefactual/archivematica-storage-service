@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block page_title %}{{space}} Information{% endblock %}
+
+{% block content %}
+
+<div class='space'>
+    <dl>
+        <dt>Access Protocol</dt> <dd>{{ space.get_access_protocol_display }}</dd>
+        <dt>Path</dt> <dd>{{ space.path }}</dd>
+        <dt>Last Verified</dt> <dd>{{ space.last_verified }}</dd>
+        {% for k, v in space.child.items %}
+            <dt>{{ k|capfirst }}</dt> <dd>{{ v }}</dd>
+        {% endfor %}
+    </dl>
+</div>
+
+<p><a href="{%url 'location_create' space.uuid %}">Create new location here</a></p>
+{% for loc in locations %}
+    <div class='location'>
+        <dl>
+            <dt>Purpose:</dt> <dd>{{ loc.get_purpose_display }}</dd>
+            <dt>Path:</dt> <dd>{{ loc.full_path }}</dd>
+            <dt>Description:</dt> <dd>{{ loc.description|default:"No description" }}</dd>
+            <dt>Storage:</dt> <dd>{{ loc.used }}B used out of {{ loc.quota|default:"unlimited" }}</dd>
+        </dl>
+    </div>
+{% empty %}
+    <p>No locations in this space.</p>
+{% endfor %}
+
+{% endblock %}

@@ -118,6 +118,10 @@ class NFS(models.Model):
 
 ########################## LOCATIONS ##########################
 
+class EnabledLocations(models.Manager):
+    def get_query_set(self):
+            return super(EnabledLocations, self).get_query_set().filter(disabled=False)
+
 class Location(models.Model):
     """ Stores information about a location. """
 
@@ -156,6 +160,9 @@ class Location(models.Model):
                                   help_text="Amount used in bytes")
     disabled = models.BooleanField(default=False,
                                    help_text="True if space should no longer be accessed.")
+
+    objects = models.Manager()
+    enabled = EnabledLocations()
 
     def __unicode__(self):
         return "{uuid}: {path} ({purpose})".format(
