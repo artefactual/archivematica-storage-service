@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block page_title %}All Spaces{% endblock %}
+
+{% block content %}
+
+<p><a href="{% url 'space_create' %}">Create new space</a></p>
+
+{% for s in spaces %}
+    <div class='space'>
+        <dl>
+            <dt>Access Protocol</dt> <dd>{{ s.get_access_protocol_display }}</dd>
+            <dt>Path</dt> <dd>{{ s.path }}</dd>
+            <dt>Last Verified</dt> <dd>{{ s.last_verified }}</dd>
+            {% for k, v in s.child.items %}
+                <dt>{{ k|capfirst }}</dt> <dd>{{ v }}</dd>
+            {% endfor %}
+        </dl>
+    </div>
+{% endfor %}
+
+{% endblock %}

@@ -1,0 +1,20 @@
+body {
+    font-size:100%;
+}
+
+h1 {
+    font-size:2em;
+}
+
+h2 {
+    font-size: 1.8em;
+}
+
+p {
+    font-size:0.875em;
+}
+
+
+.space {
+    border-bottom: 1px dashed #444444;
+}
