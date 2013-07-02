@@ -1,14 +1,12 @@
-import os
-import uuid
-
 from django.forms.models import model_to_dict
 
 from tastypie import fields
-from tastypie.authentication import BasicAuthentication, ApiKeyAuthentication, MultiAuthentication, Authentication
+from tastypie.authentication import (BasicAuthentication, ApiKeyAuthentication,
+    MultiAuthentication, Authentication)
 from tastypie.authorization import DjangoAuthorization, Authorization
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.validation import CleanedDataFormValidation
-from ..models import (File, LocalFilesystem, Location, NFS, Space)
+from ..models import (File, Location, Space)
 from ..forms import LocationForm, SpaceForm
 
 import common.constants
@@ -17,12 +15,14 @@ class SpaceResource(ModelResource):
     class Meta:
         queryset = Space.objects.all()
         authentication = Authentication()
-        # authentication = MultiAuthentication(BasicAuthentication, ApiKeyAuthentication())
+        # authentication = MultiAuthentication(
+        #     BasicAuthentication, ApiKeyAuthentication())
         authorization = Authorization()
         # authorization = DjangoAuthorization()
         validation = CleanedDataFormValidation(form_class=SpaceForm)
 
-        fields = ['access_protocol', 'last_verified', 'location_set', 'path', 'size', 'used', 'uuid', 'verified']
+        fields = ['access_protocol', 'last_verified', 'location_set', 'path',
+            'size', 'used', 'uuid', 'verified']
         list_allowed_methods = ['get', 'post']
         detail_allowed_methods = ['get']
         detail_uri_name = 'uuid'
@@ -44,7 +44,7 @@ class SpaceResource(ModelResource):
         """ Add protocol specific fields to an entry. """
         bundle = super(SpaceResource, self).dehydrate(bundle)
         access_protocol = bundle.obj.access_protocol
-        model = common.constants.protocol[access_protocol]['model']
+        model = common.constants.PROTOCOL[access_protocol]['model']
 
         try:
             space = model.objects.get(space=bundle.obj.uuid)
@@ -52,8 +52,8 @@ class SpaceResource(ModelResource):
             print "Item doesn't exist :("
             # TODO this should assert later once creation/deletion stuff works
         else:
-            fields = common.constants.protocol[access_protocol]['fields']
-            added_fields = model_to_dict(space, fields)
+            keep_fields = common.constants.PROTOCOL[access_protocol]['fields']
+            added_fields = model_to_dict(space, keep_fields)
             bundle.data.update(added_fields)
 
         return bundle
@@ -63,12 +63,12 @@ class SpaceResource(ModelResource):
         # TODO How to move this to the model?
         # Make dict of fields in model and values from bundle.data
         access_protocol = bundle.data['access_protocol']
-        fields = common.constants.protocol[access_protocol]['fields']
-        fields_dict = { key: bundle.data[key] for key in fields }
+        keep_fields = common.constants.PROTOCOL[access_protocol]['fields']
+        fields_dict = { key: bundle.data[key] for key in keep_fields }
 
         bundle = super(SpaceResource, self).obj_create(bundle, **kwargs)
 
-        model = common.constants.protocol[access_protocol]['model']
+        model = common.constants.PROTOCOL[access_protocol]['model']
         obj = model.objects.create(space=bundle.obj, **fields_dict)
         obj.save()
         return bundle
@@ -81,7 +81,8 @@ class LocationResource(ModelResource):
     class Meta:
         queryset = Location.objects.filter(disabled=False)
         authentication = Authentication()
-        # authentication = MultiAuthentication(BasicAuthentication, ApiKeyAuthentication())
+        # authentication = MultiAuthentication(
+        #     BasicAuthentication, ApiKeyAuthentication())
         authorization = Authorization()
         # authorization = DjangoAuthorization()
         validation = CleanedDataFormValidation(form_class=LocationForm)
@@ -95,7 +96,7 @@ class LocationResource(ModelResource):
             'relative_path': ALL,
             'purpose': ALL,
             'quota': ALL,
-            'space': ALL,
+            'space': ALL_WITH_RELATIONS,
             'used': ALL,
             'uuid': ALL,
         }
@@ -113,7 +114,8 @@ class FileResource(ModelResource):
     class Meta:
         queryset = File.objects.all()
         authentication = Authentication()
-        # authentication = MultiAuthentication(BasicAuthentication, ApiKeyAuthentication())
+        # authentication = MultiAuthentication(
+        #     BasicAuthentication, ApiKeyAuthentication())
         authorization = Authorization()
         # authorization = DjangoAuthorization()
         # validation = CleanedDataFormValidation(form_class=FileForm)
@@ -124,7 +126,7 @@ class FileResource(ModelResource):
         detail_uri_name = 'uuid'
         always_return_data = True
         filtering = {
-            'location': ALL,
+            'location': ALL_WITH_RELATIONS,
             'path': ALL,
             'uuid': ALL,
         }

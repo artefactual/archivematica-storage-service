@@ -1,7 +1,6 @@
 import datetime
 import os.path
 
-from django import forms
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -9,13 +8,18 @@ from django_extensions.db.fields import UUIDField
 
 ########################## SPACES ##########################
 
+def validate_space_path(path):
+    """ Validation for path in Space.  Must be absolute. """
+    if path[0] != '/':
+        raise ValidationError("Path must begin with a /")
+
 class Space(models.Model):
+    """ Common storage space information.
 
-    def validate_path(path):
-        if path[0] != '/':
-            raise ValidationError("Path must begin with a /")
-
-    uuid = UUIDField(editable=False, unique=True, version=4, help_text="Unique identifier")
+    Knows what protocol to use to access a storage space, but all protocol
+    specific information is in children classes with ForeignKeys to Space."""
+    uuid = UUIDField(editable=False, unique=True, version=4,
+        help_text="Unique identifier")
 
     LOCAL_FILESYSTEM = 'FS'
     NFS = 'NFS'
@@ -32,9 +36,9 @@ class Space(models.Model):
                                   help_text="Size in bytes")
     used = models.BigIntegerField(default=0,
                                   help_text="Amount used in bytes")
-    path = models.TextField(validators=[validate_path])
+    path = models.TextField(validators=[validate_space_path])
     verified = models.BooleanField(default=False,
-                                   help_text="Whether or not the space has been verified to be accessible.")
+       help_text="Whether or not the space has been verified to be accessible.")
     last_verified = models.DateTimeField(default=None, null=True, blank=True,
         help_text="Time this location was last verified to be accessible.")
 
@@ -71,9 +75,11 @@ class NFS(models.Model):
     # Space.path is the local path
     remote_name = models.CharField(max_length=256, 
         help_text="Name of the NFS server.")
-    remote_path = models.TextField(help_text="Path on the NFS server to the export.")
+    remote_path = models.TextField(
+        help_text="Path on the NFS server to the export.")
     version = models.CharField(max_length=64, default='nfs4', 
-        help_text="Type of the filesystem, i.e. nfs, or nfs4.  Should match a command in `mount`.")
+        help_text="Type of the filesystem, i.e. nfs, or nfs4. \
+        Should match a command in `mount`.")
     # https://help.ubuntu.com/community/NFSv4Howto
 
     manually_mounted = models.BooleanField(default=False)
@@ -85,13 +91,13 @@ class NFS(models.Model):
     def verify(self):
         """ Verify that the space is accessible to the storage service. """
         # TODO run script to verify that it works
-        # FIXME Sets verified in initial resource returned, but doesn't seem to set in DB
         if self.manually_mounted:
             verified = os.path.ismount(self.space.path)
             self.space.verified = verified
             self.space.last_verified = datetime.datetime.now()
 
     def mount(self):
+        """ Mount the NFS export with the provided info. """
         # sudo mount -t nfs -o proto=tcp,port=2049 192.168.1.133:/export /mnt/
         # sudo mount -t self.version -o proto=tcp,port=2049 self.remote_name:self.remote_path self.space.path
         # or /etc/fstab
@@ -119,17 +125,16 @@ class NFS(models.Model):
 ########################## LOCATIONS ##########################
 
 class EnabledLocations(models.Manager):
+    """ Manager to only return enabled Locations. """
     def get_query_set(self):
-            return super(EnabledLocations, self).get_query_set().filter(disabled=False)
+        return super(EnabledLocations, self).get_query_set().filter(
+            disabled=False)
 
 class Location(models.Model):
     """ Stores information about a location. """
 
-    def validate_path(path):
-        if path[0] == '/':
-            raise ValidationError("Path cannot begin with a /")
-
-    uuid = UUIDField(editable=False, unique=True, version=4, help_text="Unique identifier")
+    uuid = UUIDField(editable=False, unique=True, version=4,
+        help_text="Unique identifier")
     storage_space = models.ForeignKey('Space', to_field='uuid')
     # storage_space cannot be called the same thing as the ForeignKey in 
     # resources.py , because of iteractions with Tastypie, see 
@@ -149,17 +154,18 @@ class Location(models.Model):
         (CURRENTLY_PROCESSING, 'Currently Processing'),
     )
     purpose = models.CharField(max_length=2,
-                               choices=PURPOSE_CHOICES,
-                               help_text="Purpose of the space.  Eg. AIP storage, Transfer source")
+        choices=PURPOSE_CHOICES,
+        help_text="Purpose of the space.  Eg. AIP storage, Transfer source")
 
     relative_path = models.TextField()
-    description = models.CharField(max_length=256, default=None, null=True, blank=True)
+    description = models.CharField(max_length=256, default=None,
+        null=True, blank=True)
     quota = models.BigIntegerField(default=None, null=True, blank=True,
-                                   help_text="Size in bytes")
+        help_text="Size in bytes")
     used = models.BigIntegerField(default=0,
-                                  help_text="Amount used in bytes")
+        help_text="Amount used in bytes")
     disabled = models.BooleanField(default=False,
-                                   help_text="True if space should no longer be accessed.")
+        help_text="True if space should no longer be accessed.")
 
     objects = models.Manager()
     enabled = EnabledLocations()
@@ -172,9 +178,11 @@ class Location(models.Model):
             )
 
     def full_path(self):
+        """ Returns full pat of location - space + location paths. """
         return os.path.join(self.storage_space.path, self.relative_path)
 
     def get_description(self):
+        """ Returns a user-friendly description (or the path). """
         return self.description or self.full_path()
 
 
@@ -183,7 +191,8 @@ class Location(models.Model):
 # Currently untested
 class File(models.Model):
     """ A file stored in a specific location. """
-    uuid = UUIDField(editable=False, unique=True, version=4, help_text="Unique identifier")
+    uuid = UUIDField(editable=False, unique=True, version=4,
+        help_text="Unique identifier")
     location = models.ForeignKey(Location, to_field='uuid')
     path = models.TextField()
     size = models.IntegerField()

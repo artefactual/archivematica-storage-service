@@ -4,26 +4,28 @@ from django.forms.models import model_to_dict
 from django.shortcuts import render, redirect, get_object_or_404, get_list_or_404
 from django.views.decorators.csrf import csrf_exempt
 
-from common.constants import protocol
+from common.constants import PROTOCOL
 from .models import Space, Location
 from .forms import SpaceForm, LocationForm
 
 ########################## SPACES ##########################
 
 def space_list(request):
-    spaces = get_list_or_404(Space)
-    def add_child(s):
-        model = protocol[s.access_protocol]['model']
-        child = model.objects.get(space=s)
-        s.child = model_to_dict(child, protocol[s.access_protocol]['fields']or [''])
+    spaces = Space.objects.all()
+    def add_child(space):
+        model = PROTOCOL[space.access_protocol]['model']
+        child = model.objects.get(space=space)
+        space.child = model_to_dict(child,
+            PROTOCOL[space.access_protocol]['fields'] or [''])
     map(add_child, spaces)
     return render(request, 'locations/space_list.html', locals())
 
 def space_detail(request, uuid):
     space = get_object_or_404(Space, uuid=uuid)
-    model = protocol[space.access_protocol]['model']
+    model = PROTOCOL[space.access_protocol]['model']
     child = model.objects.get(space=space)
-    space.child = model_to_dict(child, protocol[space.access_protocol]['fields']or [''])
+    space.child = model_to_dict(child,
+        PROTOCOL[space.access_protocol]['fields']or [''])
     locations = Location.objects.filter(storage_space=space)
     return render(request, 'locations/space_detail.html', locals())
 
@@ -33,7 +35,7 @@ def space_create(request):
         if space_form.is_valid():
             # Get access protocol form to validate
             access_protocol = space_form.cleaned_data['access_protocol']
-            protocol_form = protocol[access_protocol]['form'](
+            protocol_form = PROTOCOL[access_protocol]['form'](
                 request.POST, prefix='protocol')
             if protocol_form.is_valid():
                 # If both are valid, save everything
@@ -49,7 +51,7 @@ def space_create(request):
             # See if access_protocol has been set
             access_protocol = space_form['access_protocol'].value()
             if access_protocol:
-                protocol_form = protocol[access_protocol]['form'](
+                protocol_form = PROTOCOL[access_protocol]['form'](
                    request.POST, prefix='protocol')
     else:
         space_form = SpaceForm(prefix='space')
@@ -64,8 +66,8 @@ def ajax_space_create_protocol_form(request):
         sent_protocol = request.POST.get("protocol")
         try:
             # Get form class if it exists
-            form_class = protocol[sent_protocol]['form']
-        except KeyError as e:
+            form_class = PROTOCOL[sent_protocol]['form']
+        except KeyError:
             response_data = {}
         else:
             # Create and return the form
