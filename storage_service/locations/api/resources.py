@@ -110,7 +110,9 @@ class LocationResource(ModelResource):
 
 
 class FileResource(ModelResource):
-    location = fields.ForeignKey(LocationResource, 'location')
+    origin_location = fields.ForeignKey(LocationResource, 'origin_location')
+    destination_location = fields.ForeignKey(LocationResource, 'current_location')
+    destination_path = fields.CharField(attribute='current_path')
     class Meta:
         queryset = File.objects.all()
         authentication = Authentication()
@@ -120,8 +122,8 @@ class FileResource(ModelResource):
         # authorization = DjangoAuthorization()
         # validation = CleanedDataFormValidation(form_class=FileForm)
 
-        fields = ['path', 'size', 'uuid']
-        list_allowed_methods = ['get']
+        fields = ['origin_path', 'package_type', 'size', 'uuid']
+        list_allowed_methods = ['get', 'post']
         detail_allowed_methods = ['get', 'put', 'post']
         detail_uri_name = 'uuid'
         always_return_data = True
@@ -130,3 +132,10 @@ class FileResource(ModelResource):
             'path': ALL,
             'uuid': ALL,
         }
+
+    def obj_create(self, bundle, **kwargs):
+        bundle = super(FileResource, self).obj_create(bundle, **kwargs)
+        # IDEA add custom endpoints, instead of storing all AIPS that come in?
+        if bundle.obj.package_type == "AIP":
+            bundle.obj.current_location.space.store_aip(bundle.obj)
+        return bundle

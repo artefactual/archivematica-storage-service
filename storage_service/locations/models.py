@@ -1,10 +1,16 @@
 import datetime
+import logging
 import os.path
+import subprocess
 
 from django.core.exceptions import ValidationError
 from django.db import models
 
 from django_extensions.db.fields import UUIDField
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename="/tmp/storage-service.log",
+    level=logging.INFO)
 
 ########################## SPACES ##########################
 
@@ -49,6 +55,15 @@ class Space(models.Model):
             path=self.path,
             )
 
+    def store_aip(self, *args, **kwargs):
+        # FIXME there has to be a better way to do this
+        if self.access_protocol == self.LOCAL_FILESYSTEM:
+            self.localfilesystem.store_aip(*args, **kwargs)
+        elif self.access_protocol == self.NFS:
+            self.nfs.store_aip(*args, **kwargs)
+        else:
+            logging.warning("No access protocol for this space.")
+
 
 class LocalFilesystem(models.Model):
     """ Spaces found in the local filesystem."""
@@ -66,6 +81,31 @@ class LocalFilesystem(models.Model):
         self.space.verified = verified
         self.space.last_verified = datetime.datetime.now()
 
+    def store_aip(self, aip_file, *args, **kwargs):
+        """ Stores aip_file in this space, at aip_file.current_location. """
+        # IDEA Make this a script that can be run? Would lose access to python
+        # objects and have to pass UUIDs
+
+        # Confirm that this is the correct space to be moving to
+        assert self.space == aip_file.current_location.space
+
+        # TODO Move some of the procesing in archivematica
+        # clientScripts/storeAIP to here
+        source = aip_file.full_origin_path()
+        destination = aip_file.full_path()
+        logging.info("rsyncing from {} to {}".format(source, destination))
+        try:
+            os.makedirs(os.path.dirname(destination))
+        except OSError as e:
+            # Errno 17 = folder exists already - expected error
+            if e.errno != 17:
+                logging.warning("Could not create storage directory: {}".format(e))
+                return -1
+        try:
+            subprocess.call(['rsync', '-a', source, destination])
+        except CalledProcessError as e:
+            logging.warning("{}".format(e))
+            return -1
 
 
 class NFS(models.Model):
@@ -104,6 +144,34 @@ class NFS(models.Model):
         # self.remote_name:self.remote_path   self.space.path   self.version    auto,user  0  0
         # may need to tweak options
         pass
+
+    def store_aip(self):
+        """ Stores aip_file in this space, at aip_file.current_location.
+
+        Assumes that aip_file.current_location is mounted locally."""
+        # IDEA Make this a script that can be run? Would lose access to python
+        # objects and have to pass UUIDs
+
+        # Confirm that this is the correct space to be moving to
+        assert self.space == aip_file.current_location.space
+
+        # TODO Move some of the procesing in archivematica
+        # clientScripts/storeAIP to here
+        source = aip_file.full_origin_path()
+        destination = aip_file.full_path()
+        logging.info("rsyncing from {} to {}".format(source, destination))
+        try:
+            os.makedirs(os.path.dirname(destination))
+        except OSError as e:
+            # Errno 17 = folder exists already - expected error
+            if e.errno != 17:
+                logging.warning("Could not create storage directory: {}".format(e))
+                return -1
+        try:
+            subprocess.call(['rsync', '-a', source, destination])
+        except CalledProcessError as e:
+            logging.warning("{}".format(e))
+            return -1
 
 # To add a new storage space the following places must be updated:
 #  locations/models.py (this file)
@@ -175,8 +243,8 @@ class Location(models.Model):
             )
 
     def full_path(self):
-        """ Returns full pat of location - space + location paths. """
-        return os.path.join(self.storage_space.path, self.relative_path)
+        """ Returns full path of location: space + location paths. """
+        return os.path.join(self.space.path, self.relative_path)
 
     def get_description(self):
         """ Returns a user-friendly description (or the path). """
@@ -185,20 +253,39 @@ class Location(models.Model):
 
 ########################## FILES ##########################
 
-# Currently untested
 class File(models.Model):
     """ A file stored in a specific location. """
     uuid = UUIDField(editable=False, unique=True, version=4,
         help_text="Unique identifier")
-    location = models.ForeignKey(Location, to_field='uuid')
-    path = models.TextField()
-    size = models.IntegerField()
-    # package_type = models.CharField() # eg. AIP, SIP, DIP, Transfer, File
+    origin_location = models.ForeignKey(Location, to_field='uuid', related_name='+')
+    origin_path = models.TextField()
+    current_location = models.ForeignKey(Location, to_field='uuid', related_name='+')
+    current_path = models.TextField()
+    size = models.IntegerField(default=0)
+
+    PACKAGE_TYPE_CHOICES = (
+        ("AIP", 'AIP'),
+        ("SIP", 'SIP'),
+        ("DIP", 'DIP'),
+        ("transfer", 'Transfer'),
+        ("file", 'Single File'),
+    )
+    package_type = models.CharField(max_length=8,
+        choices=PACKAGE_TYPE_CHOICES,
+        help_text="Purpose of the space.  Eg. AIP storage, Transfer source")
+    uploaded = models.BooleanField(default=False,
+        help_text="Whether the file is at its final destination or not.")
 
     def __unicode__(self):
         return "{uuid}: {path} in {location}".format(
             uuid=self.uuid,
-            path=self.path,
-            location=self.location,
+            path=self.current_path,
+            location=self.current_location,
             )
+        # return "File: {}".format(self.uuid)
 
+    def full_path(self):
+        return os.path.join(self.current_location.full_path(), self.current_path)
+
+    def full_origin_path(self):
+        return os.path.join(self.origin_location.full_path(), self.origin_path)
