@@ -6,6 +6,7 @@ from tastypie.authentication import (BasicAuthentication, ApiKeyAuthentication,
 from tastypie.authorization import DjangoAuthorization, Authorization
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.validation import CleanedDataFormValidation
+
 from ..models import (File, Location, Space)
 from ..forms import LocationForm, SpaceForm
 
@@ -78,6 +79,8 @@ class SpaceResource(ModelResource):
 
 class LocationResource(ModelResource):
     space = fields.ForeignKey(SpaceResource, 'space')
+    path = fields.CharField(attribute='full_path', readonly=True)
+    description = fields.CharField(attribute='get_description', readonly=True)
     class Meta:
         queryset = Location.objects.filter(disabled=False)
         authentication = Authentication()
@@ -100,13 +103,6 @@ class LocationResource(ModelResource):
             'used': ALL,
             'uuid': ALL,
         }
-
-    def dehydrate(self, bundle):
-        bundle = super(LocationResource, self).dehydrate(bundle)
-        # Include full path (space path + location relative_path)
-        bundle.data['path'] = bundle.obj.full_path()
-        bundle.data['description'] = bundle.obj.get_description()
-        return bundle
 
 
 class FileResource(ModelResource):
