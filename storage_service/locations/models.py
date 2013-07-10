@@ -135,10 +135,7 @@ class Location(models.Model):
 
     uuid = UUIDField(editable=False, unique=True, version=4,
         help_text="Unique identifier")
-    storage_space = models.ForeignKey('Space', to_field='uuid')
-    # storage_space cannot be called the same thing as the ForeignKey in 
-    # resources.py , because of iteractions with Tastypie, see 
-    # https://github.com/toastdriven/django-tastypie/issues/152 for details
+    space = models.ForeignKey('Space', to_field='uuid')
 
     TRANSFER_SOURCE = 'TS'
     AIP_STORAGE = 'AS'

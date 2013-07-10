@@ -26,7 +26,7 @@ def space_detail(request, uuid):
     child = model.objects.get(space=space)
     space.child = model_to_dict(child,
         PROTOCOL[space.access_protocol]['fields']or [''])
-    locations = Location.objects.filter(storage_space=space)
+    locations = Location.objects.filter(space=space)
     return render(request, 'locations/space_detail.html', locals())
 
 def space_create(request):
@@ -83,7 +83,7 @@ def location_create(request, space_uuid):
         form = LocationForm(request.POST)
         if form.is_valid():
             location = form.save(commit=False)
-            location.storage_space = space
+            location.space = space
             location.save()
             return redirect('space_detail', space.uuid)
     else:

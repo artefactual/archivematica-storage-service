@@ -77,7 +77,7 @@ class SpaceResource(ModelResource):
 
 
 class LocationResource(ModelResource):
-    space = fields.ForeignKey(SpaceResource, 'storage_space')
+    space = fields.ForeignKey(SpaceResource, 'space')
     class Meta:
         queryset = Location.objects.filter(disabled=False)
         authentication = Authentication()

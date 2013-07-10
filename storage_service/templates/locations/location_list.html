@@ -10,7 +10,7 @@
             <dt>Purpose:</dt> <dd>{{ loc.get_purpose_display }}</dd>
             <dt>Path:</dt> <dd>{{ loc.full_path }}</dd>
             <dt>Description:</dt> <dd>{{ loc.description|default:"No description" }}</dd>
-            <dt>Space:</dt> <dd><a href="{% url 'space_detail' loc.storage_space.uuid %}">{{ loc.storage_space }}</a></dd>
+            <dt>Space:</dt> <dd><a href="{% url 'space_detail' loc.space.uuid %}">{{ loc.space }}</a></dd>
             <dt>Storage:</dt> <dd>{{ loc.used }}B used out of {{ loc.quota|default:"unlimited" }}</dd>
         </dl>
     </div>
