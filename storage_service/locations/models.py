@@ -8,6 +8,8 @@ from django.db import models
 
 from django_extensions.db.fields import UUIDField
 
+import common.utils as utils
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename="/tmp/storage-service.log",
     level=logging.INFO)
@@ -82,7 +84,7 @@ class LocalFilesystem(models.Model):
         self.space.last_verified = datetime.datetime.now()
 
     def store_aip(self, aip_file, *args, **kwargs):
-        """ Stores aip_file in this space, at aip_file.current_location. """
+        """ Stores aip_file in this space. """
         # IDEA Make this a script that can be run? Would lose access to python
         # objects and have to pass UUIDs
 
@@ -92,7 +94,14 @@ class LocalFilesystem(models.Model):
         # TODO Move some of the procesing in archivematica
         # clientScripts/storeAIP to here
         source = aip_file.full_origin_path()
-        destination = aip_file.full_path()
+
+        # Store AIP at
+        # destination_location/uuid/split/into/chunks/destination_path
+        path = utils.uuid_to_path(aip_file.uuid)
+        destination = os.path.join(
+            aip_file.current_location.full_path(),
+            path,
+            aip_file.current_path)
         logging.info("rsyncing from {} to {}".format(source, destination))
         try:
             os.makedirs(os.path.dirname(destination))
@@ -145,7 +154,7 @@ class NFS(models.Model):
         # may need to tweak options
         pass
 
-    def store_aip(self):
+    def store_aip(self, aip_file, *args, **kwargs):
         """ Stores aip_file in this space, at aip_file.current_location.
 
         Assumes that aip_file.current_location is mounted locally."""
@@ -158,7 +167,14 @@ class NFS(models.Model):
         # TODO Move some of the procesing in archivematica
         # clientScripts/storeAIP to here
         source = aip_file.full_origin_path()
-        destination = aip_file.full_path()
+
+        # Store AIP at
+        # destination_location/uuid/split/into/chunks/destination_path
+        path = utils.uuid_to_path(aip_file.uuid)
+        destination = os.path.join(
+            aip_file.current_location.full_path(),
+            path,
+            aip_file.current_path)
         logging.info("rsyncing from {} to {}".format(source, destination))
         try:
             os.makedirs(os.path.dirname(destination))
