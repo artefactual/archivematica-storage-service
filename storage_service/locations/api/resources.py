@@ -90,7 +90,7 @@ class LocationResource(ModelResource):
         # authorization = DjangoAuthorization()
         validation = CleanedDataFormValidation(form_class=LocationForm)
 
-        fields = ['relative_path', 'purpose', 'quota', 'used', 'uuid']
+        fields = ['disabled', 'relative_path', 'purpose', 'quota', 'used', 'uuid']
         list_allowed_methods = ['get', 'post']
         detail_allowed_methods = ['get', 'patch']
         detail_uri_name = 'uuid'
@@ -107,8 +107,12 @@ class LocationResource(ModelResource):
 
 class FileResource(ModelResource):
     origin_location = fields.ForeignKey(LocationResource, 'origin_location')
-    destination_location = fields.ForeignKey(LocationResource, 'current_location')
-    destination_path = fields.CharField(attribute='current_path')
+    current_location = fields.ForeignKey(LocationResource, 'current_location')
+
+    origin_full_path = fields.CharField(attribute='full_origin_path',
+        readonly=True)
+    current_full_path = fields.CharField(attribute='full_path', readonly=True)
+
     class Meta:
         queryset = File.objects.all()
         authentication = Authentication()
@@ -118,7 +122,7 @@ class FileResource(ModelResource):
         # authorization = DjangoAuthorization()
         # validation = CleanedDataFormValidation(form_class=FileForm)
 
-        fields = ['origin_path', 'package_type', 'size', 'uuid']
+        fields = ['origin_path', 'current_path', 'package_type', 'size', 'status', 'uuid']
         list_allowed_methods = ['get', 'post']
         detail_allowed_methods = ['get', 'put', 'post']
         detail_uri_name = 'uuid'

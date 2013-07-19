@@ -1,6 +1,7 @@
 import datetime
 import logging
 import os.path
+import stat
 import subprocess
 
 from django.core.exceptions import ValidationError
@@ -11,8 +12,50 @@ from django_extensions.db.fields import UUIDField
 import common.utils as utils
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(filename="/tmp/storage-service.log",
+logging.basicConfig(#filename="/tmp/storage-service.log",
     level=logging.INFO)
+
+########################## COMMON ##########################
+
+def store_aip_local_path(aip_file):
+    # TODO Move some of the procesing in archivematica
+    # clientScripts/storeAIP to here
+    source = aip_file.full_origin_path()
+
+    # Store AIP at
+    # destination_location/uuid/split/into/chunks/destination_path
+    path = utils.uuid_to_path(aip_file.uuid)
+    aip_file.current_path = os.path.join(path, aip_file.current_path)
+    destination = os.path.join(
+        aip_file.current_location.full_path(),
+        aip_file.current_path)
+    aip_file.save()
+
+    logging.info("rsyncing from {} to {}".format(source, destination))
+    try:
+        mode = (stat.S_IRUSR + stat.S_IWUSR + stat.S_IXUSR +
+                stat.S_IRGRP +                stat.S_IXGRP +
+                stat.S_IROTH +                stat.S_IXOTH)
+        os.makedirs(os.path.dirname(destination), mode)
+        # Mode not getting set correctly
+        os.chmod(os.path.dirname(destination), mode)
+    except OSError as e:
+        if e.errno != 17:
+            logging.warning("Could not create storage directory: {}".format(e))
+            aip_file.status = File.FAIL
+            raise
+    command = ['rsync', '--chmod=u+rw,go-rwx', source, destination]
+    logging.info("rsync command: {}".format(command))
+    try:
+        subprocess.check_call(command)
+    except Exception as e:
+        logging.warning("Rsync failed: {}".format(e))
+        aip_file.status = File.FAIL
+        raise
+
+    aip_file.status = File.UPLOADED
+    aip_file.save()
+
 
 ########################## SPACES ##########################
 
@@ -68,7 +111,7 @@ class Space(models.Model):
 
 
 class LocalFilesystem(models.Model):
-    """ Spaces found in the local filesystem."""
+    """ Spaces found in the local filesystem of the storage service."""
     space = models.OneToOneField('Space', to_field='uuid')
     # Does not currently need any other information - delete?
 
@@ -87,35 +130,9 @@ class LocalFilesystem(models.Model):
         """ Stores aip_file in this space. """
         # IDEA Make this a script that can be run? Would lose access to python
         # objects and have to pass UUIDs
-
         # Confirm that this is the correct space to be moving to
         assert self.space == aip_file.current_location.space
-
-        # TODO Move some of the procesing in archivematica
-        # clientScripts/storeAIP to here
-        source = aip_file.full_origin_path()
-
-        # Store AIP at
-        # destination_location/uuid/split/into/chunks/destination_path
-        path = utils.uuid_to_path(aip_file.uuid)
-        destination = os.path.join(
-            aip_file.current_location.full_path(),
-            path,
-            aip_file.current_path)
-        logging.info("rsyncing from {} to {}".format(source, destination))
-        try:
-            os.makedirs(os.path.dirname(destination))
-        except OSError as e:
-            # Errno 17 = folder exists already - expected error
-            if e.errno != 17:
-                logging.warning("Could not create storage directory: {}".format(e))
-                return -1
-        try:
-            subprocess.call(['rsync', '-a', source, destination])
-        except CalledProcessError as e:
-            logging.warning("{}".format(e))
-            return -1
-
+        store_aip_local_path(aip_file)
 
 class NFS(models.Model):
     """ Spaces accessed over NFS. """
@@ -160,34 +177,10 @@ class NFS(models.Model):
         Assumes that aip_file.current_location is mounted locally."""
         # IDEA Make this a script that can be run? Would lose access to python
         # objects and have to pass UUIDs
-
         # Confirm that this is the correct space to be moving to
         assert self.space == aip_file.current_location.space
+        store_aip_local_path(aip_file)
 
-        # TODO Move some of the procesing in archivematica
-        # clientScripts/storeAIP to here
-        source = aip_file.full_origin_path()
-
-        # Store AIP at
-        # destination_location/uuid/split/into/chunks/destination_path
-        path = utils.uuid_to_path(aip_file.uuid)
-        destination = os.path.join(
-            aip_file.current_location.full_path(),
-            path,
-            aip_file.current_path)
-        logging.info("rsyncing from {} to {}".format(source, destination))
-        try:
-            os.makedirs(os.path.dirname(destination))
-        except OSError as e:
-            # Errno 17 = folder exists already - expected error
-            if e.errno != 17:
-                logging.warning("Could not create storage directory: {}".format(e))
-                return -1
-        try:
-            subprocess.call(['rsync', '-a', source, destination])
-        except CalledProcessError as e:
-            logging.warning("{}".format(e))
-            return -1
 
 # To add a new storage space the following places must be updated:
 #  locations/models.py (this file)
@@ -260,7 +253,8 @@ class Location(models.Model):
 
     def full_path(self):
         """ Returns full path of location: space + location paths. """
-        return os.path.join(self.space.path, self.relative_path)
+        return os.path.normpath(
+            os.path.join(self.space.path, self.relative_path))
 
     def get_description(self):
         """ Returns a user-friendly description (or the path). """
@@ -289,8 +283,20 @@ class File(models.Model):
     package_type = models.CharField(max_length=8,
         choices=PACKAGE_TYPE_CHOICES,
         help_text="Purpose of the space.  Eg. AIP storage, Transfer source")
-    uploaded = models.BooleanField(default=False,
-        help_text="Whether the file is at its final destination or not.")
+
+    PENDING = 'PENDING'
+    UPLOADED = 'UPLOADED'
+    VERIFIED = 'VERIFIED'
+    FAIL = 'FAIL'
+    STATUS_CHOICES = (
+        (PENDING, "Upload Pending"),
+        (UPLOADED, "Uploaded"),
+        (VERIFIED, "Verified"),
+        (FAIL, "Failed"),
+    )
+    status = models.CharField(max_length=8, choices=STATUS_CHOICES,
+        default = "PENDING",
+        help_text="Status of the file in the storage service.")
 
     def __unicode__(self):
         return "{uuid}: {path} in {location}".format(
@@ -301,7 +307,9 @@ class File(models.Model):
         # return "File: {}".format(self.uuid)
 
     def full_path(self):
-        return os.path.join(self.current_location.full_path(), self.current_path)
+        return os.path.normpath(
+            os.path.join(self.current_location.full_path(), self.current_path) )
 
     def full_origin_path(self):
-        return os.path.join(self.origin_location.full_path(), self.origin_path)
+        return os.path.normpath(
+            os.path.join(self.origin_location.full_path(), self.origin_path) )
