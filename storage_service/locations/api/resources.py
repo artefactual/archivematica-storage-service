@@ -7,10 +7,31 @@ from tastypie.authorization import DjangoAuthorization, Authorization
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.validation import CleanedDataFormValidation
 
-from ..models import (File, Location, Space)
+from ..models import (File, Location, Space, Pipeline)
 from ..forms import LocationForm, SpaceForm
 
 import common.constants
+
+class PipelineResource(ModelResource):
+    class Meta:
+        queryset = Pipeline.objects.all()
+        authentication = Authentication()
+        # authentication = MultiAuthentication(
+        #     BasicAuthentication, ApiKeyAuthentication())
+        authorization = Authorization()
+        # authorization = DjangoAuthorization()
+        # validation = CleanedDataFormValidation(form_class=FileForm)
+
+        fields = ['uuid', 'description']
+        list_allowed_methods = ['get', 'post']
+        detail_allowed_methods = ['get']
+        detail_uri_name = 'uuid'
+        always_return_data = True
+        filtering = {
+            'description': ALL,
+            'uuid': ALL,
+        }
+
 
 class SpaceResource(ModelResource):
     class Meta:
@@ -81,6 +102,7 @@ class LocationResource(ModelResource):
     space = fields.ForeignKey(SpaceResource, 'space')
     path = fields.CharField(attribute='full_path', readonly=True)
     description = fields.CharField(attribute='get_description', readonly=True)
+    pipeline = fields.ForeignKey(PipelineResource, 'pipeline', full=True)
     class Meta:
         queryset = Location.objects.filter(disabled=False)
         authentication = Authentication()
@@ -97,6 +119,7 @@ class LocationResource(ModelResource):
         always_return_data = True
         filtering = {
             'relative_path': ALL,
+            'pipeline': ALL_WITH_RELATIONS,
             'purpose': ALL,
             'quota': ALL,
             'space': ALL_WITH_RELATIONS,

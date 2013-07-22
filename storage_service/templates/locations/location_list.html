@@ -8,6 +8,7 @@
     <div class='location'>
         <dl>
             <dt>Purpose:</dt> <dd>{{ loc.get_purpose_display }}</dd>
+            <dt>Pipeline:</dt> <dd>{{ loc.pipeline }}</dd>
             <dt>Path:</dt> <dd>{{ loc.full_path }}</dd>
             <dt>Description:</dt> <dd>{{ loc.description|default:"No description" }}</dd>
             <dt>Space:</dt> <dd><a href="{% url 'space_detail' loc.space.uuid %}">{{ loc.space }}</a></dd>

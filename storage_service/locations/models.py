@@ -230,6 +230,8 @@ class Location(models.Model):
     purpose = models.CharField(max_length=2,
         choices=PURPOSE_CHOICES,
         help_text="Purpose of the space.  Eg. AIP storage, Transfer source")
+    pipeline = models.ForeignKey('Pipeline', to_field='uuid',
+        help_text="UUID of the Archivematica instance using this location.")
 
     relative_path = models.TextField()
     description = models.CharField(max_length=256, default=None,
@@ -313,3 +315,19 @@ class File(models.Model):
     def full_origin_path(self):
         return os.path.normpath(
             os.path.join(self.origin_location.full_path(), self.origin_path) )
+
+########################## OTHER ##########################
+
+class Pipeline(models.Model):
+    """ Information about Archivematica instances using the storage service. """
+    uuid = UUIDField(editable=False, unique=True, version=4,
+        help_text="Identifier for the Archivematica pipeline")
+    description = models.CharField(max_length=256, default=None,
+        null=True, blank=True,
+        help_text="Human readable description of the Archivematica instance.")
+
+    def __unicode__(self):
+        return "{uuid} ({description})".format(
+            uuid=self.uuid,
+            description=self.description)
+

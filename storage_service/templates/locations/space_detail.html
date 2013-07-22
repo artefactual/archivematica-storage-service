@@ -20,6 +20,7 @@
     <div class='location'>
         <dl>
             <dt>Purpose:</dt> <dd>{{ loc.get_purpose_display }}</dd>
+            <dt>Pipeline:</dt> <dd>{{ loc.pipeline }}</dd>
             <dt>Path:</dt> <dd>{{ loc.full_path }}</dd>
             <dt>Description:</dt> <dd>{{ loc.description|default:"No description" }}</dd>
             <dt>Storage:</dt> <dd>{{ loc.used }}B used out of {{ loc.quota|default:"unlimited" }}</dd>
