@@ -17,20 +17,44 @@ logging.basicConfig(#filename="/tmp/storage-service.log",
 
 ########################## COMMON ##########################
 
+class StorageException(Exception):
+    """ Exceptions specific to the service."""
+    pass
+
 def store_aip_local_path(aip_file):
+    """ Stores AIPs to locations accessible locally to the storage service.
+
+    Checks if there is space in the Space and Location for the AIP, and raises
+    a StorageException if not.  All sizes expected to be in bytes.
+
+    AIP is stored at:
+    destination_location/uuid/split/into/chunks/destination_path. """
     # TODO Move some of the procesing in archivematica
     # clientScripts/storeAIP to here
+    location = aip_file.current_location
+    space = location.space
+    if space.size is not None and space.used + aip_file.size > space.size:
+        raise StorageException(
+            "Not enough space for AIP on storage device {space}; Used: {used}; Size: {size}; AIP size: {aip_size}".format(
+            space=space, used=space.used, size=space.size,
+            aip_size=aip_file.size))
+    if (location.quota is not None and
+        location.used + aip_file.size > location.quota):
+        raise StorageException(
+            "AIP too big for quota on {location}; Used: {used}; Quota: {quota}; AIP size: {aip_size}".format(
+                location=location, used=location.used, quota=location.quota,
+                aip_size=aip_file.size))
+
     source = aip_file.full_origin_path()
 
     # Store AIP at
     # destination_location/uuid/split/into/chunks/destination_path
     path = utils.uuid_to_path(aip_file.uuid)
     aip_file.current_path = os.path.join(path, aip_file.current_path)
-    destination = os.path.join(
-        aip_file.current_location.full_path(),
-        aip_file.current_path)
     aip_file.save()
+    destination = aip_file.full_path()
 
+    # Create directories
     logging.info("rsyncing from {} to {}".format(source, destination))
     try:
         mode = (stat.S_IRUSR + stat.S_IWUSR + stat.S_IXUSR +
@@ -43,7 +67,10 @@ def store_aip_local_path(aip_file):
         if e.errno != 17:
             logging.warning("Could not create storage directory: {}".format(e))
             aip_file.status = File.FAIL
+            aip_file.save()
             raise
+    # Rsync file over
+    # TODO use Gearman to do this asyncronously
     command = ['rsync', '--chmod=u+rw,go-rwx', source, destination]
     logging.info("rsync command: {}".format(command))
     try:
@@ -51,8 +78,13 @@ def store_aip_local_path(aip_file):
     except Exception as e:
         logging.warning("Rsync failed: {}".format(e))
         aip_file.status = File.FAIL
+        aip_file.save()
         raise
 
+    space.used += aip_file.size
+    space.save()
+    location.used += aip_file.size
+    location.save()
     aip_file.status = File.UPLOADED
     aip_file.save()
 
@@ -309,10 +341,16 @@ class File(models.Model):
         # return "File: {}".format(self.uuid)
 
     def full_path(self):
+        """ Return the full path of the file's current location.
+
+        Includes the space, location, and file paths joined. """
         return os.path.normpath(
             os.path.join(self.current_location.full_path(), self.current_path) )
 
     def full_origin_path(self):
+        """ Return the full path of the file's original location.
+
+        Includes the space, location, and file paths joined. """
         return os.path.normpath(
             os.path.join(self.origin_location.full_path(), self.origin_path) )
 
