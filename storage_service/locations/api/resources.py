@@ -12,6 +12,13 @@ from ..forms import LocationForm, SpaceForm
 
 import common.constants
 
+# FIXME ModelResources with ForeignKeys to another model don't work with
+# validation = CleanedDataFormValidation  On creation, it errors with:
+# "Select a valid choice. That choice is not one of the available choices."
+# This is because the ModelResource accepts a URI, but does not convert it to a
+# primary key (in our case, UUID) before passing it to Django.
+# See https://github.com/toastdriven/django-tastypie/issues/152 for details
+
 class PipelineResource(ModelResource):
     class Meta:
         queryset = Pipeline.objects.all()
@@ -110,7 +117,7 @@ class LocationResource(ModelResource):
         #     BasicAuthentication, ApiKeyAuthentication())
         authorization = Authorization()
         # authorization = DjangoAuthorization()
-        validation = CleanedDataFormValidation(form_class=LocationForm)
+        # validation = CleanedDataFormValidation(form_class=LocationForm)
 
         fields = ['disabled', 'relative_path', 'purpose', 'quota', 'used', 'uuid']
         list_allowed_methods = ['get', 'post']
