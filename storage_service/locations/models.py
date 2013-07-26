@@ -4,6 +4,7 @@ import os.path
 import stat
 import subprocess
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -54,6 +55,9 @@ def store_aip_local_path(aip_file):
     aip_file.save()
     destination = aip_file.full_path()
 
+    aip_file.status = File.PENDING
+    aip_file.save()
+
     # Create directories
     logging.info("rsyncing from {} to {}".format(source, destination))
     try:
@@ -66,8 +70,6 @@ def store_aip_local_path(aip_file):
     except OSError as e:
         if e.errno != 17:
             logging.warning("Could not create storage directory: {}".format(e))
-            aip_file.status = File.FAIL
-            aip_file.save()
             raise
     # Rsync file over
     # TODO use Gearman to do this asyncronously
@@ -77,8 +79,6 @@ def store_aip_local_path(aip_file):
         subprocess.check_call(command)
     except Exception as e:
         logging.warning("Rsync failed: {}".format(e))
-        aip_file.status = File.FAIL
-        aip_file.save()
         raise
 
     space.used += aip_file.size
@@ -296,6 +296,7 @@ class Location(models.Model):
 
 
 ########################## FILES ##########################
+# NOTE If the Files section gets much bigger, move to its own app
 
 class File(models.Model):
     """ A file stored in a specific location. """
@@ -307,12 +308,17 @@ class File(models.Model):
     current_path = models.TextField()
     size = models.IntegerField(default=0)
 
+    AIP = "AIP"
+    SIP = "SIP"
+    DIP = "DIP"
+    TRANSFER = "transfer"
+    FILE = 'file'
     PACKAGE_TYPE_CHOICES = (
-        ("AIP", 'AIP'),
-        ("SIP", 'SIP'),
-        ("DIP", 'DIP'),
-        ("transfer", 'Transfer'),
-        ("file", 'Single File'),
+        (AIP, 'AIP'),
+        (SIP, 'SIP'),
+        (DIP, 'DIP'),
+        (TRANSFER, 'Transfer'),
+        (FILE, 'Single File'),
     )
     package_type = models.CharField(max_length=8,
         choices=PACKAGE_TYPE_CHOICES,
@@ -321,23 +327,26 @@ class File(models.Model):
     PENDING = 'PENDING'
     UPLOADED = 'UPLOADED'
     VERIFIED = 'VERIFIED'
+    DEL_REQ = 'DEL_REQ'
+    DELETED = 'DELETED'
     FAIL = 'FAIL'
     STATUS_CHOICES = (
         (PENDING, "Upload Pending"),
         (UPLOADED, "Uploaded"),
         (VERIFIED, "Verified"),
         (FAIL, "Failed"),
+        (DEL_REQ, "Delete requested"),
+        (DELETED, "Deleted"),
     )
     status = models.CharField(max_length=8, choices=STATUS_CHOICES,
-        default = "PENDING",
+        default = FAIL,
         help_text="Status of the file in the storage service.")
 
     def __unicode__(self):
-        return "{uuid}: {path} in {location}".format(
+        return u"{uuid}: {path}".format(
             uuid=self.uuid,
-            path=self.current_path,
-            location=self.current_location,
-            )
+            path=self.full_path(),
+        )
         # return "File: {}".format(self.uuid)
 
     def full_path(self):
@@ -352,7 +361,50 @@ class File(models.Model):
 
         Includes the space, location, and file paths joined. """
         return os.path.normpath(
-            os.path.join(self.origin_location.full_path(), self.origin_path) )
+            os.path.join(self.origin_location.full_path(), self.origin_path))
+
+
+class Event(models.Model):
+    """ Stores requests to modify files that need admin approval.
+
+    Eg. delete AIP can be requested by a pipeline, but needs storage
+    administrator approval.  Who made the request and why is also stored. """
+    file = models.ForeignKey('File', to_field='uuid')
+    DELETE = 'DELETE'
+    EVENT_TYPE_CHOICES = (
+        (DELETE, 'delete'),
+    )
+    event_type = models.CharField(max_length=8, choices=EVENT_TYPE_CHOICES)
+    event_reason = models.TextField()
+    pipeline = models.ForeignKey('Pipeline', to_field='uuid')
+    user_id = models.PositiveIntegerField()
+    user_email = models.EmailField(max_length=254)
+    SUBMITTED = 'SUBMIT'
+    APPROVED = 'APPROVE'
+    REJECTED = 'REJECT'
+    EVENT_STATUS_CHOICES = (
+        (SUBMITTED, 'Submitted'),
+        (APPROVED, 'Approved'),
+        (REJECTED, 'Rejected'),
+    )
+    status = models.CharField(max_length=8, choices=EVENT_STATUS_CHOICES)
+    status_reason = models.TextField(null=True, blank=True)
+    admin_id = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True)
+    status_time = models.DateTimeField(auto_now=True)
+
+    def __unicode__(self):
+        return u"{event_status} request to {event_type} {file}".format(
+            event_status=self.get_status_display(),
+            event_type=self.get_event_type_display(),
+            file=self.file)
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            # Creating new object
+            self.file.status = File.DEL_REQ
+            self.file.save()
+        super(Event, self).save(*args, **kwargs)
+
 
 ########################## OTHER ##########################
 

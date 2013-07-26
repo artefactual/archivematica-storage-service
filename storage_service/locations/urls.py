@@ -19,4 +19,8 @@ urlpatterns = patterns('locations.views',
     url(r'^locations/$', 'location_list',
         name='location_list'),
 
+    url(r'^files/$', 'file_list',
+        name='file_list'),
+    url(r'^files/aip_delete_request$', 'aip_delete_request',
+        name='aip_delete_request'),
 )

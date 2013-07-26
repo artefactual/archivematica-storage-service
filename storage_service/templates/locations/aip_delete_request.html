@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load common_filters %}
+
+{% block page_title %}AIP Deletion Requests{% endblock %}
+
+{% block content %}
+
+{% if requests %}
+  <table class="datatable">
+    <thead>
+      <tr>
+        <th>File</th>
+        <th>Reason</th>
+        <th>Pipeline</th>
+        <th>User</th>
+        <th>Approve/Reject</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for req in requests %}
+      <tr>
+        <td>{{ req.file }}</td>
+        <td>{{ req.event_reason }}</td>
+        <td>{{ req.pipeline }}</td>
+        <td>{{ req.user_email }} (ID: {{ req.user_id}})</td>
+        <td>Approval form</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p>No requests pending.</p>
+{% endif %}
+
+{% endblock %}

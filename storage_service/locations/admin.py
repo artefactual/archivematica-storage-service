@@ -1,6 +1,8 @@
 from django.contrib import admin
-from .models import File, LocalFilesystem, Location, NFS, Pipeline, Space
+from .models import (Event, File, LocalFilesystem, Location, NFS, Pipeline,
+    Space)
 
+admin.site.register(Event)
 admin.site.register(File)
 admin.site.register(LocalFilesystem)
 admin.site.register(Location)

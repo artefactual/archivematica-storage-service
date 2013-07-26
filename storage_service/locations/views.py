@@ -5,7 +5,7 @@ from django.shortcuts import render, redirect, get_object_or_404, get_list_or_40
 from django.views.decorators.csrf import csrf_exempt
 
 from common.constants import PROTOCOL
-from .models import Space, Location
+from .models import Space, Location, File, Event
 from .forms import SpaceForm, LocationForm
 
 ########################## SPACES ##########################
@@ -95,4 +95,13 @@ def location_list(request):
     # TODO sort by purpose?  Or should that be done in the template?
     return render(request, 'locations/location_list.html', locals())
 
+########################## FILES ##########################
+
+def file_list(request):
+    files = File.objects.all()
+    return render(request, 'locations/file_list.html', locals())
+
+def aip_delete_request(request):
+    requests = Event.objects.filter(status=Event.SUBMITTED)
+    return render(request, 'locations/aip_delete_request.html', locals())
 

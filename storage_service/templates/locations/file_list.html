@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block page_title %}All Files{% endblock %}
+
+{% block content %}
+
+<p><a href="{% url 'aip_delete_request' %}">View delete requests</a></p>
+
+{% if files %}
+  <table class="datatable">
+    <thead>
+      <tr>
+        <th>UUID</th>
+        <th>Current Location</th>
+        <th>Size</th>
+        <th>Type</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for file in files %}
+      <tr>
+        <td>{{ file.uuid }}</td>
+        <td>{{ file.full_path }}</td>
+        <td>{{ file.size }}B</td>
+        <td>{{ file.get_package_type_display }}</td>
+        <td>{{ file.get_status_display }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p>No files currently exist.</p>
+{% endif %}
+
+{% endblock %}

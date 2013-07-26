@@ -1,13 +1,17 @@
+from django.conf.urls import *
 from django.forms.models import model_to_dict
 
-from tastypie import fields
+import json
 from tastypie.authentication import (BasicAuthentication, ApiKeyAuthentication,
     MultiAuthentication, Authentication)
 from tastypie.authorization import DjangoAuthorization, Authorization
+from tastypie import fields
+from tastypie import http
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.validation import CleanedDataFormValidation
+from tastypie.utils import trailing_slash
 
-from ..models import (File, Location, Space, Pipeline)
+from ..models import (Event, File, Location, Space, Pipeline)
 from ..forms import LocationForm, SpaceForm
 
 import common.constants
@@ -136,6 +140,18 @@ class LocationResource(ModelResource):
 
 
 class FileResource(ModelResource):
+    """ Resource for managing Files.
+
+    List (api/v1/file/) supports:
+    GET: List of files
+    POST: Create new File
+
+    Detail (api/v1/file/<uuid>/) supports:
+    GET: Get details on a specific file
+
+    api/v1/file/<uuid>/delete_aip/ supports:
+    POST: Create a delete request for that AIP.
+    """
     origin_location = fields.ForeignKey(LocationResource, 'origin_location')
     current_location = fields.ForeignKey(LocationResource, 'current_location')
 
@@ -154,7 +170,7 @@ class FileResource(ModelResource):
 
         fields = ['origin_path', 'current_path', 'package_type', 'size', 'status', 'uuid']
         list_allowed_methods = ['get', 'post']
-        detail_allowed_methods = ['get', 'put', 'post']
+        detail_allowed_methods = ['get']
         detail_uri_name = 'uuid'
         always_return_data = True
         filtering = {
@@ -163,9 +179,43 @@ class FileResource(ModelResource):
             'uuid': ALL,
         }
 
+    def prepend_urls(self):
+        return [
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/delete_aip%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('delete_aip_request'), name="delete_aip_request"),
+        ]
+
     def obj_create(self, bundle, **kwargs):
         bundle = super(FileResource, self).obj_create(bundle, **kwargs)
         # IDEA add custom endpoints, instead of storing all AIPS that come in?
-        if bundle.obj.package_type == "AIP":
+        if bundle.obj.package_type == File.AIP:
             bundle.obj.current_location.space.store_aip(bundle.obj)
         return bundle
+
+    def delete_aip_request(self, request, **kwargs):
+        # Tastypie checks
+        self.method_check(request, allowed=['post'])
+        self.is_authenticated(request)
+        self.throttle_check(request)
+
+        # Load request from body, check it has all the keys we need
+        request_info = json.loads(request.body)
+        if not all(k in request_info for k in
+                ('event_reason', 'pipeline', 'user_id', 'user_email')):
+            # Don't have enough information to make the request - return error
+            return http.HttpBadRequest
+
+        # Create the Event for file deletion request
+        file = File.objects.get(uuid=kwargs['uuid'])
+        if file.package_type != File.AIP:
+            # Can only request deletion on AIPs
+            return http.HttpMethodNotAllowed()
+
+        pipeline = Pipeline.objects.get(uuid=request_info['pipeline'])
+        delete_request = Event(file=file, event_type=Event.DELETE,
+            status=Event.SUBMITTED, event_reason=request_info['event_reason'],
+            pipeline=pipeline, user_id=request_info['user_id'],
+            user_email=request_info['user_email'])
+        delete_request.save()
+
+        self.log_throttled_access(request)
+        return http.HttpAccepted()
