@@ -23,6 +23,7 @@ import common.constants
 # primary key (in our case, UUID) before passing it to Django.
 # See https://github.com/toastdriven/django-tastypie/issues/152 for details
 
+
 class PipelineResource(ModelResource):
     class Meta:
         queryset = Pipeline.objects.all()
@@ -114,6 +115,7 @@ class LocationResource(ModelResource):
     path = fields.CharField(attribute='full_path', readonly=True)
     description = fields.CharField(attribute='get_description', readonly=True)
     pipeline = fields.ForeignKey(PipelineResource, 'pipeline', full=True)
+
     class Meta:
         queryset = Location.objects.filter(disabled=False)
         authentication = Authentication()

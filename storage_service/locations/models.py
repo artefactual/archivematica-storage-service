@@ -40,7 +40,7 @@ def store_aip_local_path(aip_file):
             space=space, used=space.used, size=space.size,
             aip_size=aip_file.size))
     if (location.quota is not None and
-        location.used + aip_file.size > location.quota):
+            location.used + aip_file.size > location.quota):
         raise StorageException(
             "AIP too big for quota on {location}; Used: {used}; Quota: {quota}; AIP size: {aip_size}".format(
                 location=location, used=location.used, quota=location.quota,
@@ -113,12 +113,12 @@ class Space(models.Model):
         (NFS, "NFS")
     )
     access_protocol = models.CharField(max_length=6,
-                            choices=ACCESS_PROTOCOL_CHOICES,
-                            help_text="How the space can be accessed.")
+        choices=ACCESS_PROTOCOL_CHOICES,
+        help_text="How the space can be accessed.")
     size = models.BigIntegerField(default=None, null=True, blank=True,
-                                  help_text="Size in bytes")
+        help_text="Size in bytes")
     used = models.BigIntegerField(default=0,
-                                  help_text="Amount used in bytes")
+        help_text="Amount used in bytes")
     path = models.TextField(validators=[validate_space_path])
     verified = models.BooleanField(default=False,
        help_text="Whether or not the space has been verified to be accessible.")
@@ -126,11 +126,11 @@ class Space(models.Model):
         help_text="Time this location was last verified to be accessible.")
 
     def __unicode__(self):
-        return "{uuid}: {path} ({access_protocol})".format(
+        return u"{uuid}: {path} ({access_protocol})".format(
             uuid=self.uuid,
             access_protocol=self.access_protocol,
             path=self.path,
-            )
+        )
 
     def store_aip(self, *args, **kwargs):
         # FIXME there has to be a better way to do this
@@ -171,11 +171,11 @@ class NFS(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
 
     # Space.path is the local path
-    remote_name = models.CharField(max_length=256, 
+    remote_name = models.CharField(max_length=256,
         help_text="Name of the NFS server.")
     remote_path = models.TextField(
         help_text="Path on the NFS server to the export.")
-    version = models.CharField(max_length=64, default='nfs4', 
+    version = models.CharField(max_length=64, default='nfs4',
         help_text="Type of the filesystem, i.e. nfs, or nfs4. \
         Should match a command in `mount`.")
     # https://help.ubuntu.com/community/NFSv4Howto
@@ -222,7 +222,7 @@ class NFS(models.Model):
 #  locations/forms.py
 #   Add ModelForm for new class
 #  common/constants.py
-#   Add entry to protocol with fields that should be added to GET resource 
+#   Add entry to protocol with fields that should be added to GET resource
 #     requests, the Model and ModelForm
 
 # class Example(models.Model):
@@ -279,11 +279,11 @@ class Location(models.Model):
     enabled = EnabledLocations()
 
     def __unicode__(self):
-        return "{uuid}: {path} ({purpose})".format(
+        return u"{uuid}: {path} ({purpose})".format(
             uuid=self.uuid,
             purpose=self.purpose,
             path=self.relative_path,
-            )
+        )
 
     def full_path(self):
         """ Returns full path of location: space + location paths. """
@@ -354,7 +354,7 @@ class File(models.Model):
 
         Includes the space, location, and file paths joined. """
         return os.path.normpath(
-            os.path.join(self.current_location.full_path(), self.current_path) )
+            os.path.join(self.current_location.full_path(), self.current_path))
 
     def full_origin_path(self):
         """ Return the full path of the file's original location.
@@ -417,7 +417,6 @@ class Pipeline(models.Model):
         help_text="Human readable description of the Archivematica instance.")
 
     def __unicode__(self):
-        return "{uuid} ({description})".format(
+        return u"{uuid} ({description})".format(
             uuid=self.uuid,
             description=self.description)
-
