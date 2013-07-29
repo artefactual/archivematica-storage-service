@@ -339,7 +339,7 @@ class File(models.Model):
         (DELETED, "Deleted"),
     )
     status = models.CharField(max_length=8, choices=STATUS_CHOICES,
-        default = FAIL,
+        default=FAIL,
         help_text="Status of the file in the storage service.")
 
     def __unicode__(self):
@@ -397,13 +397,6 @@ class Event(models.Model):
             event_status=self.get_status_display(),
             event_type=self.get_event_type_display(),
             file=self.file)
-
-    def save(self, *args, **kwargs):
-        if not self.pk:
-            # Creating new object
-            self.file.status = File.DEL_REQ
-            self.file.save()
-        super(Event, self).save(*args, **kwargs)
 
 
 ########################## OTHER ##########################

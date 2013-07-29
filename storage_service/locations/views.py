@@ -1,4 +1,6 @@
 
+from django.contrib import auth
+from django.db.models import Q
 from django.http import HttpResponse
 from django.forms.models import model_to_dict
 from django.shortcuts import render, redirect, get_object_or_404, get_list_or_404
@@ -6,7 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from common.constants import PROTOCOL
 from .models import Space, Location, File, Event
-from .forms import SpaceForm, LocationForm
+from .forms import SpaceForm, LocationForm, ConfirmEventForm
 
 ########################## SPACES ##########################
 
@@ -103,5 +105,28 @@ def file_list(request):
 
 def aip_delete_request(request):
     requests = Event.objects.filter(status=Event.SUBMITTED)
+    if request.method == 'POST':
+        # FIXME won't scale with many pending deletes, since does linear search
+        # on all the forms
+        for req in requests:
+            req.form = ConfirmEventForm(request.POST, prefix=str(req.id),
+                instance=req)
+            if req.form.is_valid():
+                event = req.form.save()
+                event.status_reason = req.form.cleaned_data['status_reason']
+                event.admin_id = auth.get_user(request)
+                if 'reject' in request.POST:
+                    event.status = Event.REJECTED
+                elif 'approve' in request.POST:
+                    event.status = Event.APPROVED
+                    event.file.status = File.DELETED
+                    # TODO do actual deletion here
+                event.save()
+                event.file.save()
+                return redirect('aip_delete_request')
+    else:
+        for req in requests:
+            req.form = ConfirmEventForm(prefix=str(req.id), instance=req)
+    closed_requests = Event.objects.filter(
+        Q(status=Event.APPROVED) | Q(status=Event.REJECTED))
     return render(request, 'locations/aip_delete_request.html', locals())
-
