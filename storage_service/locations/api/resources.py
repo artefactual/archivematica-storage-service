@@ -216,8 +216,12 @@ class FileResource(ModelResource):
         delete_request = Event(file=file, event_type=Event.DELETE,
             status=Event.SUBMITTED, event_reason=request_info['event_reason'],
             pipeline=pipeline, user_id=request_info['user_id'],
-            user_email=request_info['user_email'])
+            user_email=request_info['user_email'], store_data=file.status)
         delete_request.save()
+
+        # Update file status
+        file.status = File.DEL_REQ
+        file.save()
 
         self.log_throttled_access(request)
         return http.HttpAccepted()

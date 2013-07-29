@@ -104,7 +104,8 @@ def file_list(request):
     return render(request, 'locations/file_list.html', locals())
 
 def aip_delete_request(request):
-    requests = Event.objects.filter(status=Event.SUBMITTED)
+    requests = Event.objects.filter(status=Event.SUBMITTED).filter(
+        event_type=Event.DELETE)
     if request.method == 'POST':
         # FIXME won't scale with many pending deletes, since does linear search
         # on all the forms
@@ -117,6 +118,7 @@ def aip_delete_request(request):
                 event.admin_id = auth.get_user(request)
                 if 'reject' in request.POST:
                     event.status = Event.REJECTED
+                    event.file.status = event.store_data
                 elif 'approve' in request.POST:
                     event.status = Event.APPROVED
                     event.file.status = File.DELETED

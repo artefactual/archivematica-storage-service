@@ -391,6 +391,7 @@ class Event(models.Model):
     status_reason = models.TextField(null=True, blank=True)
     admin_id = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True)
     status_time = models.DateTimeField(auto_now=True)
+    store_data = models.TextField(null=True, blank=True, editable=False)
 
     def __unicode__(self):
         return u"{event_status} request to {event_type} {file}".format(
