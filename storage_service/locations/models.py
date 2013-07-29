@@ -88,13 +88,13 @@ def store_aip_local_path(aip_file):
     aip_file.status = File.UPLOADED
     aip_file.save()
 
-
-########################## SPACES ##########################
-
 def validate_space_path(path):
     """ Validation for path in Space.  Must be absolute. """
     if path[0] != '/':
         raise ValidationError("Path must begin with a /")
+
+
+########################## SPACES ##########################
 
 class Space(models.Model):
     """ Common storage space information.
@@ -116,10 +116,11 @@ class Space(models.Model):
         choices=ACCESS_PROTOCOL_CHOICES,
         help_text="How the space can be accessed.")
     size = models.BigIntegerField(default=None, null=True, blank=True,
-        help_text="Size in bytes")
+        help_text="Size in bytes (optional)")
     used = models.BigIntegerField(default=0,
         help_text="Amount used in bytes")
-    path = models.TextField(validators=[validate_space_path])
+    path = models.TextField(validators=[validate_space_path],
+        help_text="Absolute path to the space on the storage service machine.")
     verified = models.BooleanField(default=False,
        help_text="Whether or not the space has been verified to be accessible.")
     last_verified = models.DateTimeField(default=None, null=True, blank=True,
@@ -165,6 +166,7 @@ class LocalFilesystem(models.Model):
         # Confirm that this is the correct space to be moving to
         assert self.space == aip_file.current_location.space
         store_aip_local_path(aip_file)
+
 
 class NFS(models.Model):
     """ Spaces accessed over NFS. """
@@ -265,13 +267,13 @@ class Location(models.Model):
     pipeline = models.ForeignKey('Pipeline', to_field='uuid',
         help_text="UUID of the Archivematica instance using this location.")
 
-    relative_path = models.TextField()
+    relative_path = models.TextField(help_text="Path to location, relative to the storage space's path.")
     description = models.CharField(max_length=256, default=None,
-        null=True, blank=True)
+        null=True, blank=True, help_text="Human-readable description.")
     quota = models.BigIntegerField(default=None, null=True, blank=True,
-        help_text="Size in bytes")
+        help_text="Size, in bytes (optional)")
     used = models.BigIntegerField(default=0,
-        help_text="Amount used in bytes")
+        help_text="Amount used, in bytes.")
     disabled = models.BooleanField(default=False,
         help_text="True if space should no longer be accessed.")
 
