@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block page_title %}{{action}} Pipeline{% endblock %}
+
+{% block content %}
+
+<div class='pipeline'>
+    {% if pipeline %}
+    <form action="{% url 'pipeline_edit' pipeline.uuid %}" method="post">
+    {% else %}
+    <form action="{% url 'pipeline_create' %}" method="post">
+    {% endif %}
+    {% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="{{action}} Pipeline" />
+    </form>
+</div>
+{% endblock %}

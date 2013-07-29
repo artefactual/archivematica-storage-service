@@ -5,6 +5,7 @@ import stat
 import subprocess
 
 from django.conf import settings
+from django.core import validators
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -406,11 +407,17 @@ class Event(models.Model):
 
 class Pipeline(models.Model):
     """ Information about Archivematica instances using the storage service. """
-    uuid = UUIDField(editable=False, unique=True, version=4,
-        help_text="Identifier for the Archivematica pipeline")
+    uuid = UUIDField(unique=True, version=4, auto=False, verbose_name="UUID",
+        help_text="Identifier for the Archivematica pipeline",
+        validators=[validators.RegexValidator(
+            r'\w{8}-\w{4}-\w{4}-\w{4}-\w{12}',
+            "Needs to be format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx where x is a hexadecimal digit.",
+            "Invalid UUID")])
     description = models.CharField(max_length=256, default=None,
         null=True, blank=True,
         help_text="Human readable description of the Archivematica instance.")
+    enabled = models.BooleanField(
+        help_text="Enabled if this pipeline is able to access the storage service.")
 
     def __unicode__(self):
         return u"{uuid} ({description})".format(

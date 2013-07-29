@@ -7,13 +7,98 @@ from django.shortcuts import render, redirect, get_object_or_404, get_list_or_40
 from django.views.decorators.csrf import csrf_exempt
 
 from common.constants import PROTOCOL
-from .models import Space, Location, File, Event
-from .forms import SpaceForm, LocationForm, ConfirmEventForm
+from .models import Space, Location, File, Event, Pipeline
+from .forms import SpaceForm, LocationForm, ConfirmEventForm, PipelineForm
+
+
+########################## FILES ##########################
+
+def file_list(request):
+    files = File.objects.all()
+    return render(request, 'locations/file_list.html', locals())
+
+def aip_delete_request(request):
+    requests = Event.objects.filter(status=Event.SUBMITTED).filter(
+        event_type=Event.DELETE)
+    if request.method == 'POST':
+        # FIXME won't scale with many pending deletes, since does linear search
+        # on all the forms
+        for req in requests:
+            req.form = ConfirmEventForm(request.POST, prefix=str(req.id),
+                instance=req)
+            if req.form.is_valid():
+                event = req.form.save()
+                event.status_reason = req.form.cleaned_data['status_reason']
+                event.admin_id = auth.get_user(request)
+                if 'reject' in request.POST:
+                    event.status = Event.REJECTED
+                    event.file.status = event.store_data
+                elif 'approve' in request.POST:
+                    event.status = Event.APPROVED
+                    event.file.status = File.DELETED
+                    # TODO do actual deletion here
+                event.save()
+                event.file.save()
+                return redirect('aip_delete_request')
+    else:
+        for req in requests:
+            req.form = ConfirmEventForm(prefix=str(req.id), instance=req)
+    closed_requests = Event.objects.filter(
+        Q(status=Event.APPROVED) | Q(status=Event.REJECTED))
+    return render(request, 'locations/aip_delete_request.html', locals())
+
+
+########################## LOCATIONS ##########################
+
+def location_create(request, space_uuid):
+    space = get_object_or_404(Space, uuid=space_uuid)
+    if request.method == 'POST':
+        form = LocationForm(request.POST)
+        if form.is_valid():
+            location = form.save(commit=False)
+            location.space = space
+            location.save()
+            return redirect('space_detail', space.uuid)
+    else:
+        form = LocationForm()
+    return render(request, 'locations/location_form.html', locals())
+
+def location_list(request):
+    locations = Location.enabled.all()
+    # TODO sort by purpose?  Or should that be done in the template?
+    return render(request, 'locations/location_list.html', locals())
+
+
+########################## PIPELINES ##########################
+
+def pipeline_edit(request, uuid=None):
+    if uuid:
+        action = "Edit"
+        pipeline = get_object_or_404(Pipeline, uuid=uuid)
+    else:
+        action = "Create"
+        pipeline = None
+
+    if request.method == 'POST':
+        form = PipelineForm(request.POST, instance=pipeline)
+        if form.is_valid():
+            form.save()
+            return redirect('pipeline_list')
+    else:
+        form = PipelineForm(instance=pipeline)
+    return render(request, 'locations/pipeline_form.html', locals())
+
+
+def pipeline_list(request):
+    pipelines = Pipeline.objects.all()
+    return render(request, 'locations/pipeline_list.html', locals())
+
 
 ########################## SPACES ##########################
 
 def space_list(request):
     spaces = Space.objects.all()
+
     def add_child(space):
         model = PROTOCOL[space.access_protocol]['model']
         child = model.objects.get(space=space)
@@ -76,59 +161,3 @@ def ajax_space_create_protocol_form(request):
             form = form_class(prefix='protocol')
             response_data = form.as_p()
     return HttpResponse(response_data, content_type="text/html")
-
-########################## LOCATIONS ##########################
-
-def location_create(request, space_uuid):
-    space = get_object_or_404(Space, uuid=space_uuid)
-    if request.method == 'POST':
-        form = LocationForm(request.POST)
-        if form.is_valid():
-            location = form.save(commit=False)
-            location.space = space
-            location.save()
-            return redirect('space_detail', space.uuid)
-    else:
-        form = LocationForm()
-    return render(request, 'locations/location_form.html', locals())
-
-def location_list(request):
-    locations = Location.enabled.all()
-    # TODO sort by purpose?  Or should that be done in the template?
-    return render(request, 'locations/location_list.html', locals())
-
-########################## FILES ##########################
-
-def file_list(request):
-    files = File.objects.all()
-    return render(request, 'locations/file_list.html', locals())
-
-def aip_delete_request(request):
-    requests = Event.objects.filter(status=Event.SUBMITTED).filter(
-        event_type=Event.DELETE)
-    if request.method == 'POST':
-        # FIXME won't scale with many pending deletes, since does linear search
-        # on all the forms
-        for req in requests:
-            req.form = ConfirmEventForm(request.POST, prefix=str(req.id),
-                instance=req)
-            if req.form.is_valid():
-                event = req.form.save()
-                event.status_reason = req.form.cleaned_data['status_reason']
-                event.admin_id = auth.get_user(request)
-                if 'reject' in request.POST:
-                    event.status = Event.REJECTED
-                    event.file.status = event.store_data
-                elif 'approve' in request.POST:
-                    event.status = Event.APPROVED
-                    event.file.status = File.DELETED
-                    # TODO do actual deletion here
-                event.save()
-                event.file.save()
-                return redirect('aip_delete_request')
-    else:
-        for req in requests:
-            req.form = ConfirmEventForm(prefix=str(req.id), instance=req)
-    closed_requests = Event.objects.filter(
-        Q(status=Event.APPROVED) | Q(status=Event.REJECTED))
-    return render(request, 'locations/aip_delete_request.html', locals())

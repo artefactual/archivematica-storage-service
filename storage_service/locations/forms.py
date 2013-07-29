@@ -1,7 +1,13 @@
 
 from django.forms import ModelForm
 
-from .models import Space, LocalFilesystem, NFS, Location, Event
+from .models import Space, LocalFilesystem, NFS, Location, Event, Pipeline
+
+
+class PipelineForm(ModelForm):
+    class Meta:
+        model = Pipeline
+        fields = ('uuid', 'description', 'enabled')
 
 
 class SpaceForm(ModelForm):
