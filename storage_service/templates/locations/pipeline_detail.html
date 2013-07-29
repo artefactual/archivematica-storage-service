@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block page_title %}{{ pipeline.description }} Information{% endblock %}
+
+{% block content %}
+
+<div class='pipeline'>
+  <dl>
+    <dt>UUID</dt> <dd>{{ pipeline.uuid }}</dd>
+    <dt>Description</dt> <dd>{{ pipeline.description }}</dd>
+    <dt>Enabled</dt> <dd>{{ pipeline.enabled|yesno:"Enabled,Disabled" }}</dd>
+  </dl>
+</div>
+
+<h2>Locations</h2>
+
+{% if locations %}
+  {% include "snippets/locations_table.html" with no_pipeline=True %}
+{% else %}
+  <p>No locations currently exist.  Please create one from the <a href="{% url 'space_list' %}">spaces</a> page.</p>
+{% endif %}
+
+{% endblock %}

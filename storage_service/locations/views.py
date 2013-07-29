@@ -93,6 +93,11 @@ def pipeline_list(request):
     pipelines = Pipeline.objects.all()
     return render(request, 'locations/pipeline_list.html', locals())
 
+def pipeline_detail(request, uuid):
+    pipeline = get_object_or_404(Pipeline, uuid=uuid)
+    locations = Location.objects.filter(pipeline=pipeline)
+    return render(request, 'locations/pipeline_detail.html', locals())
+
 
 ########################## SPACES ##########################
 

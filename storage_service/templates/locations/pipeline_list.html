@@ -19,7 +19,7 @@
     <tbody>
     {% for pipeline in pipelines %}
       <tr>
-        <td>{{ pipeline.uuid }}</td>
+        <td><a href="{% url 'pipeline_detail' pipeline.uuid %}">{{ pipeline.uuid }}</a></td>
         <td>{{ pipeline.description }}</td>
         <td>{{ pipeline.enabled|yesno:"Enabled,Disabled" }}</td>
         <td><a href="{% url 'pipeline_edit' pipeline.uuid %}">Edit</a></td>

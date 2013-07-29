@@ -22,6 +22,8 @@ urlpatterns = patterns('locations.views',
         name='pipeline_create'),
     url(r'^pipeline/(?P<uuid>'+UUID+')/edit/$', 'pipeline_edit',
         name='pipeline_edit'),
+    url(r'^pipeline/(?P<uuid>'+UUID+')/detail/$', 'pipeline_detail',
+        name='pipeline_detail'),
 
 
     # Spaces

@@ -16,19 +16,13 @@
     </dl>
 </div>
 
+<h2>Locations</h2>
 <p><a href="{%url 'location_create' space.uuid %}">Create new location here</a></p>
-{% for loc in locations %}
-    <div class='location'>
-        <dl>
-            <dt>Purpose:</dt> <dd>{{ loc.get_purpose_display }}</dd>
-            <dt>Pipeline:</dt> <dd>{{ loc.pipeline }}</dd>
-            <dt>Path:</dt> <dd>{{ loc.full_path }}</dd>
-            <dt>Description:</dt> <dd>{{ loc.description|default:"No description" }}</dd>
-            <dt>Storage:</dt> <dd>{{ loc.used }} B used out of {{ loc.quota|default:"unlimited" }}</dd>
-        </dl>
-    </div>
-{% empty %}
-    <p>No locations in this space.</p>
-{% endfor %}
+
+{% if locations %}
+  {% include "snippets/locations_table.html" with no_space=True %}
+{% else %}
+  <p>No locations in this space.</p>
+{% endif %}
 
 {% endblock %}
