@@ -2,6 +2,7 @@ from django.conf.urls import *
 from django.forms.models import model_to_dict
 
 import json
+from django.utils import simplejson
 from tastypie.authentication import (BasicAuthentication, ApiKeyAuthentication,
     MultiAuthentication, Authentication)
 from tastypie.authorization import DjangoAuthorization, Authorization
@@ -223,5 +224,11 @@ class FileResource(ModelResource):
         file.status = File.DEL_REQ
         file.save()
 
+        response = {
+            'message': 'Delete request created successfully.'
+        }
+
+        response_json = simplejson.JSONEncoder(encoding='utf-8').encode(response)
+
         self.log_throttled_access(request)
-        return http.HttpAccepted()
+        return http.HttpAccepted(content=response_json, mimetype='application/json')
