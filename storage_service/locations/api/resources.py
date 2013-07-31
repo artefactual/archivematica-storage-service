@@ -2,6 +2,7 @@ from django.conf.urls import *
 from django.forms.models import model_to_dict
 
 import json
+import os
 from django.utils import simplejson
 from tastypie.authentication import (BasicAuthentication, ApiKeyAuthentication,
     MultiAuthentication, Authentication)
@@ -140,6 +141,44 @@ class LocationResource(ModelResource):
             'used': ALL,
             'uuid': ALL,
         }
+
+    def prepend_urls(self):
+        return [
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/browse%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('browse'), name="browse"),
+        ]
+
+    def browse(self, request, **kwargs):
+        """ Returns all of the entries in a location, optionally at a subpath.
+
+        Returns a dict with
+            {'entries': [list of entries in the directory],
+             'directories': [list of directories in the directory]}
+        Directories is a subset of entries, all are just the name.
+
+        If a path=<path> parameter is provided, will look in that path inside
+        the Location. """
+        self.method_check(request, allowed=['get'])
+        self.is_authenticated(request)
+        self.throttle_check(request)
+        path = request.GET.get('path', '')
+        location = Location.objects.get(uuid=kwargs['uuid'])
+        path = os.path.join(location.full_path(), path)
+
+        # TODO Move this to space-specific code
+
+        # Sorted list of all entries in directory, excluding hidden files
+        # This may need magic for encoding/decoding, but doesn't seem to
+        entries = [name for name in os.listdir(path) if name[0] != '.']
+        entries = sorted(entries, key=lambda s: s.lower())
+        directories = []
+        for name in entries:
+            full_path = os.path.join(path, name)
+            if os.path.isdir(full_path) and os.access(full_path, os.R_OK):
+                directories.append(name)
+        objects = {'directories': directories, 'entries': entries}
+
+        self.log_throttled_access(request)
+        return self.create_response(request, objects)
 
 
 class FileResource(ModelResource):
