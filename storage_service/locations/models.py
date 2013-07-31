@@ -30,16 +30,16 @@ class Enabled(models.Manager):
     returns all items if neither is found.  """
     def get_query_set(self):
         try:
-            self.model._meta.get_field_by_name('disabled')
+            self.model._meta.get_field_by_name('enabled')
         except models.FieldDoesNotExist:
             try:
-                self.model._meta.get_field_by_name('enabled')
+                self.model._meta.get_field_by_name('disabled')
             except models.FieldDoesNotExist:
                 return super(Enabled, self).get_query_set()
             else:
-                return super(Enabled, self).get_query_set().filter(enabled=True)
-        else:  # found disabled
-            return super(Enabled, self).get_query_set().filter(disabled=False)
+                return super(Enabled, self).get_query_set().filter(disabled=False)
+        else:  # found enabled
+            return super(Enabled, self).get_query_set().filter(enabled=True)
 
 
 def store_aip_local_path(aip_file):
@@ -300,6 +300,10 @@ class Location(models.Model):
             purpose=self.purpose,
             path=self.relative_path,
         )
+
+    def save(self, *args, **kwargs):
+        self.enabled = self.pipeline.enabled and self.enabled
+        super(Location, self).save(args, kwargs)
 
     def full_path(self):
         """ Returns full path of location: space + location paths. """

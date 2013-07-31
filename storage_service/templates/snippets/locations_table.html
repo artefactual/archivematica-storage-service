@@ -10,7 +10,11 @@
         {% if not no_space %}
         <th>Space</th>
         {% endif %}
+        <th>UUID</th>
         <th>Usage</th>
+        {% if not no_enabled %}
+        <th>Enabled</th>
+        {% endif %}
       </tr>
     </thead>
     <tbody>
@@ -25,7 +29,11 @@
         {% if not no_space %}
           <td><a href="{% url 'space_detail' loc.space.uuid %}">{{ loc.space.uuid|truncatechars:11 }}</a></td>
         {% endif %}
+        <td>{{ loc.uuid }}</td>
         <td>{{ loc.used }}B / {{ loc.quota|default:"unlimited" }}</td>
+        {% if not no_enabled %}
+          <td>{{ loc.enabled|yesno:"Enabled,Disabled" }}
+        {% endif %}
       </tr>
     {% endfor %}
     </tbody>

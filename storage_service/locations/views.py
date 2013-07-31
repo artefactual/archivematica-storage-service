@@ -64,8 +64,7 @@ def location_create(request, space_uuid):
     return render(request, 'locations/location_form.html', locals())
 
 def location_list(request):
-    locations = Location.active.all()
-    # TODO sort by purpose?  Or should that be done in the template?
+    locations = Location.objects.all()
     return render(request, 'locations/location_list.html', locals())
 
 
@@ -82,12 +81,15 @@ def pipeline_edit(request, uuid=None):
     if request.method == 'POST':
         form = PipelineForm(request.POST, instance=pipeline)
         if form.is_valid():
-            form.save()
+            pipeline = form.save()
+            if pipeline.enabled:
+                Location.objects.filter(pipeline=pipeline).update(enabled=True)
+            else:
+                Location.active.filter(pipeline=pipeline).update(enabled=False)
             return redirect('pipeline_list')
     else:
         form = PipelineForm(instance=pipeline)
     return render(request, 'locations/pipeline_form.html', locals())
-
 
 def pipeline_list(request):
     pipelines = Pipeline.objects.all()
