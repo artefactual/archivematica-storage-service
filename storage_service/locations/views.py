@@ -64,7 +64,7 @@ def location_create(request, space_uuid):
     return render(request, 'locations/location_form.html', locals())
 
 def location_list(request):
-    locations = Location.enabled.all()
+    locations = Location.active.all()
     # TODO sort by purpose?  Or should that be done in the template?
     return render(request, 'locations/location_list.html', locals())
 

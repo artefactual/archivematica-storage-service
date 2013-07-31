@@ -23,6 +23,25 @@ class StorageException(Exception):
     """ Exceptions specific to the service."""
     pass
 
+class Enabled(models.Manager):
+    """ Manager to only return enabled objects.
+
+    Filters by disable=False if it exists, or enabled=True if it exists, or
+    returns all items if neither is found.  """
+    def get_query_set(self):
+        try:
+            self.model._meta.get_field_by_name('disabled')
+        except models.FieldDoesNotExist:
+            try:
+                self.model._meta.get_field_by_name('enabled')
+            except models.FieldDoesNotExist:
+                return super(Enabled, self).get_query_set()
+            else:
+                return super(Enabled, self).get_query_set().filter(enabled=True)
+        else:  # found disabled
+            return super(Enabled, self).get_query_set().filter(disabled=False)
+
+
 def store_aip_local_path(aip_file):
     """ Stores AIPs to locations accessible locally to the storage service.
 
@@ -236,12 +255,6 @@ class NFS(models.Model):
 
 ########################## LOCATIONS ##########################
 
-class EnabledLocations(models.Manager):
-    """ Manager to only return enabled Locations. """
-    def get_query_set(self):
-        return super(EnabledLocations, self).get_query_set().filter(
-            disabled=False)
-
 class Location(models.Model):
     """ Stores information about a location. """
 
@@ -275,11 +288,11 @@ class Location(models.Model):
         help_text="Size, in bytes (optional)")
     used = models.BigIntegerField(default=0,
         help_text="Amount used, in bytes.")
-    disabled = models.BooleanField(default=False,
-        help_text="True if space should no longer be accessed.")
+    enabled = models.BooleanField(default=True,
+        help_text="True if space can be accessed.")
 
     objects = models.Manager()
-    enabled = EnabledLocations()
+    active = Enabled()
 
     def __unicode__(self):
         return u"{uuid}: {path} ({purpose})".format(
@@ -416,8 +429,11 @@ class Pipeline(models.Model):
     description = models.CharField(max_length=256, default=None,
         null=True, blank=True,
         help_text="Human readable description of the Archivematica instance.")
-    enabled = models.BooleanField(
+    enabled = models.BooleanField(default=True,
         help_text="Enabled if this pipeline is able to access the storage service.")
+
+    objects = models.Manager()
+    active = Enabled()
 
     def __unicode__(self):
         return u"{uuid} ({description})".format(

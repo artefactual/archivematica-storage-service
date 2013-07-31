@@ -28,7 +28,7 @@ import common.constants
 
 class PipelineResource(ModelResource):
     class Meta:
-        queryset = Pipeline.objects.all()
+        queryset = Pipeline.active.all()
         authentication = Authentication()
         # authentication = MultiAuthentication(
         #     BasicAuthentication, ApiKeyAuthentication())
@@ -119,7 +119,7 @@ class LocationResource(ModelResource):
     pipeline = fields.ForeignKey(PipelineResource, 'pipeline', full=True)
 
     class Meta:
-        queryset = Location.objects.filter(disabled=False)
+        queryset = Location.active.all()
         authentication = Authentication()
         # authentication = MultiAuthentication(
         #     BasicAuthentication, ApiKeyAuthentication())
@@ -127,7 +127,7 @@ class LocationResource(ModelResource):
         # authorization = DjangoAuthorization()
         # validation = CleanedDataFormValidation(form_class=LocationForm)
 
-        fields = ['disabled', 'relative_path', 'purpose', 'quota', 'used', 'uuid']
+        fields = ['enabled', 'relative_path', 'purpose', 'quota', 'used', 'uuid']
         list_allowed_methods = ['get', 'post']
         detail_allowed_methods = ['get', 'patch']
         detail_uri_name = 'uuid'
