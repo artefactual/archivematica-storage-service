@@ -214,21 +214,35 @@ class FileResource(ModelResource):
             return http.HttpMethodNotAllowed()
 
         pipeline = Pipeline.objects.get(uuid=request_info['pipeline'])
-        delete_request = Event(file=file, event_type=Event.DELETE,
-            status=Event.SUBMITTED, event_reason=request_info['event_reason'],
-            pipeline=pipeline, user_id=request_info['user_id'],
-            user_email=request_info['user_email'], store_data=file.status)
-        delete_request.save()
 
-        # Update file status
-        file.status = File.DEL_REQ
-        file.save()
+        # See if an event already exists
+        existing_requests = Event.objects.filter(file=file, event_type=Event.DELETE,
+            status=Event.SUBMITTED, store_data=file.status)
 
-        response = {
-            'message': 'Delete request created successfully.'
-        }
+        if (len(existing_requests) < 1):
+            delete_request = Event(file=file, event_type=Event.DELETE,
+                status=Event.SUBMITTED, event_reason=request_info['event_reason'],
+                pipeline=pipeline, user_id=request_info['user_id'],
+                user_email=request_info['user_email'], store_data=file.status)
+            delete_request.save()
 
-        response_json = simplejson.JSONEncoder(encoding='utf-8').encode(response)
+            # Update file status
+            file.status = File.DEL_REQ
+            file.save()
+
+            response = {
+                'message': 'Delete request created successfully.'
+            }
+
+            response_json = simplejson.JSONEncoder(encoding='utf-8').encode(response)
+            status_code = 202
+        else:
+            response = {
+                'error_message': 'A deletion request already exists for this AIP.'
+            }
+            status_code = 200
 
         self.log_throttled_access(request)
-        return http.HttpAccepted(content=response_json, mimetype='application/json')
+        response_json = simplejson.JSONEncoder(encoding='utf-8').encode(response)
+        return http.HttpResponse(status=status_code, content=response_json,
+            mimetype='application/json')
