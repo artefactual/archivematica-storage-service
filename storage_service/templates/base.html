@@ -49,6 +49,9 @@
               <li><a href="{% url 'space_list' %}">Spaces</a></li>
               <li><a href="{% url 'location_list' %}">Locations</a></li>
               <li><a href="{% url 'file_list' %}">Files</a></li>
+              {% if user.is_authenticated %}
+              <li><a href="{% url 'logout' %}">Logout</a></li>
+              {% endif %}
             </ul>
           </div><!--/.nav-collapse -->
         </div>
