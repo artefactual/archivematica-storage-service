@@ -17,6 +17,7 @@ from ..models import (Event, File, Location, Space, Pipeline)
 from ..forms import LocationForm, SpaceForm
 
 import common.constants
+from common import utils
 
 # FIXME ModelResources with ForeignKeys to another model don't work with
 # validation = CleanedDataFormValidation  On creation, it errors with:
@@ -34,7 +35,7 @@ class PipelineResource(ModelResource):
         #     BasicAuthentication, ApiKeyAuthentication())
         authorization = Authorization()
         # authorization = DjangoAuthorization()
-        # validation = CleanedDataFormValidation(form_class=FileForm)
+        # validation = CleanedDataFormValidation(form_class=PipelineForm)
 
         fields = ['uuid', 'description']
         list_allowed_methods = ['get', 'post']
@@ -45,6 +46,12 @@ class PipelineResource(ModelResource):
             'description': ALL,
             'uuid': ALL,
         }
+
+    def obj_create(self, bundle, **kwargs):
+        bundle = super(PipelineResource, self).obj_create(bundle, **kwargs)
+        bundle.obj.enabled = not utils.get_setting('pipelines_disabled', False)
+        bundle.obj.save()
+        return bundle
 
 
 class SpaceResource(ModelResource):

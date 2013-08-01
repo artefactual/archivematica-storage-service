@@ -7,6 +7,7 @@ from django.shortcuts import render, redirect, get_object_or_404, get_list_or_40
 from django.views.decorators.csrf import csrf_exempt
 
 from common.constants import PROTOCOL
+from common import utils
 from .models import Space, Location, File, Event, Pipeline
 from .forms import SpaceForm, LocationForm, ConfirmEventForm, PipelineForm
 
@@ -74,12 +75,14 @@ def pipeline_edit(request, uuid=None):
     if uuid:
         action = "Edit"
         pipeline = get_object_or_404(Pipeline, uuid=uuid)
+        initial = {}
     else:
         action = "Create"
         pipeline = None
+        initial = {'enabled': not utils.get_setting('pipelines_disabled')}
 
     if request.method == 'POST':
-        form = PipelineForm(request.POST, instance=pipeline)
+        form = PipelineForm(request.POST, instance=pipeline, initial=initial)
         if form.is_valid():
             pipeline = form.save()
             if pipeline.enabled:
@@ -88,7 +91,7 @@ def pipeline_edit(request, uuid=None):
                 Location.active.filter(pipeline=pipeline).update(enabled=False)
             return redirect('pipeline_list')
     else:
-        form = PipelineForm(instance=pipeline)
+        form = PipelineForm(instance=pipeline, initial=initial)
     return render(request, 'locations/pipeline_form.html', locals())
 
 def pipeline_list(request):
