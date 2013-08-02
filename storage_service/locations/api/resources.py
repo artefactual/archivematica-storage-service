@@ -219,6 +219,7 @@ class FileResource(ModelResource):
             'location': ALL_WITH_RELATIONS,
             'path': ALL,
             'uuid': ALL,
+            'status': ALL
         }
 
     def prepend_urls(self):
