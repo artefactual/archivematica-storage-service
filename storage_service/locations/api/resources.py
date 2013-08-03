@@ -13,7 +13,7 @@ from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.validation import CleanedDataFormValidation
 from tastypie.utils import trailing_slash
 
-from ..models import (Event, File, Location, Space, Pipeline)
+from ..models import (Event, Package, Location, Space, Pipeline)
 from ..forms import LocationForm, SpaceForm
 
 import common.constants
@@ -188,12 +188,12 @@ class LocationResource(ModelResource):
         return self.create_response(request, objects)
 
 
-class FileResource(ModelResource):
-    """ Resource for managing Files.
+class PackageResource(ModelResource):
+    """ Resource for managing Packages.
 
     List (api/v1/file/) supports:
     GET: List of files
-    POST: Create new File
+    POST: Create new Package
 
     Detail (api/v1/file/<uuid>/) supports:
     GET: Get details on a specific file
@@ -209,13 +209,14 @@ class FileResource(ModelResource):
     current_full_path = fields.CharField(attribute='full_path', readonly=True)
 
     class Meta:
-        queryset = File.objects.all()
+        queryset = Package.objects.all()
+        resource_name = 'file'
         authentication = Authentication()
         # authentication = MultiAuthentication(
         #     BasicAuthentication, ApiKeyAuthentication())
         authorization = Authorization()
         # authorization = DjangoAuthorization()
-        # validation = CleanedDataFormValidation(form_class=FileForm)
+        # validation = CleanedDataFormValidation(form_class=PackageForm)
 
         fields = ['origin_path', 'current_path', 'package_type', 'size', 'status', 'uuid']
         list_allowed_methods = ['get', 'post']
@@ -235,9 +236,9 @@ class FileResource(ModelResource):
         ]
 
     def obj_create(self, bundle, **kwargs):
-        bundle = super(FileResource, self).obj_create(bundle, **kwargs)
+        bundle = super(PackageResource, self).obj_create(bundle, **kwargs)
         # IDEA add custom endpoints, instead of storing all AIPS that come in?
-        if bundle.obj.package_type == File.AIP:
+        if bundle.obj.package_type == Package.AIP:
             bundle.obj.current_location.space.store_aip(bundle.obj)
         return bundle
 
@@ -255,8 +256,8 @@ class FileResource(ModelResource):
             return http.HttpBadRequest
 
         # Create the Event for file deletion request
-        file = File.objects.get(uuid=kwargs['uuid'])
-        if file.package_type != File.AIP:
+        file = Package.objects.get(uuid=kwargs['uuid'])
+        if file.package_type != Package.AIP:
             # Can only request deletion on AIPs
             return http.HttpMethodNotAllowed()
 
@@ -274,7 +275,7 @@ class FileResource(ModelResource):
             delete_request.save()
 
             # Update file status
-            file.status = File.DEL_REQ
+            file.status = Package.DEL_REQ
             file.save()
 
             response = {

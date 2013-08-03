@@ -75,7 +75,7 @@ def store_aip_local_path(aip_file):
     aip_file.save()
     destination = aip_file.full_path()
 
-    aip_file.status = File.PENDING
+    aip_file.status = Package.PENDING
     aip_file.save()
 
     # Create directories
@@ -105,7 +105,7 @@ def store_aip_local_path(aip_file):
     space.save()
     location.used += aip_file.size
     location.save()
-    aip_file.status = File.UPLOADED
+    aip_file.status = Package.UPLOADED
     aip_file.save()
 
 def validate_space_path(path):
@@ -315,11 +315,11 @@ class Location(models.Model):
         return self.description or self.full_path()
 
 
-########################## FILES ##########################
-# NOTE If the Files section gets much bigger, move to its own app
+########################## PACKAGES ##########################
+# NOTE If the Packages section gets much bigger, move to its own app
 
-class File(models.Model):
-    """ A file stored in a specific location. """
+class Package(models.Model):
+    """ A package stored in a specific location. """
     uuid = UUIDField(editable=False, unique=True, version=4,
         help_text="Unique identifier")
     origin_location = models.ForeignKey(Location, to_field='uuid', related_name='+')
@@ -360,7 +360,7 @@ class File(models.Model):
     )
     status = models.CharField(max_length=8, choices=STATUS_CHOICES,
         default=FAIL,
-        help_text="Status of the file in the storage service.")
+        help_text="Status of the package in the storage service.")
 
     def __unicode__(self):
         return u"{uuid}: {path}".format(
@@ -370,26 +370,26 @@ class File(models.Model):
         # return "File: {}".format(self.uuid)
 
     def full_path(self):
-        """ Return the full path of the file's current location.
+        """ Return the full path of the package's current location.
 
-        Includes the space, location, and file paths joined. """
+        Includes the space, location, and package paths joined. """
         return os.path.normpath(
             os.path.join(self.current_location.full_path(), self.current_path))
 
     def full_origin_path(self):
-        """ Return the full path of the file's original location.
+        """ Return the full path of the package's original location.
 
-        Includes the space, location, and file paths joined. """
+        Includes the space, location, and package paths joined. """
         return os.path.normpath(
             os.path.join(self.origin_location.full_path(), self.origin_path))
 
 
 class Event(models.Model):
-    """ Stores requests to modify files that need admin approval.
+    """ Stores requests to modify packages that need admin approval.
 
     Eg. delete AIP can be requested by a pipeline, but needs storage
     administrator approval.  Who made the request and why is also stored. """
-    file = models.ForeignKey('File', to_field='uuid')
+    package = models.ForeignKey('Package', to_field='uuid')
     DELETE = 'DELETE'
     EVENT_TYPE_CHOICES = (
         (DELETE, 'delete'),
@@ -414,10 +414,10 @@ class Event(models.Model):
     store_data = models.TextField(null=True, blank=True, editable=False)
 
     def __unicode__(self):
-        return u"{event_status} request to {event_type} {file}".format(
+        return u"{event_status} request to {event_type} {package}".format(
             event_status=self.get_status_display(),
             event_type=self.get_event_type_display(),
-            file=self.file)
+            package=self.package)
 
 
 ########################## OTHER ##########################

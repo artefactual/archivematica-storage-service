@@ -5,15 +5,15 @@ UUID = r"\w{8}-\w{4}-\w{4}-\w{4}-\w{12}"
 urlpatterns = patterns('locations.views',
     # Sorted by alphabetized categories
 
-    # Files
-    url(r'^files/$', 'file_list',
-        name='file_list'),
-    url(r'^files/aip_delete_request$', 'aip_delete_request',
-        name='aip_delete_request'),
-
     # Locations
     url(r'^locations/$', 'location_list',
         name='location_list'),
+
+    # Packages
+    url(r'^packages/$', 'package_list',
+        name='package_list'),
+    url(r'^packages/aip_delete_request$', 'aip_delete_request',
+        name='aip_delete_request'),
 
     # Pipelines
     url(r'^pipelines/$', 'pipeline_list',

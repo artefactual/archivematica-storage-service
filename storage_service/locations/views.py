@@ -8,15 +8,15 @@ from django.views.decorators.csrf import csrf_exempt
 
 from common.constants import PROTOCOL
 from common import utils
-from .models import Space, Location, File, Event, Pipeline
+from .models import Space, Location, Package, Event, Pipeline
 from .forms import SpaceForm, LocationForm, ConfirmEventForm, PipelineForm
 
 
 ########################## FILES ##########################
 
-def file_list(request):
-    files = File.objects.all()
-    return render(request, 'locations/file_list.html', locals())
+def package_list(request):
+    packages = Package.objects.all()
+    return render(request, 'locations/package_list.html', locals())
 
 def aip_delete_request(request):
     requests = Event.objects.filter(status=Event.SUBMITTED).filter(
@@ -33,13 +33,13 @@ def aip_delete_request(request):
                 event.admin_id = auth.get_user(request)
                 if 'reject' in request.POST:
                     event.status = Event.REJECTED
-                    event.file.status = event.store_data
+                    event.package.status = event.store_data
                 elif 'approve' in request.POST:
                     event.status = Event.APPROVED
-                    event.file.status = File.DELETED
+                    event.package.status = Package.DELETED
                     # TODO do actual deletion here
                 event.save()
-                event.file.save()
+                event.package.save()
                 return redirect('aip_delete_request')
     else:
         for req in requests:

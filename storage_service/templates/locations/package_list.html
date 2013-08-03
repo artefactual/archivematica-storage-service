@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block page_title %}All Files{% endblock %}
+{% block page_title %}All Packages{% endblock %}
 
 {% block content %}
 
 <p><a href="{% url 'aip_delete_request' %}">View delete requests</a></p>
 
-{% if files %}
+{% if packages %}
   <table class="datatable">
     <thead>
       <tr>
@@ -18,19 +18,19 @@
       </tr>
     </thead>
     <tbody>
-    {% for file in files %}
+    {% for package in packages %}
       <tr>
-        <td>{{ file.uuid }}</td>
-        <td>{{ file.full_path }}</td>
-        <td>{{ file.size }}B</td>
-        <td>{{ file.get_package_type_display }}</td>
-        <td>{{ file.get_status_display }}</td>
+        <td>{{ package.uuid }}</td>
+        <td>{{ package.full_path }}</td>
+        <td>{{ package.size }}B</td>
+        <td>{{ package.get_package_type_display }}</td>
+        <td>{{ package.get_status_display }}</td>
       </tr>
     {% endfor %}
     </tbody>
   </table>
 {% else %}
-  <p>No files currently exist.</p>
+  <p>No packages currently exist.</p>
 {% endif %}
 
 {% endblock %}
