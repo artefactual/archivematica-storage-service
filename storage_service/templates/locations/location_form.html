@@ -1,14 +1,19 @@
 {% extends "base.html" %}
 
-{% block page_title %}Create Location{% endblock %}
+{% block page_title %}{{ action }} Location{% endblock %}
 
 {% block content %}
 
 <div class='space'>
-    <form action="{% url 'location_create' space.uuid %}" method="post">{% csrf_token %}
+    {% if location %}
+    <form action="{% url 'location_edit' space.uuid location.uuid %}" method="post">
+    {% else %}
+    <form action="{% url 'location_create' space.uuid %}" method="post">
+    {% endif %}
+      {% csrf_token %}
         <p>Space: {{ space }}</p>
         {{ form.as_p }}
-        <input type="submit" value="Create Location" />
+        <input type="submit" value="{{ action }} Location" />
     </form>
 </div>
 {% endblock %}

@@ -51,17 +51,20 @@ def aip_delete_request(request):
 
 ########################## LOCATIONS ##########################
 
-def location_create(request, space_uuid):
+def location_edit(request, space_uuid, location_uuid=None):
     space = get_object_or_404(Space, uuid=space_uuid)
-    if request.method == 'POST':
-        form = LocationForm(request.POST)
-        if form.is_valid():
-            location = form.save(commit=False)
-            location.space = space
-            location.save()
-            return redirect('space_detail', space.uuid)
+    if location_uuid:
+        action = "Edit"
+        location = get_object_or_404(Location, uuid=location_uuid)
     else:
-        form = LocationForm()
+        action = "Create"
+        location = None
+    form = LocationForm(request.POST or None, instance=location)
+    if form.is_valid():
+        location = form.save(commit=False)
+        location.space = space
+        location.save()
+        return redirect('space_detail', space.uuid)
     return render(request, 'locations/location_form.html', locals())
 
 def location_list(request):

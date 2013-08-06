@@ -31,7 +31,7 @@ class NFSForm(ModelForm):
 class LocationForm(ModelForm):
     class Meta:
         model = Location
-        fields = ('purpose', 'pipeline', 'relative_path', 'description', 'quota', 'used')
+        fields = ('purpose', 'pipeline', 'relative_path', 'description', 'quota', 'enabled')
 
 
 class ConfirmEventForm(ModelForm):
