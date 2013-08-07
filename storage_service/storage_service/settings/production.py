@@ -1,8 +1,5 @@
 """Production settings and globals."""
-
-
 from os import environ
-
 from base import *
 
 # Normally you should not import ANYTHING from Django directly
@@ -20,7 +17,7 @@ def get_env_setting(setting):
 
 ########## HOST CONFIGURATION
 # See: https://docs.djangoproject.com/en/1.5/releases/1.5/#allowed-hosts-required-in-production
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 ########## END HOST CONFIGURATION
 
 ########## EMAIL CONFIGURATION
@@ -77,9 +74,3 @@ CACHES = {
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
 SECRET_KEY = 'a#ek33Y0Il;;k<dee3;Wqasl2jeK'
 ########## END SECRET CONFIGURATION
-
-########## SITE CONFIGURATION
-# Hosts/domain names that are valid for this site
-# See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = []
-########## END SITE CONFIGURATION
