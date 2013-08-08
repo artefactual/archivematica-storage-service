@@ -5,4 +5,11 @@ urlpatterns = patterns('administration.views',
 
     url(r'^$', 'settings_edit',
         name='settings_edit'),
+
+    url(r'^users/$', 'user_list',
+        name='user_list'),
+    url(r'^users/create/$', 'user_create',
+        name='user_create'),
+    url(r'^users/(?P<username>[-\w]+)/edit/$', 'user_edit',
+        name='user_edit'),
 )

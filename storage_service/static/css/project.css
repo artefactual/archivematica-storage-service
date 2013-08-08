@@ -8,13 +8,30 @@ h1 {
 
 h2 {
     font-size: 1.8em;
+    margin-top: 1em;
 }
 
 p {
     font-size:0.875em;
 }
 
-
-.space {
-    border-bottom: 1px dashed #444444;
+.row {
+    display: table-row;
+    margin-left: 0;
 }
+.sidebar ul,
+.sidebar li {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar li {
+  padding: 4px 6px;
+}
+
+div.sidebar {
+    width: 15%;
+    min-width: 120px;
+}
+

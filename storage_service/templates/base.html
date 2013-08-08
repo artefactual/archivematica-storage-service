@@ -60,13 +60,13 @@
     </div>
 
     <div class="container">
+      {% block sidebar %}{% endblock sidebar %}
 
-      <h1>{% block page_title %}Example Base Template{% endblock page_title %}</h1>
+      <div class="row">
+        <h1>{% block page_title %}Archivematica Storage Service{% endblock page_title %}</h1>
 
-      {% block content %}
-        <p>Use this document as a way to quick start any new project.</p>
-      {% endblock content %}
-
+        {% block content %}{% endblock content %}
+      </div>
     </div> <!-- /container -->
 
     <!-- Le javascript

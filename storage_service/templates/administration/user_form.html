@@ -1,0 +1,18 @@
+{% extends "administration/base.html" %}
+
+{% block page_title %}{{action}} User{% endblock %}
+
+{% block content %}
+
+<div class='user'>
+    {% if edit_user %}
+    <form action="{% url 'user_edit' edit_user.username %}" method="post">
+    {% else %}
+    <form action="{% url 'user_create' %}" method="post">
+    {% endif %}
+    {% csrf_token %}
+        {{ user_form.as_p }}
+        <input type="submit" value="{{action}} user" />
+    </form>
+</div>
+{% endblock %}

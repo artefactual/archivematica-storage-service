@@ -1,0 +1,34 @@
+{% extends "administration/base.html" %}
+
+{% block page_title %}Users{% endblock %}
+
+{% block content %}
+
+  <p><a href="{% url 'user_create' %}">Create New User</a></p>
+  <table class="datatable">
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>Name</th>
+        <th>E-mail</th>
+        <th>Administrator</th>
+        <th>Active</th>
+        <th></th>
+      </tr>
+    </thead>
+    {% for user_display in users %}
+      <tr>
+        <td>{{ user_display.username }}</td>
+        <td>{{ user_display.get_full_name }}</td>
+        <td>{{ user_display.email }}</td>
+        <td>{{ user_display.is_superuser }}</td>
+        <td>{{ user_display.is_active }}</td>
+        <td>
+          {% if user.is_superuser or user.id == user_display.id %}
+            <a class="btn edit small" href="{% url 'user_edit' user_display.username %}">Edit</a>
+            <a class="btn edit small" href="">Change Password</a>
+          {% endif %}
+      </tr>
+    {% endfor %}
+  </table>
+{% endblock %}
