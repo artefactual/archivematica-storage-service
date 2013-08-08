@@ -4,6 +4,8 @@
 
 {% block content %}
 
+{% include 'snippets/pipeline_description.html' %}
+
 <p><a href="{% url 'pipeline_create' %}">Create new pipeline</a></p>
 
 {% if pipelines %}

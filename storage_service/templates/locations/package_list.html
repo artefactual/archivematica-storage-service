@@ -4,6 +4,8 @@
 
 {% block content %}
 
+{% include 'snippets/package_description.html' %}
+
 <p><a href="{% url 'aip_delete_request' %}">View delete requests</a></p>
 
 {% if packages %}

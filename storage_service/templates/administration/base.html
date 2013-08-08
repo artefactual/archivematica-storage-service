@@ -2,6 +2,7 @@
 
 {% block sidebar %}
 <div class='span2 row sidebar'>
+  {% include 'snippets/administration_description.html' %}
   <ul>
     <li><a href="{% url 'settings_edit' %}">Configuration</a></li>
     <li><a href="{% url 'user_list' %}">Users</a></li>

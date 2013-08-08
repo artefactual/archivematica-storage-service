@@ -4,6 +4,8 @@
 
 {% block content %}
 
+{% include 'snippets/space_description.html' %}
+
 <p><a href="{% url 'space_create' %}">Create new space</a></p>
 
 {% for s in spaces %}

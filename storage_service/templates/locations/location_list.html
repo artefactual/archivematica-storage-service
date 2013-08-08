@@ -4,6 +4,8 @@
 
 {% block content %}
 
+{% include 'snippets/location_description.html' %}
+
 {% if locations %}
   {% include "snippets/locations_table.html" %}
 {% else %}
