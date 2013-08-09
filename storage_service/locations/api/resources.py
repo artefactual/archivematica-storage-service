@@ -264,11 +264,11 @@ class PackageResource(ModelResource):
         pipeline = Pipeline.objects.get(uuid=request_info['pipeline'])
 
         # See if an event already exists
-        existing_requests = Event.objects.filter(file=file, event_type=Event.DELETE,
+        existing_requests = Event.objects.filter(package=file, event_type=Event.DELETE,
             status=Event.SUBMITTED, store_data=file.status)
 
         if (len(existing_requests) < 1):
-            delete_request = Event(file=file, event_type=Event.DELETE,
+            delete_request = Event(package=file, event_type=Event.DELETE,
                 status=Event.SUBMITTED, event_reason=request_info['event_reason'],
                 pipeline=pipeline, user_id=request_info['user_id'],
                 user_email=request_info['user_email'], store_data=file.status)
