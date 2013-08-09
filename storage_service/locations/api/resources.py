@@ -2,6 +2,7 @@ from django.conf.urls import *
 from django.forms.models import model_to_dict
 
 import json
+import logging
 import os
 from django.utils import simplejson
 from tastypie.authentication import (BasicAuthentication, ApiKeyAuthentication,
@@ -13,11 +14,15 @@ from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.validation import CleanedDataFormValidation
 from tastypie.utils import trailing_slash
 
-from ..models import (Event, Package, Location, Space, Pipeline)
+from ..models import (Event, Package, Location, Space, Pipeline, LocalFilesystem)
 from ..forms import LocationForm, SpaceForm
 
 import common.constants
 from common import utils
+
+LOGGER = logging.getLogger(__name__)
+logging.basicConfig(filename="/tmp/storage_service.log",
+    level=logging.INFO)
 
 # FIXME ModelResources with ForeignKeys to another model don't work with
 # validation = CleanedDataFormValidation  On creation, it errors with:
@@ -28,6 +33,10 @@ from common import utils
 
 
 class PipelineResource(ModelResource):
+    # Attributes used for POST, exclude from GET
+    create_default_locations = fields.BooleanField(use_in=lambda x: False)
+    shared_path = fields.CharField(use_in=lambda x: False)
+
     class Meta:
         queryset = Pipeline.active.all()
         authentication = Authentication()
@@ -51,6 +60,37 @@ class PipelineResource(ModelResource):
         bundle = super(PipelineResource, self).obj_create(bundle, **kwargs)
         bundle.obj.enabled = not utils.get_setting('pipelines_disabled', False)
         bundle.obj.save()
+        # If asked, create default locations for Pipeline
+        if bundle.data.get('create_default_locations', False):
+            # Create local FS space, transfer source, AIP storage, and
+            # currently processing locations
+            # Use shared path if provided
+            # IDEA make default space/locations configurable in storage service?
+            shared_path = bundle.data.get('shared_path',
+                '/var/archivematica/sharedDirectory').lstrip('/')
+            logging.info("Creating default locations for pipeline. Shared path: {}".format(shared_path))
+            space = Space(access_protocol=Space.LOCAL_FILESYSTEM, path='/')
+            space.save()
+            local_fs = LocalFilesystem(space=space)
+            local_fs.save()
+            transfer_source = Location(purpose=Location.TRANSFER_SOURCE,
+                pipeline=bundle.obj,
+                space=space,
+                relative_path='home')
+            aip_storage = Location(
+                purpose=Location.AIP_STORAGE,
+                pipeline=bundle.obj,
+                space=space,
+                relative_path=os.path.join(shared_path, 'wwww', 'AIPsStore'),
+                description='Store AIP in standard Archivematica Directory')
+            currently_processing = Location(
+                purpose=Location.CURRENTLY_PROCESSING,
+                pipeline=bundle.obj,
+                space=space,
+                relative_path=shared_path)
+            transfer_source.save()
+            aip_storage.save()
+            currently_processing.save()
         return bundle
 
 
@@ -66,7 +106,7 @@ class SpaceResource(ModelResource):
 
         fields = ['access_protocol', 'last_verified', 'location_set', 'path',
             'size', 'used', 'uuid', 'verified']
-        list_allowed_methods = ['get', 'post']
+        list_allowed_methods = ['get']
         detail_allowed_methods = ['get']
         detail_uri_name = 'uuid'
         always_return_data = True
@@ -116,8 +156,6 @@ class SpaceResource(ModelResource):
         obj.save()
         return bundle
 
-    # TODO only accept 'post's from dashboard for local filesystem
-
 
 class LocationResource(ModelResource):
     space = fields.ForeignKey(SpaceResource, 'space')
@@ -135,8 +173,8 @@ class LocationResource(ModelResource):
         # validation = CleanedDataFormValidation(form_class=LocationForm)
 
         fields = ['enabled', 'relative_path', 'purpose', 'quota', 'used', 'uuid']
-        list_allowed_methods = ['get', 'post']
-        detail_allowed_methods = ['get', 'patch']
+        list_allowed_methods = ['get']
+        detail_allowed_methods = ['get']
         detail_uri_name = 'uuid'
         always_return_data = True
         filtering = {
