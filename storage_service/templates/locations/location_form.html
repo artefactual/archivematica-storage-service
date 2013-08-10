@@ -34,14 +34,12 @@
 
   <script>
     $(document).ready(function() {
-      if ('{{ location_uuid }}' != 'None') {
-        createSingleDirectoryPicker(
-          '{{ space.path }}',
-          'id_relative_path',
-          'directory_picker',
-          '/api/v1/location/{{ location_uuid }}/browse/'
-        );
-      }
+      createSingleDirectoryPicker(
+        '{{ space.path }}',
+        'id_relative_path',
+        'directory_picker',
+        '/api/v1/space/{{ space.uuid }}/browse/'
+      );
     });
   </script>
 
