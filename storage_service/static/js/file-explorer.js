@@ -181,7 +181,6 @@
     },
 
     activateHover: function(el) {
-      console.log('activate');
       $(el).hover(
         function() {
           $(this).addClass('backbone-file-exporer-entry-highlighted');

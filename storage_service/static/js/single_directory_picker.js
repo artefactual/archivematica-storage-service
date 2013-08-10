@@ -1,4 +1,4 @@
-function createSingleDirectoryPicker(path, textFieldCssId, destinationCssId, ajaxChildDataUrl) {
+function createSingleDirectoryPicker(path, textFieldCssId, triggerElementCssId, destinationCssId, ajaxChildDataUrl) {
   var SingleDirectoryPickerView = Backbone.View.extend({
     initialize: function(options) {
       this.modal_template = options.modal_template;
@@ -57,7 +57,7 @@ function createSingleDirectoryPicker(path, textFieldCssId, destinationCssId, aja
     modal_template: $('#directory-select-modal-layout').html()
   });
 
-  $('#id_relative_path').click(function() {
+  $('#' + triggerElementCssId).click(function() {
     picker.showSelector();
   });
   picker.render();
