@@ -277,7 +277,7 @@ class PackageResource(ModelResource):
         bundle = super(PackageResource, self).obj_create(bundle, **kwargs)
         # IDEA add custom endpoints, instead of storing all AIPS that come in?
         if bundle.obj.package_type == Package.AIP:
-            bundle.obj.current_location.space.store_aip(bundle.obj)
+            bundle.obj.store_aip()
         return bundle
 
     def delete_aip_request(self, request, **kwargs):

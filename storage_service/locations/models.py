@@ -42,71 +42,7 @@ class Enabled(models.Manager):
             return super(Enabled, self).get_query_set().filter(enabled=True)
 
 
-def store_aip_local_path(aip_file):
-    """ Stores AIPs to locations accessible locally to the storage service.
 
-    Checks if there is space in the Space and Location for the AIP, and raises
-    a StorageException if not.  All sizes expected to be in bytes.
-
-    AIP is stored at:
-    destination_location/uuid/split/into/chunks/destination_path. """
-    # TODO Move some of the procesing in archivematica
-    # clientScripts/storeAIP to here
-    location = aip_file.current_location
-    space = location.space
-    if space.size is not None and space.used + aip_file.size > space.size:
-        raise StorageException(
-            "Not enough space for AIP on storage device {space}; Used: {used}; Size: {size}; AIP size: {aip_size}".format(
-            space=space, used=space.used, size=space.size,
-            aip_size=aip_file.size))
-    if (location.quota is not None and
-            location.used + aip_file.size > location.quota):
-        raise StorageException(
-            "AIP too big for quota on {location}; Used: {used}; Quota: {quota}; AIP size: {aip_size}".format(
-                location=location, used=location.used, quota=location.quota,
-                aip_size=aip_file.size))
-
-    source = aip_file.full_origin_path()
-
-    # Store AIP at
-    # destination_location/uuid/split/into/chunks/destination_path
-    path = utils.uuid_to_path(aip_file.uuid)
-    aip_file.current_path = os.path.join(path, aip_file.current_path)
-    aip_file.save()
-    destination = aip_file.full_path()
-
-    aip_file.status = Package.PENDING
-    aip_file.save()
-
-    # Create directories
-    logging.info("rsyncing from {} to {}".format(source, destination))
-    try:
-        mode = (stat.S_IRUSR + stat.S_IWUSR + stat.S_IXUSR +
-                stat.S_IRGRP +                stat.S_IXGRP +
-                stat.S_IROTH +                stat.S_IXOTH)
-        os.makedirs(os.path.dirname(destination), mode)
-        # Mode not getting set correctly
-        os.chmod(os.path.dirname(destination), mode)
-    except OSError as e:
-        if e.errno != 17:
-            logging.warning("Could not create storage directory: {}".format(e))
-            raise
-    # Rsync file over
-    # TODO use Gearman to do this asyncronously
-    command = ['rsync', '--chmod=u+rw,go-rwx', source, destination]
-    logging.info("rsync command: {}".format(command))
-    try:
-        subprocess.check_call(command)
-    except Exception as e:
-        logging.warning("Rsync failed: {}".format(e))
-        raise
-
-    space.used += aip_file.size
-    space.save()
-    location.used += aip_file.size
-    location.save()
-    aip_file.status = Package.UPLOADED
-    aip_file.save()
 
 def validate_space_path(path):
     """ Validation for path in Space.  Must be absolute. """
@@ -153,15 +89,6 @@ class Space(models.Model):
             path=self.path,
         )
 
-    def store_aip(self, *args, **kwargs):
-        # FIXME there has to be a better way to do this
-        if self.access_protocol == self.LOCAL_FILESYSTEM:
-            self.localfilesystem.store_aip(*args, **kwargs)
-        elif self.access_protocol == self.NFS:
-            self.nfs.store_aip(*args, **kwargs)
-        else:
-            logging.warning("No access protocol for this space.")
-
 
 class LocalFilesystem(models.Model):
     """ Spaces found in the local filesystem of the storage service."""
@@ -178,14 +105,6 @@ class LocalFilesystem(models.Model):
         verified = os.path.isdir(self.space.path)
         self.space.verified = verified
         self.space.last_verified = datetime.datetime.now()
-
-    def store_aip(self, aip_file, *args, **kwargs):
-        """ Stores aip_file in this space. """
-        # IDEA Make this a script that can be run? Would lose access to python
-        # objects and have to pass UUIDs
-        # Confirm that this is the correct space to be moving to
-        assert self.space == aip_file.current_location.space
-        store_aip_local_path(aip_file)
 
 
 class NFS(models.Model):
@@ -382,6 +301,93 @@ class Package(models.Model):
         Includes the space, location, and package paths joined. """
         return os.path.normpath(
             os.path.join(self.origin_location.full_path(), self.origin_path))
+
+    def store_aip(self):
+        """ Stores an AIP in the correct Location.
+
+        Invokes different transfer mechanisms depending on what the source and
+        destination Spaces are.  Checks if there is space in the Space and
+        Location for the AIP, and raises a StorageException if not.  All sizes
+        expected to be in bytes.
+        """
+        # TODO Move some of the procesing in archivematica
+        # clientScripts/storeAIP to here?
+
+        # Check if enough space on the space and location
+        # All sizes expected to be in bytes
+        location = self.current_location
+        dest_space = location.space
+        if dest_space.size is not None and dest_space.used + self.size > dest_space.size:
+            raise StorageException(
+                "Not enough space for AIP on storage device {space}; Used: {used}; Size: {size}; AIP size: {aip_size}".format(
+                space=dest_space, used=dest_space.used, size=dest_space.size,
+                aip_size=self.size))
+        if (location.quota is not None and
+                location.used + self.size > location.quota):
+            raise StorageException(
+                "AIP too big for quota on {location}; Used: {used}; Quota: {quota}; AIP size: {aip_size}".format(
+                    location=location, used=location.used, quota=location.quota,
+                    aip_size=self.size))
+        source = self.full_origin_path()
+
+        # Store AIP at
+        # destination_location/uuid/split/into/chunks/destination_path
+        path = utils.uuid_to_path(self.uuid)
+        self.current_path = os.path.join(path, self.current_path)
+        self.save()
+        destination = self.full_path()
+
+        self.status = Package.PENDING
+        self.save()
+
+        # Call different protocols depending on what Space we're moving it to
+        # and from
+        mounted_locally = set([Space.LOCAL_FILESYSTEM, Space.NFS])
+        src_space = self.origin_location.space
+        if src_space.access_protocol in mounted_locally and dest_space.access_protocol in mounted_locally:
+            self._store_aip_local_to_local(source, destination)
+        else:
+            logging.warning("Transfering package from {} to {} not supported".format(src_space.access_protocol, dest_space.access_protocol))
+            return
+
+        # Save new space/location usage, package status
+        dest_space.used += self.size
+        dest_space.save()
+        location.used += self.size
+        location.save()
+        self.status = Package.UPLOADED
+        self.save()
+
+    def _store_aip_local_to_local(self, source, destination):
+        """ Stores AIPs to locations accessible locally to the storage service.
+
+        Checks if there is space in the Space and Location for the AIP, and raises
+        a StorageException if not.  All sizes expected to be in bytes.
+
+        AIP is stored at:
+        destination_location/uuid/split/into/chunks/destination_path. """
+        # Create directories
+        logging.info("rsyncing from {} to {}".format(source, destination))
+        try:
+            mode = (stat.S_IRUSR + stat.S_IWUSR + stat.S_IXUSR +
+                    stat.S_IRGRP +                stat.S_IXGRP +
+                    stat.S_IROTH +                stat.S_IXOTH)
+            os.makedirs(os.path.dirname(destination), mode)
+            # Mode not getting set correctly
+            os.chmod(os.path.dirname(destination), mode)
+        except OSError as e:
+            if e.errno != 17:
+                logging.warning("Could not create storage directory: {}".format(e))
+                raise
+        # Rsync file over
+        # TODO use Gearman to do this asyncronously
+        command = ['rsync', '--chmod=u+rw,go-rwx', source, destination]
+        logging.info("rsync command: {}".format(command))
+        try:
+            subprocess.check_call(command)
+        except Exception as e:
+            logging.warning("Rsync failed: {}".format(e))
+            raise
 
 
 class Event(models.Model):
