@@ -30,72 +30,17 @@
   <script type="text/javascript" src="{{ STATIC_URL }}js/backbone.js"></script>
   <script type="text/javascript" src="{{ STATIC_URL }}js/file-explorer.js"></script>
   <script type="text/javascript" src="{{ STATIC_URL }}js/directory_picker.js"></script>
+  <script type="text/javascript" src="{{ STATIC_URL }}js/single_directory_picker.js"></script>
 
   <script>
     $(document).ready(function() {
-      var SingleDirectoryPickerView = Backbone.View.extend({
-        initialize: function(options) {
-          this.modal_template = options.modal_template;
-        },
-
-        showSelector: function(sourceDir) {
-          // display action selector in modal window
-          $(this.modal_template).modal({show: true});
-
-          // make it destroy rather than hide modal
-          $('#directory-select-close, #directory-select-cancel')
-            .click(function() {
-              $('#directory-select-modal').remove();
-              $('.modal-backdrop').remove();
-            });
-
-          // add directory selector
-          var selector = new DirectoryPickerView({
-            ajaxChildDataUrl: '/api/v1/location/{{ location_uuid }}/browse/',
-            el: $('#explorer'),
-            levelTemplate: $('#template-dir-level').html(),
-            entryTemplate: $('#template-dir-entry').html(),
-            actionHandlers: [
-              {
-                name: 'Select',
-                description: 'Select directory',
-                iconHtml: 'Select',
-                logic: function(result) {
-                  var path = result.path;
-
-                  // hack to work around issue
-                  while (path[0] == '/') {
-                    path = path.substr(1, path.length - 1);
-                  }
-
-                  $('#id_relative_path').val(path);
-                  $('#directory-select-modal').remove();
-                  $('.modal-backdrop').remove();
-                }
-              }
-            ]
-          });
-
-          selector.structure = {
-            'name': '{{ space.path }}',
-            'parent': '',
-            'children': []
-          };
-
-          selector.render();
-        }
-      });
-
-      var picker = new SingleDirectoryPickerView({
-        el: $('#directory_picker'),
-        modal_template: $('#directory-select-modal-layout').html()
-      });
-
       if ('{{ location_uuid }}' != 'None') {
-        $('#id_relative_path').click(function() {
-          picker.showSelector();
-        });
-        picker.render();
+        createSingleDirectoryPicker(
+          '{{ space.path }}',
+          'id_relative_path',
+          'directory_picker',
+          '/api/v1/location/{{ location_uuid }}/browse/'
+        );
       }
     });
   </script>

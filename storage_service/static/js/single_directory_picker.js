@@ -1,0 +1,64 @@
+function createSingleDirectoryPicker(path, textFieldCssId, destinationCssId, ajaxChildDataUrl) {
+  var SingleDirectoryPickerView = Backbone.View.extend({
+    initialize: function(options) {
+      this.modal_template = options.modal_template;
+    },
+
+    showSelector: function(sourceDir) {
+      // display action selector in modal window
+      $(this.modal_template).modal({show: true});
+
+      // make it destroy rather than hide modal
+      $('#directory-select-close, #directory-select-cancel')
+        .click(function() {
+          $('#directory-select-modal').remove();
+          $('.modal-backdrop').remove();
+        });
+
+      // add directory selector
+      var selector = new DirectoryPickerView({
+        ajaxChildDataUrl: ajaxChildDataUrl,
+        el: $('#explorer'),
+        levelTemplate: $('#template-dir-level').html(),
+        entryTemplate: $('#template-dir-entry').html(),
+        actionHandlers: [
+          {
+            name: 'Select',
+            description: 'Select directory',
+            iconHtml: 'Select',
+            logic: function(result) {
+              var path = result.path;
+
+              // hack to work around issue
+              while (path[0] == '/') {
+                path = path.substr(1, path.length - 1);
+              }
+
+              $('#' + textFieldCssId).val(path);
+              $('#directory-select-modal').remove();
+              $('.modal-backdrop').remove();
+            }
+          }
+        ]
+      });
+
+      selector.structure = {
+        'name': path,
+        'parent': '',
+        'children': []
+      };
+
+      selector.render();
+    }
+  });
+
+  var picker = new SingleDirectoryPickerView({
+    el: $('#directory_picker'),
+    modal_template: $('#directory-select-modal-layout').html()
+  });
+
+  $('#id_relative_path').click(function() {
+    picker.showSelector();
+  });
+  picker.render();
+}
