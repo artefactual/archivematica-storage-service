@@ -1,6 +1,6 @@
 
-from locations.models import LocalFilesystem, NFS
-from locations.forms import LocalFilesystemForm, NFSForm
+from locations.models import LocalFilesystem, NFS, PipelineLocalFS
+from locations.forms import LocalFilesystemForm, NFSForm, PipelineLocalFSForm
 
 
 ########################## SPACES ##########################
@@ -17,3 +17,8 @@ PROTOCOL['NFS'] = {'model': NFS,
                               'remote_name',
                               'remote_path',
                               'version'] }
+PROTOCOL['PIPE_FS'] = {'model': PipelineLocalFS,
+                       'form': PipelineLocalFSForm,
+                       'fields': ['remote_user',
+                                  'remote_name']
+                       }

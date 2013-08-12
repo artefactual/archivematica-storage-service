@@ -1,7 +1,7 @@
 
 from django.forms import ModelForm
 
-from .models import Space, LocalFilesystem, NFS, Location, Event, Pipeline
+from .models import Space, LocalFilesystem, NFS, Location, Event, Pipeline, PipelineLocalFS
 
 
 class PipelineForm(ModelForm):
@@ -26,6 +26,13 @@ class NFSForm(ModelForm):
     class Meta:
         model = NFS
         fields = ('remote_name', 'remote_path', 'version', 'manually_mounted')
+
+
+class PipelineLocalFSForm(ModelForm):
+    # TODO SpaceForm.path help text should say path to space on local machine
+    class Meta:
+        model = PipelineLocalFS
+        fields = ('remote_user', 'remote_name', )
 
 
 class LocationForm(ModelForm):

@@ -62,13 +62,15 @@ class Space(models.Model):
 
     LOCAL_FILESYSTEM = 'FS'
     NFS = 'NFS'
+    PIPELINE_LOCAL_FS = 'PIPE_FS'
     # LOCKSS = 'LOCKSS'
     # FEDORA = 'FEDORA'
     ACCESS_PROTOCOL_CHOICES = (
         (LOCAL_FILESYSTEM, "Local Filesystem"),
-        (NFS, "NFS")
+        (NFS, "NFS"),
+        (PIPELINE_LOCAL_FS, "Pipeline Local Filesystem"),
     )
-    access_protocol = models.CharField(max_length=6,
+    access_protocol = models.CharField(max_length=8,
         choices=ACCESS_PROTOCOL_CHOICES,
         help_text="How the space can be accessed.")
     size = models.BigIntegerField(default=None, null=True, blank=True,
@@ -144,15 +146,18 @@ class NFS(models.Model):
         # may need to tweak options
         pass
 
-    def store_aip(self, aip_file, *args, **kwargs):
-        """ Stores aip_file in this space, at aip_file.current_location.
 
-        Assumes that aip_file.current_location is mounted locally."""
-        # IDEA Make this a script that can be run? Would lose access to python
-        # objects and have to pass UUIDs
-        # Confirm that this is the correct space to be moving to
-        assert self.space == aip_file.current_location.space
-        store_aip_local_path(aip_file)
+class PipelineLocalFS(models.Model):
+    """ Spaces local to the creating machine, but not to the storage service.
+
+    Use case: currently processing locations. """
+    space = models.OneToOneField('Space', to_field='uuid')
+
+    remote_user = models.CharField(max_length=64,
+        help_text="Username on the remote machine accessible via ssh")
+    remote_name = models.CharField(max_length=256,
+        help_text="Name or IP of the remote machine.")
+    # Space.path is the path on the remote machine
 
 
 # To add a new storage space the following places must be updated:
@@ -160,6 +165,7 @@ class NFS(models.Model):
 #   Add constant for storage protocol
 #   Add constant to ACCESS_PROTOCOL_CHOICES
 #   Add class for protocol-specific fields using template below
+#   Add to Package.store_aip(), using existing categories if possible
 #  locations/forms.py
 #   Add ModelForm for new class
 #  common/constants.py
@@ -169,8 +175,7 @@ class NFS(models.Model):
 # class Example(models.Model):
 #     space = models.OneToOneField('Space', to_field='uuid')
 #
-#     def verify(self):
-#         pass
+
 
 ########################## LOCATIONS ##########################
 
@@ -343,10 +348,16 @@ class Package(models.Model):
         # Call different protocols depending on what Space we're moving it to
         # and from
         mounted_locally = set([Space.LOCAL_FILESYSTEM, Space.NFS])
+        ssh_only_access = set([Space.PIPELINE_LOCAL_FS])
         src_space = self.origin_location.space
         if src_space.access_protocol in mounted_locally and dest_space.access_protocol in mounted_locally:
             self._store_aip_local_to_local(source, destination)
+        elif src_space.access_protocol in ssh_only_access and dest_space.access_protocol in mounted_locally:
+            self._store_aip_ssh_only_to_local(source, destination)
+        elif src_space.access_protocol in ssh_only_access and dest_space.access_protocol in ssh_only_access:
+            self._store_aip_ssh_only_to_ssh_only(source, destination)
         else:
+            # Not supported: mounted_locally to ssh_only_access
             logging.warning("Transfering package from {} to {} not supported".format(src_space.access_protocol, dest_space.access_protocol))
             return
 
@@ -388,6 +399,12 @@ class Package(models.Model):
         except Exception as e:
             logging.warning("Rsync failed: {}".format(e))
             raise
+
+    def _store_aip_ssh_only_to_local(source, destination):
+        raise Exception("Moving AIP from SSH only access to locally mounted spaces not implemented yet.")
+
+    def _store_aip_ssh_only_to_ssh_only(source, destination):
+        raise Exception("Moving AIP within SSH only access spaces not implemented yet.")
 
 
 class Event(models.Model):
