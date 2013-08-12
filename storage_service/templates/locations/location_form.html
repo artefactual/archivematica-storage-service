@@ -2,6 +2,11 @@
 
 {% block page_title %}{{ action }} Location{% endblock %}
 
+{% block extra_css %}
+  <link type="text/css" rel="stylesheet" media="all" href="{{ STATIC_URL }}css/backbone-file-explorer.css" />
+  <link type="text/css" rel="stylesheet" media="all" href="{{ STATIC_URL }}css/directory_picker.css" />
+{% endblock %}
+
 {% block content %}
 
 <div class='space'>
@@ -16,4 +21,111 @@
         <input type="submit" value="{{ action }} Location" />
     </form>
 </div>
+
+<div id='directory_picker'></div>
 {% endblock %}
+
+{% block extra_js %}
+  <script type="text/javascript" src="{{ STATIC_URL }}js/underscore.js"></script>
+  <script type="text/javascript" src="{{ STATIC_URL }}js/backbone.js"></script>
+  <script type="text/javascript" src="{{ STATIC_URL }}js/file-explorer.js"></script>
+  <script type="text/javascript" src="{{ STATIC_URL }}js/directory_picker.js"></script>
+
+  <script>
+    $(document).ready(function() {
+      var SingleDirectoryPickerView = Backbone.View.extend({
+        initialize: function(options) {
+          this.modal_template = options.modal_template;
+        },
+
+        showSelector: function(sourceDir) {
+          // display action selector in modal window
+          $(this.modal_template).modal({show: true});
+
+          // make it destroy rather than hide modal
+          $('#directory-select-close, #directory-select-cancel')
+            .click(function() {
+              $('#directory-select-modal').remove();
+              $('.modal-backdrop').remove();
+            });
+
+          // add directory selector
+          var selector = new DirectoryPickerView({
+            ajaxChildDataUrl: '/api/v1/location/{{ location_uuid }}/browse/',
+            el: $('#explorer'),
+            levelTemplate: $('#template-dir-level').html(),
+            entryTemplate: $('#template-dir-entry').html(),
+            actionHandlers: [
+              {
+                name: 'Select',
+                description: 'Select directory',
+                iconHtml: 'Select',
+                logic: function(result) {
+                  var path = result.path;
+
+                  // hack to work around issue
+                  while (path[0] == '/') {
+                    path = path.substr(1, path.length - 1);
+                  }
+
+                  $('#id_relative_path').val(path);
+                  $('#directory-select-modal').remove();
+                  $('.modal-backdrop').remove();
+                }
+              }
+            ]
+          });
+
+          selector.structure = {
+            'name': '{{ space.path }}',
+            'parent': '',
+            'children': []
+          };
+
+          selector.render();
+        }
+      });
+
+      var picker = new SingleDirectoryPickerView({
+        el: $('#directory_picker'),
+        modal_template: $('#directory-select-modal-layout').html()
+      });
+
+      if ('{{ location_uuid }}' != 'None') {
+        $('#id_relative_path').click(function() {
+          picker.showSelector();
+        });
+        picker.render();
+      }
+    });
+  </script>
+
+  <!-- File explorer-related templates -->
+
+  <script type="text/template" id='directory-select-modal-layout'>
+    <div class="modal hide" id="directory-select-modal">
+      <div class="modal-header">
+        <button type="button" class="close" id="directory-select-close" data-dismiss="modal">×</button>
+        <h3>Select a directory</h3>
+      </div>
+      <div class="modal-body" id="transfer-component-select-body">
+        <div id="explorer" class="backbone-file-explorer"></div>
+      </div>
+      <div class="modal-footer">
+        <a href="#" class="btn" data-dismiss="modal" id="directory-select-cancel">Cancel</a>
+      </div>
+    </div>
+  </script>
+
+  <script type="text/template" id='template-dir-level'>
+    <div class="backbone-file-explorer-level"></div>
+  </script>
+
+  <script type="text/template" id='template-dir-entry'>
+    <div class="backbone-file-explorer-entry" style='clear:both'>
+      <span class="backbone-file-explorer-directory_icon_button"></span>
+      <span class="backbone-file-explorer-directory_entry_name"><%= name %></span>
+      <span class="backbone-file-explorer-directory_entry_actions"></span>
+    </div>
+  </script>
+{% endblock extra_js %}
