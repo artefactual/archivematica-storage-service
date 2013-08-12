@@ -119,6 +119,11 @@ class SpaceResource(ModelResource):
             'verified': ALL,
         }
 
+    def prepend_urls(self):
+        return [
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/browse%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('browse'), name="browse"),
+        ]
+
     # Is there a better place to add protocol-specific space info?
     # alter_detail_data_to_serialize
     # alter_deserialized_detail_data
@@ -155,6 +160,40 @@ class SpaceResource(ModelResource):
         obj = model.objects.create(space=bundle.obj, **fields_dict)
         obj.save()
         return bundle
+
+    def browse(self, request, **kwargs):
+        """ Returns all of the entries in a space, optionally at a subpath.
+
+        Returns a dict with
+            {'entries': [list of entries in the directory],
+             'directories': [list of directories in the directory]}
+        Directories is a subset of entries, all are just the name.
+
+        If a path=<path> parameter is provided, will look in that path inside
+        the Space. """
+        self.method_check(request, allowed=['get'])
+        self.is_authenticated(request)
+        self.throttle_check(request)
+        path = request.GET.get('path', '')
+        space = Space.objects.get(uuid=kwargs['uuid'])
+        path = os.path.join(space.path, path)
+
+        # TODO Move this to space-specific code
+        # TODO add checking for non-locally mounted space
+
+        # Sorted list of all entries in directory, excluding hidden files
+        # This may need magic for encoding/decoding, but doesn't seem to
+        entries = [name for name in os.listdir(path) if name[0] != '.']
+        entries = sorted(entries, key=lambda s: s.lower())
+        directories = []
+        for name in entries:
+            full_path = os.path.join(path, name)
+            if os.path.isdir(full_path) and os.access(full_path, os.R_OK):
+                directories.append(name)
+        objects = {'directories': directories, 'entries': entries}
+
+        self.log_throttled_access(request)
+        return self.create_response(request, objects)
 
 
 class LocationResource(ModelResource):
