@@ -6,10 +6,10 @@ from django.forms.models import model_to_dict
 from django.shortcuts import render, redirect, get_object_or_404, get_list_or_404
 from django.views.decorators.csrf import csrf_exempt
 
-from common.constants import PROTOCOL
 from common import utils
 from .models import Space, Location, Package, Event, Pipeline
 from .forms import SpaceForm, LocationForm, ConfirmEventForm, PipelineForm
+from .constants import PROTOCOL
 
 
 ########################## FILES ##########################

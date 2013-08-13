@@ -14,11 +14,11 @@ from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.validation import CleanedDataFormValidation
 from tastypie.utils import trailing_slash
 
+from common import utils
+
 from ..models import (Event, Package, Location, Space, Pipeline, LocalFilesystem)
 from ..forms import LocationForm, SpaceForm
-
-import common.constants
-from common import utils
+from ..constants import PROTOCOL
 
 LOGGER = logging.getLogger(__name__)
 logging.basicConfig(filename="/tmp/storage_service.log",
@@ -132,7 +132,7 @@ class SpaceResource(ModelResource):
         """ Add protocol specific fields to an entry. """
         bundle = super(SpaceResource, self).dehydrate(bundle)
         access_protocol = bundle.obj.access_protocol
-        model = common.constants.PROTOCOL[access_protocol]['model']
+        model = PROTOCOL[access_protocol]['model']
 
         try:
             space = model.objects.get(space=bundle.obj.uuid)
@@ -140,7 +140,7 @@ class SpaceResource(ModelResource):
             print "Item doesn't exist :("
             # TODO this should assert later once creation/deletion stuff works
         else:
-            keep_fields = common.constants.PROTOCOL[access_protocol]['fields']
+            keep_fields = PROTOCOL[access_protocol]['fields']
             added_fields = model_to_dict(space, keep_fields)
             bundle.data.update(added_fields)
 
@@ -151,12 +151,12 @@ class SpaceResource(ModelResource):
         # TODO How to move this to the model?
         # Make dict of fields in model and values from bundle.data
         access_protocol = bundle.data['access_protocol']
-        keep_fields = common.constants.PROTOCOL[access_protocol]['fields']
+        keep_fields = PROTOCOL[access_protocol]['fields']
         fields_dict = { key: bundle.data[key] for key in keep_fields }
 
         bundle = super(SpaceResource, self).obj_create(bundle, **kwargs)
 
-        model = common.constants.PROTOCOL[access_protocol]['model']
+        model = PROTOCOL[access_protocol]['model']
         obj = model.objects.create(space=bundle.obj, **fields_dict)
         obj.save()
         return bundle
