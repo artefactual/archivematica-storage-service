@@ -333,14 +333,14 @@ class Package(models.Model):
                 "AIP too big for quota on {location}; Used: {used}; Quota: {quota}; AIP size: {aip_size}".format(
                     location=location, used=location.used, quota=location.quota,
                     aip_size=self.size))
-        source = self.full_origin_path()
+        source_path = self.full_origin_path()
 
         # Store AIP at
         # destination_location/uuid/split/into/chunks/destination_path
         path = utils.uuid_to_path(self.uuid)
         self.current_path = os.path.join(path, self.current_path)
         self.save()
-        destination = self.full_path()
+        destination_path = self.full_path()
 
         self.status = Package.PENDING
         self.save()
@@ -351,11 +351,14 @@ class Package(models.Model):
         ssh_only_access = set([Space.PIPELINE_LOCAL_FS])
         src_space = self.origin_location.space
         if src_space.access_protocol in mounted_locally and dest_space.access_protocol in mounted_locally:
-            self._store_aip_local_to_local(source, destination)
+            logging.info("Moving AIP from locally mounted storage to locally mounted storage.")
+            self._store_aip_local_to_local(source_path, destination_path)
         elif src_space.access_protocol in ssh_only_access and dest_space.access_protocol in mounted_locally:
-            self._store_aip_ssh_only_to_local(source, destination)
+            logging.info("Moving AIP from SSH-only access storage to locally mounted storage.")
+            self._store_aip_ssh_only_to_local(source_path, destination_path)
         elif src_space.access_protocol in ssh_only_access and dest_space.access_protocol in ssh_only_access:
-            self._store_aip_ssh_only_to_ssh_only(source, destination)
+            logging.info("Moving AIP from SSH-only access storage to SSH-only access storage.")
+            self._store_aip_ssh_only_to_ssh_only(source_path, destination_path)
         else:
             # Not supported: mounted_locally to ssh_only_access
             logging.warning("Transfering package from {} to {} not supported".format(src_space.access_protocol, dest_space.access_protocol))
@@ -369,7 +372,7 @@ class Package(models.Model):
         self.status = Package.UPLOADED
         self.save()
 
-    def _store_aip_local_to_local(self, source, destination):
+    def _store_aip_local_to_local(self, source_path, destination_path):
         """ Stores AIPs to locations accessible locally to the storage service.
 
         Checks if there is space in the Space and Location for the AIP, and raises
@@ -378,21 +381,21 @@ class Package(models.Model):
         AIP is stored at:
         destination_location/uuid/split/into/chunks/destination_path. """
         # Create directories
-        logging.info("rsyncing from {} to {}".format(source, destination))
+        logging.info("rsyncing from {} to {}".format(source_path, destination_path))
         try:
             mode = (stat.S_IRUSR + stat.S_IWUSR + stat.S_IXUSR +
                     stat.S_IRGRP +                stat.S_IXGRP +
                     stat.S_IROTH +                stat.S_IXOTH)
-            os.makedirs(os.path.dirname(destination), mode)
+            os.makedirs(os.path.dirname(destination_path), mode)
             # Mode not getting set correctly
-            os.chmod(os.path.dirname(destination), mode)
+            os.chmod(os.path.dirname(destination_path), mode)
         except OSError as e:
             if e.errno != 17:
                 logging.warning("Could not create storage directory: {}".format(e))
                 raise
         # Rsync file over
         # TODO use Gearman to do this asyncronously
-        command = ['rsync', '--chmod=u+rw,go-rwx', source, destination]
+        command = ['rsync', '--chmod=u+rw,go-rwx', source_path, destination_path]
         logging.info("rsync command: {}".format(command))
         try:
             subprocess.check_call(command)
@@ -400,10 +403,24 @@ class Package(models.Model):
             logging.warning("Rsync failed: {}".format(e))
             raise
 
-    def _store_aip_ssh_only_to_local(source, destination):
-        raise Exception("Moving AIP from SSH only access to locally mounted spaces not implemented yet.")
+    def _store_aip_ssh_only_to_local(self, source_path, destination_path):
+        # Local to local uses rsync, so pass it a source_path that includes
+        # user@host:path
+        # Get correct protocol-specific model, and then the correct object
+        # Importing PROTOCOL here because importing locations.constants at the
+        # top of the file causes a circular dependency
+        from .constants import PROTOCOL
+        protocol = self.origin_location.space.access_protocol
+        protocol_model = PROTOCOL[protocol]['model']
+        protocol_space = protocol_model.objects.get(space=self.origin_location.space)
+        # TODO try-catch AttributeError if remote_user or remote_name not exist?
+        user = protocol_space.remote_user
+        host = protocol_space.remote_name
+        full_source_path = "{user}@{host}:{path}".format(user=user, host=host,
+            path=source_path)
+        self._store_aip_local_to_local(full_source_path, destination_path)
 
-    def _store_aip_ssh_only_to_ssh_only(source, destination):
+    def _store_aip_ssh_only_to_ssh_only(self, source_path, destination_path):
         raise Exception("Moving AIP within SSH only access spaces not implemented yet.")
 
 
