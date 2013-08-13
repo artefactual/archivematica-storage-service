@@ -81,7 +81,7 @@ class PipelineResource(ModelResource):
                 purpose=Location.AIP_STORAGE,
                 pipeline=bundle.obj,
                 space=space,
-                relative_path=os.path.join(shared_path, 'wwww', 'AIPsStore'),
+                relative_path=os.path.join(shared_path, 'www', 'AIPsStore'),
                 description='Store AIP in standard Archivematica Directory')
             currently_processing = Location(
                 purpose=Location.CURRENTLY_PROCESSING,

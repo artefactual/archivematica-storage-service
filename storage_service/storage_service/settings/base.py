@@ -216,6 +216,7 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGIN_EXEMPT_URLS = (
     r'^api/',
+    r'^admin/',
 )
 
 ########## END LOGIN REQUIRED MIDDLEWARE CONFIGURATION
