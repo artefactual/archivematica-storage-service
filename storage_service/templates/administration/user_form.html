@@ -10,9 +10,18 @@
     {% else %}
     <form action="{% url 'user_create' %}" method="post">
     {% endif %}
-    {% csrf_token %}
-        {{ user_form.as_p }}
-        <input type="submit" value="{{action}} user" />
+      {% csrf_token %}
+      {{ user_form.as_p }}
+      <input type="submit" name='user' value="{{action}} user" />
     </form>
+
+    {% if edit_user %}
+    <form action="{% url 'user_edit' edit_user.username %}" method="post">
+      {% csrf_token %}
+      {{ password_form.as_p }}
+      <input type="submit" name='password' value="Change Password" />
+    </form>
+    {% endif %}
+
 </div>
 {% endblock %}
