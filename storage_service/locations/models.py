@@ -202,7 +202,7 @@ class Location(models.Model):
     purpose = models.CharField(max_length=2,
         choices=PURPOSE_CHOICES,
         help_text="Purpose of the space.  Eg. AIP storage, Transfer source")
-    pipeline = models.ForeignKey('Pipeline', to_field='uuid',
+    pipeline = models.ManyToManyField('Pipeline',
         help_text="UUID of the Archivematica instance using this location.")
 
     relative_path = models.TextField(help_text="Path to location, relative to the storage space's path.")
@@ -224,10 +224,6 @@ class Location(models.Model):
             purpose=self.purpose,
             path=self.relative_path,
         )
-
-    def save(self, *args, **kwargs):
-        self.enabled = self.pipeline.enabled and self.enabled
-        super(Location, self).save(args, kwargs)
 
     def full_path(self):
         """ Returns full path of location: space + location paths. """

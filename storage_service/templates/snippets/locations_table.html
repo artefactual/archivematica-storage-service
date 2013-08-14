@@ -23,7 +23,13 @@
       <tr>
         <td>{{ loc.get_purpose_display }}</td>
         {% if not no_pipeline %}
-          <td><a href="{% url 'pipeline_detail' loc.pipeline.uuid %}">{{ loc.pipeline.description }}</a></td>
+          <td>
+          {% for p in loc.pipeline.all %}
+            <a href="{% url 'pipeline_detail' p.uuid %}">{{ p.description }}</a>,
+          {% empty %}
+            <p>No pipelines</p>
+          {% endfor %}
+          </td>
         {% endif %}
         <td>{{ loc.full_path }}</td>
         <td>{{ loc.description|default:"None" }}</td>

@@ -74,23 +74,23 @@ class PipelineResource(ModelResource):
             local_fs = LocalFilesystem(space=space)
             local_fs.save()
             transfer_source = Location(purpose=Location.TRANSFER_SOURCE,
-                pipeline=bundle.obj,
                 space=space,
                 relative_path='home')
+            transfer_source.save()
+            transfer_source.pipeline.add(bundle.obj)
             aip_storage = Location(
                 purpose=Location.AIP_STORAGE,
-                pipeline=bundle.obj,
                 space=space,
                 relative_path=os.path.join(shared_path, 'www', 'AIPsStore'),
                 description='Store AIP in standard Archivematica Directory')
+            aip_storage.save()
+            aip_storage.pipeline.add(bundle.obj)
             currently_processing = Location(
                 purpose=Location.CURRENTLY_PROCESSING,
-                pipeline=bundle.obj,
                 space=space,
                 relative_path=shared_path)
-            transfer_source.save()
-            aip_storage.save()
             currently_processing.save()
+            currently_processing.pipeline.add(bundle.obj)
         return bundle
 
 
@@ -200,7 +200,7 @@ class LocationResource(ModelResource):
     space = fields.ForeignKey(SpaceResource, 'space')
     path = fields.CharField(attribute='full_path', readonly=True)
     description = fields.CharField(attribute='get_description', readonly=True)
-    pipeline = fields.ForeignKey(PipelineResource, 'pipeline', full=True)
+    pipeline = fields.ToManyField(PipelineResource, 'pipeline')
 
     class Meta:
         queryset = Location.active.all()

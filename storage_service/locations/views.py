@@ -64,6 +64,7 @@ def location_edit(request, space_uuid, location_uuid=None):
         location = form.save(commit=False)
         location.space = space
         location.save()
+        form.save_m2m()
         return redirect('space_detail', space.uuid)
     return render(request, 'locations/location_form.html', locals())
 
@@ -88,10 +89,6 @@ def pipeline_edit(request, uuid=None):
         form = PipelineForm(request.POST, instance=pipeline, initial=initial)
         if form.is_valid():
             pipeline = form.save()
-            if pipeline.enabled:
-                Location.objects.filter(pipeline=pipeline).update(enabled=True)
-            else:
-                Location.active.filter(pipeline=pipeline).update(enabled=False)
             return redirect('pipeline_list')
     else:
         form = PipelineForm(instance=pipeline, initial=initial)
