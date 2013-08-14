@@ -27,16 +27,22 @@ class SettingsForm(forms.Form):
 ########################## USERS ##########################
 
 class UserCreationForm(UserCreationForm):
+    def __init__(self, *args, **kwargs):
+        super(UserCreationForm, self).__init__(*args, **kwargs)
+        self.fields['is_superuser'].label = "Administrator?"
+        self.fields['is_superuser'].initial = True
+
     class Meta:
         model = get_user_model()
-        fields = ('username', 'first_name', 'last_name', 'email', 'password1', 'password2')
+        fields = ('username', 'first_name', 'last_name', 'email', 'password1', 'password2', 'is_superuser')
 
 
 class UserChangeForm(UserChangeForm):
     def __init__(self, *args, **kwargs):
         super(UserChangeForm, self).__init__(*args, **kwargs)
+        self.fields['is_superuser'].label = "Administrator?"
         del self.fields['password']
 
     class Meta:
         model = get_user_model()
-        fields = ('username', 'first_name', 'last_name', 'email')
+        fields = ('username', 'first_name', 'last_name', 'email', 'is_superuser')
