@@ -7,7 +7,12 @@
 <div class='settings'>
     <form action="{% url 'settings_edit' %}" method="post">
       {% csrf_token %}
-      {{ form.as_p }}
+      {{ common_form.as_p }}
+
+      <h2>Default Locations</h2>
+      <p>Configure default locations here.  These will be added to each new pipeline that registers with the storage service.</p>
+      {{ default_location_form.as_p }}
+
       <input type="submit" value="Save" />
     </form>
 </div>

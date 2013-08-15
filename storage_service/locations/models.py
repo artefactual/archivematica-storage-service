@@ -203,6 +203,7 @@ class Location(models.Model):
         choices=PURPOSE_CHOICES,
         help_text="Purpose of the space.  Eg. AIP storage, Transfer source")
     pipeline = models.ManyToManyField('Pipeline', through='LocationPipeline',
+        null=True, blank=True,
         help_text="UUID of the Archivematica instance using this location.")
 
     relative_path = models.TextField(help_text="Path to location, relative to the storage space's path.")
@@ -496,33 +497,31 @@ class Pipeline(models.Model):
             if not shared_path:
                 shared_path = '/var/archivematica/sharedDirectory'
             shared_path = shared_path.strip('/')+'/'
-            logging.info("Creating default locations for pipeline {}. Shared path: {}".format(self, shared_path))
-            # TODO get this information from config
+            logging.info("Creating default locations for pipeline {}.".format(self))
+
             space, space_created = Space.objects.get_or_create(
                 access_protocol=Space.LOCAL_FILESYSTEM, path='/')
-            logging.info("Space: {}".format(space))
             if space_created:
                 local_fs = LocalFilesystem(space=space)
                 local_fs.save()
                 logging.info("Protocol Space created: {}".format(local_fs))
-            transfer_source, _ = Location.objects.get_or_create(
-                purpose=Location.TRANSFER_SOURCE,
-                space=space,
-                relative_path='home')
-            LocationPipeline(pipeline=self, location=transfer_source).save()
-            logging.info("Transfer source: {}".format(transfer_source))
-
-            aip_storage, _ = Location.objects.get_or_create(
-                purpose=Location.AIP_STORAGE,
-                space=space,
-                relative_path=os.path.join(shared_path, 'www', 'AIPsStore'),
-                description='Store AIP in standard Archivematica Directory')
-            LocationPipeline(pipeline=self, location=aip_storage).save()
-            logging.info("AIP storage: {}".format(aip_storage))
-
-            currently_processing, _ = Location.objects.get_or_create(
+            currently_processing = Location.objects.create(
                 purpose=Location.CURRENTLY_PROCESSING,
                 space=space,
                 relative_path=shared_path)
             logging.info("Currently processing: {}".format(currently_processing))
             LocationPipeline(pipeline=self, location=currently_processing).save()
+
+            default_transfer_source = utils.get_setting('default_transfer_source', [])
+            for uuid in default_transfer_source:
+                transfer_source = Location.objects.get(uuid=uuid)
+                logging.info("Adding transfer source {} to {}".format(transfer_source, self))
+                LocationPipeline.objects.get_or_create(
+                    pipeline=self, location=transfer_source)
+
+            default_aip_storage = utils.get_setting('default_aip_storage', [])
+            for uuid in default_aip_storage:
+                aip_storage = Location.objects.get(uuid=uuid)
+                logging.info("Adding AIP storage {} to {}".format(aip_storage, self))
+                LocationPipeline.objects.get_or_create(
+                    pipeline=self, location=aip_storage)

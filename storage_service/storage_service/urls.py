@@ -31,3 +31,30 @@ urlpatterns = patterns('',
 
     url(r'^api/', include(locations.api.urls)),
 )
+
+
+def startup():
+    import os.path
+    from locations import models as locations_models
+    from common import utils
+    import logging
+    logger = logging.getLogger(__name__)
+    logging.basicConfig(level=logging.INFO)
+    logging.info("Running startup")
+    space, space_created = locations_models.Space.objects.get_or_create(
+        access_protocol=locations_models.Space.LOCAL_FILESYSTEM, path='/')
+    if space_created:
+        local_fs = locations_models.LocalFilesystem(space=space)
+        local_fs.save()
+    transfer_source, _ = locations_models.Location.objects.get_or_create(
+        purpose=locations_models.Location.TRANSFER_SOURCE,
+        space=space,
+        relative_path='home')
+    aip_storage, _ = locations_models.Location.objects.get_or_create(
+        purpose=locations_models.Location.AIP_STORAGE,
+        space=space,
+        relative_path=os.path.join('var', 'archivematica', 'sharedDirectory', 'www', 'AIPsStore'),
+        description='Store AIP in standard Archivematica Directory')
+    utils.set_setting('default_transfer_source', [transfer_source.uuid])
+    utils.set_setting('default_aip_storage', [aip_storage.uuid])
+startup()

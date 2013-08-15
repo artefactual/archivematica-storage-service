@@ -5,18 +5,20 @@ from django.shortcuts import render, redirect, get_object_or_404
 
 from common import utils
 from . import forms as settings_forms
-from . import models
 
 
 ########################## ADMIN ##########################
 
 def settings_edit(request):
     initial_data = utils.get_all_settings()
-    form = settings_forms.CommonSettingsForm(request.POST or None,
+    common_form = settings_forms.CommonSettingsForm(request.POST or None,
         initial=initial_data, prefix='common')
-    if form.is_valid():
+    default_location_form = settings_forms.DefaultLocationsForm(
+        request.POST or None, initial=initial_data, prefix='default_loc')
+    if common_form.is_valid() and default_location_form.is_valid():
         # Save settings
-        form.save()
+        common_form.save()
+        default_location_form.save()
         return redirect('settings_edit')
     return render(request, 'administration/settings_form.html', locals())
 
