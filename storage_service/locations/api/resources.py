@@ -16,7 +16,7 @@ from tastypie.utils import trailing_slash
 
 from common import utils
 
-from ..models import (Event, Package, Location, Space, Pipeline, LocalFilesystem)
+from ..models import (Event, Package, Location, Space, Pipeline, LocalFilesystem, LocationPipeline)
 from ..forms import LocationForm, SpaceForm
 from ..constants import PROTOCOL
 
@@ -77,20 +77,22 @@ class PipelineResource(ModelResource):
                 space=space,
                 relative_path='home')
             transfer_source.save()
-            transfer_source.pipeline.add(bundle.obj)
+            LocationPipeline(pipeline=bundle.obj, location=transfer_source).save()
+
             aip_storage = Location(
                 purpose=Location.AIP_STORAGE,
                 space=space,
                 relative_path=os.path.join(shared_path, 'www', 'AIPsStore'),
                 description='Store AIP in standard Archivematica Directory')
             aip_storage.save()
-            aip_storage.pipeline.add(bundle.obj)
+            LocationPipeline(pipeline=bundle.obj, location=aip_storage).save()
+
             currently_processing = Location(
                 purpose=Location.CURRENTLY_PROCESSING,
                 space=space,
                 relative_path=shared_path)
             currently_processing.save()
-            currently_processing.pipeline.add(bundle.obj)
+            LocationPipeline(pipeline=bundle.obj, location=currently_processing).save()
         return bundle
 
 

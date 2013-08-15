@@ -202,7 +202,7 @@ class Location(models.Model):
     purpose = models.CharField(max_length=2,
         choices=PURPOSE_CHOICES,
         help_text="Purpose of the space.  Eg. AIP storage, Transfer source")
-    pipeline = models.ManyToManyField('Pipeline',
+    pipeline = models.ManyToManyField('Pipeline', through='LocationPipeline',
         help_text="UUID of the Archivematica instance using this location.")
 
     relative_path = models.TextField(help_text="Path to location, relative to the storage space's path.")
@@ -234,6 +234,13 @@ class Location(models.Model):
         """ Returns a user-friendly description (or the path). """
         return self.description or self.full_path()
 
+
+class LocationPipeline(models.Model):
+    location = models.ForeignKey('Location', to_field='uuid')
+    pipeline = models.ForeignKey('Pipeline', to_field='uuid')
+
+    def __unicode__(self):
+        return u'{} to {}'.format(self.location, self.pipeline)
 
 ########################## PACKAGES ##########################
 # NOTE If the Packages section gets much bigger, move to its own app
