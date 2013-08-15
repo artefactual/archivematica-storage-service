@@ -1,3 +1,4 @@
+import ast
 import logging
 import os.path
 
@@ -6,27 +7,35 @@ from administration import models
 logger = logging.getLogger(__name__)
 
 
+def get_all_settings():
+    """ Returns a dict of 'setting_name': value with all of the settings. """
+    settings = dict(models.Settings.objects.all().values_list('name', 'value'))
+    for setting, value in settings.iteritems():
+        settings[setting] = ast.literal_eval(value)
+    return settings
+
 def get_setting(setting, default=None):
     """ Returns the value of 'setting' from models.Settings, 'default' if not found."""
     try:
         setting = models.Settings.objects.get(name=setting)
-        if setting.value == "False":
-            return False
-        else:
-            return_value = setting.value
     except:
         return_value = default
+    else:
+        return_value = ast.literal_eval(setting.value)
     return return_value
 
 def set_setting(setting, value=None):
-    """ Sets 'setting' to 'value' in models.Settings. """
-    try:
-        setting_data = models.Settings.objects.get(name=setting)
-    except:
-        setting_data = models.Settings.objects.create()
-        setting_data.name = setting
-    setting_data.value = value
-    setting_data.save()
+    """ Sets 'setting' to 'value' in models.Settings.
+
+    'value' must be an object that can be recreated by calling literal_eval on
+    its string representation.  Strings are automatically esacped. """
+    # Since we call literal_eval on settings when we extract them, we need to
+    # put quotes around strings so they remain strings
+    if isinstance(value, basestring):
+        value = "'{}'".format(value)
+    setting, _ = models.Settings.objects.get_or_create(name=setting)
+    setting.value = value
+    setting.save()
 
 
 def uuid_to_path(uuid):

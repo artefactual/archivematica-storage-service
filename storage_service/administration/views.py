@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import SetPasswordForm
 from django.shortcuts import render, redirect, get_object_or_404
 
+from common import utils
 from . import forms as settings_forms
 from . import models
 
@@ -10,8 +11,9 @@ from . import models
 ########################## ADMIN ##########################
 
 def settings_edit(request):
-    initial_data = dict(models.Settings.objects.all().values_list('name', 'value'))
-    form = settings_forms.SettingsForm(request.POST or None, initial=initial_data)
+    initial_data = utils.get_all_settings()
+    form = settings_forms.CommonSettingsForm(request.POST or None,
+        initial=initial_data, prefix='common')
     if form.is_valid():
         # Save settings
         form.save()
