@@ -103,6 +103,7 @@ def pipeline_edit(request, uuid=None):
         form = PipelineForm(request.POST, instance=pipeline, initial=initial)
         if form.is_valid():
             pipeline = form.save()
+            pipeline.save(form.cleaned_data['create_default_locations'])
             return redirect('pipeline_list')
     else:
         form = PipelineForm(instance=pipeline, initial=initial)

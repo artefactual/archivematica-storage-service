@@ -59,40 +59,9 @@ class PipelineResource(ModelResource):
     def obj_create(self, bundle, **kwargs):
         bundle = super(PipelineResource, self).obj_create(bundle, **kwargs)
         bundle.obj.enabled = not utils.get_setting('pipelines_disabled', False)
-        bundle.obj.save()
-        # If asked, create default locations for Pipeline
-        if bundle.data.get('create_default_locations', False):
-            # Create local FS space, transfer source, AIP storage, and
-            # currently processing locations
-            # Use shared path if provided
-            # IDEA make default space/locations configurable in storage service?
-            shared_path = bundle.data.get('shared_path',
-                '/var/archivematica/sharedDirectory').lstrip('/')
-            logging.info("Creating default locations for pipeline. Shared path: {}".format(shared_path))
-            space = Space(access_protocol=Space.LOCAL_FILESYSTEM, path='/')
-            space.save()
-            local_fs = LocalFilesystem(space=space)
-            local_fs.save()
-            transfer_source = Location(purpose=Location.TRANSFER_SOURCE,
-                space=space,
-                relative_path='home')
-            transfer_source.save()
-            LocationPipeline(pipeline=bundle.obj, location=transfer_source).save()
-
-            aip_storage = Location(
-                purpose=Location.AIP_STORAGE,
-                space=space,
-                relative_path=os.path.join(shared_path, 'www', 'AIPsStore'),
-                description='Store AIP in standard Archivematica Directory')
-            aip_storage.save()
-            LocationPipeline(pipeline=bundle.obj, location=aip_storage).save()
-
-            currently_processing = Location(
-                purpose=Location.CURRENTLY_PROCESSING,
-                space=space,
-                relative_path=shared_path)
-            currently_processing.save()
-            LocationPipeline(pipeline=bundle.obj, location=currently_processing).save()
+        create_default_locations = bundle.data.get('create_default_locations', False)
+        shared_path = bundle.data.get('shared_path', None)
+        bundle.obj.save(create_default_locations, shared_path)
         return bundle
 
 

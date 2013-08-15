@@ -486,3 +486,43 @@ class Pipeline(models.Model):
         return u"{uuid} ({description})".format(
             uuid=self.uuid,
             description=self.description)
+
+    def save(self, create_default_locations=False, shared_path=None, *args, **kwargs):
+        super(Pipeline, self).save(*args, **kwargs)
+        if create_default_locations:
+            # Create local FS space, transfer source, AIP storage, and
+            # currently processing locations
+            # Use shared path if provided
+            if not shared_path:
+                shared_path = '/var/archivematica/sharedDirectory'
+            shared_path = shared_path.strip('/')+'/'
+            logging.info("Creating default locations for pipeline {}. Shared path: {}".format(self, shared_path))
+            # TODO get this information from config
+            space, space_created = Space.objects.get_or_create(
+                access_protocol=Space.LOCAL_FILESYSTEM, path='/')
+            logging.info("Space: {}".format(space))
+            if space_created:
+                local_fs = LocalFilesystem(space=space)
+                local_fs.save()
+                logging.info("Protocol Space created: {}".format(local_fs))
+            transfer_source, _ = Location.objects.get_or_create(
+                purpose=Location.TRANSFER_SOURCE,
+                space=space,
+                relative_path='home')
+            LocationPipeline(pipeline=self, location=transfer_source).save()
+            logging.info("Transfer source: {}".format(transfer_source))
+
+            aip_storage, _ = Location.objects.get_or_create(
+                purpose=Location.AIP_STORAGE,
+                space=space,
+                relative_path=os.path.join(shared_path, 'www', 'AIPsStore'),
+                description='Store AIP in standard Archivematica Directory')
+            LocationPipeline(pipeline=self, location=aip_storage).save()
+            logging.info("AIP storage: {}".format(aip_storage))
+
+            currently_processing, _ = Location.objects.get_or_create(
+                purpose=Location.CURRENTLY_PROCESSING,
+                space=space,
+                relative_path=shared_path)
+            logging.info("Currently processing: {}".format(currently_processing))
+            LocationPipeline(pipeline=self, location=currently_processing).save()
