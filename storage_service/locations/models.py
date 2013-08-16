@@ -491,37 +491,56 @@ class Pipeline(models.Model):
     def save(self, create_default_locations=False, shared_path=None, *args, **kwargs):
         super(Pipeline, self).save(*args, **kwargs)
         if create_default_locations:
-            # Create local FS space, transfer source, AIP storage, and
-            # currently processing locations
-            # Use shared path if provided
-            if not shared_path:
-                shared_path = '/var/archivematica/sharedDirectory'
-            shared_path = shared_path.strip('/')+'/'
-            logging.info("Creating default locations for pipeline {}.".format(self))
+            self.create_default_locations(shared_path)
 
-            space, space_created = Space.objects.get_or_create(
-                access_protocol=Space.LOCAL_FILESYSTEM, path='/')
-            if space_created:
-                local_fs = LocalFilesystem(space=space)
-                local_fs.save()
-                logging.info("Protocol Space created: {}".format(local_fs))
-            currently_processing = Location.objects.create(
-                purpose=Location.CURRENTLY_PROCESSING,
-                space=space,
-                relative_path=shared_path)
-            logging.info("Currently processing: {}".format(currently_processing))
-            LocationPipeline(pipeline=self, location=currently_processing).save()
+    def create_default_locations(self, shared_path=None):
+        """ Creates default locations for a pipeline based on config.
 
-            default_transfer_source = utils.get_setting('default_transfer_source', [])
-            for uuid in default_transfer_source:
-                transfer_source = Location.objects.get(uuid=uuid)
-                logging.info("Adding transfer source {} to {}".format(transfer_source, self))
+        Creates a local filesystem Space and currently processing location in
+        it.  If a shared_path is provided, currently processing location is at
+        that path.  Creates Transfer Source and AIP Store locations based on
+        configuration from administration.Settings.
+        """
+        # Use shared path if provided
+        if not shared_path:
+            shared_path = '/var/archivematica/sharedDirectory'
+        shared_path = shared_path.strip('/')+'/'
+        logging.info("Creating default locations for pipeline {}.".format(self))
+
+        space, space_created = Space.objects.get_or_create(
+            access_protocol=Space.LOCAL_FILESYSTEM, path='/')
+        if space_created:
+            local_fs = LocalFilesystem(space=space)
+            local_fs.save()
+            logging.info("Protocol Space created: {}".format(local_fs))
+        currently_processing = Location.objects.create(
+            purpose=Location.CURRENTLY_PROCESSING,
+            space=space,
+            relative_path=shared_path)
+        logging.info("Currently processing: {}".format(currently_processing))
+        LocationPipeline(pipeline=self, location=currently_processing).save()
+
+        purposes = [
+            {'default': 'default_transfer_source',
+             'new': 'new_transfer_source',
+             'purpose': Location.TRANSFER_SOURCE},
+            {'default': 'default_aip_storage',
+             'new': 'new_aip_storage',
+             'purpose': Location.AIP_STORAGE},
+        ]
+        for p in purposes:
+            defaults = utils.get_setting(p['default'], [])
+            for uuid in defaults:
+                if uuid == 'new':
+                    # Create new location
+                    new_location = utils.get_setting(p['new'])
+                    location = Location.objects.create(
+                        purpose=p['purpose'], **new_location)
+                else:
+                    # Fetch existing location
+                    location = Location.objects.get(uuid=uuid)
+                    assert location.purpose == p['purpose']
+                logging.info("Adding new {} {} to {}".format(
+                    p['purpose'], location, self))
                 LocationPipeline.objects.get_or_create(
-                    pipeline=self, location=transfer_source)
-
-            default_aip_storage = utils.get_setting('default_aip_storage', [])
-            for uuid in default_aip_storage:
-                aip_storage = Location.objects.get(uuid=uuid)
-                logging.info("Adding AIP storage {} to {}".format(aip_storage, self))
-                LocationPipeline.objects.get_or_create(
-                    pipeline=self, location=aip_storage)
+                    pipeline=self, location=location)
