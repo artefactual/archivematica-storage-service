@@ -489,6 +489,7 @@ class Pipeline(models.Model):
             description=self.description)
 
     def save(self, create_default_locations=False, shared_path=None, *args, **kwargs):
+        """ Save pipeline and optionally create default locations. """
         super(Pipeline, self).save(*args, **kwargs)
         if create_default_locations:
             self.create_default_locations(shared_path)

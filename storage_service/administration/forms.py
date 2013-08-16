@@ -1,7 +1,6 @@
 
 from django import forms
-from django.contrib.auth import get_user_model
-from django.contrib.auth.forms import UserCreationForm, UserChangeForm
+from django.contrib import auth
 
 from common import utils
 
@@ -11,6 +10,7 @@ from locations.models import Location, Space
 ########################## CUSTOM FIELDS/WIDGETS ##########################
 
 class DefaultLocationWidget(forms.MultiWidget):
+    """ Widget for entering required information to create a new location. """
     def __init__(self, *args, **kwargs):
         choices = [(s.uuid, str(s)) for s in Space.objects.all()]
         widgets = [
@@ -22,6 +22,7 @@ class DefaultLocationWidget(forms.MultiWidget):
         super(DefaultLocationWidget, self).__init__(widgets=widgets, *args, **kwargs)
 
     def decompress(self, value):
+        """ Splits initial data to a list for each sub-widget. """
         try:
             return [
                 value['space_id'],
@@ -39,7 +40,7 @@ class DefaultLocationWidget(forms.MultiWidget):
 
 
 class DefaultLocationField(forms.MultiValueField):
-
+    """ Field for entering required information to create a new location. """
     def __init__(self, *args, **kwargs):
         choices = [(s.uuid, str(s)) for s in Space.objects.all()]
         space_id = forms.ChoiceField(choices=choices, *args, **kwargs)
@@ -51,6 +52,7 @@ class DefaultLocationField(forms.MultiValueField):
         super(DefaultLocationField, self).__init__(fields=fields, widget=widget, *args, **kwargs)
 
     def compress(self, data_list):
+        """ Takes widget data and compresses to one data structure. """
         if data_list and len(data_list) == 4:
             return {
                 'space_id': data_list[0],
@@ -85,11 +87,13 @@ class SettingsForm(forms.Form):
 
 
 class CommonSettingsForm(SettingsForm):
+    """ Configures common or generic settings that don't belong elsewhere. """
     pipelines_disabled = forms.BooleanField(required=False,
         label="Pipelines are disabled upon creation?")
 
 
 class DefaultLocationsForm(SettingsForm):
+    """ Configures default locations associated with a new pipeline. """
     default_transfer_source = forms.MultipleChoiceField(
         choices=[],
         required=False,
@@ -134,23 +138,25 @@ class DefaultLocationsForm(SettingsForm):
 
 ########################## USERS ##########################
 
-class UserCreationForm(UserCreationForm):
+class UserCreationForm(auth.forms.UserCreationForm):
+    """ Creates a new user.  Inherits from django's UserCreationForm. """
     def __init__(self, *args, **kwargs):
         super(UserCreationForm, self).__init__(*args, **kwargs)
         self.fields['is_superuser'].label = "Administrator?"
         self.fields['is_superuser'].initial = True
 
     class Meta:
-        model = get_user_model()
+        model = auth.get_user_model()
         fields = ('username', 'first_name', 'last_name', 'email', 'password1', 'password2', 'is_superuser')
 
 
-class UserChangeForm(UserChangeForm):
+class UserChangeForm(auth.forms.UserChangeForm):
+    """ Modifys an existing user.  Inherits from django's UserChangeForm. """
     def __init__(self, *args, **kwargs):
         super(UserChangeForm, self).__init__(*args, **kwargs)
         self.fields['is_superuser'].label = "Administrator?"
         del self.fields['password']
 
     class Meta:
-        model = get_user_model()
+        model = auth.get_user_model()
         fields = ('username', 'first_name', 'last_name', 'email', 'is_superuser')
