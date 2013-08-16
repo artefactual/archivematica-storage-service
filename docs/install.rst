@@ -54,6 +54,10 @@ The source code for the project should be there ready to work with.
 
     export DJANGO_SETTINGS_MODULE=storage_service.settings.local
     export DJANGO_SECRET_KEY='ADDKEY'
+    export SS_DB_NAME='storage_service/default.db'
+    export SS_DB_USER=''
+    export SS_DB_PASSWORD=''
+    export SS_DB_HOST=''
 
 Change the DJANGO_SETTINGS_MODULE to match whichever requirements file you installed from.
 
