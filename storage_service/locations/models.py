@@ -379,9 +379,6 @@ class Package(models.Model):
     def _store_aip_local_to_local(self, source_path, destination_path):
         """ Stores AIPs to locations accessible locally to the storage service.
 
-        Checks if there is space in the Space and Location for the AIP, and raises
-        a StorageException if not.  All sizes expected to be in bytes.
-
         AIP is stored at:
         destination_location/uuid/split/into/chunks/destination_path. """
         # Create directories
@@ -408,6 +405,10 @@ class Package(models.Model):
             raise
 
     def _store_aip_ssh_only_to_local(self, source_path, destination_path):
+        """ Stores an AIP from a location SSH-accessible to one accessible locally.
+
+        AIP is stored at:
+        destination_location/uuid/split/into/chunks/destination_path. """
         # Local to local uses rsync, so pass it a source_path that includes
         # user@host:path
         # Get correct protocol-specific model, and then the correct object
@@ -425,8 +426,40 @@ class Package(models.Model):
         self._store_aip_local_to_local(full_source_path, destination_path)
 
     def _store_aip_ssh_only_to_ssh_only(self, source_path, destination_path):
-        raise Exception("Moving AIP within SSH only access spaces not implemented yet.")
+        """ Stores AIPs from and to a location only accessible via SSH.
 
+        AIP is stored at:
+        destination_location/uuid/split/into/chunks/destination_path. """
+        # Get correct protocol-specific model, and then the correct object
+        # Importing PROTOCOL here because importing locations.constants at the
+        # top of the file causes a circular dependency
+        from .constants import PROTOCOL
+        src_protocol = self.origin_location.space.access_protocol
+        src_protocol_model = PROTOCOL[src_protocol]['model']
+        src_protocol_space = src_protocol_model.objects.get(
+            space=self.origin_location.space)
+        dst_protocol = self.current_location.space.access_protocol
+        dst_protocol_model = PROTOCOL[dst_protocol]['model']
+        dst_protocol_space = dst_protocol_model.objects.get(
+            space=self.current_location.space)
+        # TODO try-catch AttributeError if remote_user or remote_name not exist?
+        src_user = src_protocol_space.remote_user
+        src_host = src_protocol_space.remote_name
+        dst_user = dst_protocol_space.remote_user
+        dst_host = dst_protocol_space.remote_name
+
+        command = 'mkdir -p {dst_dir} && rsync {src_user}@{src_host}:{src_path} {dst_path}'.format(
+            dst_dir=os.path.dirname(destination_path),
+            src_user=src_user, src_host=src_host,
+            src_path=source_path, dst_path=destination_path,
+            )
+        ssh_command = ["ssh", dst_user+"@"+dst_host, command]
+        logging.info("ssh+rsync command: {}".format(ssh_command))
+        try:
+            subprocess.check_call(ssh_command)
+        except Exception as e:
+            logging.warning("ssh+sync failed: {}".format(e))
+            raise
 
 class Event(models.Model):
     """ Stores requests to modify packages that need admin approval.
