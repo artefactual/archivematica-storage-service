@@ -30,7 +30,7 @@ class DefaultLocationWidget(forms.MultiWidget):
                 value['description'],
                 value['quota']
             ]
-        except KeyError:
+        except (KeyError, TypeError):
             return []
 
     def format_output(self, rendered_widgets):
