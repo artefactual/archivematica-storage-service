@@ -38,12 +38,16 @@ def aip_delete_request(request):
                 if 'reject' in request.POST:
                     event.status = Event.REJECTED
                     event.package.status = event.store_data
-                    messages.success(request, "Request rejected.")
+                    messages.success(request, "Request rejected, package still stored.")
                 elif 'approve' in request.POST:
                     event.status = Event.APPROVED
                     event.package.status = Package.DELETED
-                    messages.success(request, "Request approved.")
-                    # TODO do actual deletion here
+                    success, err_msg = event.package.delete_from_storage()
+                    if not success:
+                        messages.error(request,
+                            "Package was not deleted from disk correctly: {}. Please contact an administrator or see logs for details".format(err_msg))
+                    else:
+                        messages.success(request, "Request approved.  Package deleted successfully.")
                 event.save()
                 event.package.save()
                 return redirect('aip_delete_request')

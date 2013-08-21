@@ -1,6 +1,6 @@
 import datetime
 import logging
-import os.path
+import os
 import stat
 import subprocess
 
@@ -290,6 +290,10 @@ class Package(models.Model):
         default=FAIL,
         help_text="Status of the package in the storage service.")
 
+
+    mounted_locally = set([Space.LOCAL_FILESYSTEM, Space.NFS])
+    ssh_only_access = set([Space.PIPELINE_LOCAL_FS])
+
     def __unicode__(self):
         return u"{uuid}: {path}".format(
             uuid=self.uuid,
@@ -351,20 +355,18 @@ class Package(models.Model):
 
         # Call different protocols depending on what Space we're moving it to
         # and from
-        mounted_locally = set([Space.LOCAL_FILESYSTEM, Space.NFS])
-        ssh_only_access = set([Space.PIPELINE_LOCAL_FS])
         src_space = self.origin_location.space
-        if src_space.access_protocol in mounted_locally and dest_space.access_protocol in mounted_locally:
+        if src_space.access_protocol in self.mounted_locally and dest_space.access_protocol in self.mounted_locally:
             logging.info("Moving AIP from locally mounted storage to locally mounted storage.")
             self._store_aip_local_to_local(source_path, destination_path)
-        elif src_space.access_protocol in ssh_only_access and dest_space.access_protocol in mounted_locally:
+        elif src_space.access_protocol in self.ssh_only_access and dest_space.access_protocol in self.mounted_locally:
             logging.info("Moving AIP from SSH-only access storage to locally mounted storage.")
             self._store_aip_ssh_only_to_local(source_path, destination_path)
-        elif src_space.access_protocol in ssh_only_access and dest_space.access_protocol in ssh_only_access:
+        elif src_space.access_protocol in self.ssh_only_access and dest_space.access_protocol in self.ssh_only_access:
             logging.info("Moving AIP from SSH-only access storage to SSH-only access storage.")
             self._store_aip_ssh_only_to_ssh_only(source_path, destination_path)
         else:
-            # Not supported: mounted_locally to ssh_only_access
+            # Not supported: self.mounted_locally to self.ssh_only_access
             logging.warning("Transfering package from {} to {} not supported".format(src_space.access_protocol, dest_space.access_protocol))
             return
 
@@ -460,6 +462,38 @@ class Package(models.Model):
         except Exception as e:
             logging.warning("ssh+sync failed: {}".format(e))
             raise
+
+    def delete_from_storage(self):
+        """ Deletes the package from filesystem and updates metadata.
+
+        Returns (True, None) on success, and (False, error_msg) on failure. """
+        if self.current_location.space.access_protocol in self.mounted_locally:
+            try:
+                os.remove(self.full_path())
+            except OSError as e:
+                logging.warning("Error deleting package: {}".format(e))
+                return False, e.strerror
+        elif self.current_location.space.access_protocol in self.ssh_only_access:
+            from .constants import PROTOCOL
+            protocol = self.current_location.space.access_protocol
+            protocol_model = PROTOCOL[protocol]['model']
+            protocol_space = protocol_model.objects.get(
+                space=self.current_location.space)
+            # TODO try-catch AttributeError if remote_user or remote_name not exist?
+            user = protocol_space.remote_user
+            host = protocol_space.remote_name
+            command = 'rm -f '+self.full_path()
+            ssh_command = ["ssh", user+"@"+host, command]
+            logging.info("ssh+rsync command: {}".format(ssh_command))
+            try:
+                subprocess.check_call(ssh_command)
+            except Exception as e:
+                logging.warning("ssh+sync failed: {}".format(e))
+                return False, "Error connecting to Location"
+
+        self.status = self.DELETED
+        self.save()
+        return True, None
 
 class Event(models.Model):
     """ Stores requests to modify packages that need admin approval.
