@@ -1,4 +1,5 @@
 
+from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import SetPasswordForm
 from django.shortcuts import render, redirect, get_object_or_404
@@ -19,6 +20,7 @@ def settings_edit(request):
         # Save settings
         common_form.save()
         default_location_form.save()
+        messages.success(request, "Setting saved.")
         return redirect('settings_edit')
     return render(request, 'administration/settings_form.html', locals())
 
@@ -36,9 +38,11 @@ def user_edit(request, username):
     password_form = SetPasswordForm(data=request.POST or None, user=edit_user)
     if 'user' in request.POST and user_form.is_valid():
         user_form.save()
+        messages.success(request, "User information saved.")
         return redirect('user_list')
     elif 'password' in request.POST and password_form.is_valid():
         password_form.save()
+        messages.success(request, "Password changed.")
         return redirect('user_list')
     return render(request, 'administration/user_form.html', locals())
 
@@ -47,5 +51,7 @@ def user_create(request):
     user_form = settings_forms.UserCreationForm(request.POST or None)
     if user_form.is_valid():
         user_form.save()
+        messages.success(request, "New user {} created.".format(
+            user_form.cleaned_data['username']))
         return redirect('user_list')
     return render(request, 'administration/user_form.html', locals())
