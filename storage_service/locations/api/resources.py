@@ -1,10 +1,13 @@
-from django.conf.urls import *
-from django.forms.models import model_to_dict
-
+# stdlib, alphabetical
 import json
 import logging
 import os
-from django.utils import simplejson
+
+# Core Django, alphabetical
+from django.conf.urls import url
+from django.forms.models import model_to_dict
+
+# Third party dependencies, alphabetical
 from tastypie.authentication import (BasicAuthentication, ApiKeyAuthentication,
     MultiAuthentication, Authentication)
 from tastypie.authorization import DjangoAuthorization, Authorization
@@ -14,9 +17,10 @@ from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.validation import CleanedDataFormValidation
 from tastypie.utils import trailing_slash
 
+# This project, alphabetical
 from common import utils
 
-from ..models import (Event, Package, Location, Space, Pipeline, LocalFilesystem, LocationPipeline)
+from ..models import (Event, Package, Location, Space, Pipeline)
 from ..forms import LocationForm, SpaceForm
 from ..constants import PROTOCOL
 
@@ -312,10 +316,9 @@ class PackageResource(ModelResource):
         pipeline = Pipeline.objects.get(uuid=request_info['pipeline'])
 
         # See if an event already exists
-        existing_requests = Event.objects.filter(package=file, event_type=Event.DELETE,
-            status=Event.SUBMITTED, store_data=file.status)
-
-        if (len(existing_requests) < 1):
+        existing_requests = Event.objects.filter(package=file,
+            event_type=Event.DELETE, status=Event.SUBMITTED).count()
+        if existing_requests < 1:
             delete_request = Event(package=file, event_type=Event.DELETE,
                 status=Event.SUBMITTED, event_reason=request_info['event_reason'],
                 pipeline=pipeline, user_id=request_info['user_id'],
@@ -330,7 +333,7 @@ class PackageResource(ModelResource):
                 'message': 'Delete request created successfully.'
             }
 
-            response_json = simplejson.JSONEncoder(encoding='utf-8').encode(response)
+            response_json = json.dumps(response)
             status_code = 202
         else:
             response = {
@@ -339,6 +342,6 @@ class PackageResource(ModelResource):
             status_code = 200
 
         self.log_throttled_access(request)
-        response_json = simplejson.JSONEncoder(encoding='utf-8').encode(response)
+        response_json = json.dumps(response)
         return http.HttpResponse(status=status_code, content=response_json,
             mimetype='application/json')
