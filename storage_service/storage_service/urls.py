@@ -34,6 +34,7 @@ urlpatterns = patterns('',
 
 
 def startup():
+    import errno
     import os.path
     from locations import models as locations_models
     from common import utils
@@ -55,6 +56,16 @@ def startup():
         space=space,
         relative_path=os.path.join('var', 'archivematica', 'sharedDirectory', 'www', 'AIPsStore'),
         description='Store AIP in standard Archivematica Directory')
+    internal_use, _ = locations_models.Location.objects.get_or_create(
+        purpose=locations_models.Location.STORAGE_SERVICE_INTERNAL,
+        space=space,
+        relative_path=os.path.join('var', 'archivematica', 'storage_service'),
+        description='For storage service internal usage.')
+    try:
+        os.mkdir(internal_use.full_path())
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            logging.error("Internal storage location {} not accessible.".format(internal_use.full_path()))
     utils.set_setting('default_transfer_source', [transfer_source.uuid])
     utils.set_setting('default_aip_storage', [aip_storage.uuid])
 startup()

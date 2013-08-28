@@ -1,16 +1,22 @@
+# stdlib, alphabetical
 import datetime
+import errno
 import logging
+from lxml import etree
 import os
 import stat
 import subprocess
 
+# Core Django, alphabetical
 from django.conf import settings
 from django.core import validators
 from django.core.exceptions import ValidationError
 from django.db import models
 
+# Third party dependencies, alphabetical
 from django_extensions.db.fields import UUIDField
 
+# This project, alphabetical
 import common.utils as utils
 
 logger = logging.getLogger(__name__)
@@ -191,6 +197,7 @@ class Location(models.Model):
     # QUARANTINE = 'QU'
     # BACKLOG = 'BL'
     CURRENTLY_PROCESSING = 'CP'
+    STORAGE_SERVICE_INTERNAL = 'SS'
 
     PURPOSE_CHOICES = (
         (TRANSFER_SOURCE, 'Transfer Source'),
@@ -254,6 +261,9 @@ class Package(models.Model):
     origin_path = models.TextField()
     current_location = models.ForeignKey(Location, to_field='uuid', related_name='+')
     current_path = models.TextField()
+    # pointer_file = models.OneToOneField('self', to_field='uuid', related_name='package', null=True, blank=True)
+    pointer_file_location = models.ForeignKey(Location, to_field='uuid', related_name='+', null=True, blank=True)
+    pointer_file_path = models.TextField(null=True, blank=True)
     size = models.IntegerField(default=0)
 
     AIP = "AIP"
@@ -268,9 +278,7 @@ class Package(models.Model):
         (TRANSFER, 'Transfer'),
         (FILE, 'Single File'),
     )
-    package_type = models.CharField(max_length=8,
-        choices=PACKAGE_TYPE_CHOICES,
-        help_text="Purpose of the space.  Eg. AIP storage, Transfer source")
+    package_type = models.CharField(max_length=8, choices=PACKAGE_TYPE_CHOICES)
 
     PENDING = 'PENDING'
     UPLOADED = 'UPLOADED'
@@ -315,6 +323,16 @@ class Package(models.Model):
         return os.path.normpath(
             os.path.join(self.origin_location.full_path(), self.origin_path))
 
+    def full_pointer_file_path(self):
+        """ Return the full path of the AIP's pointer file, None if not an AIP.
+
+        Includes the space, location and package paths joined."""
+        if self.package_type != self.AIP:
+            return None
+        else:
+            return os.path.join(self.pointer_file_location.full_path(),
+                self.pointer_file_path)
+
     def store_aip(self):
         """ Stores an AIP in the correct Location.
 
@@ -350,20 +368,38 @@ class Package(models.Model):
         self.save()
         destination_path = self.full_path()
 
+        # Store AIP Pointer File at
+        # internal_usage_location/uuid/split/into/chunks/pointer.xml
+        self.pointer_file_location = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
+        self.pointer_file_path = os.path.join(path, 'pointer.xml')
+        pointer_file_src = os.path.join(os.path.dirname(source_path), 'pointer.xml')
+        pointer_file_dst = self.full_pointer_file_path()
+
         self.status = Package.PENDING
         self.save()
+
+        # Create destination for pointer file
 
         # Call different protocols depending on what Space we're moving it to
         # and from
         src_space = self.origin_location.space
         if src_space.access_protocol in self.mounted_locally and dest_space.access_protocol in self.mounted_locally:
             logging.info("Moving AIP from locally mounted storage to locally mounted storage.")
+            # Move pointer file
+            self._store_aip_local_to_local(pointer_file_src, pointer_file_dst)
+            # Move AIP
             self._store_aip_local_to_local(source_path, destination_path)
         elif src_space.access_protocol in self.ssh_only_access and dest_space.access_protocol in self.mounted_locally:
             logging.info("Moving AIP from SSH-only access storage to locally mounted storage.")
+            # Move pointer file
+            self._store_aip_ssh_only_to_local(pointer_file_src, pointer_file_dst)
+            # Move AIP
             self._store_aip_ssh_only_to_local(source_path, destination_path)
         elif src_space.access_protocol in self.ssh_only_access and dest_space.access_protocol in self.ssh_only_access:
             logging.info("Moving AIP from SSH-only access storage to SSH-only access storage.")
+            # Move pointer file
+            self._store_aip_ssh_only_to_local(pointer_file_src, pointer_file_dst)
+            # Move AIP
             self._store_aip_ssh_only_to_ssh_only(source_path, destination_path)
         else:
             # Not supported: self.mounted_locally to self.ssh_only_access
@@ -377,6 +413,14 @@ class Package(models.Model):
         location.save()
         self.status = Package.UPLOADED
         self.save()
+
+        # Update pointer file's location information
+        root = etree.parse(pointer_file_dst)
+        element = root.find('fileSec/fileGrp/file')
+        if self.uuid in element.get('ID', '') and element.find('FLocat') is not None:
+            element.find('FLocat').set('href', self.full_path())
+        with open(pointer_file_dst, 'w') as f:
+            f.write(etree.tostring(root, pretty_print=True))
 
     def _store_aip_local_to_local(self, source_path, destination_path):
         """ Stores AIPs to locations accessible locally to the storage service.
@@ -393,7 +437,7 @@ class Package(models.Model):
             # Mode not getting set correctly
             os.chmod(os.path.dirname(destination_path), mode)
         except OSError as e:
-            if e.errno != 17:
+            if e.errno != errno.EEXIST:
                 logging.warning("Could not create storage directory: {}".format(e))
                 raise
         # Rsync file over
