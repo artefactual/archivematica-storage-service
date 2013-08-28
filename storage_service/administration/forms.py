@@ -62,18 +62,6 @@ class DefaultLocationField(forms.MultiValueField):
             }
         return {}
 
-    def validate(self, value):
-        # value is dict of
-        # {'quota': <number or None>,
-        #  'relative_path': <unicode string>,
-        #  'description': <unicode string>,
-        #  'space_id': <unicode UUID>}
-
-        if not value['relative_path']:
-            raise forms.ValidationError("Relative path is required")
-        if value['relative_path'][0] == '/':
-            raise forms.ValidationError("Relative path cannot start with /")
-
 
 ########################## SETTINGS ##########################
 
@@ -125,10 +113,18 @@ class DefaultLocationsForm(SettingsForm):
     def clean(self):
         cleaned_data = super(DefaultLocationsForm, self).clean()
         # Check that if a field has 'new' it filled in the new location info
-        if 'new' in cleaned_data['default_transfer_source'] and not cleaned_data.get('new_transfer_source'):
-            raise forms.ValidationError("New location specified, but details not valid.")
-        if 'new' in cleaned_data['default_aip_storage'] and not cleaned_data.get('new_aip_storage'):
-            raise forms.ValidationError("New location specified, but details not valid.")
+        if 'new' in cleaned_data['default_transfer_source']:
+            location_data = cleaned_data.get('new_transfer_source')
+            if location_data and not location_data['relative_path']:
+                raise forms.ValidationError("Relative path is required")
+            if location_data and location_data['relative_path'][0] == '/':
+                raise forms.ValidationError("Relative path cannot start with /")
+        if 'new' in cleaned_data['default_aip_storage']:
+            location_data = cleaned_data.get('new_aip_storage')
+            if location_data and not location_data['relative_path']:
+                raise forms.ValidationError("Relative path is required")
+            if location_data and location_data['relative_path'][0] == '/':
+                raise forms.ValidationError("Relative path cannot start with /")
         return cleaned_data
 
     def save(self, *args, **kwargs):
