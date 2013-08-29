@@ -417,8 +417,10 @@ class Package(models.Model):
         # Update pointer file's location information
         root = etree.parse(pointer_file_dst)
         element = root.find('fileSec/fileGrp/file')
+        xlink = 'http://www.w3.org/1999/xlink'
         if self.uuid in element.get('ID', '') and element.find('FLocat') is not None:
-            element.find('FLocat').set('href', self.full_path())
+            flocat = element.find('FLocat')
+            flocat.set('{{{ns}}}href'.format(ns=xlink), self.full_path())
         with open(pointer_file_dst, 'w') as f:
             f.write(etree.tostring(root, pretty_print=True))
 
