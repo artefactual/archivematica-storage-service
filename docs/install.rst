@@ -11,6 +11,15 @@ Tested with python 2.7.3.
 To get up and running:
 
 * install pip (if it is not already there)
+
+::
+    $ sudo apt-get install python-pip
+
+* install some dependencies (if they are not already installed)
+
+::
+    $ sudo apt-get install gcc libxslt1-dev python-dev
+
 * install virtualenv and virtualenvwrapper
 
 ::
