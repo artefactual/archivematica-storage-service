@@ -414,12 +414,13 @@ class Package(models.Model):
         self.status = Package.UPLOADED
         self.save()
 
-        # Update pointer file's location information
+        # Update pointer file's location infrmation
+        nsmap = {'mets': 'http://www.loc.gov/METS/'}
         root = etree.parse(pointer_file_dst)
-        element = root.find('fileSec/fileGrp/file')
+        element = root.find('mets:fileSec/mets:fileGrp/mets:file', namespaces=nsmap)
+        flocat = element.find('mets:FLocat', namespaces=nsmap)
         xlink = 'http://www.w3.org/1999/xlink'
-        if self.uuid in element.get('ID', '') and element.find('FLocat') is not None:
-            flocat = element.find('FLocat')
+        if self.uuid in element.get('ID', '') and flocat is not None:
             flocat.set('{{{ns}}}href'.format(ns=xlink), self.full_path())
         with open(pointer_file_dst, 'w') as f:
             f.write(etree.tostring(root, pretty_print=True))
