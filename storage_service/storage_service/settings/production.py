@@ -50,7 +50,7 @@ SERVER_EMAIL = EMAIL_HOST_USER
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#databases
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',  # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'ENGINE': 'django.db.backends.sqlite3',  # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
         'NAME': get_env_variable('SS_DB_NAME'),
         'USER': get_env_variable('SS_DB_USER'),  # Not used with sqlite3.
         'PASSWORD': get_env_variable('SS_DB_PASSWORD'),  # Not used with sqlite3.
