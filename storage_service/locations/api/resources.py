@@ -254,6 +254,9 @@ class PackageResource(ModelResource):
     Detail (api/v1/file/<uuid>/) supports:
     GET: Get details on a specific file
 
+    Download package (/api/v1/file/<uuid>/download/) supports:
+    GET: Get package as download
+
     Extract file (/api/v1/file/<uuid>/extract_file/) supports:
     GET: Extract file from package (param "relative_path_to_file" specifies which file)
 
@@ -293,6 +296,7 @@ class PackageResource(ModelResource):
         return [
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/delete_aip%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('delete_aip_request'), name="delete_aip_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/extract_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('extract_file_request'), name="extract_file_request"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/download%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('download_request'), name="download_request"),
         ]
 
     def obj_create(self, bundle, **kwargs):
@@ -406,6 +410,40 @@ class PackageResource(ModelResource):
             response['Content-type'] = mimetype
 
         response['Content-Length'] = os.path.getsize(extracted_file_path)
+
+        self.log_throttled_access(request)
+
+        return response
+
+    def download_request(self, request, **kwargs):
+        # Tastypie checks
+        self.method_check(request, allowed=['get'])
+        self.is_authenticated(request)
+        self.throttle_check(request)
+
+        # Get AIP details
+        package = Package.objects.get(uuid=kwargs['uuid'])
+        if package.package_type != Package.AIP:
+            # Can only extract files from AIPs
+            return http.HttpMethodNotAllowed()
+
+        filename = os.path.basename(package.full_path())
+        extension = os.path.splitext(package.full_path())[1].lower()
+
+        wrapper = FileWrapper(file(package.full_path()))
+        response = http.HttpResponse(wrapper)
+
+        # force download for certain filetypes
+        extensions_to_download = ['.7z', '.zip']
+
+        if extension in extensions_to_download:
+            response['Content-Type'] = 'application/force-download'
+            response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
+        else:
+            mimetype = mimetypes.guess_type(filename)[0]
+            response['Content-type'] = mimetype
+
+        response['Content-Length'] = os.path.getsize(package.full_path())
 
         self.log_throttled_access(request)
 
