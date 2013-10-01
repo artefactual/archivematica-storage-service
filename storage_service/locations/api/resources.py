@@ -1,10 +1,14 @@
 # stdlib, alphabetical
 import json
 import logging
+import mimetypes
 import os
+import subprocess
+import tempfile
 
 # Core Django, alphabetical
 from django.conf.urls import url
+from django.core.servers.basehttp import FileWrapper
 from django.forms.models import model_to_dict
 
 # Third party dependencies, alphabetical
@@ -250,6 +254,9 @@ class PackageResource(ModelResource):
     Detail (api/v1/file/<uuid>/) supports:
     GET: Get details on a specific file
 
+    Extract file (/api/v1/file/<uuid>/extract_file/) supports:
+    GET: Extract file from package (param "relative_path_to_file" specifies which file)
+
     api/v1/file/<uuid>/delete_aip/ supports:
     POST: Create a delete request for that AIP.
     """
@@ -285,6 +292,7 @@ class PackageResource(ModelResource):
     def prepend_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/delete_aip%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('delete_aip_request'), name="delete_aip_request"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/extract_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('extract_file_request'), name="extract_file_request"),
         ]
 
     def obj_create(self, bundle, **kwargs):
@@ -345,3 +353,60 @@ class PackageResource(ModelResource):
         response_json = json.dumps(response)
         return http.HttpResponse(status=status_code, content=response_json,
             mimetype='application/json')
+
+    def extract_file_request(self, request, **kwargs):
+        relative_path_to_file = request.GET.get('relative_path_to_file')
+
+        # Tastypie checks
+        self.method_check(request, allowed=['get'])
+        self.is_authenticated(request)
+        self.throttle_check(request)
+
+        # Get AIP details
+        package = Package.objects.get(uuid=kwargs['uuid'])
+        if package.package_type != Package.AIP:
+            # Can only extract files from AIPs
+            return http.HttpMethodNotAllowed()
+
+        # create temp dir to extract to
+        temp_dir = tempfile.mkdtemp()
+
+        # extract file from AIP
+        command_data = [
+            '7za',
+            'e',
+            '-o' + temp_dir,
+            package.full_path(),
+            relative_path_to_file
+        ]
+
+        subprocess.call(command_data)
+
+        # send extracted file
+        extracted_file_path = os.path.join(temp_dir, os.path.basename(relative_path_to_file))
+
+        # handle 404s
+        if not os.path.exists(extracted_file_path):
+            return http.HttpResponse('404')
+
+        filename = os.path.basename(extracted_file_path)
+        extension = os.path.splitext(extracted_file_path)[1].lower()
+
+        wrapper = FileWrapper(file(extracted_file_path))
+        response = http.HttpResponse(wrapper)
+
+        # force download for certain filetypes
+        extensions_to_download = ['.7z', '.zip']
+
+        if extension in extensions_to_download:
+            response['Content-Type'] = 'application/force-download'
+            response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
+        else:
+            mimetype = mimetypes.guess_type(filename)[0]
+            response['Content-type'] = mimetype
+
+        response['Content-Length'] = os.path.getsize(extracted_file_path)
+
+        self.log_throttled_access(request)
+
+        return response
