@@ -129,9 +129,10 @@ class Space(models.Model):
             protocol_space = protocol_model.objects.get(space=self)
             user = protocol_space.remote_user
             host = protocol_space.remote_name
+            private_ssh_key = '/var/lib/archivematica/.ssh/id_rsa'
             # Get entries
             command = "python2 -c \"import os; print os.listdir('{path}')\"".format(path=path)
-            ssh_command = ["ssh", user+"@"+host, command]
+            ssh_command = ["ssh",  "-i", private_ssh_key, user+"@"+host, command]
             logging.info("ssh+rsync command: {}".format(ssh_command))
             try:
                 entries = subprocess.check_output(ssh_command)
@@ -140,8 +141,8 @@ class Space(models.Model):
                 logging.warning("ssh+sync failed: {}".format(e))
                 entries = []
             # Get directories
-            command = "python2 -c \"import os; print [d for d in os.listdir('{path}') if os.path.isdir(os.path.join('{path}', d))]\"".format(path=path)
-            ssh_command = ["ssh", user+"@"+host, command]
+            command = "python2 -c \"import os; print [d for d in os.listdir('{path}') if d[0] != '.' and os.path.isdir(os.path.join('{path}', d))]\"".format(path=path)
+            ssh_command = ["ssh",  "-i", private_ssh_key, user+"@"+host, command]
             logging.info("ssh+rsync command: {}".format(ssh_command))
             try:
                 directories = subprocess.check_output(ssh_command)
