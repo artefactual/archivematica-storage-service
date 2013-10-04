@@ -157,19 +157,7 @@ class SpaceResource(ModelResource):
         space = Space.objects.get(uuid=kwargs['uuid'])
         path = os.path.join(space.path, path)
 
-        # TODO Move this to space-specific code
-        # TODO add checking for non-locally mounted space
-
-        # Sorted list of all entries in directory, excluding hidden files
-        # This may need magic for encoding/decoding, but doesn't seem to
-        entries = [name for name in os.listdir(path) if name[0] != '.']
-        entries = sorted(entries, key=lambda s: s.lower())
-        directories = []
-        for name in entries:
-            full_path = os.path.join(path, name)
-            if os.path.isdir(full_path) and os.access(full_path, os.R_OK):
-                directories.append(name)
-        objects = {'directories': directories, 'entries': entries}
+        objects = space.browse(path)
 
         self.log_throttled_access(request)
         return self.create_response(request, objects)
@@ -227,18 +215,7 @@ class LocationResource(ModelResource):
         location = Location.objects.get(uuid=kwargs['uuid'])
         path = os.path.join(location.full_path(), path)
 
-        # TODO Move this to space-specific code
-
-        # Sorted list of all entries in directory, excluding hidden files
-        # This may need magic for encoding/decoding, but doesn't seem to
-        entries = [name for name in os.listdir(path) if name[0] != '.']
-        entries = sorted(entries, key=lambda s: s.lower())
-        directories = []
-        for name in entries:
-            full_path = os.path.join(path, name)
-            if os.path.isdir(full_path) and os.access(full_path, os.R_OK):
-                directories.append(name)
-        objects = {'directories': directories, 'entries': entries}
+        objects = location.space.browse(path)
 
         self.log_throttled_access(request)
         return self.create_response(request, objects)

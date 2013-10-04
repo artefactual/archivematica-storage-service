@@ -1,4 +1,5 @@
 # stdlib, alphabetical
+import ast
 import datetime
 import errno
 import logging
@@ -20,7 +21,7 @@ from django_extensions.db.fields import UUIDField
 import common.utils as utils
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(#filename="/tmp/storage-service.log",
+logging.basicConfig(filename="/tmp/storage-service.log",
     level=logging.INFO)
 
 ########################## COMMON ##########################
@@ -90,12 +91,72 @@ class Space(models.Model):
     last_verified = models.DateTimeField(default=None, null=True, blank=True,
         help_text="Time this location was last verified to be accessible.")
 
+    mounted_locally = set([LOCAL_FILESYSTEM, NFS])
+    ssh_only_access = set([PIPELINE_LOCAL_FS])
+
     def __unicode__(self):
         return u"{uuid}: {path} ({access_protocol})".format(
             uuid=self.uuid,
             access_protocol=self.access_protocol,
             path=self.path,
         )
+
+    def browse(self, path):
+        """ Returns {'directories': [directory], 'entries': [entries]} at path.
+
+        `path` is a full path in this space.
+
+        'directories' in the return dict is the name of all the directories
+            located at that path
+        'entries' in the return dict is the name of any file (directory or other)
+            located at that path
+        """
+        if self.access_protocol in self.mounted_locally:
+            # Sorted list of all entries in directory, excluding hidden files
+            # This may need magic for encoding/decoding, but doesn't seem to
+            entries = [name for name in os.listdir(path) if name[0] != '.']
+            entries = sorted(entries, key=lambda s: s.lower())
+            directories = []
+            for name in entries:
+                full_path = os.path.join(path, name)
+                if os.path.isdir(full_path) and os.access(full_path, os.R_OK):
+                    directories.append(name)
+        elif self.access_protocol in self.ssh_only_access:
+            # Importing PROTOCOL here because importing locations.constants at the
+            # top of the file causes a circular dependency
+            from .constants import PROTOCOL
+            protocol_model = PROTOCOL[self.access_protocol]['model']
+            protocol_space = protocol_model.objects.get(space=self)
+            user = protocol_space.remote_user
+            host = protocol_space.remote_name
+            # Get entries
+            command = "python2 -c \"import os; print os.listdir('{path}')\"".format(path=path)
+            ssh_command = ["ssh", user+"@"+host, command]
+            logging.info("ssh+rsync command: {}".format(ssh_command))
+            try:
+                entries = subprocess.check_output(ssh_command)
+                entries = ast.literal_eval(entries)
+            except Exception as e:
+                logging.warning("ssh+sync failed: {}".format(e))
+                entries = []
+            # Get directories
+            command = "python2 -c \"import os; print [d for d in os.listdir('{path}') if os.path.isdir(os.path.join('{path}', d))]\"".format(path=path)
+            ssh_command = ["ssh", user+"@"+host, command]
+            logging.info("ssh+rsync command: {}".format(ssh_command))
+            try:
+                directories = subprocess.check_output(ssh_command)
+                directories = ast.literal_eval(directories)
+                print 'directories eval', directories
+            except Exception as e:
+                logging.warning("ssh+sync failed: {}".format(e))
+                print 'exception', e
+                directories = []
+        else:
+            # Error
+            logging.error("Unexpected category of access protocol ({}): browse failed".format(self.access_protocol))
+            directories = []
+            entries = []
+        return {'directories': directories, 'entries': entries}
 
 
 class LocalFilesystem(models.Model):
@@ -173,6 +234,7 @@ class PipelineLocalFS(models.Model):
 #   Add class for protocol-specific fields using template below
 #   Add to Package.store_aip(), using existing categories if possible
 #  locations/forms.py
+#   Add to Space.browse, using existing categories if possible
 #   Add ModelForm for new class
 #  common/constants.py
 #   Add entry to protocol with fields that should be added to GET resource
@@ -299,9 +361,6 @@ class Package(models.Model):
         help_text="Status of the package in the storage service.")
 
 
-    mounted_locally = set([Space.LOCAL_FILESYSTEM, Space.NFS])
-    ssh_only_access = set([Space.PIPELINE_LOCAL_FS])
-
     def __unicode__(self):
         return u"{uuid}: {path}".format(
             uuid=self.uuid,
@@ -383,26 +442,26 @@ class Package(models.Model):
         # Call different protocols depending on what Space we're moving it to
         # and from
         src_space = self.origin_location.space
-        if src_space.access_protocol in self.mounted_locally and dest_space.access_protocol in self.mounted_locally:
+        if src_space.access_protocol in Space.mounted_locally and dest_space.access_protocol in Space.mounted_locally:
             logging.info("Moving AIP from locally mounted storage to locally mounted storage.")
             # Move pointer file
             self._store_aip_local_to_local(pointer_file_src, pointer_file_dst)
             # Move AIP
             self._store_aip_local_to_local(source_path, destination_path)
-        elif src_space.access_protocol in self.ssh_only_access and dest_space.access_protocol in self.mounted_locally:
+        elif src_space.access_protocol in Space.ssh_only_access and dest_space.access_protocol in Space.mounted_locally:
             logging.info("Moving AIP from SSH-only access storage to locally mounted storage.")
             # Move pointer file
             self._store_aip_ssh_only_to_local(pointer_file_src, pointer_file_dst)
             # Move AIP
             self._store_aip_ssh_only_to_local(source_path, destination_path)
-        elif src_space.access_protocol in self.ssh_only_access and dest_space.access_protocol in self.ssh_only_access:
+        elif src_space.access_protocol in Space.ssh_only_access and dest_space.access_protocol in Space.ssh_only_access:
             logging.info("Moving AIP from SSH-only access storage to SSH-only access storage.")
             # Move pointer file
             self._store_aip_ssh_only_to_local(pointer_file_src, pointer_file_dst)
             # Move AIP
             self._store_aip_ssh_only_to_ssh_only(source_path, destination_path)
         else:
-            # Not supported: self.mounted_locally to self.ssh_only_access
+            # Not supported: Space.mounted_locally to Space.ssh_only_access
             logging.warning("Transfering package from {} to {} not supported".format(src_space.access_protocol, dest_space.access_protocol))
             return
 
@@ -514,13 +573,13 @@ class Package(models.Model):
         """ Deletes the package from filesystem and updates metadata.
 
         Returns (True, None) on success, and (False, error_msg) on failure. """
-        if self.current_location.space.access_protocol in self.mounted_locally:
+        if self.current_location.space.access_protocol in Space.mounted_locally:
             try:
                 os.remove(self.full_path())
             except OSError as e:
                 logging.warning("Error deleting package: {}".format(e))
                 return False, e.strerror
-        elif self.current_location.space.access_protocol in self.ssh_only_access:
+        elif self.current_location.space.access_protocol in Space.ssh_only_access:
             from .constants import PROTOCOL
             protocol = self.current_location.space.access_protocol
             protocol_model = PROTOCOL[protocol]['model']
