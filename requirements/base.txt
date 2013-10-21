@@ -7,3 +7,4 @@ South==0.8.1
 django-tastypie==0.9.15
 django-extensions==1.1.1
 lxml==3.2.3
+six==1.4.1
