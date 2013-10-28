@@ -6,6 +6,7 @@ import json
 import logging
 import mimetypes
 import os
+import shutil
 import subprocess
 import tempfile
 
@@ -298,7 +299,7 @@ class PackageResource(ModelResource):
     def obj_create(self, bundle, **kwargs):
         bundle = super(PackageResource, self).obj_create(bundle, **kwargs)
         # IDEA add custom endpoints, instead of storing all AIPS that come in?
-        if bundle.obj.package_type == Package.AIP:
+        if bundle.obj.package_type in (Package.AIP, Package.AIC):
             origin_location_uri = bundle.data.get('origin_location', False)
             origin_location = self.origin_location.build_related_resource(origin_location_uri, bundle.request).obj
             origin_path = bundle.data.get('origin_path', False)
@@ -316,29 +317,29 @@ class PackageResource(ModelResource):
         if not all(k in request_info for k in
                 ('event_reason', 'pipeline', 'user_id', 'user_email')):
             # Don't have enough information to make the request - return error
-            return http.HttpBadRequest
+            return http.HttpBadRequest()
 
-        # Create the Event for file deletion request
-        file = Package.objects.get(uuid=kwargs['uuid'])
-        if file.package_type != Package.AIP:
+        # Create the Event for package deletion request
+        package = Package.objects.get(uuid=kwargs['uuid'])
+        if package.package_type not in Package.PACKAGE_TYPE_DELETABLE:
             # Can only request deletion on AIPs
             return http.HttpMethodNotAllowed()
 
         pipeline = Pipeline.objects.get(uuid=request_info['pipeline'])
 
         # See if an event already exists
-        existing_requests = Event.objects.filter(package=file,
+        existing_requests = Event.objects.filter(package=package,
             event_type=Event.DELETE, status=Event.SUBMITTED).count()
         if existing_requests < 1:
-            delete_request = Event(package=file, event_type=Event.DELETE,
+            delete_request = Event(package=package, event_type=Event.DELETE,
                 status=Event.SUBMITTED, event_reason=request_info['event_reason'],
                 pipeline=pipeline, user_id=request_info['user_id'],
-                user_email=request_info['user_email'], store_data=file.status)
+                user_email=request_info['user_email'], store_data=package.status)
             delete_request.save()
 
-            # Update file status
-            file.status = Package.DEL_REQ
-            file.save()
+            # Update package status
+            package.status = Package.DEL_REQ
+            package.save()
 
             response = {
                 'message': 'Delete request created successfully.'
@@ -367,7 +368,7 @@ class PackageResource(ModelResource):
 
         # Get AIP details
         package = Package.objects.get(uuid=kwargs['uuid'])
-        if package.package_type != Package.AIP:
+        if package.package_type not in Package.PACKAGE_TYPE_EXTRACTABLE:
             # Can only extract files from AIPs
             return http.HttpMethodNotAllowed()
 
@@ -395,16 +396,15 @@ class PackageResource(ModelResource):
             ]
 
         subprocess.call(command_data)
-
         # send extracted file
         if file_extension == '.bz2':
             extracted_file_path = os.path.join(temp_dir, relative_path_to_file)
         else:
             extracted_file_path = os.path.join(temp_dir, os.path.basename(relative_path_to_file))
 
-        # handle 404s
+        # If not found, return 404
         if not os.path.exists(extracted_file_path):
-            return http.HttpResponse('404')
+            return http.HttpNotFound("File not found")
 
         filename = os.path.basename(extracted_file_path)
         extension = os.path.splitext(extracted_file_path)[1].lower()
@@ -426,6 +426,7 @@ class PackageResource(ModelResource):
 
         self.log_throttled_access(request)
 
+        shutil.rmtree(temp_dir)
         return response
 
     def download_request(self, request, **kwargs):
@@ -436,7 +437,7 @@ class PackageResource(ModelResource):
 
         # Get AIP details
         package = Package.objects.get(uuid=kwargs['uuid'])
-        if package.package_type != Package.AIP:
+        if package.package_type not in Package.PACKAGE_TYPE_EXTRACTABLE:
             # Can only extract files from AIPs
             return http.HttpMethodNotAllowed()
 
