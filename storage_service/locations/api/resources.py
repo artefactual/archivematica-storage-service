@@ -352,19 +352,33 @@ class PackageResource(ModelResource):
         # create temp dir to extract to
         temp_dir = tempfile.mkdtemp()
 
+        filename, file_extension = os.path.splitext(package.full_path())
+
         # extract file from AIP
-        command_data = [
-            '7za',
-            'e',
-            '-o' + temp_dir,
-            package.full_path(),
-            relative_path_to_file
-        ]
+        if file_extension == '.bz2':
+            command_data = [
+                'tar',
+                'xvjf',
+                package.full_path(),
+                '-C' + temp_dir,
+                relative_path_to_file
+            ]
+        else:
+            command_data = [
+                '7za',
+                'e',
+                '-o' + temp_dir,
+                package.full_path(),
+                relative_path_to_file
+            ]
 
         subprocess.call(command_data)
 
         # send extracted file
-        extracted_file_path = os.path.join(temp_dir, os.path.basename(relative_path_to_file))
+        if file_extension == '.bz2':
+            extracted_file_path = os.path.join(temp_dir, relative_path_to_file)
+        else:
+            extracted_file_path = os.path.join(temp_dir, os.path.basename(relative_path_to_file))
 
         # handle 404s
         if not os.path.exists(extracted_file_path):
