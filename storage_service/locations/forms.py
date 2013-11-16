@@ -1,7 +1,7 @@
 
 from django import forms
 
-from .models import Space, LocalFilesystem, NFS, Location, Event, Pipeline, PipelineLocalFS
+from .models import Space, LocalFilesystem, NFS, Location, Event, Pipeline, PipelineLocalFS, SwordServer
 
 
 class PipelineForm(forms.ModelForm):
@@ -52,6 +52,12 @@ class PipelineLocalFSForm(forms.ModelForm):
     class Meta:
         model = PipelineLocalFS
         fields = ('remote_user', 'remote_name', )
+
+
+class SwordServerForm(forms.ModelForm):
+    class Meta:
+        model = SwordServer
+        fields = ()
 
 
 class LocationForm(forms.ModelForm):

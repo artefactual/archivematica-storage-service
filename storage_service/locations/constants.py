@@ -1,6 +1,6 @@
 
-from .models import LocalFilesystem, NFS, PipelineLocalFS, Space
-from .forms import LocalFilesystemForm, NFSForm, PipelineLocalFSForm
+from .models import LocalFilesystem, NFS, PipelineLocalFS, SwordServer, Space
+from .forms import LocalFilesystemForm, NFSForm, SwordServerForm, PipelineLocalFSForm
 
 
 ########################## SPACES ##########################
@@ -26,4 +26,9 @@ PROTOCOL[Space.PIPELINE_LOCAL_FS] = {
     'form': PipelineLocalFSForm,
     'fields': ['remote_user',
                'remote_name']
+}
+PROTOCOL[Space.SWORD_SERVER] = {
+    'model': SwordServer,
+    'form': SwordServerForm,
+    'fields': []
 }
