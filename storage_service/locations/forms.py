@@ -66,6 +66,12 @@ class LockssomaticForm(forms.ModelForm):
         return data
 
 
+class SwordServerForm(forms.ModelForm):
+    class Meta:
+        model = models.SwordServer
+        fields = ()
+
+
 class LocationForm(forms.ModelForm):
     class Meta:
         model = models.Location

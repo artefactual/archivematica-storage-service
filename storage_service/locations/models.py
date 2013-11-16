@@ -84,12 +84,13 @@ class Space(models.Model):
     NFS = 'NFS'
     PIPELINE_LOCAL_FS = 'PIPE_FS'
     LOM = 'LOM'
-    # FEDORA = 'FEDORA'
+    SWORD_SERVER = 'SWORD_S'
     ACCESS_PROTOCOL_CHOICES = (
         (LOCAL_FILESYSTEM, "Local Filesystem"),
         (NFS, "NFS"),
         (PIPELINE_LOCAL_FS, "Pipeline Local Filesystem"),
-        (LOM, "LOCKSS-o-matic")
+        (LOM, "LOCKSS-o-matic"),
+        (SWORD_SERVER, "SWORD Server"),
     )
     access_protocol = models.CharField(max_length=8,
         choices=ACCESS_PROTOCOL_CHOICES,
@@ -107,7 +108,7 @@ class Space(models.Model):
     last_verified = models.DateTimeField(default=None, null=True, blank=True,
         help_text="Time this location was last verified to be accessible.")
 
-    mounted_locally = set([LOCAL_FILESYSTEM, NFS])
+    mounted_locally = set([LOCAL_FILESYSTEM, NFS, SWORD_SERVER])
     ssh_only_access = set([PIPELINE_LOCAL_FS])
 
     class Meta:
@@ -1058,6 +1059,23 @@ class Lockssomatic(models.Model):
         logging.debug('LOCKSS atom entry: {}'.format(entry))
         return entry, slug
 
+
+class SwordServer(models.Model):
+    """ SWORD server that accepts deposits."""
+    space = models.OneToOneField('Space', to_field='uuid')
+
+    def save(self, *args, **kwargs):
+        self.verify()
+        super(SwordServer, self).save(*args, **kwargs)
+
+    def verify(self):
+        """ Verify that the space is accessible to the storage service. """
+        # TODO run script to verify that it works
+        verified = os.path.isdir(self.space.path)
+        self.space.verified = verified
+        self.space.last_verified = datetime.datetime.now()
+
+
 # To add a new storage space the following places must be updated:
 #  locations/models.py (this file)
 #   Add constant for storage protocol
@@ -1807,6 +1825,8 @@ class Pipeline(models.Model):
         it.  If a shared_path is provided, currently processing location is at
         that path.  Creates Transfer Source and AIP Store locations based on
         configuration from administration.Settings.
+
+        Also create a SWORD server Space.
         """
         # Use shared path if provided
         if not shared_path:
@@ -1858,3 +1878,10 @@ class Pipeline(models.Model):
                     p['purpose'], location, self))
                 LocationPipeline.objects.get_or_create(
                     pipeline=self, location=location)
+
+        space, space_created = Space.objects.get_or_create(
+            access_protocol=Space.SWORD_SERVER, path='/' + os.path.join(shared_path, 'staging'))
+        if space_created:
+            sword_server = SwordServer(space=space)
+            sword_server.save()
+            logging.info("Protocol Space created: {}".format(sword_server))

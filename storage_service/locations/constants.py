@@ -1,7 +1,6 @@
 
-from .models import LocalFilesystem, NFS, PipelineLocalFS, Space, Lockssomatic
-from .forms import LocalFilesystemForm, NFSForm, PipelineLocalFSForm, LockssomaticForm
-
+from .models import LocalFilesystem, NFS, PipelineLocalFS, Lockssomatic, SwordServer, Space
+from .forms import LocalFilesystemForm, NFSForm, PipelineLocalFSForm, LockssomaticForm, SwordServerForm
 
 ########################## SPACES ##########################
 
@@ -38,4 +37,10 @@ PROTOCOL[Space.LOM] = {
                'external_domain',
                'keep_local',
                'checksum_type',]
+}
+
+PROTOCOL[Space.SWORD_SERVER] = {
+    'model': SwordServer,
+    'form': SwordServerForm,
+    'fields': []
 }
