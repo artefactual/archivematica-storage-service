@@ -775,3 +775,8 @@ class Deposit(models.Model):
         help_text="Name of the deposit.")
     path = models.TextField(
         help_text="Absolute path to the deposit on the storage service machine.")
+
+    def full_path(self):
+        """ Returns full path of deposit: space + location + deposit paths. """
+        return os.path.normpath(
+            os.path.join(self.location.full_path, self.path)) # TODO: change to relative path

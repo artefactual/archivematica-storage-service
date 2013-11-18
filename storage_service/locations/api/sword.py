@@ -22,7 +22,7 @@ from django.template.loader import render_to_string
 from ..models import Deposit
 from ..models import Location
 
-def _transfer_storage_path(uuid):
+def _deposit_storage_path(uuid):
     try:
         transfer = models.Transfer.objects.get(uuid=uuid)
         return transfer.currentlocation
@@ -52,7 +52,7 @@ def _create_deposit_directory_and_db_entry(deposit_specification):
 
     if os.path.exists(deposit_path):
         location = Location.objects.get(uuid=deposit_specification['location_uuid'])
-        deposit = Deposit.objects.create(name=deposit_name, path=deposit_path,
+        deposit = Deposit.objects.create(name=deposit_name, path=deposit_name,
             location=location)
 
         # TODO
@@ -127,7 +127,7 @@ def _handle_upload_request(request, uuid, replace_file=False):
         filename = _parse_filename_from_content_disposition(request.META['HTTP_CONTENT_DISPOSITION']) 
 
         if filename != '':
-            file_path = os.path.join(_transfer_storage_path(uuid), filename)
+            file_path = os.path.join(_deposit_storage_path(uuid), filename)
 
             if replace_file:
                 # if doing a file replace, the file being replaced must exist
@@ -187,7 +187,7 @@ def _fetch_content(transfer_uuid, object_content_urls):
     for resource_url in object_content_urls:
         # create task record so progress can be tracked
         task_uuid = uuid.uuid4().__str__()
-        arguments = '"{resource_url}" "{transfer_path}"'.format(resource_url=resource_url, transfer_path=_transfer_storage_path(transfer_uuid))
+        arguments = '"{resource_url}" "{transfer_path}"'.format(resource_url=resource_url, transfer_path=_deposit_storage_path(transfer_uuid))
 
         """
         # create task record so time can be tracked by the MCP client
@@ -233,10 +233,10 @@ def _deposit_receipt_response(request, transfer_uuid, status_code):
     response['Location'] = transfer_uuid
     return response
 
-def _transfer_is_being_processed(transfer_uuid):
+def _deposit_has_been_submitted_for_processing(deposit_uuid):
     try:
-        transfer = models.Transfer.objects.get(uuid=transfer_uuid)
-        if transfer.magiclink != None:
+        deposit = models.Deposit.objects.get(uuid=deposit_uuid)
+        if deposit.status != 'complete':
             return True
         return False
     except:
@@ -260,11 +260,11 @@ def service_document(request):
 """
 Example GET of collection deposit list:
 
-  curl -v http://127.0.0.1/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/collection/
+  curl -v http://localhost:8000/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/collection/
 
 Example POST creation of deposit:
 
-  curl -v -H "In-Progress: true" --data-binary @mets.xml --request POST http://localhost/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/collection/
+  curl -v -H "In-Progress: true" --data-binary @mets.xml --request POST http://localhost:8000/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/collection/
 """
 # TODO: add authentication
 # TODO: error if deposit is finalized, but has no files?
@@ -321,27 +321,39 @@ def collection(request, location_uuid):
                                 # TODO: should get this from author header
                                 transfer_specification['sourceofacquisition'] = request.META['HTTP_ON_BEHALF_OF']
 
-                            transfer_uuid = _create_deposit_directory_and_db_entry(transfer_specification)
-
-                            if transfer_uuid != None:
-                                # parse XML for content URLs
-                                object_content_urls = []
-
-                                elements = root.iterfind("{http://www.loc.gov/METS/}fileSec/{http://www.loc.gov/METS/}fileGrp[@ID='DATASTREAMS']/{http://www.loc.gov/METS/}fileGrp[@ID='OBJ']/{http://www.loc.gov/METS/}file/{http://www.loc.gov/METS/}FLocat")
-
-                                for element in elements:
-                                    object_content_urls.append(element.get('{http://www.w3.org/1999/xlink}href'))
-
-                                # create thread so content URLs can be downloaded asynchronously
-                                thread = threading.Thread(target=_fetch_content, args=(transfer_uuid, object_content_urls))
-                                thread.start()
-
-                                return _deposit_receipt_response(request, transfer_uuid, 201)
-                            else:
+                            location_path = _deposit_storage_path_root(location_uuid)
+                            if not os.path.isdir(location_path):
                                 error = {
-                                    'summary': 'Could not create deposit: contact an administrator.',
+                                    'summary': 'Location path (%s) does not exist: contact an administrator.' % (location_path),
                                     'status': 500
-                            }
+                                }
+                            else:
+                                transfer_uuid = _create_deposit_directory_and_db_entry(transfer_specification)
+
+                                if transfer_uuid != None:
+                                    # parse XML for content URLs
+                                    object_content_urls = []
+
+                                    elements = root.iterfind("{http://www.loc.gov/METS/}fileSec/"
+                                        + "{http://www.loc.gov/METS/}fileGrp[@ID='DATASTREAMS']/"
+                                        + "{http://www.loc.gov/METS/}fileGrp[@ID='OBJ']/"
+                                        + "{http://www.loc.gov/METS/}file/"
+                                        + "{http://www.loc.gov/METS/}FLocat"
+                                    )
+
+                                    for element in elements:
+                                        object_content_urls.append(element.get('{http://www.w3.org/1999/xlink}href'))
+
+                                    # create thread so content URLs can be downloaded asynchronously
+                                    thread = threading.Thread(target=_fetch_content, args=(transfer_uuid, object_content_urls))
+                                    thread.start()
+
+                                    return _deposit_receipt_response(request, transfer_uuid, 201)
+                                else:
+                                    error = {
+                                        'summary': 'Could not create deposit: contact an administrator.',
+                                        'status': 500
+                                    }
                     except etree.XMLSyntaxError as e:
                         error = {
                             'summary': 'Error parsing XML ({error_message}).'.format(error_message=str(e)),
@@ -376,67 +388,71 @@ def collection(request, location_uuid):
         return _sword_error_response(request, error)
 
 """
+TODO: decouple deposits and locations for shorter URLs
+
 Example POST finalization of transfer:
 
-  curl -v -H "In-Progress: false" --request POST http://localhost/api/v2/transfer/sword/5bdf83cd-5858-4152-90e2-c2426e90e7c0
+  curl -v -H "In-Progress: false" --request http://127.0.0.1/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/deposit/5bdf83cd-5858-4152-90e2-c2426e90e7c0/
 
 Example DELETE if transfer:
 
-  curl -v -XDELETE http://localhost/api/v2/transfer/sword/5bdf83cd-5858-4152-90e2-c2426e90e7c0
+  curl -v -XDELETE http://127.0.0.1/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/deposit/5bdf83cd-5858-4152-90e2-c2426e90e7c0/
 """
 # TODO: add authentication
-def transfer(request, uuid):
+def deposit(request, uuid):
     error = None
     bad_request = None
 
     if request.method == 'GET':
-        # details about a transfer
-        return HttpResponse('Some detail XML')
+        # details about a deposit
+        return HttpResponse('Feed XML of files for deposit' + uuid)
     elif request.method == 'POST':
-        # is the transfer ready to move to a processing directory?
+        # is the deposit ready to be processed?
         if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
-            # TODO: check that related task is complete before copying
+            # TODO: check that related tasks are complete before copying
             # ...task row must exist and task endtime must be equal to or greater than start time
             try:
-                if _transfer_is_being_processed(uuid):
+                if _deposit_has_been_submitted_for_processing(uuid):
                     error = {
-                        'summary': 'This transfer has already been started and approved.',
+                        'summary': 'This deposit has already been submitted for processing.',
                         'status': 400
                     }
                 else:
-                    transfer = models.Transfer.objects.get(uuid=uuid)
+                    deposit = models.Deposit.objects.get(uuid=uuid)
 
-                    if len(os.listdir(transfer.currentlocation)) > 0:
+                    if len(os.listdir(deposit.full_path())) > 0:
+                        """
+                        TODO: replace this will call to dashboard API
                         helpers.copy_to_start_transfer(transfer.currentlocation, 'standard', {'uuid': uuid})
 
                         # wait for watch directory to determine a transfer is awaiting
                         # approval then attempt to approve it
                         time.sleep(5)
-                        """
                         approve_transfer_via_mcp(
                             os.path.basename(transfer.currentlocation),
                             'standard',
                         1
                         ) # TODO: replace hardcoded user ID
                         """
+                        pass
 
                         return _deposit_receipt_response(request, uuid, 200)
                     else:
-                        bad_request = 'This transfer contains no files.'
+                        bad_request = 'This deposit contains no files.'
 
             except ObjectDoesNotExist:
                 error = {
-                    'summary': 'This transfer could not be found.',
+                    'summary': 'This deposit could not be found.',
                     'status': 404
                 }
         else:
-            bad_request = 'The In-Progress header must be set to false when starting transfer processing.'
+            bad_request = 'The In-Progress header must be set to false when starting deposit processing.'
     elif request.method == 'PUT':
-        # update transfer
+        # update deposit
         return HttpResponse(status=204) # No content
     elif request.method == 'DELETE':
-        # delete transfer files
-        transfer_path = _transfer_storage_path(uuid)
+        # delete deposit files
+        deposit_path = _deposit_storage_path(uuid)
         shutil.rmtree(transfer_path)
 
         # delete entry in Transfers table (and task?)
@@ -483,7 +499,7 @@ Example DELETE of file:
 # TODO: better Content-Disposition header parsing
 # TODO: add authentication
 def transfer_files(request, uuid):
-    if _transfer_is_being_processed(uuid):
+    if _deposit_has_been_submitted_for_processing(uuid):
         return _sword_error_response(request, {
             'summary': 'This transfer is already being processed by Archivematica.',
             'status': 400
@@ -492,7 +508,7 @@ def transfer_files(request, uuid):
     error = None
 
     if request.method == 'GET':
-        transfer_path = _transfer_storage_path(uuid)
+        transfer_path = _deposit_storage_path(uuid)
         if transfer_path == None:
             error = {
                 'summary': 'This transfer does not exist.',
@@ -515,7 +531,7 @@ def transfer_files(request, uuid):
     elif request.method == 'DELETE':
         filename = request.GET.get('filename', '')
         if filename != '':
-            transfer_path = _transfer_storage_path(uuid)
+            transfer_path = _deposit_storage_path(uuid)
             file_path = os.path.join(transfer_path, filename) 
             if os.path.exists(file_path):
                 os.remove(file_path)
@@ -527,7 +543,7 @@ def transfer_files(request, uuid):
                 }
         else:
             # delete all files in transfer
-            if _transfer_is_being_processed(uuid):
+            if _deposit_has_been_submitted_for_processing(uuid):
                 error = {
                     'summary': 'This transfer is already being processed by Archivematica.',
                     'status': 400
