@@ -1885,3 +1885,23 @@ class Pipeline(models.Model):
             sword_server = SwordServer(space=space)
             sword_server.save()
             logging.info("Protocol Space created: {}".format(sword_server))
+        #location = Location.objects.create(
+        #    purpose=Location.TRANSFER_SOURCE, '1762e436-2ae0-4e23-8ab0-afe8f3a9ebd0')
+        #LocationPipeline.objects.get_or_create(
+        #    pipeline=self, location=location)
+
+class Deposit(models.Model):
+    """ Stores information about a deposit of files. """
+
+    uuid = UUIDField(editable=False, unique=True, version=4,
+        help_text="Unique identifier")
+    location = models.ForeignKey('Location', to_field='uuid')
+    name = models.CharField(max_length=256,
+        help_text="Name of the deposit.")
+    path = models.TextField(
+        help_text="Absolute path to the deposit on the storage service machine.")
+
+    def full_path(self):
+        """ Returns full path of deposit: space + location + deposit paths. """
+        return os.path.normpath(
+            os.path.join(self.location.full_path, self.path)) # TODO: change to relative path
