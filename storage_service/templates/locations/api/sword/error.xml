@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<sword:error href="http://purl.org/net/sword/error/ErrorBadRequest" xmlns="http://www.w3.org/2005/Atom" xmlns:sword="http://purl.org/net/sword/">
+  <summary type="text">{{ summary }}</summary>
+  <title type="text">ERROR</title>
+  <updated>{{ update_time }}</updated>
+  <generator uri="{{ request.get_full_path }}" version="1.0">Archivematica</generator>
+  <sword:userAgent>{{ user_agent }}</sword:userAgent>
+  <link rel="alternate" href="https://www.archivematica.org/wiki/Sword_API" type="text/html"/>
+</sword:error>

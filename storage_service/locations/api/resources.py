@@ -23,6 +23,7 @@ from tastypie.utils import trailing_slash
 
 # This project, alphabetical
 from common import utils
+from locations.api import sword
 
 from ..models import (Event, Package, Location, Space, Pipeline)
 from ..forms import LocationForm, SpaceForm
@@ -196,6 +197,7 @@ class LocationResource(ModelResource):
     def prepend_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/browse%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('browse'), name="browse"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/collection%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_collection'), name="sword_collection")
         ]
 
     def browse(self, request, **kwargs):
@@ -219,6 +221,10 @@ class LocationResource(ModelResource):
 
         self.log_throttled_access(request)
         return self.create_response(request, objects)
+
+    def sword_collection(self, request, **kwargs):
+        self.log_throttled_access(request)
+        return sword.collection(request, kwargs['uuid'])
 
 
 class PackageResource(ModelResource):

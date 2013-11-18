@@ -1,0 +1,19 @@
+<entry xmlns="http://www.w3.org/2005/Atom"
+        xmlns:sword="http://purl.org/net/sword/"
+        xmlns:dcterms="http://purl.org/dc/terms/">
+
+    <title>{{ transfer_name }}</title>
+    <id>{{ transfer_id }}</id>
+    <updated>{{ current_datetime }}</updated>
+    <generator uri="https://www.archivematica.org" version="1.0"/>
+
+    <summary>An Archivematica transfer was started.</summary>
+    <sword:treatment>A temporary transfer directory was created.</sword:treatment>
+
+    <link rel="alternate" href="http://www.swordserver.ac.uk/col1/mydeposit.html"/>
+    <link rel="edit-media" href="{{ media_iri }}"/>
+    <link rel="edit" href="{{ edit_iri }}" />
+    <link rel="http://purl.org/net/sword/terms/add" href="{{ edit_iri }}" />
+    <link rel="http://purl.org/net/sword/terms/statement" type="application/atom+xml;type=feed"
+      href="{{ state_iri }}" />
+</entry>
