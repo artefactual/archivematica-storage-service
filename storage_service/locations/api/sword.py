@@ -561,7 +561,7 @@ def deposit_media(request, uuid):
 """
 Example GET of state:
 
-  curl -v http://127.0.0.1/api/v2/transfer/sword/03ce11a5-32c1-445a-83ac-400008894f78/state
+  curl -v http://localhost:8000/api/v1/deposit/96606387-cc70-4b09-b422-a7220606488d/sword/state/
 """
 # TODO: add authentication
 def deposit_state(request, uuid):
@@ -570,43 +570,37 @@ def deposit_state(request, uuid):
     error = None
 
     if request.method == 'GET':
-        # In order to determine the deposit status we need to check
-        # for three possibilities:
-        #
-        # 1) The deposit involved no asynchronous depositing. There
-        #    should be no row in the Jobs table for this transfer.
-        #
-        # 2) The deposit involved asynchronous depositing, but the
-        #    depositing is incomplete. There should be a row in the
-        #    Jobs table, but the end time should be blank.
-        #
-        # 3) The deposit involved asynchronous depositing and is
-        #    complete. There should be a row in the Jobs table with
-        #    an end time.
-
-        # get deposit creation job, if any
-        job = None
-        try:
-            # get job corresponding to transfer
-            job = Job.objects.filter(sipuuid=uuid, hidden=True)[0]
-
-            task = None
-            if job != None:
-                try:
-                    task = Task.objects.filter(job=job)[0]
-                except:
-                    pass
-
-            if task != None:
-                task_state = 'Processing'
-
-            if task.endtime != None:
-                if task.exitcode == 1:
-                    task_state = 'Failed'
-                else:
-                    task_state = 'Complete'
-        except:
+        """
+        In order to determine the deposit status we need to check
+        for three possibilities:
+        
+        1) The deposit involved no asynchronous depositing. The
+           downloads_attempted DB row column should be 0.
+       
+        2) The deposit involved asynchronous depositing, but
+           the depositing is incomplete. downloads_attempted is
+           greater than 0, but download_completion_time is not
+           set.
+      
+        3) The deposit involved asynchronous depositing and
+           completed successfully. download_completion_time is set.
+           downloads_attempted is equal to downloads_completed.
+      
+        4) The deposit involved asynchronous depositing and
+           completed unsuccessfully. download_completion_time is set.
+           downloads_attempted isn't equal to downloads_completed.
+        """
+        deposit = Deposit.objects.get(uuid=uuid)
+        if deposit.downloads_attempted == 0:
             task_state = 'Complete'
+        else:
+           if deposit.download_completion_time == None:
+               task_state = 'Incomplete'
+           else:
+               if deposit.downloads_attempted == deposit.downloads_completed:
+                   task_state = 'Complete'
+               else:
+                   task_state = 'Failed'
 
         state_term = task_state.lower()
         state_description = 'Deposit initiation: ' + task_state
