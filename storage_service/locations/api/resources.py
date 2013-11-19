@@ -23,7 +23,7 @@ from tastypie.utils import trailing_slash
 
 # This project, alphabetical
 from common import utils
-from locations.api import sword
+from locations.api.sword import views as sword_views
 
 from ..models import (Event, Package, Location, Space, Pipeline, Deposit)
 from ..forms import LocationForm, SpaceForm
@@ -224,7 +224,7 @@ class LocationResource(ModelResource):
 
     def sword_collection(self, request, **kwargs):
         self.log_throttled_access(request)
-        return sword.collection(request, kwargs['uuid'])
+        return sword_views.collection(request, kwargs['uuid'])
 
 
 class DepositResource(ModelResource):
@@ -261,15 +261,15 @@ class DepositResource(ModelResource):
 
     def sword_deposit(self, request, **kwargs):
         self.log_throttled_access(request)
-        return sword.deposit(request, kwargs['uuid'])
+        return sword_views.deposit(request, kwargs['uuid'])
 
     def sword_deposit_media(self, request, **kwargs):
         self.log_throttled_access(request)
-        return sword.deposit_media(request, kwargs['uuid'])
+        return sword_views.deposit_media(request, kwargs['uuid'])
 
     def sword_deposit_state(self, request, **kwargs):
         self.log_throttled_access(request)
-        return sword.deposit_state(request, kwargs['uuid'])
+        return sword_views.deposit_state(request, kwargs['uuid'])
 
 class PackageResource(ModelResource):
     """ Resource for managing Packages.

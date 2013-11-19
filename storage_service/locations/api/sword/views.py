@@ -22,8 +22,8 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 # This project, alphabetical
-from ..models import Deposit
-from ..models import Location
+from locations.models import Deposit
+from locations.models import Location
 
 def _deposit_storage_path(uuid):
     try:
