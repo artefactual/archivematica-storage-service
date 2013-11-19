@@ -1,236 +1,23 @@
 # stdlib, alphabetical
 import datetime
 from lxml import etree as etree
-import json
 from multiprocessing import Process
 import os
 import shutil
-import subprocess
 import tempfile
-import threading
 import time
-import urllib2
-import uuid
 
 # Core Django, alphabetical
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
-from django.db import transaction
 from django.http import HttpResponse
-from django.shortcuts import render
 from django.template.loader import render_to_string
 from django.utils import timezone
 
 # This project, alphabetical
 from locations.models import Deposit
 from locations.models import Location
-
-def _deposit_storage_path(uuid):
-    try:
-        deposit = Deposit.objects.get(uuid=uuid)
-        return deposit.full_path()
-    except ObjectDoesNotExist:
-        return None
-
-def _deposit_storage_path_root(location_uuid):
-    location = Location.objects.get(uuid=location_uuid)
-    return location.full_path()
-
-def _create_deposit_directory_and_db_entry(deposit_specification):
-    deposit_uuid = uuid.uuid4().__str__()
-
-    if 'name' in deposit_specification:
-        deposit_name = deposit_specification['name']
-    else:
-        deposit_name = 'Untitled'
-
-    deposit_path = os.path.join(
-        _deposit_storage_path_root(deposit_specification['location_uuid']),
-        deposit_name
-    )
-
-    # TODO deposit_path = helpers.pad_destination_filepath_if_it_already_exists(deposit_path)
-    os.mkdir(deposit_path)
-    os.chmod(deposit_path, 02770) # drwxrws---
-
-    if os.path.exists(deposit_path):
-        location = Location.objects.get(uuid=deposit_specification['location_uuid'])
-        deposit = Deposit.objects.create(name=deposit_name, path=deposit_name,
-            location=location)
-
-        # TODO
-        if 'sourceofacquisition' in deposit_specification:
-            deposit.source = deposit_specification['sourceofacquisition']
-
-        deposit.save()
-        return deposit.uuid
-
-def _deposit_list(location_uuid):
-    location = Location.objects.get(uuid=location_uuid)
-
-    deposit_list = []
-    deposits = Deposit.objects.filter(location=location)
-    for deposit in deposits:
-        deposit_list.append(deposit.uuid)
-    return deposit_list
-
-def _sword_error_response(request, error_details):
-    error_details['request'] = request
-    error_details['update_time'] = datetime.datetime.now().__str__()
-    error_details['user_agent'] = request.META['HTTP_USER_AGENT']
-    error_xml = render_to_string('locations/api/sword/error.xml', error_details)
-    return HttpResponse(error_xml, status=error_details['status'])
-
-def _write_file_from_request_body(request, file_path):
-    bytes_written = 0
-    new_file = open(file_path, 'ab')
-    chunk = request.read()
-    if chunk != None:
-        new_file.write(chunk)
-        bytes_written += len(chunk)
-        chunk = request.read()
-    new_file.close()
-    return bytes_written
-
-def _get_file_md5_checksum(filepath):
-    raw_result = subprocess.Popen(["md5sum", filepath],stdout=subprocess.PIPE).communicate()[0]
-    return raw_result[0:32]
-
-def _handle_upload_request_with_potential_md5_checksum(request, file_path, success_status_code):
-    temp_filepath = _write_request_body_to_temp_file(request)
-    if 'HTTP_CONTENT_MD5' in request.META:
-        md5sum = _get_file_md5_checksum(temp_filepath)
-        if request.META['HTTP_CONTENT_MD5'] != md5sum:
-            os.remove(temp_filepath)
-            bad_request = 'MD5 checksum of uploaded file ({uploaded_md5sum}) does not match checksum provided in header ({header_md5sum}).'.format(uploaded_md5sum=md5sum, header_md5sum=request.META['HTTP_CONTENT_MD5'])
-            return _sword_error_response(request, {
-                'summary': bad_request,
-                'status': 400
-            })
-        else:
-            shutil.copyfile(temp_filepath, file_path)
-            os.remove(temp_filepath)
-            return HttpResponse(status=success_status_code)
-    else:
-        shutil.copyfile(temp_filepath, file_path)
-        os.remove(temp_filepath)
-        return HttpResponse(status=success_status_code)
-
-def _parse_filename_from_content_disposition(header):
-    filename = header.split('filename=')[1]
-    if filename[0] == '"' or filename[0] == "'":
-        filename = filename[1:-1]
-    return filename
-
-def _handle_upload_request(request, uuid, replace_file=False):
-    error = None
-    bad_request = None
-
-    if 'HTTP_CONTENT_DISPOSITION' in request.META:
-        filename = _parse_filename_from_content_disposition(request.META['HTTP_CONTENT_DISPOSITION']) 
-
-        if filename != '':
-            file_path = os.path.join(_deposit_storage_path(uuid), filename)
-
-            if replace_file:
-                # if doing a file replace, the file being replaced must exist
-                if os.path.exists(file_path):
-                    return _handle_upload_request_with_potential_md5_checksum(
-                        request,
-                        file_path,
-                        204
-                    )
-                else:
-                    bad_request = 'File does not exist.'
-            else:
-                # if adding a file, the file must not already exist
-                if os.path.exists(file_path):
-                    bad_request = 'File already exists.'
-                else:
-                    return _handle_upload_request_with_potential_md5_checksum(
-                        request,
-                        file_path,
-                        201
-                    )
-        else:
-            bad_request = 'No filename found in Content-disposition header.'
-    else:
-        bad_request = 'Content-disposition must be set in request header.'
-
-    if bad_request != None:
-        error = {
-            'summary': bad_request,
-            'status': 400
-        }
-
-    if error != None:
-        return _sword_error_response(request, error)
-
-def _write_request_body_to_temp_file(request):
-    filehandle, temp_filepath = tempfile.mkstemp()
-    _write_file_from_request_body(request, temp_filepath)
-    return temp_filepath
-
-def _fetch_content(deposit_uuid, object_content_urls):
-    # update deposit with number of files that need to be downloaded
-    deposit = Deposit.objects.get(uuid=deposit_uuid)
-    deposit.downloads_attempted = len(object_content_urls)
-    deposit.downloads_completed = 0
-    deposit.save()
-
-    # download the files
-    destination_path = _deposit_storage_path(deposit_uuid)
-    temp_dir = tempfile.mkdtemp()
-
-    completed = 0
-    for url in object_content_urls:
-        try:
-            filename = _download_resource(url, temp_dir)
-            completed += 1
-        except:
-            pass
-        shutil.move(os.path.join(temp_dir, filename),
-            os.path.join(destination_path, filename))
-
-    # remove temp dir
-    shutil.rmtree(temp_dir)
-
-    # record the number of successful downloads and completion time
-    deposit.downloads_completed = completed
-    deposit.download_completion_time = timezone.now()
-    deposit.save()
-
-# respond with SWORD 2.0 deposit receipt XML
-def _deposit_receipt_response(request, deposit_uuid, status_code):
-    deposit = Deposit.objects.get(uuid=deposit_uuid)
-
-    # TODO: fix minor issues with template
-    media_iri = request.build_absolute_uri(
-        reverse('sword_deposit_media', kwargs={'api_name': 'v1',
-            'resource_name': 'deposit', 'uuid': deposit_uuid}))
-
-    edit_iri = request.build_absolute_uri(
-        reverse('sword_deposit', kwargs={'api_name': 'v1',
-            'resource_name': 'deposit', 'uuid': deposit_uuid}))
-
-    state_iri = request.build_absolute_uri(
-        reverse('sword_deposit_state', kwargs={'api_name': 'v1',
-            'resource_name': 'deposit', 'uuid': deposit_uuid}))
-
-    receipt_xml = render_to_string('locations/api/sword/deposit_receipt.xml', locals())
-
-    response = HttpResponse(receipt_xml, mimetype='text/xml', status=status_code)
-    response['Location'] = deposit_uuid
-    return response
-
-def _deposit_has_been_submitted_for_processing(deposit_uuid):
-    try:
-        deposit = models.Deposit.objects.get(uuid=deposit_uuid)
-        if deposit.status != 'complete':
-            return True
-        return False
-    except:
-        return False
+import helpers
 
 """
 Example GET of service document:
@@ -271,16 +58,16 @@ def collection(request, location_uuid):
 
         entries = []
 
-        entries = [{
-            'title': 'Hey',
-            'url': 'http://www.google.com'
-        }]
-        for uuid in _deposit_list(location_uuid):
+        for uuid in helpers.deposit_list(location_uuid):
             deposit = Deposit.objects.get(uuid=uuid)
+
+            edit_iri = request.build_absolute_uri(
+                reverse('sword_deposit', kwargs={'api_name': 'v1',
+                    'resource_name': 'deposit', 'uuid': uuid}))
+
             entries.append({
                 'title': deposit.name,
-                'url': 'http://www.google.com/',
-                #'url': request.build_absolute_uri(reverse('components.api.views_sword.transfer', args=[uuid]))
+                'url': edit_iri,
             })
 
         collection_xml = render_to_string('locations/api/sword/collection.xml', locals())
@@ -293,7 +80,7 @@ def collection(request, location_uuid):
             # process creation request, if criteria met
             if request.body != '':
                 try:
-                    temp_filepath = _write_request_body_to_temp_file(request)
+                    temp_filepath = helpers.write_request_body_to_temp_file(request)
 
                     # parse XML
                     try:
@@ -311,7 +98,7 @@ def collection(request, location_uuid):
                                 # TODO: should get this from author header
                                 transfer_specification['sourceofacquisition'] = request.META['HTTP_ON_BEHALF_OF']
 
-                            location_path = _deposit_storage_path_root(location_uuid)
+                            location_path = helpers.deposit_location_path(location_uuid)
                             if not os.path.isdir(location_path):
                                 error = {
                                     'summary': 'Location path (%s) does not exist: contact an administrator.' % (location_path),
@@ -376,6 +163,62 @@ def collection(request, location_uuid):
 
     if error != None:
         return _sword_error_response(request, error)
+
+def _create_deposit_directory_and_db_entry(deposit_specification):
+    if 'name' in deposit_specification:
+        deposit_name = deposit_specification['name']
+    else:
+        deposit_name = 'Untitled'
+
+    deposit_path = os.path.join(
+        helpers.deposit_location_path(deposit_specification['location_uuid']),
+        deposit_name
+    )
+
+    # TODO deposit_path = helpers.pad_destination_filepath_if_it_already_exists(deposit_path)
+    os.mkdir(deposit_path)
+    os.chmod(deposit_path, 02770) # drwxrws---
+
+    if os.path.exists(deposit_path):
+        location = Location.objects.get(uuid=deposit_specification['location_uuid'])
+        deposit = Deposit.objects.create(name=deposit_name, path=deposit_name,
+            location=location)
+
+        # TODO
+        if 'sourceofacquisition' in deposit_specification:
+            deposit.source = deposit_specification['sourceofacquisition']
+
+        deposit.save()
+        return deposit.uuid
+
+def _fetch_content(deposit_uuid, object_content_urls):
+    # update deposit with number of files that need to be downloaded
+    deposit = Deposit.objects.get(uuid=deposit_uuid)
+    deposit.downloads_attempted = len(object_content_urls)
+    deposit.downloads_completed = 0
+    deposit.save()
+
+    # download the files
+    destination_path = helpers.deposit_storage_path(deposit_uuid)
+    temp_dir = tempfile.mkdtemp()
+
+    completed = 0
+    for url in object_content_urls:
+        try:
+            filename = helpers.download_resource(url, temp_dir)
+            completed += 1
+        except:
+            pass
+        shutil.move(os.path.join(temp_dir, filename),
+            os.path.join(destination_path, filename))
+
+    # remove temp dir
+    shutil.rmtree(temp_dir)
+
+    # record the number of successful downloads and completion time
+    deposit.downloads_completed = completed
+    deposit.download_completion_time = timezone.now()
+    deposit.save()
 
 """
 TODO: decouple deposits and locations for shorter URLs
@@ -442,7 +285,7 @@ def deposit(request, uuid):
         return HttpResponse(status=204) # No content
     elif request.method == 'DELETE':
         # delete deposit files
-        deposit_path = _deposit_storage_path(uuid)
+        deposit_path = helpers.deposit_storage_path(uuid)
         shutil.rmtree(deposit_path)
 
         # delete entry in Transfers table (and task?)
@@ -498,7 +341,7 @@ def deposit_media(request, uuid):
     error = None
 
     if request.method == 'GET':
-        deposit_path = _deposit_storage_path(uuid)
+        deposit_path = helpers.deposit_storage_path(uuid)
         if deposit_path == None:
             error = {
                 'summary': 'This deposit does not exist.',
@@ -507,7 +350,6 @@ def deposit_media(request, uuid):
         else:
             if os.path.exists(deposit_path):
                 return HttpResponse(str(os.listdir(deposit_path)))
-                #return helpers.json_response(os.listdir(deposit_path))
             else:
                 error = {
                     'summary': 'This deposit path (%s) does not exist.' % (deposit_path),
@@ -522,7 +364,7 @@ def deposit_media(request, uuid):
     elif request.method == 'DELETE':
         filename = request.GET.get('filename', '')
         if filename != '':
-            deposit_path = _deposit_storage_path(uuid)
+            deposit_path = helpers.deposit_storage_path(uuid)
             file_path = os.path.join(deposit_path, filename) 
             if os.path.exists(file_path):
                 os.remove(file_path)
@@ -558,6 +400,70 @@ def deposit_media(request, uuid):
 
     if error != None:
                 return _sword_error_response(request, error)
+
+def _handle_upload_request(request, uuid, replace_file=False):
+    error = None
+    bad_request = None
+
+    if 'HTTP_CONTENT_DISPOSITION' in request.META:
+        filename = helpers.parse_filename_from_content_disposition(request.META['HTTP_CONTENT_DISPOSITION']) 
+
+        if filename != '':
+            file_path = os.path.join(helpers.deposit_storage_path(uuid), filename)
+
+            if replace_file:
+                # if doing a file replace, the file being replaced must exist
+                if os.path.exists(file_path):
+                    return _handle_upload_request_with_potential_md5_checksum(
+                        request,
+                        file_path,
+                        204
+                    )
+                else:
+                    bad_request = 'File does not exist.'
+            else:
+                # if adding a file, the file must not already exist
+                if os.path.exists(file_path):
+                    bad_request = 'File already exists.'
+                else:
+                    return _handle_upload_request_with_potential_md5_checksum(
+                        request,
+                        file_path,
+                        201
+                    )
+        else:
+            bad_request = 'No filename found in Content-disposition header.'
+    else:
+        bad_request = 'Content-disposition must be set in request header.'
+
+    if bad_request != None:
+        error = {
+            'summary': bad_request,
+            'status': 400
+        }
+
+    if error != None:
+        return _sword_error_response(request, error)
+
+def _handle_upload_request_with_potential_md5_checksum(request, file_path, success_status_code):
+    temp_filepath = helpers.write_request_body_to_temp_file(request)
+    if 'HTTP_CONTENT_MD5' in request.META:
+        md5sum = helpers.get_file_md5_checksum(temp_filepath)
+        if request.META['HTTP_CONTENT_MD5'] != md5sum:
+            os.remove(temp_filepath)
+            bad_request = 'MD5 checksum of uploaded file ({uploaded_md5sum}) does not match checksum provided in header ({header_md5sum}).'.format(uploaded_md5sum=md5sum, header_md5sum=request.META['HTTP_CONTENT_MD5'])
+            return _sword_error_response(request, {
+                'summary': bad_request,
+                'status': 400
+            })
+        else:
+            shutil.copyfile(temp_filepath, file_path)
+            os.remove(temp_filepath)
+            return HttpResponse(status=success_status_code)
+    else:
+        shutil.copyfile(temp_filepath, file_path)
+        os.remove(temp_filepath)
+        return HttpResponse(status=success_status_code)
 
 """
 Example GET of state:
@@ -618,25 +524,42 @@ def deposit_state(request, uuid):
     if error != None:
                 return _sword_error_response(request, error)
 
-def _download_resource(url, destination_path):
-    response = urllib2.urlopen(url)
-    filename = _filename_from_response(response)
+# respond with SWORD 2.0 deposit receipt XML
+def _deposit_receipt_response(request, deposit_uuid, status_code):
+    deposit = Deposit.objects.get(uuid=deposit_uuid)
 
-    if filename == None:
-        filename = os.path.basename(url)
+    # TODO: fix minor issues with template
+    media_iri = request.build_absolute_uri(
+        reverse('sword_deposit_media', kwargs={'api_name': 'v1',
+            'resource_name': 'deposit', 'uuid': deposit_uuid}))
 
-    filepath = os.path.join(destination_path, filename)
-    buffer = 16 * 1024
-    with open(filepath, 'wb') as fp:
-        while True:
-            chunk = response.read(buffer)
-            if not chunk: break
-            fp.write(chunk)
-    return filename
+    edit_iri = request.build_absolute_uri(
+        reverse('sword_deposit', kwargs={'api_name': 'v1',
+            'resource_name': 'deposit', 'uuid': deposit_uuid}))
 
-def _filename_from_response(response):
-    info = response.info()
-    if 'content-disposition' in info:
-        return _parse_filename_from_content_disposition(info['content-disposition'])
-    else:
-        return None
+    state_iri = request.build_absolute_uri(
+        reverse('sword_deposit_state', kwargs={'api_name': 'v1',
+            'resource_name': 'deposit', 'uuid': deposit_uuid}))
+
+    receipt_xml = render_to_string('locations/api/sword/deposit_receipt.xml', locals())
+
+    response = HttpResponse(receipt_xml, mimetype='text/xml', status=status_code)
+    response['Location'] = deposit_uuid
+    return response
+
+def _sword_error_response(request, error_details):
+    error_details['request'] = request
+    error_details['update_time'] = datetime.datetime.now().__str__()
+    error_details['user_agent'] = request.META['HTTP_USER_AGENT']
+    error_xml = render_to_string('locations/api/sword/error.xml', error_details)
+    return HttpResponse(error_xml, status=error_details['status'])
+
+# TODO: is this right?
+def _deposit_has_been_submitted_for_processing(deposit_uuid):
+    try:
+        deposit = models.Deposit.objects.get(uuid=deposit_uuid)
+        if deposit.status != 'complete':
+            return True
+        return False
+    except:
+        return False
