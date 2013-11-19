@@ -1,0 +1,10 @@
+<atom:feed xmlns:sword="http://purl.org/net/sword/terms/" 
+            xmlns:atom="http://www.w3.org/2005/Atom">
+
+    <atom:category scheme="http://purl.org/net/sword/terms/state"
+        term="{{ state_term }}"
+        label="State">
+            {{ state_description }}
+    </atom:category>
+
+</atom:feed>
