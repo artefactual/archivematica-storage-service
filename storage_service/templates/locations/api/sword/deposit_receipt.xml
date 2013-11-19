@@ -7,8 +7,8 @@
     <updated>{{ current_datetime }}</updated>
     <generator uri="https://www.archivematica.org" version="1.0"/>
 
-    <summary>An Archivematica transfer was started.</summary>
-    <sword:treatment>A temporary transfer directory was created.</sword:treatment>
+    <summary>A deposit was started.</summary>
+    <sword:treatment>A deposit directory was created and, optionally, asynchronous download of digital objects.</sword:treatment>
 
     <link rel="alternate" href="http://www.swordserver.ac.uk/col1/mydeposit.html"/>
     <link rel="edit-media" href="{{ media_iri }}"/>
