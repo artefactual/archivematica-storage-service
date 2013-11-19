@@ -2,12 +2,14 @@
 import datetime
 from lxml import etree as etree
 import json
+from multiprocessing import Process
 import os
 import shutil
 import subprocess
 import tempfile
 import threading
 import time
+import urllib2
 import uuid
 
 # Core Django, alphabetical
@@ -17,6 +19,7 @@ from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.template.loader import render_to_string
+from django.utils import timezone
 
 # This project, alphabetical
 from ..models import Deposit
@@ -116,7 +119,7 @@ def _handle_upload_request_with_potential_md5_checksum(request, file_path, succe
 def _parse_filename_from_content_disposition(header):
     filename = header.split('filename=')[1]
     if filename[0] == '"' or filename[0] == "'":
-            filename = filename[1:-1]
+        filename = filename[1:-1]
     return filename
 
 def _handle_upload_request(request, uuid, replace_file=False):
@@ -169,47 +172,33 @@ def _write_request_body_to_temp_file(request):
     return temp_filepath
 
 def _fetch_content(deposit_uuid, object_content_urls):
-    # write resources to temp file
+    # update deposit with number of files that need to be downloaded
+    deposit = Deposit.objects.get(uuid=deposit_uuid)
+    deposit.downloads_attempted = len(object_content_urls)
+    deposit.downloads_completed = 0
+    deposit.save()
+
+    # download the files
+    destination_path = _deposit_storage_path(deposit_uuid)
     temp_dir = tempfile.mkdtemp()
-    os.chmod(temp_dir, 02770) # drwxrws---
 
-    # create job record to associate tasks with the deposit
-    now = datetime.datetime.now()
-    job_uuid = uuid.uuid4().__str__()
-    job = models.Job()
-    job.jobuuid = job_uuid
-    job.sipuuid = deposit_uuid
-    job.createdtime = now.__str__()
-    job.createdtimedec = int(now.strftime("%s"))
-    job.hidden = True
-    job.save()
+    completed = 0
+    for url in object_content_urls:
+        try:
+            filename = _download_resource(url, temp_dir)
+            completed += 1
+        except:
+            pass
+        shutil.move(os.path.join(temp_dir, filename),
+            os.path.join(destination_path, filename))
 
-    for resource_url in object_content_urls:
-        # create task record so progress can be tracked
-        task_uuid = uuid.uuid4().__str__()
-        arguments = '"{resource_url}" "{deposit_path}"'.format(resource_url=resource_url, deposit_path=_deposit_storage_path(deposit_uuid))
-
-        """
-        # create task record so time can be tracked by the MCP client
-        # ...Django doesn't like putting 0 in datetime fields
-        # TODO: put in arguments, etc. and use proper sanitization
-        sql = "INSERT INTO Tasks (taskUUID, jobUUID, startTime) VALUES ('%s', '%s', 0)" % (task_uuid, job_uuid)
-        #sql = "INSERT INTO Tasks (taskUUID, jobUUID, startTime) VALUES ('" + task_uuid + "', '" + job_uuid + "', 0)"
-        databaseInterface.runSQL(sql)
-        _flush_transaction() # refresh ORM after manual SQL
-
-        command = '/usr/lib/archivematica/MCPClient/clientScripts/fetchFedoraCommonsObjectContent.py ' + arguments
-        exitCode, stdOut, stdError = executeOrRun("command", command)
-
-        # record task completion time
-        task = models.Task.objects.get(taskuuid=task_uuid)
-        task.exitcode = exitCode
-        task.endtime = datetime.datetime.now().__str__() # TODO: endtime seems weird... Django time zone issue?
-        task.save()
-        """
-
-    # delete temp dir
+    # remove temp dir
     shutil.rmtree(temp_dir)
+
+    # record the number of successful downloads and completion time
+    deposit.downloads_completed = completed
+    deposit.download_completion_time = timezone.now()
+    deposit.save()
 
 # respond with SWORD 2.0 deposit receipt XML
 def _deposit_receipt_response(request, deposit_uuid, status_code):
@@ -344,9 +333,9 @@ def collection(request, location_uuid):
                                     for element in elements:
                                         object_content_urls.append(element.get('{http://www.w3.org/1999/xlink}href'))
 
-                                    # create thread so content URLs can be downloaded asynchronously
-                                    thread = threading.Thread(target=_fetch_content, args=(transfer_uuid, object_content_urls))
-                                    thread.start()
+                                    # create process so content URLs can be downloaded asynchronously
+                                    p = Process(target=_fetch_content, args=(transfer_uuid, object_content_urls))
+                                    p.start()
 
                                     return _deposit_receipt_response(request, transfer_uuid, 201)
                                 else:
@@ -633,3 +622,26 @@ def deposit_state(request, uuid):
 
     if error != None:
                 return _sword_error_response(request, error)
+
+def _download_resource(url, destination_path):
+    response = urllib2.urlopen(url)
+    filename = _filename_from_response(response)
+
+    if filename == None:
+        filename = os.path.basename(url)
+
+    filepath = os.path.join(destination_path, filename)
+    buffer = 16 * 1024
+    with open(filepath, 'wb') as fp:
+        while True:
+            chunk = response.read(buffer)
+            if not chunk: break
+            fp.write(chunk)
+    return filename
+
+def _filename_from_response(response):
+    info = response.info()
+    if 'content-disposition' in info:
+        return _parse_filename_from_content_disposition(info['content-disposition'])
+    else:
+        return None
