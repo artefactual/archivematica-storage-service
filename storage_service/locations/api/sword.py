@@ -202,19 +202,20 @@ def _fetch_content(deposit_uuid, object_content_urls):
 
 # respond with SWORD 2.0 deposit receipt XML
 def _deposit_receipt_response(request, deposit_uuid, status_code):
+    deposit = Deposit.objects.get(uuid=deposit_uuid)
+
+    # TODO: fix minor issues with template
     media_iri = request.build_absolute_uri(
-       reverse('sword_deposit_media', kwargs={'api_name': 'v1',
-           'resource_name': 'deposit', 'uuid': deposit_uuid}))
+        reverse('sword_deposit_media', kwargs={'api_name': 'v1',
+            'resource_name': 'deposit', 'uuid': deposit_uuid}))
 
     edit_iri = request.build_absolute_uri(
         reverse('sword_deposit', kwargs={'api_name': 'v1',
-                   'resource_name': 'deposit', 'uuid': deposit_uuid}))
+            'resource_name': 'deposit', 'uuid': deposit_uuid}))
 
-    """
     state_iri = request.build_absolute_uri(
-        reverse('components.api.views_sword.transfer_state', args=[transfer_uuid])
-    )
-    """
+        reverse('sword_deposit_state', kwargs={'api_name': 'v1',
+            'resource_name': 'deposit', 'uuid': deposit_uuid}))
 
     receipt_xml = render_to_string('locations/api/sword/deposit_receipt.xml', locals())
 
