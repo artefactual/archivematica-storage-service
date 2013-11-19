@@ -43,17 +43,20 @@ Example POST creation of deposit:
 
   curl -v -H "In-Progress: true" --data-binary @mets.xml --request POST http://localhost:8000/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/collection/
 """
-# TODO: add authentication
 # TODO: error if deposit is finalized, but has no files?
 def collection(request, location_uuid):
     error = None
     bad_request = None
 
     if request.method == 'GET':
-        # return list of transfers as ATOM feed
+        # return list of deposits as ATOM feed
+        col_iri = request.build_absolute_uri(
+            reverse('sword_collection', kwargs={'api_name': 'v1',
+                'resource_name': 'location', 'uuid': location_uuid}))
+
         feed = {
-            'title': 'Transfers',
-            #'url': request.build_absolute_uri(reverse('components.api.views_sword.transfer_collection'))
+            'title': 'Deposits',
+            'url': col_iri
         }
 
         entries = []
@@ -82,32 +85,29 @@ def collection(request, location_uuid):
                 try:
                     temp_filepath = helpers.write_request_body_to_temp_file(request)
 
-                    # parse XML
+                    # parse name and content URLs out of XML
                     try:
                         tree = etree.parse(temp_filepath)
                         root = tree.getroot()
-                        transfer_name = root.get('LABEL')
+                        deposit_name = root.get('LABEL')
 
-                        if transfer_name == None:
+                        if deposit_name == None:
                             bad_request = 'No deposit name found in XML.'
                         else:
                             # assemble deposit specification
-                            transfer_specification = {'location_uuid': location_uuid}
-                            transfer_specification['name'] = transfer_name
+                            deposit_specification = {'location_uuid': location_uuid}
+                            deposit_specification['name'] = deposit_name
                             if 'HTTP_ON_BEHALF_OF' in request.META:
                                 # TODO: should get this from author header
-                                transfer_specification['sourceofacquisition'] = request.META['HTTP_ON_BEHALF_OF']
+                                deposit_specification['sourceofacquisition'] = request.META['HTTP_ON_BEHALF_OF']
 
                             location_path = helpers.deposit_location_path(location_uuid)
                             if not os.path.isdir(location_path):
-                                error = {
-                                    'summary': 'Location path (%s) does not exist: contact an administrator.' % (location_path),
-                                    'status': 500
-                                }
+                                error = _error(500, 'Location path (%s) does not exist: contact an administrator.' % (location_path))
                             else:
-                                transfer_uuid = _create_deposit_directory_and_db_entry(transfer_specification)
+                                deposit_uuid = _create_deposit_directory_and_db_entry(deposit_specification)
 
-                                if transfer_uuid != None:
+                                if deposit_uuid != None:
                                     # parse XML for content URLs
                                     object_content_urls = []
 
@@ -122,44 +122,26 @@ def collection(request, location_uuid):
                                         object_content_urls.append(element.get('{http://www.w3.org/1999/xlink}href'))
 
                                     # create process so content URLs can be downloaded asynchronously
-                                    p = Process(target=_fetch_content, args=(transfer_uuid, object_content_urls))
+                                    p = Process(target=_fetch_content, args=(deposit_uuid, object_content_urls))
                                     p.start()
 
-                                    return _deposit_receipt_response(request, transfer_uuid, 201)
+                                    return _deposit_receipt_response(request, deposit_uuid, 201)
                                 else:
-                                    error = {
-                                        'summary': 'Could not create deposit: contact an administrator.',
-                                        'status': 500
-                                    }
+                                    error = _error(500, 'Could not create deposit: contact an administrator.')
                     except etree.XMLSyntaxError as e:
-                        error = {
-                            'summary': 'Error parsing XML ({error_message}).'.format(error_message=str(e)),
-                            'status': 412
-                        }
+                        error = _error(412, 'Error parsing XML ({error_message}).'.format(error_message=str(e)))
                 except Exception as e:
                     bad_request = str(e)
             else:
-                error = {
-                    'summary': 'A request body must be sent when creating a transfer.',
-                    'status': 412
-                }
+                error = _error(412, 'A request body must be sent when creating a deposit.')
         else:
-            # TODO: way to do one-step transfer creation by setting In-Progress to false
-            error = {
-                'summary': 'The In-Progress header must be set to true when creating a transfer.',
-                'status': 412
-            }
+            # TODO: way to do one-step deposit creation by setting In-Progress to false
+            error = _error(412, 'The In-Progress header must be set to true when creating a deposit.')
     else:
-        error = {
-            'summary': 'This endpoint only responds to the GET and POST HTTP methods.',
-            'status': 405
-        }
+        error = _error(405, 'This endpoint only responds to the GET and POST HTTP methods.')
 
     if bad_request != None:
-        error = {
-            'summary': bad_request,
-            'status': 400
-        }
+        error = _error(400, bad_request)
 
     if error != None:
         return _sword_error_response(request, error)
@@ -223,11 +205,11 @@ def _fetch_content(deposit_uuid, object_content_urls):
 """
 TODO: decouple deposits and locations for shorter URLs
 
-Example POST finalization of transfer:
+Example POST finalization of deposit:
 
   curl -v -H "In-Progress: false" --request POST http://127.0.0.1/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/deposit/5bdf83cd-5858-4152-90e2-c2426e90e7c0/
 
-Example DELETE if transfer:
+Example DELETE of deposit:
 
   curl -v -XDELETE http://127.0.0.1/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/deposit/5bdf83cd-5858-4152-90e2-c2426e90e7c0/
 """
@@ -246,10 +228,7 @@ def deposit(request, uuid):
             # ...task row must exist and task endtime must be equal to or greater than start time
             try:
                 if _deposit_has_been_submitted_for_processing(uuid):
-                    error = {
-                        'summary': 'This deposit has already been submitted for processing.',
-                        'status': 400
-                    }
+                    error = _error(400, 'This deposit has already been submitted for processing.')
                 else:
                     deposit = Deposit.objects.get(uuid=uuid)
 
@@ -274,10 +253,7 @@ def deposit(request, uuid):
                         bad_request = 'This deposit contains no files.'
 
             except ObjectDoesNotExist:
-                error = {
-                    'summary': 'This deposit could not be found.',
-                    'status': 404
-                }
+                error = _error(404, 'This deposit could not be found.')
         else:
             bad_request = 'The In-Progress header must be set to false when starting deposit processing.'
     elif request.method == 'PUT':
@@ -293,19 +269,13 @@ def deposit(request, uuid):
         deposit.delete()
         return HttpResponse(status=204) # No content
     else:
-        error = {
-            'summary': 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.',
-            'status': 405
-        }
+        error = _error(405, 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.')
 
     if bad_request != None:
-        error = {
-            'summary': bad_request,
-            'status': 400
-        }
+        error = _error(400, bad_request)
 
     if error != None:
-                return _sword_error_response(request, error)
+        return _sword_error_response(request, error)
 
 """
 Example GET of files list:
@@ -328,9 +298,6 @@ Example DELETE of file:
   curl -v -XDELETE \
     "http://localhost/api/v2/transfer/sword/03ce11a5-32c1-445a-83ac-400008894f78/media?filename=thing.jpg"
 """
-# TODO: implement Content-MD5 header so we can verify file upload was successful
-# TODO: better Content-Disposition header parsing
-# TODO: add authentication
 def deposit_media(request, uuid):
     if _deposit_has_been_submitted_for_processing(uuid):
         return _sword_error_response(request, {
@@ -343,18 +310,12 @@ def deposit_media(request, uuid):
     if request.method == 'GET':
         deposit_path = helpers.deposit_storage_path(uuid)
         if deposit_path == None:
-            error = {
-                'summary': 'This deposit does not exist.',
-                'status': 404
-            }
+            error = _error(404, 'This deposit does not exist.')
         else:
             if os.path.exists(deposit_path):
                 return HttpResponse(str(os.listdir(deposit_path)))
             else:
-                error = {
-                    'summary': 'This deposit path (%s) does not exist.' % (deposit_path),
-                    'status': 404
-                }
+                error = _error(404, 'This deposit path (%s) does not exist.' % (deposit_path))
     elif request.method == 'PUT':
         # replace a file in the deposit
         return _handle_upload_request(request, uuid, True)
@@ -370,17 +331,11 @@ def deposit_media(request, uuid):
                 os.remove(file_path)
                 return HttpResponse(status=204) # No content
             else:
-                error = {
-                    'summary': 'The path to this file (%s) does not exist.' % (file_path),
-                    'status': 404
-                }
+                error = _error(404, 'The path to this file (%s) does not exist.' % (file_path))
         else:
             # delete all files in deposit
             if _deposit_has_been_submitted_for_processing(uuid):
-                error = {
-                    'summary': 'This deposit has already been submitted for processing.',
-                    'status': 400
-                }
+                error = _error(400, 'This deposit has already been submitted for processing.')
             else:
                 deposit = Deposit.objects.get(uuid=uuid)
 
@@ -393,13 +348,10 @@ def deposit_media(request, uuid):
 
                 return HttpResponse(status=204) # No content
     else:
-        error = {
-            'summary': 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.',
-            'status': 405
-        }
+        error = _error(405, 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.')
 
     if error != None:
-                return _sword_error_response(request, error)
+        return _sword_error_response(request, error)
 
 def _handle_upload_request(request, uuid, replace_file=False):
     error = None
@@ -437,10 +389,7 @@ def _handle_upload_request(request, uuid, replace_file=False):
         bad_request = 'Content-disposition must be set in request header.'
 
     if bad_request != None:
-        error = {
-            'summary': bad_request,
-            'status': 400
-        }
+        error = _error(400, bad_request)
 
     if error != None:
         return _sword_error_response(request, error)
@@ -516,10 +465,7 @@ def deposit_state(request, uuid):
         response['Content-Type'] = 'application/atom+xml;type=feed'
         return response
     else:
-        error = {
-            'summary': 'This endpoint only responds to the GET HTTP method.',
-            'status': 405
-        }
+        error = _error(405, 'This endpoint only responds to the GET HTTP method.')
 
     if error != None:
                 return _sword_error_response(request, error)
@@ -553,6 +499,12 @@ def _sword_error_response(request, error_details):
     error_details['user_agent'] = request.META['HTTP_USER_AGENT']
     error_xml = render_to_string('locations/api/sword/error.xml', error_details)
     return HttpResponse(error_xml, status=error_details['status'])
+
+def _error(status, summary):
+    return {
+        'summary': summary,
+        'status': status
+    }
 
 # TODO: is this right?
 def _deposit_has_been_submitted_for_processing(deposit_uuid):
