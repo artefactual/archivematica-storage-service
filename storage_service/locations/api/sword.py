@@ -168,17 +168,17 @@ def _write_request_body_to_temp_file(request):
     _write_file_from_request_body(request, temp_filepath)
     return temp_filepath
 
-def _fetch_content(transfer_uuid, object_content_urls):
+def _fetch_content(deposit_uuid, object_content_urls):
     # write resources to temp file
     temp_dir = tempfile.mkdtemp()
     os.chmod(temp_dir, 02770) # drwxrws---
 
-    # create job record to associate tasks with the transfer
+    # create job record to associate tasks with the deposit
     now = datetime.datetime.now()
     job_uuid = uuid.uuid4().__str__()
     job = models.Job()
     job.jobuuid = job_uuid
-    job.sipuuid = transfer_uuid
+    job.sipuuid = deposit_uuid
     job.createdtime = now.__str__()
     job.createdtimedec = int(now.strftime("%s"))
     job.hidden = True
@@ -187,7 +187,7 @@ def _fetch_content(transfer_uuid, object_content_urls):
     for resource_url in object_content_urls:
         # create task record so progress can be tracked
         task_uuid = uuid.uuid4().__str__()
-        arguments = '"{resource_url}" "{transfer_path}"'.format(resource_url=resource_url, transfer_path=_deposit_storage_path(transfer_uuid))
+        arguments = '"{resource_url}" "{deposit_path}"'.format(resource_url=resource_url, deposit_path=_deposit_storage_path(deposit_uuid))
 
         """
         # create task record so time can be tracked by the MCP client
@@ -575,36 +575,36 @@ Example GET of state:
   curl -v http://127.0.0.1/api/v2/transfer/sword/03ce11a5-32c1-445a-83ac-400008894f78/state
 """
 # TODO: add authentication
-def transfer_state(request, uuid):
+def deposit_state(request, uuid):
     # TODO: add check if UUID is valid, 404 otherwise
 
     error = None
 
     if request.method == 'GET':
-        # In order to determine the transfer status we need to check
+        # In order to determine the deposit status we need to check
         # for three possibilities:
         #
-        # 1) The transfer involved no asynchronous depositing. There
+        # 1) The deposit involved no asynchronous depositing. There
         #    should be no row in the Jobs table for this transfer.
         #
-        # 2) The transfer involved asynchronous depositing, but the
+        # 2) The deposit involved asynchronous depositing, but the
         #    depositing is incomplete. There should be a row in the
         #    Jobs table, but the end time should be blank.
         #
-        # 3) The transfer involved asynchronous depositing and is
+        # 3) The deposit involved asynchronous depositing and is
         #    complete. There should be a row in the Jobs table with
         #    an end time.
 
-        # get transfer creation job, if any
+        # get deposit creation job, if any
         job = None
         try:
             # get job corresponding to transfer
-            job = models.Job.objects.filter(sipuuid=uuid, hidden=True)[0]
+            job = Job.objects.filter(sipuuid=uuid, hidden=True)[0]
 
             task = None
             if job != None:
                 try:
-                    task = models.Task.objects.filter(job=job)[0]
+                    task = Task.objects.filter(job=job)[0]
                 except:
                     pass
 
@@ -622,7 +622,7 @@ def transfer_state(request, uuid):
         state_term = task_state.lower()
         state_description = 'Deposit initiation: ' + task_state
 
-        response = HttpResponse(render_to_string('api/sword/state.xml', locals()))
+        response = HttpResponse(render_to_string('locations/api/sword/state.xml', locals()))
         response['Content-Type'] = 'application/atom+xml;type=feed'
         return response
     else:
