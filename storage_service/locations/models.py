@@ -1900,6 +1900,10 @@ class Deposit(models.Model):
         help_text="Name of the deposit.")
     path = models.TextField(
         help_text="Absolute path to the deposit on the storage service machine.")
+    create_time = models.DateTimeField(auto_now_add=True)
+    downloads_attempted = models.IntegerField(default=0)
+    downloads_completed = models.IntegerField(default=0)
+    download_completion_time = models.DateTimeField(default=None, null=True, blank=True)
 
     def full_path(self):
         """ Returns full path of deposit: space + location + deposit paths. """
