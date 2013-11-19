@@ -157,7 +157,7 @@ def _create_deposit_directory_and_db_entry(deposit_specification):
         deposit_name
     )
 
-    # TODO deposit_path = helpers.pad_destination_filepath_if_it_already_exists(deposit_path)
+    deposit_path = helpers.pad_destination_filepath_if_it_already_exists(deposit_path)
     os.mkdir(deposit_path)
     os.chmod(deposit_path, 02770) # drwxrws---
 

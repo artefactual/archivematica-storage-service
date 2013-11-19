@@ -57,6 +57,15 @@ def write_request_body_to_temp_file(request):
     write_file_from_request_body(request, temp_filepath)
     return temp_filepath
 
+# recursive
+def pad_destination_filepath_if_it_already_exists(filepath, original=None, attempt=0):
+    if original == None:
+        original = filepath
+    attempt = attempt + 1
+    if os.path.exists(filepath):
+        return pad_destination_filepath_if_it_already_exists(original + '_' + str(attempt), original, attempt)
+    return filepath
+
 def download_resource(url, destination_path):
     response = urllib2.urlopen(url)
     filename = _filename_from_response(response)
