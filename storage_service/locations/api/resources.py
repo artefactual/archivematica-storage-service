@@ -405,6 +405,7 @@ class DepositResource(ModelResource):
         return [
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit'), name="sword_deposit"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/media%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit_media'), name="sword_deposit_media"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/state%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit_state'), name="sword_deposit_state")
         ]
 
     def sword_deposit(self, request, **kwargs):
@@ -415,6 +416,9 @@ class DepositResource(ModelResource):
         self.log_throttled_access(request)
         return sword.deposit_media(request, kwargs['uuid'])
 
+    def sword_deposit_state(self, request, **kwargs):
+        self.log_throttled_access(request)
+        return sword.deposit_state(request, kwargs['uuid'])
 
 class PackageResource(ModelResource):
     """ Resource for managing Packages.
