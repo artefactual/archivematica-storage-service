@@ -779,4 +779,4 @@ class Deposit(models.Model):
     def full_path(self):
         """ Returns full path of deposit: space + location + deposit paths. """
         return os.path.normpath(
-            os.path.join(self.location.full_path, self.path)) # TODO: change to relative path
+            os.path.join(self.location.full_path(), self.path)) # TODO: change to relative path

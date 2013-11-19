@@ -24,8 +24,8 @@ from ..models import Location
 
 def _deposit_storage_path(uuid):
     try:
-        transfer = models.Transfer.objects.get(uuid=uuid)
-        return transfer.currentlocation
+        deposit = Deposit.objects.get(uuid=uuid)
+        return deposit.full_path()
     except ObjectDoesNotExist:
         return None
 
@@ -212,16 +212,16 @@ def _fetch_content(transfer_uuid, object_content_urls):
     shutil.rmtree(temp_dir)
 
 # respond with SWORD 2.0 deposit receipt XML
-def _deposit_receipt_response(request, transfer_uuid, status_code):
-    """
+def _deposit_receipt_response(request, deposit_uuid, status_code):
     media_iri = request.build_absolute_uri(
-        reverse('components.api.views_sword.transfer_files', args=[transfer_uuid])
-    )
+       reverse('sword_deposit_media', kwargs={'api_name': 'v1',
+           'resource_name': 'deposit', 'uuid': deposit_uuid}))
 
     edit_iri = request.build_absolute_uri(
-        reverse('components.api.views_sword.transfer', args=[transfer_uuid])
-    )
+        reverse('sword_deposit', kwargs={'api_name': 'v1',
+                   'resource_name': 'deposit', 'uuid': deposit_uuid}))
 
+    """
     state_iri = request.build_absolute_uri(
         reverse('components.api.views_sword.transfer_state', args=[transfer_uuid])
     )
@@ -230,7 +230,7 @@ def _deposit_receipt_response(request, transfer_uuid, status_code):
     receipt_xml = render_to_string('locations/api/sword/deposit_receipt.xml', locals())
 
     response = HttpResponse(receipt_xml, mimetype='text/xml', status=status_code)
-    response['Location'] = transfer_uuid
+    response['Location'] = deposit_uuid
     return response
 
 def _deposit_has_been_submitted_for_processing(deposit_uuid):
@@ -392,7 +392,7 @@ TODO: decouple deposits and locations for shorter URLs
 
 Example POST finalization of transfer:
 
-  curl -v -H "In-Progress: false" --request http://127.0.0.1/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/deposit/5bdf83cd-5858-4152-90e2-c2426e90e7c0/
+  curl -v -H "In-Progress: false" --request POST http://127.0.0.1/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/deposit/5bdf83cd-5858-4152-90e2-c2426e90e7c0/
 
 Example DELETE if transfer:
 
@@ -418,7 +418,7 @@ def deposit(request, uuid):
                         'status': 400
                     }
                 else:
-                    deposit = models.Deposit.objects.get(uuid=uuid)
+                    deposit = Deposit.objects.get(uuid=uuid)
 
                     if len(os.listdir(deposit.full_path())) > 0:
                         """
@@ -453,11 +453,11 @@ def deposit(request, uuid):
     elif request.method == 'DELETE':
         # delete deposit files
         deposit_path = _deposit_storage_path(uuid)
-        shutil.rmtree(transfer_path)
+        shutil.rmtree(deposit_path)
 
         # delete entry in Transfers table (and task?)
-        transfer = models.Transfer.objects.get(uuid=uuid)
-        transfer.delete()
+        deposit = Deposit.objects.get(uuid=uuid)
+        deposit.delete()
         return HttpResponse(status=204) # No content
     else:
         error = {
@@ -498,61 +498,62 @@ Example DELETE of file:
 # TODO: implement Content-MD5 header so we can verify file upload was successful
 # TODO: better Content-Disposition header parsing
 # TODO: add authentication
-def transfer_files(request, uuid):
+def deposit_media(request, uuid):
     if _deposit_has_been_submitted_for_processing(uuid):
         return _sword_error_response(request, {
-            'summary': 'This transfer is already being processed by Archivematica.',
+            'summary': 'This deposit has already been submitted for processing.',
             'status': 400
         })
 
     error = None
 
     if request.method == 'GET':
-        transfer_path = _deposit_storage_path(uuid)
-        if transfer_path == None:
+        deposit_path = _deposit_storage_path(uuid)
+        if deposit_path == None:
             error = {
-                'summary': 'This transfer does not exist.',
+                'summary': 'This deposit does not exist.',
                 'status': 404
             }
         else:
-            if os.path.exists(transfer_path):
-                return helpers.json_response(os.listdir(transfer_path))
+            if os.path.exists(deposit_path):
+                return HttpResponse(str(os.listdir(deposit_path)))
+                #return helpers.json_response(os.listdir(deposit_path))
             else:
                 error = {
-                    'summary': 'This transfer path does not exist.',
+                    'summary': 'This deposit path (%s) does not exist.' % (deposit_path),
                     'status': 404
                 }
     elif request.method == 'PUT':
-        # replace a file in the transfer
+        # replace a file in the deposit
         return _handle_upload_request(request, uuid, True)
     elif request.method == 'POST':
-        # add a file to the transfer
+        # add a file to the deposit
         return _handle_upload_request(request, uuid)
     elif request.method == 'DELETE':
         filename = request.GET.get('filename', '')
         if filename != '':
-            transfer_path = _deposit_storage_path(uuid)
-            file_path = os.path.join(transfer_path, filename) 
+            deposit_path = _deposit_storage_path(uuid)
+            file_path = os.path.join(deposit_path, filename) 
             if os.path.exists(file_path):
                 os.remove(file_path)
                 return HttpResponse(status=204) # No content
             else:
                 error = {
-                    'summary': 'The transfer path does not exist.',
+                    'summary': 'The path to this file (%s) does not exist.' % (file_path),
                     'status': 404
                 }
         else:
-            # delete all files in transfer
+            # delete all files in deposit
             if _deposit_has_been_submitted_for_processing(uuid):
                 error = {
-                    'summary': 'This transfer is already being processed by Archivematica.',
+                    'summary': 'This deposit has already been submitted for processing.',
                     'status': 400
                 }
             else:
-                transfer = models.Transfer.objects.get(uuid=uuid)
+                deposit = Deposit.objects.get(uuid=uuid)
 
-                for filename in os.listdir(transfer.currentlocation):
-                    filepath = os.path.join(transfer.currentlocation, filename)
+                for filename in os.listdir(deposit.full_path()):
+                    filepath = os.path.join(deposit.full_path(), filename)
                     if os.path.isfile(filepath):
                         os.remove(filepath)
                     elif os.path.isdir(filepath):

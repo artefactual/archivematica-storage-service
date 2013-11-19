@@ -25,7 +25,7 @@ from tastypie.utils import trailing_slash
 from common import utils
 from locations.api import sword
 
-from ..models import (Event, Package, Location, Space, Pipeline)
+from ..models import (Event, Package, Location, Space, Pipeline, Deposit)
 from ..forms import LocationForm, SpaceForm
 from ..constants import PROTOCOL
 
@@ -225,6 +225,46 @@ class LocationResource(ModelResource):
     def sword_collection(self, request, **kwargs):
         self.log_throttled_access(request)
         return sword.collection(request, kwargs['uuid'])
+
+
+class DepositResource(ModelResource):
+    location = fields.ForeignKey(LocationResource, 'location')
+    path = fields.CharField(attribute='full_path', readonly=True)
+    name = fields.CharField(attribute='name', readonly=True)
+
+    class Meta:
+        queryset = Deposit.objects.all()
+        authentication = Authentication()
+        # authentication = MultiAuthentication(
+        #     BasicAuthentication, ApiKeyAuthentication())
+        authorization = Authorization()
+        # authorization = DjangoAuthorization()
+        # validation = CleanedDataFormValidation(form_class=LocationForm)
+
+        fields = ['path', 'name', 'uuid']
+        list_allowed_methods = ['get']
+        detail_allowed_methods = ['get']
+        detail_uri_name = 'uuid'
+        always_return_data = True
+        filtering = {
+            'path': ALL,
+            'location': ALL_WITH_RELATIONS,
+            'uuid': ALL,
+        }
+
+    def prepend_urls(self):
+        return [
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit'), name="sword_deposit"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/media%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit_media'), name="sword_deposit_media"),
+        ]
+
+    def sword_deposit(self, request, **kwargs):
+        self.log_throttled_access(request)
+        return sword.deposit(request, kwargs['uuid'])
+
+    def sword_deposit_media(self, request, **kwargs):
+        self.log_throttled_access(request)
+        return sword.deposit_media(request, kwargs['uuid'])
 
 
 class PackageResource(ModelResource):
