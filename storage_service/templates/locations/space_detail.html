@@ -13,6 +13,8 @@
         {% for k, v in space.child.items %}
             <dt>{{ k|capfirst }}</dt> <dd>{{ v }}</dd>
         {% endfor %}
+        <dt>Actions</dt>
+        <dd><a href="{% url 'space_edit' space.uuid %}">Edit Space</a></dd>
     </dl>
 </div>
 

@@ -97,7 +97,7 @@ class Space(models.Model):
     def __unicode__(self):
         return u"{uuid}: {path} ({access_protocol})".format(
             uuid=self.uuid,
-            access_protocol=self.access_protocol,
+            access_protocol=self.get_access_protocol_display(),
             path=self.path,
         )
 

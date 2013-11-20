@@ -184,6 +184,19 @@ def space_create(request):
 
     return render(request, 'locations/space_form.html', locals())
 
+def space_edit(request, uuid):
+    space = get_object_or_404(Space, uuid=uuid)
+    protocol_space = space.get_child_space()
+    space_form = SpaceForm(request.POST or None, prefix='space', instance=space)
+    protocol_form = PROTOCOL[space.access_protocol]['form'](
+                request.POST or None, prefix='protocol', instance=protocol_space)
+    if space_form.is_valid() and protocol_form.is_valid():
+        space_form.save()
+        protocol_form.save()
+        messages.success(request, "Space saved.")
+        return redirect('space_detail', space.uuid)
+    return render(request, 'locations/space_edit.html', locals())
+
 # FIXME this should probably submit a csrf token
 @csrf_exempt
 def ajax_space_create_protocol_form(request):
