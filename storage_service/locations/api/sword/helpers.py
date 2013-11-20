@@ -18,10 +18,6 @@ def deposit_storage_path(uuid):
     except ObjectDoesNotExist:
         return None
 
-def deposit_location_path(location_uuid):
-    location = Location.objects.get(uuid=location_uuid)
-    return location.full_path()
-
 def deposit_list(location_uuid):
     location = Location.objects.get(uuid=location_uuid)
 

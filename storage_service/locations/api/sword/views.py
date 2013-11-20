@@ -76,6 +76,7 @@ Example POST creation of deposit, finalizing the deposit and auto-approving it:
 """
 def collection(request, location_uuid):
     location = get_object_or_None(Location, uuid=location_uuid)
+
     if location == None:
         error = _error(404, 'Location {uuid} does not exist.'.format(uuid=location_uuid))
         return _sword_error_response(request, error)
@@ -135,9 +136,8 @@ def collection(request, location_uuid):
                                 # TODO: should get this from author header
                                 deposit_specification['sourceofacquisition'] = request.META['HTTP_ON_BEHALF_OF']
 
-                            location_path = helpers.deposit_location_path(location_uuid)
-                            if not os.path.isdir(location_path):
-                                error = _error(500, 'Location path (%s) does not exist: contact an administrator.' % (location_path))
+                            if not os.path.isdir(location.full_path()):
+                                error = _error(500, 'Location path (%s) does not exist: contact an administrator.' % (location.full_path()))
                             else:
                                 deposit_uuid = _create_deposit_directory_and_db_entry(deposit_specification)
 
@@ -189,8 +189,10 @@ def _create_deposit_directory_and_db_entry(deposit_specification):
     else:
         deposit_name = 'Untitled'
 
+    location = Location.objects.get(uuid=deposit_specification['location_uuid']) 
+
     deposit_path = os.path.join(
-        helpers.deposit_location_path(deposit_specification['location_uuid']),
+        location.full_path(),
         deposit_name
     )
 
