@@ -76,6 +76,7 @@ Example POST creation of deposit, finalizing the deposit and auto-approving it:
 """
 def collection(request, location_uuid):
     location = get_object_or_None(Location, uuid=location_uuid)
+
     if location == None:
         error = _error(404, 'Location {uuid} does not exist.'.format(uuid=location_uuid))
         return _sword_error_response(request, error)
@@ -135,9 +136,8 @@ def collection(request, location_uuid):
                                 # TODO: should get this from author header
                                 deposit_specification['sourceofacquisition'] = request.META['HTTP_ON_BEHALF_OF']
 
-                            location_path = helpers.deposit_location_path(location_uuid)
-                            if not os.path.isdir(location_path):
-                                error = _error(500, 'Location path (%s) does not exist: contact an administrator.' % (location_path))
+                            if not os.path.isdir(location.full_path()):
+                                error = _error(500, 'Location path (%s) does not exist: contact an administrator.' % (location.full_path()))
                             else:
                                 deposit_uuid = _create_deposit_directory_and_db_entry(deposit_specification)
 
@@ -189,8 +189,10 @@ def _create_deposit_directory_and_db_entry(deposit_specification):
     else:
         deposit_name = 'Untitled'
 
+    location = Location.objects.get(uuid=deposit_specification['location_uuid']) 
+
     deposit_path = os.path.join(
-        helpers.deposit_location_path(deposit_specification['location_uuid']),
+        location.full_path(),
         deposit_name
     )
 
@@ -218,7 +220,6 @@ def _fetch_content(deposit_uuid, object_content_urls):
     deposit.save()
 
     # download the files
-    destination_path = helpers.deposit_storage_path(deposit_uuid)
     temp_dir = tempfile.mkdtemp()
 
     completed = 0
@@ -229,7 +230,7 @@ def _fetch_content(deposit_uuid, object_content_urls):
         except:
             pass
         shutil.move(os.path.join(temp_dir, filename),
-            os.path.join(destination_path, filename))
+            os.path.join(deposit.full_path(), filename))
 
     # remove temp dir
     shutil.rmtree(temp_dir)
@@ -335,8 +336,7 @@ def deposit_edit(request, uuid):
         return HttpResponse(status=204) # No content
     elif request.method == 'DELETE':
         # delete deposit files
-        deposit_path = helpers.deposit_storage_path(uuid)
-        shutil.rmtree(deposit_path)
+        shutil.rmtree(deposit.full_path())
 
         # delete deposit
         deposit = Deposit.objects.get(uuid=uuid)
@@ -386,14 +386,7 @@ def deposit_media(request, uuid):
     error = None
 
     if request.method == 'GET':
-        deposit_path = helpers.deposit_storage_path(uuid)
-        if deposit_path == None:
-            error = _error(404, 'This deposit does not exist.')
-        else:
-            if os.path.exists(deposit_path):
-                return HttpResponse(str(os.listdir(deposit_path)))
-            else:
-                error = _error(404, 'This deposit path (%s) does not exist.' % (deposit_path))
+        return HttpResponse(str(os.listdir(deposit.full_path())))
     elif request.method == 'PUT':
         # replace a file in the deposit
         return _handle_upload_request(request, uuid, True)
@@ -403,8 +396,7 @@ def deposit_media(request, uuid):
     elif request.method == 'DELETE':
         filename = request.GET.get('filename', '')
         if filename != '':
-            deposit_path = helpers.deposit_storage_path(uuid)
-            file_path = os.path.join(deposit_path, filename) 
+            file_path = os.path.join(deposit.full_path(), filename) 
             if os.path.exists(file_path):
                 os.remove(file_path)
                 return HttpResponse(status=204) # No content
@@ -427,14 +419,14 @@ def deposit_media(request, uuid):
     if error != None:
         return _sword_error_response(request, error)
 
-def _handle_upload_request(request, uuid, replace_file=False):
+def _handle_upload_request(request, deposit, replace_file=False):
     error = None
 
     if 'HTTP_CONTENT_DISPOSITION' in request.META:
         filename = helpers.parse_filename_from_content_disposition(request.META['HTTP_CONTENT_DISPOSITION']) 
 
         if filename != '':
-            file_path = os.path.join(helpers.deposit_storage_path(uuid), filename)
+            file_path = os.path.join(deposit.full_path(), filename)
 
             if replace_file:
                 # if doing a file replace, the file being replaced must exist

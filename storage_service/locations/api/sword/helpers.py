@@ -11,17 +11,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from locations.models import Deposit
 from locations.models import Location
 
-def deposit_storage_path(uuid):
-    try:
-        deposit = Deposit.objects.get(uuid=uuid)
-        return deposit.full_path()
-    except ObjectDoesNotExist:
-        return None
-
-def deposit_location_path(location_uuid):
-    location = Location.objects.get(uuid=location_uuid)
-    return location.full_path()
-
 def deposit_list(location_uuid):
     location = Location.objects.get(uuid=location_uuid)
 
