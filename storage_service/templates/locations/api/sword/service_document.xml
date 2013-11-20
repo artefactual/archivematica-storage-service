@@ -1,0 +1,20 @@
+<service xmlns:dcterms="http://purl.org/dc/terms/"
+  xmlns:sword="http://purl.org/net/sword/terms/"
+  xmlns:atom="http://www.w3.org/2005/Atom"
+  xmlns="http://www.w3.org/2007/app">
+
+  <sword:version>2.0</sword:version>
+
+  <workspace>
+    <atom:title>Archivematica storage service</atom:title>
+
+    {% for collection in collections %}
+    <collection href="{{ collection.url }}">
+      <atom:title>{{ collection.title }}</atom:title>
+      <accept>*/*</accept>
+      <accept alternate="multipart-related">*/*</accept>
+      <sword:mediation>false</sword:mediation>
+    </collection>
+    {% endfor %}
+  </workspace>
+</service>
