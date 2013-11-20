@@ -225,8 +225,6 @@ def _fetch_content(deposit_uuid, object_content_urls):
     deposit.save()
 
 """
-TODO: decouple deposits and locations for shorter URLs
-
 Example POST finalization of deposit:
 
   curl -v -H "In-Progress: false" --request POST http://127.0.0.1:8000/api/v1/deposit/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/
@@ -464,7 +462,6 @@ Example GET of state:
 
   curl -v http://localhost:8000/api/v1/deposit/96606387-cc70-4b09-b422-a7220606488d/sword/state/
 """
-# TODO: add authentication
 def deposit_state(request, uuid):
     # TODO: add check if UUID is valid, 404 otherwise
 
@@ -554,9 +551,7 @@ def _error(status, summary):
 # TODO: is this right?
 def _deposit_has_been_submitted_for_processing(deposit_uuid):
     try:
-        deposit = models.Deposit.objects.get(uuid=deposit_uuid)
-        if deposit.status != 'complete':
-            return True
-        return False
-    except:
+        deposit = Deposit.objects.get(uuid=deposit_uuid)
+        return deposit.deposit_completion_time != None
+    except ObjectDoesNotExist:
         return False
