@@ -56,6 +56,10 @@ def startup():
         space=space,
         relative_path=os.path.join('var', 'archivematica', 'sharedDirectory', 'www', 'AIPsStore'),
         description='Store AIP in standard Archivematica Directory')
+    transfer_deposit, _ = locations_models.Location.objects.get_or_create(
+        purpose=locations_models.Location.TRANSFER_SOURCE, #TODO: make new purpose
+        space=space,
+        relative_path=os.path.join('var', 'archivematica', 'sharedDirectory', 'staging', 'deposits'))
     internal_use, _ = locations_models.Location.objects.get_or_create(
         purpose=locations_models.Location.STORAGE_SERVICE_INTERNAL,
         space=space,
@@ -68,4 +72,5 @@ def startup():
             logging.error("Internal storage location {} not accessible.".format(internal_use.full_path()))
     utils.set_setting('default_transfer_source', [transfer_source.uuid])
     utils.set_setting('default_aip_storage', [aip_storage.uuid])
+    utils.set_setting('default_transfer_deposit', [transfer_deposit.uuid])
 startup()

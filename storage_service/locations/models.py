@@ -754,16 +754,24 @@ class Pipeline(models.Model):
                 LocationPipeline.objects.get_or_create(
                     pipeline=self, location=location)
 
+        # TODO: not sure if we need a space for this, or just a new location purpose
         space, space_created = Space.objects.get_or_create(
             access_protocol=Space.SWORD_SERVER, path='/' + os.path.join(shared_path, 'staging'))
         if space_created:
             sword_server = SwordServer(space=space)
             sword_server.save()
             logging.info("Protocol Space created: {}".format(sword_server))
-        #location = Location.objects.create(
-        #    purpose=Location.TRANSFER_SOURCE, '1762e436-2ae0-4e23-8ab0-afe8f3a9ebd0')
-        #LocationPipeline.objects.get_or_create(
-        #    pipeline=self, location=location)
+
+        # TODO: integrate this with the other location creation logic
+        # associate pipeline with transfer deposit location
+        defaults = utils.get_setting('default_transfer_deposit', [])
+        for uuid in defaults:
+            location = Location.objects.get(uuid=uuid)
+            assert location.purpose == Location.TRANSFER_SOURCE
+            logging.info("Adding new transfer deposits directory to {}".format(
+                self))
+            LocationPipeline.objects.get_or_create(
+                pipeline=self, location=location)
 
 class Deposit(models.Model):
     """ Stores information about a deposit of files. """
