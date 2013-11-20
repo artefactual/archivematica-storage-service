@@ -415,7 +415,7 @@ class DepositResource(ModelResource):
 
     def sword_deposit(self, request, **kwargs):
         self.log_throttled_access(request)
-        return sword_views.deposit(request, kwargs['uuid'])
+        return sword_views.deposit_edit(request, kwargs['uuid'])
 
     def sword_deposit_media(self, request, **kwargs):
         self.log_throttled_access(request)
