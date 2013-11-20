@@ -1,11 +1,14 @@
 # stdlib, alphabetical
 import datetime
+import json
 from lxml import etree as etree
 from multiprocessing import Process
 import os
 import shutil
 import tempfile
 import time
+import urllib
+import urllib2
 
 # Core Django, alphabetical
 from django.core.exceptions import ObjectDoesNotExist
@@ -17,6 +20,7 @@ from django.utils import timezone
 # This project, alphabetical
 from locations.models import Deposit
 from locations.models import Location
+from locations.models import Pipeline
 from locations.models import Space
 import helpers
 
@@ -28,7 +32,12 @@ Example GET of service document:
 def service_document(request, space_uuid):
     collections = []
 
-    space = Space.objects.get(uuid=space_uuid)
+    try:
+        space = Space.objects.get(uuid=space_uuid)
+    except ObjectDoesNotExist:
+        error = _error(404, 'Space {uuid} does not exist.'.format(uuid=space_uuid))
+        return _sword_error_response(request, error)
+
     locations = Location.objects.filter(space=space)
 
     for location in locations:
@@ -245,36 +254,37 @@ def deposit(request, uuid):
                     deposit = Deposit.objects.get(uuid=uuid)
 
                     if len(os.listdir(deposit.full_path())) > 0:
-                        # TODO: work out how to decide if we want auto approval? ...could be LocationPipeline config item?
-
+                        # TODO... how to get appropriate destination path?
                         # work out destination path
                         destination_path = '/var/archivematica/sharedDirectory/watchedDirectories/activeTransfers/standardTransfer/' + os.path.basename(deposit.full_path())
 
                         # move to standard transfers directory
+                        destination_path = helpers.pad_destination_filepath_if_it_already_exists(destination_path)
                         shutil.move(deposit.full_path(), destination_path)
 
-                        # wait to make sure the MCP responds to the directory being in the watch directory
-                        import time
-                        time.sleep(2)
+                        # optionally auto-approve
+                        approval_pipeline = request.GET.get('approval_pipeline', '')
 
-                        # make approval request to pipeline
-                        import urllib2
-                        import urllib
-                        # TODO: get deposit basedir
-                        # TODO: get the IP, creds from the pipeline... ? how?
-                        # need to then hit approval endpoint via urllib or whatever
-                        data = {
-                            'username': 'mike',
-                            'api_key': '0bf2c8585720bec68ab1c52d1e86254a1d7e87ce',
-                            'directory': 'Hat',
-                            'type': 'standard'
-                        }
-                        data = urllib.urlencode(data) # TODO can this be done without the old urllib?
-                        req = urllib2.Request('http://192.168.1.231/api/transfer/approve/', data) 
-                        response = urllib2.urlopen(req)
-                        result_json = response.read()
-                        # TODO: do something with the reply
-                        return HttpResponse(result_json)
+                        if approval_pipeline != '':
+                            # TODO check if it exists
+                            pipeline = Pipeline.objects.get(uuid=approval_pipeline)
+
+                            # wait to make sure the MCP responds to the directory being in the watch directory
+                            import time
+                            time.sleep(2)
+
+                            # make request to pipeline's transfer approval API
+                            data = urllib.urlencode({
+                                'username': pipeline.api_username,
+                                'api_key': pipeline.api_key,
+                                'directory': os.path.basename(destination_path),
+                                'type': 'standard' # TODO: make this customizable via a URL param
+                            })
+                            approve_request = urllib2.Request('http://' + pipeline.remote_name + '/api/transfer/approve/', data) 
+                            approve_response = urllib2.urlopen(approve_request)
+                            result = json.loads(approve_response.read())
+                            # TODO: maybe return a sword error if the approval didn't work
+                            return HttpResponse(str(result))
 
                         return _deposit_receipt_response(request, uuid, 200)
                     else:
