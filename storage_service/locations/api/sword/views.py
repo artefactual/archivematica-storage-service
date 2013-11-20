@@ -75,6 +75,11 @@ Example POST creation of deposit, finalizing the deposit and auto-approving it:
   curl -v -H "In-Progress: false" --data-binary @mets.xml --request POST http://localhost:8000/api/v1/location/c0bee7c8-3e9b-41e3-8600-ee9b2c475da2/sword/collection/?approval_pipeline=41b57f04-9738-43d8-b80e-3fad88c75abc
 """
 def collection(request, location_uuid):
+    location = get_object_or_None(Location, uuid=location_uuid)
+    if location == None:
+        error = _error(404, 'Location {uuid} does not exist.'.format(uuid=location_uuid))
+        return _sword_error_response(request, error)
+
     error = None
 
     if request.method == 'GET':
@@ -246,6 +251,10 @@ Example DELETE of deposit:
 def deposit_edit(request, uuid):
     deposit = get_object_or_None(Deposit, uuid=uuid)
 
+    if deposit == None:
+        error = _error(404, 'Deposit {uuid} does not exist.'.format(uuid=uuid))
+        return _sword_error_response(request, error)
+
     if deposit.has_been_submitted_for_processing():
         return _sword_error_response(request, {
             'summary': 'This deposit has already been submitted for processing.',
@@ -365,6 +374,10 @@ Example DELETE of file:
 def deposit_media(request, uuid):
     deposit = get_object_or_None(Deposit, uuid=uuid)
 
+    if deposit == None:
+        error = _error(404, 'Deposit {uuid} does not exist.'.format(uuid=uuid))
+        return _sword_error_response(request, error)
+
     if deposit.has_been_submitted_for_processing():
         return _sword_error_response(request, {
             'summary': 'This deposit has already been submitted for processing.',
@@ -476,7 +489,11 @@ Example GET of state:
   curl -v http://localhost:8000/api/v1/deposit/96606387-cc70-4b09-b422-a7220606488d/sword/state/
 """
 def deposit_state(request, uuid):
-    # TODO: add check if UUID is valid, 404 otherwise
+    deposit = get_object_or_None(Deposit, uuid=uuid)
+
+    if deposit == None:
+        error = _error(404, 'Deposit {uuid} does not exist.'.format(uuid=uuid))
+        return _sword_error_response(request, error)
 
     error = None
 
