@@ -235,8 +235,15 @@ Example DELETE of deposit:
 
   curl -v -XDELETE http://127.0.0.1:8000/api/v1/deposit/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/
 """
-# TODO: add authentication
 def deposit(request, uuid):
+    if _deposit_has_been_submitted_for_processing(uuid):
+        return _sword_error_response(request, {
+            'summary': 'This deposit has already been submitted for processing.',
+            'status': 400
+        })
+
+    # TODO: existance check?
+
     error = None
 
     if request.method == 'GET':
@@ -245,66 +252,79 @@ def deposit(request, uuid):
     elif request.method == 'POST':
         # is the deposit ready to be processed?
         if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
-            # TODO: check that related tasks are complete before copying
-            # ...task row must exist and task endtime must be equal to or greater than start time
-            try:
-                if _deposit_has_been_submitted_for_processing(uuid):
-                    error = _error(400, 'This deposit has already been submitted for processing.')
-                else:
-                    deposit = Deposit.objects.get(uuid=uuid)
+            deposit = Deposit.objects.get(uuid=uuid)
 
-                    if len(os.listdir(deposit.full_path())) > 0:
-                        # TODO... how to get appropriate destination path?
-                        # work out destination path
-                        destination_path = '/var/archivematica/sharedDirectory/watchedDirectories/activeTransfers/standardTransfer/' + os.path.basename(deposit.full_path())
+            if len(os.listdir(deposit.full_path())) > 0:
+                # optionally auto-approve
+                approval_pipeline = request.GET.get('approval_pipeline', '')
 
-                        # move to standard transfers directory
-                        destination_path = helpers.pad_destination_filepath_if_it_already_exists(destination_path)
-                        shutil.move(deposit.full_path(), destination_path)
+                # if auto-approve is being used, test configuration
+                if approval_pipeline != '':
+                    try:
+                        pipeline = Pipeline.objects.get(uuid=approval_pipeline)
+                    except ObjectDoesNotExist:
+                        error = _error(400, 'Pipeline {uuid} does not exist.'.format(uuid=approval_pipeline))
+                        return _sword_error_response(request, error)
 
-                        # optionally auto-approve
-                        approval_pipeline = request.GET.get('approval_pipeline', '')
+                    # make sure pipeline API access is configured
+                    for property in ['remote_name', 'api_username', 'api_key']:
+                        if getattr(pipeline, property)=='':
+                            property_description = property.replace('_', ' ')
+                            error = _error(500, 'Pipeline {property} not set.'.format(property=property_description))
+                            return _sword_error_response(request, error)
 
-                        if approval_pipeline != '':
-                            # TODO check if it exists
-                            pipeline = Pipeline.objects.get(uuid=approval_pipeline)
+                # TODO... how to get appropriate destination path?
+                destination_path = '/var/archivematica/sharedDirectory/watchedDirectories/activeTransfers/standardTransfer/' + os.path.basename(deposit.full_path())
 
-                            # wait to make sure the MCP responds to the directory being in the watch directory
-                            import time
-                            time.sleep(2)
+                # move to standard transfers directory
+                destination_path = helpers.pad_destination_filepath_if_it_already_exists(destination_path)
+                shutil.move(deposit.full_path(), destination_path)
 
-                            # make request to pipeline's transfer approval API
-                            data = urllib.urlencode({
-                                'username': pipeline.api_username,
-                                'api_key': pipeline.api_key,
-                                'directory': os.path.basename(destination_path),
-                                'type': 'standard' # TODO: make this customizable via a URL param
-                            })
-                            approve_request = urllib2.Request('http://' + pipeline.remote_name + '/api/transfer/approve/', data) 
-                            approve_response = urllib2.urlopen(approve_request)
-                            result = json.loads(approve_response.read())
-                            # TODO: maybe return a sword error if the approval didn't work
-                            return HttpResponse(str(result))
+                # handle auto-approval
+                if approval_pipeline != '':
+                    # wait to make sure the MCP responds to the directory being in the watch directory
+                    time.sleep(2)
 
-                        return _deposit_receipt_response(request, uuid, 200)
-                    else:
-                        error = _error(400, 'This deposit contains no files.')
+                    # make request to pipeline's transfer approval API
+                    data = urllib.urlencode({
+                        'username': pipeline.api_username,
+                        'api_key': pipeline.api_key,
+                        'directory': os.path.basename(destination_path),
+                        'type': 'standard' # TODO: make this customizable via a URL param
+                    })
+                    approve_request = urllib2.Request('http://' + pipeline.remote_name + '/api/transfer/approve/', data)
 
-            except ObjectDoesNotExist:
-                error = _error(400, 'This deposit could not be found.')
+                    try:
+                        approve_response = urllib2.urlopen(approve_request)
+                    except:
+                        error = _error(500, 'Request to pipeline transfer approval API failed: check credentials.')
+                        return _sword_error_response(request, error)
+
+                    result = json.loads(approve_response.read())
+                    if 'error' in result:
+                        error = _error(500, result['message'])
+                        return _sword_error_response(request, error)
+
+                # mark deposit as complete and return deposit receipt
+                deposit.deposit_completion_time = timezone.now()
+                deposit.save()
+                return _deposit_receipt_response(request, uuid, 200)
+            else:
+                error = _error(400, 'This deposit contains no files.')
         else:
             error = _error(400, 'The In-Progress header must be set to false when starting deposit processing.')
     elif request.method == 'PUT':
-        # update deposit
+        # TODO: implement update deposit
         return HttpResponse(status=204) # No content
     elif request.method == 'DELETE':
         # delete deposit files
         deposit_path = helpers.deposit_storage_path(uuid)
         shutil.rmtree(deposit_path)
 
-        # delete entry in Transfers table (and task?)
+        # delete deposit
         deposit = Deposit.objects.get(uuid=uuid)
         deposit.delete()
+
         return HttpResponse(status=204) # No content
     else:
         error = _error(405, 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.')
@@ -368,20 +388,16 @@ def deposit_media(request, uuid):
             else:
                 error = _error(404, 'The path to this file (%s) does not exist.' % (file_path))
         else:
-            # delete all files in deposit
-            if _deposit_has_been_submitted_for_processing(uuid):
-                error = _error(400, 'This deposit has already been submitted for processing.')
-            else:
-                deposit = Deposit.objects.get(uuid=uuid)
+            deposit = Deposit.objects.get(uuid=uuid)
 
-                for filename in os.listdir(deposit.full_path()):
-                    filepath = os.path.join(deposit.full_path(), filename)
-                    if os.path.isfile(filepath):
-                        os.remove(filepath)
-                    elif os.path.isdir(filepath):
-                        shutil.rmtree(filepath)
+            for filename in os.listdir(deposit.full_path()):
+                filepath = os.path.join(deposit.full_path(), filename)
+                if os.path.isfile(filepath):
+                    os.remove(filepath)
+                elif os.path.isdir(filepath):
+                    shutil.rmtree(filepath)
 
-                return HttpResponse(status=204) # No content
+            return HttpResponse(status=204) # No content
     else:
         error = _error(405, 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.')
 
