@@ -118,16 +118,14 @@ def collection(request, location_uuid):
 
                     # parse name and content URLs out of XML
                     try:
-                        tree = etree.parse(temp_filepath)
-                        root = tree.getroot()
-                        deposit_name = root.get('LABEL')
+                        mets_data = _parse_name_and_content_urls_from_mets_file(temp_filepath)
 
-                        if deposit_name == None:
+                        if mets_data['deposit_name'] == None:
                             return _sword_error_response(400, 'No deposit name found in XML.')
                         else:
                             # assemble deposit specification
                             deposit_specification = {'location_uuid': location_uuid}
-                            deposit_specification['name'] = deposit_name
+                            deposit_specification['name'] = mets_data['deposit_name']
                             if 'HTTP_ON_BEHALF_OF' in request.META:
                                 # TODO: should get this from author header
                                 deposit_specification['sourceofacquisition'] = request.META['HTTP_ON_BEHALF_OF']
@@ -138,27 +136,14 @@ def collection(request, location_uuid):
                                 deposit_uuid = _create_deposit_directory_and_db_entry(deposit_specification)
 
                                 if deposit_uuid != None:
-                                    # parse XML for content URLs
-                                    object_content_urls = []
-
-                                    elements = root.iterfind("{http://www.loc.gov/METS/}fileSec/"
-                                        + "{http://www.loc.gov/METS/}fileGrp[@ID='DATASTREAMS']/"
-                                        + "{http://www.loc.gov/METS/}fileGrp[@ID='OBJ']/"
-                                        + "{http://www.loc.gov/METS/}file/"
-                                        + "{http://www.loc.gov/METS/}FLocat"
-                                    )
-
-                                    for element in elements:
-                                        object_content_urls.append(element.get('{http://www.w3.org/1999/xlink}href'))
-
                                     if request.META['HTTP_IN_PROGRESS'] == 'true':
                                         # create subprocess so content URLs can be downloaded asynchronously
-                                        p = Process(target=_fetch_content, args=(deposit_uuid, object_content_urls))
+                                        p = Process(target=_fetch_content, args=(deposit_uuid, mets_data['object_content_urls']))
                                         p.start()
                                         return _deposit_receipt_response(request, deposit_uuid, 201)
                                     else:
                                         # fetch content synchronously then finalize transfer
-                                        _fetch_content(deposit_uuid, object_content_urls)
+                                        _fetch_content(deposit_uuid, mets_data['object_content_urls'])
                                         return deposit_edit(request, deposit_uuid)
                                 else:
                                     return _sword_error_response(500, 'Could not create deposit: contact an administrator.')
@@ -175,6 +160,29 @@ def collection(request, location_uuid):
             return _sword_error_response(412, 'The In-Progress header must be set to either true or false when creating a deposit.')
     else:
         return _sword_error_response(405, 'This endpoint only responds to the GET and POST HTTP methods.')
+
+def _parse_name_and_content_urls_from_mets_file(filepath):
+    tree = etree.parse(filepath)
+    root = tree.getroot()
+    deposit_name = root.get('LABEL')
+
+    # parse XML for content URLs
+    object_content_urls = []
+
+    elements = root.iterfind("{http://www.loc.gov/METS/}fileSec/"
+        + "{http://www.loc.gov/METS/}fileGrp[@ID='DATASTREAMS']/"
+        + "{http://www.loc.gov/METS/}fileGrp[@ID='OBJ']/"
+        + "{http://www.loc.gov/METS/}file/"
+        + "{http://www.loc.gov/METS/}FLocat"
+    )
+
+    for element in elements:
+       object_content_urls.append(element.get('{http://www.w3.org/1999/xlink}href'))
+
+    return {
+        'deposit_name': deposit_name,
+        'object_content_urls': object_content_urls
+    }
 
 def _create_deposit_directory_and_db_entry(deposit_specification):
     if 'name' in deposit_specification:
