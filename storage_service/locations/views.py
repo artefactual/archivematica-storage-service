@@ -225,6 +225,7 @@ def space_detail(request, uuid):
         messages.warning(request, "Space {} does not exist.".format(uuid))
         return redirect('space_list')
     child = space.get_child_space()
+
     child_dict_raw = model_to_dict(child,
         PROTOCOL[space.access_protocol]['fields']or [''])
     child_dict = { child._meta.get_field_by_name(field)[0].verbose_name: value
