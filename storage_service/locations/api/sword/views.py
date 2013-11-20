@@ -17,19 +17,36 @@ from django.utils import timezone
 # This project, alphabetical
 from locations.models import Deposit
 from locations.models import Location
+from locations.models import Space
 import helpers
 
 """
 Example GET of service document:
 
-  curl -v http://127.0.0.1/api/v2/sword
+  curl -v http://127.0.0.1:8000/api/v1/space/969959bc-5f20-4c6f-9e9b-fcc4e19d6cd5/sword/
 """
-def service_document(request):
-    transfer_collectiion_url = request.build_absolute_uri(
-        reverse('components.api.views_sword.transfer_collection')
-    )
+def service_document(request, space_uuid):
+    collections = []
 
-    service_document_xml = render_to_string('api/sword/service_document.xml', locals())
+    space = Space.objects.get(uuid=space_uuid)
+    locations = Location.objects.filter(space=space)
+
+    for location in locations:
+        if location.description != '':
+            title = location.description
+        else:
+            title = 'Collection'
+
+        col_iri = request.build_absolute_uri(
+            reverse('sword_collection', kwargs={'api_name': 'v1',
+                'resource_name': 'location', 'uuid': location.uuid}))
+
+        collections.append({
+            'title': title,
+            'url': col_iri
+        })
+
+    service_document_xml = render_to_string('locations/api/sword/service_document.xml', locals())
     response = HttpResponse(service_document_xml)
     response['Content-Type'] = 'application/atomserv+xml'
     return response
@@ -389,7 +406,7 @@ def _handle_upload_request_with_potential_md5_checksum(request, file_path, succe
         if request.META['HTTP_CONTENT_MD5'] != md5sum:
             os.remove(temp_filepath)
             error = _error(400, 'MD5 checksum of uploaded file ({uploaded_md5sum}) does not match ' + 'checksum provided in header ({header_md5sum}).'.format(
-                uploaded_md5sum=md5sum, header_md5sum=request.META['HTTP_CONTENT_MD5'])
+                uploaded_md5sum=md5sum, header_md5sum=request.META['HTTP_CONTENT_MD5']))
             return _sword_error_response(request, error)
         else:
             shutil.copyfile(temp_filepath, file_path)
