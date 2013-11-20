@@ -1,7 +1,8 @@
 
 from django import forms
 
-from . import models
+from locations import models
+
 
 class PipelineForm(forms.ModelForm):
     create_default_locations = forms.BooleanField(required=False,
@@ -51,6 +52,13 @@ class PipelineLocalFSForm(forms.ModelForm):
     class Meta:
         model = models.PipelineLocalFS
         fields = ('remote_user', 'remote_name', )
+
+
+class LockssomaticForm(forms.ModelForm):
+    # TODO SpaceForm.path help text should say path to staging space, preferably local
+    class Meta:
+        model = models.Lockssomatic
+        fields = ('sd_iri', 'keep_local')
 
 
 class LocationForm(forms.ModelForm):

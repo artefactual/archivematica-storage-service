@@ -4,6 +4,7 @@ import datetime
 import errno
 import logging
 from lxml import etree
+import math
 import os
 import shutil
 import stat
@@ -74,12 +75,13 @@ class Space(models.Model):
     LOCAL_FILESYSTEM = 'FS'
     NFS = 'NFS'
     PIPELINE_LOCAL_FS = 'PIPE_FS'
-    # LOCKSS = 'LOCKSS'
+    LOM = 'LOM'
     # FEDORA = 'FEDORA'
     ACCESS_PROTOCOL_CHOICES = (
         (LOCAL_FILESYSTEM, "Local Filesystem"),
         (NFS, "NFS"),
         (PIPELINE_LOCAL_FS, "Pipeline Local Filesystem"),
+        (LOM, "LOCKSS-o-matic")
     )
     access_protocol = models.CharField(max_length=8,
         choices=ACCESS_PROTOCOL_CHOICES,
@@ -487,6 +489,22 @@ class PipelineLocalFS(models.Model):
         pass
 
 
+class Lockssomatic(models.Model):
+    """ Spaces that store their contents in LOCKSS, via LOCKSS-o-matic. """
+    space = models.OneToOneField('Space', to_field='uuid')
+
+    # staging location is Space.path
+    au_size = models.BigIntegerField(verbose_name="AU Size", null=True, blank=True,
+        help_text="Size in bytes of an Allocation Unit")
+    sd_iri = models.CharField(max_length=256, verbose_name="Service Document IRI",
+        help_text="URL of LOCKSS-o-matic service document IRI, eg. http://lockssomatic.example.org/api/sword/2.0/sd-iri")
+    collection_iri = models.CharField(max_length=256, verbose_name="Collection IRI",
+        help_text="URL to post the packages to, eg. http://lockssomatic.example.org/api/sword/2.0/col-iri/12")
+    keep_local = models.BooleanField(blank=True, default=True, verbose_name="Keep local copy?",
+        help_text="If checked, keep a local copy even after the AIP is stored in the LOCKSS network.")
+    # Uses the SWORD protocol to talk to LOM
+
+
 # To add a new storage space the following places must be updated:
 #  locations/models.py (this file)
 #   Add constant for storage protocol
@@ -619,16 +637,18 @@ class Package(models.Model):
     package_type = models.CharField(max_length=8, choices=PACKAGE_TYPE_CHOICES)
 
     PENDING = 'PENDING'
+    STAGING = 'STAGING'
     UPLOADED = 'UPLOADED'
     VERIFIED = 'VERIFIED'
     DEL_REQ = 'DEL_REQ'
     DELETED = 'DELETED'
     FAIL = 'FAIL'
     STATUS_CHOICES = (
-        (PENDING, "Upload Pending"),
-        (UPLOADED, "Uploaded"),
-        (VERIFIED, "Verified"),
-        (FAIL, "Failed"),
+        (PENDING, "Upload Pending"),  # Still on Archivematica
+        (STAGING, "Staged on Storage Service"), # In Storage Service staging dir
+        (UPLOADED, "Uploaded"),  # In final storage location
+        (VERIFIED, "Verified"),  # Verified to be in final storage location
+        (FAIL, "Failed"),  # Error occured - may or may not be at final location
         (DEL_REQ, "Delete requested"),
         (DELETED, "Deleted"),
     )
@@ -683,6 +703,21 @@ class Package(models.Model):
             else:
                 message = "{} is neither a file nor a directory".format(full_path)
             raise StorageException(message)
+
+    def get_download_path(self, lockss_au_number=None):
+        full_path = self.full_path()
+        if lockss_au_number is None:
+            path = full_path
+        elif self.current_location.space.access_protocol == Space.LOM:
+            # Only LOCKSS breaks files into AUs
+            # TODO look up lockss_au_number path in the METS file
+            path = os.path.splitext(full_path)[0] + '_' + str(lockss_au_number).zfill(2)
+        return path
+        # TODO check if files exists and return error somehow
+        # if os.path.isfile(path):
+        #     return path
+        # else:
+        #     raise Exception('Path {} does not exist'.format(path))
 
     def _check_quotas(self, dest_space, dest_location):
         """
@@ -763,9 +798,15 @@ class Package(models.Model):
             source_path=self.current_path,  # This should include Location.path
             destination_path=os.path.join(self.current_location.relative_path, self.current_path),
             )
+
         # Save new space/location usage, package status
         self._update_quotas(dest_space, self.current_location)
-        self.status = Package.UPLOADED
+        if dest_space.access_protocol == Space.LOM:
+            # TODO Run this after returning success
+            self._store_aip_lom(destination_path)
+            self.status = Package.STAGING
+        else:
+            self.status = Package.UPLOADED
         self.save()
 
         # Update pointer file's location infrmation
@@ -903,6 +944,62 @@ class Package(models.Model):
 
         return (success, failures, message)
 
+    def _store_aip_lom(self, file_path):
+        """ Stores a file in LOCKSS, after splitting into AU sizes. """
+        protocol_space = self.current_location.space.get_child_space()
+
+        # TODO Query LOM for Service Document, including the AU size
+        # GET to protocol_space.lom_url
+        # Get element sword:maxUploadSize (in kB = 1000*B)
+        # Set protocol_space.lom_url = maxUploadSize, save
+
+        output_path = os.path.splitext(file_path)[0]+'_'  # strip extension
+        expected_num_files = math.ceil(os.path.getsize(file_path) / float(protocol_space.au_size))
+        if expected_num_files > 1:
+            # TODO reserve space in quota for extra files
+            command = ['split', '-b', str(protocol_space.au_size), '-d', file_path, output_path]
+            try:
+                subprocess.check_call(command)
+            except Exception as e:
+                logging.warning("ssh+sync failed: {}".format(e))
+                raise
+            dirname, basename = os.path.split(output_path)
+            output_files = sorted([entry for entry in os.listdir(dirname) if entry.startswith(basename)])
+            # TODO update pointer file here
+        else:
+            print 'Only one file expected, not splitting'
+            output_files = [file_path]  # TODO check absolute vs relative path
+        # TODO make calls to LOM here
+
+    def _store_aip_lom_complete(self):
+        """ Acknowledges the file was completely stored in LOCKSS via LOCKSS-o-matic.
+
+        Returns True on success, error message on failure. """
+        if self.current_location.space.access_protocol != Space.LOM:
+            return "AIP not stored in LOCKSS"
+        # Delete the pieces
+        # TODO parse this from the pointer file
+        dirname, filename = os.path.split(self.full_path())
+        basename, _ = os.path.splitext(filename)
+        output_files = sorted([entry for entry in os.listdir(dirname) if entry.startswith(basename+'_')])
+        # Delete original AIP if Space says so
+        protocol_space = self.current_location.space.get_child_space()
+        if protocol_space.delete_staging:
+            output_files += [filename]
+        error_files = []
+        for f in output_files:
+            path = os.path.join(dirname, f)
+            try:
+                os.remove(path)
+            except os.error:
+                error_files += [path]
+        # Update status
+        self.status = Package.UPLOADED
+        self.save()
+        if error_files:
+            return "Some LOCKSS files not deleted: " + ', '.join(error_files)
+        return True
+
     def delete_from_storage(self):
         """ Deletes the package from filesystem and updates metadata.
 
@@ -933,6 +1030,11 @@ class Package(models.Model):
             except Exception as e:
                 logging.exception("ssh+sync failed.")
                 return False, "Error connecting to Location"
+        elif self.current_location.space.access_protocol == Space.LOM:
+            # TODO Updated for LOM
+            return (False, "Not yet implemented")
+        else:
+            return (False, "Unknown access protocol for storing Space")
 
         # Remove pointer file, and the UUID quad directories if they're empty
         pointer_path = self.full_pointer_file_path()

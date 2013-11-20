@@ -1,6 +1,6 @@
 
-from .models import LocalFilesystem, NFS, PipelineLocalFS, Space
-from .forms import LocalFilesystemForm, NFSForm, PipelineLocalFSForm
+from .models import LocalFilesystem, NFS, PipelineLocalFS, Space, Lockssomatic
+from .forms import LocalFilesystemForm, NFSForm, PipelineLocalFSForm, LockssomaticForm
 
 
 ########################## SPACES ##########################
@@ -26,4 +26,13 @@ PROTOCOL[Space.PIPELINE_LOCAL_FS] = {
     'form': PipelineLocalFSForm,
     'fields': ['remote_user',
                'remote_name']
+}
+
+PROTOCOL[Space.LOM] = {
+    'model': Lockssomatic,
+    'form': LockssomaticForm,
+    'fields': ['au_size',
+               'sd_iri',
+               'collection_iri',
+               'keep_local']
 }

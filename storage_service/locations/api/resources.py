@@ -420,9 +420,11 @@ class PackageResource(ModelResource):
         return [
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/delete_aip%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('delete_aip_request'), name="delete_aip_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/extract_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('extract_file_request'), name="extract_file_request"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/download/(?P<chunk_number>\d+)%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('download_request'), name="download_lockss"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/download%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('download_request'), name="download_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/pointer_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('pointer_file_request'), name="pointer_file_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/check_fixity%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('check_fixity_request'), name="check_fixity_request"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/lom_complete%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('lom_complete'), name="lom_complete"),
         ]
 
     def obj_create(self, bundle, **kwargs):
@@ -518,7 +520,8 @@ class PackageResource(ModelResource):
             # TODO Update to zip up a transfer before returning it?
             return http.HttpMethodNotAllowed()
 
-        full_path = package.full_path()
+        lockss_au_number = kwargs.get('chunk_number')
+        full_path = package.get_download_path(lockss_au_number)
 
         response = utils.download_file_stream(full_path)
 
@@ -574,3 +577,26 @@ class PackageResource(ModelResource):
             json.dumps(response),
             mimetype="application/json"
         )
+
+    def lom_complete(self, request, **kwargs):
+        """ Callback when AIP is stored in LOCKSS. """
+        # TODO Update this for actual LOM call
+        # Tastypie checks
+        self.method_check(request, allowed=['get'])
+        self.throttle_check(request)
+
+        # Get AIP details
+        package = Package.objects.get(uuid=kwargs['uuid'])
+        result = package._store_aip_lom_complete()
+        if result == True:
+            status_code = 200
+            response = {'message': 'AIP stored in LOCKSS'}
+        else:
+            status_code = 202
+            response = {'message': result}
+
+        self.log_throttled_access(request)
+        response_json = json.dumps(response)
+        return http.HttpResponse(status=status_code, content=response_json,
+            mimetype='application/json')
+
