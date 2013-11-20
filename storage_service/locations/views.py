@@ -135,8 +135,11 @@ def space_list(request):
     def add_child(space):
         model = PROTOCOL[space.access_protocol]['model']
         child = model.objects.get(space=space)
-        space.child = model_to_dict(child,
+        child_dict_raw = model_to_dict(child,
             PROTOCOL[space.access_protocol]['fields'] or [''])
+        child_dict = { child._meta.get_field_by_name(field)[0].verbose_name: value
+            for field, value in child_dict_raw.iteritems() }
+        space.child = child_dict
     map(add_child, spaces)
     return render(request, 'locations/space_list.html', locals())
 
@@ -144,8 +147,11 @@ def space_detail(request, uuid):
     space = get_object_or_404(Space, uuid=uuid)
     model = PROTOCOL[space.access_protocol]['model']
     child = model.objects.get(space=space)
-    space.child = model_to_dict(child,
+    child_dict_raw = model_to_dict(child,
         PROTOCOL[space.access_protocol]['fields']or [''])
+    child_dict = { child._meta.get_field_by_name(field)[0].verbose_name: value
+        for field, value in child_dict_raw.iteritems() }
+    space.child = child_dict
     locations = Location.objects.filter(space=space)
     return render(request, 'locations/space_detail.html', locals())
 

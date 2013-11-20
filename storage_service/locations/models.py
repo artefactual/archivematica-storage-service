@@ -101,6 +101,16 @@ class Space(models.Model):
             path=self.path,
         )
 
+    def get_child_space(self):
+        """ Returns the protocol-specific space object. """
+        # Importing PROTOCOL here because importing locations.constants at the
+        # top of the file causes a circular dependency
+        from .constants import PROTOCOL
+        protocol_model = PROTOCOL[self.access_protocol]['model']
+        protocol_space = protocol_model.objects.get(space=self)
+        # TODO try-catch AttributeError if remote_user or remote_name not exist?
+        return protocol_space
+
     def browse(self, path):
         """ Returns {'directories': [directory], 'entries': [entries]} at path.
 
@@ -122,11 +132,7 @@ class Space(models.Model):
                 if os.path.isdir(full_path) and os.access(full_path, os.R_OK):
                     directories.append(name)
         elif self.access_protocol in self.ssh_only_access:
-            # Importing PROTOCOL here because importing locations.constants at the
-            # top of the file causes a circular dependency
-            from .constants import PROTOCOL
-            protocol_model = PROTOCOL[self.access_protocol]['model']
-            protocol_space = protocol_model.objects.get(space=self)
+            protocol_space = self.get_child_space()
             user = protocol_space.remote_user
             host = protocol_space.remote_name
             private_ssh_key = '/var/lib/archivematica/.ssh/id_rsa'
@@ -525,13 +531,7 @@ class Package(models.Model):
         # Local to local uses rsync, so pass it a source_path that includes
         # user@host:path
         # Get correct protocol-specific model, and then the correct object
-        # Importing PROTOCOL here because importing locations.constants at the
-        # top of the file causes a circular dependency
-        from .constants import PROTOCOL
-        protocol = self.origin_location.space.access_protocol
-        protocol_model = PROTOCOL[protocol]['model']
-        protocol_space = protocol_model.objects.get(space=self.origin_location.space)
-        # TODO try-catch AttributeError if remote_user or remote_name not exist?
+        protocol_space = self.origin_location.space.get_child_space()
         user = protocol_space.remote_user
         host = protocol_space.remote_name
         full_source_path = "{user}@{host}:{path}".format(user=user, host=host,
@@ -544,18 +544,8 @@ class Package(models.Model):
         AIP is stored at:
         destination_location/uuid/split/into/chunks/destination_path. """
         # Get correct protocol-specific model, and then the correct object
-        # Importing PROTOCOL here because importing locations.constants at the
-        # top of the file causes a circular dependency
-        from .constants import PROTOCOL
-        src_protocol = self.origin_location.space.access_protocol
-        src_protocol_model = PROTOCOL[src_protocol]['model']
-        src_protocol_space = src_protocol_model.objects.get(
-            space=self.origin_location.space)
-        dst_protocol = self.current_location.space.access_protocol
-        dst_protocol_model = PROTOCOL[dst_protocol]['model']
-        dst_protocol_space = dst_protocol_model.objects.get(
-            space=self.current_location.space)
-        # TODO try-catch AttributeError if remote_user or remote_name not exist?
+        src_protocol_space = self.origin_location.space.get_child_space()
+        dst_protocol_space = self.current_location.space.get_child_space()
         src_user = src_protocol_space.remote_user
         src_host = src_protocol_space.remote_name
         dst_user = dst_protocol_space.remote_user
@@ -585,11 +575,7 @@ class Package(models.Model):
                 logging.warning("Error deleting package: {}".format(e))
                 return False, e.strerror
         elif self.current_location.space.access_protocol in Space.ssh_only_access:
-            from .constants import PROTOCOL
-            protocol = self.current_location.space.access_protocol
-            protocol_model = PROTOCOL[protocol]['model']
-            protocol_space = protocol_model.objects.get(
-                space=self.current_location.space)
+            protocol_space = self.current_location.space.get_child_space()
             # TODO try-catch AttributeError if remote_user or remote_name not exist?
             user = protocol_space.remote_user
             host = protocol_space.remote_name
