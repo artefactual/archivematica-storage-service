@@ -46,7 +46,6 @@ Example POST creation of deposit:
 # TODO: error if deposit is finalized, but has no files?
 def collection(request, location_uuid):
     error = None
-    bad_request = None
 
     if request.method == 'GET':
         # return list of deposits as ATOM feed
@@ -92,7 +91,7 @@ def collection(request, location_uuid):
                         deposit_name = root.get('LABEL')
 
                         if deposit_name == None:
-                            bad_request = 'No deposit name found in XML.'
+                            error = _error(400, 'No deposit name found in XML.')
                         else:
                             # assemble deposit specification
                             deposit_specification = {'location_uuid': location_uuid}
@@ -131,7 +130,7 @@ def collection(request, location_uuid):
                     except etree.XMLSyntaxError as e:
                         error = _error(412, 'Error parsing XML ({error_message}).'.format(error_message=str(e)))
                 except Exception as e:
-                    bad_request = str(e)
+                    error = _error(400, str(e))
             else:
                 error = _error(412, 'A request body must be sent when creating a deposit.')
         else:
@@ -139,9 +138,6 @@ def collection(request, location_uuid):
             error = _error(412, 'The In-Progress header must be set to true when creating a deposit.')
     else:
         error = _error(405, 'This endpoint only responds to the GET and POST HTTP methods.')
-
-    if bad_request != None:
-        error = _error(400, bad_request)
 
     if error != None:
         return _sword_error_response(request, error)
@@ -216,7 +212,6 @@ Example DELETE of deposit:
 # TODO: add authentication
 def deposit(request, uuid):
     error = None
-    bad_request = None
 
     if request.method == 'GET':
         # details about a deposit
@@ -250,12 +245,12 @@ def deposit(request, uuid):
 
                         return _deposit_receipt_response(request, uuid, 200)
                     else:
-                        bad_request = 'This deposit contains no files.'
+                        error = _error(400, 'This deposit contains no files.')
 
             except ObjectDoesNotExist:
-                error = _error(404, 'This deposit could not be found.')
+                error = _error(400, 'This deposit could not be found.')
         else:
-            bad_request = 'The In-Progress header must be set to false when starting deposit processing.'
+            error = _error(400, 'The In-Progress header must be set to false when starting deposit processing.')
     elif request.method == 'PUT':
         # update deposit
         return HttpResponse(status=204) # No content
@@ -270,9 +265,6 @@ def deposit(request, uuid):
         return HttpResponse(status=204) # No content
     else:
         error = _error(405, 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.')
-
-    if bad_request != None:
-        error = _error(400, bad_request)
 
     if error != None:
         return _sword_error_response(request, error)
@@ -355,7 +347,6 @@ def deposit_media(request, uuid):
 
 def _handle_upload_request(request, uuid, replace_file=False):
     error = None
-    bad_request = None
 
     if 'HTTP_CONTENT_DISPOSITION' in request.META:
         filename = helpers.parse_filename_from_content_disposition(request.META['HTTP_CONTENT_DISPOSITION']) 
@@ -372,11 +363,11 @@ def _handle_upload_request(request, uuid, replace_file=False):
                         204
                     )
                 else:
-                    bad_request = 'File does not exist.'
+                    error = _error(400, 'File does not exist.')
             else:
                 # if adding a file, the file must not already exist
                 if os.path.exists(file_path):
-                    bad_request = 'File already exists.'
+                    error = _error(400, 'File already exists.')
                 else:
                     return _handle_upload_request_with_potential_md5_checksum(
                         request,
@@ -384,12 +375,9 @@ def _handle_upload_request(request, uuid, replace_file=False):
                         201
                     )
         else:
-            bad_request = 'No filename found in Content-disposition header.'
+            error = _error(400, 'No filename found in Content-disposition header.')
     else:
-        bad_request = 'Content-disposition must be set in request header.'
-
-    if bad_request != None:
-        error = _error(400, bad_request)
+        error = _error(400, 'Content-disposition must be set in request header.')
 
     if error != None:
         return _sword_error_response(request, error)
@@ -400,9 +388,9 @@ def _handle_upload_request_with_potential_md5_checksum(request, file_path, succe
         md5sum = helpers.get_file_md5_checksum(temp_filepath)
         if request.META['HTTP_CONTENT_MD5'] != md5sum:
             os.remove(temp_filepath)
-            bad_request = 'MD5 checksum of uploaded file ({uploaded_md5sum}) does not match ' + 'checksum provided in header ({header_md5sum}).'.format(
+            error = _error(400, 'MD5 checksum of uploaded file ({uploaded_md5sum}) does not match ' + 'checksum provided in header ({header_md5sum}).'.format(
                 uploaded_md5sum=md5sum, header_md5sum=request.META['HTTP_CONTENT_MD5'])
-            return _sword_error_response(request, _error(400, bad_request))
+            return _sword_error_response(request, error)
         else:
             shutil.copyfile(temp_filepath, file_path)
             os.remove(temp_filepath)
