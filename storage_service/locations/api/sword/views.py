@@ -17,6 +17,9 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import timezone
 
+# External dependencies, alphabetical
+from annoying.functions import get_object_or_None
+
 # This project, alphabetical
 from locations.models import Deposit
 from locations.models import Location
@@ -234,13 +237,13 @@ Example DELETE of deposit:
   curl -v -XDELETE http://127.0.0.1:8000/api/v1/deposit/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/
 """
 def deposit(request, uuid):
-    if _deposit_has_been_submitted_for_processing(uuid):
+    deposit = get_object_or_None(Deposit, uuid=uuid)
+
+    if deposit.has_been_submitted_for_processing():
         return _sword_error_response(request, {
             'summary': 'This deposit has already been submitted for processing.',
             'status': 400
         })
-
-    # TODO: existance check?
 
     error = None
 
@@ -352,7 +355,9 @@ Example DELETE of file:
     http://127.0.0.1:8000/api/v1/deposit/9c8b4ac0-0407-4360-a10d-af6c62a48b69/sword/media/?filename=joke.jpg
 """
 def deposit_media(request, uuid):
-    if _deposit_has_been_submitted_for_processing(uuid):
+    deposit = get_object_or_None(Deposit, uuid=uuid)
+
+    if deposit.has_been_submitted_for_processing():
         return _sword_error_response(request, {
             'summary': 'This deposit has already been submitted for processing.',
             'status': 400
@@ -547,11 +552,3 @@ def _error(status, summary):
         'summary': summary,
         'status': status
     }
-
-# TODO: is this right?
-def _deposit_has_been_submitted_for_processing(deposit_uuid):
-    try:
-        deposit = Deposit.objects.get(uuid=deposit_uuid)
-        return deposit.deposit_completion_time != None
-    except ObjectDoesNotExist:
-        return False

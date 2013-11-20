@@ -1918,3 +1918,6 @@ class Deposit(models.Model):
         """ Returns full path of deposit: space + location + deposit paths. """
         return os.path.normpath(
             os.path.join(self.location.full_path(), self.path)) # TODO: change to relative path
+
+    def has_been_submitted_for_processing(self):
+        return self.deposit_completion_time != None
