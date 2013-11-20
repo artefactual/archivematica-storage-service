@@ -207,11 +207,11 @@ TODO: decouple deposits and locations for shorter URLs
 
 Example POST finalization of deposit:
 
-  curl -v -H "In-Progress: false" --request POST http://127.0.0.1/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/deposit/5bdf83cd-5858-4152-90e2-c2426e90e7c0/
+  curl -v -H "In-Progress: false" --request POST http://127.0.0.1:8000/api/v1/deposit/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/
 
 Example DELETE of deposit:
 
-  curl -v -XDELETE http://127.0.0.1/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/deposit/5bdf83cd-5858-4152-90e2-c2426e90e7c0/
+  curl -v -XDELETE http://127.0.0.1:8000/api/v1/deposit/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/
 """
 # TODO: add authentication
 def deposit(request, uuid):
@@ -280,23 +280,23 @@ def deposit(request, uuid):
 """
 Example GET of files list:
 
-  curl -v http://127.0.0.1/api/v2/transfer/sword/03ce11a5-32c1-445a-83ac-400008894f78/media
+  curl -v http://127.0.0.1:8000/api/v1/deposit/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/media/
 
 Example POST of file:
 
   curl -v -H "Content-Disposition: attachment; filename=joke.jpg" --request POST \
     --data-binary "@joke.jpg" \
-    http://localhost/api/v2/transfer/sword/03ce11a5-32c1-445a-83ac-400008894f78/media
+    http://127.0.0.1:8000/api/v1/deposit/9c8b4ac0-0407-4360-a10d-af6c62a48b69/sword/media/
 
 Example DELETE of all files:
 
   curl -v -XDELETE \
-      "http://localhost/api/v2/transfer/sword/03ce11a5-32c1-445a-83ac-400008894f78/media
+    http://127.0.0.1:8000/api/v1/deposit/9c8b4ac0-0407-4360-a10d-af6c62a48b69/sword/media/
 
 Example DELETE of file:
 
   curl -v -XDELETE \
-    "http://localhost/api/v2/transfer/sword/03ce11a5-32c1-445a-83ac-400008894f78/media?filename=thing.jpg"
+    http://127.0.0.1:8000/api/v1/deposit/9c8b4ac0-0407-4360-a10d-af6c62a48b69/sword/media/?filename=joke.jpg
 """
 def deposit_media(request, uuid):
     if _deposit_has_been_submitted_for_processing(uuid):
@@ -400,11 +400,9 @@ def _handle_upload_request_with_potential_md5_checksum(request, file_path, succe
         md5sum = helpers.get_file_md5_checksum(temp_filepath)
         if request.META['HTTP_CONTENT_MD5'] != md5sum:
             os.remove(temp_filepath)
-            bad_request = 'MD5 checksum of uploaded file ({uploaded_md5sum}) does not match checksum provided in header ({header_md5sum}).'.format(uploaded_md5sum=md5sum, header_md5sum=request.META['HTTP_CONTENT_MD5'])
-            return _sword_error_response(request, {
-                'summary': bad_request,
-                'status': 400
-            })
+            bad_request = 'MD5 checksum of uploaded file ({uploaded_md5sum}) does not match ' + 'checksum provided in header ({header_md5sum}).'.format(
+                uploaded_md5sum=md5sum, header_md5sum=request.META['HTTP_CONTENT_MD5'])
+            return _sword_error_response(request, _error(400, bad_request))
         else:
             shutil.copyfile(temp_filepath, file_path)
             os.remove(temp_filepath)
