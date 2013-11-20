@@ -12,7 +12,7 @@ class PipelineForm(forms.ModelForm):
 
     class Meta:
         model = models.Pipeline
-        fields = ('uuid', 'description', 'enabled')
+        fields = ('uuid', 'description', 'remote_name', 'api_username', 'api_key', 'enabled')
 
 
 class SpaceForm(forms.ModelForm):

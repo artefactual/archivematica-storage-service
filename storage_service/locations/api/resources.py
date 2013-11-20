@@ -112,7 +112,7 @@ class PipelineResource(ModelResource):
         # validation = CleanedDataFormValidation(form_class=PipelineForm)
         resource_name = 'pipeline'
 
-        fields = ['uuid', 'description']
+        fields = ['uuid', 'description', 'remote_name', 'api_key', 'api_username']
         list_allowed_methods = ['get', 'post']
         detail_allowed_methods = ['get']
         detail_uri_name = 'uuid'
@@ -122,10 +122,20 @@ class PipelineResource(ModelResource):
             'uuid': ALL,
         }
 
+    def dehydrate(self, bundle):
+        # Don't return API username or key
+        del bundle.data['api_username']
+        del bundle.data['api_key']
+        return bundle
+
     def obj_create(self, bundle, **kwargs):
         bundle = super(PipelineResource, self).obj_create(bundle, **kwargs)
         bundle.obj.enabled = not utils.get_setting('pipelines_disabled', False)
         create_default_locations = bundle.data.get('create_default_locations', False)
+        # Try to guess Pipeline's IP, if doing default setup
+        if create_default_locations:
+            ip = bundle.request.META.get('REMOTE_ADDR') or None
+            bundle.obj.remote_name = ip
         shared_path = bundle.data.get('shared_path', None)
         bundle.obj.save(create_default_locations, shared_path)
         return bundle

@@ -7,7 +7,9 @@
 <div class='pipeline'>
   <dl>
     <dt>UUID</dt> <dd>{{ pipeline.uuid }}</dd>
-    <dt>Description</dt> <dd>{{ pipeline.description }}</dd>
+    <dt>Description</dt> <dd>{{ pipeline.description|default:"&lt;None&gt;" }}</dd>
+    <dt>Remote name</dt> <dd>{{ pipeline.remote_name|default:"&lt;None&gt;" }}</dd>
+    <dt>API Username / Key</dt> <dd> {{ pipeline.api_username|default:"&lt;None&gt;" }} / {{ pipeline.api_key|default:"&lt;None&gt;" }}</dd>
     <dt>Enabled</dt> <dd>{{ pipeline.enabled|yesno:"Enabled,Disabled" }}</dd>
     <dt>Actions</dt> <dd>
       <ul>

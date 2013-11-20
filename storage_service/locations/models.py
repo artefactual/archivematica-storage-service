@@ -1693,6 +1693,15 @@ class Pipeline(models.Model):
     description = models.CharField(max_length=256, default=None,
         null=True, blank=True,
         help_text="Human readable description of the Archivematica instance.")
+    remote_name = models.CharField(max_length=256, default=None,
+        null=True, blank=True,
+        help_text="Host or IP address of the pipeline server for making API calls.")
+    api_username = models.CharField(max_length=256, default=None,
+        null=True, blank=True,
+        help_text="Username to use when making API calls to the pipeline.")
+    api_key = models.CharField(max_length=256, default=None,
+        null=True, blank=True,
+        help_text="API key to use when making API calls to the pipeline.")
     enabled = models.BooleanField(default=True,
         help_text="Enabled if this pipeline is able to access the storage service.")
 
