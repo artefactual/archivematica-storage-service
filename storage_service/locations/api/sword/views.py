@@ -554,5 +554,5 @@ def _deposit_has_been_submitted_for_processing(deposit_uuid):
     try:
         deposit = Deposit.objects.get(uuid=deposit_uuid)
         return deposit.deposit_completion_time != None
-    except:
+    except ObjectDoesNotExist:
         return False
