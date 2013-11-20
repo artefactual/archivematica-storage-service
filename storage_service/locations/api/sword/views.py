@@ -33,16 +33,14 @@ Example GET of service document:
   curl -v http://127.0.0.1:8000/api/v1/space/969959bc-5f20-4c6f-9e9b-fcc4e19d6cd5/sword/
 """
 def service_document(request, space_uuid):
-    collections = []
-
-    try:
-        space = Space.objects.get(uuid=space_uuid)
-    except ObjectDoesNotExist:
+    space = get_object_or_None(Space, uuid=space_uuid)
+    if space == None:
         error = _error(404, 'Space {uuid} does not exist.'.format(uuid=space_uuid))
         return _sword_error_response(request, error)
 
     locations = Location.objects.filter(space=space)
 
+    collections = []
     for location in locations:
         if location.description != '':
             title = location.description
@@ -68,11 +66,14 @@ Example GET of collection deposit list:
 
   curl -v http://localhost:8000/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/collection/
 
-Example POST creation of deposit:
+Example POST creation of deposit, allowing asynchronous downloading of object content URLs:
 
   curl -v -H "In-Progress: true" --data-binary @mets.xml --request POST http://localhost:8000/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/collection/
+
+Example POST creation of deposit, finalizing the deposit and auto-approving it:
+
+  curl -v -H "In-Progress: false" --data-binary @mets.xml --request POST http://localhost:8000/api/v1/location/c0bee7c8-3e9b-41e3-8600-ee9b2c475da2/sword/collection/?approval_pipeline=41b57f04-9738-43d8-b80e-3fad88c75abc
 """
-# TODO: error if deposit is finalized, but has no files?
 def collection(request, location_uuid):
     error = None
 
@@ -106,8 +107,8 @@ def collection(request, location_uuid):
         response['Content-Type'] = 'application/atom+xml;type=feed'
         return response
     elif request.method == 'POST':
-        # is the deposit still in progress?
-        if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'true':
+        # has the In-Progress header been set?
+        if 'HTTP_IN_PROGRESS' in request.META:
             # process creation request, if criteria met
             if request.body != '':
                 try:
@@ -149,22 +150,28 @@ def collection(request, location_uuid):
                                     for element in elements:
                                         object_content_urls.append(element.get('{http://www.w3.org/1999/xlink}href'))
 
-                                    # create process so content URLs can be downloaded asynchronously
-                                    p = Process(target=_fetch_content, args=(deposit_uuid, object_content_urls))
-                                    p.start()
-
-                                    return _deposit_receipt_response(request, deposit_uuid, 201)
+                                    if request.META['HTTP_IN_PROGRESS'] == 'true':
+                                        # create subprocess so content URLs can be downloaded asynchronously
+                                        p = Process(target=_fetch_content, args=(deposit_uuid, object_content_urls))
+                                        p.start()
+                                        return _deposit_receipt_response(request, deposit_uuid, 201)
+                                    else:
+                                        # fetch content synchronously then finalize transfer
+                                        _fetch_content(deposit_uuid, object_content_urls)
+                                        return deposit_edit(request, deposit_uuid)
                                 else:
                                     error = _error(500, 'Could not create deposit: contact an administrator.')
                     except etree.XMLSyntaxError as e:
                         error = _error(412, 'Error parsing XML ({error_message}).'.format(error_message=str(e)))
                 except Exception as e:
-                    error = _error(400, str(e))
+                    import sys
+                    exc_type, exc_obj, exc_tb = sys.exc_info()
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    error = _error(400, 'Contact administration: ' + str(exc_type) + ' ' + str(fname) + ' ' + str(exc_tb.tb_lineno))
             else:
                 error = _error(412, 'A request body must be sent when creating a deposit.')
         else:
-            # TODO: way to do one-step deposit creation by setting In-Progress to false
-            error = _error(412, 'The In-Progress header must be set to true when creating a deposit.')
+            error = _error(412, 'The In-Progress header must be set to either true or false when creating a deposit.')
     else:
         error = _error(405, 'This endpoint only responds to the GET and POST HTTP methods.')
 
@@ -236,7 +243,7 @@ Example DELETE of deposit:
 
   curl -v -XDELETE http://127.0.0.1:8000/api/v1/deposit/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/
 """
-def deposit(request, uuid):
+def deposit_edit(request, uuid):
     deposit = get_object_or_None(Deposit, uuid=uuid)
 
     if deposit.has_been_submitted_for_processing():
