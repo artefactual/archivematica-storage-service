@@ -756,7 +756,7 @@ class Pipeline(models.Model):
 
         # TODO: not sure if we need a space for this, or just a new location purpose
         space, space_created = Space.objects.get_or_create(
-            access_protocol=Space.SWORD_SERVER, path='/' + os.path.join(shared_path, 'staging'))
+            access_protocol=Space.SWORD_SERVER, path='/' + os.path.join(shared_path, 'staging', 'deposits'))
         if space_created:
             sword_server = SwordServer(space=space)
             sword_server.save()

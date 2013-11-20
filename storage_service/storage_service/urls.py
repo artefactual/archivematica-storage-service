@@ -56,10 +56,6 @@ def startup():
         space=space,
         relative_path=os.path.join('var', 'archivematica', 'sharedDirectory', 'www', 'AIPsStore'),
         description='Store AIP in standard Archivematica Directory')
-    transfer_deposit, _ = locations_models.Location.objects.get_or_create(
-        purpose=locations_models.Location.TRANSFER_SOURCE, #TODO: make new purpose
-        space=space,
-        relative_path=os.path.join('var', 'archivematica', 'sharedDirectory', 'staging', 'deposits'))
     internal_use, _ = locations_models.Location.objects.get_or_create(
         purpose=locations_models.Location.STORAGE_SERVICE_INTERNAL,
         space=space,
@@ -70,6 +66,27 @@ def startup():
     except OSError as e:
         if e.errno != errno.EEXIST:
             logging.error("Internal storage location {} not accessible.".format(internal_use.full_path()))
+
+    # create SWORD server directories, space, and location
+    deposits_directory = '/' + os.path.join('var', 'archivematica', 'sharedDirectory', 'staging', 'deposits')
+    space, space_created = locations_models.Space.objects.get_or_create(
+        access_protocol=locations_models.Space.SWORD_SERVER,
+        path=deposits_directory)
+    if space_created:
+        sword_server = locations_models.SwordServer(space=space)
+        sword_server.save()
+        logging.info("Protocol Space created: {}".format(sword_server))
+    transfer_deposit, _ = locations_models.Location.objects.get_or_create(
+        purpose=locations_models.Location.TRANSFER_SOURCE, #TODO: make new purpose?
+        space=space,
+        relative_path='transfers',
+        description='SWORD transfer deposits')
+    try:
+        os.makedirs(transfer_deposit.full_path())
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            logging.error("Internal storage location {} not accessible.".format(transfer_deposit.full_path()))
+
     utils.set_setting('default_transfer_source', [transfer_source.uuid])
     utils.set_setting('default_aip_storage', [aip_storage.uuid])
     utils.set_setting('default_transfer_deposit', [transfer_deposit.uuid])
