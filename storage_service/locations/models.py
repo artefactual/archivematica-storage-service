@@ -497,12 +497,16 @@ class Package(models.Model):
                     stat.S_IRGRP +                stat.S_IXGRP +
                     stat.S_IROTH +                stat.S_IXOTH)
             os.makedirs(os.path.dirname(destination_path), mode)
-            # Mode not getting set correctly
-            os.chmod(os.path.dirname(destination_path), mode)
-        except OSError as e:
+        except os.error as e:
             if e.errno != errno.EEXIST:
                 logging.warning("Could not create storage directory: {}".format(e))
                 raise
+        try:
+            # Mode not getting set correctly in os.makedirs
+            os.chmod(os.path.dirname(destination_path), mode)
+        except os.error as e:
+            logging.warning(e)
+
         # Rsync file over
         # TODO use Gearman to do this asyncronously
         command = ['rsync', '--chmod=u+rw,go-rwx', source_path, destination_path]
