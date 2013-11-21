@@ -326,11 +326,9 @@ class Package(models.Model):
     """ A package stored in a specific location. """
     uuid = UUIDField(editable=False, unique=True, version=4,
         help_text="Unique identifier")
-    origin_location = models.ForeignKey(Location, to_field='uuid', related_name='+')
-    origin_path = models.TextField()
-    current_location = models.ForeignKey(Location, to_field='uuid', related_name='+')
+    origin_pipeline = models.ForeignKey('Pipeline', to_field='uuid')
+    current_location = models.ForeignKey(Location, to_field='uuid')
     current_path = models.TextField()
-    # pointer_file = models.OneToOneField('self', to_field='uuid', related_name='package', null=True, blank=True)
     pointer_file_location = models.ForeignKey(Location, to_field='uuid', related_name='+', null=True, blank=True)
     pointer_file_path = models.TextField(null=True, blank=True)
     size = models.IntegerField(default=0)
@@ -382,13 +380,6 @@ class Package(models.Model):
         return os.path.normpath(
             os.path.join(self.current_location.full_path(), self.current_path))
 
-    def full_origin_path(self):
-        """ Return the full path of the package's original location.
-
-        Includes the space, location, and package paths joined. """
-        return os.path.normpath(
-            os.path.join(self.origin_location.full_path(), self.origin_path))
-
     def full_pointer_file_path(self):
         """ Return the full path of the AIP's pointer file, None if not an AIP.
 
@@ -399,7 +390,7 @@ class Package(models.Model):
             return os.path.join(self.pointer_file_location.full_path(),
                 self.pointer_file_path)
 
-    def store_aip(self):
+    def store_aip(self, origin_location, origin_path):
         """ Stores an AIP in the correct Location.
 
         Invokes different transfer mechanisms depending on what the source and
@@ -407,6 +398,8 @@ class Package(models.Model):
         Location for the AIP, and raises a StorageException if not.  All sizes
         expected to be in bytes.
         """
+        self.origin_location = origin_location
+        self.origin_path = origin_path
         # TODO Move some of the procesing in archivematica
         # clientScripts/storeAIP to here?
 
@@ -425,7 +418,8 @@ class Package(models.Model):
                 "AIP too big for quota on {location}; Used: {used}; Quota: {quota}; AIP size: {aip_size}".format(
                     location=location, used=location.used, quota=location.quota,
                     aip_size=self.size))
-        source_path = self.full_origin_path()
+        source_path = os.path.normpath(
+            os.path.join(self.origin_location.full_path(), self.origin_path))
 
         # Store AIP at
         # destination_location/uuid/split/into/chunks/destination_path
