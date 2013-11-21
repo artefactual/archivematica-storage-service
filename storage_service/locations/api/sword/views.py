@@ -245,20 +245,36 @@ def deposit(request, uuid):
                     deposit = Deposit.objects.get(uuid=uuid)
 
                     if len(os.listdir(deposit.full_path())) > 0:
-                        """
-                        TODO: replace this will call to dashboard API
-                        helpers.copy_to_start_transfer(transfer.currentlocation, 'standard', {'uuid': uuid})
+                        # TODO: work out how to decide if we want auto approval? ...could be LocationPipeline config item?
 
-                        # wait for watch directory to determine a transfer is awaiting
-                        # approval then attempt to approve it
-                        time.sleep(5)
-                        approve_transfer_via_mcp(
-                            os.path.basename(transfer.currentlocation),
-                            'standard',
-                        1
-                        ) # TODO: replace hardcoded user ID
-                        """
-                        pass
+                        # work out destination path
+                        destination_path = '/var/archivematica/sharedDirectory/watchedDirectories/activeTransfers/standardTransfer/' + os.path.basename(deposit.full_path())
+
+                        # move to standard transfers directory
+                        shutil.move(deposit.full_path(), destination_path)
+
+                        # wait to make sure the MCP responds to the directory being in the watch directory
+                        import time
+                        time.sleep(2)
+
+                        # make approval request to pipeline
+                        import urllib2
+                        import urllib
+                        # TODO: get deposit basedir
+                        # TODO: get the IP, creds from the pipeline... ? how?
+                        # need to then hit approval endpoint via urllib or whatever
+                        data = {
+                            'username': 'mike',
+                            'api_key': '0bf2c8585720bec68ab1c52d1e86254a1d7e87ce',
+                            'directory': 'Hat',
+                            'type': 'standard'
+                        }
+                        data = urllib.urlencode(data) # TODO can this be done without the old urllib?
+                        req = urllib2.Request('http://192.168.1.231/api/transfer/approve/', data) 
+                        response = urllib2.urlopen(req)
+                        result_json = response.read()
+                        # TODO: do something with the reply
+                        return HttpResponse(result_json)
 
                         return _deposit_receipt_response(request, uuid, 200)
                     else:
