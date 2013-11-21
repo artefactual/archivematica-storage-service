@@ -3,7 +3,7 @@ import logging
 from django.contrib import auth, messages
 from django.core.urlresolvers import reverse
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.forms.models import model_to_dict
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template import RequestContext
@@ -138,6 +138,7 @@ def location_delete_context(request, location_uuid):
     context_dict = get_delete_context_dict(request, Location, location_uuid,
         reverse('location_list'))
     return RequestContext(request, context_dict)
+
 
 @decorators.confirm_required('locations/delete.html', location_delete_context)
 def location_delete(request, location_uuid):
