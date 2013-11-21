@@ -41,7 +41,7 @@
         {% if not no_enabled %}
           <td>{{ loc.enabled|yesno:"Enabled,Disabled" }}
         {% endif %}
-        <td><a href="{% url 'location_edit' loc.space.uuid loc.uuid %}">Edit</a></td>
+        <td><a href="{% url 'location_edit' loc.space.uuid loc.uuid %}">Edit</a> | <a href="{% url 'location_delete' loc.uuid %}?next={{ request.path }}">Delete</a></td>
       </tr>
     {% endfor %}
     </tbody>

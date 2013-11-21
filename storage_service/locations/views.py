@@ -1,12 +1,15 @@
 import logging
 
 from django.contrib import auth, messages
+from django.core.urlresolvers import reverse
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.forms.models import model_to_dict
-from django.shortcuts import render, redirect, get_object_or_404, get_list_or_404
+from django.shortcuts import render, redirect, get_object_or_404
+from django.template import RequestContext
 from django.views.decorators.csrf import csrf_exempt
 
+from common import decorators
 from common import utils
 from .models import Space, Location, Package, Event, Pipeline, LocationPipeline
 from .forms import SpaceForm, LocationForm, ConfirmEventForm, PipelineForm
@@ -92,6 +95,24 @@ def location_edit(request, space_uuid, location_uuid=None):
 def location_list(request):
     locations = Location.objects.all()
     return render(request, 'locations/location_list.html', locals())
+
+def location_delete_context(request, location_uuid):
+    location = get_object_or_404(Location, uuid=location_uuid)
+    header = "Confirm deleting {}".format(Location._meta.verbose_name)
+    dependent_objects = utils.dependent_objects(location)
+    if dependent_objects:
+        prompt = "{} cannot be deleted until the following items are also deleted or unassociated.".format(location)
+    else:
+        prompt = "Are you sure you want to delete {}?".format(location)
+    cancel_url = reverse('location_list')
+    return RequestContext(request, locals())
+
+@decorators.confirm_required('locations/delete.html', location_delete_context)
+def location_delete(request, location_uuid):
+    location = get_object_or_404(Location, uuid=location_uuid)
+    location.delete()
+    next_url = request.GET.get('next', '/')
+    return HttpResponseRedirect(next_url)
 
 
 ########################## PIPELINES ##########################

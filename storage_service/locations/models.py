@@ -298,7 +298,7 @@ class Location(models.Model):
     def __unicode__(self):
         return u"{uuid}: {path} ({purpose})".format(
             uuid=self.uuid,
-            purpose=self.purpose,
+            purpose=self.get_purpose_display(),
             path=self.relative_path,
         )
 
@@ -317,7 +317,10 @@ class LocationPipeline(models.Model):
     pipeline = models.ForeignKey('Pipeline', to_field='uuid')
 
     def __unicode__(self):
-        return u'{} to {}'.format(self.location, self.pipeline)
+        return u'{} is associated with {}'.format(self.location, self.pipeline)
+
+    class Meta:
+        verbose_name = "Location associated with a Pipeline"
 
 ########################## PACKAGES ##########################
 # NOTE If the Packages section gets much bigger, move to its own app
@@ -365,6 +368,8 @@ class Package(models.Model):
         default=FAIL,
         help_text="Status of the package in the storage service.")
 
+    class Meta:
+        verbose_name = "Package"
 
     def __unicode__(self):
         return u"{uuid}: {path}".format(
@@ -642,7 +647,7 @@ class Pipeline(models.Model):
     active = Enabled()
 
     def __unicode__(self):
-        return u"{uuid} ({description})".format(
+        return u"{description} ({uuid})".format(
             uuid=self.uuid,
             description=self.description)
 
