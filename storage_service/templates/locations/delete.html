@@ -7,14 +7,14 @@
 <p>{{ prompt }}</p>
 
 {% regroup dependent_objects by model as dependent_grouped %}
-<dl>
     {% for model in dependent_grouped %}
-        <dt>{{ model.grouper }}</dt>
+        <h3>{{ model.grouper }}</h3>
+        <ul>
         {% for rule in model.list %}
-            <dd>{{ rule.value }}</dd>
+            <li>{{ rule.value }}</li>
         {% endfor %}
+        </ul>
     {% endfor %}
-</dl>
 
 <form method="POST" action="">
   {% csrf_token %}

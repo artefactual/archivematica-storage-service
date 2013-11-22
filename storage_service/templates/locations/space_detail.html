@@ -14,7 +14,13 @@
             <dt>{{ k|capfirst }}</dt> <dd>{{ v }}</dd>
         {% endfor %}
         <dt>Actions</dt>
-        <dd><a href="{% url 'space_edit' space.uuid %}">Edit Space</a></dd>
+              <dd>
+                <ul>
+                  <li><a href="{% url 'location_create' space.uuid %}">Create Location here</a></li>
+                  <li><a href="{% url 'space_edit' space.uuid %}">Edit Space</a></li>
+                  <li><a href="{% url 'space_delete' space.uuid %}">Delete Space</a></li>
+                </ul>
+              </dd>
     </dl>
 </div>
 

@@ -24,6 +24,8 @@ urlpatterns = patterns('locations.views',
         name='pipeline_edit'),
     url(r'^pipeline/(?P<uuid>'+UUID+')/detail/$', 'pipeline_detail',
         name='pipeline_detail'),
+    url(r'^pipeline/(?P<uuid>'+UUID+')/delete/$', 'pipeline_delete',
+        name='pipeline_delete'),
 
 
     # Spaces
@@ -33,6 +35,8 @@ urlpatterns = patterns('locations.views',
         name='space_detail'),
     url(r'^spaces/(?P<uuid>'+UUID+')/edit/$', 'space_edit',
         name='space_edit'),
+    url(r'^spaces/(?P<uuid>'+UUID+')/delete/$', 'space_delete',
+        name='space_delete'),
     url(r'^spaces/locations/(?P<location_uuid>'+UUID+')/delete/$', 'location_delete',
         name='location_delete'),
     url(r'^spaces/(?P<space_uuid>'+UUID+')/location_create/$', 'location_edit',

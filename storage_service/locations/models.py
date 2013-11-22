@@ -94,6 +94,9 @@ class Space(models.Model):
     mounted_locally = set([LOCAL_FILESYSTEM, NFS])
     ssh_only_access = set([PIPELINE_LOCAL_FS])
 
+    class Meta:
+        verbose_name = 'Space'
+
     def __unicode__(self):
         return u"{uuid}: {path} ({access_protocol})".format(
             uuid=self.uuid,
@@ -292,6 +295,9 @@ class Location(models.Model):
     enabled = models.BooleanField(default=True,
         help_text="True if space can be accessed.")
 
+    class Meta:
+        verbose_name = "Location"
+
     objects = models.Manager()
     active = Enabled()
 
@@ -299,7 +305,7 @@ class Location(models.Model):
         return u"{uuid}: {path} ({purpose})".format(
             uuid=self.uuid,
             purpose=self.get_purpose_display(),
-            path=self.relative_path,
+            path=self.full_path(),
         )
 
     def full_path(self):
@@ -316,11 +322,11 @@ class LocationPipeline(models.Model):
     location = models.ForeignKey('Location', to_field='uuid')
     pipeline = models.ForeignKey('Pipeline', to_field='uuid')
 
-    def __unicode__(self):
-        return u'{} is associated with {}'.format(self.location, self.pipeline)
-
     class Meta:
         verbose_name = "Location associated with a Pipeline"
+
+    def __unicode__(self):
+        return u'{} is associated with {}'.format(self.location, self.pipeline)
 
 ########################## PACKAGES ##########################
 # NOTE If the Packages section gets much bigger, move to its own app
@@ -620,6 +626,9 @@ class Event(models.Model):
     status_time = models.DateTimeField(auto_now=True)
     store_data = models.TextField(null=True, blank=True, editable=False)
 
+    class Meta:
+        verbose_name = "Event"
+
     def __unicode__(self):
         return u"{event_status} request to {event_type} {package}".format(
             event_status=self.get_status_display(),
@@ -642,6 +651,9 @@ class Pipeline(models.Model):
         help_text="Human readable description of the Archivematica instance.")
     enabled = models.BooleanField(default=True,
         help_text="Enabled if this pipeline is able to access the storage service.")
+
+    class Meta:
+        verbose_name = "Pipeline"
 
     objects = models.Manager()
     active = Enabled()
