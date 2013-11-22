@@ -265,7 +265,6 @@ def deposit_edit(request, uuid):
     elif request.method == 'POST':
         # is the deposit ready to be processed?
         if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
-            # TODO: check that async download is complete before copying
             deposit = Deposit.objects.get(uuid=uuid)
             if _deposit_state_summary(deposit) == 'Complete':
                 if len(os.listdir(deposit.full_path())) > 0:
