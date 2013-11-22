@@ -13,7 +13,7 @@
         <td><a href="{% url 'pipeline_detail' pipeline.uuid %}">{{ pipeline.uuid }}</a></td>
         <td>{{ pipeline.description }}</td>
         <td>{{ pipeline.enabled|yesno:"Enabled,Disabled" }}</td>
-        <td><a href="{% url 'pipeline_edit' pipeline.uuid %}">Edit</a> | <a href="{% url 'pipeline_delete' pipeline.uuid %}?next={{ request.path }}">Delete</a></td>
+        <td><a href="{% url 'pipeline_edit' pipeline.uuid %}">Edit</a> | <a href="{% url 'pipeline_switch_enabled' pipeline.uuid %}?next={{ request.path }}">{{ pipeline.enabled|yesno:"Disable,Enable" }}</a> | <a href="{% url 'pipeline_delete' pipeline.uuid %}?next={{ request.path }}">Delete</a></td>
       </tr>
     {% endfor %}
     </tbody>

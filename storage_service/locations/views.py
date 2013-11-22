@@ -123,6 +123,13 @@ def location_detail(request, location_uuid):
     packages = Package.objects.filter(current_location=location)
     return render(request, 'locations/location_detail.html', locals())
 
+def location_switch_enabled(request, location_uuid):
+    location = get_object_or_404(Location, uuid=location_uuid)
+    location.enabled = not location.enabled
+    location.save()
+    next_url = request.GET.get('next', reverse('location_detail', args=[location.uuid]))
+    return redirect(next_url)
+
 def location_delete_context(request, location_uuid):
     context_dict = get_delete_context_dict(request, Location, location_uuid,
         reverse('location_list'))
@@ -132,7 +139,7 @@ def location_delete_context(request, location_uuid):
 def location_delete(request, location_uuid):
     location = get_object_or_404(Location, uuid=location_uuid)
     location.delete()
-    next_url = request.GET.get('next', '/')
+    next_url = request.GET.get('next', reverse('location_list'))
     return redirect(next_url)
 
 
@@ -168,6 +175,13 @@ def pipeline_detail(request, uuid):
     locations = Location.objects.filter(pipeline=pipeline)
     return render(request, 'locations/pipeline_detail.html', locals())
 
+def pipeline_switch_enabled(request, uuid):
+    pipeline = get_object_or_404(Pipeline, uuid=uuid)
+    pipeline.enabled = not pipeline.enabled
+    pipeline.save()
+    next_url = request.GET.get('next', reverse('pipeline_detail', args=[pipeline.uuid]))
+    return redirect(next_url)
+
 def pipeline_delete_context(request, uuid):
     context_dict = get_delete_context_dict(request, Pipeline, uuid,
         reverse('pipeline_list'))
@@ -177,7 +191,7 @@ def pipeline_delete_context(request, uuid):
 def pipeline_delete(request, uuid):
     pipeline = get_object_or_404(Pipeline, uuid=uuid)
     pipeline.delete()
-    next_url = request.GET.get('next', '/')
+    next_url = request.GET.get('next', reverse('pipeline_list'))
     return redirect(next_url)
 
 ########################## SPACES ##########################
@@ -276,6 +290,6 @@ def space_delete_context(request, uuid):
 def space_delete(request, uuid):
     space = get_object_or_404(Space, uuid=uuid)
     space.delete()
-    next_url = request.GET.get('next', '/')
+    next_url = request.GET.get('next', reverse('space_list'))
     return redirect(next_url)
 

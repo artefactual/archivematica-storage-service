@@ -8,7 +8,7 @@
     <dl>
         <dt>Access Protocol</dt> <dd>{{ space.get_access_protocol_display }}</dd>
         <dt>Path</dt> <dd>{{ space.path }}</dd>
-        <dt>Usage</dt> <dd>{{ space.used }} B / {{ space.size|default:"unknown" }}</dd>
+        <dt>Usage</dt> <dd>{{ space.used|filesizeformat }} / {{ space.size|filesizeformat }}</dd>
         <dt>Last Verified</dt> <dd>{{ space.last_verified }}</dd>
         {% for k, v in space.child.items %}
             <dt>{{ k|capfirst }}</dt> <dd>{{ v }}</dd>

@@ -12,6 +12,8 @@ urlpatterns = patterns('locations.views',
         name='location_detail'),
     url(r'^locations/(?P<location_uuid>'+UUID+')/delete/$', 'location_delete',
         name='location_delete'),
+    url(r'^locations/(?P<location_uuid>'+UUID+')/switch_enabled/$', 'location_switch_enabled',
+        name='location_switch_enabled'),
 
     # Packages
     url(r'^packages/$', 'package_list',
@@ -30,6 +32,8 @@ urlpatterns = patterns('locations.views',
         name='pipeline_detail'),
     url(r'^pipeline/(?P<uuid>'+UUID+')/delete/$', 'pipeline_delete',
         name='pipeline_delete'),
+    url(r'^pipeline/(?P<uuid>'+UUID+')/switch_enabled/$', 'pipeline_switch_enabled',
+        name='pipeline_switch_enabled'),
 
 
     # Spaces

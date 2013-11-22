@@ -5,21 +5,23 @@
 {% block content %}
 
 <div class='location'>
-    <dl>
-        <dt>Space</dt> <dd><a href="{% url 'space_detail' location.space.uuid %}">{{ location.space }}</a></dd>
-        <dt>Purpose</dt> <dd>{{ location.get_purpose_display }}</dd>
-        <dt>Description</dt> <dd>{{ location.description }}</dd>
-        <dt>Full Path</dt> <dd>{{ location.full_path }}</dd>
-        <dt>Relative Path</dt> <dd>{{ location.relative_path }}</dd>
-        <dt>Usage</dt> <dd>{{ location.used }} B / {{ location.quota|default:"unknown" }}</dd>
-        <dt>Actions</dt>
-              <dd>
-                <ul>
-                  <li><a href="{% url 'location_edit' location.space.uuid location.uuid %}">Edit Location</a></li>
-                  <li><a href="{% url 'location_delete' location.uuid %}?next={{ request.path }}">Delete Location</a></li>
-                </ul>
-              </dd>
-    </dl>
+  <dl>
+    <dt>Space</dt> <dd><a href="{% url 'space_detail' location.space.uuid %}">{{ location.space }}</a></dd>
+    <dt>Purpose</dt> <dd>{{ location.get_purpose_display }}</dd>
+    <dt>Description</dt> <dd>{{ location.description }}</dd>
+    <dt>Full Path</dt> <dd>{{ location.full_path }}</dd>
+    <dt>Relative Path</dt> <dd>{{ location.relative_path }}</dd>
+    <dt>Usage</dt> <dd>{{ location.used|filesizeformat }} / {{ location.quota|filesizeformat }}</dd>
+    <dt>Enabled</dt> <dd>{{ location.enabled|yesno:"Enabled,Disabled" }}</dd>
+    <dt>Actions</dt>
+      <dd>
+        <ul>
+          <li><a href="{% url 'location_edit' location.space.uuid location.uuid %}">Edit Location</a></li>
+          <li><a href="{% url 'location_switch_enabled' location.uuid %}?next={{ request.path }}">{{ location.enabled|yesno:"Disable,Enable" }}</a></li>
+          <li><a href="{% url 'location_delete' location.uuid %}">Delete Location</a></li>
+        </ul>
+      </dd>
+  </dl>
 </div>
 
 <h2>Pipelines</h2>

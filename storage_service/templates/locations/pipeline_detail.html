@@ -12,6 +12,7 @@
     <dt>Actions</dt> <dd>
       <ul>
         <li><a href="{% url 'pipeline_edit' pipeline.uuid %}">Edit</a></li>
+        <li><a href="{% url 'pipeline_switch_enabled' pipeline.uuid %}?next={{ request.path }}">{{ pipeline.enabled|yesno:"Disable,Enable" }}</a></li>
         <li><a href="{% url 'pipeline_delete' pipeline.uuid %}">Delete</a></li>
       </ul>
     </dd>

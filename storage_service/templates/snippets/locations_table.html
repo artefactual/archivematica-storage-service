@@ -12,9 +12,7 @@
         {% endif %}
         <th>UUID</th>
         <th>Usage</th>
-        {% if not no_enabled %}
         <th>Enabled</th>
-        {% endif %}
         <th>Actions</th>
       </tr>
     </thead>
@@ -38,10 +36,8 @@
         {% endif %}
         <td>{{ loc.uuid }}</td>
         <td>{{ loc.used }}B / {{ loc.quota|default:"unlimited" }}</td>
-        {% if not no_enabled %}
-          <td>{{ loc.enabled|yesno:"Enabled,Disabled" }}
-        {% endif %}
-        <td><a href="{% url 'location_edit' loc.space.uuid loc.uuid %}">Edit</a> | <a href="{% url 'location_delete' loc.uuid %}?next={{ request.path }}">Delete</a></td>
+        <td>{{ loc.enabled|yesno:"Enabled,Disabled" }}</td>
+        <td><a href="{% url 'location_edit' loc.space.uuid loc.uuid %}">Edit</a> | <a href="{% url 'location_switch_enabled' loc.uuid %}?next={{ request.path }}">{{ loc.enabled|yesno:"Disable,Enable" }}</a> | <a href="{% url 'location_delete' loc.uuid %}?next={{ request.path }}">Delete</a></td>
       </tr>
     {% endfor %}
     </tbody>

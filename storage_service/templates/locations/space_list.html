@@ -23,7 +23,7 @@
                   <li><a href="{% url 'space_detail' s.uuid %}">View Details and Locations</a></li>
                   <li><a href="{% url 'space_edit' s.uuid %}">Edit Space</a></li>
                   <li><a href="{% url 'location_create' s.uuid %}">Create Location here</a></li>
-                  <li><a href="{% url 'space_delete' s.uuid %}">Delete Space</a></li>
+                  <li><a href="{% url 'space_delete' s.uuid %}?next={{ request.path }}">Delete Space</a></li>
                 </ul>
               </dd>
         </dl>
