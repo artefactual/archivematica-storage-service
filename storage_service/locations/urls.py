@@ -35,7 +35,6 @@ urlpatterns = patterns('locations.views',
     url(r'^pipeline/(?P<uuid>'+UUID+')/switch_enabled/$', 'pipeline_switch_enabled',
         name='pipeline_switch_enabled'),
 
-
     # Spaces
     url(r'^spaces/$', 'space_list',
         name='space_list'),
