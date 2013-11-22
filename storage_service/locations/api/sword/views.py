@@ -127,7 +127,7 @@ def collection(request, location_uuid):
                             deposit_specification = {'location_uuid': location_uuid}
                             deposit_specification['name'] = mets_data['deposit_name']
                             if 'HTTP_ON_BEHALF_OF' in request.META:
-                                # TODO: should get this from author header
+                                # TODO: should get this from author header or provided XML metadata
                                 deposit_specification['sourceofacquisition'] = request.META['HTTP_ON_BEHALF_OF']
 
                             if not os.path.isdir(location.full_path()):
@@ -206,7 +206,7 @@ def _create_deposit_directory_and_db_entry(deposit_specification):
         deposit = Deposit.objects.create(name=deposit_name, path=deposit_name,
             location=location)
 
-        # TODO
+        # TODO: implement this
         if 'sourceofacquisition' in deposit_specification:
             deposit.source = deposit_specification['sourceofacquisition']
 
@@ -266,7 +266,7 @@ def deposit_edit(request, uuid):
         # is the deposit ready to be processed?
         if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
             deposit = Deposit.objects.get(uuid=uuid)
-            if _deposit_state_summary(deposit) == 'Complete':
+            if deposit.downloading_status() == 'complete':
                 if len(os.listdir(deposit.full_path())) > 0:
                     # optionally auto-approve
                     approval_pipeline = request.GET.get('approval_pipeline', '')
@@ -461,51 +461,14 @@ def deposit_state(request, uuid):
         return _sword_error_response(request, 404, 'Deposit {uuid} does not exist.'.format(uuid=uuid))
 
     if request.method == 'GET':
-        state = _deposit_state_summary(deposit)
-        state_term = state.lower()
-        state_description = 'Deposit initiation: ' + state
+        state_term = deposit.downloading_status()
+        state_description = 'Deposit initiation: ' + deposit.downloading_status()
 
         response = HttpResponse(render_to_string('locations/api/sword/state.xml', locals()))
         response['Content-Type'] = 'application/atom+xml;type=feed'
         return response
     else:
         return _sword_error_response(request, 405, 'This endpoint only responds to the GET HTTP method.')
-
-"""
-In order to determine the deposit status we need to check
-for three possibilities:
-
-1) The deposit involved no asynchronous depositing. The
-   downloads_attempted DB row column should be 0.
-
-2) The deposit involved asynchronous depositing, but
-   the depositing is incomplete. downloads_attempted is
-   greater than 0, but download_completion_time is not
-   set.
-      
-3) The deposit involved asynchronous depositing and
-   completed successfully. download_completion_time is set.
-   downloads_attempted is equal to downloads_completed.
-      
-4) The deposit involved asynchronous depositing and
-   completed unsuccessfully. download_completion_time is set.
-   downloads_attempted isn't equal to downloads_completed.
-"""
-
-# TODO: put this in the model?
-def _deposit_state_summary(deposit):
-    if deposit.downloads_attempted == 0:
-        state = 'Complete'
-    else:
-       if deposit.download_completion_time == None:
-           state = 'Incomplete'
-       else:
-           if deposit.downloads_attempted == deposit.downloads_completed:
-               state = 'Complete'
-           else:
-               state = 'Failed'
-
-    return state
 
 # respond with SWORD 2.0 deposit receipt XML
 def _deposit_receipt_response(request, deposit_uuid, status_code):
