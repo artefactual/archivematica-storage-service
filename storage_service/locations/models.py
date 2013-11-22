@@ -804,3 +804,36 @@ class Deposit(models.Model):
 
     def has_been_submitted_for_processing(self):
         return self.deposit_completion_time != None
+
+    """
+    In order to determine the downloading status (whether or not the
+    deposit is ready to be finalized) we need to check for three
+    possibilities:
+
+    1) The deposit involved no asynchronous depositing. The
+       downloads_attempted DB row column should be 0.
+
+    2) The deposit involved asynchronous depositing, but
+       the depositing is incomplete. downloads_attempted is
+       greater than 0, but download_completion_time is not
+       set.
+
+    3) The deposit involved asynchronous depositing and
+       completed successfully. download_completion_time is set.
+       downloads_attempted is equal to downloads_completed.
+
+    4) The deposit involved asynchronous depositing and
+       completed unsuccessfully. download_completion_time is set.
+       downloads_attempted isn't equal to downloads_completed.
+    """
+    def downloading_status(self):
+        if self.downloads_attempted == 0:
+            return 'complete'
+        else:
+            if self.download_completion_time == None:
+                return 'incomplete'
+            else:
+                if self.downloads_attempted == self.downloads_completed:
+                    return 'complete'
+                else:
+                    return 'failed'
