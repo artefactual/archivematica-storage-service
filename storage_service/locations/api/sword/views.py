@@ -320,9 +320,9 @@ def deposit_edit(request, uuid):
                     deposit.save()
                     return _deposit_receipt_response(request, uuid, 200)
                 else:
-                    return _sword_error_response(request, 400, 'Deposit is not complete or has failed.')
+                    return _sword_error_response(request, 400, 'This deposit contains no files.')
             else:
-                return _sword_error_response(request, 400, 'This deposit contains no files.')
+                return _sword_error_response(request, 400, 'Deposit is not complete or has failed.')
         else:
             return _sword_error_response(request, 400, 'The In-Progress header must be set to false when starting deposit processing.')
     elif request.method == 'PUT':
