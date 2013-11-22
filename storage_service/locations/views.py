@@ -110,12 +110,18 @@ def location_edit(request, space_uuid, location_uuid=None):
         messages.success(request, "Location saved.")
         # TODO make this return to the originating page
         # http://stackoverflow.com/questions/4203417/django-how-do-i-redirect-to-page-where-form-originated
-        return redirect('space_detail', space.uuid)
+        return redirect('location_detail', location.uuid)
     return render(request, 'locations/location_form.html', locals())
 
 def location_list(request):
     locations = Location.objects.all()
     return render(request, 'locations/location_list.html', locals())
+
+def location_detail(request, location_uuid):
+    location = get_object_or_404(Location, uuid=location_uuid)
+    pipelines = Pipeline.objects.filter(location=location)
+    packages = Package.objects.filter(current_location=location)
+    return render(request, 'locations/location_detail.html', locals())
 
 def location_delete_context(request, location_uuid):
     context_dict = get_delete_context_dict(request, Location, location_uuid,

@@ -32,7 +32,7 @@
           </td>
         {% endif %}
         <td>{{ loc.full_path }}</td>
-        <td>{{ loc.description|default:"None" }}</td>
+        <td><a href="{% url 'location_detail' loc.uuid %}">{{ loc.description|default:"None" }}</a></td>
         {% if not no_space %}
           <td><a href="{% url 'space_detail' loc.space.uuid %}">{{ loc.space.uuid|truncatechars:11 }}</a></td>
         {% endif %}
