@@ -29,7 +29,7 @@ from tastypie.utils import trailing_slash
 from common import utils
 from locations.api.sword import views as sword_views
 
-from ..models import (Event, Package, Location, Space, Pipeline, Deposit, StorageException)
+from ..models import (Event, Package, Location, Space, Pipeline, StorageException)
 from ..forms import LocationForm, SpaceForm
 from ..constants import PROTOCOL
 from locations import signals
@@ -169,7 +169,7 @@ class SpaceResource(ModelResource):
     def prepend_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/browse%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('browse'), name="browse"),
-            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_service_document'), name="sword_service_document"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/collection%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_collection'), name="sword_collection")
         ]
 
     # Is there a better place to add protocol-specific space info?
@@ -233,9 +233,9 @@ class SpaceResource(ModelResource):
 
         return self.create_response(request, objects)
 
-    def sword_service_document(self, request, **kwargs):
+    def sword_collection(self, request, **kwargs):
         self.log_throttled_access(request)
-        return sword_views.service_document(request, kwargs['uuid'])
+        return sword_views.collection(request, kwargs['uuid'])
 
 
 class LocationResource(ModelResource):
@@ -272,7 +272,9 @@ class LocationResource(ModelResource):
     def prepend_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/browse%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('browse'), name="browse"),
-            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/collection%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_collection'), name="sword_collection")
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit'), name="sword_deposit"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/media%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit_media'), name="sword_deposit_media"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/state%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit_state'), name="sword_deposit_state"),
         ]
 
     def decode_path(self, path):
@@ -376,43 +378,6 @@ class LocationResource(ModelResource):
                     'message': 'Files moved successfully'}
         return self.create_response(request, response)
 
-    def sword_collection(self, request, **kwargs):
-        self.log_throttled_access(request)
-        return sword_views.collection(request, kwargs['uuid'])
-
-
-class DepositResource(ModelResource):
-    location = fields.ForeignKey(LocationResource, 'location')
-    path = fields.CharField(attribute='full_path', readonly=True)
-    name = fields.CharField(attribute='name', readonly=True)
-
-    class Meta:
-        queryset = Deposit.objects.all()
-        authentication = Authentication()
-        # authentication = MultiAuthentication(
-        #     BasicAuthentication, ApiKeyAuthentication())
-        authorization = Authorization()
-        # authorization = DjangoAuthorization()
-        # validation = CleanedDataFormValidation(form_class=LocationForm)
-
-        fields = ['path', 'name', 'uuid']
-        list_allowed_methods = ['get']
-        detail_allowed_methods = ['get']
-        detail_uri_name = 'uuid'
-        always_return_data = True
-        filtering = {
-            'path': ALL,
-            'location': ALL_WITH_RELATIONS,
-            'uuid': ALL,
-        }
-
-    def prepend_urls(self):
-        return [
-            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit'), name="sword_deposit"),
-            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/media%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit_media'), name="sword_deposit_media"),
-            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/state%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit_state'), name="sword_deposit_state")
-        ]
-
     def sword_deposit(self, request, **kwargs):
         self.log_throttled_access(request)
         return sword_views.deposit_edit(request, kwargs['uuid'])
@@ -424,6 +389,7 @@ class DepositResource(ModelResource):
     def sword_deposit_state(self, request, **kwargs):
         self.log_throttled_access(request)
         return sword_views.deposit_state(request, kwargs['uuid'])
+
 
 class PackageResource(ModelResource):
     """ Resource for managing Packages.
