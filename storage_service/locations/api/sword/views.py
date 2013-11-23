@@ -85,7 +85,7 @@ def collection(request, space_uuid):
         entries = []
 
         for uuid in helpers.deposit_list(space_uuid):
-            deposit = Location.objects.get(uuid=uuid)
+            deposit = helpers.get_deposit(uuid)
 
             edit_iri = request.build_absolute_uri(
                 reverse('sword_deposit', kwargs={'api_name': 'v1',
@@ -195,7 +195,7 @@ def _create_deposit_directory_and_db_entry(deposit_specification):
 
     if os.path.exists(deposit_path):
         deposit = Location.objects.create(description=deposit_name, relative_path=deposit_name,
-            space=space)
+            space=space, purpose=Location.SWORD_DEPOSIT)
 
         # TODO: implement this
         if 'sourceofacquisition' in deposit_specification:
@@ -206,7 +206,7 @@ def _create_deposit_directory_and_db_entry(deposit_specification):
 
 def _fetch_content(deposit_uuid, object_content_urls):
     # update deposit with number of files that need to be downloaded
-    deposit = Location.objects.get(uuid=deposit_uuid)
+    deposit = helpers.get_deposit(deposit_uuid)
     deposit.downloads_attempted = len(object_content_urls)
     deposit.downloads_completed = 0
     deposit.save()
@@ -322,7 +322,7 @@ def deposit_edit(request, uuid):
         shutil.rmtree(deposit.full_path())
 
         # delete deposit
-        deposit = Location.objects.get(uuid=uuid)
+        deposit = helpers.get_deposit(uuid)
         deposit.delete()
 
         return HttpResponse(status=204) # No content
