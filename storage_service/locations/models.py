@@ -312,6 +312,11 @@ class Location(models.Model):
         help_text="Amount used, in bytes.")
     enabled = models.BooleanField(default=True,
         help_text="True if space can be accessed.")
+    # SWORD-related attributes
+    downloads_attempted = models.IntegerField(default=0)
+    downloads_completed = models.IntegerField(default=0)
+    download_completion_time = models.DateTimeField(default=None, null=True, blank=True)
+    deposit_completion_time = models.DateTimeField(default=None, null=True, blank=True)
 
     class Meta:
         verbose_name = "Location"
@@ -334,6 +339,43 @@ class Location(models.Model):
     def get_description(self):
         """ Returns a user-friendly description (or the path). """
         return self.description or self.full_path()
+
+    # SWORD-related methods
+    def has_been_submitted_for_processing(self):
+        return self.deposit_completion_time != None
+
+    """
+    In order to determine the downloading status (whether or not the
+    deposit is ready to be finalized) we need to check for three
+    possibilities:
+
+    1) The deposit involved no asynchronous depositing. The
+       downloads_attempted DB row column should be 0.
+
+    2) The deposit involved asynchronous depositing, but
+       the depositing is incomplete. downloads_attempted is
+       greater than 0, but download_completion_time is not
+       set.
+
+    3) The deposit involved asynchronous depositing and
+       completed successfully. download_completion_time is set.
+       downloads_attempted is equal to downloads_completed.
+
+    4) The deposit involved asynchronous depositing and
+       completed unsuccessfully. download_completion_time is set.
+       downloads_attempted isn't equal to downloads_completed.
+    """
+    def downloading_status(self):
+        if self.downloads_attempted == 0:
+            return 'complete'
+        else:
+            if self.download_completion_time == None:
+                return 'incomplete'
+            else:
+                if self.downloads_attempted == self.downloads_completed:
+                    return 'complete'
+                else:
+                    return 'failed'
 
 
 class LocationPipeline(models.Model):
@@ -762,78 +804,10 @@ class Pipeline(models.Model):
                 LocationPipeline.objects.get_or_create(
                     pipeline=self, location=location)
 
-        # TODO: not sure if we need a space for this, or just a new location purpose
+        # create SWORD space if it doesn't already exist
         space, space_created = Space.objects.get_or_create(
             access_protocol=Space.SWORD_SERVER, path='/' + os.path.join(shared_path, 'staging', 'deposits'))
         if space_created:
             sword_server = SwordServer(space=space)
             sword_server.save()
             logging.info("Protocol Space created: {}".format(sword_server))
-
-        # TODO: integrate this with the other location creation logic
-        # associate pipeline with transfer deposit location
-        defaults = utils.get_setting('default_transfer_deposit', [])
-        for uuid in defaults:
-            location = Location.objects.get(uuid=uuid)
-            assert location.purpose == Location.TRANSFER_SOURCE
-            logging.info("Adding new transfer deposits directory to {}".format(
-                self))
-            LocationPipeline.objects.get_or_create(
-                pipeline=self, location=location)
-
-class Deposit(models.Model):
-    """ Stores information about a deposit of files. """
-
-    uuid = UUIDField(editable=False, unique=True, version=4,
-        help_text="Unique identifier")
-    location = models.ForeignKey('Location', to_field='uuid')
-    name = models.CharField(max_length=256,
-        help_text="Name of the deposit.")
-    path = models.TextField(
-        help_text="Absolute path to the deposit on the storage service machine.")
-    create_time = models.DateTimeField(auto_now_add=True)
-    downloads_attempted = models.IntegerField(default=0)
-    downloads_completed = models.IntegerField(default=0)
-    download_completion_time = models.DateTimeField(default=None, null=True, blank=True)
-    deposit_completion_time = models.DateTimeField(default=None, null=True, blank=True)
-
-    def full_path(self):
-        """ Returns full path of deposit: space + location + deposit paths. """
-        return os.path.normpath(
-            os.path.join(self.location.full_path(), self.path)) # TODO: change to relative path
-
-    def has_been_submitted_for_processing(self):
-        return self.deposit_completion_time != None
-
-    """
-    In order to determine the downloading status (whether or not the
-    deposit is ready to be finalized) we need to check for three
-    possibilities:
-
-    1) The deposit involved no asynchronous depositing. The
-       downloads_attempted DB row column should be 0.
-
-    2) The deposit involved asynchronous depositing, but
-       the depositing is incomplete. downloads_attempted is
-       greater than 0, but download_completion_time is not
-       set.
-
-    3) The deposit involved asynchronous depositing and
-       completed successfully. download_completion_time is set.
-       downloads_attempted is equal to downloads_completed.
-
-    4) The deposit involved asynchronous depositing and
-       completed unsuccessfully. download_completion_time is set.
-       downloads_attempted isn't equal to downloads_completed.
-    """
-    def downloading_status(self):
-        if self.downloads_attempted == 0:
-            return 'complete'
-        else:
-            if self.download_completion_time == None:
-                return 'incomplete'
-            else:
-                if self.downloads_attempted == self.downloads_completed:
-                    return 'complete'
-                else:
-                    return 'failed'

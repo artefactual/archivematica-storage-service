@@ -76,16 +76,11 @@ def startup():
         sword_server = locations_models.SwordServer(space=space)
         sword_server.save()
         logging.info("Protocol Space created: {}".format(sword_server))
-    transfer_deposit, _ = locations_models.Location.objects.get_or_create(
-        purpose=locations_models.Location.TRANSFER_SOURCE, #TODO: make new purpose?
-        space=space,
-        relative_path='transfers',
-        description='SWORD transfer deposits')
-    try:
-        os.makedirs(transfer_deposit.full_path())
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            logging.error("Internal storage location {} not accessible.".format(transfer_deposit.full_path()))
+        try:
+            os.makedirs(space.path())
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                logging.error("Unable to create directory {} for SWORD server space.".format(space.path))
 
     utils.set_setting('default_transfer_source', [transfer_source.uuid])
     utils.set_setting('default_aip_storage', [aip_storage.uuid])

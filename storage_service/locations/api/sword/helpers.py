@@ -7,15 +7,21 @@ import urllib2
 # Core Django, alphabetical
 from django.core.exceptions import ObjectDoesNotExist
 
-# This project, alphabetical
-from locations.models import Deposit
-from locations.models import Location
+# External dependencies, alphabetical
+from annoying.functions import get_object_or_None
 
-def deposit_list(location_uuid):
-    location = Location.objects.get(uuid=location_uuid)
+# This project, alphabetical
+from locations.models import Location
+from locations.models import Space
+
+def get_deposit(uuid):
+    return get_object_or_None(Location, uuid=uuid)
+
+def deposit_list(space_uuid):
+    space = Space.objects.get(uuid=space_uuid)
 
     deposit_list = []
-    deposits = Deposit.objects.filter(location=location)
+    deposits = Location.objects.filter(space=space)
     for deposit in deposits:
         deposit_list.append(deposit.uuid)
     return deposit_list

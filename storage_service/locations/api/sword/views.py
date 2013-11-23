@@ -21,7 +21,6 @@ from django.utils import timezone
 from annoying.functions import get_object_or_None
 
 # This project, alphabetical
-from locations.models import Deposit
 from locations.models import Location
 from locations.models import Pipeline
 from locations.models import Space
@@ -32,23 +31,16 @@ Example GET of service document:
 
   curl -v http://127.0.0.1:8000/api/v1/space/969959bc-5f20-4c6f-9e9b-fcc4e19d6cd5/sword/
 """
-def service_document(request, space_uuid):
-    space = get_object_or_None(Space, uuid=space_uuid)
-    if space == None:
-        return _sword_error_response(request, 404, 'Space {uuid} does not exist.'.format(uuid=space_uuid))
-
-    locations = Location.objects.filter(space=space)
+def service_document(request):
+    spaces = Space.objects.filter(access_protocol='SWORD_S')
 
     collections = []
-    for location in locations:
-        if location.description != '':
-            title = location.description
-        else:
-            title = 'Collection'
+    for space in spaces:
+        title = 'Collection'
 
         col_iri = request.build_absolute_uri(
             reverse('sword_collection', kwargs={'api_name': 'v1',
-                'resource_name': 'location', 'uuid': location.uuid}))
+                'resource_name': 'space', 'uuid': space.uuid}))
 
         collections.append({
             'title': title,
@@ -63,27 +55,27 @@ def service_document(request, space_uuid):
 """
 Example GET of collection deposit list:
 
-  curl -v http://localhost:8000/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/collection/
+  curl -v http://localhost:8000/api/v1/space/96606387-cc70-4b09-b422-a7220606488d/sword/collection/
 
 Example POST creation of deposit, allowing asynchronous downloading of object content URLs:
 
-  curl -v -H "In-Progress: true" --data-binary @mets.xml --request POST http://localhost:8000/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/collection/
+  curl -v -H "In-Progress: true" --data-binary @mets.xml --request POST http://localhost:8000/api/v1/space/96606387-cc70-4b09-b422-a7220606488d/sword/collection/
 
 Example POST creation of deposit, finalizing the deposit and auto-approving it:
 
-  curl -v -H "In-Progress: false" --data-binary @mets.xml --request POST http://localhost:8000/api/v1/location/c0bee7c8-3e9b-41e3-8600-ee9b2c475da2/sword/collection/?approval_pipeline=41b57f04-9738-43d8-b80e-3fad88c75abc
+  curl -v -H "In-Progress: false" --data-binary @mets.xml --request POST http://localhost:8000/api/v1/space/c0bee7c8-3e9b-41e3-8600-ee9b2c475da2/sword/collection/?approval_pipeline=41b57f04-9738-43d8-b80e-3fad88c75abc
 """
-def collection(request, location_uuid):
-    location = get_object_or_None(Location, uuid=location_uuid)
+def collection(request, space_uuid):
+    space = get_object_or_None(Space, uuid=space_uuid)
 
-    if location == None:
-        return _sword_error_response(request, 404, 'Location {uuid} does not exist.'.format(uuid=location_uuid))
+    if space == None:
+        return _sword_error_response(request, 404, 'Space {uuid} does not exist.'.format(uuid=space_uuid))
 
     if request.method == 'GET':
         # return list of deposits as ATOM feed
         col_iri = request.build_absolute_uri(
             reverse('sword_collection', kwargs={'api_name': 'v1',
-                'resource_name': 'location', 'uuid': location_uuid}))
+                'resource_name': 'space', 'uuid': space_uuid}))
 
         feed = {
             'title': 'Deposits',
@@ -92,15 +84,15 @@ def collection(request, location_uuid):
 
         entries = []
 
-        for uuid in helpers.deposit_list(location_uuid):
-            deposit = Deposit.objects.get(uuid=uuid)
+        for uuid in helpers.deposit_list(space_uuid):
+            deposit = Location.objects.get(uuid=uuid)
 
             edit_iri = request.build_absolute_uri(
                 reverse('sword_deposit', kwargs={'api_name': 'v1',
-                    'resource_name': 'deposit', 'uuid': uuid}))
+                    'resource_name': 'location', 'uuid': uuid}))
 
             entries.append({
-                'title': deposit.name,
+                'title': deposit.description,
                 'url': edit_iri,
             })
 
@@ -124,14 +116,14 @@ def collection(request, location_uuid):
                             return _sword_error_response(request, 400, 'No deposit name found in XML.')
                         else:
                             # assemble deposit specification
-                            deposit_specification = {'location_uuid': location_uuid}
+                            deposit_specification = {'space_uuid': space_uuid}
                             deposit_specification['name'] = mets_data['deposit_name']
                             if 'HTTP_ON_BEHALF_OF' in request.META:
                                 # TODO: should get this from author header or provided XML metadata
                                 deposit_specification['sourceofacquisition'] = request.META['HTTP_ON_BEHALF_OF']
 
-                            if not os.path.isdir(location.full_path()):
-                                return  _sword_error_response(request, 500, 'Location path (%s) does not exist: contact an administrator.' % (location.full_path()))
+                            if not os.path.isdir(space.path):
+                                return  _sword_error_response(request, 500, 'Space path (%s) does not exist: contact an administrator.' % (space.path))
                             else:
                                 deposit_uuid = _create_deposit_directory_and_db_entry(deposit_specification)
 
@@ -190,10 +182,10 @@ def _create_deposit_directory_and_db_entry(deposit_specification):
     else:
         deposit_name = 'Untitled'
 
-    location = Location.objects.get(uuid=deposit_specification['location_uuid']) 
+    space = Space.objects.get(uuid=deposit_specification['space_uuid']) 
 
     deposit_path = os.path.join(
-        location.full_path(),
+        space.path,
         deposit_name
     )
 
@@ -202,9 +194,8 @@ def _create_deposit_directory_and_db_entry(deposit_specification):
     os.chmod(deposit_path, 02770) # drwxrws---
 
     if os.path.exists(deposit_path):
-        location = Location.objects.get(uuid=deposit_specification['location_uuid'])
-        deposit = Deposit.objects.create(name=deposit_name, path=deposit_name,
-            location=location)
+        deposit = Location.objects.create(description=deposit_name, relative_path=deposit_name,
+            space=space)
 
         # TODO: implement this
         if 'sourceofacquisition' in deposit_specification:
@@ -215,7 +206,7 @@ def _create_deposit_directory_and_db_entry(deposit_specification):
 
 def _fetch_content(deposit_uuid, object_content_urls):
     # update deposit with number of files that need to be downloaded
-    deposit = Deposit.objects.get(uuid=deposit_uuid)
+    deposit = Location.objects.get(uuid=deposit_uuid)
     deposit.downloads_attempted = len(object_content_urls)
     deposit.downloads_completed = 0
     deposit.save()
@@ -244,17 +235,17 @@ def _fetch_content(deposit_uuid, object_content_urls):
 """
 Example POST finalization of deposit:
 
-  curl -v -H "In-Progress: false" --request POST http://127.0.0.1:8000/api/v1/deposit/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/
+  curl -v -H "In-Progress: false" --request POST http://127.0.0.1:8000/api/v1/location/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/
 
 Example DELETE of deposit:
 
-  curl -v -XDELETE http://127.0.0.1:8000/api/v1/deposit/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/
+  curl -v -XDELETE http://127.0.0.1:8000/api/v1/location/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/
 """
 def deposit_edit(request, uuid):
-    deposit = get_object_or_None(Deposit, uuid=uuid)
+    deposit = helpers.get_deposit(uuid)
 
     if deposit == None:
-        return _sword_error_response(request, 404, 'Deposit {uuid} does not exist.'.format(uuid=uuid))
+        return _sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=uuid))
 
     if deposit.has_been_submitted_for_processing():
         return _sword_error_response(request, 400, 'This deposit has already been submitted for processing.')
@@ -265,7 +256,6 @@ def deposit_edit(request, uuid):
     elif request.method == 'POST':
         # is the deposit ready to be processed?
         if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
-            deposit = Deposit.objects.get(uuid=uuid)
             if deposit.downloading_status() == 'complete':
                 if len(os.listdir(deposit.full_path())) > 0:
                     # optionally auto-approve
@@ -332,7 +322,7 @@ def deposit_edit(request, uuid):
         shutil.rmtree(deposit.full_path())
 
         # delete deposit
-        deposit = Deposit.objects.get(uuid=uuid)
+        deposit = Location.objects.get(uuid=uuid)
         deposit.delete()
 
         return HttpResponse(status=204) # No content
@@ -342,29 +332,29 @@ def deposit_edit(request, uuid):
 """
 Example GET of files list:
 
-  curl -v http://127.0.0.1:8000/api/v1/deposit/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/media/
+  curl -v http://127.0.0.1:8000/api/v1/location/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/media/
 
 Example POST of file:
 
   curl -v -H "Content-Disposition: attachment; filename=joke.jpg" --request POST \
     --data-binary "@joke.jpg" \
-    http://127.0.0.1:8000/api/v1/deposit/9c8b4ac0-0407-4360-a10d-af6c62a48b69/sword/media/
+    http://127.0.0.1:8000/api/v1/location/9c8b4ac0-0407-4360-a10d-af6c62a48b69/sword/media/
 
 Example DELETE of all files:
 
   curl -v -XDELETE \
-    http://127.0.0.1:8000/api/v1/deposit/9c8b4ac0-0407-4360-a10d-af6c62a48b69/sword/media/
+    http://127.0.0.1:8000/api/v1/location/9c8b4ac0-0407-4360-a10d-af6c62a48b69/sword/media/
 
 Example DELETE of file:
 
   curl -v -XDELETE \
-    http://127.0.0.1:8000/api/v1/deposit/9c8b4ac0-0407-4360-a10d-af6c62a48b69/sword/media/?filename=joke.jpg
+    http://127.0.0.1:8000/api/v1/location/9c8b4ac0-0407-4360-a10d-af6c62a48b69/sword/media/?filename=joke.jpg
 """
 def deposit_media(request, uuid):
-    deposit = get_object_or_None(Deposit, uuid=uuid)
+    deposit = helpers.get_deposit(uuid)
 
     if deposit == None:
-        return _sword_error_response(request, 404, 'Deposit {uuid} does not exist.'.format(uuid=uuid))
+        return _sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=uuid))
 
     if deposit.has_been_submitted_for_processing():
         return _sword_error_response(request, 400, 'This deposit has already been submitted for processing.')
@@ -373,10 +363,10 @@ def deposit_media(request, uuid):
         return HttpResponse(str(os.listdir(deposit.full_path())))
     elif request.method == 'PUT':
         # replace a file in the deposit
-        return _handle_upload_request(request, uuid, True)
+        return _handle_upload_request(request, deposit, True)
     elif request.method == 'POST':
         # add a file to the deposit
-        return _handle_upload_request(request, uuid)
+        return _handle_upload_request(request, deposit)
     elif request.method == 'DELETE':
         filename = request.GET.get('filename', '')
         if filename != '':
@@ -387,8 +377,6 @@ def deposit_media(request, uuid):
             else:
                 return _sword_error_response(request, 404, 'The path to this file (%s) does not exist.' % (file_path))
         else:
-            deposit = Deposit.objects.get(uuid=uuid)
-
             for filename in os.listdir(deposit.full_path()):
                 filepath = os.path.join(deposit.full_path(), filename)
                 if os.path.isfile(filepath):
@@ -452,13 +440,13 @@ def _handle_upload_request_with_potential_md5_checksum(request, file_path, succe
 """
 Example GET of state:
 
-  curl -v http://localhost:8000/api/v1/deposit/96606387-cc70-4b09-b422-a7220606488d/sword/state/
+  curl -v http://localhost:8000/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/state/
 """
 def deposit_state(request, uuid):
-    deposit = get_object_or_None(Deposit, uuid=uuid)
+    deposit = helpers.get_deposit(uuid)
 
     if deposit == None:
-        return _sword_error_response(request, 404, 'Deposit {uuid} does not exist.'.format(uuid=uuid))
+        return _sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=uuid))
 
     if request.method == 'GET':
         state_term = deposit.downloading_status()
@@ -472,20 +460,20 @@ def deposit_state(request, uuid):
 
 # respond with SWORD 2.0 deposit receipt XML
 def _deposit_receipt_response(request, deposit_uuid, status_code):
-    deposit = Deposit.objects.get(uuid=deposit_uuid)
+    deposit = helpers.get_deposit(deposit_uuid)
 
     # TODO: fix minor issues with template
     media_iri = request.build_absolute_uri(
         reverse('sword_deposit_media', kwargs={'api_name': 'v1',
-            'resource_name': 'deposit', 'uuid': deposit_uuid}))
+            'resource_name': 'location', 'uuid': deposit_uuid}))
 
     edit_iri = request.build_absolute_uri(
         reverse('sword_deposit', kwargs={'api_name': 'v1',
-            'resource_name': 'deposit', 'uuid': deposit_uuid}))
+            'resource_name': 'location', 'uuid': deposit_uuid}))
 
     state_iri = request.build_absolute_uri(
         reverse('sword_deposit_state', kwargs={'api_name': 'v1',
-            'resource_name': 'deposit', 'uuid': deposit_uuid}))
+            'resource_name': 'location', 'uuid': deposit_uuid}))
 
     receipt_xml = render_to_string('locations/api/sword/deposit_receipt.xml', locals())
 
