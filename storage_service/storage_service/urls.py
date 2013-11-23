@@ -84,5 +84,4 @@ def startup():
 
     utils.set_setting('default_transfer_source', [transfer_source.uuid])
     utils.set_setting('default_aip_storage', [aip_storage.uuid])
-    utils.set_setting('default_transfer_deposit', [transfer_deposit.uuid])
 startup()
