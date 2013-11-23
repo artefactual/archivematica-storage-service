@@ -1125,6 +1125,7 @@ class Location(models.Model):
     BACKLOG = 'BL'
     CURRENTLY_PROCESSING = 'CP'
     STORAGE_SERVICE_INTERNAL = 'SS'
+    SWORD_DEPOSIT = 'SD'
 
     PURPOSE_CHOICES = (
         (TRANSFER_SOURCE, 'Transfer Source'),

@@ -21,6 +21,7 @@ def deposit_list(space_uuid):
     space = Space.objects.get(uuid=space_uuid)
 
     deposit_list = []
+    # TODO: add purpose spec to filter
     deposits = Location.objects.filter(space=space)
     for deposit in deposits:
         deposit_list.append(deposit.uuid)
