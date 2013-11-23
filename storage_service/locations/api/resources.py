@@ -166,6 +166,9 @@ class SpaceResource(ModelResource):
         return self.create_response(request, objects)
 
     def sword_collection(self, request, **kwargs):
+        space = Space.objects.get(uuid=kwargs['uuid'])
+        if space.access_protocol != Space.SWORD_SERVER:
+            return http.HttpBadRequest('This is not a SWORD server space.')
         self.log_throttled_access(request)
         return sword_views.collection(request, kwargs['uuid'])
 
