@@ -478,7 +478,7 @@ def _deposit_receipt_response(request, deposit_uuid, status_code):
     receipt_xml = render_to_string('locations/api/sword/deposit_receipt.xml', locals())
 
     response = HttpResponse(receipt_xml, mimetype='text/xml', status=status_code)
-    response['Location'] = deposit_uuid
+    response['Location'] = '/api/v1/location/' + deposit_uuid + '/sword/'
     return response
 
 def _sword_error_response_render(request, error_details):
