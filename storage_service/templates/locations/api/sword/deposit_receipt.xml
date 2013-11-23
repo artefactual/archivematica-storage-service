@@ -2,7 +2,7 @@
         xmlns:sword="http://purl.org/net/sword/"
         xmlns:dcterms="http://purl.org/dc/terms/">
 
-    <title>{{ deposit.name }}</title>
+    <title>{{ deposit.description }}</title>
     <id>{{ deposit.uuid }}</id>
     <updated>{{ current_datetime }}</updated>
     <generator uri="https://www.archivematica.org" version="1.0"/>
