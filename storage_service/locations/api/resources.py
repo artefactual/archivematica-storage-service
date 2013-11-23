@@ -231,20 +231,23 @@ class LocationResource(ModelResource):
         return self.create_response(request, objects)
 
     def sword_deposit(self, request, **kwargs):
-        if self.location.purpose != Location.SWORD_DEPOSIT:
-            return http.HttpBadRequest
+        location = Location.objects.get(uuid=kwargs['uuid'])
+        if location.purpose != Location.SWORD_DEPOSIT:
+            return http.HttpBadRequest('This is not a SWORD deposit location.')
         self.log_throttled_access(request)
         return sword_views.deposit_edit(request, kwargs['uuid'])
 
     def sword_deposit_media(self, request, **kwargs):
-        if self.location.purpose != Location.SWORD_DEPOSIT:
-            return http.HttpBadRequest
+        location = Location.objects.get(uuid=kwargs['uuid'])
+        if location.purpose != Location.SWORD_DEPOSIT:
+            return http.HttpBadRequest('This is not a SWORD deposit location.')
         self.log_throttled_access(request)
         return sword_views.deposit_media(request, kwargs['uuid'])
 
     def sword_deposit_state(self, request, **kwargs):
-        if self.location.purpose != Location.SWORD_DEPOSIT:
-            return http.HttpBadRequest
+        location = Location.objects.get(uuid=kwargs['uuid'])
+        if location.purpose != Location.SWORD_DEPOSIT:
+            return http.HttpBadRequest('This is not a SWORD deposit location.')
         self.log_throttled_access(request)
         return sword_views.deposit_state(request, kwargs['uuid'])
 
