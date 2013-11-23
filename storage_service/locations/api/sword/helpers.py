@@ -24,7 +24,8 @@ def deposit_list(space_uuid):
     # TODO: add purpose spec to filter
     deposits = Location.objects.filter(space=space)
     for deposit in deposits:
-        deposit_list.append(deposit.uuid)
+        if deposit.purpose == Location.SWORD_DEPOSIT:
+            deposit_list.append(deposit.uuid)
     return deposit_list
 
 def write_file_from_request_body(request, file_path):
