@@ -1,0 +1,6 @@
+  <atom:entry>
+    <atom:id>{{ entry.url }}</atom:id>
+    <atom:title type="text">{{ entry.title }}</atom:title>
+    <atom:link href="{{ entry.url }}" rel="self">
+    </atom:link>
+  </atom:entry>

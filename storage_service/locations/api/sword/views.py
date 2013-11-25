@@ -251,8 +251,19 @@ def deposit_edit(request, uuid):
         return _sword_error_response(request, 400, 'This deposit has already been submitted for processing.')
 
     if request.method == 'GET':
-        # details about a deposit
-        return HttpResponse('Feed XML of files for deposit' + uuid)
+        deposit = helpers.get_deposit(uuid)
+        edit_iri = request.build_absolute_uri(
+            reverse(
+                'sword_deposit',
+                kwargs={'api_name': 'v1', 'resource_name': 'location', 'uuid': deposit.uuid}))
+
+        entry = {
+            'title': deposit.description,
+            'url': edit_iri
+        }
+        response = HttpResponse(render_to_string('locations/api/sword/entry.xml', locals()))
+        response['Content-Type'] = 'application/atom+xml'
+        return response
     elif request.method == 'POST':
         # is the deposit ready to be processed?
         if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':

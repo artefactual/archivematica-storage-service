@@ -1,7 +1,1 @@
-{% for entry in entries %}
-  <atom:entry>
-    <atom:id>{{ entry.url }}</atom:id>
-    <atom:title type="text">{{ entry.title }}</atom:title>
-    <atom:link href="{{ entry.url }}" rel="self">
-    </atom:link>
-  </atom:entry>{% endfor %}
+{% for entry in entries %}{% include 'locations/api/sword/_entry.xml' %}{% endfor %}
