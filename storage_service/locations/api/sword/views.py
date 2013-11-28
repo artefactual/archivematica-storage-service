@@ -24,6 +24,7 @@ from annoying.functions import get_object_or_None
 from locations.models import Location
 from locations.models import Pipeline
 from locations.models import Space
+from locations.models import SwordServer
 import helpers
 
 """
@@ -63,7 +64,7 @@ Example POST creation of deposit, allowing asynchronous downloading of object co
 
 Example POST creation of deposit, finalizing the deposit and auto-approving it:
 
-  curl -v -H "In-Progress: false" --data-binary @mets.xml --request POST http://localhost:8000/api/v1/space/c0bee7c8-3e9b-41e3-8600-ee9b2c475da2/sword/collection/?approval_pipeline=41b57f04-9738-43d8-b80e-3fad88c75abc
+  curl -v -H "In-Progress: false" --data-binary @mets.xml --request POST http://localhost:8000/api/v1/space/c0bee7c8-3e9b-41e3-8600-ee9b2c475da2/sword/collection/
 """
 def collection(request, space_uuid):
     space = get_object_or_None(Space, uuid=space_uuid)
@@ -269,22 +270,16 @@ def deposit_edit(request, uuid):
         if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
             if deposit.downloading_status() == 'complete':
                 if len(os.listdir(deposit.full_path())) > 0:
-                    # optionally auto-approve
-                    approval_pipeline = request.GET.get('approval_pipeline', '')
+                    # get sword server so we can access pipeline information
+                    sword_server = SwordServer.objects.get(space=deposit.space)
 
-                    # if auto-approve is being used, test configuration
-                    if approval_pipeline != '':
-                        try:
-                            pipeline = Pipeline.objects.get(uuid=approval_pipeline)
-                        except ObjectDoesNotExist:
-                            return _sword_error_response(request, 400, 'Pipeline {uuid} does not exist.'.format(uuid=approval_pipeline))
+                    # make sure pipeline API access is configured
+                    for property in ['remote_name', 'api_username', 'api_key']:
+                        if getattr(sword_server.pipeline, property)=='':
+                            property_description = property.replace('_', ' ')
+                            return _sword_error_response(request, 500, 'Pipeline {property} not set.'.format(property=property_description))
 
-                        # make sure pipeline API access is configured
-                        for property in ['remote_name', 'api_username', 'api_key']:
-                            if getattr(pipeline, property)=='':
-                                property_description = property.replace('_', ' ')
-                                return _sword_error_response(request, 500, 'Pipeline {property} not set.'.format(property=property_description))
-
+                    # TODO deal with issue when IP isn't whitelisted
                     # TODO... how to get appropriate destination path?
                     destination_path = '/var/archivematica/sharedDirectory/watchedDirectories/activeTransfers/standardTransfer/' + os.path.basename(deposit.full_path())
 
@@ -292,28 +287,26 @@ def deposit_edit(request, uuid):
                     destination_path = helpers.pad_destination_filepath_if_it_already_exists(destination_path)
                     shutil.move(deposit.full_path(), destination_path)
 
-                    # handle auto-approval
-                    if approval_pipeline != '':
-                        # wait to make sure the MCP responds to the directory being in the watch directory
-                        time.sleep(2)
+                    # wait to make sure the MCP responds to the directory being in the watch directory
+                    time.sleep(4)
 
-                        # make request to pipeline's transfer approval API
-                        data = urllib.urlencode({
-                            'username': pipeline.api_username,
-                            'api_key': pipeline.api_key,
-                            'directory': os.path.basename(destination_path),
-                            'type': 'standard' # TODO: make this customizable via a URL param
-                        })
-                        approve_request = urllib2.Request('http://' + pipeline.remote_name + '/api/transfer/approve/', data)
+                    # make request to pipeline's transfer approval API
+                    data = urllib.urlencode({
+                        'username': sword_server.pipeline.api_username,
+                        'api_key': sword_server.pipeline.api_key,
+                        'directory': os.path.basename(destination_path),
+                        'type': 'standard' # TODO: make this customizable via a URL param
+                    })
+                    approve_request = urllib2.Request('http://' + sword_server.pipeline.remote_name + '/api/transfer/approve/', data)
 
-                        try:
-                            approve_response = urllib2.urlopen(approve_request)
-                        except:
-                            return _sword_error_response(request, 500, 'Request to pipeline transfer approval API failed: check credentials.')
+                    try:
+                        approve_response = urllib2.urlopen(approve_request)
+                    except:
+                        return _sword_error_response(request, 500, 'Request to pipeline transfer approval API failed: check credentials.')
 
-                        result = json.loads(approve_response.read())
-                        if 'error' in result:
-                            return _sword_error_response(request, 500, result['message'])
+                    result = json.loads(approve_response.read())
+                    if 'error' in result:
+                        return _sword_error_response(request, 500, result['message'])
 
                     # mark deposit as complete and return deposit receipt
                     deposit.deposit_completion_time = timezone.now()
