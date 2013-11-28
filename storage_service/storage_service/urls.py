@@ -67,20 +67,13 @@ def startup():
         if e.errno != errno.EEXIST:
             logging.error("Internal storage location {} not accessible.".format(internal_use.full_path()))
 
-    # create SWORD server directories, space, and location
+    # create SWORD server base deposit directory
     deposits_directory = '/' + os.path.join('var', 'archivematica', 'sharedDirectory', 'staging', 'deposits')
-    space, space_created = locations_models.Space.objects.get_or_create(
-        access_protocol=locations_models.Space.SWORD_SERVER,
-        path=deposits_directory)
-    if space_created:
-        sword_server = locations_models.SwordServer(space=space)
-        sword_server.save()
-        logging.info("Protocol Space created: {}".format(sword_server))
-        try:
-            os.makedirs(space.path())
-        except OSError as e:
-            if e.errno != errno.EEXIST:
-                logging.error("Unable to create directory {} for SWORD server space.".format(space.path))
+    try:
+        os.makedirs(deposits_directory)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            logging.error("Unable to create base directory for SWORD server deposits.")
 
     utils.set_setting('default_transfer_source', [transfer_source.uuid])
     utils.set_setting('default_aip_storage', [aip_storage.uuid])
