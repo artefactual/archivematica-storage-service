@@ -234,32 +234,40 @@ def space_detail(request, uuid):
     locations = Location.objects.filter(space=space)
     return render(request, 'locations/space_detail.html', locals())
 
-def space_create(request):
-    if request.method == 'POST':
-        space_form = SpaceForm(request.POST, prefix='space')
-        if space_form.is_valid():
-            # Get access protocol form to validate
-            access_protocol = space_form.cleaned_data['access_protocol']
-            protocol_form = PROTOCOL[access_protocol]['form'](
-                request.POST, prefix='protocol')
-            if protocol_form.is_valid():
-                # If both are valid, save everything
-                space = space_form.save()
-                protocol_obj = protocol_form.save(commit=False)
-                protocol_obj.space = space
-                protocol_obj.save()
-                messages.success(request, "Space saved.")
-                return redirect('space_detail', space.uuid)
-        else:
-            # We need to return the protocol_form so that protocol_form errors
-            # are displayed, and so the form doesn't mysterious disappear
-            # See if access_protocol has been set
-            access_protocol = space_form['access_protocol'].value()
-            if access_protocol:
-                protocol_form = PROTOCOL[access_protocol]['form'](
-                   request.POST, prefix='protocol')
+def space_create(request, space_uuid=None):
+    if space_uuid:
+        action = "Edit"
+        space = get_object_or_404(Space, uuid=space_uuid)
+        protocol = get_object_or_404(PROTOCOL[space.access_protocol]['model'], space=space)
     else:
-        space_form = SpaceForm(prefix='space')
+        action = "Create"
+        space = None
+        protocol = None
+
+    space_form = SpaceForm(request.POST or None, instance=space, prefix='space')
+
+    # if data has been submitted or we've loaded data to edit, populate the
+    # protocol form with the data
+    if request.POST or space != None:
+        # determine the access protocol so we can determine which
+        # protocol form to use
+        if space != None:
+            access_protocol = space.access_protocol
+        elif space_form.is_valid():
+            access_protocol = space_form.cleaned_data['access_protocol']
+
+        protocol_form = PROTOCOL[access_protocol]['form'](
+            request.POST or None, instance=protocol, prefix='protocol')
+
+    if request.method == 'POST':
+        if space_form.is_valid() and protocol_form.is_valid():
+            # If both are valid, save everything
+            space = space_form.save()
+            protocol_obj = protocol_form.save(commit=False)
+            protocol_obj.space = space
+            protocol_obj.save()
+            messages.success(request, "Space saved.")
+            return redirect('space_detail', space.uuid)
 
     return render(request, 'locations/space_form.html', locals())
 

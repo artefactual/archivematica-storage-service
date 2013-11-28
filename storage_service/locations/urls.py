@@ -50,6 +50,8 @@ urlpatterns = patterns('locations.views',
         name='location_edit'),
     url(r'^spaces/create/$', 'space_create',
         name='space_create'),
+    url(r'^spaces/(?P<space_uuid>'+UUID+')/edit/$', 'space_create',
+        name='space_create'),
     # Spaces AJAX
     url(r'^spaces/get_form_type/$', 'ajax_space_create_protocol_form',
         name='ajax_space_create_protocol_form'),

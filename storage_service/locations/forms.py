@@ -14,8 +14,22 @@ class PipelineForm(forms.ModelForm):
         model = Pipeline
         fields = ('uuid', 'description', 'remote_name', 'api_username', 'api_key', 'enabled')
 
-
 class SpaceForm(forms.ModelForm):
+    # certain fields should not be editable
+    def __init__(self, *args, **kwargs):
+        super(SpaceForm, self).__init__(*args, **kwargs)
+        instance = getattr(self, 'instance', None)
+        if instance and instance.pk:
+            self.fields['access_protocol'].widget.attrs['readonly'] = True
+            #self.fields['access_protocol'].widget.attrs['disabled'] = True
+
+    def clean_access_protocol(self):
+        instance = getattr(self, 'instance', None)
+        if instance and instance.pk:
+            return instance.access_protocol
+        else:
+            return self.cleaned_data['access_protocol']
+
     class Meta:
         model = Space
         fields = ('access_protocol', 'size', 'path')

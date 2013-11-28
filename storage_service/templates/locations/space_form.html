@@ -1,14 +1,18 @@
 {% extends "base.html" %}
 
-{% block page_title %}Create Spaces{% endblock %}
+{% block page_title %}{{ action }} Space{% endblock %}
 
 {% block content %}
 
 <div class='space'>
+    {% if space_uuid %}
+    <form action="{% url 'space_create' space_uuid %}" method="post">{% csrf_token %}
+    {% else %}
     <form action="{% url 'space_create' %}" method="post">{% csrf_token %}
+    {% endif %}
         {{ space_form.as_p }}
         <div id="protocol_form">{{ protocol_form.as_p|default:"" }}</div>
-        <input type="submit" value="Create Space" />
+        <input type="submit" value="{{ action }} Space" />
     </form>
 </div>
 {% endblock %}
