@@ -310,7 +310,9 @@ def deposit_edit(request, uuid):
                     try:
                         approve_response = urllib2.urlopen(approve_request)
                     except:
-                        return _sword_error_response(request, 500, 'Request to pipeline transfer approval API failed: check credentials.')
+                        # move back to deposit directory
+                        shutil.move(destination_path, deposit.full_path())
+                        return _sword_error_response(request, 500, 'Request to pipeline transfer approval API failed: check credentials and REST API IP whitelist.')
 
                     result = json.loads(approve_response.read())
                     if 'error' in result:
