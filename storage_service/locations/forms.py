@@ -69,7 +69,7 @@ class LockssomaticForm(forms.ModelForm):
 class SwordServerForm(forms.ModelForm):
     class Meta:
         model = models.SwordServer
-        fields = ()
+        fields = ('pipeline',)
 
 
 class LocationForm(forms.ModelForm):

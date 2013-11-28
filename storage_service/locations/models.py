@@ -1063,6 +1063,7 @@ class Lockssomatic(models.Model):
 class SwordServer(models.Model):
     """ SWORD server that accepts deposits."""
     space = models.OneToOneField('Space', to_field='uuid')
+    pipeline = models.ForeignKey('Pipeline', to_field='uuid')
 
     def save(self, *args, **kwargs):
         self.verify()
@@ -1923,9 +1924,18 @@ class Pipeline(models.Model):
                     pipeline=self, location=location)
 
         # create SWORD space if it doesn't already exist
+        space_path = os.path.join(os.path.join('/', shared_path), 'staging', 'deposits', self.uuid)
         space, space_created = Space.objects.get_or_create(
-            access_protocol=Space.SWORD_SERVER, path='/' + os.path.join(shared_path, 'staging', 'deposits'))
+            access_protocol=Space.SWORD_SERVER, path=space_path)
+
         if space_created:
-            sword_server = SwordServer(space=space)
-            sword_server.save()
-            logging.info("Protocol Space created: {}".format(sword_server))
+            try:
+                os.makedirs(space_path)
+            except OSError as e:
+                if e.errno != errno.EEXIST:
+                    logging.error("Unable to create directory {} for SWORD server space.".format(space.path))
+
+        # create SWORD server for pipeline if it doesn't already exist
+        sword_server, sword_server_created = SwordServer.objects.get_or_create(space=space, pipeline=self)
+        if sword_server_created:
+            logging.info("SWORD server created: {}".format(sword_server))
