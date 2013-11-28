@@ -29,7 +29,7 @@ import helpers
 """
 Example GET of service document:
 
-  curl -v http://127.0.0.1:8000/api/v1/space/969959bc-5f20-4c6f-9e9b-fcc4e19d6cd5/sword/
+  curl -v http://127.0.0.1:8000/api/v1/sword/
 """
 def service_document(request):
     spaces = Space.objects.filter(access_protocol='SWORD_S')
