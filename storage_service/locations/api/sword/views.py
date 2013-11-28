@@ -280,8 +280,16 @@ def deposit_edit(request, uuid):
                             return _sword_error_response(request, 500, 'Pipeline {property} not set.'.format(property=property_description))
 
                     # TODO deal with issue when IP isn't whitelisted
-                    # TODO... how to get appropriate destination path?
-                    destination_path = '/var/archivematica/sharedDirectory/watchedDirectories/activeTransfers/standardTransfer/' + os.path.basename(deposit.full_path())
+
+                    # TODO: add error if more than one location is returned
+                    processing_location = Location.objects.get(
+                        pipeline=sword_server.pipeline,
+                        purpose=Location.CURRENTLY_PROCESSING)
+
+                    destination_path = os.path.join(
+                        processing_location.full_path(),
+                        'watchedDirectories/activeTransfers/standardTransfer',
+                        os.path.basename(deposit.full_path()))
 
                     # move to standard transfers directory
                     destination_path = helpers.pad_destination_filepath_if_it_already_exists(destination_path)
