@@ -242,7 +242,8 @@ class PipelineLocalFS(models.Model):
 class SwordServer(models.Model):
     """ SWORD server that accepts deposits."""
     space = models.OneToOneField('Space', to_field='uuid')
-    pipeline = models.OneToOneField('Pipeline', to_field='uuid')
+    #pipeline = models.OneToOneField('Pipeline', to_field='uuid')
+    pipeline = models.ForeignKey('Pipeline', to_field='uuid')
 
     def save(self, *args, **kwargs):
         self.verify()
