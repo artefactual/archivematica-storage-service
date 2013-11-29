@@ -283,7 +283,12 @@ class PackageResource(ModelResource):
             origin_location_uri = bundle.data.get('origin_location', False)
             origin_location = self.origin_location.build_related_resource(origin_location_uri, bundle.request).obj
             origin_path = bundle.data.get('origin_path', False)
-            bundle.obj.store_aip(origin_location, origin_path)
+            try:
+                bundle.obj.store_aip(origin_location, origin_path)
+            except Exception as e:
+                bundle.obj.status = Package.FAIL
+                bundle.obj.save()
+                logging.exception("Error saving AIP")
         return bundle
 
     def delete_aip_request(self, request, **kwargs):
