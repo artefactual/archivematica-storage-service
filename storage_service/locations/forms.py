@@ -71,7 +71,7 @@ class PipelineLocalFSForm(forms.ModelForm):
 class SwordServerForm(forms.ModelForm):
     class Meta:
         model = SwordServer
-        fields = ()
+        fields = ('pipeline',)
 
 
 class LocationForm(forms.ModelForm):
