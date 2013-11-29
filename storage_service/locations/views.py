@@ -42,6 +42,8 @@ def get_delete_context_dict(request, model, object_uuid, default_cancel='/'):
 
 def package_list(request):
     packages = Package.objects.all()
+    delete_statuses = Package.PACKAGE_STATUS_DELETABLE
+    delete_requested = Package.DEL_REQ
     return render(request, 'locations/package_list.html', locals())
 
 def aip_delete_request(request):
@@ -79,6 +81,29 @@ def aip_delete_request(request):
     closed_requests = Event.objects.filter(
         Q(status=Event.APPROVED) | Q(status=Event.REJECTED))
     return render(request, 'locations/aip_delete_request.html', locals())
+
+def package_delete_context(request, uuid):
+    context_dict = get_delete_context_dict(request, Package, uuid,
+        reverse('package_list'))
+    return RequestContext(request, context_dict)
+
+@decorators.confirm_required('locations/delete.html', package_delete_context)
+def package_delete(request, uuid):
+    package = get_object_or_404(Package, uuid=uuid)
+    if package.status not in Package.PACKAGE_STATUS_DELETABLE:
+        deletable_display = [dict(Package.STATUS_CHOICES).get(x,x) for x in Package.PACKAGE_STATUS_DELETABLE]
+        messages.warning(request, "Package {} could not be deleted: status is not one of {}".format(package.uuid, ", ".join(deletable_display)))
+    else:
+        success, err_msg = package.delete_from_storage()
+        if not success and package.status not in (Package.FAIL, Package.DELETED):
+            messages.error(request,
+                "Package was not deleted from disk correctly: {}. Please contact an administrator or see logs for details".format(err_msg))
+        else:
+            messages.success(request, "Package deleted successfully.")
+        package.status = Package.DELETED
+        package.save()
+    next_url = request.GET.get('next', reverse('package_list'))
+    return redirect(next_url)
 
 
 ########################## LOCATIONS ##########################

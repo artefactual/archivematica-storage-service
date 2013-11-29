@@ -8,10 +8,9 @@
   <table class="datatable">
     <thead>
       <tr>
-        <th>File</th>
+        <th>Package</th>
         <th>Reason</th>
-        <th>Pipeline</th>
-        <th>User</th>
+        <th>Requested by</th>
         <th>Submitted</th>
         <th>Approve/Reject</th>
       </tr>
@@ -19,10 +18,9 @@
     <tbody>
     {% for req in requests %}
       <tr>
-        <td>{{ req.file }}</td>
+        <td>{{ req.package }}</td>
         <td>{{ req.event_reason }}</td>
-        <td>{{ req.pipeline }}</td>
-        <td>{{ req.user_email }} (ID: {{ req.user_id}})</td>
+        <td>{{ req.user_email }} (ID: {{ req.user_id}})<br />{{ req.pipeline }}</td>
         <td>{{ req.status_time }}</td>
         <td>
           <form action="{% url 'aip_delete_request' %}" method="post">

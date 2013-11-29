@@ -9,7 +9,7 @@
 <p><a href="{% url 'aip_delete_request' %}">View delete requests</a></p>
 
 {% if packages %}
-  {% include "snippets/packages_table.html" %}
+  {% include "snippets/packages_table.html" with delete_enabled=True %}
 {% else %}
   <p>No packages currently exist.</p>
 {% endif %}

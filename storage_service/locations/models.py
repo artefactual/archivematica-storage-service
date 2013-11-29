@@ -374,6 +374,8 @@ class Package(models.Model):
         default=FAIL,
         help_text="Status of the package in the storage service.")
 
+    PACKAGE_STATUS_DELETABLE = (PENDING, UPLOADED, VERIFIED, FAIL)
+
     class Meta:
         verbose_name = "Package"
 

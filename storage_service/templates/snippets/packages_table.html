@@ -7,6 +7,9 @@
         <th>Size</th>
         <th>Type</th>
         <th>Status</th>
+        {% if delete_enabled %}
+        <th>Action</th>
+        {% endif %}
       </tr>
     </thead>
     <tbody>
@@ -18,6 +21,15 @@
         <td>{{ package.size|filesizeformat }}</td>
         <td>{{ package.get_package_type_display }}</td>
         <td>{{ package.get_status_display }}</td>
+        {% if delete_enabled %}
+        <td>
+          {% if package.status in delete_statuses %}
+          <a href="{% url 'package_delete' package.uuid %}">Delete</a>
+          {% elif package.status == delete_requested %}
+          <a href="{% url 'aip_delete_request' %}">See delete requests</a>
+          {% endif %}
+        </td>
+        {% endif %}
       </tr>
     {% endfor %}
     </tbody>
