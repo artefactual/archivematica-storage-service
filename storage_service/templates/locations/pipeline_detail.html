@@ -9,7 +9,13 @@
     <dt>UUID</dt> <dd>{{ pipeline.uuid }}</dd>
     <dt>Description</dt> <dd>{{ pipeline.description }}</dd>
     <dt>Enabled</dt> <dd>{{ pipeline.enabled|yesno:"Enabled,Disabled" }}</dd>
-    <dt>Actions</dt> <dd><a href="{% url 'pipeline_edit' pipeline.uuid %}">Edit</a></dd>
+    <dt>Actions</dt> <dd>
+      <ul>
+        <li><a href="{% url 'pipeline_edit' pipeline.uuid %}">Edit</a></li>
+        <li><a href="{% url 'pipeline_switch_enabled' pipeline.uuid %}?next={{ request.path }}">{{ pipeline.enabled|yesno:"Disable,Enable" }}</a></li>
+        <li><a href="{% url 'pipeline_delete' pipeline.uuid %}">Delete</a></li>
+      </ul>
+    </dd>
   </dl>
 </div>
 

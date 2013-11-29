@@ -94,12 +94,25 @@ class Space(models.Model):
     mounted_locally = set([LOCAL_FILESYSTEM, NFS])
     ssh_only_access = set([PIPELINE_LOCAL_FS])
 
+    class Meta:
+        verbose_name = 'Space'
+
     def __unicode__(self):
         return u"{uuid}: {path} ({access_protocol})".format(
             uuid=self.uuid,
-            access_protocol=self.access_protocol,
+            access_protocol=self.get_access_protocol_display(),
             path=self.path,
         )
+
+    def get_child_space(self):
+        """ Returns the protocol-specific space object. """
+        # Importing PROTOCOL here because importing locations.constants at the
+        # top of the file causes a circular dependency
+        from .constants import PROTOCOL
+        protocol_model = PROTOCOL[self.access_protocol]['model']
+        protocol_space = protocol_model.objects.get(space=self)
+        # TODO try-catch AttributeError if remote_user or remote_name not exist?
+        return protocol_space
 
     def browse(self, path):
         """ Returns {'directories': [directory], 'entries': [entries]} at path.
@@ -122,11 +135,7 @@ class Space(models.Model):
                 if os.path.isdir(full_path) and os.access(full_path, os.R_OK):
                     directories.append(name)
         elif self.access_protocol in self.ssh_only_access:
-            # Importing PROTOCOL here because importing locations.constants at the
-            # top of the file causes a circular dependency
-            from .constants import PROTOCOL
-            protocol_model = PROTOCOL[self.access_protocol]['model']
-            protocol_space = protocol_model.objects.get(space=self)
+            protocol_space = self.get_child_space()
             user = protocol_space.remote_user
             host = protocol_space.remote_name
             private_ssh_key = '/var/lib/archivematica/.ssh/id_rsa'
@@ -286,14 +295,17 @@ class Location(models.Model):
     enabled = models.BooleanField(default=True,
         help_text="True if space can be accessed.")
 
+    class Meta:
+        verbose_name = "Location"
+
     objects = models.Manager()
     active = Enabled()
 
     def __unicode__(self):
         return u"{uuid}: {path} ({purpose})".format(
             uuid=self.uuid,
-            purpose=self.purpose,
-            path=self.relative_path,
+            purpose=self.get_purpose_display(),
+            path=self.full_path(),
         )
 
     def full_path(self):
@@ -310,8 +322,11 @@ class LocationPipeline(models.Model):
     location = models.ForeignKey('Location', to_field='uuid')
     pipeline = models.ForeignKey('Pipeline', to_field='uuid')
 
+    class Meta:
+        verbose_name = "Location associated with a Pipeline"
+
     def __unicode__(self):
-        return u'{} to {}'.format(self.location, self.pipeline)
+        return u'{} is associated with {}'.format(self.location, self.pipeline)
 
 ########################## PACKAGES ##########################
 # NOTE If the Packages section gets much bigger, move to its own app
@@ -320,11 +335,9 @@ class Package(models.Model):
     """ A package stored in a specific location. """
     uuid = UUIDField(editable=False, unique=True, version=4,
         help_text="Unique identifier")
-    origin_location = models.ForeignKey(Location, to_field='uuid', related_name='+')
-    origin_path = models.TextField()
-    current_location = models.ForeignKey(Location, to_field='uuid', related_name='+')
+    origin_pipeline = models.ForeignKey('Pipeline', to_field='uuid')
+    current_location = models.ForeignKey(Location, to_field='uuid')
     current_path = models.TextField()
-    # pointer_file = models.OneToOneField('self', to_field='uuid', related_name='package', null=True, blank=True)
     pointer_file_location = models.ForeignKey(Location, to_field='uuid', related_name='+', null=True, blank=True)
     pointer_file_path = models.TextField(null=True, blank=True)
     size = models.IntegerField(default=0)
@@ -361,6 +374,8 @@ class Package(models.Model):
         default=FAIL,
         help_text="Status of the package in the storage service.")
 
+    class Meta:
+        verbose_name = "Package"
 
     def __unicode__(self):
         return u"{uuid}: {path}".format(
@@ -376,13 +391,6 @@ class Package(models.Model):
         return os.path.normpath(
             os.path.join(self.current_location.full_path(), self.current_path))
 
-    def full_origin_path(self):
-        """ Return the full path of the package's original location.
-
-        Includes the space, location, and package paths joined. """
-        return os.path.normpath(
-            os.path.join(self.origin_location.full_path(), self.origin_path))
-
     def full_pointer_file_path(self):
         """ Return the full path of the AIP's pointer file, None if not an AIP.
 
@@ -393,7 +401,7 @@ class Package(models.Model):
             return os.path.join(self.pointer_file_location.full_path(),
                 self.pointer_file_path)
 
-    def store_aip(self):
+    def store_aip(self, origin_location, origin_path):
         """ Stores an AIP in the correct Location.
 
         Invokes different transfer mechanisms depending on what the source and
@@ -401,6 +409,8 @@ class Package(models.Model):
         Location for the AIP, and raises a StorageException if not.  All sizes
         expected to be in bytes.
         """
+        self.origin_location = origin_location
+        self.origin_path = origin_path
         # TODO Move some of the procesing in archivematica
         # clientScripts/storeAIP to here?
 
@@ -419,7 +429,8 @@ class Package(models.Model):
                 "AIP too big for quota on {location}; Used: {used}; Quota: {quota}; AIP size: {aip_size}".format(
                     location=location, used=location.used, quota=location.quota,
                     aip_size=self.size))
-        source_path = self.full_origin_path()
+        source_path = os.path.normpath(
+            os.path.join(self.origin_location.full_path(), self.origin_path))
 
         # Store AIP at
         # destination_location/uuid/split/into/chunks/destination_path
@@ -497,12 +508,16 @@ class Package(models.Model):
                     stat.S_IRGRP +                stat.S_IXGRP +
                     stat.S_IROTH +                stat.S_IXOTH)
             os.makedirs(os.path.dirname(destination_path), mode)
-            # Mode not getting set correctly
-            os.chmod(os.path.dirname(destination_path), mode)
-        except OSError as e:
+        except os.error as e:
             if e.errno != errno.EEXIST:
                 logging.warning("Could not create storage directory: {}".format(e))
                 raise
+        try:
+            # Mode not getting set correctly in os.makedirs
+            os.chmod(os.path.dirname(destination_path), mode)
+        except os.error as e:
+            logging.warning(e)
+
         # Rsync file over
         # TODO use Gearman to do this asyncronously
         command = ['rsync', '--chmod=u+rw,go-rwx', source_path, destination_path]
@@ -521,13 +536,7 @@ class Package(models.Model):
         # Local to local uses rsync, so pass it a source_path that includes
         # user@host:path
         # Get correct protocol-specific model, and then the correct object
-        # Importing PROTOCOL here because importing locations.constants at the
-        # top of the file causes a circular dependency
-        from .constants import PROTOCOL
-        protocol = self.origin_location.space.access_protocol
-        protocol_model = PROTOCOL[protocol]['model']
-        protocol_space = protocol_model.objects.get(space=self.origin_location.space)
-        # TODO try-catch AttributeError if remote_user or remote_name not exist?
+        protocol_space = self.origin_location.space.get_child_space()
         user = protocol_space.remote_user
         host = protocol_space.remote_name
         full_source_path = "{user}@{host}:{path}".format(user=user, host=host,
@@ -540,18 +549,8 @@ class Package(models.Model):
         AIP is stored at:
         destination_location/uuid/split/into/chunks/destination_path. """
         # Get correct protocol-specific model, and then the correct object
-        # Importing PROTOCOL here because importing locations.constants at the
-        # top of the file causes a circular dependency
-        from .constants import PROTOCOL
-        src_protocol = self.origin_location.space.access_protocol
-        src_protocol_model = PROTOCOL[src_protocol]['model']
-        src_protocol_space = src_protocol_model.objects.get(
-            space=self.origin_location.space)
-        dst_protocol = self.current_location.space.access_protocol
-        dst_protocol_model = PROTOCOL[dst_protocol]['model']
-        dst_protocol_space = dst_protocol_model.objects.get(
-            space=self.current_location.space)
-        # TODO try-catch AttributeError if remote_user or remote_name not exist?
+        src_protocol_space = self.origin_location.space.get_child_space()
+        dst_protocol_space = self.current_location.space.get_child_space()
         src_user = src_protocol_space.remote_user
         src_host = src_protocol_space.remote_name
         dst_user = dst_protocol_space.remote_user
@@ -581,11 +580,7 @@ class Package(models.Model):
                 logging.warning("Error deleting package: {}".format(e))
                 return False, e.strerror
         elif self.current_location.space.access_protocol in Space.ssh_only_access:
-            from .constants import PROTOCOL
-            protocol = self.current_location.space.access_protocol
-            protocol_model = PROTOCOL[protocol]['model']
-            protocol_space = protocol_model.objects.get(
-                space=self.current_location.space)
+            protocol_space = self.current_location.space.get_child_space()
             # TODO try-catch AttributeError if remote_user or remote_name not exist?
             user = protocol_space.remote_user
             host = protocol_space.remote_name
@@ -631,6 +626,9 @@ class Event(models.Model):
     status_time = models.DateTimeField(auto_now=True)
     store_data = models.TextField(null=True, blank=True, editable=False)
 
+    class Meta:
+        verbose_name = "Event"
+
     def __unicode__(self):
         return u"{event_status} request to {event_type} {package}".format(
             event_status=self.get_status_display(),
@@ -654,11 +652,14 @@ class Pipeline(models.Model):
     enabled = models.BooleanField(default=True,
         help_text="Enabled if this pipeline is able to access the storage service.")
 
+    class Meta:
+        verbose_name = "Pipeline"
+
     objects = models.Manager()
     active = Enabled()
 
     def __unicode__(self):
-        return u"{uuid} ({description})".format(
+        return u"{description} ({uuid})".format(
             uuid=self.uuid,
             description=self.description)
 

@@ -1,12 +1,15 @@
 import logging
 
 from django.contrib import auth, messages
+from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.http import HttpResponse
 from django.forms.models import model_to_dict
-from django.shortcuts import render, redirect, get_object_or_404, get_list_or_404
+from django.shortcuts import render, redirect, get_object_or_404
+from django.template import RequestContext
 from django.views.decorators.csrf import csrf_exempt
 
+from common import decorators
 from common import utils
 from .models import Space, Location, Package, Event, Pipeline, LocationPipeline
 from .forms import SpaceForm, LocationForm, ConfirmEventForm, PipelineForm
@@ -15,6 +18,25 @@ from .constants import PROTOCOL
 logger = logging.getLogger(__name__)
 logging.basicConfig(#filename="/tmp/storage-service.log",
     level=logging.INFO)
+
+########################## HELPERS ##########################
+
+def get_delete_context_dict(request, model, object_uuid, default_cancel='/'):
+    """ Returns a dict of the values needed by the confirm delete view. """
+    obj = get_object_or_404(model, uuid=object_uuid)
+    header = "Confirm deleting {}".format(model._meta.verbose_name)
+    dependent_objects = utils.dependent_objects(obj)
+    if dependent_objects:
+        prompt = "{} cannot be deleted until the following items are also deleted or unassociated.".format(obj)
+    else:
+        prompt = "Are you sure you want to delete {}?".format(obj)
+    cancel_url = request.GET.get('next', default_cancel)
+    return {
+        'header': header,
+        'dependent_objects': dependent_objects,
+        'prompt': prompt,
+        'cancel_url': cancel_url,
+    }
 
 ########################## FILES ##########################
 
@@ -86,12 +108,39 @@ def location_edit(request, space_uuid, location_uuid=None):
         logging.debug("LocationPipeline to delete: {}".format(to_delete))
         to_delete.delete()
         messages.success(request, "Location saved.")
-        return redirect('space_detail', space.uuid)
+        # TODO make this return to the originating page
+        # http://stackoverflow.com/questions/4203417/django-how-do-i-redirect-to-page-where-form-originated
+        return redirect('location_detail', location.uuid)
     return render(request, 'locations/location_form.html', locals())
 
 def location_list(request):
     locations = Location.objects.all()
     return render(request, 'locations/location_list.html', locals())
+
+def location_detail(request, location_uuid):
+    location = get_object_or_404(Location, uuid=location_uuid)
+    pipelines = Pipeline.objects.filter(location=location)
+    packages = Package.objects.filter(current_location=location)
+    return render(request, 'locations/location_detail.html', locals())
+
+def location_switch_enabled(request, location_uuid):
+    location = get_object_or_404(Location, uuid=location_uuid)
+    location.enabled = not location.enabled
+    location.save()
+    next_url = request.GET.get('next', reverse('location_detail', args=[location.uuid]))
+    return redirect(next_url)
+
+def location_delete_context(request, location_uuid):
+    context_dict = get_delete_context_dict(request, Location, location_uuid,
+        reverse('location_list'))
+    return RequestContext(request, context_dict)
+
+@decorators.confirm_required('locations/delete.html', location_delete_context)
+def location_delete(request, location_uuid):
+    location = get_object_or_404(Location, uuid=location_uuid)
+    location.delete()
+    next_url = request.GET.get('next', reverse('location_list'))
+    return redirect(next_url)
 
 
 ########################## PIPELINES ##########################
@@ -126,6 +175,24 @@ def pipeline_detail(request, uuid):
     locations = Location.objects.filter(pipeline=pipeline)
     return render(request, 'locations/pipeline_detail.html', locals())
 
+def pipeline_switch_enabled(request, uuid):
+    pipeline = get_object_or_404(Pipeline, uuid=uuid)
+    pipeline.enabled = not pipeline.enabled
+    pipeline.save()
+    next_url = request.GET.get('next', reverse('pipeline_detail', args=[pipeline.uuid]))
+    return redirect(next_url)
+
+def pipeline_delete_context(request, uuid):
+    context_dict = get_delete_context_dict(request, Pipeline, uuid,
+        reverse('pipeline_list'))
+    return RequestContext(request, context_dict)
+
+@decorators.confirm_required('locations/delete.html', pipeline_delete_context)
+def pipeline_delete(request, uuid):
+    pipeline = get_object_or_404(Pipeline, uuid=uuid)
+    pipeline.delete()
+    next_url = request.GET.get('next', reverse('pipeline_list'))
+    return redirect(next_url)
 
 ########################## SPACES ##########################
 
@@ -135,8 +202,11 @@ def space_list(request):
     def add_child(space):
         model = PROTOCOL[space.access_protocol]['model']
         child = model.objects.get(space=space)
-        space.child = model_to_dict(child,
+        child_dict_raw = model_to_dict(child,
             PROTOCOL[space.access_protocol]['fields'] or [''])
+        child_dict = { child._meta.get_field_by_name(field)[0].verbose_name: value
+            for field, value in child_dict_raw.iteritems() }
+        space.child = child_dict
     map(add_child, spaces)
     return render(request, 'locations/space_list.html', locals())
 
@@ -144,8 +214,11 @@ def space_detail(request, uuid):
     space = get_object_or_404(Space, uuid=uuid)
     model = PROTOCOL[space.access_protocol]['model']
     child = model.objects.get(space=space)
-    space.child = model_to_dict(child,
+    child_dict_raw = model_to_dict(child,
         PROTOCOL[space.access_protocol]['fields']or [''])
+    child_dict = { child._meta.get_field_by_name(field)[0].verbose_name: value
+        for field, value in child_dict_raw.iteritems() }
+    space.child = child_dict
     locations = Location.objects.filter(space=space)
     return render(request, 'locations/space_detail.html', locals())
 
@@ -178,6 +251,19 @@ def space_create(request):
 
     return render(request, 'locations/space_form.html', locals())
 
+def space_edit(request, uuid):
+    space = get_object_or_404(Space, uuid=uuid)
+    protocol_space = space.get_child_space()
+    space_form = SpaceForm(request.POST or None, prefix='space', instance=space)
+    protocol_form = PROTOCOL[space.access_protocol]['form'](
+                request.POST or None, prefix='protocol', instance=protocol_space)
+    if space_form.is_valid() and protocol_form.is_valid():
+        space_form.save()
+        protocol_form.save()
+        messages.success(request, "Space saved.")
+        return redirect('space_detail', space.uuid)
+    return render(request, 'locations/space_edit.html', locals())
+
 # FIXME this should probably submit a csrf token
 @csrf_exempt
 def ajax_space_create_protocol_form(request):
@@ -194,3 +280,16 @@ def ajax_space_create_protocol_form(request):
             form = form_class(prefix='protocol')
             response_data = form.as_p()
     return HttpResponse(response_data, content_type="text/html")
+
+def space_delete_context(request, uuid):
+    context_dict = get_delete_context_dict(request, Space, uuid,
+        reverse('space_list'))
+    return RequestContext(request, context_dict)
+
+@decorators.confirm_required('locations/delete.html', space_delete_context)
+def space_delete(request, uuid):
+    space = get_object_or_404(Space, uuid=uuid)
+    space.delete()
+    next_url = request.GET.get('next', reverse('space_list'))
+    return redirect(next_url)
+

@@ -1,0 +1,24 @@
+  <table class="datatable">
+    <thead>
+      <tr>
+        <th>UUID</th>
+        <th>Originating Pipeline</th>
+        <th>Current Location</th>
+        <th>Size</th>
+        <th>Type</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for package in packages %}
+      <tr>
+        <td>{{ package.uuid }}</td>
+        <td><a href="{% url 'pipeline_detail' package.origin_pipeline.uuid %}">{{ package.origin_pipeline }}</a></td>
+        <td>{{ package.full_path }}</td>
+        <td>{{ package.size|filesizeformat }}</td>
+        <td>{{ package.get_package_type_display }}</td>
+        <td>{{ package.get_status_display }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>

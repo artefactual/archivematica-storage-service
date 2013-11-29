@@ -9,28 +9,7 @@
 <p><a href="{% url 'aip_delete_request' %}">View delete requests</a></p>
 
 {% if packages %}
-  <table class="datatable">
-    <thead>
-      <tr>
-        <th>UUID</th>
-        <th>Current Location</th>
-        <th>Size</th>
-        <th>Type</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-    {% for package in packages %}
-      <tr>
-        <td>{{ package.uuid }}</td>
-        <td>{{ package.full_path }}</td>
-        <td>{{ package.size }}B</td>
-        <td>{{ package.get_package_type_display }}</td>
-        <td>{{ package.get_status_display }}</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
+  {% include "snippets/packages_table.html" %}
 {% else %}
   <p>No packages currently exist.</p>
 {% endif %}

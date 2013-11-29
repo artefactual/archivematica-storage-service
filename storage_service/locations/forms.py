@@ -20,6 +20,20 @@ class SpaceForm(forms.ModelForm):
         model = Space
         fields = ('access_protocol', 'size', 'path')
 
+    def __init__(self, *args, **kwargs):
+        super(SpaceForm, self).__init__(*args, **kwargs)
+        instance = getattr(self, 'instance', None)
+        if instance and instance.uuid:
+            # If editing (not creating a new object) access protocol shouldn't
+            # be changed.  Remove from fields, print in template
+            del self.fields['access_protocol']
+
+    def clean_access_protocol(self):
+        instance = getattr(self, 'instance', None)
+        if instance and instance.uuid:
+            return instance.access_protocol
+        else:
+            return self.cleaned_data['access_protocol']
 
 class LocalFilesystemForm(forms.ModelForm):
     class Meta:

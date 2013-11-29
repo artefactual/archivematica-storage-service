@@ -240,11 +240,11 @@ class PackageResource(ModelResource):
     api/v1/file/<uuid>/delete_aip/ supports:
     POST: Create a delete request for that AIP.
     """
-    origin_location = fields.ForeignKey(LocationResource, 'origin_location')
+    origin_pipeline = fields.ForeignKey(PipelineResource, 'origin_pipeline')
+    origin_location = fields.ForeignKey(LocationResource, None, use_in=lambda x: False)
+    origin_path = fields.CharField(use_in=lambda x: False)
     current_location = fields.ForeignKey(LocationResource, 'current_location')
 
-    origin_full_path = fields.CharField(attribute='full_origin_path',
-        readonly=True)
     current_full_path = fields.CharField(attribute='full_path', readonly=True)
 
     class Meta:
@@ -257,7 +257,7 @@ class PackageResource(ModelResource):
         # authorization = DjangoAuthorization()
         # validation = CleanedDataFormValidation(form_class=PackageForm)
 
-        fields = ['origin_path', 'current_path', 'package_type', 'size', 'status', 'uuid']
+        fields = ['current_path', 'package_type', 'size', 'status', 'uuid']
         list_allowed_methods = ['get', 'post']
         detail_allowed_methods = ['get']
         detail_uri_name = 'uuid'
@@ -280,7 +280,10 @@ class PackageResource(ModelResource):
         bundle = super(PackageResource, self).obj_create(bundle, **kwargs)
         # IDEA add custom endpoints, instead of storing all AIPS that come in?
         if bundle.obj.package_type == Package.AIP:
-            bundle.obj.store_aip()
+            origin_location_uri = bundle.data.get('origin_location', False)
+            origin_location = self.origin_location.build_related_resource(origin_location_uri, bundle.request).obj
+            origin_path = bundle.data.get('origin_path', False)
+            bundle.obj.store_aip(origin_location, origin_path)
         return bundle
 
     def delete_aip_request(self, request, **kwargs):

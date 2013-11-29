@@ -2,10 +2,13 @@ import ast
 import logging
 import os.path
 
+from django.core.exceptions import ObjectDoesNotExist
+
 from administration import models
 
 logger = logging.getLogger(__name__)
 
+############ SETTINGS ############
 
 def get_all_settings():
     """ Returns a dict of 'setting_name': value with all of the settings. """
@@ -37,6 +40,26 @@ def set_setting(setting, value=None):
     setting.value = value
     setting.save()
 
+############ DEPENDENCIES ############
+
+def dependent_objects(object_):
+    """ Returns all the objects that rely on 'object_'. """
+    links = [rel.get_accessor_name() for rel in object_._meta.get_all_related_objects()]
+    dependent_objects = []
+    for link in links:
+        try:
+            linked_objects = getattr(object_, link).all()
+        except (AttributeError, ObjectDoesNotExist):
+            # This is probably a OneToOneField, and should be handled differently
+            # Or the relation has no entries
+            continue
+        for linked_object in linked_objects:
+            dependent_objects.append(
+                {'model': linked_object._meta.verbose_name,
+                 'value': linked_object})
+    return dependent_objects
+
+############ OTHER ############
 
 def uuid_to_path(uuid):
     """ Converts a UUID into a path.

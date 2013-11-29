@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block page_title %}{{ header }}{% endblock %}
+
+{% block content %}
+
+<p>{{ prompt }}</p>
+
+{% regroup dependent_objects by model as dependent_grouped %}
+    {% for model in dependent_grouped %}
+        <h3>{{ model.grouper }}</h3>
+        <ul>
+        {% for rule in model.list %}
+            <li>{{ rule.value }}</li>
+        {% endfor %}
+        </ul>
+    {% endfor %}
+
+<form method="POST" action="">
+  {% csrf_token %}
+  <input type="hidden" name="__confirm__" value="1" />
+  {% if not dependent_objects %}
+    <input type="submit" value="Delete" class='btn primary' />
+  {% endif %}
+  <a href="{{ cancel_url }}" class='btn'>Cancel</a>
+</form>
+
+{% endblock %}

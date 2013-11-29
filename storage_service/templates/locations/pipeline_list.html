@@ -9,26 +9,7 @@
 <p><a href="{% url 'pipeline_create' %}">Create new pipeline</a></p>
 
 {% if pipelines %}
-  <table class="datatable">
-    <thead>
-      <tr>
-        <th>UUID</th>
-        <th>Description</th>
-        <th>Enabled</th>
-        <th>Edit</th>
-      </tr>
-    </thead>
-    <tbody>
-    {% for pipeline in pipelines %}
-      <tr>
-        <td><a href="{% url 'pipeline_detail' pipeline.uuid %}">{{ pipeline.uuid }}</a></td>
-        <td>{{ pipeline.description }}</td>
-        <td>{{ pipeline.enabled|yesno:"Enabled,Disabled" }}</td>
-        <td><a href="{% url 'pipeline_edit' pipeline.uuid %}">Edit</a></td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
+  {% include "snippets/pipelines_table.html" %}
 {% else %}
   <p>No pipelines currently exist.</p>
 {% endif %}
