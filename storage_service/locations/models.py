@@ -242,7 +242,6 @@ class PipelineLocalFS(models.Model):
 class SwordServer(models.Model):
     """ SWORD server that accepts deposits."""
     space = models.OneToOneField('Space', to_field='uuid')
-    #pipeline = models.OneToOneField('Pipeline', to_field='uuid')
     pipeline = models.ForeignKey('Pipeline', to_field='uuid')
 
     def save(self, *args, **kwargs):
@@ -724,7 +723,8 @@ class Pipeline(models.Model):
     description = models.CharField(max_length=256, default=None,
         null=True, blank=True,
         help_text="Human readable description of the Archivematica instance.")
-    remote_name = models.CharField(max_length=256,
+    remote_name = models.CharField(max_length=256, default=None,
+        null=True, blank=True,
         help_text="Host or IP address of the pipeline server for making API calls.")
     api_username = models.CharField(max_length=256, default=None,
         null=True, blank=True,
