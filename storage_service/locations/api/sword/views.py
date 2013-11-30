@@ -105,6 +105,9 @@ def collection(request, space_uuid):
         # has the In-Progress header been set?
         if 'HTTP_IN_PROGRESS' in request.META:
             # process creation request, if criteria met
+            source_location = request.GET.get('source_location', '')
+            relative_path_to_files = request.GET.get('relative_path_to_files', '')
+            
             if request.body != '':
                 try:
                     temp_filepath = helpers.write_request_body_to_temp_file(request)
@@ -147,6 +150,25 @@ def collection(request, space_uuid):
                     exc_type, exc_obj, exc_tb = sys.exc_info()
                     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
                     return _sword_error_response(request, 400, 'Contact administration: ' + str(exc_type) + ' ' + str(fname) + ' ' + str(exc_tb.tb_lineno))
+            elif source_location or relative_path_to_files:
+                if not source_location or not relative_path_to_files:
+                    if not source_location:
+                        return _sword_error_response(request, 400, 'relative_path_to_files is set, but source_location is not.')
+                    else:
+                        return _sword_error_response(request, 400, 'source_location is set, but relative_path_to_files is not.')
+                else:
+                    # a deposit of files stored on the storage server is being done
+                    location = Location.objects.get(uuid=source_location)
+                    path_to_deposit_files = os.path.join(location.full_path(), relative_path_to_files)
+
+                    deposit_specification = {'space_uuid': space_uuid}
+                    deposit_specification['name'] = os.path.basename(path_to_deposit_files) # replace this with optional name
+                    deposit_specification['source_path'] = path_to_deposit_files
+                    deposit_uuid = _create_deposit_directory_and_db_entry(deposit_specification)
+
+                    return HttpResponse(deposit_uuid)
+                    #shutil.copytree(path_to_deposit_files, os.path.join('', os.path.basename(path_to_deposit_files)))
+                    #return HttpResponse(path_to_deposit_files)
             else:
                 return _sword_error_response(request, 412, 'A request body must be sent when creating a deposit.')
         else:
@@ -191,11 +213,14 @@ def _create_deposit_directory_and_db_entry(deposit_specification):
     )
 
     deposit_path = helpers.pad_destination_filepath_if_it_already_exists(deposit_path)
-    os.mkdir(deposit_path)
-    os.chmod(deposit_path, 02770) # drwxrws---
+    if 'source_path' in deposit_specification and deposit_specification['source_path'] != '':
+        shutil.copytree(deposit_specification['source_path'], deposit_path)
+    else:
+        os.mkdir(deposit_path)
+        os.chmod(deposit_path, 02770) # drwxrws---
 
     if os.path.exists(deposit_path):
-        deposit = Location.objects.create(description=deposit_name, relative_path=deposit_name,
+        deposit = Location.objects.create(description=deposit_name, relative_path=os.path.basename(deposit_path),
             space=space, purpose=Location.SWORD_DEPOSIT)
 
         # TODO: implement this
