@@ -44,7 +44,7 @@ class LocalFilesystemForm(forms.ModelForm):
 class NFSForm(forms.ModelForm):
     class Meta:
         model = NFS
-        fields = ('remote_name', 'remote_path', 'version', 'manually_mounted')
+        fields = ('remote_name', 'remote_path', 'version', 'options', 'manually_mounted')
 
 
 class PipelineLocalFSForm(forms.ModelForm):

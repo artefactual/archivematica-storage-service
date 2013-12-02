@@ -261,6 +261,7 @@ def space_create(request):
                 protocol_obj = protocol_form.save(commit=False)
                 protocol_obj.space = space
                 protocol_obj.save()
+                protocol_obj.verify()
                 messages.success(request, "Space saved.")
                 return redirect('space_detail', space.uuid)
         else:

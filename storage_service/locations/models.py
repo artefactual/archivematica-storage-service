@@ -175,7 +175,6 @@ class LocalFilesystem(models.Model):
     # Does not currently need any other information - delete?
 
     def save(self, *args, **kwargs):
-        self.verify()
         super(LocalFilesystem, self).save(*args, **kwargs)
 
     def verify(self):
@@ -184,6 +183,7 @@ class LocalFilesystem(models.Model):
         verified = os.path.isdir(self.space.path)
         self.space.verified = verified
         self.space.last_verified = datetime.datetime.now()
+        self.save()
 
 
 class NFS(models.Model):
@@ -198,21 +198,20 @@ class NFS(models.Model):
     version = models.CharField(max_length=64, default='nfs4',
         help_text="Type of the filesystem, i.e. nfs, or nfs4. \
         Should match a command in `mount`.")
+    options = models.CharField(max_length=128, default='proto=tcp,port=2049',
+        help_text="Options to pass to `mount` command.")
     # https://help.ubuntu.com/community/NFSv4Howto
 
     manually_mounted = models.BooleanField(default=False)
 
-    def save(self, *args, **kwargs):
-        self.verify()
-        super(NFS, self).save(*args, **kwargs)
-
-    def verify(self):
+    def verify(self, *args, **kwargs):
         """ Verify that the space is accessible to the storage service. """
-        # TODO run script to verify that it works
-        if self.manually_mounted:
-            verified = os.path.ismount(self.space.path)
-            self.space.verified = verified
-            self.space.last_verified = datetime.datetime.now()
+        if not self.manually_mounted:
+            self.mount()
+        verified = os.path.ismount(self.space.path)
+        self.space.verified = verified
+        self.space.last_verified = datetime.datetime.now()
+        self.save()
 
     def mount(self):
         """ Mount the NFS export with the provided info. """
@@ -220,8 +219,25 @@ class NFS(models.Model):
         # sudo mount -t self.version -o proto=tcp,port=2049 self.remote_name:self.remote_path self.space.path
         # or /etc/fstab
         # self.remote_name:self.remote_path   self.space.path   self.version    auto,user  0  0
-        # may need to tweak options
-        pass
+        # If already mounted, we're done
+        if os.path.ismount(self.space.path):
+            return
+        mount_command = ['sudo', 'mount',
+            '-t', self.version,
+            '-o', self.options,
+            self.remote_name+':'+self.remote_path,
+            self.space.path]
+        logging.info('mount command: {}'.format(mount_command))
+        try:
+            subprocess.check_call(mount_command)
+        except subprocess.CalledProcessError as e:
+            if e.returncode == 32:  # 32 = already mounted or busy
+                logging.exception("{} already mounted or busy".format(self.space.path))
+            elif e.returncode == 1:  # 1 = syntax error or permissions
+                logging.exception("Incorrect invocation or permissions: check that user can run mount with passwordless sudo")
+            else:
+                logging.exception("Mount failed")
+                raise
 
 
 class PipelineLocalFS(models.Model):
@@ -236,6 +252,8 @@ class PipelineLocalFS(models.Model):
         help_text="Name or IP of the remote machine.")
     # Space.path is the path on the remote machine
 
+    def verify(self, *args, **kwargs):
+        pass
 
 # To add a new storage space the following places must be updated:
 #  locations/models.py (this file)
@@ -252,6 +270,9 @@ class PipelineLocalFS(models.Model):
 
 # class Example(models.Model):
 #     space = models.OneToOneField('Space', to_field='uuid')
+#
+#     def verify(self, *args, **kwargs):
+#         pass
 #
 
 

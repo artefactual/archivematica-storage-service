@@ -19,7 +19,8 @@ PROTOCOL[Space.NFS] = {
     'fields': ['manually_mounted',
                'remote_name',
                'remote_path',
-               'version']
+               'options',
+               'version',]
 }
 PROTOCOL[Space.PIPELINE_LOCAL_FS] = {
     'model': PipelineLocalFS,
