@@ -154,24 +154,50 @@ def collection(request, space_uuid):
                 if source_location == '' or relative_path_to_files == '':
                     return HttpResponse('error both must be set') # TODO: should be HTTP 400
                 else:
-                    # a deposit of files stored on the storage server is being done
-                    location = Location.objects.get(uuid=source_location)
-                    path_to_deposit_files = os.path.join(location.full_path(), relative_path_to_files)
-
-                    deposit_specification = {'space_uuid': space_uuid}
-                    deposit_specification['name'] = os.path.basename(path_to_deposit_files) # replace this with optional name
-                    deposit_specification['source_path'] = path_to_deposit_files
-                    deposit_uuid = _create_deposit_directory_and_db_entry(deposit_specification)
-
-                    return HttpResponse(deposit_uuid)
-                    #shutil.copytree(path_to_deposit_files, os.path.join('', os.path.basename(path_to_deposit_files)))
-                    #return HttpResponse(path_to_deposit_files)
+                    # TODO: consider removing this?
+                    result = deposit_from_location_relative_path(source_location, relative_path_to_files, space.uuid)
+                    if 'error' in result and result['error'] != None:
+                        return _sword_error_response(request, 500, result['message'])
+                    else:
+                        return _deposit_receipt_response(request, result['deposit_uuid'], 200)
             else:
                 return _sword_error_response(request, 412, 'A request body must be sent when creating a deposit.')
         else:
             return _sword_error_response(request, 412, 'The In-Progress header must be set to either true or false when creating a deposit.')
     else:
         return _sword_error_response(request, 405, 'This endpoint only responds to the GET and POST HTTP methods.')
+
+def deposit_from_location_relative_path(source_location, relative_path_to_files, space_uuid=None, pipeline_uuid=None):
+    # if no explicit space or pipeline specified, nothing can be done
+    if space_uuid == None and pipeline_uuid == None:
+        return
+
+    # if a pipeline, but no space, was specified then look up the first SWORD server space
+    # associated with the pipeline
+    if space_uuid == None:
+        pipeline = Pipeline.objects.get(uuid=pipeline_uuid)
+        sword_server = SwordServer.objects.filter(pipeline=pipeline)[0]
+        space_uuid = sword_server.space.uuid
+    else:
+    # ...otherwise, get the pipeline associated with the SWORD server space
+        space = Space.objects.get(uuid=space_uuid)
+        sword_server = SwordServer.objects.get(space=space)
+        pipeline = sword_server.pipeline
+
+    # a deposit of files stored on the storage server is being done
+    location = Location.objects.get(uuid=source_location)
+    path_to_deposit_files = os.path.join(location.full_path(), relative_path_to_files)
+
+    deposit_specification = {'space_uuid': space_uuid}
+    deposit_specification['name'] = os.path.basename(path_to_deposit_files) # replace this with optional name
+    deposit_specification['source_path'] = path_to_deposit_files
+
+    deposit_uuid = _create_deposit_directory_and_db_entry(deposit_specification)
+    deposit = helpers.get_deposit(deposit_uuid)
+
+    result =  _activate_transfer_and_request_approval_from_pipeline(deposit, sword_server)
+    result['deposit_uuid'] = deposit_uuid
+    return result
 
 def _parse_name_and_content_urls_from_mets_file(filepath):
     tree = etree.parse(filepath)
@@ -293,50 +319,8 @@ def deposit_edit(request, uuid):
             if deposit.downloading_status() == 'complete':
                 if len(os.listdir(deposit.full_path())) > 0:
                     # get sword server so we can access pipeline information
-                    sword_server = SwordServer.objects.get(space=deposit.space)
+                    #sword_server = SwordServer.objects.get(space=deposit.space)
 
-                    # make sure pipeline API access is configured
-                    for property in ['remote_name', 'api_username', 'api_key']:
-                        if getattr(sword_server.pipeline, property)=='':
-                            property_description = property.replace('_', ' ')
-                            return _sword_error_response(request, 500, 'Pipeline {property} not set.'.format(property=property_description))
-
-                    # TODO deal with issue when IP isn't whitelisted
-
-                    # TODO: add error if more than one location is returned
-                    processing_location = Location.objects.get(
-                        pipeline=sword_server.pipeline,
-                        purpose=Location.CURRENTLY_PROCESSING)
-
-                    destination_path = os.path.join(
-                        processing_location.full_path(),
-                        'watchedDirectories/activeTransfers/standardTransfer',
-                        os.path.basename(deposit.full_path()))
-
-                    # move to standard transfers directory
-                    destination_path = helpers.pad_destination_filepath_if_it_already_exists(destination_path)
-                    shutil.move(deposit.full_path(), destination_path)
-
-                    # wait to make sure the MCP responds to the directory being in the watch directory
-                    time.sleep(4)
-
-                    # make request to pipeline's transfer approval API
-                    data = urllib.urlencode({
-                        'username': sword_server.pipeline.api_username,
-                        'api_key': sword_server.pipeline.api_key,
-                        'directory': os.path.basename(destination_path),
-                        'type': 'standard' # TODO: make this customizable via a URL param
-                    })
-                    approve_request = urllib2.Request('http://' + sword_server.pipeline.remote_name + '/api/transfer/approve/', data)
-
-                    try:
-                        approve_response = urllib2.urlopen(approve_request)
-                    except:
-                        # move back to deposit directory
-                        shutil.move(destination_path, deposit.full_path())
-                        return _sword_error_response(request, 500, 'Request to pipeline transfer approval API failed: check credentials and REST API IP whitelist.')
-
-                    result = json.loads(approve_response.read())
                     if 'error' in result:
                         return _sword_error_response(request, 500, result['message'])
 
@@ -364,6 +348,68 @@ def deposit_edit(request, uuid):
         return HttpResponse(status=204) # No content
     else:
         return _sword_error_response(request, 405, 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.')
+
+"""
+Handle requesting the approval of a transfer from a pipeline via a REST call.
+
+This function returns a dict representation of the results, either returning
+the JSON returned by the request to the pipeline (converted to a dict) or
+a dict indicating a pipeline authentication issue.
+
+The dict representation is of the form:
+
+{
+    'error': <True|False>,
+    'message': <description of success or failure>
+}
+"""
+def _activate_transfer_and_request_approval_from_pipeline(deposit, sword_server):
+    # make sure pipeline API access is configured
+    for property in ['remote_name', 'api_username', 'api_key']:
+        if getattr(sword_server.pipeline, property)=='':
+            property_description = property.replace('_', ' ')
+            return _sword_error_response(request, 500, 'Pipeline {property} not set.'.format(property=property_description))
+
+    # TODO: add error if more than one location is returned
+    processing_location = Location.objects.get(
+        pipeline=sword_server.pipeline,
+        purpose=Location.CURRENTLY_PROCESSING)
+
+    destination_path = os.path.join(
+        processing_location.full_path(),
+        'watchedDirectories/activeTransfers/standardTransfer',
+        os.path.basename(deposit.full_path()))
+
+    # move to standard transfers directory
+    destination_path = helpers.pad_destination_filepath_if_it_already_exists(destination_path)
+    shutil.move(deposit.full_path(), destination_path)
+
+    # wait to make sure the MCP responds to the directory being in the watch directory
+    time.sleep(4)
+
+    # make request to pipeline's transfer approval API
+    data = urllib.urlencode({
+        'username': sword_server.pipeline.api_username,
+        'api_key': sword_server.pipeline.api_key,
+        'directory': os.path.basename(destination_path),
+        'type': 'standard' # TODO: make this customizable via a URL param
+    })
+
+    pipeline_endpoint_url = 'http://' + sword_server.pipeline.remote_name + '/api/transfer/approve/'
+    approve_request = urllib2.Request(pipeline_endpoint_url, data)
+
+    try:
+        approve_response = urllib2.urlopen(approve_request)
+    except:
+        # move back to deposit directory
+        shutil.move(destination_path, deposit.full_path())
+        return {
+            'error': True,
+            'message': 'Request to pipeline ' + sword_server.pipeline.uuid + ' transfer approval API failed: check credentials and REST API IP whitelist.'
+        } #_sword_error_response(request, 500, 'Request to pipeline transfer approval API failed: check credentials and REST API IP whitelist.')
+
+    result = json.loads(approve_response.read())
+    return result
 
 """
 Example GET of files list:
