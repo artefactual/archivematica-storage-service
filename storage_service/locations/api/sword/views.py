@@ -236,7 +236,7 @@ def _create_deposit_directory_and_db_entry(deposit_specification):
     )
 
     deposit_path = helpers.pad_destination_filepath_if_it_already_exists(deposit_path)
-    if deposit_specification['source_path']:
+    if 'source_path' in deposit_specification and deposit_specification['source_path'] != '':
         shutil.copytree(deposit_specification['source_path'], deposit_path)
     else:
         os.mkdir(deposit_path)
