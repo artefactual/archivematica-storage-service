@@ -319,7 +319,9 @@ def deposit_edit(request, uuid):
             if deposit.downloading_status() == 'complete':
                 if len(os.listdir(deposit.full_path())) > 0:
                     # get sword server so we can access pipeline information
-                    #sword_server = SwordServer.objects.get(space=deposit.space)
+                    sword_server = SwordServer.objects.get(space=deposit.space)
+                    result = _activate_transfer_and_request_approval_from_pipeline(deposit, sword_server)
+                    #result['deposit_uuid'] = deposit_uuid
 
                     if 'error' in result:
                         return _sword_error_response(request, 500, result['message'])
@@ -368,6 +370,7 @@ def _activate_transfer_and_request_approval_from_pipeline(deposit, sword_server)
     for property in ['remote_name', 'api_username', 'api_key']:
         if getattr(sword_server.pipeline, property)=='':
             property_description = property.replace('_', ' ')
+            # TODO: fix this
             return _sword_error_response(request, 500, 'Pipeline {property} not set.'.format(property=property_description))
 
     # TODO: add error if more than one location is returned
