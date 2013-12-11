@@ -689,12 +689,13 @@ class Pipeline(models.Model):
             local_fs = LocalFilesystem(space=space)
             local_fs.save()
             logging.info("Protocol Space created: {}".format(local_fs))
-        currently_processing = Location.objects.create(
+        currently_processing, _ = Location.objects.get_or_create(
             purpose=Location.CURRENTLY_PROCESSING,
             space=space,
             relative_path=shared_path)
+        LocationPipeline.objects.get_or_create(
+            pipeline=self, location=currently_processing)
         logging.info("Currently processing: {}".format(currently_processing))
-        LocationPipeline(pipeline=self, location=currently_processing).save()
 
         purposes = [
             {'default': 'default_transfer_source',
