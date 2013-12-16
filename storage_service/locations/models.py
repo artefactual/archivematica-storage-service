@@ -127,6 +127,8 @@ class Space(models.Model):
         if self.access_protocol in self.mounted_locally:
             # Sorted list of all entries in directory, excluding hidden files
             # This may need magic for encoding/decoding, but doesn't seem to
+            if isinstance(path, unicode):
+                path = str(path)
             entries = [name for name in os.listdir(path) if name[0] != '.']
             entries = sorted(entries, key=lambda s: s.lower())
             directories = []
