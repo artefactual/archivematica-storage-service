@@ -9,6 +9,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import urllib
 
 # Core Django, alphabetical
 from django.conf.urls import url
@@ -366,6 +367,7 @@ class PackageResource(ModelResource):
         Returns a single file from the Package, extracting if necessary.
         """
         relative_path_to_file = request.GET.get('relative_path_to_file')
+        relative_path_to_file = urllib.unquote(relative_path_to_file)
         temp_dir = ''
 
         # Tastypie checks
@@ -383,38 +385,7 @@ class PackageResource(ModelResource):
             extracted_file_path = local_path
         elif package.package_type in Package.PACKAGE_TYPE_EXTRACTABLE:
             # If file doesn't exist, try to extract it
-
-            # Create temp dir to extract to
-            # TODO store this somewhere well known, so we don't clutter up
-            # filesystem with duplicates of files?
-            temp_dir = tempfile.mkdtemp()
-
-            filename, file_extension = os.path.splitext(full_path)
-
-            # extract file from Package
-            if file_extension == '.bz2':
-                command_data = [
-                    'tar',
-                    'xvjf',
-                    full_path,
-                    '-C' + temp_dir,
-                    relative_path_to_file
-                ]
-            else:
-                command_data = [
-                    '7za',
-                    'e',
-                    '-o' + temp_dir,
-                    full_path,
-                    relative_path_to_file
-                ]
-
-            subprocess.call(command_data)
-            # send extracted file
-            if file_extension == '.bz2':
-                extracted_file_path = os.path.join(temp_dir, relative_path_to_file)
-            else:
-                extracted_file_path = os.path.join(temp_dir, os.path.basename(relative_path_to_file))
+            (extracted_file_path, temp_dir) = package.extract_file(relative_path_to_file)
 
         # If not found, return 404
         if not os.path.exists(extracted_file_path):
