@@ -21,6 +21,7 @@ from django.db import models
 import bagit
 import jsonfield
 from django_extensions.db.fields import UUIDField
+import sword2
 
 # This project, alphabetical
 import common.utils as utils
@@ -502,7 +503,34 @@ class Lockssomatic(models.Model):
         help_text="URL to post the packages to, eg. http://lockssomatic.example.org/api/sword/2.0/col-iri/12")
     keep_local = models.BooleanField(blank=True, default=True, verbose_name="Keep local copy?",
         help_text="If checked, keep a local copy even after the AIP is stored in the LOCKSS network.")
+    sword_connection = None
     # Uses the SWORD protocol to talk to LOM
+
+    def update_service_document(self):
+        """ Fetch the service document from self.sd_iri and updates based on that.
+
+        Updates AU size and collection IRI.
+
+        Returns True on success, False on error.  No updates performed on error."""
+        try:
+            self.sword_connection = sword2.Connection(self.sd_iri, download_service_document=True)
+        except Exception:  # TODO make this more specific
+            logging.exception("Error getting service document from SWORD server.")
+            return False
+        # AU size
+        self.au_size = self.sword_connection.maxUploadSize
+
+        # Collection IRI
+        # Workspaces are a list of ('workspace name', [collections]) tuples
+        # Currently only support one workspace, so take the first one
+        try:
+            self.collection_iri = self.sword_connection.workspaces[0][1][0].href
+        except IndexError:
+            logging.warning("No collection IRI found in LOCKSS-o-matic service document.")
+            return False
+
+        self.save()
+        return True
 
 
 # To add a new storage space the following places must be updated:
@@ -947,12 +975,10 @@ class Package(models.Model):
     def _store_aip_lom(self, file_path):
         """ Stores a file in LOCKSS, after splitting into AU sizes. """
         protocol_space = self.current_location.space.get_child_space()
+        # Update Service Document, including maxUploadSize and Collection IRI
+        protocol_space.update_service_document()
 
-        # TODO Query LOM for Service Document, including the AU size
-        # GET to protocol_space.lom_url
-        # Get element sword:maxUploadSize (in kB = 1000*B)
-        # Set protocol_space.lom_url = maxUploadSize, save
-
+        # Split the files and record their locations
         output_path = os.path.splitext(file_path)[0]+'_'  # strip extension
         expected_num_files = math.ceil(os.path.getsize(file_path) / float(protocol_space.au_size))
         if expected_num_files > 1:
@@ -960,8 +986,8 @@ class Package(models.Model):
             command = ['split', '-b', str(protocol_space.au_size), '-d', file_path, output_path]
             try:
                 subprocess.check_call(command)
-            except Exception as e:
-                logging.warning("ssh+sync failed: {}".format(e))
+            except Exception:
+                logging.exception("Split of {} failed".format(file_path))
                 raise
             dirname, basename = os.path.split(output_path)
             output_files = sorted([entry for entry in os.listdir(dirname) if entry.startswith(basename)])
