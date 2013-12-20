@@ -25,7 +25,7 @@ from setuptools import setup, find_packages
 
 setup(name='archivematica-storage-service',
       packages=find_packages(),
-      version='0.2.0',
+      version='0.2.2',
       author=u'Justin Simpson',
       author_email='jsimpson@artefactual.com',
       url='https://github.com/artefacutal/archivematica-storage-service',

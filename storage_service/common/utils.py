@@ -70,3 +70,21 @@ def uuid_to_path(uuid):
     path = os.path.join(*path)
     logging.debug("path {}".format(path))
     return path
+
+def removedirs(relative_path, base=None):
+    """ Removes leaf directory of relative_path and all empty directories in
+    relative_path, but nothing from base.
+
+    Cribbed from the implementation of os.removedirs. """
+    if not base:
+        return os.removedirs(relative_path)
+    os.rmdir(os.path.join(base, relative_path))
+    head, tail = os.path.split(relative_path)
+    if not tail:
+        head, tail = os.path.split(head)
+    while head and tail:
+        try:
+            os.rmdir(os.path.join(base, head))
+        except os.error:
+            break
+        head, tail = os.path.split(head)

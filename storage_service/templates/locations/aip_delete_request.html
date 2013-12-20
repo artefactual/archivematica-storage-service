@@ -19,7 +19,7 @@
     <tbody>
     {% for req in requests %}
       <tr>
-        <td>{{ req.file }}</td>
+        <td>{{ req.package }}</td>
         <td>{{ req.event_reason }}</td>
         <td>{{ req.pipeline }}</td>
         <td>{{ req.user_email }} (ID: {{ req.user_id}})</td>
@@ -58,7 +58,7 @@
     <tbody>
     {% for req in closed_requests %}
       <tr>
-        <td>{{ req.file }}</td>
+        <td>{{ req.package }}</td>
         <td>{{ req.event_reason }}</td>
         <td>{{ req.pipeline }}</td>
         <td>{{ req.user_email }} (ID: {{ req.user_id}})</td>

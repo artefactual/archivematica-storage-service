@@ -576,9 +576,12 @@ class Package(models.Model):
         if self.current_location.space.access_protocol in Space.mounted_locally:
             try:
                 os.remove(self.full_path())
-            except OSError as e:
-                logging.warning("Error deleting package: {}".format(e))
+            except os.error as e:
+                logging.exception("Error deleting package.")
                 return False, e.strerror
+            # Remove uuid quad directories if they're empty
+            utils.removedirs(os.path.dirname(self.current_path),
+                base=self.current_location.full_path())
         elif self.current_location.space.access_protocol in Space.ssh_only_access:
             protocol_space = self.current_location.space.get_child_space()
             # TODO try-catch AttributeError if remote_user or remote_name not exist?
@@ -590,8 +593,17 @@ class Package(models.Model):
             try:
                 subprocess.check_call(ssh_command)
             except Exception as e:
-                logging.warning("ssh+sync failed: {}".format(e))
+                logging.exception("ssh+sync failed.")
                 return False, "Error connecting to Location"
+
+        # Remove pointer file, and the UUID quad directories if they're empty
+        try:
+            os.remove(self.full_pointer_file_path())
+        except os.error as e:
+            logging.exception("Error deleting pointer file {} for package {}".format(self.full_pointer_file_path(), self.uuid))
+
+        utils.removedirs(os.path.dirname(self.pointer_file_path),
+            base=self.pointer_file_location.full_path())
 
         self.status = self.DELETED
         self.save()

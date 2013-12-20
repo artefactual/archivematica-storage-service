@@ -1,0 +1,9 @@
+#archivematica-storage-service.install
+
+install/storage.ini etc/uwsgi/apps-available/
+install/storage etc/nginx/sites-available
+install/.storage-service var/lib/archivematica/
+install/make_key.py var/lib/archivematica
+
+storage_service/static/* /var/archivematica/storage-service/static
+storage_service/templates/* /var/archivematica/storage-service/templates

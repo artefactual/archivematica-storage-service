@@ -118,7 +118,11 @@ def location_list(request):
     return render(request, 'locations/location_list.html', locals())
 
 def location_detail(request, location_uuid):
-    location = get_object_or_404(Location, uuid=location_uuid)
+    try:
+        location = Location.objects.get(uuid=location_uuid)
+    except Location.DoesNotExist:
+        messages.warning(request, "Location {} does not exist.".format(location_uuid))
+        return redirect('location_list')
     pipelines = Pipeline.objects.filter(location=location)
     packages = Package.objects.filter(current_location=location)
     return render(request, 'locations/location_detail.html', locals())
@@ -171,7 +175,11 @@ def pipeline_list(request):
     return render(request, 'locations/pipeline_list.html', locals())
 
 def pipeline_detail(request, uuid):
-    pipeline = get_object_or_404(Pipeline, uuid=uuid)
+    try:
+        pipeline = Pipeline.objects.get(uuid=uuid)
+    except Pipeline.DoesNotExist:
+        messages.warning(request, "Pipeline {} does not exist.".format(uuid))
+        return redirect('pipeline_list')
     locations = Location.objects.filter(pipeline=pipeline)
     return render(request, 'locations/pipeline_detail.html', locals())
 
@@ -211,9 +219,18 @@ def space_list(request):
     return render(request, 'locations/space_list.html', locals())
 
 def space_detail(request, uuid):
+<<<<<<< HEAD
     space = get_object_or_404(Space, uuid=uuid)
     model = PROTOCOL[space.access_protocol]['model']
     child = model.objects.get(space=space)
+=======
+    try:
+        space = Space.objects.get(uuid=uuid)
+    except Space.DoesNotExist:
+        messages.warning(request, "Space {} does not exist.".format(uuid))
+        return redirect('space_list')
+    child = space.get_child_space()
+>>>>>>> 0.x
     child_dict_raw = model_to_dict(child,
         PROTOCOL[space.access_protocol]['fields']or [''])
     child_dict = { child._meta.get_field_by_name(field)[0].verbose_name: value

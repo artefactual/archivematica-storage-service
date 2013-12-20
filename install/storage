@@ -1,0 +1,24 @@
+upstream storage {
+
+    # Socket mode
+    server unix:/tmp/storage.uwsgi.sock;
+
+}
+
+server {
+
+    listen 8000;
+
+    # Adjust to taste
+    client_max_body_size 256M;
+
+    location /static {
+        alias /usr/lib/archivematica/storage-service/assets;
+    }
+
+    location / {
+        uwsgi_pass storage;
+        include /etc/nginx/uwsgi_params;
+    }
+
+}
