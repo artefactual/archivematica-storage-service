@@ -24,7 +24,7 @@ from django_extensions.db.fields import UUIDField
 import sword2
 
 # This project, alphabetical
-import common.utils as utils
+from common import utils
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename="/tmp/storage-service.log",
@@ -838,13 +838,11 @@ class Package(models.Model):
         self.save()
 
         # Update pointer file's location infrmation
-        nsmap = {'mets': 'http://www.loc.gov/METS/'}
         root = etree.parse(pointer_file_dst)
-        element = root.find('mets:fileSec/mets:fileGrp/mets:file', namespaces=nsmap)
-        flocat = element.find('mets:FLocat', namespaces=nsmap)
-        xlink = 'http://www.w3.org/1999/xlink'
+        element = root.find('mets:fileSec/mets:fileGrp/mets:file', namespaces=utils.NSMAP)
+        flocat = element.find('mets:FLocat', namespaces=utils.NSMAP)
         if self.uuid in element.get('ID', '') and flocat is not None:
-            flocat.set('{{{ns}}}href'.format(ns=xlink), self.full_path())
+            flocat.set('{{{ns}}}href'.format(ns=utils.NSMAP['xlink']), self.full_path())
         with open(pointer_file_dst, 'w') as f:
             f.write(etree.tostring(root, pretty_print=True))
 

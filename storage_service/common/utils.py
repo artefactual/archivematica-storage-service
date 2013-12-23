@@ -13,6 +13,15 @@ from administration import models
 
 logger = logging.getLogger(__name__)
 
+NSMAP = {
+    'dc': 'http://purl.org/dc/elements/1.1/',
+    'dcterms': 'http://purl.org/dc/terms/',
+    'mets': 'http://www.loc.gov/METS/',
+    'premis': 'info:lc/xmlns/premis-v2',
+    'xlink': 'http://www.w3.org/1999/xlink',
+    'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+}
+
 ############ SETTINGS ############
 
 def get_all_settings():
