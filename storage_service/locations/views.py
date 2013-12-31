@@ -219,18 +219,12 @@ def space_list(request):
     return render(request, 'locations/space_list.html', locals())
 
 def space_detail(request, uuid):
-<<<<<<< HEAD
-    space = get_object_or_404(Space, uuid=uuid)
-    model = PROTOCOL[space.access_protocol]['model']
-    child = model.objects.get(space=space)
-=======
     try:
         space = Space.objects.get(uuid=uuid)
     except Space.DoesNotExist:
         messages.warning(request, "Space {} does not exist.".format(uuid))
         return redirect('space_list')
     child = space.get_child_space()
->>>>>>> 0.x
     child_dict_raw = model_to_dict(child,
         PROTOCOL[space.access_protocol]['fields']or [''])
     child_dict = { child._meta.get_field_by_name(field)[0].verbose_name: value
