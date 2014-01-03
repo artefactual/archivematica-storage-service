@@ -1,0 +1,10 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: archivematica-storage-service
+Upstream-Contact: Justin Simpson <jsimpson@artefactual.com>
+Source: https://github.com/artefactual/archivematica-storage-service
+
+Files: *
+Copyright: Artefactual Systems Inc.
+License: AGPL-3+
+ Full license available at http://www.gnu.org/licenses/agpl-3.0.txt
+

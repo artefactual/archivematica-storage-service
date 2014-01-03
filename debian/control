@@ -4,12 +4,12 @@ Priority: extra
 Maintainer: Artefactual Systems Inc. <ops@artefactual.com>
 Build-Depends: 
     python (>= 2.7.3),
-	debhelper (>= 9),
+    debhelper (>= 9),
     libxml2-dev,
     libxslt-dev,
     dh-virtualenv
 Standards-Version: 3.9.2
-X-Python-Version: >= 2.7
+X-Python-Version: 2.7
 
 Package: archivematica-storage-service
 Architecture: all
