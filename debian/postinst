@@ -11,7 +11,7 @@ fi
 
 
 echo "creating django secret key"
-KEYCMD=$(python /var/lib/archivematica/make_key.py 2>&1)
+KEYCMD=$(python /var/lib/archivematica/storage-service/make_key.py 2>&1)
 echo $KEYCMD
 
 sed -i "s/<replace-with-key>/\"$KEYCMD\"/g" /var/lib/archivematica/.storage-service
@@ -20,13 +20,13 @@ sed -i "s/<replace-with-key>/\"$KEYCMD\"/g" /etc/uwsgi/apps-available/storage.in
 . /var/lib/archivematica/.storage-service
 
 echo "creating symlink in /usr/lib/archivematica"
-ln -s /usr/share/python/archivematica-storage-service/lib/python2.7/site-packages/archivematica_storage_service-0.2.2-py2.7.egg/storage_service/ /usr/lib/archivematica/storage-service
-mv /var/archivematica/storage-service/static /usr/share/python/archivematica-storage-service/lib/python2.7/site-packages/archivematica_storage_service-0.2.2-py2.7.egg/storage_service/static
-mv /var/archivematica/storage-service/templates /usr/share/python/archivematica-storage-service/lib/python2.7/site-packages/archivematica_storage_service-0.2.2-py2.7.egg/storage_service/templates
+ln -s /usr/share/python/archivematica-storage-service/lib/python2.7/site-packages/storage_service/ /usr/lib/archivematica/storage-service
+mv /var/archivematica/storage-service/static /usr/lib/archivematica/storage-service/static
+mv /var/archivematica/storage-service/templates /usr/lib/archivematica/storage-service/templates
 
-echo "configuring django database and static files"
 cd /usr/lib/archivematica/storage-service
 
+echo "configuring django database and static files"
 /usr/share/python/archivematica-storage-service/bin/python manage.py syncdb
 /usr/share/python/archivematica-storage-service/bin/python manage.py collectstatic --noinput
 
@@ -35,3 +35,5 @@ chown -R archivematica:archivematica /var/archivematica/
 chown -R archivematica:archivematica /usr/share/python/archivematica-storage-service
 
 rm /tmp/storage-service.log
+
+#DEBHELPER#

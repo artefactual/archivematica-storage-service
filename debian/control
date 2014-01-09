@@ -7,8 +7,9 @@ Build-Depends:
     debhelper (>= 9),
     libxml2-dev,
     libxslt-dev,
+    python-dev,
     dh-virtualenv
-Standards-Version: 3.9.2
+Standards-Version: 3.9.3
 X-Python-Version: 2.7
 
 Package: archivematica-storage-service

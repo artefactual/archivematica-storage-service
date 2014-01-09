@@ -1,5 +1,5 @@
-archivematica-storage-service (0.2.2) precise; urgency=low
+archivematica-storage-service (0.2.2ppa12) precise; urgency=high
 
   * updated to 0.2.2
 
- -- Justin Simpson <jsimpson@artefactual.com>  Tue, 17 Dec 2013 18:17:20 -0800
+ -- Austin Trask <austin@artefactual.com>  Wed, 8 Jan 2013 18:17:20 -0800
