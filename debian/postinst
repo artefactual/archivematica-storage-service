@@ -11,13 +11,13 @@ fi
 
 
 echo "creating django secret key"
-KEYCMD=$(python /var/lib/archivematica/storage-service/make_key.py 2>&1)
+KEYCMD=$(python /var/archivematica/storage-service/make_key.py 2>&1)
 echo $KEYCMD
 
-sed -i "s/<replace-with-key>/\"$KEYCMD\"/g" /var/lib/archivematica/.storage-service
+sed -i "s/<replace-with-key>/\"$KEYCMD\"/g" /var/archivematica/.storage-service
 sed -i "s/<replace-with-key>/\"$KEYCMD\"/g" /etc/uwsgi/apps-available/storage.ini
 
-. /var/lib/archivematica/.storage-service
+. /var/archivematica/.storage-service
 
 echo "creating symlink in /usr/lib/archivematica"
 ln -s /usr/share/python/archivematica-storage-service/lib/python2.7/site-packages/storage_service/ /usr/lib/archivematica/storage-service
@@ -34,6 +34,6 @@ echo "updating directory permissions"
 chown -R archivematica:archivematica /var/archivematica/
 chown -R archivematica:archivematica /usr/share/python/archivematica-storage-service
 
-rm /tmp/storage-service.log
+rm -f /tmp/storage-service.log
 
 #DEBHELPER#
