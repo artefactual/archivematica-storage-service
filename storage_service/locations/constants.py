@@ -34,5 +34,6 @@ PROTOCOL[Space.LOM] = {
     'fields': ['au_size',
                'sd_iri',
                'collection_iri',
-               'keep_local']
+               'keep_local',
+               'checksum_type',]
 }
