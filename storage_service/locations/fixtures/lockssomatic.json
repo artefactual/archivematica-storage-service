@@ -1,0 +1,27 @@
+[
+{
+    "pk": 2, 
+    "model": "locations.space", 
+    "fields": {
+        "last_verified": null, 
+        "used": 0, 
+        "verified": false, 
+        "uuid": "584e029f-a23e-4764-b7d7-ea6a808691c2", 
+        "access_protocol": "LOM", 
+        "path": "/tmp/", 
+        "size": null
+    }
+},
+{
+    "pk": 1, 
+    "model": "locations.lockssomatic", 
+    "fields": {
+        "collection_iri": null, 
+        "keep_local": true, 
+        "space": "584e029f-a23e-4764-b7d7-ea6a808691c2", 
+        "sd_iri": "http://localhost:9000/sd-uri", 
+        "checksum_type": null, 
+        "au_size": null
+    }
+}
+]

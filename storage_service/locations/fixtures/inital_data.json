@@ -1,0 +1,64 @@
+[
+{
+    "pk": 1, 
+    "model": "locations.space", 
+    "fields": {
+        "last_verified": null, 
+        "used": 0, 
+        "verified": false, 
+        "uuid": "7d20c992-bc92-4f92-a794-7161ff2cc08b", 
+        "access_protocol": "FS", 
+        "path": "/", 
+        "size": null
+    }
+},
+{
+    "pk": 1, 
+    "model": "locations.localfilesystem", 
+    "fields": {
+        "space": "7d20c992-bc92-4f92-a794-7161ff2cc08b"
+    }
+},
+{
+    "pk": 1, 
+    "model": "locations.location", 
+    "fields": {
+        "used": 0, 
+        "description": null, 
+        "space": "7d20c992-bc92-4f92-a794-7161ff2cc08b", 
+        "enabled": true, 
+        "quota": null, 
+        "relative_path": "home", 
+        "purpose": "TS", 
+        "uuid": "4056b25d-6a85-4557-b9a5-9c85565fd892"
+    }
+},
+{
+    "pk": 2, 
+    "model": "locations.location", 
+    "fields": {
+        "used": 0, 
+        "description": "Store AIP in standard Archivematica Directory", 
+        "space": "7d20c992-bc92-4f92-a794-7161ff2cc08b", 
+        "enabled": true, 
+        "quota": null, 
+        "relative_path": "var/archivematica/sharedDirectory/www/AIPsStore", 
+        "purpose": "AS", 
+        "uuid": "99536e72-97af-4f0c-811e-06160a995c36"
+    }
+},
+{
+    "pk": 3, 
+    "model": "locations.location", 
+    "fields": {
+        "used": 0, 
+        "description": "For storage service internal usage.", 
+        "space": "7d20c992-bc92-4f92-a794-7161ff2cc08b", 
+        "enabled": true, 
+        "quota": null, 
+        "relative_path": "var/archivematica/storage_service", 
+        "purpose": "SS", 
+        "uuid": "72ee3a1a-9497-46db-aa58-56ea8d7fedc5"
+    }
+}
+]
