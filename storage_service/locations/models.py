@@ -501,7 +501,7 @@ class Lockssomatic(models.Model):
         help_text="Size in bytes of an Allocation Unit")
     sd_iri = models.CharField(max_length=256, verbose_name="Service Document IRI",
         help_text="URL of LOCKSS-o-matic service document IRI, eg. http://lockssomatic.example.org/api/sword/2.0/sd-iri")
-    collection_iri = models.CharField(max_length=256, verbose_name="Collection IRI",
+    collection_iri = models.CharField(max_length=256, null=True, blank=True, verbose_name="Collection IRI",
         help_text="URL to post the packages to, eg. http://lockssomatic.example.org/api/sword/2.0/col-iri/12")
     checksum_type = models.CharField(max_length=64, null=True, blank=True, verbose_name='Checksum type', help_text='Checksum type to send to LOCKSS-o-matic for verification.  Eg. md5, sha1, sha256')
     keep_local = models.BooleanField(blank=True, default=True, verbose_name="Keep local copy?",
@@ -534,12 +534,8 @@ class Lockssomatic(models.Model):
             return False
 
         # Checksum type - LOM specific tag
-        nsmap = {
-            None: 'http://www.w3.org/2007/app',
-            'lom': 'http://purl.org/lockssomatic/terms/SWORD',
-        }
         root = self.sword_connection.sd.service_dom
-        self.checksum_type = root.findtext('lom:uploadChecksumType', namespaces=nsmap)
+        self.checksum_type = root.findtext('lom:uploadChecksumType', namespaces=utils.NSMAP)
 
         self.save()
         return True
@@ -1088,20 +1084,46 @@ class Package(models.Model):
 
         # Post to SWORD2 server
         receipt = protocol_space.sword_connection.create(col_iri=protocol_space.collection_iri, metadata_entry=entry, suggested_identifier=slug)
-        state_iri = receipt.edit_media_feed
+        # URI to update LOM with whether the local copy is deleted or not
+        edit_iri = receipt.se_iri
 
-        logging.debug("LOCKSS State IRI for {}: {}".format(self.uuid, state_iri))
+        # State IRI not parsed by default in the SWORD2 library
+        state_iri_element = receipt.dom.find('atom:link[@rel="http://purl.org/net/sword/terms/statement"][@type="application/atom+xml;type=feed"]', namespaces=utils.NSMAP)
+        if state_iri_element is not None:
+            state_iri = state_iri_element.get('href')
+        else:
+            pass
+            # FIXME Error
 
-        # TODO save the state IRI to the pointer file
+        # FIXME what if state_iri is None?
 
-    def _store_aip_lom_complete(self):
+        logging.info("LOCKSS State IRI for {}: {}, Edit IRI: {}".format(self.uuid, state_iri, edit_iri))
+
+        # TODO save the state IRI & Edit IRI to the pointer file
+        # Where store state & edit IRI if not pointer file???
+
+
+    def _lom_poll_state(self):
+        if self.current_location.space.access_protocol != Space.LOM:
+            return "AIP not stored in LOCKSS"
+        # Get state URI from pointer file
+
+        # Poll state URI
+
+        # Check that all pieces are in agreement
+
+        # If all agreement, _lom_store_aip_complete
+        # else NOP
+
+
+    def _lom_store_aip_complete(self):
         """ Acknowledges the file was completely stored in LOCKSS via LOCKSS-o-matic.
 
         Returns True on success, error message on failure. """
         if self.current_location.space.access_protocol != Space.LOM:
             return "AIP not stored in LOCKSS"
         # Delete the pieces
-        # TODO parse this from the pointer file
+        # FIXME parse this from the pointer file
         dirname, filename = os.path.split(self.full_path())
         basename, _ = os.path.splitext(filename)
         output_files = sorted([entry for entry in os.listdir(dirname) if entry.startswith(basename+'_')])
@@ -1109,6 +1131,8 @@ class Package(models.Model):
         protocol_space = self.current_location.space.get_child_space()
         if protocol_space.delete_staging:
             output_files += [filename]
+            # notify LOM that local copy is gone
+            # use edit IRI from pointer file
         error_files = []
         for f in output_files:
             path = os.path.join(dirname, f)
@@ -1116,11 +1140,12 @@ class Package(models.Model):
                 os.remove(path)
             except os.error:
                 error_files += [path]
+                logging.exception("File not deleted: {}".format(path))
         # Update status
         self.status = Package.UPLOADED
         self.save()
         if error_files:
-            return "Some LOCKSS files not deleted: " + ', '.join(error_files)
+            return "Some local copies of LOCKSS files not deleted: " + ', '.join(error_files)
         return True
 
     def delete_from_storage(self):

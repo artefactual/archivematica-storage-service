@@ -14,10 +14,14 @@ from administration import models
 logger = logging.getLogger(__name__)
 
 NSMAP = {
+    'atom': 'http://www.w3.org/2005/Atom',  # Atom Syndication Format
+    'app': 'http://www.w3.org/2007/app',  # Atom Publishing Protocol
     'dc': 'http://purl.org/dc/elements/1.1/',
     'dcterms': 'http://purl.org/dc/terms/',
+    'lom': 'http://purl.org/lockssomatic/terms/SWORD',
     'mets': 'http://www.loc.gov/METS/',
     'premis': 'info:lc/xmlns/premis-v2',
+    'sword': 'http://purl.org/net/sword/terms/',
     'xlink': 'http://www.w3.org/1999/xlink',
     'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
 }
