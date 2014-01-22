@@ -25,7 +25,64 @@ from locations.models import Location
 from locations.models import Pipeline
 from locations.models import Space
 from locations.models import SwordServer
+from locations.models import LocationDownloadTask
 import helpers
+
+def deposit_downloading_status(deposit_uuid):
+    deposit = helpers.get_deposit(deposit_uuid)
+    tasks = LocationDownloadTask.objects.filter(location=deposit)
+    if len(tasks) > 0:
+        # check each task for completion and failure
+        complete = True
+        failed = False
+
+        for task in tasks:
+            if task.downloading_status() != 'complete':
+                complete = False
+                if task.downloading_status() == 'failed':
+                    failed = True
+        if failed:
+            return 'failed'
+        else:
+            if complete:
+                return 'complete'
+            else:
+                return 'incomplete'
+    else:
+        return 'complete'
+
+def spawn_download_task(deposit_uuid, object_content_urls):
+    p = Process(target=_fetch_content, args=(deposit_uuid, object_content_urls))
+    p.start()
+
+def _fetch_content(deposit_uuid, object_content_urls):
+    # add download task to keep track of progress
+    deposit = helpers.get_deposit(deposit_uuid)
+    task = LocationDownloadTask(location=deposit)
+    task.downloads_attempted = len(object_content_urls)
+    task.downloads_completed = 0
+    task.save()
+
+    # download the files
+    temp_dir = tempfile.mkdtemp()
+
+    completed = 0
+    for url in object_content_urls:
+        try:
+            filename = helpers.download_resource(url, temp_dir)
+            shutil.move(os.path.join(temp_dir, filename),
+                os.path.join(deposit.full_path(), filename))
+            completed += 1
+        except:
+            pass
+
+    # remove temp dir
+    shutil.rmtree(temp_dir)
+
+    # record the number of successful downloads and completion time
+    task.downloads_completed = completed
+    task.download_completion_time = timezone.now()
+    task.save()
 
 """
 Example GET of service document:
@@ -134,8 +191,7 @@ def collection(request, space_uuid):
                                 if deposit_uuid != None:
                                     if request.META['HTTP_IN_PROGRESS'] == 'true':
                                         # create subprocess so content URLs can be downloaded asynchronously
-                                        p = Process(target=_fetch_content, args=(deposit_uuid, mets_data['object_content_urls']))
-                                        p.start()
+                                        spawn_download_task(deposit_uuid, mets_data['object_content_urls'])
                                         return _deposit_receipt_response(request, deposit_uuid, 201)
                                     else:
                                         # fetch content synchronously then finalize transfer
@@ -253,34 +309,6 @@ def _create_deposit_directory_and_db_entry(deposit_specification):
         deposit.save()
         return deposit.uuid
 
-def _fetch_content(deposit_uuid, object_content_urls):
-    # update deposit with number of files that need to be downloaded
-    deposit = helpers.get_deposit(deposit_uuid)
-    deposit.downloads_attempted = len(object_content_urls)
-    deposit.downloads_completed = 0
-    deposit.save()
-
-    # download the files
-    temp_dir = tempfile.mkdtemp()
-
-    completed = 0
-    for url in object_content_urls:
-        try:
-            filename = helpers.download_resource(url, temp_dir)
-            completed += 1
-        except:
-            pass
-        shutil.move(os.path.join(temp_dir, filename),
-            os.path.join(deposit.full_path(), filename))
-
-    # remove temp dir
-    shutil.rmtree(temp_dir)
-
-    # record the number of successful downloads and completion time
-    deposit.downloads_completed = completed
-    deposit.download_completion_time = timezone.now()
-    deposit.save()
-
 """
 Example POST finalization of deposit:
 
@@ -316,7 +344,7 @@ def deposit_edit(request, uuid):
     elif request.method == 'POST':
         # is the deposit ready to be processed?
         if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
-            if deposit.downloading_status() == 'complete':
+            if deposit_downloading_status(uuid) == 'complete':
                 if len(os.listdir(deposit.full_path())) > 0:
                     # get sword server so we can access pipeline information
                     sword_server = SwordServer.objects.get(space=deposit.space)
@@ -534,8 +562,8 @@ def deposit_state(request, uuid):
         return _sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=uuid))
 
     if request.method == 'GET':
-        state_term = deposit.downloading_status()
-        state_description = 'Deposit initiation: ' + deposit.downloading_status()
+        state_term = deposit_downloading_status(uuid)
+        state_description = 'Deposit initiation: ' + deposit_downloading_status(uuid)
 
         response = HttpResponse(render_to_string('locations/api/sword/state.xml', locals()))
         response['Content-Type'] = 'application/atom+xml;type=feed'
