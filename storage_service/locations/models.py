@@ -1154,9 +1154,6 @@ class Location(models.Model):
     enabled = models.BooleanField(default=True,
         help_text="True if space can be accessed.")
     # SWORD-related attributes
-    downloads_attempted = models.IntegerField(default=0)
-    downloads_completed = models.IntegerField(default=0)
-    download_completion_time = models.DateTimeField(default=None, null=True, blank=True)
     deposit_completion_time = models.DateTimeField(default=None, null=True, blank=True)
 
     class Meta:
@@ -1187,26 +1184,46 @@ class Location(models.Model):
     def has_been_submitted_for_processing(self):
         return self.deposit_completion_time != None
 
+class LocationPipeline(models.Model):
+    location = models.ForeignKey('Location', to_field='uuid')
+    pipeline = models.ForeignKey('Pipeline', to_field='uuid')
+
+    class Meta:
+        verbose_name = "Location associated with a Pipeline"
+
+    def __unicode__(self):
+        return u'{} is associated with {}'.format(self.location, self.pipeline)
+
+# For SWORD asynchronous downloading support
+class LocationDownloadTask(models.Model):
+    uuid = UUIDField(editable=False, unique=True, version=4,
+        help_text="Unique identifier")
+    location = models.ForeignKey('Location', to_field='uuid')
+
+    downloads_attempted = models.IntegerField(default=0)
+    downloads_completed = models.IntegerField(default=0)
+    download_completion_time = models.DateTimeField(default=None, null=True, blank=True)
+
     """
-    In order to determine the downloading status (whether or not the
-    deposit is ready to be finalized) we need to check for three
-    possibilities:
+    In order to determine the downloading status we need to check
+    for three possibilities:
 
-    1) The deposit involved no asynchronous depositing. The
-       downloads_attempted DB row column should be 0.
+    1) The task involved no downloads. The downloads_attempted
+       DB row column should be 0. This would be unusual, however,
+       as there's no reason to make a task if not attempting
+       to download anything.
 
-    2) The deposit involved asynchronous depositing, but
-       the depositing is incomplete. downloads_attempted is
-       greater than 0, but download_completion_time is not
-       set.
+    2) The task is downloading, but the downloading is not
+       yet complete. downloads_attempted is greater than 0, but
+       download_completion_time is not set.
 
-    3) The deposit involved asynchronous depositing and
-       completed successfully. download_completion_time is set.
-       downloads_attempted is equal to downloads_completed.
+    3) The task finished downloading and completed successfully.
+       download_completion_time is set. downloads_attempted is
+       equal to downloads_completed.
 
-    4) The deposit involved asynchronous depositing and
-       completed unsuccessfully. download_completion_time is set.
-       downloads_attempted isn't equal to downloads_completed.
+    4) The task finished downloading and completed unsuccessfully.
+       download_completion_time is set. downloads_attempted isn't
+       equal to downloads_completed.
     """
     def downloading_status(self):
         if self.downloads_attempted == 0:
@@ -1220,16 +1237,6 @@ class Location(models.Model):
                 else:
                     return 'failed'
 
-
-class LocationPipeline(models.Model):
-    location = models.ForeignKey('Location', to_field='uuid')
-    pipeline = models.ForeignKey('Pipeline', to_field='uuid')
-
-    class Meta:
-        verbose_name = "Location associated with a Pipeline"
-
-    def __unicode__(self):
-        return u'{} is associated with {}'.format(self.location, self.pipeline)
 
 ########################## PACKAGES ##########################
 # NOTE If the Packages section gets much bigger, move to its own app
