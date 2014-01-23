@@ -7,6 +7,7 @@ import os
 import shutil
 import tempfile
 import time
+import traceback
 import urllib
 import urllib2
 
@@ -167,12 +168,9 @@ def collection(request, space_uuid):
             
             if request.body != '':
                 try:
-                    temp_filepath = helpers.write_request_body_to_temp_file(request)
+                    mets_data = _parse_name_and_content_urls_from_request_body(request)
 
-                    # parse name and content URLs out of XML
-                    try:
-                        mets_data = _parse_name_and_content_urls_from_mets_file(temp_filepath)
-
+                    if mets_data != None:
                         if mets_data['deposit_name'] == None:
                             return _sword_error_response(request, 400, 'No deposit name found in XML.')
                         else:
@@ -189,23 +187,17 @@ def collection(request, space_uuid):
                                 deposit_uuid = _create_deposit_directory_and_db_entry(deposit_specification)
 
                                 if deposit_uuid != None:
+                                    _handle_batch_download_depending_on_whether_request_specifies_finalization(deposit_uuid, request, mets_data)
                                     if request.META['HTTP_IN_PROGRESS'] == 'true':
-                                        # create subprocess so content URLs can be downloaded asynchronously
-                                        spawn_download_task(deposit_uuid, mets_data['object_content_urls'])
                                         return _deposit_receipt_response(request, deposit_uuid, 201)
                                     else:
-                                        # fetch content synchronously then finalize transfer
-                                        _fetch_content(deposit_uuid, mets_data['object_content_urls'])
-                                        return deposit_edit(request, deposit_uuid)
+                                        return _deposit_receipt_response(request, deposit_uuid, 200)
                                 else:
                                     return _sword_error_response(request, 500, 'Could not create deposit: contact an administrator.')
-                    except etree.XMLSyntaxError as e:
+                    else:
                         return _sword_error_response(request, 412, 'Error parsing XML ({error_message}).'.format(error_message=str(e)))
                 except Exception as e:
-                    import sys
-                    exc_type, exc_obj, exc_tb = sys.exc_info()
-                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-                    return _sword_error_response(request, 400, 'Contact administration: ' + str(exc_type) + ' ' + str(fname) + ' ' + str(exc_tb.tb_lineno))
+                    return _sword_error_response(request, 400, traceback.format_exc())
             elif source_location or relative_path_to_files:
                 if not source_location or not relative_path_to_files:
                     if not source_location:
@@ -257,6 +249,27 @@ def deposit_from_location_relative_path(source_location, relative_path_to_files,
     result =  _activate_transfer_and_request_approval_from_pipeline(deposit, sword_server)
     result['deposit_uuid'] = deposit_uuid
     return result
+
+# If HTTP_IN_PROGRESS is set to true, spawn async batch download
+# Once async finalization is implemented, this function will be redundant
+def _handle_batch_download_depending_on_whether_request_specifies_finalization(deposit_uuid, request, mets_data):
+    if request.META['HTTP_IN_PROGRESS'] == 'true':
+        # create subprocess so content URLs can be downloaded asynchronously
+        spawn_download_task(deposit_uuid, mets_data['object_content_urls'])
+    else:
+        # fetch content synchronously then finalize transfer
+        _fetch_content(deposit_uuid, mets_data['object_content_urls'])
+
+# returns None if didn't parse correctly
+def _parse_name_and_content_urls_from_request_body(request):
+    temp_filepath = helpers.write_request_body_to_temp_file(request)
+
+    # parse name and content URLs out of XML
+    try:
+        mets_data = _parse_name_and_content_urls_from_mets_file(temp_filepath)
+        return mets_data
+    except etree.XMLSyntaxError as e:
+        return None
 
 def _parse_name_and_content_urls_from_mets_file(filepath):
     tree = etree.parse(filepath)
@@ -345,6 +358,13 @@ def deposit_edit(request, uuid):
         response['Content-Type'] = 'application/atom+xml'
         return response
     elif request.method == 'POST':
+        if request.body != '':
+            mets_data = _parse_name_and_content_urls_from_request_body(request)
+            if mets_data != None:
+                _handle_batch_download_depending_on_whether_request_specifies_finalization(uuid, request, mets_data)
+            else:
+                return _sword_error_response(request, 412, 'Error parsing XML ({error_message}).'.format(error_message=str(e)))
+
         # is the deposit ready to be processed?
         if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
             if deposit_downloading_status(uuid) == 'complete':
