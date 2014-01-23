@@ -18,7 +18,7 @@ class PipelineForm(forms.ModelForm):
 class SpaceForm(forms.ModelForm):
     class Meta:
         model = Space
-        fields = ('access_protocol', 'size', 'path')
+        fields = ('access_protocol', 'size', 'path', 'staging_path')
 
     def __init__(self, *args, **kwargs):
         super(SpaceForm, self).__init__(*args, **kwargs)
