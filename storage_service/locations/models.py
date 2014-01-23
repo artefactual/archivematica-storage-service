@@ -88,6 +88,8 @@ class Space(models.Model):
         help_text="Amount used in bytes")
     path = models.TextField(validators=[validate_space_path],
         help_text="Absolute path to the space on the storage service machine.")
+    staging_path=models.TextField(validators=[validate_space_path],
+        help_text="Absolute path to a staging area.  Must be UNIX filesystem compatible, preferably on the same filesystem as the path.")
     verified = models.BooleanField(default=False,
        help_text="Whether or not the space has been verified to be accessible.")
     last_verified = models.DateTimeField(default=None, null=True, blank=True,

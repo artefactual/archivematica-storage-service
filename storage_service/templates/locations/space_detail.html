@@ -8,6 +8,7 @@
   <dl>
     <dt>Access Protocol</dt> <dd>{{ space.get_access_protocol_display }}</dd>
     <dt>Path</dt> <dd>{{ space.path }}</dd>
+    <dt>Staging Path</dt> <dd>{{ space.staging_path}}</dd>
     <dt>Usage</dt> <dd>{{ space.used|filesizeformat }} / {{ space.size|filesizeformat }}</dd>
     <dt>Last Verified</dt> <dd>{{ space.last_verified }}</dd>
     {% for k, v in space.child.items %}
