@@ -531,7 +531,7 @@ class Location(models.Model):
     TRANSFER_SOURCE = 'TS'
     AIP_STORAGE = 'AS'
     # QUARANTINE = 'QU'
-    # BACKLOG = 'BL'
+    BACKLOG = 'BL'
     CURRENTLY_PROCESSING = 'CP'
     STORAGE_SERVICE_INTERNAL = 'SS'
 
@@ -539,7 +539,7 @@ class Location(models.Model):
         (TRANSFER_SOURCE, 'Transfer Source'),
         (AIP_STORAGE, 'AIP Storage'),
         # (QUARANTINE, 'Quarantine'),
-        # (BACKLOG, 'Backlog Transfer'),
+        (BACKLOG, 'Transfer Backlog'),
         (CURRENTLY_PROCESSING, 'Currently Processing'),
     )
     purpose = models.CharField(max_length=2,
@@ -915,6 +915,9 @@ class Pipeline(models.Model):
             {'default': 'default_aip_storage',
              'new': 'new_aip_storage',
              'purpose': Location.AIP_STORAGE},
+            {'default': 'default_backlog',
+             'new': 'new_backlog',
+             'purpose': Location.BACKLOG},
         ]
         for p in purposes:
             defaults = utils.get_setting(p['default'], [])
