@@ -1,15 +1,9 @@
 # stdlib, alphabetical
 import datetime
-import json
 from lxml import etree as etree
-from multiprocessing import Process
 import os
 import shutil
-import tempfile
-import time
 import traceback
-import urllib
-import urllib2
 
 # Core Django, alphabetical
 from django.core.exceptions import ObjectDoesNotExist
@@ -26,83 +20,7 @@ from locations.models import Location
 from locations.models import Pipeline
 from locations.models import Space
 from locations.models import SwordServer
-from locations.models import LocationDownloadTask
 import helpers
-
-"""
-Return deposit status, indicating whether any incomplete or failed batch
-downloads exist.
-"""
-# TODO: move to helpers
-def deposit_downloading_status(deposit_uuid):
-    deposit = helpers.get_deposit(deposit_uuid)
-    tasks = LocationDownloadTask.objects.filter(location=deposit)
-    if len(tasks) > 0:
-        # check each task for completion and failure
-        complete = True
-        failed = False
-
-        for task in tasks:
-            if task.downloading_status() != 'complete':
-                complete = False
-                if task.downloading_status() == 'failed':
-                    failed = True
-        if failed:
-            return 'failed'
-        else:
-            if complete:
-                return 'complete'
-            else:
-                return 'incomplete'
-    else:
-        return 'complete'
-
-"""
-Spawn an asynchrnous batch download
-"""
-# TODO: move to helpers
-def spawn_download_task(deposit_uuid, object_content_urls):
-    p = Process(target=_fetch_content, args=(deposit_uuid, object_content_urls))
-    p.start()
-
-"""
-Download a number of files, keeping track of progress and success using a
-database record. After downloading, finalize deposit if requested.
-"""
-# TODO: move to helpers
-def _fetch_content(deposit_uuid, object_content_urls):
-    # add download task to keep track of progress
-    deposit = helpers.get_deposit(deposit_uuid)
-    task = LocationDownloadTask(location=deposit)
-    task.downloads_attempted = len(object_content_urls)
-    task.downloads_completed = 0
-    task.save()
-
-    # download the files
-    temp_dir = tempfile.mkdtemp()
-
-    completed = 0
-    for url in object_content_urls:
-        try:
-            filename = helpers.download_resource(url, temp_dir)
-            shutil.move(os.path.join(temp_dir, filename),
-                os.path.join(deposit.full_path(), filename))
-            completed += 1
-        except:
-            pass
-
-    # remove temp dir
-    shutil.rmtree(temp_dir)
-
-    # record the number of successful downloads and completion time
-    task.downloads_completed = completed
-    task.download_completion_time = timezone.now()
-    task.save()
-
-    # if the deposit is ready for finalization and this is the last batch
-    # download to complete, then finalize
-    if deposit.ready_for_finalization and deposit_downloading_status(deposit_uuid) == 'complete':
-        _finalize_if_not_empty(deposit_uuid)
 
 """
 Example GET of service document:
@@ -215,7 +133,7 @@ def collection(request, space_uuid):
                                 else:
                                     return _sword_error_response(request, 500, 'Could not create deposit: contact an administrator.')
                     else:
-                        return _sword_error_response(request, 412, 'Error parsing XML ({error_message}).'.format(error_message=str(e)))
+                        return _sword_error_response(request, 412, 'Error parsing XML')
                 except Exception as e:
                     return _sword_error_response(request, 400, traceback.format_exc())
             elif source_location or relative_path_to_files:
@@ -238,6 +156,13 @@ def collection(request, space_uuid):
     else:
         return _sword_error_response(request, 405, 'This endpoint only responds to the GET and POST HTTP methods.')
 
+"""
+Create and approve deposit using files in an existing location at a relative
+path within the location
+
+Returns dict combining returned response from the dashboard with the UUID of
+the new deposit
+"""
 def deposit_from_location_relative_path(source_location, relative_path_to_files, space_uuid=None, pipeline_uuid=None):
     # if no explicit space or pipeline specified, nothing can be done
     if space_uuid == None and pipeline_uuid == None:
@@ -266,13 +191,11 @@ def deposit_from_location_relative_path(source_location, relative_path_to_files,
     deposit_uuid = _create_deposit_directory_and_db_entry(deposit_specification)
     deposit = helpers.get_deposit(deposit_uuid)
 
-    result =  _activate_transfer_and_request_approval_from_pipeline(deposit, sword_server)
+    result = helpers.activate_transfer_and_request_approval_from_pipeline(deposit, sword_server)
     result['deposit_uuid'] = deposit_uuid
     return result
 
 """
-Rename this function...
-
 Spawn a batch download, optionally setting finalization beforehand.
 
 If HTTP_IN_PROGRESS is set to true, spawn async batch download
@@ -286,9 +209,13 @@ def _spawn_batch_download_and_flag_finalization_if_requested(deposit_uuid, reque
         deposit.save()
 
     # create subprocess so content URLs can be downloaded asynchronously
-    spawn_download_task(deposit_uuid, mets_data['object_content_urls'])
+    helpers.spawn_download_task(deposit_uuid, mets_data['object_content_urls'])
 
-# returns None if didn't parse correctly
+"""
+From a request's body, parse deposit name and control URLs from METS XML
+
+Returns None if parsing fails
+"""
 def _parse_name_and_content_urls_from_request_body(request):
     temp_filepath = helpers.write_request_body_to_temp_file(request)
 
@@ -299,6 +226,11 @@ def _parse_name_and_content_urls_from_request_body(request):
     except etree.XMLSyntaxError as e:
         return None
 
+"""
+Parse deposit name and control URLS from a METS XML file
+
+Returns a dict with the keys 'deposit_name' and 'object_content_urls'
+"""
 def _parse_name_and_content_urls_from_mets_file(filepath):
     tree = etree.parse(filepath)
     root = tree.getroot()
@@ -325,6 +257,8 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
 """
 Create a new deposit location from a specification, optionally copying
 files to it from a source path.
+
+Returns deposit's UUID is creation was successful
 """
 def _create_deposit_directory_and_db_entry(deposit_specification):
     # Formulate deposit name using specification
@@ -422,33 +356,16 @@ def deposit_edit(request, uuid):
     else:
         return _sword_error_response(request, 405, 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.')
 
-#
-#
-#  return True if completed successfully
-#
-def _finalize_if_not_empty(deposit_uuid):
-    deposit = helpers.get_deposit(deposit_uuid)
-    if len(os.listdir(deposit.full_path())) > 0:
-        # get sword server so we can access pipeline information
-        sword_server = SwordServer.objects.get(space=deposit.space)
-        result = _activate_transfer_and_request_approval_from_pipeline(deposit, sword_server)
-        #result['deposit_uuid'] = deposit_uuid
+"""
+If a request specifies the deposit should be finalized, synchronously finalize
+or, if downloading is incomplete, mark for finalization.
 
-        if 'error' in result:
-            return _sword_error_response(request, 500, result['message'])
-
-        # mark deposit as complete and return deposit receipt
-        deposit.deposit_completion_time = timezone.now()
-        deposit.save()
-
-        return True
-    else:
-        return False
-
+Returns deposit receipt response or error response
+"""
 def _finalize_or_mark_for_finalization(request, deposit_uuid):
     if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
-        if deposit_downloading_status(deposit_uuid) == 'complete':
-            completed = _finalize_if_not_empty(deposit_uuid)
+        if helpers.deposit_downloading_status(deposit_uuid) == 'complete':
+            completed = helpers.finalize_if_not_empty(deposit_uuid)
             if completed:
                 return _deposit_receipt_response(request, deposit_uuid, 200)
             else:
@@ -463,69 +380,6 @@ def _finalize_or_mark_for_finalization(request, deposit_uuid):
             return _deposit_receipt_response(request, uuid, 203) # change to 200
     else:
         return _sword_error_response(request, 400, 'The In-Progress header must be set to false when starting deposit processing.')
-
-"""
-Handle requesting the approval of a transfer from a pipeline via a REST call.
-
-This function returns a dict representation of the results, either returning
-the JSON returned by the request to the pipeline (converted to a dict) or
-a dict indicating a pipeline authentication issue.
-
-The dict representation is of the form:
-
-{
-    'error': <True|False>,
-    'message': <description of success or failure>
-}
-"""
-def _activate_transfer_and_request_approval_from_pipeline(deposit, sword_server):
-    # make sure pipeline API access is configured
-    for property in ['remote_name', 'api_username', 'api_key']:
-        if getattr(sword_server.pipeline, property)=='':
-            property_description = property.replace('_', ' ')
-            # TODO: fix this
-            return _sword_error_response(request, 500, 'Pipeline {property} not set.'.format(property=property_description))
-
-    # TODO: add error if more than one location is returned
-    processing_location = Location.objects.get(
-        pipeline=sword_server.pipeline,
-        purpose=Location.CURRENTLY_PROCESSING)
-
-    destination_path = os.path.join(
-        processing_location.full_path(),
-        'watchedDirectories/activeTransfers/standardTransfer',
-        os.path.basename(deposit.full_path()))
-
-    # move to standard transfers directory
-    destination_path = helpers.pad_destination_filepath_if_it_already_exists(destination_path)
-    shutil.move(deposit.full_path(), destination_path)
-
-    # wait to make sure the MCP responds to the directory being in the watch directory
-    time.sleep(4)
-
-    # make request to pipeline's transfer approval API
-    data = urllib.urlencode({
-        'username': sword_server.pipeline.api_username,
-        'api_key': sword_server.pipeline.api_key,
-        'directory': os.path.basename(destination_path),
-        'type': 'standard' # TODO: make this customizable via a URL param
-    })
-
-    pipeline_endpoint_url = 'http://' + sword_server.pipeline.remote_name + '/api/transfer/approve/'
-    approve_request = urllib2.Request(pipeline_endpoint_url, data)
-
-    try:
-        approve_response = urllib2.urlopen(approve_request)
-    except:
-        # move back to deposit directory
-        shutil.move(destination_path, deposit.full_path())
-        return {
-            'error': True,
-            'message': 'Request to pipeline ' + sword_server.pipeline.uuid + ' transfer approval API failed: check credentials and REST API IP whitelist.'
-        } #_sword_error_response(request, 500, 'Request to pipeline transfer approval API failed: check credentials and REST API IP whitelist.')
-
-    result = json.loads(approve_response.read())
-    return result
 
 """
 Example GET of files list:
@@ -561,10 +415,10 @@ def deposit_media(request, uuid):
         return HttpResponse(str(os.listdir(deposit.full_path())))
     elif request.method == 'PUT':
         # replace a file in the deposit
-        return _handle_upload_request(request, deposit, True)
+        return _handle_adding_to_or_replacing_file_in_deposit(request, deposit, True)
     elif request.method == 'POST':
         # add a file to the deposit
-        return _handle_upload_request(request, deposit)
+        return _handle_adding_to_or_replacing_file_in_deposit(request, deposit)
     elif request.method == 'DELETE':
         filename = request.GET.get('filename', '')
         if filename != '':
@@ -586,7 +440,35 @@ def deposit_media(request, uuid):
     else:
         return _sword_error_response(request, 405, 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.')
 
-def _handle_upload_request(request, deposit, replace_file=False):
+"""
+Example GET of state:
+
+  curl -v http://localhost:8000/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/state/
+"""
+def deposit_state(request, uuid):
+    deposit = helpers.get_deposit(uuid)
+
+    if deposit == None:
+        return _sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=uuid))
+
+    if request.method == 'GET':
+        state_term = helpers.deposit_downloading_status(uuid)
+        state_description = 'Deposit initiation: ' + helpers.deposit_downloading_status(uuid)
+
+        response = HttpResponse(render_to_string('locations/api/sword/state.xml', locals()))
+        response['Content-Type'] = 'application/atom+xml;type=feed'
+        return response
+    else:
+        return _sword_error_response(request, 405, 'This endpoint only responds to the GET HTTP method.')
+
+"""
+Parse a destination filename from an HTTP Content-Disposition header and
+either add or replace it
+
+Returns a response with an HTTP status code indicating whether creation (201)
+or updating (204) has occurred or an error response
+"""
+def _handle_adding_to_or_replacing_file_in_deposit(request, deposit, replace_file=False):
     if 'HTTP_CONTENT_DISPOSITION' in request.META:
         filename = helpers.parse_filename_from_content_disposition(request.META['HTTP_CONTENT_DISPOSITION']) 
 
@@ -618,6 +500,13 @@ def _handle_upload_request(request, deposit, replace_file=False):
     else:
         return _sword_error_response(request, 400, 'Content-disposition must be set in request header.')
 
+"""
+Write the HTTP request body to a file and, if the HTTP Content-MD5 header is
+set, make sure the destination file has the expected checkcum
+
+Returns a response (with a specified HTTP status code) or an error response
+if a checksum has been provided but the destination file's is different
+"""
 def _handle_upload_request_with_potential_md5_checksum(request, file_path, success_status_code):
     temp_filepath = helpers.write_request_body_to_temp_file(request)
     if 'HTTP_CONTENT_MD5' in request.META:
@@ -636,27 +525,8 @@ def _handle_upload_request_with_potential_md5_checksum(request, file_path, succe
         return HttpResponse(status=success_status_code)
 
 """
-Example GET of state:
-
-  curl -v http://localhost:8000/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/state/
+Generate SWORD 2.0 deposit receipt response
 """
-def deposit_state(request, uuid):
-    deposit = helpers.get_deposit(uuid)
-
-    if deposit == None:
-        return _sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=uuid))
-
-    if request.method == 'GET':
-        state_term = deposit_downloading_status(uuid)
-        state_description = 'Deposit initiation: ' + deposit_downloading_status(uuid)
-
-        response = HttpResponse(render_to_string('locations/api/sword/state.xml', locals()))
-        response['Content-Type'] = 'application/atom+xml;type=feed'
-        return response
-    else:
-        return _sword_error_response(request, 405, 'This endpoint only responds to the GET HTTP method.')
-
-# respond with SWORD 2.0 deposit receipt XML
 def _deposit_receipt_response(request, deposit_uuid, status_code):
     deposit = helpers.get_deposit(deposit_uuid)
 
@@ -679,16 +549,13 @@ def _deposit_receipt_response(request, deposit_uuid, status_code):
     response['Location'] = '/api/v1/location/' + deposit_uuid + '/sword/'
     return response
 
-def _sword_error_response_render(request, error_details):
+"""
+Generate SWORD 2.0 error response
+"""
+def _sword_error_response(request, status, summary):
+    error_details = {'summary': summary, 'status': status}
     error_details['request'] = request
     error_details['update_time'] = datetime.datetime.now().__str__()
     error_details['user_agent'] = request.META['HTTP_USER_AGENT']
     error_xml = render_to_string('locations/api/sword/error.xml', error_details)
     return HttpResponse(error_xml, status=error_details['status'])
-
-def _sword_error_response(request, status, summary):
-    error = _error(status, summary)
-    return _sword_error_response_render(request, error)
-
-def _error(status, summary):
-    return {'summary': summary, 'status': status}
