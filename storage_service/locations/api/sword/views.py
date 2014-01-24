@@ -139,9 +139,11 @@ def collection(request, space_uuid):
                     return _sword_error_response(request, 400, traceback.format_exc())
             elif source_location != '' or relative_path_to_files != '':
                 if source_location == '' or relative_path_to_files == '':
-                    return HttpResponse('error both must be set') # TODO: should be HTTP 400
+                    if source_location == '':
+                        return _sword_error_response(request, 400, 'relative_path_to_files is set, but source_location is not.')
+                    else:
+                        return _sword_error_response(request, 400, 'source_location is set, but relative_path_to_files is not.')
                 else:
-                    # TODO: consider removing this?
                     result = deposit_from_location_relative_path(source_location, relative_path_to_files, space.uuid)
                     if 'error' in result and result['error'] != None:
                         return _sword_error_response(request, 500, result['message'])
