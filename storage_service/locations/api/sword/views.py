@@ -101,7 +101,7 @@ def _fetch_content(deposit_uuid, object_content_urls):
 
     # if the deposit is ready for finalization and this is the last batch
     # download to complete, then finalize
-    if deposit.ready_for_finalization and deposit_downloading_status(uuid) == 'complete':
+    if deposit.ready_for_finalization and deposit_downloading_status(deposit_uuid) == 'complete':
         _finalize_if_not_empty(deposit_uuid)
 
 """
@@ -447,7 +447,7 @@ def _finalize_or_mark_for_finalization(request, deposit_uuid):
         if deposit_downloading_status(deposit_uuid) == 'complete':
             completed = _finalize_if_not_empty(deposit_uuid)
             if completed:
-                return _deposit_receipt_response(request, uuid, 200)
+                return _deposit_receipt_response(request, deposit_uuid, 200)
             else:
                 return _sword_error_response(request, 400, 'This deposit contains no files.')
         else:
