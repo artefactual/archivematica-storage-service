@@ -29,6 +29,11 @@ from locations.models import SwordServer
 from locations.models import LocationDownloadTask
 import helpers
 
+"""
+Return deposit status, indicating whether any incomplete or failed batch
+downloads exist.
+"""
+# TODO: move to helpers
 def deposit_downloading_status(deposit_uuid):
     deposit = helpers.get_deposit(deposit_uuid)
     tasks = LocationDownloadTask.objects.filter(location=deposit)
@@ -52,10 +57,19 @@ def deposit_downloading_status(deposit_uuid):
     else:
         return 'complete'
 
+"""
+Spawn an asynchrnous batch download
+"""
+# TODO: move to helpers
 def spawn_download_task(deposit_uuid, object_content_urls):
     p = Process(target=_fetch_content, args=(deposit_uuid, object_content_urls))
     p.start()
 
+"""
+Download a number of files, keeping track of progress and success using a
+database record. After downloading, finalize deposit if requested.
+"""
+# TODO: move to helpers
 def _fetch_content(deposit_uuid, object_content_urls):
     # add download task to keep track of progress
     deposit = helpers.get_deposit(deposit_uuid)
@@ -84,6 +98,11 @@ def _fetch_content(deposit_uuid, object_content_urls):
     task.downloads_completed = completed
     task.download_completion_time = timezone.now()
     task.save()
+
+    # if the deposit is ready for finalization and this is the last batch
+    # download to complete, then finalize
+    if deposit.ready_for_finalization and deposit_downloading_status(uuid) == 'complete':
+        _finalize_if_not_empty(deposit_uuid)
 
 """
 Example GET of service document:
@@ -187,7 +206,8 @@ def collection(request, space_uuid):
                                 deposit_uuid = _create_deposit_directory_and_db_entry(deposit_specification)
 
                                 if deposit_uuid != None:
-                                    _handle_batch_download_depending_on_whether_request_specifies_finalization(deposit_uuid, request, mets_data)
+                                    _spawn_batch_download_and_flag_finalization_if_requested(deposit_uuid, request, mets_data)
+
                                     if request.META['HTTP_IN_PROGRESS'] == 'true':
                                         return _deposit_receipt_response(request, deposit_uuid, 201)
                                     else:
@@ -247,15 +267,23 @@ def deposit_from_location_relative_path(source_location, relative_path_to_files,
     result['deposit_uuid'] = deposit_uuid
     return result
 
-# If HTTP_IN_PROGRESS is set to true, spawn async batch download
-# Once async finalization is implemented, this function will be redundant
-def _handle_batch_download_depending_on_whether_request_specifies_finalization(deposit_uuid, request, mets_data):
-    if request.META['HTTP_IN_PROGRESS'] == 'true':
-        # create subprocess so content URLs can be downloaded asynchronously
-        spawn_download_task(deposit_uuid, mets_data['object_content_urls'])
-    else:
-        # fetch content synchronously then finalize transfer
-        _fetch_content(deposit_uuid, mets_data['object_content_urls'])
+"""
+Rename this function...
+
+Spawn a batch download, optionally setting finalization beforehand.
+
+If HTTP_IN_PROGRESS is set to true, spawn async batch download
+"""
+def _spawn_batch_download_and_flag_finalization_if_requested(deposit_uuid, request, mets_data):
+    if request.META['HTTP_IN_PROGRESS'] == 'false':
+        # Indicate that the deposit is ready for finalization (after all batch
+        # downloads have completed)
+        deposit = helpers.get_deposit(deposit_uuid)
+        deposit.ready_for_finalization = True
+        deposit.save()
+
+    # create subprocess so content URLs can be downloaded asynchronously
+    spawn_download_task(deposit_uuid, mets_data['object_content_urls'])
 
 # returns None if didn't parse correctly
 def _parse_name_and_content_urls_from_request_body(request):
@@ -291,19 +319,25 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
         'object_content_urls': object_content_urls
     }
 
+"""
+Create a new deposit location from a specification, optionally copying
+files to it from a source path.
+"""
 def _create_deposit_directory_and_db_entry(deposit_specification):
+    # Formulate deposit name using specification
     if 'name' in deposit_specification:
         deposit_name = deposit_specification['name']
     else:
         deposit_name = 'Untitled'
 
+    # Formulate deposit path using space path and deposit name
     space = Space.objects.get(uuid=deposit_specification['space_uuid']) 
-
     deposit_path = os.path.join(
         space.path,
         deposit_name
     )
 
+    # Pad deposit path, if it already exists, and either copy source data to it or just create it
     deposit_path = helpers.pad_destination_filepath_if_it_already_exists(deposit_path)
     if 'source_path' in deposit_specification and deposit_specification['source_path'] != '':
         shutil.copytree(deposit_specification['source_path'], deposit_path)
@@ -311,6 +345,7 @@ def _create_deposit_directory_and_db_entry(deposit_specification):
         os.mkdir(deposit_path)
         os.chmod(deposit_path, 02770) # drwxrws---
 
+    # Create SWORD deposit location using deposit name and path
     if os.path.exists(deposit_path):
         deposit = Location.objects.create(description=deposit_name, relative_path=os.path.basename(deposit_path),
             space=space, purpose=Location.SWORD_DEPOSIT)
@@ -355,35 +390,20 @@ def deposit_edit(request, uuid):
         response['Content-Type'] = 'application/atom+xml'
         return response
     elif request.method == 'POST':
+        # If METS XML has been sent to indicate a list of files needing downloading, handle it
         if request.body != '':
             mets_data = _parse_name_and_content_urls_from_request_body(request)
             if mets_data != None:
-                _handle_batch_download_depending_on_whether_request_specifies_finalization(uuid, request, mets_data)
+                _spawn_batch_download_and_flag_finalization_if_requested(uuid, request, mets_data)
+                return _deposit_receipt_response(request, uuid, 200)
             else:
                 return _sword_error_response(request, 412, 'Error parsing XML ({error_message}).'.format(error_message=str(e)))
-
-        # is the deposit ready to be processed?
-        if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
-            if deposit_downloading_status(uuid) == 'complete':
-                if len(os.listdir(deposit.full_path())) > 0:
-                    # get sword server so we can access pipeline information
-                    sword_server = SwordServer.objects.get(space=deposit.space)
-                    result = _activate_transfer_and_request_approval_from_pipeline(deposit, sword_server)
-                    #result['deposit_uuid'] = deposit_uuid
-
-                    if 'error' in result:
-                        return _sword_error_response(request, 500, result['message'])
-
-                    # mark deposit as complete and return deposit receipt
-                    deposit.deposit_completion_time = timezone.now()
-                    deposit.save()
-                    return _deposit_receipt_response(request, uuid, 200)
-                else:
-                    return _sword_error_response(request, 400, 'This deposit contains no files.')
-            else:
-                return _sword_error_response(request, 400, 'Deposit is not complete or has failed.')
         else:
-            return _sword_error_response(request, 400, 'The In-Progress header must be set to false when starting deposit processing.')
+            # Attempt to finalize (if requested), otherwise just return deposit receipt
+            if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
+                return _finalize_or_mark_for_finalization(request, uuid)
+            else:
+                return _deposit_receipt_response(request, uuid, 200)
     elif request.method == 'PUT':
         # TODO: implement update deposit
         return HttpResponse(status=204) # No content
@@ -398,6 +418,48 @@ def deposit_edit(request, uuid):
         return HttpResponse(status=204) # No content
     else:
         return _sword_error_response(request, 405, 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.')
+
+#
+#
+#  return True if completed successfully
+#
+def _finalize_if_not_empty(deposit_uuid):
+    deposit = helpers.get_deposit(deposit_uuid)
+    if len(os.listdir(deposit.full_path())) > 0:
+        # get sword server so we can access pipeline information
+        sword_server = SwordServer.objects.get(space=deposit.space)
+        result = _activate_transfer_and_request_approval_from_pipeline(deposit, sword_server)
+        #result['deposit_uuid'] = deposit_uuid
+
+        if 'error' in result:
+            return _sword_error_response(request, 500, result['message'])
+
+        # mark deposit as complete and return deposit receipt
+        deposit.deposit_completion_time = timezone.now()
+        deposit.save()
+
+        return True
+    else:
+        return False
+
+def _finalize_or_mark_for_finalization(request, deposit_uuid):
+    if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
+        if deposit_downloading_status(deposit_uuid) == 'complete':
+            completed = _finalize_if_not_empty(deposit_uuid)
+            if completed:
+                return _deposit_receipt_response(request, uuid, 200)
+            else:
+                return _sword_error_response(request, 400, 'This deposit contains no files.')
+        else:
+            # Indicate that the deposit is ready for finalization (after all batch
+            # downloads have completed
+            deposit = helpers.get_deposit(deposit_uuid)
+            deposit.ready_for_finalization = True
+            deposit.save()
+
+            return _deposit_receipt_response(request, uuid, 203) # change to 200
+    else:
+        return _sword_error_response(request, 400, 'The In-Progress header must be set to false when starting deposit processing.')
 
 """
 Handle requesting the approval of a transfer from a pipeline via a REST call.

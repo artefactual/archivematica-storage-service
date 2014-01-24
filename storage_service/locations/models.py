@@ -314,8 +314,10 @@ class Location(models.Model):
         help_text="Amount used, in bytes.")
     enabled = models.BooleanField(default=True,
         help_text="True if space can be accessed.")
+
     # SWORD-related attributes
     deposit_completion_time = models.DateTimeField(default=None, null=True, blank=True)
+    ready_for_finalization = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Location"
