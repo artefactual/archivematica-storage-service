@@ -174,15 +174,150 @@ class Space(models.Model):
             entries = []
         return {'directories': directories, 'entries': entries}
 
+    def move_to_storage_service(self, source_path, destination_path,
+                                destination_space, *args, **kwargs):
+        """ Move source_path to destination_path in the staging area of destination_space.
+
+        If source_path is not an absolute path, it is assumed to be relative to
+        Space.path.
+
+        destination_path must be relative and destination_space.staging_path
+        MUST be locally accessible to the storage service.
+
+        This is implemented by the child protocol spaces.
+        """
+        logging.debug('TO: src: {}'.format(source_path))
+        logging.debug('TO: dst: {}'.format(destination_path))
+        logging.debug('TO: staging: {}'.format(destination_space.staging_path))
+        # TODO move the path mangling to here?
+        # TODO enforce source_path is inside self.path
+        try:
+            self.get_child_space().move_to_storage_service(
+                source_path, destination_path, destination_space, *args, **kwargs)
+        except AttributeError:
+            raise NotImplementedError('{} space has not implemented move_to_storage_service'.format(self.get_access_protocol_display()))
+
+    def post_move_to_storage_service(self, *args, **kwargs):
+        """ Hook for any actions that need to be taken after moving to the storage service. """
+        try:
+            self.get_child_space().post_move_to_storage_service(*args, **kwargs)
+        except AttributeError:
+            # This is optional for the child class to implement
+            pass
+
+    def move_from_storage_service(self, source_path, destination_path,
+                                  *args, **kwargs):
+        """ Move source_path in this Space's staging area to destination_path in this Space.
+
+        That is, moves self.staging_path/source_path to self.path/destination_path.
+
+        If destination_path is not an absolute path, it is assumed to be
+        relative to Space.path.
+
+        source_path must be relative to self.staging_path.
+
+        This is implemented by the child protocol spaces.
+        """
+        logging.debug('FROM: src: {}'.format(source_path))
+        logging.debug('FROM: dst: {}'.format(destination_path))
+        # TODO move the path mangling to here?
+        # TODO enforce destination_path is inside self.path
+        try:
+            self.get_child_space().move_from_storage_service(
+                source_path, destination_path, *args, **kwargs)
+        except AttributeError:
+            raise NotImplementedError('{} space has not implemented move_from_storage_service'.format(self.get_access_protocol_display()))
+
+    def post_move_from_storage_service(self, *args, **kwargs):
+        """ Hook for any actions that need to be taken after moving from the storage service to the final destination. """
+        try:
+            self.get_child_space().post_move_from_storage_service(*args, **kwargs)
+        except AttributeError:
+            # This is optional for the child class to implement
+            pass
+
+    # HELPER FUNCTIONS
+
+    def _move_locally(self, source_path, destination_path, mode=None):
+        """ Moves a file from source_path to destination_path on the local filesystem. """
+        logging.info("Moving from {} to {}".format(source_path, destination_path))
+
+        # Create directories
+        self._create_local_directory(destination_path, mode)
+
+        # Move the file
+        os.rename(source_path, destination_path)
+
+    def _move_rsync(self, source, destination):
+        """ Moves a file from source to destination using rsync.
+
+        All directories leading to destination must exist.
+        Space._create_local_directory may be useful.
+        """
+        # Create directories
+        logging.info("Rsyncing from {} to {}".format(source, destination))
+
+        # Rsync file over
+        # TODO Do this asyncronously, with restarting failed attempts
+        command = ['rsync', '--chmod=ugo+rw,ugo-x', source, destination]
+        logging.info("rsync command: {}".format(command))
+        try:
+            subprocess.check_call(command)
+        except Exception as e:
+            logging.warning("Rsync failed: {}".format(e))
+            raise
+
+    def _create_local_directory(self, path, mode=None):
+        """ Creates a local directory at 'path' with 'mode' (default 755). """
+        if mode is None:
+            mode = (stat.S_IRUSR + stat.S_IWUSR + stat.S_IXUSR +
+                    stat.S_IRGRP +                stat.S_IXGRP +
+                    stat.S_IROTH +                stat.S_IXOTH)
+        try:
+            os.makedirs(os.path.dirname(path), mode)
+        except os.error as e:
+            # If the leaf node already exists, that's fine
+            if e.errno != errno.EEXIST:
+                logging.warning("Could not create storage directory: {}".format(e))
+                raise
+
+        # Mode not getting set correctly in os.makedirs
+        # Some spaces (eg CIFS) doesn't allow chmod, so wrap it in a try-catch
+        # and ignore the failure.
+        try:
+            os.chmod(os.path.dirname(path), mode)
+        except os.error as e:
+            logging.warning(e)
+
 
 class LocalFilesystem(models.Model):
     """ Spaces found in the local filesystem of the storage service."""
     space = models.OneToOneField('Space', to_field='uuid')
-    # Does not currently need any other information - delete?
 
-    def save(self, *args, **kwargs):
-        self.verify()
-        super(LocalFilesystem, self).save(*args, **kwargs)
+    class Meta:
+        verbose_name = "Local Filesystem"
+
+    def move_to_storage_service(self, src_path, dest_path, dest_space):
+        """ Moves src_path to dest_space.staging_path/dest_path. """
+        source_path = os.path.join(self.space.path, src_path)
+        # dest_path must be relative
+        if os.path.isabs(dest_path):
+            dest_path = dest_path.lstrip(os.sep)
+            # os.path.join(*dest_path.split(os.sep)[1:]) # Strips up to first os.sep
+        destination_path = os.path.join(dest_space.staging_path, dest_path)
+        # Archivematica expects the file to still be on disk even after stored
+        self.space._create_local_directory(destination_path)
+        return self.space._move_rsync(source_path, destination_path)
+
+    def move_from_storage_service(self, src_path, dest_path):
+        """ Moves self.staging_path/src_path to dest_path. """
+        # src_path must be relative
+        if os.path.isabs(src_path):
+            src_path = src_path.lstrip(os.sep)
+            # os.path.join(*src_path.split(os.sep)[1:]) # Strips up to first os.sep
+        source_path = os.path.join(self.space.staging_path, src_path)
+        destination_path = os.path.join(self.space.path, dest_path)
+        return self.space._move_locally(source_path, destination_path)
 
     def verify(self):
         """ Verify that the space is accessible to the storage service. """
@@ -205,8 +340,41 @@ class NFS(models.Model):
         help_text="Type of the filesystem, i.e. nfs, or nfs4. \
         Should match a command in `mount`.")
     # https://help.ubuntu.com/community/NFSv4Howto
-
     manually_mounted = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = "Network File System (NFS)"
+
+    def move_to_storage_service(self, src_path, dest_path, dest_space):
+        """ Moves src_path to dest_space.staging_path/dest_path. """
+        source_path = os.path.join(self.space.path, src_path)
+        # dest_path must be relative
+        if os.path.isabs(dest_path):
+            dest_path = dest_path.lstrip(os.sep)
+            # os.path.join(*dest_path.split(os.sep)[1:]) # Strips up to first os.sep
+        destination_path = os.path.join(dest_space.staging_path, dest_path)
+        self.space._create_local_directory(destination_path)
+        return self.space._move_rsync(source_path, destination_path)
+
+    def post_move_to_storage_service(self, *args, **kwargs):
+        # TODO delete original file?
+        pass
+
+    def move_from_storage_service(self, src_path, dest_path):
+        """ Moves self.staging_path/src_path to dest_path. """
+        # src_path must be relative
+        if os.path.isabs(src_path):
+            src_path = src_path.lstrip(os.sep)
+            # os.path.join(*src_path.split(os.sep)[1:]) # Strips up to first os.sep
+        source_path = os.path.join(self.space.staging_path, src_path)
+        destination_path = os.path.join(self.space.path, dest_path)
+        # TODO optimization - check if the staging path and destination path are on the same device and use os.rename/self.space._move_locally if so
+        self.space._create_local_directory(destination_path)
+        return self.space._move_rsync(source_path, destination_path)
+
+    def post_move_from_storage_service(self, staging_file):
+        # Remove the staging file, since rsync leaves it behind
+        os.remove(staging_file)
 
     def save(self, *args, **kwargs):
         self.verify()
@@ -242,6 +410,77 @@ class PipelineLocalFS(models.Model):
         help_text="Name or IP of the remote machine.")
     # Space.path is the path on the remote machine
 
+    class Meta:
+        verbose_name = "Pipeline Local FS"
+
+    def move_to_storage_service(self, src_path, dest_path, dest_space):
+        """ Moves src_path to dest_space.staging_path/dest_path. """
+        # if dest_space == self:
+        #     # If moving within same space, don't bring to storage service
+        #     # FIXME dest_path is relative, and intended for staging_path, need
+        #     # real destination path - memoize something and retrieve it in
+        #     # move_from_storage_service?  Move to self.space.path/dest_path?
+        #     command = 'mkdir -p {dest_dir} && mv {src_path} {dest_path}'.format(
+        #         dest_dir=os.path.dirname(dest_path),
+        #         src_user=self.remote_user, src_host=self.remote_name,
+        #         src_path=src_path, dest_path=dest_path,
+        #         )
+        #     ssh_command = ["ssh", self.remote_user+"@"+self.remote_name, command]
+        #     logging.info("ssh+mv command: {}".format(ssh_command))
+        #     try:
+        #         subprocess.check_call(ssh_command)
+        #     except Exception as e:
+        #         logging.warning("ssh+mv failed: {}".format(e))
+        #         raise
+        # else:
+        source_path = "{user}@{host}:{path}".format(
+            user=self.remote_user,
+            host=self.remote_name,
+            path=os.path.join(self.space.path, src_path))
+        # dest_path must be relative
+        if os.path.isabs(dest_path):
+            dest_path = dest_path.lstrip(os.sep)
+            # os.path.join(*dest_path.split(os.sep)[1:]) # Strips up to first os.sep
+        destination_path = os.path.join(dest_space.staging_path, dest_path)
+        self.space._create_local_directory(destination_path)
+        return self.space._move_rsync(source_path, destination_path)
+
+    def post_move_to_storage_service(self, *args, **kwargs):
+        # TODO delete original file?
+        pass
+
+    def move_from_storage_service(self, src_path, dest_path):
+        """ Moves self.staging_path/src_path to dest_path. """
+        # src_path must be relative
+        if os.path.isabs(src_path):
+            src_path = src_path.lstrip(os.sep)
+            # os.path.join(*src_path.split(os.sep)[1:]) # Strips up to first os.sep
+        source_path = os.path.join(self.space.staging_path, src_path)
+        destination_path = os.path.join(self.space.path, dest_path)
+
+        # Need to make sure destination exists
+        command = 'mkdir -p {}'.format(os.path.dirname(destination_path))
+        ssh_command = ["ssh", self.remote_user+"@"+self.remote_name, command]
+        logging.info("ssh+mkdir command: {}".format(ssh_command))
+        try:
+            subprocess.check_call(ssh_command)
+        except Exception as e:
+            logging.warning("ssh+mkdir failed: {}".format(e))
+            raise
+
+        # Prepend user and host to destination
+        destination_path = "{user}@{host}:{path}".format(
+            user=self.remote_user,
+            host=self.remote_name,
+            path=destination_path)
+
+        # Move file
+        return self.space._move_rsync(source_path, destination_path)
+
+    def post_move_from_storage_service(self, *args, **kwargs):
+        # TODO delete staging file?
+        pass
+
 
 class SwordServer(models.Model):
     """ SWORD server that accepts deposits."""
@@ -265,18 +504,28 @@ class SwordServer(models.Model):
 #   Add constant for storage protocol
 #   Add constant to ACCESS_PROTOCOL_CHOICES
 #   Add class for protocol-specific fields using template below
-#   Add to Package.store_aip(), using existing categories if possible
-#  locations/forms.py
 #   Add to Space.browse, using existing categories if possible
+#  locations/forms.py
 #   Add ModelForm for new class
 #  common/constants.py
-#   Add entry to protocol with fields that should be added to GET resource
-#     requests, the Model and ModelForm
+#   Add entry to protocol
+#    'model' is the model object
+#    'form' is the ModelForm for creating the space
+#    'fields' is a whitelist of fields to display to the user
 
 # class Example(models.Model):
 #     space = models.OneToOneField('Space', to_field='uuid')
 #
-
+#     class Meta:
+#         verbose_name = "Example Space"
+#
+#     def move_to_storage_service(self, src_path, dest_path, dest_space):
+#         """ Moves src_path to dest_space.staging_path/dest_path. """
+#         pass
+#
+#     def move_from_storage_service(self, src_path, dest_path):
+#         """ Moves self.staging_path/src_path to dest_path. """
+#         pass
 
 ########################## LOCATIONS ##########################
 
@@ -552,34 +801,22 @@ class Package(models.Model):
         self.status = Package.PENDING
         self.save()
 
-        # Create destination for pointer file
-
-        # Call different protocols depending on what Space we're moving it to
-        # and from
         src_space = self.origin_location.space
-        if src_space.access_protocol in Space.mounted_locally and dest_space.access_protocol in Space.mounted_locally:
-            logging.info("Moving AIP from locally mounted storage to locally mounted storage.")
-            # Move pointer file
-            self._store_aip_local_to_local(pointer_file_src, pointer_file_dst)
-            # Move AIP
-            self._store_aip_local_to_local(source_path, destination_path)
-        elif src_space.access_protocol in Space.ssh_only_access and dest_space.access_protocol in Space.mounted_locally:
-            logging.info("Moving AIP from SSH-only access storage to locally mounted storage.")
-            # Move pointer file
-            self._store_aip_ssh_only_to_local(pointer_file_src, pointer_file_dst)
-            # Move AIP
-            self._store_aip_ssh_only_to_local(source_path, destination_path)
-        elif src_space.access_protocol in Space.ssh_only_access and dest_space.access_protocol in Space.ssh_only_access:
-            logging.info("Moving AIP from SSH-only access storage to SSH-only access storage.")
-            # Move pointer file
-            self._store_aip_ssh_only_to_local(pointer_file_src, pointer_file_dst)
-            # Move AIP
-            self._store_aip_ssh_only_to_ssh_only(source_path, destination_path)
-        else:
-            # Not supported: Space.mounted_locally to Space.ssh_only_access
-            logging.warning("Transfering package from {} to {} not supported".format(src_space.access_protocol, dest_space.access_protocol))
-            return
 
+        # Move pointer file
+        pointer_file_name = 'pointer-'+self.uuid+'.xml'
+        src_space.move_to_storage_service(pointer_file_src, pointer_file_name, self.pointer_file_location.space)
+        self.pointer_file_location.space.move_from_storage_service(pointer_file_name, pointer_file_dst)
+
+        # Move AIP
+        src_space.move_to_storage_service(
+            source_path=os.path.join(self.origin_location.relative_path, self.origin_path),
+            destination_path=self.current_path,  # This should include Location.path
+            destination_space=dest_space)
+        dest_space.move_from_storage_service(
+            source_path=self.current_path,  # This should include Location.path
+            destination_path=os.path.join(location.relative_path, self.current_path),
+            )
         # Save new space/location usage, package status
         dest_space.used += self.size
         dest_space.save()
@@ -599,78 +836,6 @@ class Package(models.Model):
         with open(pointer_file_dst, 'w') as f:
             f.write(etree.tostring(root, pretty_print=True))
 
-    def _store_aip_local_to_local(self, source_path, destination_path):
-        """ Stores AIPs to locations accessible locally to the storage service.
-
-        AIP is stored at:
-        destination_location/uuid/split/into/chunks/destination_path. """
-        # Create directories
-        logging.info("rsyncing from {} to {}".format(source_path, destination_path))
-        try:
-            mode = (stat.S_IRUSR + stat.S_IWUSR + stat.S_IXUSR +
-                    stat.S_IRGRP +                stat.S_IXGRP +
-                    stat.S_IROTH +                stat.S_IXOTH)
-            os.makedirs(os.path.dirname(destination_path), mode)
-        except os.error as e:
-            if e.errno != errno.EEXIST:
-                logging.warning("Could not create storage directory: {}".format(e))
-                raise
-        try:
-            # Mode not getting set correctly in os.makedirs
-            os.chmod(os.path.dirname(destination_path), mode)
-        except os.error as e:
-            logging.warning(e)
-
-        # Rsync file over
-        # TODO use Gearman to do this asyncronously
-        command = ['rsync', '--chmod=u+rw,go-rwx', source_path, destination_path]
-        logging.info("rsync command: {}".format(command))
-        try:
-            subprocess.check_call(command)
-        except Exception as e:
-            logging.warning("Rsync failed: {}".format(e))
-            raise
-
-    def _store_aip_ssh_only_to_local(self, source_path, destination_path):
-        """ Stores an AIP from a location SSH-accessible to one accessible locally.
-
-        AIP is stored at:
-        destination_location/uuid/split/into/chunks/destination_path. """
-        # Local to local uses rsync, so pass it a source_path that includes
-        # user@host:path
-        # Get correct protocol-specific model, and then the correct object
-        protocol_space = self.origin_location.space.get_child_space()
-        user = protocol_space.remote_user
-        host = protocol_space.remote_name
-        full_source_path = "{user}@{host}:{path}".format(user=user, host=host,
-            path=source_path)
-        self._store_aip_local_to_local(full_source_path, destination_path)
-
-    def _store_aip_ssh_only_to_ssh_only(self, source_path, destination_path):
-        """ Stores AIPs from and to a location only accessible via SSH.
-
-        AIP is stored at:
-        destination_location/uuid/split/into/chunks/destination_path. """
-        # Get correct protocol-specific model, and then the correct object
-        src_protocol_space = self.origin_location.space.get_child_space()
-        dst_protocol_space = self.current_location.space.get_child_space()
-        src_user = src_protocol_space.remote_user
-        src_host = src_protocol_space.remote_name
-        dst_user = dst_protocol_space.remote_user
-        dst_host = dst_protocol_space.remote_name
-
-        command = 'mkdir -p {dst_dir} && rsync {src_user}@{src_host}:{src_path} {dst_path}'.format(
-            dst_dir=os.path.dirname(destination_path),
-            src_user=src_user, src_host=src_host,
-            src_path=source_path, dst_path=destination_path,
-            )
-        ssh_command = ["ssh", dst_user+"@"+dst_host, command]
-        logging.info("ssh+rsync command: {}".format(ssh_command))
-        try:
-            subprocess.check_call(ssh_command)
-        except Exception as e:
-            logging.warning("ssh+sync failed: {}".format(e))
-            raise
 
     def delete_from_storage(self):
         """ Deletes the package from filesystem and updates metadata.
