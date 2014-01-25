@@ -43,7 +43,9 @@ def startup():
     logging.basicConfig(level=logging.INFO)
     logging.info("Running startup")
     space, space_created = locations_models.Space.objects.get_or_create(
-        access_protocol=locations_models.Space.LOCAL_FILESYSTEM, path='/')
+        access_protocol=locations_models.Space.LOCAL_FILESYSTEM,
+        path=os.sep,
+        staging_path=os.path.join(os.sep, 'var', 'archivematica', 'storage_service'))
     if space_created:
         local_fs = locations_models.LocalFilesystem(space=space)
         local_fs.save()
@@ -66,6 +68,9 @@ def startup():
     except OSError as e:
         if e.errno != errno.EEXIST:
             logging.error("Internal storage location {} not accessible.".format(internal_use.full_path()))
-    utils.set_setting('default_transfer_source', [transfer_source.uuid])
-    utils.set_setting('default_aip_storage', [aip_storage.uuid])
+    if not utils.get_setting('default_transfer_source'):
+        utils.set_setting('default_transfer_source', [transfer_source.uuid])
+    if not utils.get_setting('default_aip_storage'):
+        utils.set_setting('default_aip_storage', [aip_storage.uuid])
+
 startup()
