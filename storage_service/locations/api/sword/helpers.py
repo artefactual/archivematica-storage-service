@@ -201,31 +201,46 @@ def _fetch_content(deposit_uuid, object_content_urls):
     # if the deposit is ready for finalization and this is the last batch
     # download to complete, then finalize
     if deposit.ready_for_finalization and deposit_downloading_status(deposit_uuid) == 'complete':
-        finalize_if_not_empty(deposit_uuid)
+        _finalize_if_not_empty(deposit_uuid)
 
 """
-Approve a deposit for processing and mark is as completed
+Spawn an asynchronous finalization
+"""
+def spawn_finalization(deposit_uuid):
+    p = Process(target=_finalize_if_not_empty, args=(deposit_uuid, ))
+    p.start()
+
+"""
+Approve a deposit for processing and mark is as completed or finalization failed
 
 Returns True if completed successfully, False if not
 """
-def finalize_if_not_empty(deposit_uuid):
+def _finalize_if_not_empty(deposit_uuid):
     deposit = get_deposit(deposit_uuid)
-    if len(os.listdir(deposit.full_path())) > 0:
-        # get sword server so we can access pipeline information
-        sword_server = SwordServer.objects.get(space=deposit.space)
-        result = activate_transfer_and_request_approval_from_pipeline(deposit, sword_server)
-        #result['deposit_uuid'] = deposit_uuid
+    completed = False
+    
+    # don't finalize if still downloading
+    if deposit_downloading_status(deposit_uuid) == 'complete':
+        if len(os.listdir(deposit.full_path())) > 0:
+            # get sword server so we can access pipeline information
+            sword_server = SwordServer.objects.get(space=deposit.space)
+            result = activate_transfer_and_request_approval_from_pipeline(deposit, sword_server)
+            #result['deposit_uuid'] = deposit_uuid
 
-        if 'error' in result:
-            return _sword_error_response(request, 500, result['message'])
+            if 'error' in result:
+                return _sword_error_response(request, 500, result['message'])
 
-        # mark deposit as complete and return deposit receipt
+            completed = True
+
+    if completed:
+        # mark deposit as complete
         deposit.deposit_completion_time = timezone.now()
-        deposit.save()
-
-        return True
     else:
-        return False
+        # make finalization as having failed
+        deposit.finalization_attempt_failed = True
+    deposit.save()
+
+    return completed
 
 """
 Handle requesting the approval of a transfer from a pipeline via a REST call.

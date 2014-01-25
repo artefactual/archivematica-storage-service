@@ -364,20 +364,8 @@ Returns deposit receipt response or error response
 """
 def _finalize_or_mark_for_finalization(request, deposit_uuid):
     if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
-        if helpers.deposit_downloading_status(deposit_uuid) == 'complete':
-            completed = helpers.finalize_if_not_empty(deposit_uuid)
-            if completed:
-                return _deposit_receipt_response(request, deposit_uuid, 200)
-            else:
-                return _sword_error_response(request, 400, 'This deposit contains no files.')
-        else:
-            # Indicate that the deposit is ready for finalization (after all batch
-            # downloads have completed
-            deposit = helpers.get_deposit(deposit_uuid)
-            deposit.ready_for_finalization = True
-            deposit.save()
-
-            return _deposit_receipt_response(request, uuid, 203) # change to 200
+        helpers.spawn_finalization(deposit_uuid)
+        return _deposit_receipt_response(request, deposit_uuid, 200)
     else:
         return _sword_error_response(request, 400, 'The In-Progress header must be set to false when starting deposit processing.')
 
@@ -452,8 +440,14 @@ def deposit_state(request, uuid):
         return _sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=uuid))
 
     if request.method == 'GET':
-        state_term = helpers.deposit_downloading_status(uuid)
-        state_description = 'Deposit initiation: ' + helpers.deposit_downloading_status(uuid)
+        status = helpers.deposit_downloading_status(uuid)
+        state_term = status
+        state_description = 'Deposit initiation: ' + status
+
+        # if deposit hasn't been finalized and last finalization attempt
+        # failed, note failed finalization
+        if deposit.finalization_attempt_failed and deposit.deposit_completion_time==None:
+            state_description += ' (last finalization attempt failed)'
 
         response = HttpResponse(render_to_string('locations/api/sword/state.xml', locals()))
         response['Content-Type'] = 'application/atom+xml;type=feed'

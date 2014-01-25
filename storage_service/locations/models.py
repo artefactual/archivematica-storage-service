@@ -318,6 +318,7 @@ class Location(models.Model):
     # SWORD-related attributes
     deposit_completion_time = models.DateTimeField(default=None, null=True, blank=True)
     ready_for_finalization = models.BooleanField(default=False)
+    finalization_attempt_failed = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Location"
