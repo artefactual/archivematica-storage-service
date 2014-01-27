@@ -405,8 +405,21 @@ def deposit_media(request, uuid):
         # replace a file in the deposit
         return _handle_adding_to_or_replacing_file_in_deposit(request, deposit, True)
     elif request.method == 'POST':
-        # add a file to the deposit
-        return _handle_adding_to_or_replacing_file_in_deposit(request, deposit)
+        # Allow async batch upload via METS XML body content
+        if 'HTTP_PACKAGING' in request.META and request.META['HTTP_PACKAGING'] == 'METS':
+            # If METS XML has been sent to indicate a list of files needing downloading, handle it
+            if request.body != '':
+                mets_data = _parse_name_and_content_urls_from_request_body(request)
+                if mets_data != None:
+                    _spawn_batch_download_and_flag_finalization_if_requested(uuid, request, mets_data)
+                    return _deposit_receipt_response(request, uuid, 201)
+                else:
+                    return _sword_error_response(request, 412, 'Error parsing XML ({error_message}).'.format(error_message=str(e)))
+            else:
+                return _sword_error_response(request, 400, 'No METS body content sent.')
+        else:
+            # add a file to the deposit
+            return _handle_adding_to_or_replacing_file_in_deposit(request, deposit)
     elif request.method == 'DELETE':
         filename = request.GET.get('filename', '')
         if filename != '':
