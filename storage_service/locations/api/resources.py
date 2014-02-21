@@ -1,3 +1,6 @@
+# This file contains the base models that individual versioned models
+# are based on. They shouldn't be directly used with Api objects.
+
 # stdlib, alphabetical
 import json
 import logging
@@ -53,6 +56,7 @@ class PipelineResource(ModelResource):
         authorization = Authorization()
         # authorization = DjangoAuthorization()
         # validation = CleanedDataFormValidation(form_class=PipelineForm)
+        resource_name = 'pipeline'
 
         fields = ['uuid', 'description']
         list_allowed_methods = ['get', 'post']
@@ -82,6 +86,7 @@ class SpaceResource(ModelResource):
         authorization = Authorization()
         # authorization = DjangoAuthorization()
         validation = CleanedDataFormValidation(form_class=SpaceForm)
+        resource_name = 'space'
 
         fields = ['access_protocol', 'last_verified', 'location_set', 'path',
             'size', 'used', 'uuid', 'verified']
@@ -140,6 +145,10 @@ class SpaceResource(ModelResource):
         obj.save()
         return bundle
 
+    def get_objects(self, space, path):
+        message = 'This method should be accessed via a versioned subclass'
+        raise NotImplementedError(message)
+
     def browse(self, request, **kwargs):
         """ Returns all of the entries in a space, optionally at a subpath.
 
@@ -157,7 +166,7 @@ class SpaceResource(ModelResource):
         space = Space.objects.get(uuid=kwargs['uuid'])
         path = os.path.join(space.path, path)
 
-        objects = space.browse(path)
+        objects = self.get_objects(space, path)
 
         self.log_throttled_access(request)
         return self.create_response(request, objects)
@@ -177,6 +186,7 @@ class LocationResource(ModelResource):
         authorization = Authorization()
         # authorization = DjangoAuthorization()
         # validation = CleanedDataFormValidation(form_class=LocationForm)
+        resource_name = 'location'
 
         fields = ['enabled', 'relative_path', 'purpose', 'quota', 'used', 'uuid']
         list_allowed_methods = ['get']
@@ -198,6 +208,13 @@ class LocationResource(ModelResource):
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/browse%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('browse'), name="browse"),
         ]
 
+    def decode_path(self, path):
+        return path
+
+    def get_objects(self, space, path):
+        message = 'This method should be accessed via a versioned subclass'
+        raise NotImplementedError(message)
+
     def browse(self, request, **kwargs):
         """ Returns all of the entries in a location, optionally at a subpath.
 
@@ -212,10 +229,11 @@ class LocationResource(ModelResource):
         self.is_authenticated(request)
         self.throttle_check(request)
         path = request.GET.get('path', '')
+        path = self.decode_path(path)
         location = Location.objects.get(uuid=kwargs['uuid'])
-        path = os.path.join(location.full_path(), path)
+        path = os.path.join(str(location.full_path()), path)
 
-        objects = location.space.browse(path)
+        objects = self.get_objects(location.space, path)
 
         self.log_throttled_access(request)
         return self.create_response(request, objects)
@@ -256,6 +274,7 @@ class PackageResource(ModelResource):
         authorization = Authorization()
         # authorization = DjangoAuthorization()
         # validation = CleanedDataFormValidation(form_class=PackageForm)
+        resource_name = 'package'
 
         fields = ['current_path', 'package_type', 'size', 'status', 'uuid']
         list_allowed_methods = ['get', 'post']
