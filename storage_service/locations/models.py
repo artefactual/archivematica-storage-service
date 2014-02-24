@@ -417,12 +417,14 @@ class Package(models.Model):
     size = models.IntegerField(default=0)
 
     AIP = "AIP"
+    AIC = "AIC"
     SIP = "SIP"
     DIP = "DIP"
     TRANSFER = "transfer"
     FILE = 'file'
     PACKAGE_TYPE_CHOICES = (
         (AIP, 'AIP'),
+        (AIC, 'AIC'),
         (SIP, 'SIP'),
         (DIP, 'DIP'),
         (TRANSFER, 'Transfer'),
@@ -448,6 +450,9 @@ class Package(models.Model):
         default=FAIL,
         help_text="Status of the package in the storage service.")
 
+    PACKAGE_TYPE_DELETABLE = (AIP, AIC)
+    PACKAGE_TYPE_EXTRACTABLE = (AIP, AIC)
+
     class Meta:
         verbose_name = "Package"
 
@@ -469,7 +474,7 @@ class Package(models.Model):
         """ Return the full path of the AIP's pointer file, None if not an AIP.
 
         Includes the space, location and package paths joined."""
-        if self.package_type != self.AIP:
+        if self.package_type not in (self.AIP, self.AIC):
             return None
         else:
             return os.path.join(self.pointer_file_location.full_path(),
