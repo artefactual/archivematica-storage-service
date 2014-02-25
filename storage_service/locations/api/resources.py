@@ -302,14 +302,17 @@ class PackageResource(ModelResource):
 
     class Meta:
         queryset = Package.objects.all()
-        resource_name = 'file'
         authentication = Authentication()
         # authentication = MultiAuthentication(
         #     BasicAuthentication, ApiKeyAuthentication())
         authorization = Authorization()
         # authorization = DjangoAuthorization()
         # validation = CleanedDataFormValidation(form_class=PackageForm)
-        resource_name = 'package'
+        #
+        # Note that this resource is exposed as 'file' to the API for
+        # compatibility because the resource itself was originally under
+        # that name.
+        resource_name = 'file'
 
         fields = ['current_path', 'package_type', 'size', 'status', 'uuid']
         list_allowed_methods = ['get', 'post']
