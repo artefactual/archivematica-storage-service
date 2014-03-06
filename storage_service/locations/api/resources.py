@@ -358,9 +358,10 @@ class PackageResource(ModelResource):
         always_return_data = True
         filtering = {
             'location': ALL_WITH_RELATIONS,
+            'package_type': ALL,
             'path': ALL,
             'uuid': ALL,
-            'status': ALL
+            'status': ALL,
         }
 
     def prepend_urls(self):
@@ -374,11 +375,15 @@ class PackageResource(ModelResource):
     def obj_create(self, bundle, **kwargs):
         bundle = super(PackageResource, self).obj_create(bundle, **kwargs)
         # IDEA add custom endpoints, instead of storing all AIPS that come in?
-        if bundle.obj.package_type in (Package.AIP, Package.AIC):
-            origin_location_uri = bundle.data.get('origin_location', False)
-            origin_location = self.origin_location.build_related_resource(origin_location_uri, bundle.request).obj
-            origin_path = bundle.data.get('origin_path', False)
+        origin_location_uri = bundle.data.get('origin_location', False)
+        origin_location = self.origin_location.build_related_resource(origin_location_uri, bundle.request).obj
+        origin_path = bundle.data.get('origin_path', False)
+        if bundle.obj.package_type in (Package.AIP, Package.AIC) and bundle.obj.current_location.purpose in (Location.AIP_STORAGE):
+            # Store AIP/AIC
             bundle.obj.store_aip(origin_location, origin_path)
+        elif bundle.obj.package_type in (Package.TRANSFER) and bundle.obj.current_location.purpose in (Location.BACKLOG):
+            # Move transfer to backlog
+            bundle.obj.backlog_transfer(origin_location, origin_path)
         return bundle
 
     def delete_aip_request(self, request, **kwargs):

@@ -640,7 +640,7 @@ class Package(models.Model):
         default=FAIL,
         help_text="Status of the package in the storage service.")
 
-    PACKAGE_TYPE_DELETABLE = (AIP, AIC)
+    PACKAGE_TYPE_DELETABLE = (AIP, AIC, TRANSFER)
     PACKAGE_TYPE_EXTRACTABLE = (AIP, AIC)
 
     class Meta:
@@ -670,6 +670,36 @@ class Package(models.Model):
             return os.path.join(self.pointer_file_location.full_path(),
                 self.pointer_file_path)
 
+    def _check_quotas(self, dest_space, dest_location):
+        """
+        Verify that there is enough storage space on dest_space and dest_location for this package.  All sizes in bytes.
+        """
+        # Check if enough space on the space and location
+        # All sizes expected to be in bytes
+        if dest_space.size is not None and dest_space.used + self.size > dest_space.size:
+            raise StorageException(
+                "Not enough space for AIP on storage device {space}; Used: {used}; Size: {size}; AIP size: {aip_size}".format(
+                space=dest_space, used=dest_space.used, size=dest_space.size,
+                aip_size=self.size))
+        if (dest_location.quota is not None and
+                dest_location.used + self.size > dest_location.quota):
+            raise StorageException(
+                "AIP too big for quota on {location}; Used: {used}; Quota: {quota}; AIP size: {aip_size}".format(
+                    location=dest_location,
+                    used=dest_location.used,
+                    quota=dest_location.quota,
+                    aip_size=self.size)
+            )
+
+    def _update_quotas(self, space, location):
+        """
+        Add this package's size to the space and location.
+        """
+        space.used += self.size
+        space.save()
+        location.used += self.size
+        location.save()
+
     def store_aip(self, origin_location, origin_path):
         """ Stores an AIP in the correct Location.
 
@@ -685,40 +715,25 @@ class Package(models.Model):
 
         # Check if enough space on the space and location
         # All sizes expected to be in bytes
-        location = self.current_location
-        dest_space = location.space
-        if dest_space.size is not None and dest_space.used + self.size > dest_space.size:
-            raise StorageException(
-                "Not enough space for AIP on storage device {space}; Used: {used}; Size: {size}; AIP size: {aip_size}".format(
-                space=dest_space, used=dest_space.used, size=dest_space.size,
-                aip_size=self.size))
-        if (location.quota is not None and
-                location.used + self.size > location.quota):
-            raise StorageException(
-                "AIP too big for quota on {location}; Used: {used}; Quota: {quota}; AIP size: {aip_size}".format(
-                    location=location, used=location.used, quota=location.quota,
-                    aip_size=self.size))
-        source_path = os.path.normpath(
-            os.path.join(self.origin_location.full_path(), self.origin_path))
+        src_space = self.origin_location.space
+        dest_space = self.current_location.space
+        self._check_quotas(dest_space, self.current_location)
 
         # Store AIP at
         # destination_location/uuid/split/into/chunks/destination_path
-        path = utils.uuid_to_path(self.uuid)
-        self.current_path = os.path.join(path, self.current_path)
+        uuid_path = utils.uuid_to_path(self.uuid)
+        self.current_path = os.path.join(uuid_path, self.current_path)
         self.save()
-        destination_path = self.full_path()
 
         # Store AIP Pointer File at
         # internal_usage_location/uuid/split/into/chunks/pointer.xml
         self.pointer_file_location = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
-        self.pointer_file_path = os.path.join(path, 'pointer.xml')
-        pointer_file_src = os.path.join(os.path.dirname(source_path), 'pointer.xml')
+        self.pointer_file_path = os.path.join(uuid_path, 'pointer.xml')
+        pointer_file_src = os.path.join(self.origin_location.relative_path, os.path.dirname(self.origin_path), 'pointer.xml')
         pointer_file_dst = self.full_pointer_file_path()
 
         self.status = Package.PENDING
         self.save()
-
-        src_space = self.origin_location.space
 
         # Move pointer file
         pointer_file_name = 'pointer-'+self.uuid+'.xml'
@@ -732,13 +747,10 @@ class Package(models.Model):
             destination_space=dest_space)
         dest_space.move_from_storage_service(
             source_path=self.current_path,  # This should include Location.path
-            destination_path=os.path.join(location.relative_path, self.current_path),
+            destination_path=os.path.join(self.current_location.relative_path, self.current_path),
             )
         # Save new space/location usage, package status
-        dest_space.used += self.size
-        dest_space.save()
-        location.used += self.size
-        location.save()
+        self._update_quotas(dest_space, self.current_location)
         self.status = Package.UPLOADED
         self.save()
 
@@ -767,6 +779,46 @@ class Package(models.Model):
         logging.debug('Extract file RC: %s', rc)
 
         return (output_path, temp_dir)
+
+    def backlog_transfer(self, origin_location, origin_path):
+        """
+        Stores a package in backlog.
+
+        Invokes different transfer mechanisms depending on what the source and
+        destination Spaces are.  Checks if there is space in the Space and
+        Location for the AIP, and raises a StorageException if not.  All sizes
+        expected to be in bytes.
+        """
+        self.origin_location = origin_location
+        self.origin_path = origin_path
+
+        # Check if enough space on the space and location
+        # All sizes expected to be in bytes
+        src_space = self.origin_location.space
+        dest_space = self.current_location.space
+        self._check_quotas(dest_space, self.current_location)
+
+        # No pointer file
+        self.pointer_file_location = None
+        self.pointer_file_path = None
+
+        self.status = Package.PENDING
+        self.save()
+
+        # Move transfer
+        src_space.move_to_storage_service(
+            source_path=os.path.join(self.origin_location.relative_path, self.origin_path),
+            destination_path=self.current_path,  # This should include Location.path
+            destination_space=dest_space)
+        dest_space.move_from_storage_service(
+            source_path=self.current_path,  # This should include Location.path
+            destination_path=os.path.join(self.current_location.relative_path, self.current_path),
+            )
+
+        # Save new space/location usage, package status
+        self._update_quotas(dest_space, self.current_location)
+        self.status = Package.UPLOADED
+        self.save()
 
     def delete_from_storage(self):
         """ Deletes the package from filesystem and updates metadata.
