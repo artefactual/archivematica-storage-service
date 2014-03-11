@@ -3,7 +3,6 @@ import datetime
 from lxml import etree as etree
 import os
 import shutil
-import tempfile
 import traceback
 
 # Core Django, alphabetical
