@@ -221,8 +221,10 @@ def _parse_name_and_content_urls_from_request_body(request):
     # parse name and content URLs out of XML
     try:
         mets_data = _parse_name_and_content_urls_from_mets_file(temp_filepath)
+        os.unlink(temp_filepath)
         return mets_data
     except etree.XMLSyntaxError as e:
+        os.unlink(temp_filepath)
         return None
 
 """
