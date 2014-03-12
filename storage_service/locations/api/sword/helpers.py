@@ -1,5 +1,7 @@
 # stdlib, alphabetical
+import base64
 import json
+import logging
 import os
 from multiprocessing import Process
 import shutil
@@ -21,6 +23,10 @@ from locations.models import Location
 from locations.models import LocationDownloadTask
 from locations.models import Space
 from locations.models import SwordServer
+
+LOGGER = logging.getLogger(__name__)
+logging.basicConfig(filename="/tmp/storage_service.log",
+    level=logging.INFO)
 
 """
 Shortcut to retrieve deposit data

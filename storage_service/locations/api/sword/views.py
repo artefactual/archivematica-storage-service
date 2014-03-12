@@ -1,5 +1,6 @@
 # stdlib, alphabetical
 import datetime
+import logging
 from lxml import etree as etree
 import os
 import shutil
@@ -21,6 +22,10 @@ from locations.models import Pipeline
 from locations.models import Space
 from locations.models import SwordServer
 import helpers
+
+LOGGER = logging.getLogger(__name__)
+logging.basicConfig(filename="/tmp/storage_service.log",
+    level=logging.INFO)
 
 """
 Example GET of service document:
@@ -250,6 +255,7 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
     tree = etree.parse(filepath)
     root = tree.getroot()
     deposit_name = root.get('LABEL')
+    logger.info('found deposit name in mets: ' + deposit_name)
 
     # parse XML for content URLs
     object_content_urls = []
@@ -262,7 +268,9 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
     )
 
     for element in elements:
-       object_content_urls.append(element.get('{http://www.w3.org/1999/xlink}href'))
+       new_url = element.get('{http://www.w3.org/1999/xlink}href')
+       object_content_urls.append(new_url)
+       logger.info('found url in mets: ' + new_url)
 
     return {
         'deposit_name': deposit_name,
