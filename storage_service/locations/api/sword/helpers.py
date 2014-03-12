@@ -120,17 +120,19 @@ filename (using the filename at the end of the URL otherwise)
 
 Returns filename of downloaded resource
 """
-def download_resource(url, destination_path):
+def download_resource(url, destination_path, filename=None):
     logging.info('downloading url: ' + url)
     request = urllib2.Request(url)
     base64string = base64.encodestring('%s:%s' % ('fedoraAdmin', 'islandora')).replace('\n', '')
     request.add_header("Authorization", "Basic %s" % base64string)   
     response = urllib2.urlopen(request)
     info = response.info()
-    if 'content-disposition' in info:
-        filename = parse_filename_from_content_disposition(info['content-disposition'])
-    else:
-        filename = os.path.basename(url)
+    if filename == None:
+        if 'content-disposition' in info:
+            filename = parse_filename_from_content_disposition(info['content-disposition'])
+        else:
+            filename = os.path.basename(url)
+    logging.info('Filename set to ' + filename)
 
     filepath = os.path.join(destination_path, filename)
     buffer_size = 16 * 1024
@@ -171,19 +173,19 @@ def deposit_downloading_status(deposit_uuid):
 """
 Spawn an asynchrnous batch download
 """
-def spawn_download_task(deposit_uuid, object_content_urls):
-    p = Process(target=_fetch_content, args=(deposit_uuid, object_content_urls))
+def spawn_download_task(deposit_uuid, objects):
+    p = Process(target=_fetch_content, args=(deposit_uuid, objects))
     p.start()
 
 """
 Download a number of files, keeping track of progress and success using a
 database record. After downloading, finalize deposit if requested.
 """
-def _fetch_content(deposit_uuid, object_content_urls):
+def _fetch_content(deposit_uuid, objects):
     # add download task to keep track of progress
     deposit = get_deposit(deposit_uuid)
     task = LocationDownloadTask(location=deposit)
-    task.downloads_attempted = len(object_content_urls)
+    task.downloads_attempted = len(objects)
     task.downloads_completed = 0
     task.save()
 
@@ -191,11 +193,13 @@ def _fetch_content(deposit_uuid, object_content_urls):
     temp_dir = tempfile.mkdtemp()
 
     completed = 0
-    for url in object_content_urls:
+    for item in objects:
         try:
-            filename = download_resource(url, temp_dir)
+            filename = item['filename']
+            download_resource(item['url'], temp_dir, filename)
             shutil.move(os.path.join(temp_dir, filename),
                 os.path.join(deposit.full_path(), filename))
+            logging.info('Saved file to ' + os.path.join(deposit.full_path(), filename))
             completed += 1
         except:
             pass

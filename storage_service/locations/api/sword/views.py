@@ -229,7 +229,7 @@ def _spawn_batch_download_and_flag_finalization_if_requested(deposit_uuid, reque
         deposit.save()
 
     # create subprocess so content URLs can be downloaded asynchronously
-    helpers.spawn_download_task(deposit_uuid, mets_data['object_content_urls'])
+    helpers.spawn_download_task(deposit_uuid, mets_data['objects'])
 
 """
 From a request's body, parse deposit name and control URLs from METS XML
@@ -237,7 +237,7 @@ From a request's body, parse deposit name and control URLs from METS XML
 Returns None if parsing fails
 """
 def _parse_name_and_content_urls_from_request_body(request):
-    logging.info('getting name and content from request: ' + request.read())
+    logging.info('getting name and content from request')
     temp_filepath = helpers.write_request_body_to_temp_file(request)
     logging.info ('temp file path: ' + temp_filepath)
 
@@ -254,7 +254,7 @@ def _parse_name_and_content_urls_from_request_body(request):
 """
 Parse deposit name and control URLS from a METS XML file
 
-Returns a dict with the keys 'deposit_name' and 'object_content_urls'
+Returns a dict with the keys 'deposit_name' and 'objects'
 """
 def _parse_name_and_content_urls_from_mets_file(filepath):
     tree = etree.parse(filepath)
@@ -263,7 +263,7 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
     logging.info('found deposit name in mets: ' + deposit_name)
 
     # parse XML for content URLs
-    object_content_urls = []
+    objects = []
 
     elements = root.iterfind("{http://www.loc.gov/METS/}fileSec/"
         + "{http://www.loc.gov/METS/}fileGrp[@ID='DATASTREAMS']/"
@@ -273,13 +273,17 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
     )
 
     for element in elements:
-       new_url = element.get('{http://www.w3.org/1999/xlink}href')
-       object_content_urls.append(new_url)
-       logging.info('found url in mets: ' + new_url)
+       url = element.get('{http://www.w3.org/1999/xlink}href')
+       filename = element.get('{http://www.w3.org/1999/xlink}title')
+       objects.append({
+           'filename': filename,
+           'url': url
+       })
+       logging.info('found url in mets: ' + url)
 
     return {
         'deposit_name': deposit_name,
-        'object_content_urls': object_content_urls
+        'objects': objects
     }
 
 """
@@ -361,7 +365,7 @@ def deposit_edit(request, uuid):
                 _spawn_batch_download_and_flag_finalization_if_requested(uuid, request, mets_data)
                 return _deposit_receipt_response(request, uuid, 200)
             else:
-                return _sword_error_response(request, 412, 'Error parsing XML ({error_message}).'.format(error_message=str(e)))
+                return _sword_error_response(request, 412, 'Error parsing XML.')
         else:
             # Attempt to finalize (if requested), otherwise just return deposit receipt
             if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
