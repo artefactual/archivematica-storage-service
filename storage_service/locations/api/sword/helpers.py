@@ -120,11 +120,11 @@ filename (using the filename at the end of the URL otherwise)
 Returns filename of downloaded resource
 """
 def download_resource(url, destination_path):
+    logging.info('downloading url: ' + url)
     request = urllib2.Request(url)
     base64string = base64.encodestring('%s:%s' % ('fedoraAdmin', 'islandora')).replace('\n', '')
     request.add_header("Authorization", "Basic %s" % base64string)   
     response = urllib2.urlopen(request)
-
     info = response.info()
     if 'content-disposition' in info:
         filename = parse_filename_from_content_disposition(info['content-disposition'])
