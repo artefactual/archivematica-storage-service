@@ -222,7 +222,7 @@ def _spawn_batch_download_and_flag_finalization_if_requested(deposit_uuid, reque
         deposit.save()
 
     # create subprocess so content URLs can be downloaded asynchronously
-    helpers.spawn_download_task(deposit_uuid, mets_data['object_content_urls'])
+    helpers.spawn_download_task(deposit_uuid, mets_data['objects'])
 
 """
 From a request's body, parse deposit name and control URLs from METS XML
@@ -244,15 +244,16 @@ def _parse_name_and_content_urls_from_request_body(request):
 """
 Parse deposit name and control URLS from a METS XML file
 
-Returns a dict with the keys 'deposit_name' and 'object_content_urls'
+Returns a dict with the keys 'deposit_name' and 'objects'
 """
 def _parse_name_and_content_urls_from_mets_file(filepath):
     tree = etree.parse(filepath)
     root = tree.getroot()
     deposit_name = root.get('LABEL')
+    logging.info('found deposit name in mets: ' + deposit_name)
 
     # parse XML for content URLs
-    object_content_urls = []
+    objects = []
 
     elements = root.iterfind("{http://www.loc.gov/METS/}fileSec/"
         + "{http://www.loc.gov/METS/}fileGrp[@ID='DATASTREAMS']/"
@@ -262,11 +263,17 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
     )
 
     for element in elements:
-       object_content_urls.append(element.get('{http://www.w3.org/1999/xlink}href'))
+       url = element.get('{http://www.w3.org/1999/xlink}href')
+       filename = element.get('{http://www.w3.org/1999/xlink}title')
+       objects.append({
+           'filename': filename,
+           'url': url
+       })
+       logging.info('found url in mets: ' + new_url)
 
     return {
         'deposit_name': deposit_name,
-        'object_content_urls': object_content_urls
+        'objects': objects
     }
 
 """

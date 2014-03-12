@@ -161,19 +161,19 @@ def deposit_downloading_status(deposit_uuid):
 """
 Spawn an asynchrnous batch download
 """
-def spawn_download_task(deposit_uuid, object_content_urls):
-    p = Process(target=_fetch_content, args=(deposit_uuid, object_content_urls))
+def spawn_download_task(deposit_uuid, objects):
+    p = Process(target=_fetch_content, args=(deposit_uuid, objects))
     p.start()
 
 """
 Download a number of files, keeping track of progress and success using a
 database record. After downloading, finalize deposit if requested.
 """
-def _fetch_content(deposit_uuid, object_content_urls):
+def _fetch_content(deposit_uuid, objects):
     # add download task to keep track of progress
     deposit = get_deposit(deposit_uuid)
     task = LocationDownloadTask(location=deposit)
-    task.downloads_attempted = len(object_content_urls)
+    task.downloads_attempted = len(objects)
     task.downloads_completed = 0
     task.save()
 
@@ -181,9 +181,10 @@ def _fetch_content(deposit_uuid, object_content_urls):
     temp_dir = tempfile.mkdtemp()
 
     completed = 0
-    for url in object_content_urls:
+    for item in objects:
         try:
-            filename = download_resource(url, temp_dir)
+            filename = item['filename']
+            download_resource(item['url'], temp_dir)
             shutil.move(os.path.join(temp_dir, filename),
                 os.path.join(deposit.full_path(), filename))
             completed += 1
