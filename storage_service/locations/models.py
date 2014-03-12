@@ -238,6 +238,11 @@ class Space(models.Model):
 
     def _move_locally(self, source_path, destination_path, mode=None):
         """ Moves a file from source_path to destination_path on the local filesystem. """
+        # FIXME this does not work properly when moving folders troubleshoot
+        # and fix before using.
+        # When copying from folder/. to folder2/. it failed because the folder
+        # already existed.  Copying folder/ or folder to folder/ or folder also
+        # has errors.  Should uses shutil.move()
         logging.info("Moving from {} to {}".format(source_path, destination_path))
 
         # Create directories
@@ -315,7 +320,8 @@ class LocalFilesystem(models.Model):
             # os.path.join(*src_path.split(os.sep)[1:]) # Strips up to first os.sep
         source_path = os.path.join(self.space.staging_path, src_path)
         destination_path = os.path.join(self.space.path, dest_path)
-        return self.space._move_locally(source_path, destination_path)
+        self.space._create_local_directory(destination_path)
+        return self.space._move_rsync(source_path, destination_path)
 
     def verify(self):
         """ Verify that the space is accessible to the storage service. """
