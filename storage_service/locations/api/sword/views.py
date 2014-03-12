@@ -105,7 +105,14 @@ def collection(request, space_uuid):
             
             if request.body != '':
                 try:
-                    mets_data = _parse_name_and_content_urls_from_request_body(request)
+                    temp_filepath = helpers.write_request_body_to_temp_file(request)
+
+                    # parse name and content URLs out of XML
+                    try:
+                        mets_data = _parse_name_and_content_urls_from_mets_file(temp_filepath)
+                    except etree.XMLSyntaxError as e:
+                        os.unlink(temp_filepath)
+                        mets_data = None
 
                     if mets_data != None:
                         if mets_data['deposit_name'] == None:
@@ -122,6 +129,13 @@ def collection(request, space_uuid):
                                 return  _sword_error_response(request, 500, 'Space path (%s) does not exist: contact an administrator.' % (space.path))
                             else:
                                 deposit_uuid = _create_deposit_directory_and_db_entry(deposit_specification)
+
+                                # copy METS file to submission documentation directory then remove temp file
+                                deposit = helpers.get_deposit(deposit_uuid)
+                                submission_documentation_directory = os.path.join(deposit.full_path(), 'submissionDocumentation')
+                                if not path.exists(submission_documentation_directory):
+                                    os.mkdir(submission_documentation_directory)
+                                os.rename(temp_filepath, os.path.join(submission_documentation_directory, 'METS.xml'))
 
                                 if deposit_uuid != None:
                                     _spawn_batch_download_and_flag_finalization_if_requested(deposit_uuid, request, mets_data)
