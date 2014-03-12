@@ -312,7 +312,6 @@ def deposit_edit(request, uuid):
         return _sword_error_response(request, 400, 'This deposit has already been submitted for processing.')
 
     if request.method == 'GET':
-        deposit = helpers.get_deposit(uuid)
         edit_iri = request.build_absolute_uri(
             reverse(
                 'sword_deposit',
@@ -363,8 +362,11 @@ Returns deposit receipt response or error response
 """
 def _finalize_or_mark_for_finalization(request, deposit_uuid):
     if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
-        helpers.spawn_finalization(deposit_uuid)
-        return _deposit_receipt_response(request, deposit_uuid, 200)
+        if helpers.deposit_downloading_status(deposit_uuid) == 'complete':
+            helpers.spawn_finalization(deposit_uuid)
+            return _deposit_receipt_response(request, deposit_uuid, 200)
+        else:
+            return _sword_error_response(request, 400, 'Downloading not yet complete or errors were encountered.')
     else:
         return _sword_error_response(request, 400, 'The In-Progress header must be set to false when starting deposit processing.')
 
