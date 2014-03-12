@@ -225,7 +225,6 @@ def _finalize_if_not_empty(deposit_uuid):
             # get sword server so we can access pipeline information
             sword_server = SwordServer.objects.get(space=deposit.space)
             result = activate_transfer_and_request_approval_from_pipeline(deposit, sword_server)
-            #result['deposit_uuid'] = deposit_uuid
 
             if 'error' in result:
                 return _sword_error_response(request, 500, result['message'])
