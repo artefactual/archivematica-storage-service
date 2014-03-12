@@ -133,7 +133,7 @@ def collection(request, space_uuid):
                                 # copy METS file to submission documentation directory then remove temp file
                                 deposit = helpers.get_deposit(deposit_uuid)
                                 submission_documentation_directory = os.path.join(deposit.full_path(), 'submissionDocumentation')
-                                if not path.exists(submission_documentation_directory):
+                                if not os.path.exists(submission_documentation_directory):
                                     os.mkdir(submission_documentation_directory)
                                 os.rename(temp_filepath, os.path.join(submission_documentation_directory, 'METS.xml'))
 
