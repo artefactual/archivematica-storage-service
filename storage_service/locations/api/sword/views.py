@@ -1,5 +1,6 @@
 # stdlib, alphabetical
 import datetime
+import logging
 from lxml import etree as etree
 import os
 import shutil
@@ -21,6 +22,12 @@ from locations.models import Pipeline
 from locations.models import Space
 from locations.models import SwordServer
 import helpers
+
+LOGGER = logging.getLogger(__name__)
+logging.basicConfig(filename="/tmp/storage_service.log",
+    level=logging.INFO)
+
+logging.info('starting sword service')
 
 """
 Example GET of service document:
@@ -216,13 +223,18 @@ From a request's body, parse deposit name and control URLs from METS XML
 Returns None if parsing fails
 """
 def _parse_name_and_content_urls_from_request_body(request):
+    logging.info('getting name and content from request: ' + request.read())
     temp_filepath = helpers.write_request_body_to_temp_file(request)
+    logging.info ('temp file path: ' + temp_filepath)
 
     # parse name and content URLs out of XML
     try:
         mets_data = _parse_name_and_content_urls_from_mets_file(temp_filepath)
+        os.unlink(temp_filepath)
+        logging.info (mets_data)
         return mets_data
     except etree.XMLSyntaxError as e:
+        os.unlink(temp_filepath)
         return None
 
 """
@@ -234,6 +246,7 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
     tree = etree.parse(filepath)
     root = tree.getroot()
     deposit_name = root.get('LABEL')
+    logging.info('found deposit name in mets: ' + deposit_name)
 
     # parse XML for content URLs
     object_content_urls = []
@@ -246,7 +259,9 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
     )
 
     for element in elements:
-       object_content_urls.append(element.get('{http://www.w3.org/1999/xlink}href'))
+       new_url = element.get('{http://www.w3.org/1999/xlink}href')
+       object_content_urls.append(new_url)
+       logging.info('found url in mets: ' + new_url)
 
     return {
         'deposit_name': deposit_name,

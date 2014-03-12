@@ -1,5 +1,7 @@
 # stdlib, alphabetical
+import base64
 import json
+import logging
 import os
 from multiprocessing import Process
 import shutil
@@ -22,6 +24,10 @@ from locations.models import Location
 from locations.models import LocationDownloadTask
 from locations.models import Space
 from locations.models import SwordServer
+
+LOGGER = logging.getLogger(__name__)
+logging.basicConfig(filename="/tmp/storage_service.log",
+    level=logging.INFO)
 
 """
 Shortcut to retrieve deposit data
@@ -115,8 +121,11 @@ filename (using the filename at the end of the URL otherwise)
 Returns filename of downloaded resource
 """
 def download_resource(url, destination_path):
-    response = urllib2.urlopen(url)
-
+    logging.info('downloading url: ' + url)
+    request = urllib2.Request(url)
+    base64string = base64.encodestring('%s:%s' % ('fedoraAdmin', 'islandora')).replace('\n', '')
+    request.add_header("Authorization", "Basic %s" % base64string)   
+    response = urllib2.urlopen(request)
     info = response.info()
     if 'content-disposition' in info:
         filename = parse_filename_from_content_disposition(info['content-disposition'])
