@@ -248,7 +248,6 @@ def _parse_name_and_content_urls_from_request_body(request):
         logging.info (mets_data)
         return mets_data
     except etree.XMLSyntaxError as e:
-        logging.info('had an error ' + e)
         os.unlink(temp_filepath)
         return None
 
