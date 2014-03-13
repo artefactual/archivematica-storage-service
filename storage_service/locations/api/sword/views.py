@@ -142,7 +142,7 @@ def collection(request, space_uuid):
                                 submission_documentation_directory = os.path.join(deposit.full_path(), 'submissionDocumentation')
                                 if not os.path.exists(submission_documentation_directory):
                                     os.mkdir(submission_documentation_directory)
-                                os.rename(temp_filepath, os.path.join(submission_documentation_directory, 'METS.xml'))
+                                os.rename(temp_filepath, os.path.join(submission_documentation_directory, 'fedora-METS.xml'))
 
                                 if deposit_uuid != None:
                                     _spawn_batch_download_and_flag_finalization_if_requested(deposit_uuid, request, mets_data)
