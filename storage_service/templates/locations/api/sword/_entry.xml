@@ -2,5 +2,6 @@
     <atom:id>{{ entry.url }}</atom:id>
     <atom:title type="text">{{ entry.title }}</atom:title>
     <atom:link href="{{ entry.url }}" rel="self">
+    {% if entry.summary %}<atom:summary>{{ entry.summary }}</atom:summary>{% endif %}
     </atom:link>
   </atom:entry>
