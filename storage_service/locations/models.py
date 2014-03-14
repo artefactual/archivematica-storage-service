@@ -401,6 +401,28 @@ class LocationDownloadTask(models.Model):
                 else:
                     return 'failed'
 
+class LocationDownloadTaskFile(models.Model):
+    uuid = UUIDField(editable=False, unique=True, version=4,
+        help_text="Unique identifier")
+    task = models.ForeignKey('LocationDownloadTask', to_field='uuid')
+
+    filename = models.CharField(max_length=256)
+    url = models.TextField()
+
+    completed = models.BooleanField(default=False,
+        help_text="True if file downloaded successfully.")
+    failed = models.BooleanField(default=False,
+        help_text="True if file failed to download.")
+
+    def downloading_status(self):
+        if self.completed:
+            return 'complete'
+        else:
+            if self.failed:
+                return 'failed'
+            else:
+                return 'downloading'
+
 
 ########################## PACKAGES ##########################
 # NOTE If the Packages section gets much bigger, move to its own app
