@@ -21,6 +21,7 @@ from locations.models import Location
 from locations.models import Pipeline
 from locations.models import Space
 from locations.models import SwordServer
+from locations.models import LocationDownloadTaskFile
 import helpers
 
 LOGGER = logging.getLogger(__name__)
@@ -495,6 +496,21 @@ def deposit_state(request, uuid):
         # failed, note failed finalization
         if deposit.finalization_attempt_failed and deposit.deposit_completion_time==None:
             state_description += ' (last finalization attempt failed)'
+
+        # get status of download tasks, if any
+        tasks = helpers.deposit_download_tasks(uuid)
+
+        # create atom representation of download tasks
+        entries = []
+
+        for task in tasks:
+            task_files = LocationDownloadTaskFile.objects.filter(task=task)
+            for task_file in task_files:
+                entries.append({
+                    'title': task_file.filename,
+                    'url': task_file.url,
+                    'summary': task_file.downloading_status()
+                })
 
         response = HttpResponse(render_to_string('locations/api/sword/state.xml', locals()))
         response['Content-Type'] = 'application/atom+xml;type=feed'

@@ -7,4 +7,6 @@
             {{ state_description }}
     </atom:category>
 
+    {% include 'locations/api/sword/_entries.xml' %}
+
 </atom:feed>

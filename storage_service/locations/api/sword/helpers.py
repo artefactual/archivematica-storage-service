@@ -22,6 +22,7 @@ import requests
 # This project, alphabetical
 from locations.models import Location
 from locations.models import LocationDownloadTask
+from locations.models import LocationDownloadTaskFile
 from locations.models import Space
 from locations.models import SwordServer
 
@@ -144,12 +145,18 @@ def download_resource(url, destination_path, filename=None):
     return filename
 
 """
+Return a deposit's download tasks.
+"""
+def deposit_download_tasks(deposit_uuid):
+    deposit = get_deposit(deposit_uuid)
+    return LocationDownloadTask.objects.filter(location=deposit)
+
+"""
 Return deposit status, indicating whether any incomplete or failed batch
 downloads exist.
 """
 def deposit_downloading_status(deposit_uuid):
-    deposit = get_deposit(deposit_uuid)
-    tasks = LocationDownloadTask.objects.filter(location=deposit)
+    tasks = deposit_download_tasks(deposit_uuid)
     if len(tasks) > 0:
         # check each task for completion and failure
         complete = True
@@ -194,15 +201,31 @@ def _fetch_content(deposit_uuid, objects):
 
     completed = 0
     for item in objects:
+        # create download task file record
+        task_file = LocationDownloadTaskFile(task=task)
+        task_file.save()
+
         try:
             filename = item['filename']
+
+            task_file.filename = filename
+            task_file.url = item['url']
+            task_file.save()
+
             download_resource(item['url'], temp_dir, filename)
             shutil.move(os.path.join(temp_dir, filename),
                 os.path.join(deposit.full_path(), filename))
+
+            # mark download task file record complete or failed
+            task_file.completed = True
+            task_file.save()
+
             logging.info('Saved file to ' + os.path.join(deposit.full_path(), filename))
             completed += 1
         except:
-            pass
+            # an error occurred
+            task_file.failed = True
+            task_file.save()
 
     # remove temp dir
     shutil.rmtree(temp_dir)
