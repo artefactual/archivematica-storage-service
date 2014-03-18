@@ -58,7 +58,7 @@ class LockssomaticForm(forms.ModelForm):
     # TODO SpaceForm.path help text should say path to staging space, preferably local
     class Meta:
         model = models.Lockssomatic
-        fields = ('sd_iri', 'keep_local')
+        fields = ('sd_iri', 'content_provider_id', 'keep_local')
 
 
 class LocationForm(forms.ModelForm):

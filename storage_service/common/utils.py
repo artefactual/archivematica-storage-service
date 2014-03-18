@@ -18,7 +18,7 @@ NSMAP = {
     'app': 'http://www.w3.org/2007/app',  # Atom Publishing Protocol
     'dc': 'http://purl.org/dc/elements/1.1/',
     'dcterms': 'http://purl.org/dc/terms/',
-    'lom': 'http://purl.org/lockssomatic/terms/SWORD',
+    'lom': 'http://lockssomatic.info/SWORD2',
     'mets': 'http://www.loc.gov/METS/',
     'premis': 'info:lc/xmlns/premis-v2',
     'sword': 'http://purl.org/net/sword/terms/',

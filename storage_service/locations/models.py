@@ -503,6 +503,9 @@ class Lockssomatic(models.Model):
         help_text="URL of LOCKSS-o-matic service document IRI, eg. http://lockssomatic.example.org/api/sword/2.0/sd-iri")
     collection_iri = models.CharField(max_length=256, null=True, blank=True, verbose_name="Collection IRI",
         help_text="URL to post the packages to, eg. http://lockssomatic.example.org/api/sword/2.0/col-iri/12")
+    content_provider_id = models.CharField(max_length=32,
+        verbose_name='Content Provider ID',
+        help_text='On-Behalf-Of value when communicating with LOCKSS-o-matic')
     checksum_type = models.CharField(max_length=64, null=True, blank=True, verbose_name='Checksum type', help_text='Checksum type to send to LOCKSS-o-matic for verification.  Eg. md5, sha1, sha256')
     keep_local = models.BooleanField(blank=True, default=True, verbose_name="Keep local copy?",
         help_text="If checked, keep a local copy even after the AIP is stored in the LOCKSS network.")
@@ -517,7 +520,8 @@ class Lockssomatic(models.Model):
 
         Returns True on success, False on error.  No updates performed on error."""
         try:
-            self.sword_connection = sword2.Connection(self.sd_iri, download_service_document=True)
+            self.sword_connection = sword2.Connection(self.sd_iri, download_service_document=True,
+                on_behalf_of=self.content_provider_id)
         except Exception:  # TODO make this more specific
             logging.exception("Error getting service document from SWORD server.")
             return False
@@ -604,7 +608,7 @@ class Lockssomatic(models.Model):
             summary=summary)
 
         # Add each chunk to the atom entry
-        entry.register_namespace('lom', 'http://purl.org/lockssomatic/terms/SWORD')
+        entry.register_namespace('lom', utils.NSMAP['lom'])
         for index, file_path in enumerate(output_files):
             # Get external URL
             # FIXME external URLs is relative to SS url, need absolute
