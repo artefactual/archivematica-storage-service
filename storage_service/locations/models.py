@@ -228,10 +228,14 @@ class Space(models.Model):
         except AttributeError:
             raise NotImplementedError('{} space has not implemented move_from_storage_service'.format(self.get_access_protocol_display()))
 
-    def post_move_from_storage_service(self, *args, **kwargs):
+    def post_move_from_storage_service(self, staging_path=None, destination_path=None, package=None, *args, **kwargs):
         """ Hook for any actions that need to be taken after moving from the storage service to the final destination. """
         try:
-            self.get_child_space().post_move_from_storage_service(*args, **kwargs)
+            self.get_child_space().post_move_from_storage_service(
+                staging_path=staging_path,
+                destination_path=destination_path,
+                package=package,
+                *args, **kwargs)
         except AttributeError:
             # This is optional for the child class to implement
             pass
@@ -378,9 +382,9 @@ class NFS(models.Model):
         self.space._create_local_directory(destination_path)
         return self.space._move_rsync(source_path, destination_path)
 
-    def post_move_from_storage_service(self, staging_file):
-        # Remove the staging file, since rsync leaves it behind
-        os.remove(staging_file)
+    def post_move_from_storage_service(self, staging_path, destination_path, package):
+        # TODO Remove the staging file, since rsync leaves it behind
+        pass
 
     def save(self, *args, **kwargs):
         self.verify()
@@ -483,8 +487,8 @@ class PipelineLocalFS(models.Model):
         # Move file
         return self.space._move_rsync(source_path, destination_path)
 
-    def post_move_from_storage_service(self, *args, **kwargs):
-        # TODO delete staging file?
+    def post_move_from_storage_service(self, staging_path, destination_path, package):
+        # TODO Remove the staging file, since rsync leaves it behind
         pass
 
 
