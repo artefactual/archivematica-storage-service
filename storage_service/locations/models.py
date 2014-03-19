@@ -513,6 +513,35 @@ class Lockssomatic(models.Model):
     sword_connection = None
     # Uses the SWORD protocol to talk to LOM
 
+    def move_to_storage_service(self, source_path, destination_path, dest_space):
+        """ Moves source_path to dest_space.staging_path/destination_path. """
+        # Check if in SS internal, if not then fetch from LOM
+        raise NotImplementedError('LOCKSS-o-matic has not implemented retrieval.')
+
+    def move_from_storage_service(self, source_path, destination_path):
+        """ Moves self.staging_path/source_path to destination_path. """
+        self.space._create_local_directory(destination_path)
+        return self.space._move_rsync(source_path, destination_path)
+
+    def post_move_from_storage_service(self, staging_path, destination_path, package):
+        # Post to Lockss-o-matic with the create resource atom entry
+        logging.info('Storing %s in LOCKSS', package.current_path)
+
+        # Update Service Document, including maxUploadSize and Collection IRI
+        self.update_service_document()
+
+        # Create the atom entry XML
+        entry, slug = self.create_resource(package)
+
+        # Post to SWORD2 server
+        receipt = self.sword_connection.create(col_iri=self.collection_iri, metadata_entry=entry, suggested_identifier=slug)
+        state_iri = receipt.edit_media_feed
+
+        logging.info("LOCKSS State IRI for {}: {}".format(package.uuid, state_iri))
+
+        # TODO save the state IRI to the pointer file
+
+
     def update_service_document(self):
         """ Fetch the service document from self.sd_iri and updates based on that.
 
@@ -934,16 +963,19 @@ class Package(models.Model):
             source_path=os.path.join(self.origin_location.relative_path, self.origin_path),
             destination_path=self.current_path,  # This should include Location.path
             destination_space=dest_space)
+        src_space.post_move_to_storage_service()
         dest_space.move_from_storage_service(
             source_path=self.current_path,  # This should include Location.path
             destination_path=os.path.join(self.current_location.relative_path, self.current_path),
             )
+        dest_space.post_move_from_storage_service(
+            staging_path=self.current_path,
+            destination_path=os.path.join(self.current_location.relative_path, self.current_path),
+            package=self)
 
         # Save new space/location usage, package status
         self._update_quotas(dest_space, self.current_location)
         if dest_space.access_protocol == Space.LOM:
-            # TODO Run this after returning success
-            self._store_aip_lom(destination_path)
             self.status = Package.STAGING
         else:
             self.status = Package.UPLOADED
@@ -1081,37 +1113,6 @@ class Package(models.Model):
             shutil.rmtree(temp_dir)
 
         return (success, failures, message)
-
-    def _store_aip_lom(self, file_path):
-        """ Stores a file in LOCKSS, after splitting into AU sizes. """
-        logging.debug('Storing {} in LOCKSS'.format(file_path))
-        protocol_space = self.current_location.space.get_child_space()
-
-        # Update Service Document, including maxUploadSize and Collection IRI
-        protocol_space.update_service_document()
-
-        entry, slug = protocol_space.create_resource(self)
-
-        # Post to SWORD2 server
-        receipt = protocol_space.sword_connection.create(col_iri=protocol_space.collection_iri, metadata_entry=entry, suggested_identifier=slug)
-        # URI to update LOM with whether the local copy is deleted or not
-        edit_iri = receipt.se_iri
-
-        # State IRI not parsed by default in the SWORD2 library
-        state_iri_element = receipt.dom.find('atom:link[@rel="http://purl.org/net/sword/terms/statement"][@type="application/atom+xml;type=feed"]', namespaces=utils.NSMAP)
-        if state_iri_element is not None:
-            state_iri = state_iri_element.get('href')
-        else:
-            pass
-            # FIXME Error
-
-        # FIXME what if state_iri is None?
-
-        logging.info("LOCKSS State IRI for {}: {}, Edit IRI: {}".format(self.uuid, state_iri, edit_iri))
-
-        # TODO save the state IRI & Edit IRI to the pointer file
-        # Where store state & edit IRI if not pointer file???
-
 
     def _lom_poll_state(self):
         if self.current_location.space.access_protocol != Space.LOM:
