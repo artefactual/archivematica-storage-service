@@ -547,16 +547,22 @@ class Lockssomatic(models.Model):
     def _split_package(self, package):
         """ Splits the package into chunks of size self.au_size. Returns list of paths to the chunks. """
         file_path = package.full_path()
-        output_path = os.path.splitext(file_path)[0]+'_'  # strip extension
         expected_num_files = math.ceil(os.path.getsize(file_path) / float(self.au_size))
         if expected_num_files > 1:
+            # Strip extension, add .tar-1 ('-1' to make rename script happy)
+            output_path = os.path.splitext(file_path)[0]+'.tar-1'
+            command = ['tar', '--create', '--multi-volume',
+                '--tape-length', str(self.au_size),
+                '--new-volume-script', 'common/tar_new_volume.sh',
+                '-f', output_path, file_path]
             # TODO reserve space in quota for extra files
-            command = ['split', '-b', str(self.au_size), '-d', file_path, output_path]
+            logging.info('LOCKSS split command: %s', command)
             try:
                 subprocess.check_call(command)
             except Exception:
-                logging.exception("Split of {} failed".format(file_path))
+                logging.exception("Split of %s failed with command %s", file_path, command)
                 raise
+            output_path = output_path[:-2]  # Remove '-1'
             dirname, basename = os.path.split(output_path)
             output_files = sorted([os.path.join(dirname, entry) for entry in os.listdir(dirname) if entry.startswith(basename)])
             # TODO update pointer file here
