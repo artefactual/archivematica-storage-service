@@ -120,11 +120,14 @@ filename (using the filename at the end of the URL otherwise)
 
 Returns filename of downloaded resource
 """
-def download_resource(url, destination_path, filename=None):
+def download_resource(url, destination_path, filename=None, username=None, password=None):
     logging.info('downloading url: ' + url)
     request = urllib2.Request(url)
-    base64string = base64.encodestring('%s:%s' % ('fedoraAdmin', 'islandora')).replace('\n', '')
-    request.add_header("Authorization", "Basic %s" % base64string)   
+
+    if username != None and password != None:
+        base64string = base64.encodestring('%s:%s' % (username, password)).replace('\n', '')
+        request.add_header("Authorization", "Basic %s" % base64string)   
+
     response = urllib2.urlopen(request)
     info = response.info()
     if filename == None:
@@ -211,7 +214,14 @@ def _fetch_content(deposit_uuid, objects):
             task_file.url = item['url']
             task_file.save()
 
-            download_resource(item['url'], temp_dir, filename)
+            download_resource(
+                item['url'],
+                temp_dir,
+                filename,
+                deposit.space.fedora_user,
+                deposit.space.fedora_password
+            )
+
             shutil.move(os.path.join(temp_dir, filename),
                 os.path.join(deposit.full_path(), filename))
 
