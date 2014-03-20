@@ -104,6 +104,7 @@ def collection(request, space_uuid):
         response = HttpResponse(collection_xml)
         response['Content-Type'] = 'application/atom+xml;type=feed'
         return response
+
     elif request.method == 'POST':
         # has the In-Progress header been set?
         if 'HTTP_IN_PROGRESS' in request.META:
@@ -276,9 +277,12 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
     for element in elements:
        url = element.get('{http://www.w3.org/1999/xlink}href')
        filename = element.get('{http://www.w3.org/1999/xlink}title')
+       checksum = element.get('CHECKSUM')
+
        objects.append({
            'filename': filename,
-           'url': url
+           'url': url,
+           'checksum': checksum
        })
        logging.info('found url in mets: ' + url)
 

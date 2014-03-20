@@ -222,8 +222,16 @@ def _fetch_content(deposit_uuid, objects):
                 deposit.space.fedora_password
             )
 
-            shutil.move(os.path.join(temp_dir, filename),
-                os.path.join(deposit.full_path(), filename))
+            temp_filename = os.path.join(temp_dir, filename)
+
+            if item['checksum'] != None and item['checksum'] != get_file_md5_checksum(temp_filename):
+                os.unlink(temp_filename)
+                raise Exception("Incorrect checksum")
+
+            shutil.move(
+                temp_filename,
+                os.path.join(deposit.full_path(), filename)
+            )
 
             # mark download task file record complete or failed
             task_file.completed = True
