@@ -104,6 +104,7 @@ def collection(request, space_uuid):
         response = HttpResponse(collection_xml)
         response['Content-Type'] = 'application/atom+xml;type=feed'
         return response
+
     elif request.method == 'POST':
         # has the In-Progress header been set?
         if 'HTTP_IN_PROGRESS' in request.META:
@@ -276,9 +277,18 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
     for element in elements:
        url = element.get('{http://www.w3.org/1999/xlink}href')
        filename = element.get('{http://www.w3.org/1999/xlink}title')
+
+       # only MD5 checksums currently supported
+       checksumtype = element.get('CHECKSUMTYPE')
+       checksum = element.get('CHECKSUM')
+
+       if checksum is not None and checksumtype != 'MD5':
+           raise Exception('If using CHECKSUM attribute, CHECKSUMTYPE attribute value must be set to MD5 in XML')
+
        objects.append({
            'filename': filename,
-           'url': url
+           'url': url,
+           'checksum': checksum
        })
        logging.info('found url in mets: ' + url)
 
