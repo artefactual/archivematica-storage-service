@@ -277,7 +277,13 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
     for element in elements:
        url = element.get('{http://www.w3.org/1999/xlink}href')
        filename = element.get('{http://www.w3.org/1999/xlink}title')
+
+       # only MD5 checksums currently supported
+       checksumtype = element.get('CHECKSUMTYPE')
        checksum = element.get('CHECKSUM')
+
+       if checksum != None and checksumtype != 'MD5':
+           raise Exception('If using CHECKSUM attribute, CHECKSUMTYPE attribute value must be set to MD5 in XML')
 
        objects.append({
            'filename': filename,
