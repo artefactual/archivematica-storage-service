@@ -555,7 +555,7 @@ class Lockssomatic(models.Model):
             logging.exception("Error getting service document from SWORD server.")
             return False
         # AU size
-        self.au_size = self.sword_connection.maxUploadSize
+        self.au_size = self.sword_connection.maxUploadSize * 1000  # Convert from kB
 
         # Collection IRI
         # Workspaces are a list of ('workspace name', [collections]) tuples
@@ -664,9 +664,10 @@ class Lockssomatic(models.Model):
                     checksum.update(chunk)
 
             # Add new content entry and values
+            size = os.path.getsize(file_path)
             entry.add_field('lom_content', external_url)
             content_entry = entry.entry[-1]
-            content_entry.set('size', str(os.path.getsize(file_path)))
+            content_entry.set('size', str(math.ceil(size/1000.0)))  # Convert to kB
             content_entry.set('checksumType', checksum.name)
             content_entry.set('checksumValue', checksum.hexdigest())
 
@@ -787,7 +788,7 @@ class Package(models.Model):
     current_path = models.TextField()
     pointer_file_location = models.ForeignKey(Location, to_field='uuid', related_name='+', null=True, blank=True)
     pointer_file_path = models.TextField(null=True, blank=True)
-    size = models.IntegerField(default=0)
+    size = models.IntegerField(default=0, help_text='Size in bytes of the package')
 
     AIP = "AIP"
     AIC = "AIC"
