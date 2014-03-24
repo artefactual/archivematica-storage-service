@@ -8,6 +8,11 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
+        # Adding field 'Package.misc_attributes'
+        db.add_column(u'locations_package', 'misc_attributes',
+                      self.gf('jsonfield.fields.JSONField')(default={}, null=True, blank=True),
+                      keep_default=False)
+
         # Adding field 'Space.staging_path'
         db.add_column(u'locations_space', 'staging_path',
                       self.gf('django.db.models.fields.TextField')(default='/var/archivematica/storage_service/'),
@@ -15,6 +20,9 @@ class Migration(SchemaMigration):
 
 
     def backwards(self, orm):
+        # Deleting field 'Package.misc_attributes'
+        db.delete_column(u'locations_package', 'misc_attributes')
+
         # Deleting field 'Space.staging_path'
         db.delete_column(u'locations_space', 'staging_path')
 
@@ -109,6 +117,7 @@ class Migration(SchemaMigration):
             'current_location': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['locations.Location']", 'to_field': "'uuid'"}),
             'current_path': ('django.db.models.fields.TextField', [], {}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'misc_attributes': ('jsonfield.fields.JSONField', [], {'default': '{}', 'null': 'True', 'blank': 'True'}),
             'origin_pipeline': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['locations.Pipeline']", 'to_field': "'uuid'"}),
             'package_type': ('django.db.models.fields.CharField', [], {'max_length': '8'}),
             'pointer_file_location': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'+'", 'to_field': "'uuid'", 'null': 'True', 'to': u"orm['locations.Location']"}),

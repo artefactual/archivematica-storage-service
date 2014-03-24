@@ -17,6 +17,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 # Third party dependencies, alphabetical
+import jsonfield
 from django_extensions.db.fields import UUIDField
 
 # This project, alphabetical
@@ -633,6 +634,10 @@ class Package(models.Model):
     status = models.CharField(max_length=8, choices=STATUS_CHOICES,
         default=FAIL,
         help_text="Status of the package in the storage service.")
+    # NOTE Do not put anything important here because you cannot easily query
+    # JSONFields! Add a new column if you need to query it
+    misc_attributes = jsonfield.JSONField(blank=True, null=True, default={},
+        help_text='For storing flexible, often Space-specific, attributes')
 
     PACKAGE_TYPE_CAN_DELETE = (AIP, AIC, TRANSFER)
     PACKAGE_TYPE_CAN_EXTRACT = (AIP, AIC)
