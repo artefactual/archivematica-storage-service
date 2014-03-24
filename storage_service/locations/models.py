@@ -93,14 +93,6 @@ class Space(models.Model):
     last_verified = models.DateTimeField(default=None, null=True, blank=True,
         help_text="Time this location was last verified to be accessible.")
 
-    # SWORD-related attributes
-    fedora_user = models.CharField(max_length=64,
-        help_text="Fedora user name (for SWORD functionality)")
-    fedora_password = models.CharField(max_length=256,
-        help_text="Fedora password (for SWORD functionality)")
-    fedora_name = models.CharField(max_length=256,
-        help_text="Name or IP of the remote Fedora machine.")
-
     mounted_locally = set([LOCAL_FILESYSTEM, NFS, SWORD_SERVER])
     ssh_only_access = set([PIPELINE_LOCAL_FS])
 

@@ -32,7 +32,7 @@ class SpaceForm(forms.ModelForm):
 
     class Meta:
         model = Space
-        fields = ('access_protocol', 'size', 'path', 'fedora_user', 'fedora_password', 'fedora_name')
+        fields = ('access_protocol', 'size', 'path')
 
     def __init__(self, *args, **kwargs):
         super(SpaceForm, self).__init__(*args, **kwargs)
