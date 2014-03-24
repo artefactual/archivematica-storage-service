@@ -535,12 +535,15 @@ class Lockssomatic(models.Model):
 
         # Post to SWORD2 server
         receipt = self.sword_connection.create(col_iri=self.collection_iri, metadata_entry=entry, suggested_identifier=slug)
-        state_iri = receipt.edit_media_feed
+        state_iri = receipt.atom_statement_iri
+        edit_iri = receipt.edit
 
-        logging.info("LOCKSS State IRI for {}: {}".format(package.uuid, state_iri))
+        logging.info("LOCKSS State IRI for %s: %s", package.uuid, state_iri)
+        logging.info("LOCKSS Edit IRI for %s: %s", package.uuid, edit_iri)
 
-        # TODO save the state IRI to the pointer file
-
+        misc = {'state_iri': state_iri, 'edit_iri': edit_iri}
+        package.misc_attributes.update(misc)
+        package.save()
 
     def update_service_document(self):
         """ Fetch the service document from self.sd_iri and updates based on that.
