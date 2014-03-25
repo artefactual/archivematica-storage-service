@@ -424,7 +424,6 @@ class PackageResource(ModelResource):
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/download%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('download_request'), name="download_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/pointer_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('pointer_file_request'), name="pointer_file_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/check_fixity%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('check_fixity_request'), name="check_fixity_request"),
-            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/lom_complete%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('lom_complete'), name="lom_complete"),
         ]
 
     def obj_create(self, bundle, **kwargs):
@@ -577,26 +576,3 @@ class PackageResource(ModelResource):
             json.dumps(response),
             mimetype="application/json"
         )
-
-    def lom_complete(self, request, **kwargs):
-        """ Callback when AIP is stored in LOCKSS. """
-        # TODO Update this for actual LOM call
-        # Tastypie checks
-        self.method_check(request, allowed=['get'])
-        self.throttle_check(request)
-
-        # Get AIP details
-        package = Package.objects.get(uuid=kwargs['uuid'])
-        result = package._store_aip_lom_complete()
-        if result == True:
-            status_code = 200
-            response = {'message': 'AIP stored in LOCKSS'}
-        else:
-            status_code = 202
-            response = {'message': result}
-
-        self.log_throttled_access(request)
-        response_json = json.dumps(response)
-        return http.HttpResponse(status=status_code, content=response_json,
-            mimetype='application/json')
-

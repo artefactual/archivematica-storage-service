@@ -20,6 +20,8 @@ urlpatterns = patterns('locations.views',
         name='package_list'),
     url(r'^packages/aip_delete_request$', 'aip_delete_request',
         name='aip_delete_request'),
+    url(r'^packages/(?P<uuid>'+UUID+')/update_status/$', 'package_update_status',
+        name='package_update_status'),
 
     # Pipelines
     url(r'^pipelines/$', 'pipeline_list',

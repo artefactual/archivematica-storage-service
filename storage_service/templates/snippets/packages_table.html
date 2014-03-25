@@ -25,7 +25,10 @@
           None
           {% endif %}
         </td>
-        <td>{{ package.get_status_display }}</td>
+        <td>
+          {{ package.get_status_display }}
+          (<a href="{% url 'package_update_status' package.uuid %}?next={{ request.path }}">Update Status</a>)
+        </td>
       </tr>
     {% endfor %}
     </tbody>

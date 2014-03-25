@@ -80,6 +80,28 @@ def aip_delete_request(request):
         Q(status=Event.APPROVED) | Q(status=Event.REJECTED))
     return render(request, 'locations/aip_delete_request.html', locals())
 
+def package_update_status(request, uuid):
+    package = Package.objects.get(uuid=uuid)
+
+    old_status = package.status
+    try:
+        new_status = package.current_location.space.update_package_status(package)
+    except Exception:
+        new_status = None
+
+    if new_status is not None:
+        if old_status != new_status:
+            messages.info(request,
+                "Status for package {} is now '{}'.".format(uuid, package.get_status_display()))
+        else:
+            messages.info(request,
+                'Status for package {} has not changed.'.format(uuid))
+    else:
+        messages.warning(request,
+            'Error getting status for package {}'.format(uuid))
+    next_url = request.GET.get('next', reverse('package_list'))
+    return redirect(next_url)
+
 
 ########################## LOCATIONS ##########################
 

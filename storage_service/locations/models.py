@@ -258,6 +258,17 @@ class Space(models.Model):
             # This is optional for the child class to implement
             pass
 
+    def update_package_status(self, package):
+        """
+        Check and update the status of `package` stored in this Space.
+        """
+        try:
+            return self.get_child_space().update_package_status(package)
+        except AttributeError:
+            pass  # TODO should this be required?
+            # raise NotImplementedError('{} space has not implemented update_package_status'.format(self.get_access_protocol_display()))
+
+
     # HELPER FUNCTIONS
 
     def _move_locally(self, source_path, destination_path, mode=None):
@@ -544,6 +555,43 @@ class Lockssomatic(models.Model):
         misc = {'state_iri': state_iri, 'edit_iri': edit_iri}
         package.misc_attributes.update(misc)
         package.save()
+
+    def update_package_status(self, package):
+        """ """
+        status = package.status
+
+        if 'state_iri' not in package.misc_attributes:
+            pass
+            # TODO test that all called functions are idempotent
+            # self.post_move_from_storage_service(None, None, package)
+
+        if not self.sword_connection:
+            self.update_service_document()
+
+        # SWORD2 client has only experimental support for getting SWORD2
+        # statements, so implementing the fetch and parse here. (March 2014)
+        response = self.sword_connection.get_resource(package.misc_attributes['state_iri'], headers = {'Accept':'application/atom+xml;type=feed'})
+
+        if response.code != 200:
+            return None
+
+        root = etree.fromstring(response.content)
+
+        # TODO Check that number of lom:content entries is same as number of chunks
+        servers = root.findall('.//lom:server', namespaces=utils.NSMAP)
+        if all(s.get('state') == 'agreement' for s in servers):
+            status = Package.UPLOADED
+
+            # TODO update pointer file
+            if not self.keep_local:
+                pass
+                # TODO delete all local files - original and chunks
+                # TODO update pointer file
+        logging.info('status: %s', status)
+        # Update value if different
+        package.status = status
+        package.save()
+        return status
 
     def update_service_document(self):
         """ Fetch the service document from self.sd_iri and updates based on that.
@@ -1117,51 +1165,6 @@ class Package(models.Model):
             shutil.rmtree(temp_dir)
 
         return (success, failures, message)
-
-    def _lom_poll_state(self):
-        if self.current_location.space.access_protocol != Space.LOM:
-            return "AIP not stored in LOCKSS"
-        # Get state URI from pointer file
-
-        # Poll state URI
-
-        # Check that all pieces are in agreement
-
-        # If all agreement, _lom_store_aip_complete
-        # else NOP
-
-
-    def _lom_store_aip_complete(self):
-        """ Acknowledges the file was completely stored in LOCKSS via LOCKSS-o-matic.
-
-        Returns True on success, error message on failure. """
-        if self.current_location.space.access_protocol != Space.LOM:
-            return "AIP not stored in LOCKSS"
-        # Delete the pieces
-        # FIXME parse this from the pointer file
-        dirname, filename = os.path.split(self.full_path())
-        basename, _ = os.path.splitext(filename)
-        output_files = sorted([entry for entry in os.listdir(dirname) if entry.startswith(basename+'_')])
-        # Delete original AIP if Space says so
-        protocol_space = self.current_location.space.get_child_space()
-        if protocol_space.delete_staging:
-            output_files += [filename]
-            # notify LOM that local copy is gone
-            # use edit IRI from pointer file
-        error_files = []
-        for f in output_files:
-            path = os.path.join(dirname, f)
-            try:
-                os.remove(path)
-            except os.error:
-                error_files += [path]
-                logging.exception("File not deleted: {}".format(path))
-        # Update status
-        self.status = Package.UPLOADED
-        self.save()
-        if error_files:
-            return "Some local copies of LOCKSS files not deleted: " + ', '.join(error_files)
-        return True
 
     def delete_from_storage(self):
         """ Deletes the package from filesystem and updates metadata.
