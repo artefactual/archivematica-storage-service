@@ -219,7 +219,18 @@ class Space(models.Model):
         """
         logging.debug('FROM: src: {}'.format(source_path))
         logging.debug('FROM: dst: {}'.format(destination_path))
-        # TODO move the path mangling to here?
+
+        # Path pre-processing
+        # source_path must be relative
+        if os.path.isabs(source_path):
+            source_path = source_path.lstrip(os.sep)
+            # Alternate implementation:
+            # os.path.join(*source_path.split(os.sep)[1:]) # Strips up to first os.sep
+        source_path = os.path.join(self.staging_path, source_path)
+        if os.path.isdir(source_path):
+            source_path += os.sep
+        destination_path = os.path.join(self.path, destination_path)
+
         # TODO enforce destination_path is inside self.path
         try:
             self.get_child_space().move_from_storage_service(
@@ -317,14 +328,8 @@ class LocalFilesystem(models.Model):
         self.space._create_local_directory(destination_path)
         return self.space._move_rsync(source_path, destination_path)
 
-    def move_from_storage_service(self, src_path, dest_path):
+    def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
-        # src_path must be relative
-        if os.path.isabs(src_path):
-            src_path = src_path.lstrip(os.sep)
-            # os.path.join(*src_path.split(os.sep)[1:]) # Strips up to first os.sep
-        source_path = os.path.join(self.space.staging_path, src_path)
-        destination_path = os.path.join(self.space.path, dest_path)
         self.space._create_local_directory(destination_path)
         return self.space._move_rsync(source_path, destination_path)
 
@@ -369,14 +374,8 @@ class NFS(models.Model):
         # TODO delete original file?
         pass
 
-    def move_from_storage_service(self, src_path, dest_path):
+    def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
-        # src_path must be relative
-        if os.path.isabs(src_path):
-            src_path = src_path.lstrip(os.sep)
-            # os.path.join(*src_path.split(os.sep)[1:]) # Strips up to first os.sep
-        source_path = os.path.join(self.space.staging_path, src_path)
-        destination_path = os.path.join(self.space.path, dest_path)
         # TODO optimization - check if the staging path and destination path are on the same device and use os.rename/self.space._move_locally if so
         self.space._create_local_directory(destination_path)
         return self.space._move_rsync(source_path, destination_path)
@@ -458,14 +457,8 @@ class PipelineLocalFS(models.Model):
         # TODO delete original file?
         pass
 
-    def move_from_storage_service(self, src_path, dest_path):
+    def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
-        # src_path must be relative
-        if os.path.isabs(src_path):
-            src_path = src_path.lstrip(os.sep)
-            # os.path.join(*src_path.split(os.sep)[1:]) # Strips up to first os.sep
-        source_path = os.path.join(self.space.staging_path, src_path)
-        destination_path = os.path.join(self.space.path, dest_path)
 
         # Need to make sure destination exists
         command = 'mkdir -p {}'.format(os.path.dirname(destination_path))
@@ -515,7 +508,7 @@ class PipelineLocalFS(models.Model):
 #         """ Moves src_path to dest_space.staging_path/dest_path. """
 #         pass
 #
-#     def move_from_storage_service(self, src_path, dest_path):
+#     def move_from_storage_service(self, source_path, destination_path):
 #         """ Moves self.staging_path/src_path to dest_path. """
 #         pass
 
