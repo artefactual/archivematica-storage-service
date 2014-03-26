@@ -626,6 +626,8 @@ class Lockssomatic(models.Model):
 
     def _split_package(self, package):
         """ Splits the package into chunks of size self.au_size. Returns list of paths to the chunks. """
+        # Parse pointer file
+        root = etree.parse(package.full_pointer_file_path())
         file_path = package.full_path()
         expected_num_files = math.ceil(os.path.getsize(file_path) / float(self.au_size))
         if expected_num_files > 1:
@@ -645,11 +647,55 @@ class Lockssomatic(models.Model):
             output_path = output_path[:-2]  # Remove '-1'
             dirname, basename = os.path.split(output_path)
             output_files = sorted([os.path.join(dirname, entry) for entry in os.listdir(dirname) if entry.startswith(basename)])
-            # TODO update pointer file here
+
+            # Update pointer file
+            amdsec = root.find('mets:amdSec', namespaces=utils.NSMAP)
+
+            # Add 'division' PREMIS:EVENT
+            try:
+                event_detail = subprocess.check_output(['tar', '--version'])
+            except subprocess.CalledProcessError as e:
+                event_detail = e.output or 'Error: getting tool info; probably GNU tar'
+            digiprov_id = 'digiprovMD_{}'.format(len(amdsec))
+            digiprov_split = utils.mets_add_event(
+                digiprov_id=digiprov_id,
+                event_type='division',
+                event_detail=event_detail,
+                tool_output='TODO tool output',
+            )
+            logging.debug('PREMIS:EVENT division: %s', etree.tostring(digiprov_split, pretty_print=True))
+            amdsec.append(digiprov_split)
+
+            # Add PREMIS:AGENT for storage service
+            digiprov_id = 'digiprovMD_{}'.format(len(amdsec))
+            digiprov_agent = utils.mets_ss_agent(root, digiprov_id)
+            if digiprov_agent:
+                logging.debug('PREMIS:AGENT SS: %s', etree.tostring(digiprov_agent, pretty_print=True))
+                amdsec.append(digiprov_agent)
+
+            # Update structMap
+            root.find('mets:structMap', namespaces=utils.NSMAP).set('TYPE', 'logical')
+            aip_div = root.find("mets:structMap/mets:div[@TYPE='Archival Information Package']", namespaces=utils.NSMAP)
+
+            # Move ftpr to Local copy div
+            local_ftpr = aip_div.find('mets:fptr', namespaces=utils.NSMAP)
+            if local_ftpr is not None:
+                div = etree.SubElement(aip_div, 'div', TYPE='Local copy')
+                div.append(local_ftpr)  # This moves local_fptr
+
+            # Add each split chunk to structMap
+            for idx, of in enumerate(output_files):
+                div = etree.SubElement(aip_div, 'div', TYPE='LOCKSS chunk', ORDER=str(idx+1))
+                etree.SubElement(div, 'fptr', FILEID=os.path.basename(of))
         else:
             logging.debug('Only one file expected, not splitting')
             output_files = [file_path]  # TODO check absolute vs relative path
         logging.debug('LOCKSS: after splitting: {}'.format(output_files))
+
+        # Write out pointer file again
+        with open(package.full_pointer_file_path(), 'w') as f:
+            f.write(etree.tostring(root, pretty_print=True))
+
         return output_files
 
     def create_resource(self, package):
@@ -694,6 +740,11 @@ class Lockssomatic(models.Model):
             summary=summary)
 
         # Add each chunk to the atom entry
+        root = etree.parse(package.full_pointer_file_path())
+        if len(output_files) > 1:
+            # Add fileGrp USE='LOCKSS chunk' if was split
+            filesec = root.find('mets:fileSec', namespaces=utils.NSMAP)
+            filegrp = etree.SubElement(filesec, 'fileGrp', USE='LOCKSS chunk')
         entry.register_namespace('lom', utils.NSMAP['lom'])
         for index, file_path in enumerate(output_files):
             # Get external URL
@@ -722,6 +773,18 @@ class Lockssomatic(models.Model):
             content_entry.set('checksumType', checksum.name)
             content_entry.set('checksumValue', checksum.hexdigest())
 
+            # Update pointer file, add each to fileGrp USE=LOCKSS chunk only if
+            # the file was split (aka multiple output files)
+            if len(output_files) > 1:
+                file_e = etree.SubElement(filegrp, 'file',
+                    ID=os.path.basename(file_path), SIZE=str(size),
+                    CHECKSUM=checksum.hexdigest(), CHECKSUMTYPE=checksum.name)
+                flocat = etree.SubElement(file_e, 'FLocat', OTHERLOCTYPE="SYSTEM", LOCTYPE="OTHER")
+                flocat.set('{'+utils.NSMAP['xlink']+'}href', file_path)
+
+        # Write out pointer file again
+        with open(package.full_pointer_file_path(), 'w') as f:
+            f.write(etree.tostring(root, pretty_print=True))
 
         logging.debug('LOCKSS atom entry: {}'.format(entry))
         return entry, slug

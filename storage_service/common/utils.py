@@ -1,15 +1,19 @@
 import ast
+import datetime
 import logging
+from lxml import etree
+from lxml.builder import E, ElementMaker
 import mimetypes
 import os
 import shutil
-
+import uuid
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.servers.basehttp import FileWrapper
 from django import http
 
 from administration import models
+from common import version
 
 logger = logging.getLogger(__name__)
 
@@ -112,6 +116,85 @@ def download_file_stream(filepath, temp_dir=None):
         shutil.rmtree(temp_dir)
 
     return response
+
+
+############ XML & POINTER FILE ############
+
+def _storage_service_agent():
+    return 'Archivematica Storage Service-%s' % version.get_version()
+
+
+def mets_add_event(digiprov_id, event_type, event_detail='', tool_output='', agent_type='storage service', agent_value=None):
+    """
+    Create and return a PREMIS:EVENT.
+    """
+    now = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    if agent_value == None:
+        agent_value = _storage_service_agent()
+    # New E with namespace for PREMIS
+    EP = ElementMaker(
+        namespace=NSMAP['premis'],
+        nsmap={None: NSMAP['premis']})
+    premis_event = EP.event(
+        EP.eventIdentifier(
+            EP.eventIdentifierType('UUID'),
+            EP.eventIdentifierValue(str(uuid.uuid4()))
+        ),
+        EP.eventType(event_type),
+        EP.eventDateTime(now),
+        EP.eventDetail(event_detail),
+        EP.eventOutcomeInformation(
+            EP.eventOutcome(),
+            EP.eventOutcomeDetail(
+                EP.eventOutcomeDetailNote(tool_output)
+            )
+        ),
+        EP.linkingAgentIdentifier(
+            EP.linkingAgentIdentifierType(agent_type),
+            EP.linkingAgentIdentifierValue(agent_value),
+        ),
+        version='2.2'
+    )
+    premis_event.set('{'+NSMAP['xsi']+'}schemaLocation', 'info:lc/xmlns/premis-v2 http://www.loc.gov/standards/premis/v2/premis-v2-2.xsd')
+
+    # digiprovMD to wrap PREMIS event
+    digiprov_event = E.digiprovMD(
+        E.mdWrap(
+            E.xmlData(premis_event),
+            MDTYPE="PREMIS:EVENT",
+        ),
+        ID=digiprov_id,
+    )
+    return digiprov_event
+
+
+def mets_ss_agent(xml, digiprov_id, agent_value=None, agent_type='storage service'):
+    """
+    Create and return a PREMIS:AGENT for the SS, if not found in `xml`.
+    """
+    if agent_value == None:
+        agent_value = _storage_service_agent()
+    existing_agent = xml.xpath(".//mets:agentIdentifier[mets:agentIdentifierType='{}' and mets:agentIdentifierValue='{}']".format(agent_type, agent_value), namespaces=NSMAP)
+    if existing_agent:
+        return None
+    digiprov_agent = E.digiprovMD(
+        E.mdWrap(
+            E.xmlData(
+                E.agent(
+                    E.agentIdentifier(
+                        E.agentIdentifierType(agent_type),
+                        E.agentIdentifierValue(agent_value),
+                    ),
+                    E.agentName('Archivematica Storage Service'),
+                    E.agentType('software'),
+                )
+            ),
+            MDTYPE='PREMIS:AGENT',
+        ),
+        ID=digiprov_id,
+    )
+    return digiprov_agent
+
 
 ############ OTHER ############
 
