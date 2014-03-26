@@ -557,7 +557,13 @@ class Lockssomatic(models.Model):
         package.save()
 
     def update_package_status(self, package):
-        """ """
+        """
+        Poll LOM for SWORD statement and update status from response.
+
+        Query the state_iri for this package and parse it for the server states.
+        If all are in agreement, add those URLs to the pointer file for each
+        LOCKSS chunk.
+        """
         status = package.status
 
         if 'state_iri' not in package.misc_attributes:
@@ -575,19 +581,53 @@ class Lockssomatic(models.Model):
         if response.code != 200:
             return None
 
-        root = etree.fromstring(response.content)
+        statement_root = etree.fromstring(response.content)
 
         # TODO Check that number of lom:content entries is same as number of chunks
-        servers = root.findall('.//lom:server', namespaces=utils.NSMAP)
-        if all(s.get('state') == 'agreement' for s in servers):
-            status = Package.UPLOADED
+        # TODO what to do if was quorum, and now not??
 
+        # Package not safely stored, return immediately
+        servers = statement_root.findall('.//lom:server', namespaces=utils.NSMAP)
+        logging.info('All states are agreement: %s', all(s.get('state') == 'agreement' for s in servers))
+        if not all(s.get('state') == 'agreement' for s in servers):
+            return status
+
+        status = Package.UPLOADED
+
+        # Add LOCKSS URLs to each chunk
+        pointer_root = etree.parse(package.full_pointer_file_path())
+        files = pointer_root.findall(".//mets:fileSec/mets:fileGrp[@USE='LOCKSS chunk']/mets:file", namespaces=utils.NSMAP)
+        # If not files, find AIP fileGrp (package unsplit)
+        if not files:
+            files = pointer_root.findall(".//mets:fileSec/mets:fileGrp[@USE='Archival Information Package']/mets:file", namespaces=utils.NSMAP)
+
+        # Add new FLocat elements for each LOCKSS URL to each file element
+        for index, file_e in enumerate(files):
+            logging.debug('file element: %s', etree.tostring(file_e, pretty_print=True))
+            if len(files) == 1:
+                lom_id = self._download_url(package.uuid)
+            else:
+                lom_id = self._download_url(package.uuid, index)
+            logging.debug('LOM id: %s', lom_id)
+            lom_servers = statement_root.find(".//lom:content[@id='{}']/lom:serverlist".format(lom_id), namespaces=utils.NSMAP)
+            logging.debug('lom_servers: %s', lom_servers)
+            for server in lom_servers:
+                logging.debug('LOM URL: %s', server.get('src'))
+                flocat = etree.SubElement(file_e, 'FLocat', LOCTYPE="URL")
+                flocat.set('{'+utils.NSMAP['xlink']+'}href', server.get('src'))
+
+        # Delete all local files - original and chunks
+        if not self.keep_local:
+            pass
+            # TODO delete all local files - original and chunks
             # TODO update pointer file
-            if not self.keep_local:
-                pass
-                # TODO delete all local files - original and chunks
-                # TODO update pointer file
-        logging.info('status: %s', status)
+
+        logging.info('update_package_status: new status: %s', status)
+
+        # Write out pointer file again
+        with open(package.full_pointer_file_path(), 'w') as f:
+            f.write(etree.tostring(pointer_root, pretty_print=True))
+
         # Update value if different
         package.status = status
         package.save()
@@ -698,6 +738,21 @@ class Lockssomatic(models.Model):
 
         return output_files
 
+    def _download_url(self, uuid, index=None):
+        """
+        Returns externally available download URL for a file.
+
+        If index is falsy, returns URL for a file.  Otherwise, returns URL for a
+        LOCKSS chunk with the given index.
+        """
+        # FIXME URL is relative to SS url, need absolute
+        if index:  # Chunk of split file
+            download_url = reverse('download_lockss', kwargs={'api_name': 'v1', 'resource_name': 'file', 'uuid': uuid, 'chunk_number': str(index)})
+        else:  # Single file - not split
+            download_url = reverse('download_request', kwargs={'api_name': 'v1', 'resource_name': 'file', 'uuid': uuid})
+
+        return download_url
+
     def create_resource(self, package):
         """ Given a package, create an Atom resource entry to send to LOCKSS.
 
@@ -748,12 +803,10 @@ class Lockssomatic(models.Model):
         entry.register_namespace('lom', utils.NSMAP['lom'])
         for index, file_path in enumerate(output_files):
             # Get external URL
-            # FIXME external URLs is relative to SS url, need absolute
             if len(output_files) == 1:
-                # Only one item
-                external_url = reverse('download_request', kwargs={'api_name': 'v1', 'resource_name': 'file', 'uuid': package.uuid})
+                external_url = self._download_url(package.uuid)
             else:
-                external_url = reverse('download_lockss', kwargs={'api_name': 'v1', 'resource_name': 'file', 'uuid': package.uuid, 'chunk_number': str(index).zfill(3)})
+                external_url = self._download_url(package.uuid, index)
 
             # Generate checksum
             # TODO move this to own function in Package?
