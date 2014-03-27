@@ -35,6 +35,7 @@ PROTOCOL[Space.LOM] = {
                'sd_iri',
                'collection_iri',
                'content_provider_id',
+               'external_domain',
                'keep_local',
                'checksum_type',]
 }

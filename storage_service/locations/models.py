@@ -510,13 +510,15 @@ class Lockssomatic(models.Model):
     # staging location is Space.path
     au_size = models.BigIntegerField(verbose_name="AU Size", null=True, blank=True,
         help_text="Size in bytes of an Allocation Unit")
-    sd_iri = models.CharField(max_length=256, verbose_name="Service Document IRI",
+    sd_iri = models.URLField(max_length=256, verbose_name="Service Document IRI",
         help_text="URL of LOCKSS-o-matic service document IRI, eg. http://lockssomatic.example.org/api/sword/2.0/sd-iri")
     collection_iri = models.CharField(max_length=256, null=True, blank=True, verbose_name="Collection IRI",
         help_text="URL to post the packages to, eg. http://lockssomatic.example.org/api/sword/2.0/col-iri/12")
     content_provider_id = models.CharField(max_length=32,
         verbose_name='Content Provider ID',
         help_text='On-Behalf-Of value when communicating with LOCKSS-o-matic')
+    external_domain = models.URLField(verbose_name='Externally available domain',
+        help_text='Base URL for this server that LOCKSS will be able to access.  Probably the URL for the home page of the Storage Service.')
     checksum_type = models.CharField(max_length=64, null=True, blank=True, verbose_name='Checksum type', help_text='Checksum type to send to LOCKSS-o-matic for verification.  Eg. md5, sha1, sha256')
     keep_local = models.BooleanField(blank=True, default=True, verbose_name="Keep local copy?",
         help_text="If checked, keep a local copy even after the AIP is stored in the LOCKSS network.")
@@ -805,12 +807,12 @@ class Lockssomatic(models.Model):
         If index is falsy, returns URL for a file.  Otherwise, returns URL for a
         LOCKSS chunk with the given index.
         """
-        # FIXME URL is relative to SS url, need absolute
         if index:  # Chunk of split file
             download_url = reverse('download_lockss', kwargs={'api_name': 'v1', 'resource_name': 'file', 'uuid': uuid, 'chunk_number': str(index)})
         else:  # Single file - not split
             download_url = reverse('download_request', kwargs={'api_name': 'v1', 'resource_name': 'file', 'uuid': uuid})
-
+        # Prepend domain name
+        download_url = self.external_domain+download_url
         return download_url
 
     def create_resource(self, package):
