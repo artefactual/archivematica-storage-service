@@ -535,6 +535,10 @@ class Lockssomatic(models.Model):
         return self.space._move_rsync(source_path, destination_path)
 
     def post_move_from_storage_service(self, staging_path, destination_path, package):
+        # LOCKSS can only save packages in the storage service, since it needs
+        # to track information on it over time
+        if package is None:
+            return
         # Post to Lockss-o-matic with the create resource atom entry
         logging.info('Storing %s in LOCKSS', package.current_path)
 
@@ -611,7 +615,13 @@ class Lockssomatic(models.Model):
             logging.debug('LOM id: %s', lom_id)
             lom_servers = statement_root.find(".//lom:content[@id='{}']/lom:serverlist".format(lom_id), namespaces=utils.NSMAP)
             logging.debug('lom_servers: %s', lom_servers)
+            # Remove existing LOCKSS URLs, if they exist
+            for old_url in file_e.findall("mets:FLocat[@LOCTYPE='URL']", namespaces=utils.NSMAP):
+                file_e.remove(old_url)
+            # Add URLs from SWORD statement
             for server in lom_servers:
+                # TODO check that size and checksum are the same
+                # TODO what to do if size & checksum different?
                 logging.debug('LOM URL: %s', server.get('src'))
                 flocat = etree.SubElement(file_e, 'FLocat', LOCTYPE="URL")
                 flocat.set('{'+utils.NSMAP['xlink']+'}href', server.get('src'))
@@ -701,14 +711,14 @@ class Lockssomatic(models.Model):
                 digiprov_id=digiprov_id,
                 event_type='division',
                 event_detail=event_detail,
-                tool_output='TODO tool output',
+                event_outcome_detail_note='{} LOCKSS chunks created'.format(len(output_files)),
             )
             logging.debug('PREMIS:EVENT division: %s', etree.tostring(digiprov_split, pretty_print=True))
             amdsec.append(digiprov_split)
 
             # Add PREMIS:AGENT for storage service
             digiprov_id = 'digiprovMD_{}'.format(len(amdsec))
-            digiprov_agent = utils.mets_ss_agent(root, digiprov_id)
+            digiprov_agent = utils.mets_ss_agent(amdsec, digiprov_id)
             if digiprov_agent:
                 logging.debug('PREMIS:AGENT SS: %s', etree.tostring(digiprov_agent, pretty_print=True))
                 amdsec.append(digiprov_agent)
@@ -729,8 +739,9 @@ class Lockssomatic(models.Model):
                 etree.SubElement(div, 'fptr', FILEID=os.path.basename(of))
         else:
             logging.debug('Only one file expected, not splitting')
-            output_files = [file_path]  # TODO check absolute vs relative path
-        logging.debug('LOCKSS: after splitting: {}'.format(output_files))
+            output_files = [file_path]
+            # No events or structMap changes needed
+        logging.info('LOCKSS: after splitting: {}'.format(output_files))
 
         # Write out pointer file again
         with open(package.full_pointer_file_path(), 'w') as f:
@@ -828,10 +839,11 @@ class Lockssomatic(models.Model):
 
             # Update pointer file, add each to fileGrp USE=LOCKSS chunk only if
             # the file was split (aka multiple output files)
+            checksum_name = checksum.name.upper().replace('SHA', 'SHA-')
             if len(output_files) > 1:
                 file_e = etree.SubElement(filegrp, 'file',
                     ID=os.path.basename(file_path), SIZE=str(size),
-                    CHECKSUM=checksum.hexdigest(), CHECKSUMTYPE=checksum.name)
+                    CHECKSUM=checksum.hexdigest(), CHECKSUMTYPE=checksum_name)
                 flocat = etree.SubElement(file_e, 'FLocat', OTHERLOCTYPE="SYSTEM", LOCTYPE="OTHER")
                 flocat.set('{'+utils.NSMAP['xlink']+'}href', file_path)
 
@@ -1047,14 +1059,10 @@ class Package(models.Model):
             path = full_path
         elif self.current_location.space.access_protocol == Space.LOM:
             # Only LOCKSS breaks files into AUs
-            # TODO look up lockss_au_number path in the METS file
-            path = os.path.splitext(full_path)[0] + '_' + str(lockss_au_number).zfill(2)
+            # TODO Get path from pointer file
+            # root.find("mets:structMap/*/mets:div[@ORDER='{}']".format(lockss_au_number+1), namespaces=NSMAP)
+            path = os.path.splitext(full_path)[0] + '.tar-' + str(lockss_au_number)
         return path
-        # TODO check if files exists and return error somehow
-        # if os.path.isfile(path):
-        #     return path
-        # else:
-        #     raise Exception('Path {} does not exist'.format(path))
 
     def _check_quotas(self, dest_space, dest_location):
         """
@@ -1151,7 +1159,7 @@ class Package(models.Model):
 
         # Update pointer file's location infrmation
         root = etree.parse(pointer_file_dst)
-        element = root.find('mets:fileSec/mets:fileGrp/mets:file', namespaces=utils.NSMAP)
+        element = root.find('.//mets:file', namespaces=utils.NSMAP)
         flocat = element.find('mets:FLocat', namespaces=utils.NSMAP)
         if self.uuid in element.get('ID', '') and flocat is not None:
             flocat.set('{{{ns}}}href'.format(ns=utils.NSMAP['xlink']), self.full_path())

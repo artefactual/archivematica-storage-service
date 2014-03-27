@@ -124,7 +124,7 @@ def _storage_service_agent():
     return 'Archivematica Storage Service-%s' % version.get_version()
 
 
-def mets_add_event(digiprov_id, event_type, event_detail='', tool_output='', agent_type='storage service', agent_value=None):
+def mets_add_event(digiprov_id, event_type, event_detail='', event_outcome_detail_note='', agent_type='storage service', agent_value=None):
     """
     Create and return a PREMIS:EVENT.
     """
@@ -146,7 +146,7 @@ def mets_add_event(digiprov_id, event_type, event_detail='', tool_output='', age
         EP.eventOutcomeInformation(
             EP.eventOutcome(),
             EP.eventOutcomeDetail(
-                EP.eventOutcomeDetailNote(tool_output)
+                EP.eventOutcomeDetailNote(event_outcome_detail_note)
             )
         ),
         EP.linkingAgentIdentifier(
