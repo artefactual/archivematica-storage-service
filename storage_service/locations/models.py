@@ -571,7 +571,7 @@ class Lockssomatic(models.Model):
         status = package.status
 
         if 'state_iri' not in package.misc_attributes:
-            pass
+            return
             # TODO test that all called functions are idempotent
             # self.post_move_from_storage_service(None, None, package)
 
@@ -594,6 +594,7 @@ class Lockssomatic(models.Model):
         servers = statement_root.findall('.//lom:server', namespaces=utils.NSMAP)
         logging.info('All states are agreement: %s', all(s.get('state') == 'agreement' for s in servers))
         if not all(s.get('state') == 'agreement' for s in servers):
+            # TODO update pointer file for new failed status?
             return status
 
         status = Package.UPLOADED
@@ -626,11 +627,59 @@ class Lockssomatic(models.Model):
                 flocat = etree.SubElement(file_e, 'FLocat', LOCTYPE="URL")
                 flocat.set('{'+utils.NSMAP['xlink']+'}href', server.get('src'))
 
-        # Delete all local files - original and chunks
-        if not self.keep_local:
-            pass
-            # TODO delete all local files - original and chunks
-            # TODO update pointer file
+        # Delete local files
+
+        # Get paths to delete
+        if self.keep_local:
+            # Get all LOCKSS chucks local path FLocat's
+            delete_elements = pointer_root.xpath(".//mets:fileGrp[@USE='LOCKSS chunk']/*/mets:FLocat[@LOCTYPE='OTHER' and @OTHERLOCTYPE='SYSTEM']", namespaces=utils.NSMAP)
+        else:
+            # Get all local path FLocat's
+            delete_elements = pointer_root.xpath(".//mets:FLocat[@LOCTYPE='OTHER' and @OTHERLOCTYPE='SYSTEM']", namespaces=utils.NSMAP)
+        logging.info('delete_elements: %s', delete_elements)
+        # Delete paths from delete_elements from disk, and remove from METS
+        for element in delete_elements:
+            path = element.get('{'+utils.NSMAP['xlink']+'}href')
+            logging.info('path: %s', path)
+            try:
+                os.remove(path)
+            except os.error as e:
+                if e.errno != errno.ENOENT:
+                    logging.exception('Could not delete {}'.format(path))
+            element.getparent().remove(element)
+
+        # Update pointer file
+        # If delete_elements is false, then this function has probably already
+        # been run, and we don't want to add another delete event
+        if not self.keep_local and delete_elements:
+            logging.info('deleting files')
+            amdsec = pointer_root.find('mets:amdSec', namespaces=utils.NSMAP)
+            # Add 'deletion' PREMIS:EVENT
+            digiprov_id = 'digiprovMD_{}'.format(len(amdsec))
+            digiprov_split = utils.mets_add_event(
+                digiprov_id=digiprov_id,
+                event_type='deletion',
+                event_outcome_detail_note='AIP deleted from local storage',
+            )
+            logging.info('PREMIS:EVENT division: %s', etree.tostring(digiprov_split, pretty_print=True))
+            amdsec.append(digiprov_split)
+
+            # Add PREMIS:AGENT for storage service
+            digiprov_id = 'digiprovMD_{}'.format(len(amdsec))
+            digiprov_agent = utils.mets_ss_agent(amdsec, digiprov_id)
+            if digiprov_agent is not None:
+                logging.info('PREMIS:AGENT SS: %s', etree.tostring(digiprov_agent, pretty_print=True))
+                amdsec.append(digiprov_agent)
+            # If file was split
+            if pointer_root.find(".//mets:fileGrp[@USE='LOCKSS chunk']", namespaces=utils.NSMAP) is not None:
+                # Delete fileGrp USE="AIP"
+                del_elem = pointer_root.find(".//mets:fileGrp[@USE='Archival Information Package']", namespaces=utils.NSMAP)
+                del_elem.getparent().remove(del_elem)
+                # Delete structMap div TYPE='Local copy'
+                del_elem = pointer_root.find(".//mets:structMap/*/mets:div[@TYPE='Local copy']", namespaces=utils.NSMAP)
+                del_elem.getparent().remove(del_elem)
+
+        # TODO Update LOM that local copies gone
 
         logging.info('update_package_status: new status: %s', status)
 
