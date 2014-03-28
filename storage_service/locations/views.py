@@ -85,9 +85,11 @@ def package_update_status(request, uuid):
 
     old_status = package.status
     try:
-        new_status = package.current_location.space.update_package_status(package)
+        (new_status, error) = package.current_location.space.update_package_status(package)
     except Exception:
+        logging.exception('update status')
         new_status = None
+        error = 'Error getting status for package {}'.format(uuid)
 
     if new_status is not None:
         if old_status != new_status:
@@ -96,9 +98,10 @@ def package_update_status(request, uuid):
         else:
             messages.info(request,
                 'Status for package {} has not changed.'.format(uuid))
-    else:
-        messages.warning(request,
-            'Error getting status for package {}'.format(uuid))
+
+    if error:
+        messages.warning(request, error)
+
     next_url = request.GET.get('next', reverse('package_list'))
     return redirect(next_url)
 

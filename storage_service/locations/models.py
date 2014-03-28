@@ -573,9 +573,14 @@ class Lockssomatic(models.Model):
         status = package.status
 
         if 'state_iri' not in package.misc_attributes:
-            return
             # TODO test that all called functions are idempotent
             # self.post_move_from_storage_service(None, None, package)
+            return (None, 'State IRI unknown for package {}'.format(package.uuid))
+
+        # Can only delete if can notify LOM to stop harvesting
+        if 'edit_iri' not in package.misc_attributes and not self.keep_local:
+            # TODO get deposit receipt again and parse out edit-IRI
+            return(None, 'Edit IRI unknown for package {}'.format(package.uuid))
 
         if not self.sword_connection:
             self.update_service_document()
@@ -585,7 +590,7 @@ class Lockssomatic(models.Model):
         response = self.sword_connection.get_resource(package.misc_attributes['state_iri'], headers = {'Accept':'application/atom+xml;type=feed'})
 
         if response.code != 200:
-            return None
+            return (None, 'Error polling LOCKSS-o-matic for SWORD statement.')
 
         statement_root = etree.fromstring(response.content)
 
@@ -597,7 +602,7 @@ class Lockssomatic(models.Model):
         logging.info('All states are agreement: %s', all(s.get('state') == 'agreement' for s in servers))
         if not all(s.get('state') == 'agreement' for s in servers):
             # TODO update pointer file for new failed status?
-            return status
+            return (status, 'LOCKSS servers not in agreement')
 
         status = Package.UPLOADED
 
@@ -630,19 +635,71 @@ class Lockssomatic(models.Model):
                 flocat.set('{'+utils.NSMAP['xlink']+'}href', server.get('src'))
 
         # Delete local files
+        error = self._delete_files(package, statement_root, pointer_root)
+
+        logging.info('update_package_status: new status: %s', status)
+
+        # Write out pointer file again
+        with open(package.full_pointer_file_path(), 'w') as f:
+            f.write(etree.tostring(pointer_root, pretty_print=True))
+
+        # Update value if different
+        package.status = status
+        package.save()
+        return (status, error)
+
+    def _delete_files(self, package, statement_root, pointer_root):
+        """
+        Delete AIP local files once stored in LOCKSS from disk and pointer file.
+
+        Helper to update_package_status.
+        """
+        # Update LOM that local copies will be deleted
+        entry = sword2.Entry(id='urn:uuid:{}'.format(package.uuid))
+        entry.register_namespace('lom', utils.NSMAP['lom'])
+        lom_content = statement_root.findall('.//lom:content', namespaces=utils.NSMAP)
+        for element in lom_content:
+            lom_id = element.get('id')
+            if lom_id:
+                etree.SubElement(entry.entry, '{'+utils.NSMAP['lom']+'}content', recrawl='false').text = lom_id
+        logging.debug('edit entry: %s', entry)
+        # SWORD2 client doesn't handle 202 respose correctly - implementing here
+        # Correct function is self.sword_connection.update_metadata_for_resource
+        headers = {
+            'Content-Type': "application/atom+xml;type=entry",
+            'Content-Length': str(len(str(entry))),
+            'On-Behalf-Of': str(self.content_provider_id),
+        }
+        response, content = self.sword_connection.h.request(
+            uri=package.misc_attributes['edit_iri'],
+            method='PUT',
+            headers=headers,
+            payload=str(entry))
+
+        # Return with error message if response not 200
+        logging.debug('response code: %s', response['status'])
+        if response['status'] != 200:
+            if response['status'] == 202:  # Accepted - pushing new config
+                return 'Lockss-o-matic is updating the config to stop harvesting.  Please try again to delete local files.'
+            if response['status'] == 204:  # No Content - no matching AIP
+                return 'Package {} is not found in LOCKSS'.format(package.uuid)
+            if response['status'] == 409:  # Conflict - Files in AU with recrawl
+                return "There are files in the LOCKSS Archival Unit (AU) that do not have 'recrawl=false'."
+            return 'Error {} when requesting LOCKSS stop harvesting deleted files.'.format(response['status'])
 
         # Get paths to delete
         if self.keep_local:
-            # Get all LOCKSS chucks local path FLocat's
+            # Get all LOCKSS chucks local path FLocats
             delete_elements = pointer_root.xpath(".//mets:fileGrp[@USE='LOCKSS chunk']/*/mets:FLocat[@LOCTYPE='OTHER' and @OTHERLOCTYPE='SYSTEM']", namespaces=utils.NSMAP)
         else:
-            # Get all local path FLocat's
+            # Get all local path FLocats
             delete_elements = pointer_root.xpath(".//mets:FLocat[@LOCTYPE='OTHER' and @OTHERLOCTYPE='SYSTEM']", namespaces=utils.NSMAP)
-        logging.info('delete_elements: %s', delete_elements)
+        logging.debug('delete_elements: %s', delete_elements)
+
         # Delete paths from delete_elements from disk, and remove from METS
         for element in delete_elements:
             path = element.get('{'+utils.NSMAP['xlink']+'}href')
-            logging.info('path: %s', path)
+            logging.debug('path to delete: %s', path)
             try:
                 os.remove(path)
             except os.error as e:
@@ -654,7 +711,6 @@ class Lockssomatic(models.Model):
         # If delete_elements is false, then this function has probably already
         # been run, and we don't want to add another delete event
         if not self.keep_local and delete_elements:
-            logging.info('deleting files')
             amdsec = pointer_root.find('mets:amdSec', namespaces=utils.NSMAP)
             # Add 'deletion' PREMIS:EVENT
             digiprov_id = 'digiprovMD_{}'.format(len(amdsec))
@@ -680,19 +736,7 @@ class Lockssomatic(models.Model):
                 # Delete structMap div TYPE='Local copy'
                 del_elem = pointer_root.find(".//mets:structMap/*/mets:div[@TYPE='Local copy']", namespaces=utils.NSMAP)
                 del_elem.getparent().remove(del_elem)
-
-        # TODO Update LOM that local copies gone
-
-        logging.info('update_package_status: new status: %s', status)
-
-        # Write out pointer file again
-        with open(package.full_pointer_file_path(), 'w') as f:
-            f.write(etree.tostring(pointer_root, pretty_print=True))
-
-        # Update value if different
-        package.status = status
-        package.save()
-        return status
+        return None
 
     def update_service_document(self):
         """ Fetch the service document from self.sd_iri and updates based on that.
