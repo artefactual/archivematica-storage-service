@@ -631,7 +631,7 @@ class Lockssomatic(models.Model):
             if len(files) == 1:
                 lom_id = self._download_url(package.uuid)
             else:
-                lom_id = self._download_url(package.uuid, index)
+                lom_id = self._download_url(package.uuid, index+1)
             logging.debug('LOM id: %s', lom_id)
             lom_servers = statement_root.find(".//lom:content[@id='{}']/lom:serverlist".format(lom_id), namespaces=utils.NSMAP)
             logging.debug('lom_servers: %s', lom_servers)
@@ -897,10 +897,10 @@ class Lockssomatic(models.Model):
         """
         Returns externally available download URL for a file.
 
-        If index is falsy, returns URL for a file.  Otherwise, returns URL for a
+        If index is None, returns URL for a file.  Otherwise, returns URL for a
         LOCKSS chunk with the given index.
         """
-        if index:  # Chunk of split file
+        if index is not None:  # Chunk of split file
             download_url = reverse('download_lockss', kwargs={'api_name': 'v1', 'resource_name': 'file', 'uuid': uuid, 'chunk_number': str(index)})
         else:  # Single file - not split
             download_url = reverse('download_request', kwargs={'api_name': 'v1', 'resource_name': 'file', 'uuid': uuid})
@@ -955,7 +955,7 @@ class Lockssomatic(models.Model):
             if len(output_files) == 1:
                 external_url = self._download_url(package.uuid)
             else:
-                external_url = self._download_url(package.uuid, index)
+                external_url = self._download_url(package.uuid, index+1)
 
             # Get checksum and size from pointer file (or generate if not found)
             file_e = self.pointer_root.find(".//mets:fileGrp[@USE='LOCKSS chunk']/mets:file[@ID='{}']".format(os.path.basename(file_path)), namespaces=utils.NSMAP)
@@ -1193,8 +1193,11 @@ class Package(models.Model):
         elif self.current_location.space.access_protocol == Space.LOM:
             # Only LOCKSS breaks files into AUs
             # TODO Get path from pointer file
-            # root.find("mets:structMap/*/mets:div[@ORDER='{}']".format(lockss_au_number+1), namespaces=NSMAP)
+            # self.pointer_root.find("mets:structMap/*/mets:div[@ORDER='{}']".format(lockss_au_number), namespaces=NSMAP)
             path = os.path.splitext(full_path)[0] + '.tar-' + str(lockss_au_number)
+        else:  # LOCKSS AU number specified, but not a LOCKSS package
+            logging.warning('Trying to download LOCKSS chunk for a non-LOCKSS package.')
+            path = full_path
         return path
 
     def _check_quotas(self, dest_space, dest_location):
