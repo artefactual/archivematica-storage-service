@@ -1,5 +1,6 @@
 import ast
 import datetime
+import hashlib
 import logging
 from lxml import etree
 from lxml.builder import E, ElementMaker
@@ -197,6 +198,19 @@ def mets_ss_agent(xml, digiprov_id, agent_value=None, agent_type='storage servic
 
 
 ############ OTHER ############
+
+def generate_checksum(file_path, checksum_type='md5'):
+    """
+    Returns checksum object for `file_path` using `checksum_type`.
+
+    If checksum_type is not a valid checksum, ValueError raised by hashlib.
+    """
+    checksum = hashlib.new(checksum_type)
+    with open(file_path, 'rb') as f:
+        for chunk in iter(lambda: f.read(128*checksum.block_size), b''):
+            checksum.update(chunk)
+    return checksum
+
 
 def uuid_to_path(uuid):
     """ Converts a UUID into a path.

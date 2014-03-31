@@ -2,7 +2,6 @@
 import ast
 import datetime
 import errno
-import hashlib
 import logging
 from lxml import etree
 import math
@@ -523,8 +522,10 @@ class Lockssomatic(models.Model):
     keep_local = models.BooleanField(blank=True, default=True, verbose_name="Keep local copy?",
         help_text="If checked, keep a local copy even after the AIP is stored in the LOCKSS network.")
 
-    sword_connection = None
     # Uses the SWORD protocol to talk to LOM
+    sword_connection = None
+    # Parsed pointer file
+    pointer_root = None
 
     def move_to_storage_service(self, source_path, destination_path, dest_space):
         """ Moves source_path to dest_space.staging_path/destination_path. """
@@ -547,19 +548,31 @@ class Lockssomatic(models.Model):
         # Update Service Document, including maxUploadSize and Collection IRI
         self.update_service_document()
 
+        # Split the files and record their locations.  If already split, just
+        # returns list of output files
+        output_files = self._split_package(package)
+
         # Create the atom entry XML
-        entry, slug = self.create_resource(package)
+        entry, slug = self._create_resource(package, output_files)
 
         # Post to SWORD2 server
         receipt = self.sword_connection.create(col_iri=self.collection_iri, metadata_entry=entry, suggested_identifier=slug)
-        state_iri = receipt.atom_statement_iri
-        edit_iri = receipt.edit
+        try:
+            state_iri = receipt.atom_statement_iri
+            edit_iri = receipt.edit
+        except AttributeError:
+            # If something goes wrong with the parsing, receipt may not be a
+            # sword.Deposit_Recipt (might be None, or sword.Error_Document) and
+            # may not have the required attributes
+            logging.warning('Unable to contact LOCKSS for package %s', package.uuid)
+        else:
+            logging.info("LOCKSS State IRI for %s: %s", package.uuid, state_iri)
+            logging.info("LOCKSS Edit IRI for %s: %s", package.uuid, edit_iri)
 
-        logging.info("LOCKSS State IRI for %s: %s", package.uuid, state_iri)
-        logging.info("LOCKSS Edit IRI for %s: %s", package.uuid, edit_iri)
+            if state_iri and edit_iri:
+                misc = {'state_iri': state_iri, 'edit_iri': edit_iri}
+                package.misc_attributes.update(misc)
 
-        misc = {'state_iri': state_iri, 'edit_iri': edit_iri}
-        package.misc_attributes.update(misc)
         package.save()
 
     def update_package_status(self, package):
@@ -572,15 +585,13 @@ class Lockssomatic(models.Model):
         """
         status = package.status
 
-        if 'state_iri' not in package.misc_attributes:
-            # TODO test that all called functions are idempotent
-            # self.post_move_from_storage_service(None, None, package)
-            return (None, 'State IRI unknown for package {}'.format(package.uuid))
+        # Need to have state and edit IRI to talk to LOM
+        if 'state_iri' not in package.misc_attributes or 'edit_iri' not in package.misc_attributes:
+            self.post_move_from_storage_service(None, None, package)
 
-        # Can only delete if can notify LOM to stop harvesting
-        if 'edit_iri' not in package.misc_attributes and not self.keep_local:
-            # TODO get deposit receipt again and parse out edit-IRI
-            return(None, 'Edit IRI unknown for package {}'.format(package.uuid))
+        # After retry - verify that state & edit IRI exist now
+        if 'state_iri' not in package.misc_attributes or 'edit_iri' not in package.misc_attributes:
+            return (None, 'Unable to contact Lockss-o-matic')
 
         if not self.sword_connection:
             self.update_service_document()
@@ -607,11 +618,12 @@ class Lockssomatic(models.Model):
         status = Package.UPLOADED
 
         # Add LOCKSS URLs to each chunk
-        pointer_root = etree.parse(package.full_pointer_file_path())
-        files = pointer_root.findall(".//mets:fileSec/mets:fileGrp[@USE='LOCKSS chunk']/mets:file", namespaces=utils.NSMAP)
+        if not self.pointer_root:
+            self.pointer_root = etree.parse(package.full_pointer_file_path())
+        files = self.pointer_root.findall(".//mets:fileSec/mets:fileGrp[@USE='LOCKSS chunk']/mets:file", namespaces=utils.NSMAP)
         # If not files, find AIP fileGrp (package unsplit)
         if not files:
-            files = pointer_root.findall(".//mets:fileSec/mets:fileGrp[@USE='Archival Information Package']/mets:file", namespaces=utils.NSMAP)
+            files = self.pointer_root.findall(".//mets:fileSec/mets:fileGrp[@USE='Archival Information Package']/mets:file", namespaces=utils.NSMAP)
 
         # Add new FLocat elements for each LOCKSS URL to each file element
         for index, file_e in enumerate(files):
@@ -635,20 +647,20 @@ class Lockssomatic(models.Model):
                 flocat.set('{'+utils.NSMAP['xlink']+'}href', server.get('src'))
 
         # Delete local files
-        error = self._delete_files(package, statement_root, pointer_root)
+        error = self._delete_files(package, statement_root)
 
         logging.info('update_package_status: new status: %s', status)
 
         # Write out pointer file again
         with open(package.full_pointer_file_path(), 'w') as f:
-            f.write(etree.tostring(pointer_root, pretty_print=True))
+            f.write(etree.tostring(self.pointer_root, pretty_print=True))
 
         # Update value if different
         package.status = status
         package.save()
         return (status, error)
 
-    def _delete_files(self, package, statement_root, pointer_root):
+    def _delete_files(self, package, statement_root):
         """
         Delete AIP local files once stored in LOCKSS from disk and pointer file.
 
@@ -690,10 +702,10 @@ class Lockssomatic(models.Model):
         # Get paths to delete
         if self.keep_local:
             # Get all LOCKSS chucks local path FLocats
-            delete_elements = pointer_root.xpath(".//mets:fileGrp[@USE='LOCKSS chunk']/*/mets:FLocat[@LOCTYPE='OTHER' and @OTHERLOCTYPE='SYSTEM']", namespaces=utils.NSMAP)
+            delete_elements = self.pointer_root.xpath(".//mets:fileGrp[@USE='LOCKSS chunk']/*/mets:FLocat[@LOCTYPE='OTHER' and @OTHERLOCTYPE='SYSTEM']", namespaces=utils.NSMAP)
         else:
             # Get all local path FLocats
-            delete_elements = pointer_root.xpath(".//mets:FLocat[@LOCTYPE='OTHER' and @OTHERLOCTYPE='SYSTEM']", namespaces=utils.NSMAP)
+            delete_elements = self.pointer_root.xpath(".//mets:FLocat[@LOCTYPE='OTHER' and @OTHERLOCTYPE='SYSTEM']", namespaces=utils.NSMAP)
         logging.debug('delete_elements: %s', delete_elements)
 
         # Delete paths from delete_elements from disk, and remove from METS
@@ -711,7 +723,7 @@ class Lockssomatic(models.Model):
         # If delete_elements is false, then this function has probably already
         # been run, and we don't want to add another delete event
         if not self.keep_local and delete_elements:
-            amdsec = pointer_root.find('mets:amdSec', namespaces=utils.NSMAP)
+            amdsec = self.pointer_root.find('mets:amdSec', namespaces=utils.NSMAP)
             # Add 'deletion' PREMIS:EVENT
             digiprov_id = 'digiprovMD_{}'.format(len(amdsec))
             digiprov_split = utils.mets_add_event(
@@ -729,12 +741,12 @@ class Lockssomatic(models.Model):
                 logging.info('PREMIS:AGENT SS: %s', etree.tostring(digiprov_agent, pretty_print=True))
                 amdsec.append(digiprov_agent)
             # If file was split
-            if pointer_root.find(".//mets:fileGrp[@USE='LOCKSS chunk']", namespaces=utils.NSMAP) is not None:
+            if self.pointer_root.find(".//mets:fileGrp[@USE='LOCKSS chunk']", namespaces=utils.NSMAP) is not None:
                 # Delete fileGrp USE="AIP"
-                del_elem = pointer_root.find(".//mets:fileGrp[@USE='Archival Information Package']", namespaces=utils.NSMAP)
+                del_elem = self.pointer_root.find(".//mets:fileGrp[@USE='Archival Information Package']", namespaces=utils.NSMAP)
                 del_elem.getparent().remove(del_elem)
                 # Delete structMap div TYPE='Local copy'
-                del_elem = pointer_root.find(".//mets:structMap/*/mets:div[@TYPE='Local copy']", namespaces=utils.NSMAP)
+                del_elem = self.pointer_root.find(".//mets:structMap/*/mets:div[@TYPE='Local copy']", namespaces=utils.NSMAP)
                 del_elem.getparent().remove(del_elem)
         return None
 
@@ -770,77 +782,114 @@ class Lockssomatic(models.Model):
         return True
 
     def _split_package(self, package):
-        """ Splits the package into chunks of size self.au_size. Returns list of paths to the chunks. """
+        """
+        Splits the package into chunks of size self.au_size. Returns list of paths to the chunks.
+
+        If the package has already been split (and an event is in the pointer
+        file), returns the list if file paths from the pointer file.
+
+        Updates the pointer file with the new LOCKSS chunks, and adds 'division'
+        event.
+        """
         # Parse pointer file
-        root = etree.parse(package.full_pointer_file_path())
+        if not self.pointer_root:
+            self.pointer_root = etree.parse(package.full_pointer_file_path())
+
+        # Check if file is already split, and if so just return split files
+        if self.pointer_root.xpath('.//premis:eventType[text()="division"]', namespaces=utils.NSMAP):
+            chunks = self.pointer_root.findall(".//mets:div[@TYPE='Archival Information Package']/mets:div[@TYPE='LOCKSS chunk']", namespaces=utils.NSMAP)
+            output_files = [c.find('mets:fptr', namespaces=utils.NSMAP).get('FILEID') for c in chunks]
+            return output_files
+
         file_path = package.full_path()
         expected_num_files = math.ceil(os.path.getsize(file_path) / float(self.au_size))
-        if expected_num_files > 1:
-            # Strip extension, add .tar-1 ('-1' to make rename script happy)
-            output_path = os.path.splitext(file_path)[0]+'.tar-1'
-            command = ['tar', '--create', '--multi-volume',
-                '--tape-length', str(self.au_size),
-                '--new-volume-script', 'common/tar_new_volume.sh',
-                '-f', output_path, file_path]
-            # TODO reserve space in quota for extra files
-            logging.info('LOCKSS split command: %s', command)
-            try:
-                subprocess.check_call(command)
-            except Exception:
-                logging.exception("Split of %s failed with command %s", file_path, command)
-                raise
-            output_path = output_path[:-2]  # Remove '-1'
-            dirname, basename = os.path.split(output_path)
-            output_files = sorted([os.path.join(dirname, entry) for entry in os.listdir(dirname) if entry.startswith(basename)])
+        logging.debug('expected_num_files: %s', expected_num_files)
 
-            # Update pointer file
-            amdsec = root.find('mets:amdSec', namespaces=utils.NSMAP)
-
-            # Add 'division' PREMIS:EVENT
-            try:
-                event_detail = subprocess.check_output(['tar', '--version'])
-            except subprocess.CalledProcessError as e:
-                event_detail = e.output or 'Error: getting tool info; probably GNU tar'
-            digiprov_id = 'digiprovMD_{}'.format(len(amdsec))
-            digiprov_split = utils.mets_add_event(
-                digiprov_id=digiprov_id,
-                event_type='division',
-                event_detail=event_detail,
-                event_outcome_detail_note='{} LOCKSS chunks created'.format(len(output_files)),
-            )
-            logging.debug('PREMIS:EVENT division: %s', etree.tostring(digiprov_split, pretty_print=True))
-            amdsec.append(digiprov_split)
-
-            # Add PREMIS:AGENT for storage service
-            digiprov_id = 'digiprovMD_{}'.format(len(amdsec))
-            digiprov_agent = utils.mets_ss_agent(amdsec, digiprov_id)
-            if digiprov_agent:
-                logging.debug('PREMIS:AGENT SS: %s', etree.tostring(digiprov_agent, pretty_print=True))
-                amdsec.append(digiprov_agent)
-
-            # Update structMap
-            root.find('mets:structMap', namespaces=utils.NSMAP).set('TYPE', 'logical')
-            aip_div = root.find("mets:structMap/mets:div[@TYPE='Archival Information Package']", namespaces=utils.NSMAP)
-
-            # Move ftpr to Local copy div
-            local_ftpr = aip_div.find('mets:fptr', namespaces=utils.NSMAP)
-            if local_ftpr is not None:
-                div = etree.SubElement(aip_div, 'div', TYPE='Local copy')
-                div.append(local_ftpr)  # This moves local_fptr
-
-            # Add each split chunk to structMap
-            for idx, of in enumerate(output_files):
-                div = etree.SubElement(aip_div, 'div', TYPE='LOCKSS chunk', ORDER=str(idx+1))
-                etree.SubElement(div, 'fptr', FILEID=os.path.basename(of))
-        else:
+        # No split needed - just return the file path
+        if expected_num_files <= 1:
             logging.debug('Only one file expected, not splitting')
             output_files = [file_path]
             # No events or structMap changes needed
-        logging.info('LOCKSS: after splitting: {}'.format(output_files))
+            logging.info('LOCKSS: after splitting: {}'.format(output_files))
+            return output_files
+
+        # Split file
+        # Strip extension, add .tar-1 ('-1' to make rename script happy)
+        output_path = os.path.splitext(file_path)[0]+'.tar-1'
+        command = ['tar', '--create', '--multi-volume',
+            '--tape-length', str(self.au_size),
+            '--new-volume-script', 'common/tar_new_volume.sh',
+            '-f', output_path, file_path]
+        # TODO reserve space in quota for extra files
+        logging.info('LOCKSS split command: %s', command)
+        try:
+            subprocess.check_call(command)
+        except Exception:
+            logging.exception("Split of %s failed with command %s", file_path, command)
+            raise
+        output_path = output_path[:-2]  # Remove '-1'
+        dirname, basename = os.path.split(output_path)
+        output_files = sorted([os.path.join(dirname, entry) for entry in os.listdir(dirname) if entry.startswith(basename)])
+
+        # Update pointer file
+        amdsec = self.pointer_root.find('mets:amdSec', namespaces=utils.NSMAP)
+
+        # Add 'division' PREMIS:EVENT
+        try:
+            event_detail = subprocess.check_output(['tar', '--version'])
+        except subprocess.CalledProcessError as e:
+            event_detail = e.output or 'Error: getting tool info; probably GNU tar'
+        digiprov_id = 'digiprovMD_{}'.format(len(amdsec))
+        digiprov_split = utils.mets_add_event(
+            digiprov_id=digiprov_id,
+            event_type='division',
+            event_detail=event_detail,
+            event_outcome_detail_note='{} LOCKSS chunks created'.format(len(output_files)),
+        )
+        logging.debug('PREMIS:EVENT division: %s', etree.tostring(digiprov_split, pretty_print=True))
+        amdsec.append(digiprov_split)
+
+        # Add PREMIS:AGENT for storage service
+        digiprov_id = 'digiprovMD_{}'.format(len(amdsec))
+        digiprov_agent = utils.mets_ss_agent(amdsec, digiprov_id)
+        if digiprov_agent is not None:
+            logging.debug('PREMIS:AGENT SS: %s', etree.tostring(digiprov_agent, pretty_print=True))
+            amdsec.append(digiprov_agent)
+
+        # Update structMap & fileSec
+        self.pointer_root.find('mets:structMap', namespaces=utils.NSMAP).set('TYPE', 'logical')
+        aip_div = self.pointer_root.find("mets:structMap/mets:div[@TYPE='Archival Information Package']", namespaces=utils.NSMAP)
+        filesec = self.pointer_root.find('mets:fileSec', namespaces=utils.NSMAP)
+        filegrp = etree.SubElement(filesec, 'fileGrp', USE='LOCKSS chunk')
+
+        # Move ftpr to Local copy div
+        local_ftpr = aip_div.find('mets:fptr', namespaces=utils.NSMAP)
+        if local_ftpr is not None:
+            div = etree.SubElement(aip_div, 'div', TYPE='Local copy')
+            div.append(local_ftpr)  # This moves local_fptr
+
+        # Add each split chunk to structMap & fileSec
+        for idx, out_path in enumerate(output_files):
+            # Add div to structMap
+            div = etree.SubElement(aip_div, 'div', TYPE='LOCKSS chunk', ORDER=str(idx+1))
+            etree.SubElement(div, 'fptr', FILEID=os.path.basename(out_path))
+            # Get checksum and size for fileSec
+            try:
+                checksum = utils.generate_checksum(out_path, self.checksum_type)
+            except ValueError:  # Invalid checksum type
+                checksum = utils.generate_checksum(out_path, 'md5')
+            checksum_name = checksum.name.upper().replace('SHA', 'SHA-')
+            size = os.path.getsize(out_path)
+            # Add file & FLocat to fileSec
+            file_e = etree.SubElement(filegrp, 'file',
+                ID=os.path.basename(out_path), SIZE=str(size),
+                CHECKSUM=checksum.hexdigest(), CHECKSUMTYPE=checksum_name)
+            flocat = etree.SubElement(file_e, 'FLocat', OTHERLOCTYPE="SYSTEM", LOCTYPE="OTHER")
+            flocat.set('{'+utils.NSMAP['xlink']+'}href', out_path)
 
         # Write out pointer file again
         with open(package.full_pointer_file_path(), 'w') as f:
-            f.write(etree.tostring(root, pretty_print=True))
+            f.write(etree.tostring(self.pointer_root, pretty_print=True))
 
         return output_files
 
@@ -859,15 +908,12 @@ class Lockssomatic(models.Model):
         download_url = self.external_domain+download_url
         return download_url
 
-    def create_resource(self, package):
+    def _create_resource(self, package, output_files):
         """ Given a package, create an Atom resource entry to send to LOCKSS.
 
-        Splits the file into self.au_size chunks, grabs metadata for the Atom
-        entry from the METS file, updates pointer file for split, uses
+        Parses metadata for the Atom entry from the METS file, uses
         LOCKSS-o-matic-specific tags to describe size and checksums.
         """
-        # Split the files and record their locations
-        output_files = self._split_package(package)
 
         # Parse METS to get information for atom entry
         relative_mets_path = os.path.join(
@@ -901,11 +947,8 @@ class Lockssomatic(models.Model):
             summary=summary)
 
         # Add each chunk to the atom entry
-        root = etree.parse(package.full_pointer_file_path())
-        if len(output_files) > 1:
-            # Add fileGrp USE='LOCKSS chunk' if was split
-            filesec = root.find('mets:fileSec', namespaces=utils.NSMAP)
-            filegrp = etree.SubElement(filesec, 'fileGrp', USE='LOCKSS chunk')
+        if not self.pointer_root:
+            self.pointer_root = etree.parse(package.full_pointer_file_path())
         entry.register_namespace('lom', utils.NSMAP['lom'])
         for index, file_path in enumerate(output_files):
             # Get external URL
@@ -914,37 +957,32 @@ class Lockssomatic(models.Model):
             else:
                 external_url = self._download_url(package.uuid, index)
 
-            # Generate checksum
-            # TODO move this to own function in Package?
-            try:
-                checksum = hashlib.new(self.checksum_type)
-            except ValueError:  # Invalid checksum_type
-                checksum = hashlib.md5()
-            with open(file_path, 'rb') as f:
-                for chunk in iter(lambda: f.read(128*checksum.block_size), b''):
-                    checksum.update(chunk)
+            # Get checksum and size from pointer file (or generate if not found)
+            file_e = self.pointer_root.find(".//mets:fileGrp[@USE='LOCKSS chunk']/mets:file[@ID='{}']".format(os.path.basename(file_path)), namespaces=utils.NSMAP)
+            if file_e is not None:
+                checksum_name = file_e.get('CHECKSUMTYPE')
+                checksum_value = file_e.get('CHECKSUM')
+                size = int(file_e.get('SIZE'))
+            else:
+                # Not split, generate
+                try:
+                    checksum = utils.generate_checksum(file_path,
+                        self.checksum_type)
+                except ValueError:  # Invalid checksum type
+                    checksum = utils.generate_checksum(file_path, 'md5')
+                checksum_name = checksum.name.upper().replace('SHA', 'SHA-')
+                checksum_value = checksum.hexdigest()
+                size = os.path.getsize(file_path)
+
+            # Convert size to kB
+            size = str(math.ceil(size/1000.0))
 
             # Add new content entry and values
-            size = os.path.getsize(file_path)
             entry.add_field('lom_content', external_url)
             content_entry = entry.entry[-1]
-            content_entry.set('size', str(math.ceil(size/1000.0)))  # Convert to kB
-            content_entry.set('checksumType', checksum.name)
-            content_entry.set('checksumValue', checksum.hexdigest())
-
-            # Update pointer file, add each to fileGrp USE=LOCKSS chunk only if
-            # the file was split (aka multiple output files)
-            checksum_name = checksum.name.upper().replace('SHA', 'SHA-')
-            if len(output_files) > 1:
-                file_e = etree.SubElement(filegrp, 'file',
-                    ID=os.path.basename(file_path), SIZE=str(size),
-                    CHECKSUM=checksum.hexdigest(), CHECKSUMTYPE=checksum_name)
-                flocat = etree.SubElement(file_e, 'FLocat', OTHERLOCTYPE="SYSTEM", LOCTYPE="OTHER")
-                flocat.set('{'+utils.NSMAP['xlink']+'}href', file_path)
-
-        # Write out pointer file again
-        with open(package.full_pointer_file_path(), 'w') as f:
-            f.write(etree.tostring(root, pretty_print=True))
+            content_entry.set('size', size)
+            content_entry.set('checksumType', checksum_name)
+            content_entry.set('checksumValue', checksum_value)
 
         logging.debug('LOCKSS atom entry: {}'.format(entry))
         return entry, slug
