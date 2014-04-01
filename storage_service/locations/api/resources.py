@@ -4,15 +4,13 @@
 # stdlib, alphabetical
 import json
 import logging
-import mimetypes
 import os
-import shutil
 import subprocess
 import tempfile
+import urllib
 
 # Core Django, alphabetical
 from django.conf.urls import url
-from django.core.servers.basehttp import FileWrapper
 from django.forms.models import model_to_dict
 
 # Third party dependencies, alphabetical
@@ -297,6 +295,7 @@ class PackageResource(ModelResource):
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/delete_aip%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('delete_aip_request'), name="delete_aip_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/extract_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('extract_file_request'), name="extract_file_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/download%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('download_request'), name="download_request"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/pointer_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('pointer_file_request'), name="pointer_file_request"),
         ]
 
     def obj_create(self, bundle, **kwargs):
@@ -366,7 +365,8 @@ class PackageResource(ModelResource):
         Returns a single file from the Package, extracting if necessary.
         """
         relative_path_to_file = request.GET.get('relative_path_to_file')
-        temp_dir = ''
+        relative_path_to_file = urllib.unquote(relative_path_to_file)
+        temp_dir = extracted_file_path = ''
 
         # Tastypie checks
         self.method_check(request, allowed=['get'])
@@ -383,64 +383,9 @@ class PackageResource(ModelResource):
             extracted_file_path = local_path
         elif package.package_type in Package.PACKAGE_TYPE_EXTRACTABLE:
             # If file doesn't exist, try to extract it
+            (extracted_file_path, temp_dir) = package.extract_file(relative_path_to_file)
 
-            # Create temp dir to extract to
-            # TODO store this somewhere well known, so we don't clutter up
-            # filesystem with duplicates of files?
-            temp_dir = tempfile.mkdtemp()
-
-            filename, file_extension = os.path.splitext(full_path)
-
-            # extract file from Package
-            if file_extension == '.bz2':
-                command_data = [
-                    'tar',
-                    'xvjf',
-                    full_path,
-                    '-C' + temp_dir,
-                    relative_path_to_file
-                ]
-            else:
-                command_data = [
-                    '7za',
-                    'e',
-                    '-o' + temp_dir,
-                    full_path,
-                    relative_path_to_file
-                ]
-
-            subprocess.call(command_data)
-            # send extracted file
-            if file_extension == '.bz2':
-                extracted_file_path = os.path.join(temp_dir, relative_path_to_file)
-            else:
-                extracted_file_path = os.path.join(temp_dir, os.path.basename(relative_path_to_file))
-
-        # If not found, return 404
-        if not os.path.exists(extracted_file_path):
-            return http.HttpNotFound("File not found")
-
-        filename = os.path.basename(extracted_file_path)
-        extension = os.path.splitext(extracted_file_path)[1].lower()
-
-        wrapper = FileWrapper(file(extracted_file_path))
-        response = http.HttpResponse(wrapper)
-
-        # force download for certain filetypes
-        extensions_to_download = ['.7z', '.zip']
-
-        if extension in extensions_to_download:
-            response['Content-Type'] = 'application/force-download'
-            response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
-        else:
-            mimetype = mimetypes.guess_type(filename)[0]
-            response['Content-type'] = mimetype
-
-        response['Content-Length'] = os.path.getsize(extracted_file_path)
-
-        # Delete temp dir if created
-        if os.path.exists(temp_dir):
-            shutil.rmtree(temp_dir)
+        response = utils.download_file_stream(extracted_file_path, temp_dir)
 
         self.log_throttled_access(request)
         return response
@@ -461,23 +406,23 @@ class PackageResource(ModelResource):
             # TODO Update to zip up a transfer before returning it?
             return http.HttpMethodNotAllowed()
 
-        filename = os.path.basename(package.full_path())
-        extension = os.path.splitext(package.full_path())[1].lower()
+        full_path = package.full_path()
 
-        wrapper = FileWrapper(file(package.full_path()))
-        response = http.HttpResponse(wrapper)
+        response = utils.download_file_stream(full_path)
 
-        # force download for certain filetypes
-        extensions_to_download = ['.7z', '.zip']
+        self.log_throttled_access(request)
+        return response
 
-        if extension in extensions_to_download:
-            response['Content-Type'] = 'application/force-download'
-            response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
-        else:
-            mimetype = mimetypes.guess_type(filename)[0]
-            response['Content-type'] = mimetype
+    def pointer_file_request(self, request, **kwargs):
+        # Tastypie checks
+        self.method_check(request, allowed=['get'])
+        self.is_authenticated(request)
+        self.throttle_check(request)
 
-        response['Content-Length'] = os.path.getsize(package.full_path())
+        # Get AIP details
+        package = Package.objects.get(uuid=kwargs['uuid'])
+        pointer_path = package.full_pointer_file_path()
+        response = utils.download_file_stream(pointer_path)
 
         self.log_throttled_access(request)
 

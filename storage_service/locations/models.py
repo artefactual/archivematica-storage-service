@@ -7,6 +7,7 @@ from lxml import etree
 import os
 import stat
 import subprocess
+import tempfile
 
 # Core Django, alphabetical
 from django.conf import settings
@@ -752,6 +753,20 @@ class Package(models.Model):
         with open(pointer_file_dst, 'w') as f:
             f.write(etree.tostring(root, pretty_print=True))
 
+    def extract_file(self, relative_path):
+        """ Attempts to extract `relative_path` from this package.
+
+        Returns path to the extracted file and a temp dir that needs to be
+        deleted. """
+        temp_dir = tempfile.mkdtemp()
+        output_path = os.path.join(temp_dir, os.path.basename(relative_path))
+        command = ['atool', '--cat', self.full_path(), relative_path]
+        logging.info('Extracting file with: {} to {}'.format(command, output_path))
+
+        with open(output_path, 'wb') as output_file:
+            subprocess.call(command, stdout=output_file)
+
+        return (output_path, temp_dir)
 
     def delete_from_storage(self):
         """ Deletes the package from filesystem and updates metadata.

@@ -6,6 +6,7 @@
         <th>Current Location</th>
         <th>Size</th>
         <th>Type</th>
+        <th>Pointer File</th>
         <th>Status</th>
       </tr>
     </thead>
@@ -17,6 +18,13 @@
         <td>{{ package.full_path }}</td>
         <td>{{ package.size|filesizeformat }}</td>
         <td>{{ package.get_package_type_display }}</td>
+        <td>
+          {% if package.pointer_file_location %}
+            <a href="{% url 'pointer_file_request' 'v2' 'file' package.uuid %}">Pointer File</a>
+          {% else %}
+          None
+          {% endif %}
+        </td>
         <td>{{ package.get_status_display }}</td>
       </tr>
     {% endfor %}
