@@ -5,6 +5,7 @@ import errno
 import logging
 from lxml import etree
 import os
+import shutil
 import stat
 import subprocess
 import tempfile
@@ -818,9 +819,13 @@ class Package(models.Model):
 
         Returns (True, None) on success, and (False, error_msg) on failure. """
         if self.current_location.space.access_protocol in Space.mounted_locally:
+            delete_path = self.full_path()
             try:
-                os.remove(self.full_path())
-            except os.error as e:
+                if os.path.isfile(delete_path):
+                    os.remove(delete_path)
+                if os.path.isdir(delete_path):
+                    shutil.rmtree(delete_path)
+            except (os.error, shutil.Error) as e:
                 logging.exception("Error deleting package.")
                 return False, e.strerror
             # Remove uuid quad directories if they're empty
@@ -831,7 +836,7 @@ class Package(models.Model):
             # TODO try-catch AttributeError if remote_user or remote_name not exist?
             user = protocol_space.remote_user
             host = protocol_space.remote_name
-            command = 'rm -f '+self.full_path()
+            command = 'rm -rf '+self.full_path()
             ssh_command = ["ssh", user+"@"+host, command]
             logging.info("ssh+rsync command: {}".format(ssh_command))
             try:
@@ -841,13 +846,14 @@ class Package(models.Model):
                 return False, "Error connecting to Location"
 
         # Remove pointer file, and the UUID quad directories if they're empty
-        try:
-            os.remove(self.full_pointer_file_path())
-        except os.error as e:
-            logging.exception("Error deleting pointer file {} for package {}".format(self.full_pointer_file_path(), self.uuid))
-
-        utils.removedirs(os.path.dirname(self.pointer_file_path),
-            base=self.pointer_file_location.full_path())
+        pointer_path = self.full_pointer_file_path()
+        if pointer_path:
+            try:
+                os.remove(pointer_path)
+            except os.error as e:
+                logging.exception("Error deleting pointer file {} for package {}".format(pointer_path, self.uuid))
+            utils.removedirs(os.path.dirname(self.pointer_file_path),
+                base=self.pointer_file_location.full_path())
 
         self.status = self.DELETED
         self.save()
