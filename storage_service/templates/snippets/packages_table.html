@@ -27,7 +27,9 @@
         </td>
         <td>
           {{ package.get_status_display }}
+          {% if package.status != 'DELETED' and package.status != 'FAIL'%}
           (<a href="{% url 'package_update_status' package.uuid %}?next={{ request.path }}">Update Status</a>)
+          {% endif %}
         </td>
       </tr>
     {% endfor %}

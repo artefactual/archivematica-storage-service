@@ -570,7 +570,7 @@ class Lockssomatic(models.Model):
             logging.info("LOCKSS Edit IRI for %s: %s", package.uuid, edit_iri)
 
             if state_iri and edit_iri:
-                misc = {'state_iri': state_iri, 'edit_iri': edit_iri}
+                misc = {'state_iri': state_iri, 'edit_iri': edit_iri, 'num_files': len(output_files)}
                 package.misc_attributes.update(misc)
 
         package.save()
@@ -647,7 +647,13 @@ class Lockssomatic(models.Model):
                 flocat.set('{'+utils.NSMAP['xlink']+'}href', server.get('src'))
 
         # Delete local files
-        error = self._delete_files(package, statement_root)
+        # Note: This will tell LOCKSS to stop harvesting, even if the file was
+        # not split, and will not be deleted locally
+        lom_content = statement_root.findall('.//lom:content', namespaces=utils.NSMAP)
+        delete_lom_ids = [e.get('id') for e in lom_content]
+        error = self._delete_update_lom(package, delete_lom_ids)
+        if error is None:
+            self._delete_files()
 
         logging.info('update_package_status: new status: %s', status)
 
@@ -660,18 +666,16 @@ class Lockssomatic(models.Model):
         package.save()
         return (status, error)
 
-    def _delete_files(self, package, statement_root):
+    def _delete_update_lom(self, package, delete_lom_ids):
         """
-        Delete AIP local files once stored in LOCKSS from disk and pointer file.
+        Notifys LOM that AUs with `delete_lom_ids` will be deleted.
 
         Helper to update_package_status.
         """
         # Update LOM that local copies will be deleted
         entry = sword2.Entry(id='urn:uuid:{}'.format(package.uuid))
         entry.register_namespace('lom', utils.NSMAP['lom'])
-        lom_content = statement_root.findall('.//lom:content', namespaces=utils.NSMAP)
-        for element in lom_content:
-            lom_id = element.get('id')
+        for lom_id in delete_lom_ids:
             if lom_id:
                 etree.SubElement(entry.entry, '{'+utils.NSMAP['lom']+'}content', recrawl='false').text = lom_id
         logging.debug('edit entry: %s', entry)
@@ -698,7 +702,14 @@ class Lockssomatic(models.Model):
             if response['status'] == 409:  # Conflict - Files in AU with recrawl
                 return "There are files in the LOCKSS Archival Unit (AU) that do not have 'recrawl=false'."
             return 'Error {} when requesting LOCKSS stop harvesting deleted files.'.format(response['status'])
+        return None
 
+    def _delete_files(self):
+        """
+        Delete AIP local files once stored in LOCKSS from disk and pointer file.
+
+        Helper to update_package_status.
+        """
         # Get paths to delete
         if self.keep_local:
             # Get all LOCKSS chucks local path FLocats
@@ -1430,6 +1441,8 @@ class Package(models.Model):
         """ Deletes the package from filesystem and updates metadata.
 
         Returns (True, None) on success, and (False, error_msg) on failure. """
+        # TODO move to protocol Spaces
+        error = None
         if self.current_location.space.access_protocol in Space.mounted_locally:
             delete_path = self.full_path()
             try:
@@ -1450,15 +1463,28 @@ class Package(models.Model):
             host = protocol_space.remote_name
             command = 'rm -rf '+self.full_path()
             ssh_command = ["ssh", user+"@"+host, command]
-            logging.info("ssh+rsync command: {}".format(ssh_command))
+            logging.info("ssh+rm command: %s", ssh_command)
             try:
                 subprocess.check_call(ssh_command)
             except Exception as e:
-                logging.exception("ssh+sync failed.")
+                logging.exception("ssh+rm failed.")
                 return False, "Error connecting to Location"
         elif self.current_location.space.access_protocol == Space.LOM:
-            # TODO Updated for LOM
-            return (False, "Not yet implemented")
+            # Notify LOM that files will be deleted
+            if 'num_files' in self.misc_attributes:
+                lom = self.current_location.space.get_child_space()
+                lom.update_service_document()
+                delete_lom_ids = [lom._download_url(self.uuid, idx+1) for idx in range(self.misc_attributes['num_files'])]
+                error = lom._delete_update_lom(self, delete_lom_ids)
+            # Delete local copy
+            try:
+                shutil.rmtree(os.path.dirname(self.full_path()))
+            except os.error as e:
+                logging.exception("Error deleting local copy of LOCKSS package.")
+                return False, e.strerror
+            # Remove uuid quad directories if they're empty
+            utils.removedirs(os.path.dirname(self.current_path),
+                base=self.current_location.full_path())
         else:
             return (False, "Unknown access protocol for storing Space")
 
@@ -1474,7 +1500,7 @@ class Package(models.Model):
 
         self.status = self.DELETED
         self.save()
-        return True, None
+        return True, error
 
 class Event(models.Model):
     """ Stores requests to modify packages that need admin approval.

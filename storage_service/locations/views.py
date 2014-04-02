@@ -70,6 +70,8 @@ def aip_delete_request(request):
                             "Package was not deleted from disk correctly: {}. Please contact an administrator or see logs for details".format(err_msg))
                     else:
                         messages.success(request, "Request approved.  Package deleted successfully.")
+                        if err_msg:
+                            messages.info(request, err_msg)
                 event.save()
                 event.package.save()
                 return redirect('aip_delete_request')
