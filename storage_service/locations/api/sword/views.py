@@ -1,5 +1,4 @@
 # stdlib, alphabetical
-import datetime
 import logging
 from lxml import etree as etree
 import os
@@ -7,11 +6,9 @@ import shutil
 import traceback
 
 # Core Django, alphabetical
-from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from django.utils import timezone
 
 # External dependencies, alphabetical
 from annoying.functions import get_object_or_None
@@ -73,7 +70,7 @@ def collection(request, space_uuid):
     space = get_object_or_None(Space, uuid=space_uuid)
 
     if space == None:
-        return _sword_error_response(request, 404, 'Space {uuid} does not exist.'.format(uuid=space_uuid))
+        return helpers.sword_error_response(request, 404, 'Space {uuid} does not exist.'.format(uuid=space_uuid))
 
     if request.method == 'GET':
         # return list of deposits as ATOM feed
@@ -125,7 +122,7 @@ def collection(request, space_uuid):
 
                     if mets_data != None:
                         if mets_data['deposit_name'] == None:
-                            return _sword_error_response(request, 400, 'No deposit name found in XML.')
+                            return helpers.sword_error_response(request, 400, 'No deposit name found in XML.')
                         else:
                             # assemble deposit specification
                             deposit_specification = {'space_uuid': space_uuid}
@@ -135,7 +132,7 @@ def collection(request, space_uuid):
                                 deposit_specification['sourceofacquisition'] = request.META['HTTP_ON_BEHALF_OF']
 
                             if not os.path.isdir(space.path):
-                                return  _sword_error_response(request, 500, 'Space path (%s) does not exist: contact an administrator.' % (space.path))
+                                return  helpers.sword_error_response(request, 500, 'Space path (%s) does not exist: contact an administrator.' % (space.path))
                             else:
                                 deposit_uuid = _create_deposit_directory_and_db_entry(deposit_specification)
 
@@ -154,29 +151,29 @@ def collection(request, space_uuid):
                                     else:
                                         return _deposit_receipt_response(request, deposit_uuid, 200)
                                 else:
-                                    return _sword_error_response(request, 500, 'Could not create deposit: contact an administrator.')
+                                    return helpers.sword_error_response(request, 500, 'Could not create deposit: contact an administrator.')
                     else:
-                        return _sword_error_response(request, 412, 'Error parsing XML')
+                        return helpers.sword_error_response(request, 412, 'Error parsing XML')
                 except Exception as e:
-                    return _sword_error_response(request, 400, traceback.format_exc())
+                    return helpers.sword_error_response(request, 400, traceback.format_exc())
             elif source_location or relative_path_to_files:
                 if not source_location or not relative_path_to_files:
                     if not source_location:
-                        return _sword_error_response(request, 400, 'relative_path_to_files is set, but source_location is not.')
+                        return helpers.sword_error_response(request, 400, 'relative_path_to_files is set, but source_location is not.')
                     else:
-                        return _sword_error_response(request, 400, 'source_location is set, but relative_path_to_files is not.')
+                        return helpers.sword_error_response(request, 400, 'source_location is set, but relative_path_to_files is not.')
                 else:
                     result = deposit_from_location_relative_path(source_location, relative_path_to_files, space.uuid)
                     if 'error' in result and result['error'] != None:
-                        return _sword_error_response(request, 500, result['message'])
+                        return helpers.sword_error_response(request, 500, result['message'])
                     else:
                         return _deposit_receipt_response(request, result['deposit_uuid'], 200)
             else:
-                return _sword_error_response(request, 412, 'A request body must be sent when creating a deposit.')
+                return helpers.sword_error_response(request, 412, 'A request body must be sent when creating a deposit.')
         else:
-            return _sword_error_response(request, 412, 'The In-Progress header must be set to either true or false when creating a deposit.')
+            return helpers.sword_error_response(request, 412, 'The In-Progress header must be set to either true or false when creating a deposit.')
     else:
-        return _sword_error_response(request, 405, 'This endpoint only responds to the GET and POST HTTP methods.')
+        return helpers.sword_error_response(request, 405, 'This endpoint only responds to the GET and POST HTTP methods.')
 
 """
 Create and approve deposit using files in an existing location at a relative
@@ -350,10 +347,10 @@ def deposit_edit(request, uuid):
     deposit = helpers.get_deposit(uuid)
 
     if deposit == None:
-        return _sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=uuid))
+        return helpers.sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=uuid))
 
     if deposit.has_been_submitted_for_processing():
-        return _sword_error_response(request, 400, 'This deposit has already been submitted for processing.')
+        return helpers.sword_error_response(request, 400, 'This deposit has already been submitted for processing.')
 
     if request.method == 'GET':
         edit_iri = request.build_absolute_uri(
@@ -376,7 +373,7 @@ def deposit_edit(request, uuid):
                 _spawn_batch_download_and_flag_finalization_if_requested(uuid, request, mets_data)
                 return _deposit_receipt_response(request, uuid, 200)
             else:
-                return _sword_error_response(request, 412, 'Error parsing XML.')
+                return helpers.sword_error_response(request, 412, 'Error parsing XML.')
         else:
             # Attempt to finalize (if requested), otherwise just return deposit receipt
             if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
@@ -396,7 +393,7 @@ def deposit_edit(request, uuid):
 
         return HttpResponse(status=204) # No content
     else:
-        return _sword_error_response(request, 405, 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.')
+        return helpers.sword_error_response(request, 405, 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.')
 
 """
 If a request specifies the deposit should be finalized, synchronously finalize
@@ -410,9 +407,9 @@ def _finalize_or_mark_for_finalization(request, deposit_uuid):
             helpers.spawn_finalization(deposit_uuid)
             return _deposit_receipt_response(request, deposit_uuid, 200)
         else:
-            return _sword_error_response(request, 400, 'Downloading not yet complete or errors were encountered.')
+            return helpers.sword_error_response(request, 400, 'Downloading not yet complete or errors were encountered.')
     else:
-        return _sword_error_response(request, 400, 'The In-Progress header must be set to false when starting deposit processing.')
+        return helpers.sword_error_response(request, 400, 'The In-Progress header must be set to false when starting deposit processing.')
 
 """
 Example GET of files list:
@@ -439,10 +436,10 @@ def deposit_media(request, uuid):
     deposit = helpers.get_deposit(uuid)
 
     if deposit == None:
-        return _sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=uuid))
+        return helpers.sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=uuid))
 
     if deposit.has_been_submitted_for_processing():
-        return _sword_error_response(request, 400, 'This deposit has already been submitted for processing.')
+        return helpers.sword_error_response(request, 400, 'This deposit has already been submitted for processing.')
 
     if request.method == 'GET':
         return HttpResponse(str(os.listdir(deposit.full_path())))
@@ -459,9 +456,9 @@ def deposit_media(request, uuid):
                     _spawn_batch_download_and_flag_finalization_if_requested(uuid, request, mets_data)
                     return _deposit_receipt_response(request, uuid, 201)
                 else:
-                    return _sword_error_response(request, 412, 'Error parsing XML ({error_message}).'.format(error_message=str(e)))
+                    return helpers.sword_error_response(request, 412, 'Error parsing XML.')
             else:
-                return _sword_error_response(request, 400, 'No METS body content sent.')
+                return helpers.sword_error_response(request, 400, 'No METS body content sent.')
         else:
             # add a file to the deposit
             return _handle_adding_to_or_replacing_file_in_deposit(request, deposit)
@@ -473,7 +470,7 @@ def deposit_media(request, uuid):
                 os.remove(file_path)
                 return HttpResponse(status=204) # No content
             else:
-                return _sword_error_response(request, 404, 'The path to this file (%s) does not exist.' % (file_path))
+                return helpers.sword_error_response(request, 404, 'The path to this file (%s) does not exist.' % (file_path))
         else:
             for filename in os.listdir(deposit.full_path()):
                 filepath = os.path.join(deposit.full_path(), filename)
@@ -484,7 +481,7 @@ def deposit_media(request, uuid):
 
             return HttpResponse(status=204) # No content
     else:
-        return _sword_error_response(request, 405, 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.')
+        return helpers.sword_error_response(request, 405, 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.')
 
 """
 Example GET of state:
@@ -495,7 +492,7 @@ def deposit_state(request, uuid):
     deposit = helpers.get_deposit(uuid)
 
     if deposit == None:
-        return _sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=uuid))
+        return helpers.sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=uuid))
 
     if request.method == 'GET':
         status = helpers.deposit_downloading_status(uuid)
@@ -526,7 +523,7 @@ def deposit_state(request, uuid):
         response['Content-Type'] = 'application/atom+xml;type=feed'
         return response
     else:
-        return _sword_error_response(request, 405, 'This endpoint only responds to the GET HTTP method.')
+        return helpers.sword_error_response(request, 405, 'This endpoint only responds to the GET HTTP method.')
 
 """
 Parse a destination filename from an HTTP Content-Disposition header and
@@ -551,11 +548,11 @@ def _handle_adding_to_or_replacing_file_in_deposit(request, deposit, replace_fil
                         204
                     )
                 else:
-                    return _sword_error_response(request, 400, 'File does not exist.')
+                    return helpers.sword_error_response(request, 400, 'File does not exist.')
             else:
                 # if adding a file, the file must not already exist
                 if os.path.exists(file_path):
-                    return _sword_error_response(request, 400, 'File already exists.')
+                    return helpers.sword_error_response(request, 400, 'File already exists.')
                 else:
                     return _handle_upload_request_with_potential_md5_checksum(
                         request,
@@ -563,9 +560,9 @@ def _handle_adding_to_or_replacing_file_in_deposit(request, deposit, replace_fil
                         201
                     )
         else:
-            return _sword_error_response(request, 400, 'No filename found in Content-disposition header.')
+            return helpers.sword_error_response(request, 400, 'No filename found in Content-disposition header.')
     else:
-        return _sword_error_response(request, 400, 'Content-disposition must be set in request header.')
+        return helpers.sword_error_response(request, 400, 'Content-disposition must be set in request header.')
 
 """
 Write the HTTP request body to a file and, if the HTTP Content-MD5 header is
@@ -580,7 +577,7 @@ def _handle_upload_request_with_potential_md5_checksum(request, file_path, succe
         md5sum = helpers.get_file_md5_checksum(temp_filepath)
         if request.META['HTTP_CONTENT_MD5'] != md5sum:
             os.remove(temp_filepath)
-            return _sword_error_response(request, 400, 'MD5 checksum of uploaded file ({uploaded_md5sum}) does not match ' + 'checksum provided in header ({header_md5sum}).'.format(
+            return helpers.sword_error_response(request, 400, 'MD5 checksum of uploaded file ({uploaded_md5sum}) does not match ' + 'checksum provided in header ({header_md5sum}).'.format(
                 uploaded_md5sum=md5sum, header_md5sum=request.META['HTTP_CONTENT_MD5']))
         else:
             shutil.copyfile(temp_filepath, file_path)
@@ -615,14 +612,3 @@ def _deposit_receipt_response(request, deposit_uuid, status_code):
     response = HttpResponse(receipt_xml, mimetype='text/xml', status=status_code)
     response['Location'] = '/api/v1/location/' + deposit_uuid + '/sword/'
     return response
-
-"""
-Generate SWORD 2.0 error response
-"""
-def _sword_error_response(request, status, summary):
-    error_details = {'summary': summary, 'status': status}
-    error_details['request'] = request
-    error_details['update_time'] = datetime.datetime.now().__str__()
-    error_details['user_agent'] = request.META['HTTP_USER_AGENT']
-    error_xml = render_to_string('locations/api/sword/error.xml', error_details)
-    return HttpResponse(error_xml, status=error_details['status'])

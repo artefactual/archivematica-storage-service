@@ -1,6 +1,7 @@
 # stdlib, alphabetical
 import base64
 import json
+import datetime
 import logging
 import os
 from multiprocessing import Process
@@ -12,7 +13,8 @@ import urllib
 import urllib2
 
 # Core Django, alphabetical
-from django.core.exceptions import ObjectDoesNotExist
+from django.http import HttpResponse
+from django.template.loader import render_to_string
 from django.utils import timezone
 
 # External dependencies, alphabetical
@@ -282,7 +284,8 @@ def _finalize_if_not_empty(deposit_uuid):
             result = activate_transfer_and_request_approval_from_pipeline(deposit, sword_server)
 
             if 'error' in result:
-                return _sword_error_response(request, 500, result['message'])
+                # FIXME no object to pass to error
+                return sword_error_response(request, 500, result['message'])
 
             completed = True
 
@@ -315,8 +318,8 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, sword_server):
     for property in ['remote_name', 'api_username', 'api_key']:
         if getattr(sword_server.pipeline, property)=='':
             property_description = property.replace('_', ' ')
-            # TODO: fix this
-            return _sword_error_response(request, 500, 'Pipeline {property} not set.'.format(property=property_description))
+            # FIXME need request object
+            return sword_error_response(request, 500, 'Pipeline {property} not set.'.format(property=property_description))
 
     # TODO: add error if more than one location is returned
     processing_location = Location.objects.get(
@@ -368,7 +371,17 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, sword_server):
         return {
             'error': True,
             'message': 'Request to pipeline ' + sword_server.pipeline.uuid + ' transfer approval API failed: check credentials and REST API IP whitelist.'
-        } #_sword_error_response(request, 500, 'Request to pipeline transfer approval API failed: check credentials and REST API IP whitelist.')
+        } #sword_error_response(request, 500, 'Request to pipeline transfer approval API failed: check credentials and REST API IP whitelist.')
 
     result = json.loads(approve_response.read())
     return result
+
+def sword_error_response(request, status, summary):
+    """ Generate SWORD 2.0 error response """
+    error_details = {'summary': summary, 'status': status}
+    error_details['request'] = request
+    error_details['update_time'] = datetime.datetime.now().__str__()
+    error_details['user_agent'] = request.META['HTTP_USER_AGENT']
+    error_xml = render_to_string('locations/api/sword/error.xml', error_details)
+    return HttpResponse(error_xml, status=error_details['status'])
+
