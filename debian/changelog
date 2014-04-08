@@ -1,5 +1,5 @@
-archivematica-storage-service (0.2.0) precise; urgency=low
+archivematica-storage-service (0.3.0-rc7) precise; urgency=low
 
-  * updated to 0.2.2
+  * updated to 0.3.0
 
- -- Justin Simpson <jhs@inex>  Tue, 05 Nov 2013 18:17:20 -0800
+ -- Justin Simpson <jhs@inex>  Tue, 08 Apr 2014 10:07:20 -0800

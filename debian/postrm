@@ -1,0 +1,19 @@
+#!/bin/sh
+
+#postrm 
+#run after the package is uninstalled
+
+#clean up storage service directories
+rm -rf /usr/sahre/python/archivematica-storage-service
+rm -rf /var/archivematica/storage*
+rm -r /var/archivematica/.storage-service
+rm -f /tmp/storage-service.log
+rm -f /etc/nginx/sites-enabled/storage
+rm -f /etc/nginx/sites-available/storage
+rm -f /etc/uwsgi/apps-enabled/storage.ini
+rm -f /etc/uwsgi/apps-available/storage.ini
+rm -rf /usr/lib/archivematica/storage*
+
+#DEBHELPER#
+
+
