@@ -14,18 +14,13 @@ from django.template.loader import render_to_string
 from annoying.functions import get_object_or_None
 
 # This project, alphabetical
-from locations.models import Location
-from locations.models import Pipeline
-from locations.models import Space
-from locations.models import SwordServer
-from locations.models import LocationDownloadTaskFile
 import helpers
+from locations import models
 
 LOGGER = logging.getLogger(__name__)
 logging.basicConfig(filename="/tmp/storage_service.log",
     level=logging.INFO)
 
-logging.info('starting sword service')
 
 """
 Example GET of service document:
@@ -33,7 +28,7 @@ Example GET of service document:
   curl -v http://127.0.0.1:8000/api/v1/sword/
 """
 def service_document(request):
-    spaces = Space.objects.filter(access_protocol='SWORD_S')
+    spaces = models.Space.objects.filter(access_protocol=models.Space.SWORD_SERVER)
 
     collections = []
     for space in spaces:
@@ -67,7 +62,7 @@ Example POST creation of deposit, finalizing the deposit and auto-approving it:
   curl -v -H "In-Progress: false" --data-binary @mets.xml --request POST http://localhost:8000/api/v1/space/c0bee7c8-3e9b-41e3-8600-ee9b2c475da2/sword/collection/
 """
 def collection(request, space_uuid):
-    space = get_object_or_None(Space, uuid=space_uuid)
+    space = get_object_or_None(models.Space, uuid=space_uuid)
 
     if space == None:
         return helpers.sword_error_response(request, 404, 'Space {uuid} does not exist.'.format(uuid=space_uuid))
@@ -190,17 +185,17 @@ def deposit_from_location_relative_path(source_location, relative_path_to_files,
     # if a pipeline, but no space, was specified then look up the first SWORD server space
     # associated with the pipeline
     if space_uuid == None:
-        pipeline = Pipeline.objects.get(uuid=pipeline_uuid)
-        sword_server = SwordServer.objects.filter(pipeline=pipeline)[0]
+        pipeline = models.Pipeline.objects.get(uuid=pipeline_uuid)
+        sword_server = models.SwordServer.objects.filter(pipeline=pipeline)[0]
         space_uuid = sword_server.space.uuid
     else:
     # ...otherwise, get the pipeline associated with the SWORD server space
-        space = Space.objects.get(uuid=space_uuid)
-        sword_server = SwordServer.objects.get(space=space)
+        space = models.Space.objects.get(uuid=space_uuid)
+        sword_server = models.SwordServer.objects.get(space=space)
         pipeline = sword_server.pipeline
 
     # a deposit of files stored on the storage server is being done
-    location = Location.objects.get(uuid=source_location)
+    location = models.Location.objects.get(uuid=source_location)
     path_to_deposit_files = os.path.join(location.full_path(), relative_path_to_files)
 
     deposit_specification = {'space_uuid': space_uuid}
@@ -308,7 +303,7 @@ def _create_deposit_directory_and_db_entry(deposit_specification):
         deposit_name = 'Untitled'
 
     # Formulate deposit path using space path and deposit name
-    space = Space.objects.get(uuid=deposit_specification['space_uuid']) 
+    space = models.Space.objects.get(uuid=deposit_specification['space_uuid']) 
     deposit_path = os.path.join(
         space.path,
         deposit_name
@@ -324,8 +319,8 @@ def _create_deposit_directory_and_db_entry(deposit_specification):
 
     # Create SWORD deposit location using deposit name and path
     if os.path.exists(deposit_path):
-        deposit = Location.objects.create(description=deposit_name, relative_path=os.path.basename(deposit_path),
-            space=space, purpose=Location.SWORD_DEPOSIT)
+        deposit = models.Location.objects.create(description=deposit_name, relative_path=os.path.basename(deposit_path),
+            space=space, purpose=models.Location.SWORD_DEPOSIT)
 
         # TODO: implement this
         if 'sourceofacquisition' in deposit_specification:
@@ -511,7 +506,7 @@ def deposit_state(request, uuid):
         entries = []
 
         for task in tasks:
-            task_files = LocationDownloadTaskFile.objects.filter(task=task)
+            task_files = models.LocationDownloadTaskFile.objects.filter(task=task)
             for task_file in task_files:
                 entries.append({
                     'title': task_file.filename,

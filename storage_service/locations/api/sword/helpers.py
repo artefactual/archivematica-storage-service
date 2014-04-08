@@ -22,11 +22,7 @@ from annoying.functions import get_object_or_None
 import requests
 
 # This project, alphabetical
-from locations.models import Location
-from locations.models import LocationDownloadTask
-from locations.models import LocationDownloadTaskFile
-from locations.models import Space
-from locations.models import SwordServer
+from locations import models
 
 LOGGER = logging.getLogger(__name__)
 logging.basicConfig(filename="/tmp/storage_service.log",
@@ -38,7 +34,7 @@ Shortcut to retrieve deposit data
 Returns deposit model object or None
 """
 def get_deposit(uuid):
-    return get_object_or_None(Location, uuid=uuid)
+    return get_object_or_None(models.Location, uuid=uuid)
 
 """
 Retrieve list of deposits
@@ -47,12 +43,12 @@ TODO: filter out completed ones?
 Returns list containing deposit UUIDs
 """
 def deposit_list(space_uuid):
-    space = Space.objects.get(uuid=space_uuid)
+    space = models.Space.objects.get(uuid=space_uuid)
 
     deposit_list = []
-    deposits = Location.objects.filter(space=space)
+    deposits = models.Location.objects.filter(space=space)
     for deposit in deposits:
-        if deposit.purpose == Location.SWORD_DEPOSIT:
+        if deposit.purpose == models.Location.SWORD_DEPOSIT:
             deposit_list.append(deposit.uuid)
     return deposit_list
 
@@ -154,7 +150,7 @@ Return a deposit's download tasks.
 """
 def deposit_download_tasks(deposit_uuid):
     deposit = get_deposit(deposit_uuid)
-    return LocationDownloadTask.objects.filter(location=deposit)
+    return models.LocationDownloadTask.objects.filter(location=deposit)
 
 """
 Return deposit status, indicating whether any incomplete or failed batch
@@ -196,7 +192,7 @@ database record. After downloading, finalize deposit if requested.
 def _fetch_content(deposit_uuid, objects):
     # add download task to keep track of progress
     deposit = get_deposit(deposit_uuid)
-    task = LocationDownloadTask(location=deposit)
+    task = models.LocationDownloadTask(location=deposit)
     task.downloads_attempted = len(objects)
     task.downloads_completed = 0
     task.save()
@@ -207,7 +203,7 @@ def _fetch_content(deposit_uuid, objects):
     completed = 0
     for item in objects:
         # create download task file record
-        task_file = LocationDownloadTaskFile(task=task)
+        task_file = models.LocationDownloadTaskFile(task=task)
         task_file.save()
 
         try:
@@ -280,7 +276,7 @@ def _finalize_if_not_empty(deposit_uuid):
     if deposit_downloading_status(deposit_uuid) == 'complete':
         if len(os.listdir(deposit.full_path())) > 0:
             # get sword server so we can access pipeline information
-            sword_server = SwordServer.objects.get(space=deposit.space)
+            sword_server = models.SwordServer.objects.get(space=deposit.space)
             result = activate_transfer_and_request_approval_from_pipeline(deposit, sword_server)
 
             if 'error' in result:
@@ -322,9 +318,9 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, sword_server):
             return sword_error_response(request, 500, 'Pipeline {property} not set.'.format(property=property_description))
 
     # TODO: add error if more than one location is returned
-    processing_location = Location.objects.get(
+    processing_location = models.Location.objects.get(
         pipeline=sword_server.pipeline,
-        purpose=Location.CURRENTLY_PROCESSING)
+        purpose=models.Location.CURRENTLY_PROCESSING)
 
     destination_path = os.path.join(
         processing_location.full_path(),
