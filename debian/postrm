@@ -7,7 +7,7 @@
 rm -rf /usr/share/python/archivematica-storage-service
 rm -rf /var/archivematica/storage*
 rm -r /var/archivematica/.storage-service
-rm -f /tmp/storage-service.log
+rm -f /tmp/storage*
 rm -f /etc/nginx/sites-enabled/storage
 rm -f /etc/nginx/sites-available/storage
 rm -f /etc/uwsgi/apps-enabled/storage.ini
