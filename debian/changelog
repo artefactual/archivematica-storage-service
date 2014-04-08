@@ -1,4 +1,8 @@
-archivematica-storage-service (0.2.0) precise; urgency=low
+archivematica-storage-service (0.3.0.rc9) precise; urgency=high
+  
+  * Adding uninstall ability 
+
+ -- Justin Simpson <jsimpson@artefactual.com>  Tue, 08 Apr 2014 10:11:05 -0800
 
   * updated to 0.2.2
 
