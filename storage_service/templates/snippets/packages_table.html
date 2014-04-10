@@ -2,6 +2,7 @@
     <thead>
       <tr>
         <th>UUID</th>
+        <th>Description</th>
         <th>Originating Pipeline</th>
         <th>Current Location</th>
         <th>Size</th>
@@ -15,8 +16,15 @@
     {% for package in packages %}
       <tr>
         <td>{{ package.uuid }}</td>
-        <td><a href="{% url 'pipeline_detail' package.origin_pipeline.uuid %}">{{ package.origin_pipeline }}</a></td>
-        <td>{{ package.full_path }}</td>
+        <td>{{ package.description }}</td>
+        <td>
+          {% if package.origin_pipeline %}
+          <a href="{% url 'pipeline_detail' package.origin_pipeline.uuid %}">{{ package.origin_pipeline }}</a>
+          {% else %}
+          None
+          {% endif %}
+        </td>
+        <td><a href="{% url 'location_detail' package.current_location.uuid %}">{{ package.full_path }}</a></td>
         <td>{{ package.size|filesizeformat }}</td>
         <td>{{ package.get_package_type_display }}</td>
         <td>

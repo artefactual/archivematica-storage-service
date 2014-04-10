@@ -1278,7 +1278,9 @@ class Package(models.Model):
     """ A package stored in a specific location. """
     uuid = UUIDField(editable=False, unique=True, version=4,
         help_text="Unique identifier")
-    origin_pipeline = models.ForeignKey('Pipeline', to_field='uuid')
+    description = models.CharField(max_length=256, default=None,
+        null=True, blank=True, help_text="Human-readable description.")
+    origin_pipeline = models.ForeignKey('Pipeline', to_field='uuid', null=True, blank=True)
     current_location = models.ForeignKey(Location, to_field='uuid')
     current_path = models.TextField()
     pointer_file_location = models.ForeignKey(Location, to_field='uuid', related_name='+', null=True, blank=True)
