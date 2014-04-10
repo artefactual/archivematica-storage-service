@@ -1911,8 +1911,6 @@ class Pipeline(models.Model):
         it.  If a shared_path is provided, currently processing location is at
         that path.  Creates Transfer Source and AIP Store locations based on
         configuration from administration.Settings.
-
-        Also create a SWORD server Space.
         """
         # Use shared path if provided
         if not shared_path:
@@ -1964,20 +1962,3 @@ class Pipeline(models.Model):
                     p['purpose'], location, self))
                 LocationPipeline.objects.get_or_create(
                     pipeline=self, location=location)
-
-        # create SWORD space if it doesn't already exist
-        space_path = os.path.join(os.path.join('/', shared_path), 'staging', 'deposits', self.uuid)
-        space, space_created = Space.objects.get_or_create(
-            access_protocol=Space.SWORD_SERVER, path=space_path)
-
-        if space_created:
-            try:
-                os.makedirs(space_path)
-            except OSError as e:
-                if e.errno != errno.EEXIST:
-                    logging.error("Unable to create directory {} for SWORD server space.".format(space.path))
-
-        # create SWORD server for pipeline if it doesn't already exist
-        sword_server, sword_server_created = SwordServer.objects.get_or_create(space=space, pipeline=self)
-        if sword_server_created:
-            logging.info("SWORD server created: {}".format(sword_server))
