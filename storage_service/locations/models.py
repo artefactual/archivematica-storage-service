@@ -108,14 +108,6 @@ class Space(models.Model):
     last_verified = models.DateTimeField(default=None, null=True, blank=True,
         help_text="Time this location was last verified to be accessible.")
 
-    # SWORD-related attributes
-    fedora_user = models.CharField(max_length=64,
-        help_text="Fedora user name (for SWORD functionality)")
-    fedora_password = models.CharField(max_length=256,
-        help_text="Fedora password (for SWORD functionality)")
-    fedora_name = models.CharField(max_length=256,
-        help_text="Name or IP of the remote Fedora machine.")
-
     mounted_locally = set([LOCAL_FILESYSTEM, NFS, SWORD_SERVER])
     ssh_only_access = set([PIPELINE_LOCAL_FS])
 
@@ -1071,7 +1063,14 @@ class Lockssomatic(models.Model):
 class SwordServer(models.Model):
     """ SWORD server that accepts deposits."""
     space = models.OneToOneField('Space', to_field='uuid')
-    pipeline = models.ForeignKey('Pipeline', to_field='uuid')
+
+    # Authentication related attributes
+    fedora_user = models.CharField(max_length=64,
+        help_text="Fedora user name (for SWORD functionality)")
+    fedora_password = models.CharField(max_length=256,
+        help_text="Fedora password (for SWORD functionality)")
+    fedora_name = models.CharField(max_length=256,
+        help_text="Name or IP of the remote Fedora machine.")
 
     def save(self, *args, **kwargs):
         self.verify()
@@ -1143,6 +1142,7 @@ class Location(models.Model):
         # (QUARANTINE, 'Quarantine'),
         (BACKLOG, 'Transfer Backlog'),
         (CURRENTLY_PROCESSING, 'Currently Processing'),
+        (SWORD_DEPOSIT, 'FEDORA Deposits'),
         (STORAGE_SERVICE_INTERNAL, 'Storage Service Internal Processing'),
     )
     purpose = models.CharField(max_length=2,
@@ -1161,11 +1161,6 @@ class Location(models.Model):
         help_text="Amount used, in bytes.")
     enabled = models.BooleanField(default=True,
         help_text="True if space can be accessed.")
-
-    # SWORD-related attributes
-    deposit_completion_time = models.DateTimeField(default=None, null=True, blank=True)
-    ready_for_finalization = models.BooleanField(default=False)
-    finalization_attempt_failed = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Location"
@@ -1293,6 +1288,7 @@ class Package(models.Model):
     DIP = "DIP"
     TRANSFER = "transfer"
     FILE = 'file'
+    DEPOSIT = 'deposit'
     PACKAGE_TYPE_CHOICES = (
         (AIP, 'AIP'),
         (AIC, 'AIC'),
@@ -1300,6 +1296,7 @@ class Package(models.Model):
         (DIP, 'DIP'),
         (TRANSFER, 'Transfer'),
         (FILE, 'Single File'),
+        (DEPOSIT, 'FEDORA Deposit')
     )
     package_type = models.CharField(max_length=8, choices=PACKAGE_TYPE_CHOICES)
 

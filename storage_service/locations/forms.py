@@ -18,7 +18,7 @@ class PipelineForm(forms.ModelForm):
 class SpaceForm(forms.ModelForm):
     class Meta:
         model = models.Space
-        fields = ('access_protocol', 'size', 'path', 'staging_path', 'fedora_user', 'fedora_password', 'fedora_name')
+        fields = ('access_protocol', 'size', 'path', 'staging_path')
 
     def __init__(self, *args, **kwargs):
         super(SpaceForm, self).__init__(*args, **kwargs)
@@ -69,7 +69,7 @@ class LockssomaticForm(forms.ModelForm):
 class SwordServerForm(forms.ModelForm):
     class Meta:
         model = models.SwordServer
-        fields = ('pipeline',)
+        fields = ('fedora_user', 'fedora_password', 'fedora_name', )
 
 
 class LocationForm(forms.ModelForm):

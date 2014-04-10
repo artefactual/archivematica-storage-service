@@ -42,5 +42,7 @@ PROTOCOL[Space.LOM] = {
 PROTOCOL[Space.SWORD_SERVER] = {
     'model': SwordServer,
     'form': SwordServerForm,
-    'fields': []
+    'fields': ['fedora_user',
+               'fedora_password',
+               'fedora_name']
 }
