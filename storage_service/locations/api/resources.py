@@ -14,6 +14,7 @@ from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.forms.models import model_to_dict
 
 # Third party dependencies, alphabetical
+from annoying.functions import get_object_or_None
 import bagit
 from tastypie.authentication import (BasicAuthentication, ApiKeyAuthentication,
     MultiAuthentication, Authentication)
@@ -233,13 +234,6 @@ class SpaceResource(ModelResource):
 
         return self.create_response(request, objects)
 
-    def sword_collection(self, request, **kwargs):
-        space = Space.objects.get(uuid=kwargs['uuid'])
-        if space.access_protocol != Space.SWORD_SERVER:
-            return http.HttpBadRequest('This is not a SWORD server space.')
-        self.log_throttled_access(request)
-        return sword_views.collection(request, kwargs['uuid'])
-
 
 class LocationResource(ModelResource):
     space = fields.ForeignKey(SpaceResource, 'space')
@@ -275,9 +269,9 @@ class LocationResource(ModelResource):
     def prepend_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/browse%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('browse'), name="browse"),
-            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit'), name="sword_deposit"),
-            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/media%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit_media'), name="sword_deposit_media"),
-            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/state%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit_state'), name="sword_deposit_state"),
+            # FEDORA/SWORD2 endpoints
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/collection%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_collection'), name="sword_collection"),
+
         ]
 
     def decode_path(self, path):
@@ -381,26 +375,12 @@ class LocationResource(ModelResource):
                     'message': 'Files moved successfully'}
         return self.create_response(request, response)
 
-    def sword_deposit(self, request, **kwargs):
-        location = Location.objects.get(uuid=kwargs['uuid'])
-        if location.purpose != Location.SWORD_DEPOSIT:
-            return http.HttpBadRequest('This is not a SWORD deposit location.')
+    def sword_collection(self, request, **kwargs):
+        location = get_object_or_None(Location, uuid=kwargs['uuid'])
+        if location and (location.purpose != Location.SWORD_DEPOSIT or location.space.access_protocol != Space.SWORD_SERVER):
+            return http.HttpBadRequest('This is not a SWORD server space.')
         self.log_throttled_access(request)
-        return sword_views.deposit_edit(request, kwargs['uuid'])
-
-    def sword_deposit_media(self, request, **kwargs):
-        location = Location.objects.get(uuid=kwargs['uuid'])
-        if location.purpose != Location.SWORD_DEPOSIT:
-            return http.HttpBadRequest('This is not a SWORD deposit location.')
-        self.log_throttled_access(request)
-        return sword_views.deposit_media(request, kwargs['uuid'])
-
-    def sword_deposit_state(self, request, **kwargs):
-        location = Location.objects.get(uuid=kwargs['uuid'])
-        if location.purpose != Location.SWORD_DEPOSIT:
-            return http.HttpBadRequest('This is not a SWORD deposit location.')
-        self.log_throttled_access(request)
-        return sword_views.deposit_state(request, kwargs['uuid'])
+        return sword_views.collection(request, location or kwargs['uuid'])
 
 
 class PackageResource(ModelResource):
@@ -467,6 +447,11 @@ class PackageResource(ModelResource):
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/download%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('download_request'), name="download_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/pointer_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('pointer_file_request'), name="pointer_file_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/check_fixity%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('check_fixity_request'), name="check_fixity_request"),
+
+            # FEDORA/SWORD2 endpoints
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit'), name="sword_deposit"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/media%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit_media'), name="sword_deposit_media"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/state%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit_state'), name="sword_deposit_state"),
         ]
 
     def obj_create(self, bundle, **kwargs):
@@ -646,3 +631,25 @@ class PackageResource(ModelResource):
             report,
             mimetype="application/json"
         )
+        return response
+
+    def sword_deposit(self, request, **kwargs):
+        package = get_object_or_None(Package, uuid=kwargs['uuid'])
+        if package and package.package_type != Package.DEPOSIT:
+            return http.HttpBadRequest('This is not a SWORD deposit location.')
+        self.log_throttled_access(request)
+        return sword_views.deposit_edit(request, package or kwargs['uuid'])
+
+    def sword_deposit_media(self, request, **kwargs):
+        package = get_object_or_None(Package, uuid=kwargs['uuid'])
+        if package and package.package_type != Package.DEPOSIT:
+            return http.HttpBadRequest('This is not a SWORD deposit location.')
+        self.log_throttled_access(request)
+        return sword_views.deposit_media(request, package or kwargs['uuid'])
+
+    def sword_deposit_state(self, request, **kwargs):
+        package = get_object_or_None(Package, uuid=kwargs['uuid'])
+        if package and package.package_type != Package.DEPOSIT:
+            return http.HttpBadRequest('This is not a SWORD deposit location.')
+        self.log_throttled_access(request)
+        return sword_views.deposit_state(request, package or kwargs['uuid'])
