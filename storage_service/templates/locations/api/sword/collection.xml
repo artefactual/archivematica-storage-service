@@ -1,4 +1,4 @@
-<atom:feed xmlns="http://www.w3.org/2005/Atom">
+<atom:feed xmlns:atom="http://www.w3.org/2005/Atom">
   <atom:id>{{ feed.url }}</atom:id>
   <atom:title type="text">{{ feed.title }}</atom:title>
   <atom:link href="{{ feed.url }}" rel="self">

@@ -28,29 +28,21 @@ LOGGER = logging.getLogger(__name__)
 logging.basicConfig(filename="/tmp/storage_service.log",
     level=logging.INFO)
 
-"""
-Shortcut to retrieve deposit data
-
-Returns deposit model object or None
-"""
 def get_deposit(uuid):
-    return get_object_or_None(models.Location, uuid=uuid)
+    """
+    Shortcut to retrieve deposit data. Returns deposit model object or None
+    """
+    return get_object_or_None(models.Package, uuid=uuid)
 
-"""
-Retrieve list of deposits
-TODO: filter out completed ones?
+def deposit_list(location_uuid):
+    """
+    Retrieve list of deposits
 
-Returns list containing deposit UUIDs
-"""
-def deposit_list(space_uuid):
-    space = models.Space.objects.get(uuid=space_uuid)
-
-    deposit_list = []
-    deposits = models.Location.objects.filter(space=space)
-    for deposit in deposits:
-        if deposit.purpose == models.Location.SWORD_DEPOSIT:
-            deposit_list.append(deposit.uuid)
-    return deposit_list
+    Returns list containing all deposits in the Location with `location_uuid`.
+    """
+    # TODO: filter out completed ones?
+    deposits = models.Package.objects.filter(package_type=models.Package.DEPOSIT).filter(current_location_id=location_uuid)
+    return deposits
 
 """
 Write HTTP request's body content to a file
@@ -141,69 +133,63 @@ def download_resource(url, destination_path, filename=None, username=None, passw
     with open(filepath, 'wb') as fp:
         while True:
             chunk = response.read(buffer_size)
-            if not chunk: break
+            if not chunk:
+                break
             fp.write(chunk)
     return filename
 
-"""
-Return a deposit's download tasks.
-"""
-def deposit_download_tasks(deposit_uuid):
-    deposit = get_deposit(deposit_uuid)
-    return models.LocationDownloadTask.objects.filter(location=deposit)
+def deposit_download_tasks(deposit):
+    """
+    Return a deposit's download tasks.
+    """
+    return models.PackageDownloadTask.objects.filter(package=deposit)
 
-"""
-Return deposit status, indicating whether any incomplete or failed batch
-downloads exist.
-"""
-def deposit_downloading_status(deposit_uuid):
-    tasks = deposit_download_tasks(deposit_uuid)
-    if len(tasks) > 0:
-        # check each task for completion and failure
-        complete = True
-        failed = False
+def deposit_downloading_status(deposit):
+    """
+    Return deposit status, indicating whether any incomplete or failed batch
+    downloads exist.
+    """
+    tasks = deposit_download_tasks(deposit)
+    # Check each task for completion and failure
+    # If any are incomplete or have failed, then return that status
+    # If all are complete (or there are no tasks), return completed
+    for task in tasks:
+        status = task.downloading_status()
+        if status != models.PackageDownloadTask.COMPLETE:
+            # Status is either models.PackageDownloadTask.FAILED or INCOMPLETE
+            return status
+    return models.PackageDownloadTask.COMPLETE
 
-        for task in tasks:
-            if task.downloading_status() != 'complete':
-                complete = False
-                if task.downloading_status() == 'failed':
-                    failed = True
-        if failed:
-            return 'failed'
-        else:
-            if complete:
-                return 'complete'
-            else:
-                return 'incomplete'
-    else:
-        return 'complete'
-
-"""
-Spawn an asynchrnous batch download
-"""
 def spawn_download_task(deposit_uuid, objects):
+    """
+    Spawn an asynchrnous batch download
+    """
     p = Process(target=_fetch_content, args=(deposit_uuid, objects))
     p.start()
 
-"""
-Download a number of files, keeping track of progress and success using a
-database record. After downloading, finalize deposit if requested.
-"""
 def _fetch_content(deposit_uuid, objects):
+    """
+    Download a number of files, keeping track of progress and success using a
+    database record. After downloading, finalize deposit if requested.
+    """
     # add download task to keep track of progress
     deposit = get_deposit(deposit_uuid)
-    task = models.LocationDownloadTask(location=deposit)
+    task = models.PackageDownloadTask(package=deposit)
     task.downloads_attempted = len(objects)
     task.downloads_completed = 0
     task.save()
 
+    # Get deposit protocol info
+    deposit_space = deposit.current_location.space.get_child_space()
+    fedora_username = getattr(deposit_space, 'fedora_user', None)
+    fedora_password = getattr(deposit_space, 'fedora_password', None)
+
     # download the files
     temp_dir = tempfile.mkdtemp()
-
     completed = 0
     for item in objects:
         # create download task file record
-        task_file = models.LocationDownloadTaskFile(task=task)
+        task_file = models.PackageDownloadTaskFile(task=task)
         task_file.save()
 
         try:
@@ -214,11 +200,11 @@ def _fetch_content(deposit_uuid, objects):
             task_file.save()
 
             download_resource(
-                item['url'],
-                temp_dir,
-                filename,
-                deposit.space.fedora_user,
-                deposit.space.fedora_password
+                url=item['url'],
+                destination_path=temp_dir,
+                filename=filename,
+                username=fedora_username,
+                password=fedora_password
             )
 
             temp_filename = os.path.join(temp_dir, filename)
@@ -238,7 +224,7 @@ def _fetch_content(deposit_uuid, objects):
 
             logging.info('Saved file to ' + os.path.join(deposit.full_path(), filename))
             completed += 1
-        except:
+        except Exception:
             # an error occurred
             task_file.failed = True
             task_file.save()
@@ -253,80 +239,83 @@ def _fetch_content(deposit_uuid, objects):
 
     # if the deposit is ready for finalization and this is the last batch
     # download to complete, then finalize
-    if deposit.ready_for_finalization and deposit_downloading_status(deposit_uuid) == 'complete':
+    ready_for_finalization = deposit.misc_attributes.get('ready_for_finalization', False)
+    if ready_for_finalization and deposit_downloading_status(deposit) == models.PackageDownloadTask.COMPLETE:
         _finalize_if_not_empty(deposit_uuid)
 
-"""
-Spawn an asynchronous finalization
-"""
 def spawn_finalization(deposit_uuid):
+    """
+    Spawn an asynchronous finalization
+    """
     p = Process(target=_finalize_if_not_empty, args=(deposit_uuid, ))
     p.start()
 
-"""
-Approve a deposit for processing and mark is as completed or finalization failed
-
-Returns True if completed successfully, False if not
-"""
 def _finalize_if_not_empty(deposit_uuid):
+    """
+    Approve a deposit for processing and mark is as completed or finalization failed
+
+    Returns True if completed successfully, False if not
+    """
     deposit = get_deposit(deposit_uuid)
     completed = False
     
     # don't finalize if still downloading
-    if deposit_downloading_status(deposit_uuid) == 'complete':
+    if deposit_downloading_status(deposit) == models.PackageDownloadTask.COMPLETE:
         if len(os.listdir(deposit.full_path())) > 0:
             # get sword server so we can access pipeline information
-            sword_server = models.SwordServer.objects.get(space=deposit.space)
-            result = activate_transfer_and_request_approval_from_pipeline(deposit, sword_server)
-
+            if not deposit.current_location.pipeline.exists():
+                return False
+            pipeline = deposit.current_location.pipeline.all()[0]
+            result = activate_transfer_and_request_approval_from_pipeline(deposit, pipeline)
             if 'error' in result:
-                # FIXME no object to pass to error
-                return sword_error_response(request, 500, result['message'])
-
+                logging.warning('Error creating transfer: %s', result)
+                return False
             completed = True
 
     if completed:
         # mark deposit as complete
-        deposit.deposit_completion_time = timezone.now()
+        deposit.misc_attributes.update({'deposit_completion_time': timezone.now()})
     else:
         # make finalization as having failed
-        deposit.finalization_attempt_failed = True
+        deposit.misc_attributes.update({'finalization_attempt_failed': True})
     deposit.save()
 
     return completed
 
-"""
-Handle requesting the approval of a transfer from a pipeline via a REST call.
+def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
+    """
+    Handle requesting the approval of a transfer from a pipeline via a REST call.
 
-This function returns a dict representation of the results, either returning
-the JSON returned by the request to the pipeline (converted to a dict) or
-a dict indicating a pipeline authentication issue.
+    This function returns a dict representation of the results, either returning
+    the JSON returned by the request to the pipeline (converted to a dict) or
+    a dict indicating a pipeline authentication issue.
 
-The dict representation is of the form:
-
-{
-    'error': <True|False>,
-    'message': <description of success or failure>
-}
-"""
-def activate_transfer_and_request_approval_from_pipeline(deposit, sword_server):
+    The dict representation is of the form:
+    {
+        'error': <True|False>,
+        'message': <description of success or failure>
+    }
+    """
     # make sure pipeline API access is configured
-    for property in ['remote_name', 'api_username', 'api_key']:
-        if getattr(sword_server.pipeline, property)=='':
-            property_description = property.replace('_', ' ')
-            # FIXME need request object
-            return sword_error_response(request, 500, 'Pipeline {property} not set.'.format(property=property_description))
+    attrs = ('remote_name', 'api_username', 'api_key')
+    if not all([getattr(pipeline, attr, None) for attr in attrs]):
+        missing_attrs = [a for a in attrs if not getattr(pipeline, a, None)]
+        return {
+            'error': True,
+            'message': 'Pipeline properties {} not set.'.format(', '.join(missing_attrs))
+        }
 
     # TODO: add error if more than one location is returned
     processing_location = models.Location.objects.get(
-        pipeline=sword_server.pipeline,
+        pipeline=pipeline,
         purpose=models.Location.CURRENTLY_PROCESSING)
 
     destination_path = os.path.join(
         processing_location.full_path(),
-        'watchedDirectories/activeTransfers/standardTransfer',
-        os.path.basename(deposit.full_path()))
+        'watchedDirectories', 'activeTransfers', 'standardTransfer',
+        deposit.current_path)
 
+    # FIXME this should use Space.move_[to|from]_storage_service
     # move to standard transfers directory
     destination_path = pad_destination_filepath_if_it_already_exists(destination_path)
     shutil.move(deposit.full_path(), destination_path)
@@ -350,25 +339,25 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, sword_server):
 
     # make request to pipeline's transfer approval API
     data = urllib.urlencode({
-        'username': sword_server.pipeline.api_username,
-        'api_key': sword_server.pipeline.api_key,
-        'directory': os.path.basename(destination_path),
+        'username': pipeline.api_username,
+        'api_key': pipeline.api_key,
+        'directory': deposit.current_path,
         'type': 'standard'
     })
 
-    pipeline_endpoint_url = 'http://' + sword_server.pipeline.remote_name + '/api/transfer/approve/'
+    pipeline_endpoint_url = 'http://' + pipeline.remote_name + '/api/transfer/approve/'
     approve_request = urllib2.Request(pipeline_endpoint_url, data)
-
     try:
         approve_response = urllib2.urlopen(approve_request)
-    except:
+    except Exception:
+        logging.exception('Automatic approval of transfer for deposit %s failed', deposit.uuid)
         # move back to deposit directory
+        # FIXME moving the files out from under Archivematica leaves a transfer that will always error out - leave it?
         shutil.move(destination_path, deposit.full_path())
         return {
             'error': True,
-            'message': 'Request to pipeline ' + sword_server.pipeline.uuid + ' transfer approval API failed: check credentials and REST API IP whitelist.'
-        } #sword_error_response(request, 500, 'Request to pipeline transfer approval API failed: check credentials and REST API IP whitelist.')
-
+            'message': 'Request to pipeline ' + pipeline.uuid + ' transfer approval API failed: check credentials and REST API IP whitelist.'
+        }
     result = json.loads(approve_response.read())
     return result
 

@@ -9,9 +9,9 @@ import traceback
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 from django.template.loader import render_to_string
+from django.utils import timezone
 
 # External dependencies, alphabetical
-from annoying.functions import get_object_or_None
 
 # This project, alphabetical
 import helpers
@@ -22,21 +22,25 @@ logging.basicConfig(filename="/tmp/storage_service.log",
     level=logging.INFO)
 
 
-"""
-Example GET of service document:
-
-  curl -v http://127.0.0.1:8000/api/v1/sword/
-"""
 def service_document(request):
-    spaces = models.Space.objects.filter(access_protocol=models.Space.SWORD_SERVER)
+    """
+    Service document endpoint: returns a list of all SWORD2 collections available.
+
+    Each collection maps to a Location with purpose Location.SWORD_DEPOSIT,
+    inside a Space with access_protocol Space.SWORD_SERVER
+
+    Example GET of service document:
+      curl -v http://127.0.0.1:8000/api/v1/sword/
+    """
+    locations = models.Location.active.filter(purpose=models.Location.SWORD_DEPOSIT).filter(space__access_protocol=models.Space.SWORD_SERVER)
 
     collections = []
-    for space in spaces:
-        title = 'Collection'
+    for location in locations:
+        title = location.description or 'Collection'
 
         col_iri = request.build_absolute_uri(
             reverse('sword_collection', kwargs={'api_name': 'v1',
-                'resource_name': 'space', 'uuid': space.uuid}))
+                'resource_name': 'location', 'uuid': location.uuid}))
 
         collections.append({
             'title': title,
@@ -48,50 +52,47 @@ def service_document(request):
     response['Content-Type'] = 'application/atomserv+xml'
     return response
 
-"""
-Example GET of collection deposit list:
+def collection(request, location):
+    """
+    Collection endpoint: accepts deposits, and returns current deposits.
 
-  curl -v http://localhost:8000/api/v1/space/96606387-cc70-4b09-b422-a7220606488d/sword/collection/
+    Example GET of collection deposit list:
+      curl -v http://localhost:8000/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/collection/
 
-Example POST creation of deposit, allowing asynchronous downloading of object content URLs:
+    Example POST creation of deposit, allowing asynchronous downloading of object content URLs:
+      curl -v -H "In-Progress: true" --data-binary @mets.xml --request POST http://localhost:8000/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/collection/
 
-  curl -v -H "In-Progress: true" --data-binary @mets.xml --request POST http://localhost:8000/api/v1/space/96606387-cc70-4b09-b422-a7220606488d/sword/collection/
-
-Example POST creation of deposit, finalizing the deposit and auto-approving it:
-
-  curl -v -H "In-Progress: false" --data-binary @mets.xml --request POST http://localhost:8000/api/v1/space/c0bee7c8-3e9b-41e3-8600-ee9b2c475da2/sword/collection/
-"""
-def collection(request, space_uuid):
-    space = get_object_or_None(models.Space, uuid=space_uuid)
-
-    if space == None:
-        return helpers.sword_error_response(request, 404, 'Space {uuid} does not exist.'.format(uuid=space_uuid))
+    Example POST creation of deposit, finalizing the deposit and auto-approving it:
+      curl -v -H "In-Progress: false" --data-binary @mets.xml --request POST http://localhost:8000/api/v1/location/c0bee7c8-3e9b-41e3-8600-ee9b2c475da2/sword/collection/
+    """
+    if isinstance(location, basestring):
+        try:
+            location = models.Location.active.get(uuid=location)
+        except models.Location.DoesNotExist:
+            return helpers.sword_error_response(request, 404, 'Collection {uuid} does not exist.'.format(uuid=location))
 
     if request.method == 'GET':
         # return list of deposits as ATOM feed
         col_iri = request.build_absolute_uri(
             reverse('sword_collection', kwargs={'api_name': 'v1',
-                'resource_name': 'space', 'uuid': space_uuid}))
-
+                'resource_name': 'location', 'uuid': location.uuid}))
         feed = {
             'title': 'Deposits',
             'url': col_iri
         }
 
         entries = []
-
-        for uuid in helpers.deposit_list(space_uuid):
-            deposit = helpers.get_deposit(uuid)
-
+        for deposit in helpers.deposit_list(location.uuid):
             edit_iri = request.build_absolute_uri(
                 reverse('sword_deposit', kwargs={'api_name': 'v1',
-                    'resource_name': 'location', 'uuid': uuid}))
+                    'resource_name': 'file', 'uuid': deposit.uuid}))
 
             entries.append({
-                'title': deposit.description,
+                'title': deposit.description or 'Deposit '+deposit.uuid,
                 'url': edit_iri,
             })
 
+        # feed and entries passed via locals() to the template
         collection_xml = render_to_string('locations/api/sword/collection.xml', locals())
         response = HttpResponse(collection_xml)
         response['Content-Type'] = 'application/atom+xml;type=feed'
@@ -118,35 +119,31 @@ def collection(request, space_uuid):
                     if mets_data != None:
                         if mets_data['deposit_name'] == None:
                             return helpers.sword_error_response(request, 400, 'No deposit name found in XML.')
+                        if not os.path.isdir(location.full_path()):
+                            return helpers.sword_error_response(request, 500, 'Collection path (%s) does not exist: contact an administrator.' % (location.full_path()))
+
+                        # TODO: should get this from author header or provided XML metadata
+                        sourceofacquisition = request.META['HTTP_ON_BEHALF_OF'] if 'HTTP_ON_BEHALF_OF' in request.META else None
+                        deposit = _create_deposit_directory_and_db_entry(
+                            location=location,
+                            deposit_name=mets_data['deposit_name'],
+                            sourceofacquisition=sourceofacquisition
+                        )
+                        if deposit is None:
+                            return helpers.sword_error_response(request, 500, 'Could not create deposit: contact an administrator.')
+
+                        # copy METS file to submission documentation directory then remove temp file
+                        submission_documentation_directory = os.path.join(deposit.full_path(), 'submissionDocumentation')
+                        if not os.path.exists(submission_documentation_directory):
+                            os.mkdir(submission_documentation_directory)
+                        os.rename(temp_filepath, os.path.join(submission_documentation_directory, 'fedora-METS.xml'))
+
+                        _spawn_batch_download_and_flag_finalization_if_requested(deposit, request, mets_data)
+
+                        if request.META['HTTP_IN_PROGRESS'] == 'true':
+                            return _deposit_receipt_response(request, deposit, 201)
                         else:
-                            # assemble deposit specification
-                            deposit_specification = {'space_uuid': space_uuid}
-                            deposit_specification['name'] = mets_data['deposit_name']
-                            if 'HTTP_ON_BEHALF_OF' in request.META:
-                                # TODO: should get this from author header or provided XML metadata
-                                deposit_specification['sourceofacquisition'] = request.META['HTTP_ON_BEHALF_OF']
-
-                            if not os.path.isdir(space.path):
-                                return  helpers.sword_error_response(request, 500, 'Space path (%s) does not exist: contact an administrator.' % (space.path))
-                            else:
-                                deposit_uuid = _create_deposit_directory_and_db_entry(deposit_specification)
-
-                                # copy METS file to submission documentation directory then remove temp file
-                                deposit = helpers.get_deposit(deposit_uuid)
-                                submission_documentation_directory = os.path.join(deposit.full_path(), 'submissionDocumentation')
-                                if not os.path.exists(submission_documentation_directory):
-                                    os.mkdir(submission_documentation_directory)
-                                os.rename(temp_filepath, os.path.join(submission_documentation_directory, 'fedora-METS.xml'))
-
-                                if deposit_uuid != None:
-                                    _spawn_batch_download_and_flag_finalization_if_requested(deposit_uuid, request, mets_data)
-
-                                    if request.META['HTTP_IN_PROGRESS'] == 'true':
-                                        return _deposit_receipt_response(request, deposit_uuid, 201)
-                                    else:
-                                        return _deposit_receipt_response(request, deposit_uuid, 200)
-                                else:
-                                    return helpers.sword_error_response(request, 500, 'Could not create deposit: contact an administrator.')
+                            return _deposit_receipt_response(request, deposit, 200)
                     else:
                         return helpers.sword_error_response(request, 412, 'Error parsing XML')
                 except Exception as e:
@@ -158,7 +155,7 @@ def collection(request, space_uuid):
                     else:
                         return helpers.sword_error_response(request, 400, 'source_location is set, but relative_path_to_files is not.')
                 else:
-                    result = deposit_from_location_relative_path(source_location, relative_path_to_files, space.uuid)
+                    result = deposit_from_location_relative_path(source_location, relative_path_to_files, location)
                     if 'error' in result and result['error'] != None:
                         return helpers.sword_error_response(request, 500, result['message'])
                     else:
@@ -170,60 +167,56 @@ def collection(request, space_uuid):
     else:
         return helpers.sword_error_response(request, 405, 'This endpoint only responds to the GET and POST HTTP methods.')
 
-"""
-Create and approve deposit using files in an existing location at a relative
-path within the location
+def deposit_from_location_relative_path(source_location_uuid, relative_path_to_files, location):
+    """
+    Create and approve deposit using files in an existing location at a relative
+    path within the location
 
-Returns dict combining returned response from the dashboard with the UUID of
-the new deposit
-"""
-def deposit_from_location_relative_path(source_location, relative_path_to_files, space_uuid=None, pipeline_uuid=None):
-    # if no explicit space or pipeline specified, nothing can be done
-    if space_uuid == None and pipeline_uuid == None:
-        return
-
-    # if a pipeline, but no space, was specified then look up the first SWORD server space
-    # associated with the pipeline
-    if space_uuid == None:
-        pipeline = models.Pipeline.objects.get(uuid=pipeline_uuid)
-        sword_server = models.SwordServer.objects.filter(pipeline=pipeline)[0]
-        space_uuid = sword_server.space.uuid
-    else:
-    # ...otherwise, get the pipeline associated with the SWORD server space
-        space = models.Space.objects.get(uuid=space_uuid)
-        sword_server = models.SwordServer.objects.get(space=space)
-        pipeline = sword_server.pipeline
+    Returns dict combining returned response from the dashboard with the UUID of
+    the new deposit, or {'error': True, 'message': <error message>}
+    """
+    # All parameters must exist, and have useful data
+    if not all([source_location_uuid, relative_path_to_files, location]):
+        return {
+            'error': True,
+            'message': 'source_location, relative_path_to_files or the location were empty',
+        }
+    # Must have pipeline to send transfer to
+    if not location.pipeline.exists():
+        return {
+            'error': True,
+            'message': 'No pipeline associated with Location {}'.format(location.uuid)
+        }
+    pipeline = location.pipeline.all()[0]
 
     # a deposit of files stored on the storage server is being done
-    location = models.Location.objects.get(uuid=source_location)
-    path_to_deposit_files = os.path.join(location.full_path(), relative_path_to_files)
+    source_location = models.Location.objects.get(uuid=source_location_uuid)
+    path_to_deposit_files = os.path.join(source_location.full_path(), relative_path_to_files.rstrip('/'))
 
-    deposit_specification = {'space_uuid': space_uuid}
-    deposit_specification['name'] = os.path.basename(path_to_deposit_files) # replace this with optional name
-    deposit_specification['source_path'] = path_to_deposit_files
+    deposit = _create_deposit_directory_and_db_entry(
+        location,
+        deposit_name=os.path.basename(path_to_deposit_files), # replace this with optional name
+        source_path=path_to_deposit_files,
+    )
 
-    deposit_uuid = _create_deposit_directory_and_db_entry(deposit_specification)
-    deposit = helpers.get_deposit(deposit_uuid)
-
-    result = helpers.activate_transfer_and_request_approval_from_pipeline(deposit, sword_server)
-    result['deposit_uuid'] = deposit_uuid
+    result = helpers.activate_transfer_and_request_approval_from_pipeline(deposit, pipeline)
+    result['deposit_uuid'] = deposit.uuid
     return result
 
-"""
-Spawn a batch download, optionally setting finalization beforehand.
+def _spawn_batch_download_and_flag_finalization_if_requested(deposit, request, mets_data):
+    """
+    Spawn a batch download, optionally setting finalization beforehand.
 
-If HTTP_IN_PROGRESS is set to true, spawn async batch download
-"""
-def _spawn_batch_download_and_flag_finalization_if_requested(deposit_uuid, request, mets_data):
+    If HTTP_IN_PROGRESS is set to true, spawn async batch download
+    """
     if request.META['HTTP_IN_PROGRESS'] == 'false':
         # Indicate that the deposit is ready for finalization (after all batch
         # downloads have completed)
-        deposit = helpers.get_deposit(deposit_uuid)
-        deposit.ready_for_finalization = True
+        deposit.misc_attributes.update({'ready_for_finalization': True})
         deposit.save()
 
     # create subprocess so content URLs can be downloaded asynchronously
-    helpers.spawn_download_task(deposit_uuid, mets_data['objects'])
+    helpers.spawn_download_task(deposit.uuid, mets_data['objects'])
 
 """
 From a request's body, parse deposit name and control URLs from METS XML
@@ -289,45 +282,43 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
         'objects': objects
     }
 
-"""
-Create a new deposit location from a specification, optionally copying
-files to it from a source path.
+def _create_deposit_directory_and_db_entry(location, deposit_name=None, source_path=None, sourceofacquisition=None):
+    """
+    Create a new deposit package, optionally copying files to it from a source path.
 
-Returns deposit's UUID is creation was successful
-"""
-def _create_deposit_directory_and_db_entry(deposit_specification):
-    # Formulate deposit name using specification
-    if 'name' in deposit_specification:
-        deposit_name = deposit_specification['name']
-    else:
+    Returns the deposit if creation was successful, None if not
+    """
+    if deposit_name is None:
         deposit_name = 'Untitled'
 
     # Formulate deposit path using space path and deposit name
-    space = models.Space.objects.get(uuid=deposit_specification['space_uuid']) 
-    deposit_path = os.path.join(
-        space.path,
-        deposit_name
-    )
+    deposit_path = os.path.join(location.full_path(), deposit_name)
 
     # Pad deposit path, if it already exists, and either copy source data to it or just create it
     deposit_path = helpers.pad_destination_filepath_if_it_already_exists(deposit_path)
-    if 'source_path' in deposit_specification and deposit_specification['source_path'] != '':
-        shutil.copytree(deposit_specification['source_path'], deposit_path)
+
+    if source_path:
+        shutil.copytree(source_path, deposit_path)
     else:
         os.mkdir(deposit_path)
         os.chmod(deposit_path, 02770) # drwxrws---
 
     # Create SWORD deposit location using deposit name and path
     if os.path.exists(deposit_path):
-        deposit = models.Location.objects.create(description=deposit_name, relative_path=os.path.basename(deposit_path),
-            space=space, purpose=models.Location.SWORD_DEPOSIT)
-
+        deposit = models.Package.objects.create(
+            description=deposit_name,
+            current_location=location,
+            current_path=os.path.basename(deposit_path),
+            package_type=models.Package.DEPOSIT,
+            status=models.Package.PENDING,
+        )
         # TODO: implement this
-        if 'sourceofacquisition' in deposit_specification:
-            deposit.source = deposit_specification['sourceofacquisition']
-
+        if sourceofacquisition:
+            deposit.misc_attributes.update(
+                {'sourceofacquisition': sourceofacquisition})
         deposit.save()
-        return deposit.uuid
+        return deposit
+    return None
 
 """
 Example POST finalization of deposit:
@@ -366,7 +357,7 @@ def deposit_edit(request, uuid):
             mets_data = _parse_name_and_content_urls_from_request_body(request)
             if mets_data != None:
                 _spawn_batch_download_and_flag_finalization_if_requested(uuid, request, mets_data)
-                return _deposit_receipt_response(request, uuid, 200)
+                return _deposit_receipt_response(request, deposit, 200)
             else:
                 return helpers.sword_error_response(request, 412, 'Error parsing XML.')
         else:
@@ -374,7 +365,7 @@ def deposit_edit(request, uuid):
             if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
                 return _finalize_or_mark_for_finalization(request, uuid)
             else:
-                return _deposit_receipt_response(request, uuid, 200)
+                return _deposit_receipt_response(request, deposit, 200)
     elif request.method == 'PUT':
         # TODO: implement update deposit
         return HttpResponse(status=204) # No content
@@ -449,7 +440,7 @@ def deposit_media(request, uuid):
                 mets_data = _parse_name_and_content_urls_from_request_body(request)
                 if mets_data != None:
                     _spawn_batch_download_and_flag_finalization_if_requested(uuid, request, mets_data)
-                    return _deposit_receipt_response(request, uuid, 201)
+                    return _deposit_receipt_response(request, deposit, 201)
                 else:
                     return helpers.sword_error_response(request, 412, 'Error parsing XML.')
             else:
@@ -496,17 +487,18 @@ def deposit_state(request, uuid):
 
         # if deposit hasn't been finalized and last finalization attempt
         # failed, note failed finalization
-        if deposit.finalization_attempt_failed and deposit.deposit_completion_time==None:
+
+        if deposit.misc_attributes.get('finalization_attempt_failed', None) and deposit.misc_attributes.get('deposit_completion_time', None) is None:
             state_description += ' (last finalization attempt failed)'
 
         # get status of download tasks, if any
-        tasks = helpers.deposit_download_tasks(uuid)
+        tasks = helpers.deposit_download_tasks(deposit)
 
         # create atom representation of download tasks
         entries = []
 
         for task in tasks:
-            task_files = models.LocationDownloadTaskFile.objects.filter(task=task)
+            task_files = models.PackageDownloadTaskFile.objects.filter(task=task)
             for task_file in task_files:
                 entries.append({
                     'title': task_file.filename,
@@ -583,27 +575,28 @@ def _handle_upload_request_with_potential_md5_checksum(request, file_path, succe
         os.remove(temp_filepath)
         return HttpResponse(status=success_status_code)
 
-"""
-Generate SWORD 2.0 deposit receipt response
-"""
-def _deposit_receipt_response(request, deposit_uuid, status_code):
-    deposit = helpers.get_deposit(deposit_uuid)
-
+def _deposit_receipt_response(request, deposit, status_code):
+    """
+    Generate SWORD 2.0 deposit receipt response
+    """
+    # Deposit needed for deposit receipt template
+    if isinstance(deposit, basestring):
+        deposit = models.Package.objects.get(uuid=deposit)
     # TODO: fix minor issues with template
     media_iri = request.build_absolute_uri(
         reverse('sword_deposit_media', kwargs={'api_name': 'v1',
-            'resource_name': 'location', 'uuid': deposit_uuid}))
-
+            'resource_name': 'file', 'uuid': deposit.uuid}))
     edit_iri = request.build_absolute_uri(
         reverse('sword_deposit', kwargs={'api_name': 'v1',
-            'resource_name': 'location', 'uuid': deposit_uuid}))
-
+            'resource_name': 'file', 'uuid': deposit.uuid}))
     state_iri = request.build_absolute_uri(
         reverse('sword_deposit_state', kwargs={'api_name': 'v1',
-            'resource_name': 'location', 'uuid': deposit_uuid}))
-
+            'resource_name': 'file', 'uuid': deposit.uuid}))
+    location = reverse('sword_deposit', kwargs={'api_name': 'v1',
+            'resource_name': 'file', 'uuid': deposit.uuid})
+    current_datetime = timezone.now()
     receipt_xml = render_to_string('locations/api/sword/deposit_receipt.xml', locals())
 
     response = HttpResponse(receipt_xml, mimetype='text/xml', status=status_code)
-    response['Location'] = '/api/v1/location/' + deposit_uuid + '/sword/'
+    response['Location'] = location
     return response
