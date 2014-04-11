@@ -41,7 +41,11 @@ def deposit_list(location_uuid):
     Returns list containing all deposits in the Location with `location_uuid`.
     """
     # TODO: filter out completed ones?
-    deposits = models.Package.objects.filter(package_type=models.Package.DEPOSIT).filter(current_location_id=location_uuid)
+    deposits = models.Package.objects.filter(
+        package_type=models.Package.DEPOSIT).filter(
+        current_location_id=location_uuid).exclude(
+        status=models.Package.DELETED).exclude(
+        status=models.Package.FINALIZED)
     return deposits
 
 """
@@ -254,7 +258,11 @@ def _finalize_if_not_empty(deposit_uuid):
     """
     Approve a deposit for processing and mark is as completed or finalization failed
 
-    Returns True if completed successfully, False if not
+    Returns a dict of the form:
+    {
+        'error': <True|False>,
+        'message': <description of success or failure>
+    }
     """
     deposit = get_deposit(deposit_uuid)
     completed = False
@@ -264,23 +272,27 @@ def _finalize_if_not_empty(deposit_uuid):
         if len(os.listdir(deposit.full_path())) > 0:
             # get sword server so we can access pipeline information
             if not deposit.current_location.pipeline.exists():
-                return False
+                return {
+                    'error': True,
+                    'message': 'No Pipeline associated with this collection'
+                }
             pipeline = deposit.current_location.pipeline.all()[0]
             result = activate_transfer_and_request_approval_from_pipeline(deposit, pipeline)
             if 'error' in result:
                 logging.warning('Error creating transfer: %s', result)
-                return False
-            completed = True
+            else:
+                completed = True
 
     if completed:
         # mark deposit as complete
         deposit.misc_attributes.update({'deposit_completion_time': timezone.now()})
+        deposit.status = models.Package.FINALIZED
     else:
         # make finalization as having failed
         deposit.misc_attributes.update({'finalization_attempt_failed': True})
     deposit.save()
 
-    return completed
+    return result
 
 def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
     """

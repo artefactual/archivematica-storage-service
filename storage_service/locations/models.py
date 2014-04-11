@@ -1301,6 +1301,7 @@ class Package(models.Model):
     DEL_REQ = 'DEL_REQ'
     DELETED = 'DELETED'
     FAIL = 'FAIL'
+    FINALIZED = 'FINALIZE'
     STATUS_CHOICES = (
         (PENDING, "Upload Pending"),  # Still on Archivematica
         (STAGING, "Staged on Storage Service"), # In Storage Service staging dir
@@ -1309,6 +1310,7 @@ class Package(models.Model):
         (FAIL, "Failed"),  # Error occured - may or may not be at final location
         (DEL_REQ, "Delete requested"),
         (DELETED, "Deleted"),
+        (FINALIZED, "Deposit Finalized")
     )
     status = models.CharField(max_length=8, choices=STATUS_CHOICES,
         default=FAIL,
@@ -1816,9 +1818,7 @@ class Package(models.Model):
 
     # SWORD-related methods
     def has_been_submitted_for_processing(self):
-        if 'deposit_completion_time' not in self.misc_attributes:
-            return False
-        return self.misc_attributes['deposit_completion_time'] != None
+        return 'deposit_completion_time' in self.misc_attributes
 
 
 class Event(models.Model):

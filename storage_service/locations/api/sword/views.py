@@ -64,6 +64,9 @@ def collection(request, location):
 
     Example POST creation of deposit, finalizing the deposit and auto-approving it:
       curl -v -H "In-Progress: false" --data-binary @mets.xml --request POST http://localhost:8000/api/v1/location/c0bee7c8-3e9b-41e3-8600-ee9b2c475da2/sword/collection/
+
+    Example POST creation of deposit from another location:
+      curl -v -H "In-Progress: true" --request POST http://localhost:8000/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/collection/?source_location=aab142a9-018f-4452-8f93-67c1bf7fd486&relative_path_to_files=archivematica-sampledata/SampleTransfers/Images
     """
     if isinstance(location, basestring):
         try:
@@ -181,13 +184,6 @@ def deposit_from_location_relative_path(source_location_uuid, relative_path_to_f
             'error': True,
             'message': 'source_location, relative_path_to_files or the location were empty',
         }
-    # Must have pipeline to send transfer to
-    if not location.pipeline.exists():
-        return {
-            'error': True,
-            'message': 'No pipeline associated with Location {}'.format(location.uuid)
-        }
-    pipeline = location.pipeline.all()[0]
 
     # a deposit of files stored on the storage server is being done
     source_location = models.Location.objects.get(uuid=source_location_uuid)
@@ -198,8 +194,9 @@ def deposit_from_location_relative_path(source_location_uuid, relative_path_to_f
         deposit_name=os.path.basename(path_to_deposit_files), # replace this with optional name
         source_path=path_to_deposit_files,
     )
-
-    result = helpers.activate_transfer_and_request_approval_from_pipeline(deposit, pipeline)
+    # FIXME move files from source location to deposit path using
+    # Space.move_[to|from]_storage_service before finalizing deposit
+    result = helpers._finalize_if_not_empty(deposit.uuid)
     result['deposit_uuid'] = deposit.uuid
     return result
 
