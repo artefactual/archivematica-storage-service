@@ -1040,6 +1040,7 @@ class Location(models.Model):
 
     TRANSFER_SOURCE = 'TS'
     AIP_STORAGE = 'AS'
+    DIP_STORAGE = 'DS'
     # QUARANTINE = 'QU'
     BACKLOG = 'BL'
     CURRENTLY_PROCESSING = 'CP'
@@ -1048,6 +1049,7 @@ class Location(models.Model):
     PURPOSE_CHOICES = (
         (TRANSFER_SOURCE, 'Transfer Source'),
         (AIP_STORAGE, 'AIP Storage'),
+        (DIP_STORAGE, 'DIP Storage'),
         # (QUARANTINE, 'Quarantine'),
         (BACKLOG, 'Transfer Backlog'),
         (CURRENTLY_PROCESSING, 'Currently Processing'),
@@ -1271,18 +1273,20 @@ class Package(models.Model):
 
         # Store AIP Pointer File at
         # internal_usage_location/uuid/split/into/chunks/pointer.xml
-        self.pointer_file_location = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
-        self.pointer_file_path = os.path.join(uuid_path, 'pointer.xml')
-        pointer_file_src = os.path.join(self.origin_location.relative_path, os.path.dirname(self.origin_path), 'pointer.xml')
-        pointer_file_dst = self.full_pointer_file_path()
+        if self.package_type in (Package.AIP, Package.AIC):
+            self.pointer_file_location = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
+            self.pointer_file_path = os.path.join(uuid_path, 'pointer.xml')
+            pointer_file_src = os.path.join(self.origin_location.relative_path, os.path.dirname(self.origin_path), 'pointer.xml')
+            pointer_file_dst = self.full_pointer_file_path()
 
         self.status = Package.PENDING
         self.save()
 
         # Move pointer file
-        pointer_file_name = 'pointer-'+self.uuid+'.xml'
-        src_space.move_to_storage_service(pointer_file_src, pointer_file_name, self.pointer_file_location.space)
-        self.pointer_file_location.space.move_from_storage_service(pointer_file_name, pointer_file_dst)
+        if self.package_type in (Package.AIP, Package.AIC):
+            pointer_file_name = 'pointer-'+self.uuid+'.xml'
+            src_space.move_to_storage_service(pointer_file_src, pointer_file_name, self.pointer_file_location.space)
+            self.pointer_file_location.space.move_from_storage_service(pointer_file_name, pointer_file_dst)
 
         # Move AIP
         src_space.move_to_storage_service(
@@ -1308,18 +1312,19 @@ class Package(models.Model):
         self.save()
 
         # Update pointer file's location information
-        root = etree.parse(pointer_file_dst)
-        element = root.find('.//mets:file', namespaces=utils.NSMAP)
-        flocat = element.find('mets:FLocat', namespaces=utils.NSMAP)
-        if self.uuid in element.get('ID', '') and flocat is not None:
-            flocat.set('{{{ns}}}href'.format(ns=utils.NSMAP['xlink']), self.full_path())
-        # Add USE="Archival Information Package" to fileGrp.  Required for
-        # LOCKSS, and not provided in Archivematica <=1.1
-        if not root.find('.//mets:fileGrp[@USE="Archival Information Package"]', namespaces=utils.NSMAP):
-            root.find('.//mets:fileGrp', namespaces=utils.NSMAP).set('USE', 'Archival Information Package')
+        if self.package_type in (Package.AIP, Package.AIC):
+            root = etree.parse(pointer_file_dst)
+            element = root.find('.//mets:file', namespaces=utils.NSMAP)
+            flocat = element.find('mets:FLocat', namespaces=utils.NSMAP)
+            if self.uuid in element.get('ID', '') and flocat is not None:
+                flocat.set('{{{ns}}}href'.format(ns=utils.NSMAP['xlink']), self.full_path())
+            # Add USE="Archival Information Package" to fileGrp.  Required for
+            # LOCKSS, and not provided in Archivematica <=1.1
+            if not root.find('.//mets:fileGrp[@USE="Archival Information Package"]', namespaces=utils.NSMAP):
+                root.find('.//mets:fileGrp', namespaces=utils.NSMAP).set('USE', 'Archival Information Package')
 
-        with open(pointer_file_dst, 'w') as f:
-            f.write(etree.tostring(root, pretty_print=True))
+            with open(pointer_file_dst, 'w') as f:
+                f.write(etree.tostring(root, pretty_print=True))
 
     def extract_file(self, relative_path='', extract_path=None):
         """
@@ -1635,6 +1640,9 @@ class Pipeline(models.Model):
             {'default': 'default_aip_storage',
              'new': 'new_aip_storage',
              'purpose': Location.AIP_STORAGE},
+            {'default': 'default_dip_storage',
+             'new': 'new_dip_storage',
+             'purpose': Location.DIP_STORAGE},
             {'default': 'default_backlog',
              'new': 'new_backlog',
              'purpose': Location.BACKLOG},

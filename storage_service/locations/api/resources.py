@@ -432,7 +432,7 @@ class PackageResource(ModelResource):
         origin_location_uri = bundle.data.get('origin_location', False)
         origin_location = self.origin_location.build_related_resource(origin_location_uri, bundle.request).obj
         origin_path = bundle.data.get('origin_path', False)
-        if bundle.obj.package_type in (Package.AIP, Package.AIC) and bundle.obj.current_location.purpose in (Location.AIP_STORAGE):
+        if bundle.obj.package_type in (Package.AIP, Package.AIC, Package.DIP) and bundle.obj.current_location.purpose in (Location.AIP_STORAGE, Location.DIP_STORAGE):
             # Store AIP/AIC
             bundle.obj.store_aip(origin_location, origin_path)
         elif bundle.obj.package_type in (Package.TRANSFER) and bundle.obj.current_location.purpose in (Location.BACKLOG):

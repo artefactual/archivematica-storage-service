@@ -96,6 +96,13 @@ class DefaultLocationsForm(SettingsForm):
     new_aip_storage = DefaultLocationField(
         required=False,
         label="New AIP Storage:")
+    default_dip_storage = forms.MultipleChoiceField(
+        choices=[],
+        required=False,
+        label="Default DIP storage locations for new pipelines")
+    new_dip_storage = DefaultLocationField(
+        required=False,
+        label="New DIP Storage:")
     default_backlog = forms.MultipleChoiceField(
         choices=[],
         required=False,
@@ -116,6 +123,10 @@ class DefaultLocationsForm(SettingsForm):
         self.fields['default_aip_storage'].choices = [
             (l.uuid, l.get_description()) for l in
             Location.active.filter(purpose=Location.AIP_STORAGE)] + \
+            [('new', 'Create new location for each pipeline')]
+        self.fields['default_dip_storage'].choices = [
+            (l.uuid, l.get_description()) for l in
+            Location.active.filter(purpose=Location.DIP_STORAGE)] + \
             [('new', 'Create new location for each pipeline')]
         self.fields['default_backlog'].choices = [
             (l.uuid, l.get_description()) for l in
