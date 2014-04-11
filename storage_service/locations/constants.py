@@ -1,6 +1,7 @@
 
-from .models import LocalFilesystem, NFS, PipelineLocalFS, Lockssomatic, SwordServer, Space
-from .forms import LocalFilesystemForm, NFSForm, PipelineLocalFSForm, LockssomaticForm, SwordServerForm
+from .models import LocalFilesystem, NFS, PipelineLocalFS, Lockssomatic, Fedora, Space
+from .forms import LocalFilesystemForm, NFSForm, PipelineLocalFSForm, LockssomaticForm, FedoraForm
+
 
 ########################## SPACES ##########################
 
@@ -39,9 +40,9 @@ PROTOCOL[Space.LOM] = {
                'checksum_type',]
 }
 
-PROTOCOL[Space.SWORD_SERVER] = {
-    'model': SwordServer,
-    'form': SwordServerForm,
+PROTOCOL[Space.FEDORA] = {
+    'model': Fedora,
+    'form': FedoraForm,
     'fields': ['fedora_user',
                'fedora_password',
                'fedora_name']

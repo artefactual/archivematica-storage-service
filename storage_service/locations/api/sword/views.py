@@ -27,12 +27,12 @@ def service_document(request):
     Service document endpoint: returns a list of all SWORD2 collections available.
 
     Each collection maps to a Location with purpose Location.SWORD_DEPOSIT,
-    inside a Space with access_protocol Space.SWORD_SERVER
+    inside a Space with access_protocol Space.FEDORA
 
     Example GET of service document:
       curl -v http://127.0.0.1:8000/api/v1/sword/
     """
-    locations = models.Location.active.filter(purpose=models.Location.SWORD_DEPOSIT).filter(space__access_protocol=models.Space.SWORD_SERVER)
+    locations = models.Location.active.filter(purpose=models.Location.SWORD_DEPOSIT).filter(space__access_protocol=models.Space.FEDORA)
 
     collections = []
     for location in locations:

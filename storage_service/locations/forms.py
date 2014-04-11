@@ -66,9 +66,9 @@ class LockssomaticForm(forms.ModelForm):
         return data
 
 
-class SwordServerForm(forms.ModelForm):
+class FedoraForm(forms.ModelForm):
     class Meta:
-        model = models.SwordServer
+        model = models.Fedora
         fields = ('fedora_user', 'fedora_password', 'fedora_name', )
 
 

@@ -377,7 +377,7 @@ class LocationResource(ModelResource):
 
     def sword_collection(self, request, **kwargs):
         location = get_object_or_None(Location, uuid=kwargs['uuid'])
-        if location and (location.purpose != Location.SWORD_DEPOSIT or location.space.access_protocol != Space.SWORD_SERVER):
+        if location and (location.purpose != Location.SWORD_DEPOSIT or location.space.access_protocol != Space.FEDORA):
             return http.HttpBadRequest('This is not a SWORD server space.')
         self.log_throttled_access(request)
         return sword_views.collection(request, location or kwargs['uuid'])
