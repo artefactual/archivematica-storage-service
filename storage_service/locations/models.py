@@ -1207,6 +1207,10 @@ class PackageDownloadTask(models.Model):
     downloads_completed = models.IntegerField(default=0)
     download_completion_time = models.DateTimeField(default=None, null=True, blank=True)
 
+    def __unicode__(self):
+        return u'PackageDownloadTask ID: {uuid} for {package}'.format(
+            uuid=self.uuid, package=self.package)
+
     COMPLETE = 'complete'
     INCOMPLETE = 'incomplete'
     FAILED = 'failed'
@@ -1240,7 +1244,7 @@ class PackageDownloadTask(models.Model):
 class PackageDownloadTaskFile(models.Model):
     uuid = UUIDField(editable=False, unique=True, version=4,
         help_text="Unique identifier")
-    task = models.ForeignKey('PackageDownloadTask', to_field='uuid')
+    task = models.ForeignKey('PackageDownloadTask', to_field='uuid', related_name='download_file_set')
 
     filename = models.CharField(max_length=256)
     url = models.TextField()
@@ -1249,6 +1253,12 @@ class PackageDownloadTaskFile(models.Model):
         help_text="True if file downloaded successfully.")
     failed = models.BooleanField(default=False,
         help_text="True if file failed to download.")
+
+    def __unicode__(self):
+        return u'Download {filename} from {url} ({status})'.format(
+            filename=self.filename,
+            url=self.url,
+            status=self.downloading_status())
 
     def downloading_status(self):
         if self.completed:

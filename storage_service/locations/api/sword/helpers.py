@@ -1,5 +1,6 @@
 # stdlib, alphabetical
 import base64
+import cgi
 import json
 import datetime
 import logging
@@ -83,15 +84,14 @@ def get_file_md5_checksum(filepath):
     raw_result = subprocess.Popen(["md5sum", filepath],stdout=subprocess.PIPE).communicate()[0]
     return raw_result[0:32]
 
-"""
-Parse a filename from HTTP Content-Disposition data
-
-Return filename
-"""
 def parse_filename_from_content_disposition(header):
-    filename = header.split('filename=')[1]
-    if filename[0] == '"' or filename[0] == "'":
-        filename = filename[1:-1]
+    """
+    Parse a filename from HTTP Content-Disposition data
+
+    Return filename
+    """
+    _, params = cgi.parse_header(header)
+    filename = params.get('filename', '')
     return filename
 
 """
@@ -228,7 +228,8 @@ def _fetch_content(deposit_uuid, objects):
 
             logging.info('Saved file to ' + os.path.join(deposit.full_path(), filename))
             completed += 1
-        except Exception:
+        except Exception as e:
+            logging.error('Package download task encountered an error:' + str(e))
             # an error occurred
             task_file.failed = True
             task_file.save()
@@ -266,7 +267,10 @@ def _finalize_if_not_empty(deposit_uuid):
     """
     deposit = get_deposit(deposit_uuid)
     completed = False
-    
+    result = {
+        'error': True,
+        'message': 'Deposit empty, or not done downloading.',
+    }
     # don't finalize if still downloading
     if deposit_downloading_status(deposit) == models.PackageDownloadTask.COMPLETE:
         if len(os.listdir(deposit.full_path())) > 0:
@@ -278,7 +282,7 @@ def _finalize_if_not_empty(deposit_uuid):
                 }
             pipeline = deposit.current_location.pipeline.all()[0]
             result = activate_transfer_and_request_approval_from_pipeline(deposit, pipeline)
-            if 'error' in result:
+            if result.get('error', False):
                 logging.warning('Error creating transfer: %s', result)
             else:
                 completed = True

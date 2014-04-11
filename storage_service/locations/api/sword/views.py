@@ -159,7 +159,7 @@ def collection(request, location):
                         return helpers.sword_error_response(request, 400, 'source_location is set, but relative_path_to_files is not.')
                 else:
                     result = deposit_from_location_relative_path(source_location, relative_path_to_files, location)
-                    if 'error' in result and result['error'] != None:
+                    if result.get('error', False):
                         return helpers.sword_error_response(request, 500, result['message'])
                     else:
                         return _deposit_receipt_response(request, result['deposit_uuid'], 200)
@@ -215,32 +215,30 @@ def _spawn_batch_download_and_flag_finalization_if_requested(deposit, request, m
     # create subprocess so content URLs can be downloaded asynchronously
     helpers.spawn_download_task(deposit.uuid, mets_data['objects'])
 
-"""
-From a request's body, parse deposit name and control URLs from METS XML
-
-Returns None if parsing fails
-"""
 def _parse_name_and_content_urls_from_request_body(request):
-    logging.info('getting name and content from request')
-    temp_filepath = helpers.write_request_body_to_temp_file(request)
-    logging.info ('temp file path: ' + temp_filepath)
+    """
+    From a request's body, parse deposit name and control URLs from METS XML
 
+    Returns None if parsing fails
+    """
+    logging.debug('Parse name and content from request')
+    temp_filepath = helpers.write_request_body_to_temp_file(request)
     # parse name and content URLs out of XML
     try:
         mets_data = _parse_name_and_content_urls_from_mets_file(temp_filepath)
         os.unlink(temp_filepath)
-        logging.info (mets_data)
+        logging.debug('METS parsed from request: %s',mets_data)
         return mets_data
-    except etree.XMLSyntaxError as e:
+    except etree.XMLSyntaxError:
         os.unlink(temp_filepath)
         return None
 
-"""
-Parse deposit name and control URLS from a METS XML file
-
-Returns a dict with the keys 'deposit_name' and 'objects'
-"""
 def _parse_name_and_content_urls_from_mets_file(filepath):
+    """
+    Parse deposit name and control URLS from a METS XML file
+
+    Returns a dict with the keys 'deposit_name' and 'objects'
+    """
     tree = etree.parse(filepath)
     root = tree.getroot()
     deposit_name = root.get('LABEL')
@@ -317,30 +315,32 @@ def _create_deposit_directory_and_db_entry(location, deposit_name=None, source_p
         return deposit
     return None
 
-"""
-Example POST finalization of deposit:
+def deposit_edit(request, deposit):
+    """
+    Deposit endpoint: list info, accept new files, finalize or delete deposit.
 
-  curl -v -H "In-Progress: false" --request POST http://127.0.0.1:8000/api/v1/location/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/
+    Example POST adding files to the deposit:
+      curl -v -H "In-Progress: true" --data-binary @mets.xml --request POST http://127.0.0.1:8000/api/v1/file/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/
 
-Example DELETE of deposit:
+    Example POST finalization of deposit:
+      curl -v -H "In-Progress: false" --request POST http://127.0.0.1:8000/api/v1/file/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/
 
-  curl -v -XDELETE http://127.0.0.1:8000/api/v1/location/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/
-"""
-def deposit_edit(request, uuid):
-    deposit = helpers.get_deposit(uuid)
-
-    if deposit == None:
-        return helpers.sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=uuid))
+    Example DELETE of deposit:
+      curl -v -XDELETE http://127.0.0.1:8000/api/v1/file/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/
+    """
+    if isinstance(deposit, basestring):
+        try:
+            deposit = models.Package.active.get(uuid=deposit)
+        except models.Package.DoesNotExist:
+            return helpers.sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=deposit))
 
     if deposit.has_been_submitted_for_processing():
         return helpers.sword_error_response(request, 400, 'This deposit has already been submitted for processing.')
 
     if request.method == 'GET':
         edit_iri = request.build_absolute_uri(
-            reverse(
-                'sword_deposit',
-                kwargs={'api_name': 'v1', 'resource_name': 'location', 'uuid': deposit.uuid}))
-
+            reverse('sword_deposit', kwargs={
+                'api_name': 'v1', 'resource_name': 'file', 'uuid': deposit.uuid}))
         entry = {
             'title': deposit.description,
             'url': edit_iri
@@ -352,83 +352,87 @@ def deposit_edit(request, uuid):
         # If METS XML has been sent to indicate a list of files needing downloading, handle it
         if request.body != '':
             mets_data = _parse_name_and_content_urls_from_request_body(request)
-            if mets_data != None:
-                _spawn_batch_download_and_flag_finalization_if_requested(uuid, request, mets_data)
+            if mets_data is not None:
+                _spawn_batch_download_and_flag_finalization_if_requested(deposit, request, mets_data)
                 return _deposit_receipt_response(request, deposit, 200)
             else:
                 return helpers.sword_error_response(request, 412, 'Error parsing XML.')
         else:
             # Attempt to finalize (if requested), otherwise just return deposit receipt
             if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
-                return _finalize_or_mark_for_finalization(request, uuid)
+                return _finalize_or_mark_for_finalization(request, deposit)
             else:
                 return _deposit_receipt_response(request, deposit, 200)
     elif request.method == 'PUT':
         # TODO: implement update deposit
         return HttpResponse(status=204) # No content
     elif request.method == 'DELETE':
-        # delete deposit files
+        # Delete files
         shutil.rmtree(deposit.full_path())
-
-        # delete deposit
-        deposit = helpers.get_deposit(uuid)
-        deposit.delete()
-
+        # Delete all PackageDownloadTaskFile and PackageDownloadTask for this deposit
+        models.PackageDownloadTaskFile.objects.filter(task__package=deposit).delete()
+        models.PackageDownloadTask.objects.filter(package=deposit).delete()
+        # TODO should this actually delete the Package entry?
+        deposit.status = models.Package.DELETED
+        deposit.save()
         return HttpResponse(status=204) # No content
     else:
         return helpers.sword_error_response(request, 405, 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.')
 
-"""
-If a request specifies the deposit should be finalized, synchronously finalize
-or, if downloading is incomplete, mark for finalization.
+def _finalize_or_mark_for_finalization(request, deposit):
+    """
+    If a request specifies the deposit should be finalized, synchronously finalize
+    or, if downloading is incomplete, mark for finalization.
 
-Returns deposit receipt response or error response
-"""
-def _finalize_or_mark_for_finalization(request, deposit_uuid):
+    Returns deposit receipt response or error response
+    """
     if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
-        if helpers.deposit_downloading_status(deposit_uuid) == 'complete':
-            helpers.spawn_finalization(deposit_uuid)
-            return _deposit_receipt_response(request, deposit_uuid, 200)
+        if helpers.deposit_downloading_status(deposit) == models.PackageDownloadTask.COMPLETE:
+            helpers.spawn_finalization(deposit.uuid)
+            return _deposit_receipt_response(request, deposit, 200)
         else:
             return helpers.sword_error_response(request, 400, 'Downloading not yet complete or errors were encountered.')
     else:
         return helpers.sword_error_response(request, 400, 'The In-Progress header must be set to false when starting deposit processing.')
 
-"""
-Example GET of files list:
+def deposit_media(request, deposit):
+    """
+    Deposit media endpoint: list, create, update or delete files
 
-  curl -v http://127.0.0.1:8000/api/v1/location/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/media/
+    Example GET of files list:
+      curl -v http://127.0.0.1:8000/api/v1/file/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/media/
 
-Example POST of file:
+    Example PUT of file:
+      curl -v -H "Content-Disposition: attachment; filename=joke.jpg" --data-binary "@joke.jpg" --request PUT http://127.0.0.1:8000/api/v1/file/9c8b4ac0-0407-4360-a10d-af6c62a48b69/sword/media/
 
-  curl -v -H "Content-Disposition: attachment; filename=joke.jpg" --request POST \
-    --data-binary "@joke.jpg" \
-    http://127.0.0.1:8000/api/v1/location/9c8b4ac0-0407-4360-a10d-af6c62a48b69/sword/media/
+    Example POST of file:
+      curl -v -H "Content-Disposition: attachment; filename=joke.jpg" --data-binary "@joke.jpg" --request POST http://127.0.0.1:8000/api/v1/file/9c8b4ac0-0407-4360-a10d-af6c62a48b69/sword/media/
 
-Example DELETE of all files:
+    Example POST of METS with file info:
+      curl -v -H "Packaging: METS" -H "In-Progress: true" --data-binary @mets.xml --request POST http://127.0.0.1:8000/api/v1/file/9c8b4ac0-0407-4360-a10d-af6c62a48b69/sword/media/
 
-  curl -v -XDELETE \
-    http://127.0.0.1:8000/api/v1/location/9c8b4ac0-0407-4360-a10d-af6c62a48b69/sword/media/
+    Example DELETE of all files:
+      curl -v -XDELETE http://127.0.0.1:8000/api/v1/file/9c8b4ac0-0407-4360-a10d-af6c62a48b69/sword/media/
 
-Example DELETE of file:
+    Example DELETE of file:
+      curl -v -XDELETE http://127.0.0.1:8000/api/v1/file/9c8b4ac0-0407-4360-a10d-af6c62a48b69/sword/media/?filename=joke.jpg
+    """
 
-  curl -v -XDELETE \
-    http://127.0.0.1:8000/api/v1/location/9c8b4ac0-0407-4360-a10d-af6c62a48b69/sword/media/?filename=joke.jpg
-"""
-def deposit_media(request, uuid):
-    deposit = helpers.get_deposit(uuid)
-
-    if deposit == None:
-        return helpers.sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=uuid))
+    if isinstance(deposit, basestring):
+        try:
+            deposit = models.Package.active.get(uuid=deposit)
+        except models.Package.DoesNotExist:
+            return helpers.sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=deposit))
 
     if deposit.has_been_submitted_for_processing():
         return helpers.sword_error_response(request, 400, 'This deposit has already been submitted for processing.')
 
     if request.method == 'GET':
+        # TODO should this be returned in SWORD XML?
         return HttpResponse(str(os.listdir(deposit.full_path())))
     elif request.method == 'PUT':
         # replace a file in the deposit
-        return _handle_adding_to_or_replacing_file_in_deposit(request, deposit, True)
+        return _handle_adding_to_or_replacing_file_in_deposit(request, deposit, replace_file=True)
     elif request.method == 'POST':
         # Allow async batch upload via METS XML body content
         if 'HTTP_PACKAGING' in request.META and request.META['HTTP_PACKAGING'] == 'METS':
@@ -436,7 +440,7 @@ def deposit_media(request, uuid):
             if request.body != '':
                 mets_data = _parse_name_and_content_urls_from_request_body(request)
                 if mets_data != None:
-                    _spawn_batch_download_and_flag_finalization_if_requested(uuid, request, mets_data)
+                    _spawn_batch_download_and_flag_finalization_if_requested(deposit, request, mets_data)
                     return _deposit_receipt_response(request, deposit, 201)
                 else:
                     return helpers.sword_error_response(request, 412, 'Error parsing XML.')
@@ -448,13 +452,22 @@ def deposit_media(request, uuid):
     elif request.method == 'DELETE':
         filename = request.GET.get('filename', '')
         if filename != '':
-            file_path = os.path.join(deposit.full_path(), filename) 
+            # Delete PackageDownloadTaskFile for this filename
+            models.PackageDownloadTaskFile.objects.filter(task__package=deposit).filter(filename=filename).delete()
+            # Delete empty PackageDownloadTasks for this deposit
+            models.PackageDownloadTask.objects.filter(package=deposit).filter(download_file_set=None).delete()
+            # Delete file
+            file_path = os.path.join(deposit.full_path(), filename)
             if os.path.exists(file_path):
                 os.remove(file_path)
                 return HttpResponse(status=204) # No content
             else:
                 return helpers.sword_error_response(request, 404, 'The path to this file (%s) does not exist.' % (file_path))
         else:
+            # Delete all PackageDownloadTaskFile and PackageDownloadTask for this deposit
+            models.PackageDownloadTaskFile.objects.filter(task__package=deposit).delete()
+            models.PackageDownloadTask.objects.filter(package=deposit).delete()
+            # Delete all files
             for filename in os.listdir(deposit.full_path()):
                 filepath = os.path.join(deposit.full_path(), filename)
                 if os.path.isfile(filepath):
@@ -466,19 +479,21 @@ def deposit_media(request, uuid):
     else:
         return helpers.sword_error_response(request, 405, 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.')
 
-"""
-Example GET of state:
+def deposit_state(request, deposit):
+    """
+    Deposit state endpoint: return status of this deposit
 
-  curl -v http://localhost:8000/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/state/
-"""
-def deposit_state(request, uuid):
-    deposit = helpers.get_deposit(uuid)
-
-    if deposit == None:
-        return helpers.sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=uuid))
+    Example GET of state:
+      curl -v http://localhost:8000/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/state/
+    """
+    if isinstance(deposit, basestring):
+        try:
+            deposit = models.Package.active.get(uuid=deposit)
+        except models.Package.DoesNotExist:
+            return helpers.sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=deposit))
 
     if request.method == 'GET':
-        status = helpers.deposit_downloading_status(uuid)
+        status = helpers.deposit_downloading_status(deposit)
         state_term = status
         state_description = 'Deposit initiation: ' + status
 
@@ -509,14 +524,14 @@ def deposit_state(request, uuid):
     else:
         return helpers.sword_error_response(request, 405, 'This endpoint only responds to the GET HTTP method.')
 
-"""
-Parse a destination filename from an HTTP Content-Disposition header and
-either add or replace it
-
-Returns a response with an HTTP status code indicating whether creation (201)
-or updating (204) has occurred or an error response
-"""
 def _handle_adding_to_or_replacing_file_in_deposit(request, deposit, replace_file=False):
+    """
+    Parse a destination filename from an HTTP Content-Disposition header and
+    either add or replace it
+
+    Returns a response with an HTTP status code indicating whether creation (201)
+    or updating (204) has occurred or an error response
+    """
     if 'HTTP_CONTENT_DISPOSITION' in request.META:
         filename = helpers.parse_filename_from_content_disposition(request.META['HTTP_CONTENT_DISPOSITION']) 
 
@@ -548,20 +563,20 @@ def _handle_adding_to_or_replacing_file_in_deposit(request, deposit, replace_fil
     else:
         return helpers.sword_error_response(request, 400, 'Content-disposition must be set in request header.')
 
-"""
-Write the HTTP request body to a file and, if the HTTP Content-MD5 header is
-set, make sure the destination file has the expected checkcum
-
-Returns a response (with a specified HTTP status code) or an error response
-if a checksum has been provided but the destination file's is different
-"""
 def _handle_upload_request_with_potential_md5_checksum(request, file_path, success_status_code):
+    """
+    Write the HTTP request body to a file and, if the HTTP Content-MD5 header is
+    set, make sure the destination file has the expected checkcum
+
+    Returns a response (with a specified HTTP status code) or an error response
+    if a checksum has been provided but the destination file's is different
+    """
     temp_filepath = helpers.write_request_body_to_temp_file(request)
     if 'HTTP_CONTENT_MD5' in request.META:
         md5sum = helpers.get_file_md5_checksum(temp_filepath)
         if request.META['HTTP_CONTENT_MD5'] != md5sum:
             os.remove(temp_filepath)
-            return helpers.sword_error_response(request, 400, 'MD5 checksum of uploaded file ({uploaded_md5sum}) does not match ' + 'checksum provided in header ({header_md5sum}).'.format(
+            return helpers.sword_error_response(request, 400, 'MD5 checksum of uploaded file ({uploaded_md5sum}) does not match checksum provided in header ({header_md5sum}).'.format(
                 uploaded_md5sum=md5sum, header_md5sum=request.META['HTTP_CONTENT_MD5']))
         else:
             shutil.copyfile(temp_filepath, file_path)
