@@ -22,6 +22,39 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal(u'locations', ['Lockssomatic'])
 
+        # Adding model 'Fedora'
+        db.create_table(u'locations_fedora', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('space', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['locations.Space'], to_field='uuid', unique=True)),
+            ('fedora_user', self.gf('django.db.models.fields.CharField')(max_length=64)),
+            ('fedora_password', self.gf('django.db.models.fields.CharField')(max_length=256)),
+            ('fedora_name', self.gf('django.db.models.fields.CharField')(max_length=256)),
+        ))
+        db.send_create_signal(u'locations', ['Fedora'])
+
+        # Adding model 'PackageDownloadTask'
+        db.create_table(u'locations_packagedownloadtask', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('uuid', self.gf('django.db.models.fields.CharField')(unique=True, max_length=36, blank=True)),
+            ('package', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['locations.Package'], to_field='uuid')),
+            ('downloads_attempted', self.gf('django.db.models.fields.IntegerField')(default=0)),
+            ('downloads_completed', self.gf('django.db.models.fields.IntegerField')(default=0)),
+            ('download_completion_time', self.gf('django.db.models.fields.DateTimeField')(default=None, null=True, blank=True)),
+        ))
+        db.send_create_signal(u'locations', ['PackageDownloadTask'])
+
+        # Adding model 'PackageDownloadTaskFile'
+        db.create_table(u'locations_packagedownloadtaskfile', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('uuid', self.gf('django.db.models.fields.CharField')(unique=True, max_length=36, blank=True)),
+            ('task', self.gf('django.db.models.fields.related.ForeignKey')(related_name='download_file_set', to_field='uuid', to=orm['locations.PackageDownloadTask'])),
+            ('filename', self.gf('django.db.models.fields.CharField')(max_length=256)),
+            ('url', self.gf('django.db.models.fields.TextField')()),
+            ('completed', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('failed', self.gf('django.db.models.fields.BooleanField')(default=False)),
+        ))
+        db.send_create_signal(u'locations', ['PackageDownloadTaskFile'])
+
         # Adding field 'Pipeline.remote_name'
         db.add_column(u'locations_pipeline', 'remote_name',
                       self.gf('django.db.models.fields.CharField')(default=None, max_length=256, null=True, blank=True),
@@ -37,11 +70,19 @@ class Migration(SchemaMigration):
                       self.gf('django.db.models.fields.CharField')(default=None, max_length=256, null=True, blank=True),
                       keep_default=False)
 
+        # Adding field 'Package.description'
+        db.add_column(u'locations_package', 'description',
+                      self.gf('django.db.models.fields.CharField')(default=None, max_length=256, null=True, blank=True),
+                      keep_default=False)
+
         # Adding field 'Package.misc_attributes'
         db.add_column(u'locations_package', 'misc_attributes',
                       self.gf('jsonfield.fields.JSONField')(default={}, null=True, blank=True),
                       keep_default=False)
 
+
+        # Changing field 'Package.origin_pipeline'
+        db.alter_column(u'locations_package', 'origin_pipeline_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['locations.Pipeline'], to_field='uuid', null=True))
         # Adding field 'Space.staging_path'
         db.add_column(u'locations_space', 'staging_path',
                       self.gf('django.db.models.fields.TextField')(default='/var/archivematica/storage_service/'),
@@ -52,6 +93,15 @@ class Migration(SchemaMigration):
         # Deleting model 'Lockssomatic'
         db.delete_table(u'locations_lockssomatic')
 
+        # Deleting model 'Fedora'
+        db.delete_table(u'locations_fedora')
+
+        # Deleting model 'PackageDownloadTask'
+        db.delete_table(u'locations_packagedownloadtask')
+
+        # Deleting model 'PackageDownloadTaskFile'
+        db.delete_table(u'locations_packagedownloadtaskfile')
+
         # Deleting field 'Pipeline.remote_name'
         db.delete_column(u'locations_pipeline', 'remote_name')
 
@@ -61,9 +111,15 @@ class Migration(SchemaMigration):
         # Deleting field 'Pipeline.api_key'
         db.delete_column(u'locations_pipeline', 'api_key')
 
+        # Deleting field 'Package.description'
+        db.delete_column(u'locations_package', 'description')
+
         # Deleting field 'Package.misc_attributes'
         db.delete_column(u'locations_package', 'misc_attributes')
 
+
+        # Changing field 'Package.origin_pipeline'
+        db.alter_column(u'locations_package', 'origin_pipeline_id', self.gf('django.db.models.fields.related.ForeignKey')(default=None, to=orm['locations.Pipeline'], to_field='uuid'))
         # Deleting field 'Space.staging_path'
         db.delete_column(u'locations_space', 'staging_path')
 
@@ -120,6 +176,14 @@ class Migration(SchemaMigration):
             'user_email': ('django.db.models.fields.EmailField', [], {'max_length': '254'}),
             'user_id': ('django.db.models.fields.PositiveIntegerField', [], {})
         },
+        u'locations.fedora': {
+            'Meta': {'object_name': 'Fedora'},
+            'fedora_name': ('django.db.models.fields.CharField', [], {'max_length': '256'}),
+            'fedora_password': ('django.db.models.fields.CharField', [], {'max_length': '256'}),
+            'fedora_user': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'space': ('django.db.models.fields.related.OneToOneField', [], {'to': u"orm['locations.Space']", 'to_field': "'uuid'", 'unique': 'True'})
+        },
         u'locations.localfilesystem': {
             'Meta': {'object_name': 'LocalFilesystem'},
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -169,14 +233,34 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'Package'},
             'current_location': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['locations.Location']", 'to_field': "'uuid'"}),
             'current_path': ('django.db.models.fields.TextField', [], {}),
+            'description': ('django.db.models.fields.CharField', [], {'default': 'None', 'max_length': '256', 'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'misc_attributes': ('jsonfield.fields.JSONField', [], {'default': '{}', 'null': 'True', 'blank': 'True'}),
-            'origin_pipeline': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['locations.Pipeline']", 'to_field': "'uuid'"}),
+            'origin_pipeline': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['locations.Pipeline']", 'to_field': "'uuid'", 'null': 'True', 'blank': 'True'}),
             'package_type': ('django.db.models.fields.CharField', [], {'max_length': '8'}),
             'pointer_file_location': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'+'", 'to_field': "'uuid'", 'null': 'True', 'to': u"orm['locations.Location']"}),
             'pointer_file_path': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'size': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'status': ('django.db.models.fields.CharField', [], {'default': "'FAIL'", 'max_length': '8'}),
+            'uuid': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '36', 'blank': 'True'})
+        },
+        u'locations.packagedownloadtask': {
+            'Meta': {'object_name': 'PackageDownloadTask'},
+            'download_completion_time': ('django.db.models.fields.DateTimeField', [], {'default': 'None', 'null': 'True', 'blank': 'True'}),
+            'downloads_attempted': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
+            'downloads_completed': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'package': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['locations.Package']", 'to_field': "'uuid'"}),
+            'uuid': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '36', 'blank': 'True'})
+        },
+        u'locations.packagedownloadtaskfile': {
+            'Meta': {'object_name': 'PackageDownloadTaskFile'},
+            'completed': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'failed': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'filename': ('django.db.models.fields.CharField', [], {'max_length': '256'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'task': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'download_file_set'", 'to_field': "'uuid'", 'to': u"orm['locations.PackageDownloadTask']"}),
+            'url': ('django.db.models.fields.TextField', [], {}),
             'uuid': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '36', 'blank': 'True'})
         },
         u'locations.pipeline': {
