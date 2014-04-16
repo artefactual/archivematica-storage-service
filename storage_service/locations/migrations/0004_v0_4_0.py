@@ -8,6 +8,20 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
+        # Adding model 'Lockssomatic'
+        db.create_table(u'locations_lockssomatic', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('space', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['locations.Space'], to_field='uuid', unique=True)),
+            ('au_size', self.gf('django.db.models.fields.BigIntegerField')(null=True, blank=True)),
+            ('sd_iri', self.gf('django.db.models.fields.URLField')(max_length=256)),
+            ('collection_iri', self.gf('django.db.models.fields.CharField')(max_length=256, null=True, blank=True)),
+            ('content_provider_id', self.gf('django.db.models.fields.CharField')(max_length=32)),
+            ('external_domain', self.gf('django.db.models.fields.URLField')(max_length=200)),
+            ('checksum_type', self.gf('django.db.models.fields.CharField')(max_length=64, null=True, blank=True)),
+            ('keep_local', self.gf('django.db.models.fields.BooleanField')(default=True)),
+        ))
+        db.send_create_signal(u'locations', ['Lockssomatic'])
+
         # Adding field 'Package.misc_attributes'
         db.add_column(u'locations_package', 'misc_attributes',
                       self.gf('jsonfield.fields.JSONField')(default={}, null=True, blank=True),
@@ -20,6 +34,9 @@ class Migration(SchemaMigration):
 
 
     def backwards(self, orm):
+        # Deleting model 'Lockssomatic'
+        db.delete_table(u'locations_lockssomatic')
+
         # Deleting field 'Package.misc_attributes'
         db.delete_column(u'locations_package', 'misc_attributes')
 
@@ -102,6 +119,18 @@ class Migration(SchemaMigration):
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'location': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['locations.Location']", 'to_field': "'uuid'"}),
             'pipeline': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['locations.Pipeline']", 'to_field': "'uuid'"})
+        },
+        u'locations.lockssomatic': {
+            'Meta': {'object_name': 'Lockssomatic'},
+            'au_size': ('django.db.models.fields.BigIntegerField', [], {'null': 'True', 'blank': 'True'}),
+            'checksum_type': ('django.db.models.fields.CharField', [], {'max_length': '64', 'null': 'True', 'blank': 'True'}),
+            'collection_iri': ('django.db.models.fields.CharField', [], {'max_length': '256', 'null': 'True', 'blank': 'True'}),
+            'content_provider_id': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
+            'external_domain': ('django.db.models.fields.URLField', [], {'max_length': '200'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'keep_local': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
+            'sd_iri': ('django.db.models.fields.URLField', [], {'max_length': '256'}),
+            'space': ('django.db.models.fields.related.OneToOneField', [], {'to': u"orm['locations.Space']", 'to_field': "'uuid'", 'unique': 'True'})
         },
         u'locations.nfs': {
             'Meta': {'object_name': 'NFS'},
