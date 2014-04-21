@@ -28,8 +28,8 @@
           <form action="{% url 'aip_delete_request' %}" method="post">
             {% csrf_token %}
             {{ req.form.as_p }}
-            <input type="submit" name="approve" value="Approve (Delete AIP)" />
-            <input type="submit" name="reject" value="Reject (Keep AIP)" />
+            <input type="submit" name="approve" value="Approve (Delete AIP)" class='btn' />
+            <input type="submit" name="reject" value="Reject (Keep AIP)" class='btn btn-primary' />
           </form>
         </td>
       </tr>

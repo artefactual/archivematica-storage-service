@@ -18,7 +18,7 @@
       {% csrf_token %}
         <p>Space: {{ space }}</p>
         {{ form.as_p }}
-        <input type="submit" value="{{ action }} Location" />
+        <input type="submit" value="{{ action }} Location" class='btn btn-primary' />
     </form>
 </div>
 
@@ -35,7 +35,7 @@
 
   <script>
     $(document).ready(function() {
-      $('<input id="id_relative_path_browse" type="button" value="Browse" />')
+      $('<input id="id_relative_path_browse" type="button" value="Browse" class="btn" />')
         .insertAfter('#id_relative_path');
 
       createSingleDirectoryPicker(

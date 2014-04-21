@@ -35,3 +35,6 @@ div.sidebar {
     min-width: 120px;
 }
 
+.btn {
+  margin: .15em;
+}
