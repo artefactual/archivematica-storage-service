@@ -634,8 +634,8 @@ class Package(models.Model):
         default=FAIL,
         help_text="Status of the package in the storage service.")
 
-    PACKAGE_TYPE_DELETABLE = (AIP, AIC, TRANSFER)
-    PACKAGE_TYPE_EXTRACTABLE = (AIP, AIC)
+    PACKAGE_TYPE_CAN_DELETE = (AIP, AIC, TRANSFER)
+    PACKAGE_TYPE_CAN_EXTRACT = (AIP, AIC)
 
     class Meta:
         verbose_name = "Package"

@@ -439,7 +439,7 @@ class PackageResource(ModelResource):
     def delete_aip_request(self, request, bundle, **kwargs):
         request_info = bundle.data
         package = bundle.obj
-        if package.package_type not in Package.PACKAGE_TYPE_DELETABLE:
+        if package.package_type not in Package.PACKAGE_TYPE_CAN_DELETE:
             # Can only request deletion on AIPs
             return http.HttpMethodNotAllowed()
 
@@ -493,7 +493,7 @@ class PackageResource(ModelResource):
         if os.path.exists(local_path):
             # Local file exists - return that
             extracted_file_path = local_path
-        elif package.package_type in Package.PACKAGE_TYPE_EXTRACTABLE:
+        elif package.package_type in Package.PACKAGE_TYPE_CAN_EXTRACT:
             # If file doesn't exist, try to extract it
             (extracted_file_path, temp_dir) = package.extract_file(relative_path_to_file)
 
@@ -508,7 +508,7 @@ class PackageResource(ModelResource):
         """
         # Get AIP details
         package = bundle.obj
-        if package.package_type not in Package.PACKAGE_TYPE_EXTRACTABLE:
+        if package.package_type not in Package.PACKAGE_TYPE_CAN_EXTRACT:
             # Can only return packages that are a single file
             # TODO Update to zip up a transfer before returning it?
             return http.HttpMethodNotAllowed()

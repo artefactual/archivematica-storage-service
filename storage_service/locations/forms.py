@@ -1,8 +1,7 @@
 
 from django import forms
 
-from .models import Space, LocalFilesystem, NFS, Location, Event, Pipeline, PipelineLocalFS
-
+from . import models
 
 class PipelineForm(forms.ModelForm):
     create_default_locations = forms.BooleanField(required=False,
@@ -11,13 +10,13 @@ class PipelineForm(forms.ModelForm):
         help_text="Enabled if default locations should be created for this pipeline")
 
     class Meta:
-        model = Pipeline
+        model = models.Pipeline
         fields = ('uuid', 'description', 'enabled')
 
 
 class SpaceForm(forms.ModelForm):
     class Meta:
-        model = Space
+        model = models.Space
         fields = ('access_protocol', 'size', 'path', 'staging_path')
 
     def __init__(self, *args, **kwargs):
@@ -37,32 +36,32 @@ class SpaceForm(forms.ModelForm):
 
 class LocalFilesystemForm(forms.ModelForm):
     class Meta:
-        model = LocalFilesystem
+        model = models.LocalFilesystem
         fields = ()
 
 
 class NFSForm(forms.ModelForm):
     class Meta:
-        model = NFS
+        model = models.NFS
         fields = ('remote_name', 'remote_path', 'version', 'manually_mounted')
 
 
 class PipelineLocalFSForm(forms.ModelForm):
     # TODO SpaceForm.path help text should say path to space on local machine
     class Meta:
-        model = PipelineLocalFS
+        model = models.PipelineLocalFS
         fields = ('remote_user', 'remote_name', )
 
 
 class LocationForm(forms.ModelForm):
     class Meta:
-        model = Location
+        model = models.Location
         fields = ('purpose', 'pipeline', 'relative_path', 'description', 'quota', 'enabled')
 
 
 class ConfirmEventForm(forms.ModelForm):
     class Meta:
-        model = Event
+        model = models.Event
         fields = ('status_reason',)
 
     def __init__(self, *args, **kwargs):
