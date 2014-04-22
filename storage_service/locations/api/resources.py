@@ -11,6 +11,7 @@ import urllib
 
 # Core Django, alphabetical
 from django.conf.urls import url
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.forms.models import model_to_dict
 
 # Third party dependencies, alphabetical
@@ -19,6 +20,7 @@ from tastypie.authentication import (BasicAuthentication, ApiKeyAuthentication,
 from tastypie.authorization import DjangoAuthorization, Authorization
 from tastypie import fields
 from tastypie import http
+from tastypie.exceptions import UnsupportedFormat
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.validation import CleanedDataFormValidation
 from tastypie.utils import trailing_slash
@@ -40,6 +42,56 @@ logging.basicConfig(filename="/tmp/storage_service.log",
 # This is because the ModelResource accepts a URI, but does not convert it to a
 # primary key (in our case, UUID) before passing it to Django.
 # See https://github.com/toastdriven/django-tastypie/issues/152 for details
+
+def _custom_endpoint(expected_methods=['get'], required_fields=[]):
+    """
+    Decorator for custom endpoints that handles boilerplate code.
+
+    Checks if method allowed, authenticated, deserializes and can require fields
+    in the body.
+
+    Custom endpoint must accept request and bundle.
+    """
+    def decorator(func):
+        """ The decorator applied to the endpoint """
+        def wrapper(resource, request, **kwargs):
+            """ Wrapper for custom endpoints with boilerplate code. """
+            # Tastypie API checks
+            resource.method_check(request, allowed=expected_methods)
+            resource.is_authenticated(request)
+            resource.throttle_check(request)
+
+            # Get object
+            try:
+                obj = resource._meta.queryset.get(uuid=kwargs['uuid'])
+            except ObjectDoesNotExist:
+                return http.HttpNotFound("Resource with UUID {} does not exist".format(kwargs['uuid']))
+            except MultipleObjectsReturned:
+                return http.HttpMultipleChoices("More than one resource is found at this URI.")
+
+            # Get body content
+            try:
+                deserialized = resource.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
+                deserialized = resource.alter_deserialized_detail_data(request, deserialized)
+            except Exception:
+                # Trouble decoding request body - may not actually exist
+                deserialized = []
+
+            # Check required fields, if any
+            if not all(k in deserialized for k in required_fields):
+                # Don't have enough information to make the request - return error
+                return http.HttpBadRequest('All of these fields must be provided: {}'.format(', '.join(required_fields)))
+
+            # Build bundle and return it
+            bundle = resource.build_bundle(obj=obj, data=deserialized, request=request)
+            bundle = resource.alter_detail_data_to_serialize(request, bundle)
+
+            # Call the decorated method
+            result = func(resource, request, bundle, **kwargs)
+            resource.log_throttled_access(request)
+            return result
+        return wrapper
+    return decorator
 
 
 class PipelineResource(ModelResource):
