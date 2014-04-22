@@ -35,6 +35,15 @@ div.sidebar {
     min-width: 120px;
 }
 
+form ul {
+  margin-left: 0px;
+}
+
+form li {
+  list-style-type: none;
+  padding-left: 0px;
+}
+
 .btn {
   margin: .15em;
 }

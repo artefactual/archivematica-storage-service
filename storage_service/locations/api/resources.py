@@ -456,6 +456,8 @@ class PackageResource(ModelResource):
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/send_callback/post_store%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('aip_store_callback_request'), name="aip_store_callback_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/contents%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view("manage_contents"), name="manage_contents"),
             url(r"^(?P<resource_name>%s)/metadata%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view("file_data"), name="file_data"),
+            # Reingest
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/reingest%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('reingest_request'), name="reingest_request"),
 
             # FEDORA/SWORD2 endpoints
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit'), name="sword_deposit"),
@@ -718,6 +720,21 @@ class PackageResource(ModelResource):
             )
         else:
             return http.HttpNoContent()
+
+    @_custom_endpoint(expected_methods=['post'],
+        required_fields=('pipeline', 'reingest_type'))
+    def reingest_request(self, request, bundle, **kwargs):
+        try:
+            pipeline = Pipeline.objects.get(uuid=bundle.data['pipeline'])
+        except (Pipeline.DoesNotExist, Pipeline.MultipleObjectsReturned):
+            response = {'error': True, 'message': 'Pipeline UUID {} failed to return a pipeline'.format(bundle.data['pipeline'])}
+            return self.create_response(request, response, response_class=http.HttpBadRequest)
+        reingest_type = bundle.data['reingest_type']
+
+        response = bundle.obj.start_reingest(pipeline, reingest_type)
+        status_code = response.get('status_code', 500)
+
+        return self.create_response(request, response, status=status_code)
 
     def sword_deposit(self, request, **kwargs):
         package = get_object_or_None(Package, uuid=kwargs['uuid'])

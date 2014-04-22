@@ -46,6 +46,16 @@ def package_list(request):
     packages = Package.objects.all()
     return render(request, 'locations/package_list.html', locals())
 
+class AIPRequestHandlerConfig:
+    event_type = ''                # Event type being handled
+    approved_status = ''           # Event status, if approved
+    reject_message = ''            # Message returned if not approved
+    execution_success_message = '' # Message returned if execution success
+    execution_fail_message = ''    # Message returned if execution failed
+
+    def execution_logic(package):  # Logic performed on package if approved
+        pass
+
 def aip_recover_request(request):
     def execution_logic(aip): 
         recover_location = LocationPipeline.objects.get(
@@ -207,15 +217,27 @@ def package_update_status(request, uuid):
     next_url = request.GET.get('next', reverse('package_list'))
     return redirect(next_url)
 
-class AIPRequestHandlerConfig:
-    event_type = ''                # Event type being handled
-    approved_status = ''           # Event status, if approved
-    reject_message = ''            # Message returned if not approved
-    execution_success_message = '' # Message returned if execution success
-    execution_fail_message = ''    # Message returned if execution failed
-
-    def execution_logic(package):  # Logic performed on package if approved
-        pass
+def aip_reingest(request, package_uuid):
+    next_url = request.GET.get('next', reverse('package_list'))
+    try:
+        package = Package.objects.get(uuid=package_uuid)
+    except Package.DoesNotExist:
+        messages.warning(request, 'Package with UUID {} does not exist.'.format(package_uuid))
+        return redirect(next_url)
+    form = forms.ReingestForm(request.POST or None)
+    if form.is_valid():
+        pipeline = form.cleaned_data['pipeline']
+        reingest_type = form.cleaned_data['reingest_type']
+        response = package.start_reingest(pipeline, reingest_type)
+        error = response.get('error', True)
+        message = response.get('message', 'An unknown error occurred')
+        if not error:
+            if message:
+                messages.success(request, message)
+        else:
+            messages.warning(request, message)
+        return redirect(next_url)
+    return render(request, 'locations/package_reingest.html', locals())
 
 
 ########################## LOCATIONS ##########################

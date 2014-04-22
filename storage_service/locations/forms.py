@@ -208,3 +208,12 @@ class CallbackForm(forms.ModelForm):
     class Meta:
         model = models.Callback
         fields = ('uri', 'event', 'method', 'expected_status')
+
+
+class ReingestForm(forms.Form):
+    pipeline = forms.ModelChoiceField(queryset=models.Pipeline.active.all())
+    REINGEST_CHOICES = (
+        (models.Package.METADATA_ONLY, 'Re-ingest metadata only'),
+        (models.Package.OBJECTS, 'Re-ingest metadata and objects')
+    )
+    reingest_type = forms.ChoiceField(choices=REINGEST_CHOICES, widget=forms.RadioSelect)

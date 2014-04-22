@@ -18,12 +18,14 @@ urlpatterns = patterns('locations.views',
     # Packages
     url(r'^packages/$', 'package_list',
         name='package_list'),
-    url(r'^packages/aip_delete_request$', 'aip_delete_request',
+    url(r'^packages/aip_delete_request/$', 'aip_delete_request',
         name='aip_delete_request'),
     url(r'^packages/(?P<uuid>'+UUID+')/update_status/$', 'package_update_status',
         name='package_update_status'),
     url(r'^packages/aip_recover_request$', 'aip_recover_request',
         name='aip_recover_request'),
+    url(r'^packages/(?P<package_uuid>' + UUID + ')/reingest/$', 'aip_reingest',
+        name='aip_reingest'),
 
     # Pipelines
     url(r'^pipelines/$', 'pipeline_list',

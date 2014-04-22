@@ -42,6 +42,9 @@
         </td>
         <td>
           <a href="{% url 'download_request' 'v2' 'file' package.uuid %}">Download</a>
+          {% if package.package_type in 'AIP AIC' %}
+            <a href="{% url 'aip_reingest' package.uuid %}?next={{ request.path }}">Re-ingest</a>
+          {% endif %}
         </td>
       </tr>
     {% endfor %}
