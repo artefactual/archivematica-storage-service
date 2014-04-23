@@ -759,12 +759,12 @@ class Package(models.Model):
         Returns path to the extracted file and a temp dir that needs to be
         deleted. """
         temp_dir = tempfile.mkdtemp()
-        output_path = os.path.join(temp_dir, os.path.basename(relative_path))
-        command = ['atool', '--cat', self.full_path(), relative_path]
+        output_path = os.path.join(temp_dir, relative_path)
+        command = ['unar', '-force-overwrite', '-o', temp_dir, self.full_path(), relative_path]
         logging.info('Extracting file with: {} to {}'.format(command, output_path))
 
-        with open(output_path, 'wb') as output_file:
-            subprocess.call(command, stdout=output_file)
+        rc = subprocess.call(command)
+        logging.debug('Extract file RC: %s', rc)
 
         return (output_path, temp_dir)
 
