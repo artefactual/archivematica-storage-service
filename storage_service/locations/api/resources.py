@@ -189,7 +189,7 @@ class LocationResource(ModelResource):
 
         fields = ['enabled', 'relative_path', 'purpose', 'quota', 'used', 'uuid']
         list_allowed_methods = ['get']
-        detail_allowed_methods = ['get']
+        detail_allowed_methods = ['get', 'post']
         detail_uri_name = 'uuid'
         always_return_data = True
         filtering = {
@@ -236,6 +236,79 @@ class LocationResource(ModelResource):
 
         self.log_throttled_access(request)
         return self.create_response(request, objects)
+
+    def post_detail(self, request, *args, **kwargs):
+        """ Moves files to this Location.
+
+        Intended for use with creating Transfers, SIPs, etc and other cases
+        where files need to be moved but not tracked by the storage service.
+
+        POST body should contain a dict with elements:
+        origin_location: URI of the Location the files should be moved from
+        pipeline: URI of the Pipeline both Locations belong to
+        files: List of dicts containing 'source' and 'destination', paths
+            relative to their Location of the files to be moved.
+        """
+        # Not right HTTP verb?  PUT is taken
+
+        data = self.deserialize(request, request.body)
+        data = self.alter_deserialized_detail_data(request, data)
+
+        # Get the object for this endpoint
+        try:
+            destination_location = Location.objects.get(uuid=kwargs['uuid'])
+        except Location.DoesNotExist:
+            return http.HttpNotFound()
+
+        # Check for require fields
+        required_fields = ['origin_location', 'pipeline', 'files']
+        if not all((k in data) for k in required_fields):
+            # Don't have enough information to make the request - return error
+            return http.HttpBadRequest
+
+        # Get the destination Location
+        origin_uri = data['origin_location']
+        try:
+            # splitting origin_uri on / results in:
+            # ['', 'api', 'v1', '<resource_name>', '<uuid>', '']
+            origin_uuid = origin_uri.split('/')[4]
+            origin_location = Location.objects.get(uuid=origin_uuid)
+        except (IndexError, Location.DoesNotExist):
+            raise NotFound("The URL provided '%s' was not a link to a valid Location." % origin_uri)
+
+        # For each file in files, call move to/from
+        origin_space = origin_location.space
+        destination_space = destination_location.space
+        files = data['files']
+        # TODO make these move async so the SS can continue to respond while
+        # moving large files
+        for sip_file in files:
+            source_path = sip_file.get('source', None)
+            destination_path = sip_file.get('destination', None)
+            if all([source_path, destination_path]):
+                # make path relative to the location
+                source_path = os.path.join(
+                    origin_location.relative_path, source_path)
+                destination_path = os.path.join(
+                    destination_location.relative_path, destination_path)
+                origin_space.move_to_storage_service(
+                    source_path=source_path,
+                    destination_path=destination_path,
+                    destination_space=destination_space,
+                )
+                origin_space.post_move_to_storage_service()
+                destination_space.move_from_storage_service(
+                    source_path=destination_path,
+                    destination_path=destination_path,
+                )
+                destination_space.post_move_from_storage_service()
+
+            else:
+                return http.HttpBadRequest
+
+        response = {'error': None,
+                    'message': 'Files moved successfully'}
+        return self.create_response(request, response)
 
 
 class PackageResource(ModelResource):
@@ -285,9 +358,10 @@ class PackageResource(ModelResource):
         always_return_data = True
         filtering = {
             'location': ALL_WITH_RELATIONS,
+            'package_type': ALL,
             'path': ALL,
             'uuid': ALL,
-            'status': ALL
+            'status': ALL,
         }
 
     def prepend_urls(self):
@@ -301,11 +375,15 @@ class PackageResource(ModelResource):
     def obj_create(self, bundle, **kwargs):
         bundle = super(PackageResource, self).obj_create(bundle, **kwargs)
         # IDEA add custom endpoints, instead of storing all AIPS that come in?
-        if bundle.obj.package_type in (Package.AIP, Package.AIC):
-            origin_location_uri = bundle.data.get('origin_location', False)
-            origin_location = self.origin_location.build_related_resource(origin_location_uri, bundle.request).obj
-            origin_path = bundle.data.get('origin_path', False)
+        origin_location_uri = bundle.data.get('origin_location', False)
+        origin_location = self.origin_location.build_related_resource(origin_location_uri, bundle.request).obj
+        origin_path = bundle.data.get('origin_path', False)
+        if bundle.obj.package_type in (Package.AIP, Package.AIC) and bundle.obj.current_location.purpose in (Location.AIP_STORAGE):
+            # Store AIP/AIC
             bundle.obj.store_aip(origin_location, origin_path)
+        elif bundle.obj.package_type in (Package.TRANSFER) and bundle.obj.current_location.purpose in (Location.BACKLOG):
+            # Move transfer to backlog
+            bundle.obj.backlog_transfer(origin_location, origin_path)
         return bundle
 
     def delete_aip_request(self, request, **kwargs):

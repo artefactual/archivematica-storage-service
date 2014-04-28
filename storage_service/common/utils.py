@@ -119,7 +119,10 @@ def removedirs(relative_path, base=None):
     Cribbed from the implementation of os.removedirs. """
     if not base:
         return os.removedirs(relative_path)
-    os.rmdir(os.path.join(base, relative_path))
+    try:
+        os.rmdir(os.path.join(base, relative_path))
+    except os.error:
+        pass
     head, tail = os.path.split(relative_path)
     if not tail:
         head, tail = os.path.split(head)

@@ -58,6 +58,11 @@ def startup():
         space=space,
         relative_path=os.path.join('var', 'archivematica', 'sharedDirectory', 'www', 'AIPsStore'),
         description='Store AIP in standard Archivematica Directory')
+    backlog, _ = locations_models.Location.objects.get_or_create(
+        purpose=locations_models.Location.BACKLOG,
+        space=space,
+        relative_path=os.path.join('var', 'archivematica', 'sharedDirectory', 'www', 'AIPsStore', 'transferBacklog'),
+        description='Default transfer backlog')
     internal_use, _ = locations_models.Location.objects.get_or_create(
         purpose=locations_models.Location.STORAGE_SERVICE_INTERNAL,
         space=space,
@@ -72,5 +77,7 @@ def startup():
         utils.set_setting('default_transfer_source', [transfer_source.uuid])
     if not utils.get_setting('default_aip_storage'):
         utils.set_setting('default_aip_storage', [aip_storage.uuid])
+    if not utils.get_setting('default_backlog'):
+        utils.set_setting('default_backlog', [backlog.uuid])
 
 startup()

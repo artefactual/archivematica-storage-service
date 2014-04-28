@@ -5,6 +5,7 @@ import errno
 import logging
 from lxml import etree
 import os
+import shutil
 import stat
 import subprocess
 import tempfile
@@ -219,7 +220,18 @@ class Space(models.Model):
         """
         logging.debug('FROM: src: {}'.format(source_path))
         logging.debug('FROM: dst: {}'.format(destination_path))
-        # TODO move the path mangling to here?
+
+        # Path pre-processing
+        # source_path must be relative
+        if os.path.isabs(source_path):
+            source_path = source_path.lstrip(os.sep)
+            # Alternate implementation:
+            # os.path.join(*source_path.split(os.sep)[1:]) # Strips up to first os.sep
+        source_path = os.path.join(self.staging_path, source_path)
+        if os.path.isdir(source_path):
+            source_path += os.sep
+        destination_path = os.path.join(self.path, destination_path)
+
         # TODO enforce destination_path is inside self.path
         try:
             self.get_child_space().move_from_storage_service(
@@ -276,10 +288,10 @@ class Space(models.Model):
             raise
 
     def _create_local_directory(self, path, mode=None):
-        """ Creates a local directory at 'path' with 'mode' (default 755). """
+        """ Creates a local directory at 'path' with 'mode' (default 775). """
         if mode is None:
             mode = (stat.S_IRUSR + stat.S_IWUSR + stat.S_IXUSR +
-                    stat.S_IRGRP +                stat.S_IXGRP +
+                    stat.S_IRGRP + stat.S_IWGRP + stat.S_IXGRP +
                     stat.S_IROTH +                stat.S_IXOTH)
         try:
             os.makedirs(os.path.dirname(path), mode)
@@ -317,14 +329,8 @@ class LocalFilesystem(models.Model):
         self.space._create_local_directory(destination_path)
         return self.space._move_rsync(source_path, destination_path)
 
-    def move_from_storage_service(self, src_path, dest_path):
+    def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
-        # src_path must be relative
-        if os.path.isabs(src_path):
-            src_path = src_path.lstrip(os.sep)
-            # os.path.join(*src_path.split(os.sep)[1:]) # Strips up to first os.sep
-        source_path = os.path.join(self.space.staging_path, src_path)
-        destination_path = os.path.join(self.space.path, dest_path)
         self.space._create_local_directory(destination_path)
         return self.space._move_rsync(source_path, destination_path)
 
@@ -369,14 +375,8 @@ class NFS(models.Model):
         # TODO delete original file?
         pass
 
-    def move_from_storage_service(self, src_path, dest_path):
+    def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
-        # src_path must be relative
-        if os.path.isabs(src_path):
-            src_path = src_path.lstrip(os.sep)
-            # os.path.join(*src_path.split(os.sep)[1:]) # Strips up to first os.sep
-        source_path = os.path.join(self.space.staging_path, src_path)
-        destination_path = os.path.join(self.space.path, dest_path)
         # TODO optimization - check if the staging path and destination path are on the same device and use os.rename/self.space._move_locally if so
         self.space._create_local_directory(destination_path)
         return self.space._move_rsync(source_path, destination_path)
@@ -458,14 +458,8 @@ class PipelineLocalFS(models.Model):
         # TODO delete original file?
         pass
 
-    def move_from_storage_service(self, src_path, dest_path):
+    def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
-        # src_path must be relative
-        if os.path.isabs(src_path):
-            src_path = src_path.lstrip(os.sep)
-            # os.path.join(*src_path.split(os.sep)[1:]) # Strips up to first os.sep
-        source_path = os.path.join(self.space.staging_path, src_path)
-        destination_path = os.path.join(self.space.path, dest_path)
 
         # Need to make sure destination exists
         command = 'mkdir -p {}'.format(os.path.dirname(destination_path))
@@ -515,7 +509,7 @@ class PipelineLocalFS(models.Model):
 #         """ Moves src_path to dest_space.staging_path/dest_path. """
 #         pass
 #
-#     def move_from_storage_service(self, src_path, dest_path):
+#     def move_from_storage_service(self, source_path, destination_path):
 #         """ Moves self.staging_path/src_path to dest_path. """
 #         pass
 
@@ -531,7 +525,7 @@ class Location(models.Model):
     TRANSFER_SOURCE = 'TS'
     AIP_STORAGE = 'AS'
     # QUARANTINE = 'QU'
-    # BACKLOG = 'BL'
+    BACKLOG = 'BL'
     CURRENTLY_PROCESSING = 'CP'
     STORAGE_SERVICE_INTERNAL = 'SS'
 
@@ -539,7 +533,7 @@ class Location(models.Model):
         (TRANSFER_SOURCE, 'Transfer Source'),
         (AIP_STORAGE, 'AIP Storage'),
         # (QUARANTINE, 'Quarantine'),
-        # (BACKLOG, 'Backlog Transfer'),
+        (BACKLOG, 'Transfer Backlog'),
         (CURRENTLY_PROCESSING, 'Currently Processing'),
     )
     purpose = models.CharField(max_length=2,
@@ -640,7 +634,7 @@ class Package(models.Model):
         default=FAIL,
         help_text="Status of the package in the storage service.")
 
-    PACKAGE_TYPE_DELETABLE = (AIP, AIC)
+    PACKAGE_TYPE_DELETABLE = (AIP, AIC, TRANSFER)
     PACKAGE_TYPE_EXTRACTABLE = (AIP, AIC)
 
     class Meta:
@@ -670,6 +664,36 @@ class Package(models.Model):
             return os.path.join(self.pointer_file_location.full_path(),
                 self.pointer_file_path)
 
+    def _check_quotas(self, dest_space, dest_location):
+        """
+        Verify that there is enough storage space on dest_space and dest_location for this package.  All sizes in bytes.
+        """
+        # Check if enough space on the space and location
+        # All sizes expected to be in bytes
+        if dest_space.size is not None and dest_space.used + self.size > dest_space.size:
+            raise StorageException(
+                "Not enough space for AIP on storage device {space}; Used: {used}; Size: {size}; AIP size: {aip_size}".format(
+                space=dest_space, used=dest_space.used, size=dest_space.size,
+                aip_size=self.size))
+        if (dest_location.quota is not None and
+                dest_location.used + self.size > dest_location.quota):
+            raise StorageException(
+                "AIP too big for quota on {location}; Used: {used}; Quota: {quota}; AIP size: {aip_size}".format(
+                    location=dest_location,
+                    used=dest_location.used,
+                    quota=dest_location.quota,
+                    aip_size=self.size)
+            )
+
+    def _update_quotas(self, space, location):
+        """
+        Add this package's size to the space and location.
+        """
+        space.used += self.size
+        space.save()
+        location.used += self.size
+        location.save()
+
     def store_aip(self, origin_location, origin_path):
         """ Stores an AIP in the correct Location.
 
@@ -685,40 +709,25 @@ class Package(models.Model):
 
         # Check if enough space on the space and location
         # All sizes expected to be in bytes
-        location = self.current_location
-        dest_space = location.space
-        if dest_space.size is not None and dest_space.used + self.size > dest_space.size:
-            raise StorageException(
-                "Not enough space for AIP on storage device {space}; Used: {used}; Size: {size}; AIP size: {aip_size}".format(
-                space=dest_space, used=dest_space.used, size=dest_space.size,
-                aip_size=self.size))
-        if (location.quota is not None and
-                location.used + self.size > location.quota):
-            raise StorageException(
-                "AIP too big for quota on {location}; Used: {used}; Quota: {quota}; AIP size: {aip_size}".format(
-                    location=location, used=location.used, quota=location.quota,
-                    aip_size=self.size))
-        source_path = os.path.normpath(
-            os.path.join(self.origin_location.full_path(), self.origin_path))
+        src_space = self.origin_location.space
+        dest_space = self.current_location.space
+        self._check_quotas(dest_space, self.current_location)
 
         # Store AIP at
         # destination_location/uuid/split/into/chunks/destination_path
-        path = utils.uuid_to_path(self.uuid)
-        self.current_path = os.path.join(path, self.current_path)
+        uuid_path = utils.uuid_to_path(self.uuid)
+        self.current_path = os.path.join(uuid_path, self.current_path)
         self.save()
-        destination_path = self.full_path()
 
         # Store AIP Pointer File at
         # internal_usage_location/uuid/split/into/chunks/pointer.xml
         self.pointer_file_location = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
-        self.pointer_file_path = os.path.join(path, 'pointer.xml')
-        pointer_file_src = os.path.join(os.path.dirname(source_path), 'pointer.xml')
+        self.pointer_file_path = os.path.join(uuid_path, 'pointer.xml')
+        pointer_file_src = os.path.join(self.origin_location.relative_path, os.path.dirname(self.origin_path), 'pointer.xml')
         pointer_file_dst = self.full_pointer_file_path()
 
         self.status = Package.PENDING
         self.save()
-
-        src_space = self.origin_location.space
 
         # Move pointer file
         pointer_file_name = 'pointer-'+self.uuid+'.xml'
@@ -732,13 +741,10 @@ class Package(models.Model):
             destination_space=dest_space)
         dest_space.move_from_storage_service(
             source_path=self.current_path,  # This should include Location.path
-            destination_path=os.path.join(location.relative_path, self.current_path),
+            destination_path=os.path.join(self.current_location.relative_path, self.current_path),
             )
         # Save new space/location usage, package status
-        dest_space.used += self.size
-        dest_space.save()
-        location.used += self.size
-        location.save()
+        self._update_quotas(dest_space, self.current_location)
         self.status = Package.UPLOADED
         self.save()
 
@@ -768,14 +774,58 @@ class Package(models.Model):
 
         return (output_path, temp_dir)
 
+    def backlog_transfer(self, origin_location, origin_path):
+        """
+        Stores a package in backlog.
+
+        Invokes different transfer mechanisms depending on what the source and
+        destination Spaces are.  Checks if there is space in the Space and
+        Location for the AIP, and raises a StorageException if not.  All sizes
+        expected to be in bytes.
+        """
+        self.origin_location = origin_location
+        self.origin_path = origin_path
+
+        # Check if enough space on the space and location
+        # All sizes expected to be in bytes
+        src_space = self.origin_location.space
+        dest_space = self.current_location.space
+        self._check_quotas(dest_space, self.current_location)
+
+        # No pointer file
+        self.pointer_file_location = None
+        self.pointer_file_path = None
+
+        self.status = Package.PENDING
+        self.save()
+
+        # Move transfer
+        src_space.move_to_storage_service(
+            source_path=os.path.join(self.origin_location.relative_path, self.origin_path),
+            destination_path=self.current_path,  # This should include Location.path
+            destination_space=dest_space)
+        dest_space.move_from_storage_service(
+            source_path=self.current_path,  # This should include Location.path
+            destination_path=os.path.join(self.current_location.relative_path, self.current_path),
+            )
+
+        # Save new space/location usage, package status
+        self._update_quotas(dest_space, self.current_location)
+        self.status = Package.UPLOADED
+        self.save()
+
     def delete_from_storage(self):
         """ Deletes the package from filesystem and updates metadata.
 
         Returns (True, None) on success, and (False, error_msg) on failure. """
         if self.current_location.space.access_protocol in Space.mounted_locally:
+            delete_path = self.full_path()
             try:
-                os.remove(self.full_path())
-            except os.error as e:
+                if os.path.isfile(delete_path):
+                    os.remove(delete_path)
+                if os.path.isdir(delete_path):
+                    shutil.rmtree(delete_path)
+            except (os.error, shutil.Error) as e:
                 logging.exception("Error deleting package.")
                 return False, e.strerror
             # Remove uuid quad directories if they're empty
@@ -786,7 +836,7 @@ class Package(models.Model):
             # TODO try-catch AttributeError if remote_user or remote_name not exist?
             user = protocol_space.remote_user
             host = protocol_space.remote_name
-            command = 'rm -f '+self.full_path()
+            command = 'rm -rf '+self.full_path()
             ssh_command = ["ssh", user+"@"+host, command]
             logging.info("ssh+rsync command: {}".format(ssh_command))
             try:
@@ -796,13 +846,14 @@ class Package(models.Model):
                 return False, "Error connecting to Location"
 
         # Remove pointer file, and the UUID quad directories if they're empty
-        try:
-            os.remove(self.full_pointer_file_path())
-        except os.error as e:
-            logging.exception("Error deleting pointer file {} for package {}".format(self.full_pointer_file_path(), self.uuid))
-
-        utils.removedirs(os.path.dirname(self.pointer_file_path),
-            base=self.pointer_file_location.full_path())
+        pointer_path = self.full_pointer_file_path()
+        if pointer_path:
+            try:
+                os.remove(pointer_path)
+            except os.error as e:
+                logging.exception("Error deleting pointer file {} for package {}".format(pointer_path, self.uuid))
+            utils.removedirs(os.path.dirname(self.pointer_file_path),
+                base=self.pointer_file_location.full_path())
 
         self.status = self.DELETED
         self.save()
@@ -915,6 +966,9 @@ class Pipeline(models.Model):
             {'default': 'default_aip_storage',
              'new': 'new_aip_storage',
              'purpose': Location.AIP_STORAGE},
+            {'default': 'default_backlog',
+             'new': 'new_backlog',
+             'purpose': Location.BACKLOG},
         ]
         for p in purposes:
             defaults = utils.get_setting(p['default'], [])
