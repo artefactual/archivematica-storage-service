@@ -546,8 +546,10 @@ class Lockssomatic(models.Model):
         logging.info('Storing %s in LOCKSS', package.current_path)
 
         # Update Service Document, including maxUploadSize and Collection IRI
-        self.update_service_document()
-
+        # If SD cannot be updated, LOM probably down.  Terminate now, as
+        # updating LOM can be repeated
+        if not self.update_service_document():
+            return
         # Split the files and record their locations.  If already split, just
         # returns list of output files
         output_files = self._split_package(package)
@@ -593,8 +595,8 @@ class Lockssomatic(models.Model):
         if 'state_iri' not in package.misc_attributes or 'edit_iri' not in package.misc_attributes:
             return (None, 'Unable to contact Lockss-o-matic')
 
-        if not self.sword_connection:
-            self.update_service_document()
+        if not self.sword_connection and not self.update_service_document():
+            return (None, 'Error contacting LOCKSS-o-matic.')
 
         # SWORD2 client has only experimental support for getting SWORD2
         # statements, so implementing the fetch and parse here. (March 2014)
@@ -1304,12 +1306,17 @@ class Package(models.Model):
             self.status = Package.UPLOADED
         self.save()
 
-        # Update pointer file's location infrmation
+        # Update pointer file's location information
         root = etree.parse(pointer_file_dst)
         element = root.find('.//mets:file', namespaces=utils.NSMAP)
         flocat = element.find('mets:FLocat', namespaces=utils.NSMAP)
         if self.uuid in element.get('ID', '') and flocat is not None:
             flocat.set('{{{ns}}}href'.format(ns=utils.NSMAP['xlink']), self.full_path())
+        # Add USE="Archival Information Package" to fileGrp.  Required for
+        # LOCKSS, and not provided in Archivematica <=1.1
+        if not root.find('.//mets:fileGrp[@USE="Archival Information Package"]', namespaces=utils.NSMAP):
+            root.find('.//mets:fileGrp', namespaces=utils.NSMAP).set('USE', 'Archival Information Package')
+
         with open(pointer_file_dst, 'w') as f:
             f.write(etree.tostring(root, pretty_print=True))
 
