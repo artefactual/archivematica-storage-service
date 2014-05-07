@@ -10,6 +10,6 @@ urlpatterns = patterns('administration.views',
         name='user_list'),
     url(r'^users/create/$', 'user_create',
         name='user_create'),
-    url(r'^users/(?P<username>[-\w]+)/edit/$', 'user_edit',
+    url(r'^users/(?P<id>[-\w]+)/edit/$', 'user_edit',
         name='user_edit'),
 )
