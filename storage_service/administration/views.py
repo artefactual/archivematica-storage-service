@@ -31,9 +31,9 @@ def user_list(request):
     users = get_user_model().objects.all()
     return render(request, 'administration/user_list.html', locals())
 
-def user_edit(request, username):
+def user_edit(request, id):
     action = "Edit"
-    edit_user = get_object_or_404(get_user_model(), username=username)
+    edit_user = get_object_or_404(get_user_model(), id=id)
     user_form = settings_forms.UserChangeForm(request.POST or None, instance=edit_user)
     password_form = SetPasswordForm(data=request.POST or None, user=edit_user)
     if 'user' in request.POST and user_form.is_valid():

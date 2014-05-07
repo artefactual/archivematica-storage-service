@@ -25,7 +25,7 @@
         <td>{{ user_display.is_active }}</td>
         <td>
           {% if user.is_superuser or user.id == user_display.id %}
-            <a class="btn edit small" href="{% url 'user_edit' user_display.username %}">Edit</a>
+            <a class="btn edit small" href="{% url 'user_edit' user_display.id %}">Edit</a>
           {% endif %}
       </tr>
     {% endfor %}
