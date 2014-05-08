@@ -12,7 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from common import decorators
 from common import utils
 from .models import Space, Location, Package, Event, Pipeline, LocationPipeline
-from .forms import SpaceForm, LocationForm, ConfirmEventForm, PipelineForm
+from . import forms
 from .constants import PROTOCOL
 
 logger = logging.getLogger(__name__)
@@ -51,7 +51,7 @@ def aip_delete_request(request):
         # FIXME won't scale with many pending deletes, since does linear search
         # on all the forms
         for req in requests:
-            req.form = ConfirmEventForm(request.POST, prefix=str(req.id),
+            req.form = forms.ConfirmEventForm(request.POST, prefix=str(req.id),
                 instance=req)
             if req.form.is_valid():
                 event = req.form.save()
@@ -75,7 +75,7 @@ def aip_delete_request(request):
                 return redirect('aip_delete_request')
     else:
         for req in requests:
-            req.form = ConfirmEventForm(prefix=str(req.id), instance=req)
+            req.form = forms.ConfirmEventForm(prefix=str(req.id), instance=req)
     closed_requests = Event.objects.filter(
         Q(status=Event.APPROVED) | Q(status=Event.REJECTED))
     return render(request, 'locations/aip_delete_request.html', locals())
@@ -91,7 +91,7 @@ def location_edit(request, space_uuid, location_uuid=None):
     else:
         action = "Create"
         location = None
-    form = LocationForm(request.POST or None, instance=location)
+    form = forms.LocationForm(request.POST or None, instance=location)
     if form.is_valid():
         location = form.save(commit=False)
         location.space = space
@@ -160,14 +160,14 @@ def pipeline_edit(request, uuid=None):
         initial = {'enabled': not utils.get_setting('pipelines_disabled')}
 
     if request.method == 'POST':
-        form = PipelineForm(request.POST, instance=pipeline, initial=initial)
+        form = forms.PipelineForm(request.POST, instance=pipeline, initial=initial)
         if form.is_valid():
             pipeline = form.save()
             pipeline.save(form.cleaned_data['create_default_locations'])
             messages.success(request, "Pipeline saved.")
             return redirect('pipeline_list')
     else:
-        form = PipelineForm(instance=pipeline, initial=initial)
+        form = forms.PipelineForm(instance=pipeline, initial=initial)
     return render(request, 'locations/pipeline_form.html', locals())
 
 def pipeline_list(request):
@@ -236,7 +236,7 @@ def space_detail(request, uuid):
 
 def space_create(request):
     if request.method == 'POST':
-        space_form = SpaceForm(request.POST, prefix='space')
+        space_form = forms.SpaceForm(request.POST, prefix='space')
         if space_form.is_valid():
             # Get access protocol form to validate
             access_protocol = space_form.cleaned_data['access_protocol']
@@ -259,14 +259,14 @@ def space_create(request):
                 protocol_form = PROTOCOL[access_protocol]['form'](
                    request.POST, prefix='protocol')
     else:
-        space_form = SpaceForm(prefix='space')
+        space_form = forms.SpaceForm(prefix='space')
 
     return render(request, 'locations/space_form.html', locals())
 
 def space_edit(request, uuid):
     space = get_object_or_404(Space, uuid=uuid)
     protocol_space = space.get_child_space()
-    space_form = SpaceForm(request.POST or None, prefix='space', instance=space)
+    space_form = forms.SpaceForm(request.POST or None, prefix='space', instance=space)
     protocol_form = PROTOCOL[space.access_protocol]['form'](
                 request.POST or None, prefix='protocol', instance=protocol_space)
     if space_form.is_valid() and protocol_form.is_valid():

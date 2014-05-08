@@ -11,6 +11,7 @@ import urllib
 
 # Core Django, alphabetical
 from django.conf.urls import url
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.forms.models import model_to_dict
 
 # Third party dependencies, alphabetical
@@ -19,6 +20,7 @@ from tastypie.authentication import (BasicAuthentication, ApiKeyAuthentication,
 from tastypie.authorization import DjangoAuthorization, Authorization
 from tastypie import fields
 from tastypie import http
+from tastypie.exceptions import UnsupportedFormat
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.validation import CleanedDataFormValidation
 from tastypie.utils import trailing_slash
@@ -40,6 +42,56 @@ logging.basicConfig(filename="/tmp/storage_service.log",
 # This is because the ModelResource accepts a URI, but does not convert it to a
 # primary key (in our case, UUID) before passing it to Django.
 # See https://github.com/toastdriven/django-tastypie/issues/152 for details
+
+def _custom_endpoint(expected_methods=['get'], required_fields=[]):
+    """
+    Decorator for custom endpoints that handles boilerplate code.
+
+    Checks if method allowed, authenticated, deserializes and can require fields
+    in the body.
+
+    Custom endpoint must accept request and bundle.
+    """
+    def decorator(func):
+        """ The decorator applied to the endpoint """
+        def wrapper(resource, request, **kwargs):
+            """ Wrapper for custom endpoints with boilerplate code. """
+            # Tastypie API checks
+            resource.method_check(request, allowed=expected_methods)
+            resource.is_authenticated(request)
+            resource.throttle_check(request)
+
+            # Get object
+            try:
+                obj = resource._meta.queryset.get(uuid=kwargs['uuid'])
+            except ObjectDoesNotExist:
+                return http.HttpNotFound("Resource with UUID {} does not exist".format(kwargs['uuid']))
+            except MultipleObjectsReturned:
+                return http.HttpMultipleChoices("More than one resource is found at this URI.")
+
+            # Get body content
+            try:
+                deserialized = resource.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
+                deserialized = resource.alter_deserialized_detail_data(request, deserialized)
+            except Exception:
+                # Trouble decoding request body - may not actually exist
+                deserialized = []
+
+            # Check required fields, if any
+            if not all(k in deserialized for k in required_fields):
+                # Don't have enough information to make the request - return error
+                return http.HttpBadRequest('All of these fields must be provided: {}'.format(', '.join(required_fields)))
+
+            # Build bundle and return it
+            bundle = resource.build_bundle(obj=obj, data=deserialized, request=request)
+            bundle = resource.alter_detail_data_to_serialize(request, bundle)
+
+            # Call the decorated method
+            result = func(resource, request, bundle, **kwargs)
+            resource.log_throttled_access(request)
+            return result
+        return wrapper
+    return decorator
 
 
 class PipelineResource(ModelResource):
@@ -148,7 +200,8 @@ class SpaceResource(ModelResource):
         message = 'This method should be accessed via a versioned subclass'
         raise NotImplementedError(message)
 
-    def browse(self, request, **kwargs):
+    @_custom_endpoint(expected_methods=['get'])
+    def browse(self, request, bundle, **kwargs):
         """ Returns all of the entries in a space, optionally at a subpath.
 
         Returns a dict with
@@ -158,16 +211,13 @@ class SpaceResource(ModelResource):
 
         If a path=<path> parameter is provided, will look in that path inside
         the Space. """
-        self.method_check(request, allowed=['get'])
-        self.is_authenticated(request)
-        self.throttle_check(request)
+
+        space = bundle.obj
         path = request.GET.get('path', '')
-        space = Space.objects.get(uuid=kwargs['uuid'])
         path = os.path.join(space.path, path)
 
         objects = self.get_objects(space, path)
 
-        self.log_throttled_access(request)
         return self.create_response(request, objects)
 
 
@@ -214,7 +264,8 @@ class LocationResource(ModelResource):
         message = 'This method should be accessed via a versioned subclass'
         raise NotImplementedError(message)
 
-    def browse(self, request, **kwargs):
+    @_custom_endpoint(expected_methods=['get'])
+    def browse(self, request, bundle, **kwargs):
         """ Returns all of the entries in a location, optionally at a subpath.
 
         Returns a dict with
@@ -224,17 +275,14 @@ class LocationResource(ModelResource):
 
         If a path=<path> parameter is provided, will look in that path inside
         the Location. """
-        self.method_check(request, allowed=['get'])
-        self.is_authenticated(request)
-        self.throttle_check(request)
+
+        location = bundle.obj
         path = request.GET.get('path', '')
         path = self.decode_path(path)
-        location = Location.objects.get(uuid=kwargs['uuid'])
         path = os.path.join(str(location.full_path()), path)
 
         objects = self.get_objects(location.space, path)
 
-        self.log_throttled_access(request)
         return self.create_response(request, objects)
 
     def post_detail(self, request, *args, **kwargs):
@@ -386,22 +434,12 @@ class PackageResource(ModelResource):
             bundle.obj.backlog_transfer(origin_location, origin_path)
         return bundle
 
-    def delete_aip_request(self, request, **kwargs):
-        # Tastypie checks
-        self.method_check(request, allowed=['post'])
-        self.is_authenticated(request)
-        self.throttle_check(request)
-
-        # Load request from body, check it has all the keys we need
-        request_info = json.loads(request.body)
-        if not all(k in request_info for k in
-                ('event_reason', 'pipeline', 'user_id', 'user_email')):
-            # Don't have enough information to make the request - return error
-            return http.HttpBadRequest()
-
-        # Create the Event for package deletion request
-        package = Package.objects.get(uuid=kwargs['uuid'])
-        if package.package_type not in Package.PACKAGE_TYPE_DELETABLE:
+    @_custom_endpoint(expected_methods=['post'],
+        required_fields=('event_reason', 'pipeline', 'user_id', 'user_email'))
+    def delete_aip_request(self, request, bundle, **kwargs):
+        request_info = bundle.data
+        package = bundle.obj
+        if package.package_type not in Package.PACKAGE_TYPE_CAN_DELETE:
             # Can only request deletion on AIPs
             return http.HttpMethodNotAllowed()
 
@@ -438,7 +476,8 @@ class PackageResource(ModelResource):
         return http.HttpResponse(status=status_code, content=response_json,
             mimetype='application/json')
 
-    def extract_file_request(self, request, **kwargs):
+    @_custom_endpoint(expected_methods=['get'])
+    def extract_file_request(self, request, bundle, **kwargs):
         """
         Returns a single file from the Package, extracting if necessary.
         """
@@ -446,40 +485,30 @@ class PackageResource(ModelResource):
         relative_path_to_file = urllib.unquote(relative_path_to_file)
         temp_dir = extracted_file_path = ''
 
-        # Tastypie checks
-        self.method_check(request, allowed=['get'])
-        self.is_authenticated(request)
-        self.throttle_check(request)
-
         # Get Package details
-        package = Package.objects.get(uuid=kwargs['uuid'])
+        package = bundle.obj
         full_path = package.full_path()
 
         local_path = os.path.join(full_path, relative_path_to_file)
         if os.path.exists(local_path):
             # Local file exists - return that
             extracted_file_path = local_path
-        elif package.package_type in Package.PACKAGE_TYPE_EXTRACTABLE:
+        elif package.package_type in Package.PACKAGE_TYPE_CAN_EXTRACT:
             # If file doesn't exist, try to extract it
             (extracted_file_path, temp_dir) = package.extract_file(relative_path_to_file)
 
         response = utils.download_file_stream(extracted_file_path, temp_dir)
 
-        self.log_throttled_access(request)
         return response
 
-    def download_request(self, request, **kwargs):
+    @_custom_endpoint(expected_methods=['get'])
+    def download_request(self, request, bundle, **kwargs):
         """
         Returns the entire Package to be downloaded.
         """
-        # Tastypie checks
-        self.method_check(request, allowed=['get'])
-        self.is_authenticated(request)
-        self.throttle_check(request)
-
         # Get AIP details
-        package = Package.objects.get(uuid=kwargs['uuid'])
-        if package.package_type not in Package.PACKAGE_TYPE_EXTRACTABLE:
+        package = bundle.obj
+        if package.package_type not in Package.PACKAGE_TYPE_CAN_EXTRACT:
             # Can only return packages that are a single file
             # TODO Update to zip up a transfer before returning it?
             return http.HttpMethodNotAllowed()
@@ -488,20 +517,11 @@ class PackageResource(ModelResource):
 
         response = utils.download_file_stream(full_path)
 
-        self.log_throttled_access(request)
         return response
 
-    def pointer_file_request(self, request, **kwargs):
-        # Tastypie checks
-        self.method_check(request, allowed=['get'])
-        self.is_authenticated(request)
-        self.throttle_check(request)
-
+    @_custom_endpoint(expected_methods=['get'])
+    def pointer_file_request(self, request, bundle, **kwargs):
         # Get AIP details
-        package = Package.objects.get(uuid=kwargs['uuid'])
-        pointer_path = package.full_pointer_file_path()
+        pointer_path = bundle.obj.full_pointer_file_path()
         response = utils.download_file_stream(pointer_path)
-
-        self.log_throttled_access(request)
-
         return response

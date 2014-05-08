@@ -17,6 +17,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 # Third party dependencies, alphabetical
+import jsonfield
 from django_extensions.db.fields import UUIDField
 
 # This project, alphabetical
@@ -633,9 +634,13 @@ class Package(models.Model):
     status = models.CharField(max_length=8, choices=STATUS_CHOICES,
         default=FAIL,
         help_text="Status of the package in the storage service.")
+    # NOTE Do not put anything important here because you cannot easily query
+    # JSONFields! Add a new column if you need to query it
+    misc_attributes = jsonfield.JSONField(blank=True, null=True, default={},
+        help_text='For storing flexible, often Space-specific, attributes')
 
-    PACKAGE_TYPE_DELETABLE = (AIP, AIC, TRANSFER)
-    PACKAGE_TYPE_EXTRACTABLE = (AIP, AIC)
+    PACKAGE_TYPE_CAN_DELETE = (AIP, AIC, TRANSFER)
+    PACKAGE_TYPE_CAN_EXTRACT = (AIP, AIC)
 
     class Meta:
         verbose_name = "Package"
@@ -759,20 +764,35 @@ class Package(models.Model):
         with open(pointer_file_dst, 'w') as f:
             f.write(etree.tostring(root, pretty_print=True))
 
-    def extract_file(self, relative_path):
-        """ Attempts to extract `relative_path` from this package.
+    def extract_file(self, relative_path='', extract_path=None):
+        """
+        Attempts to extract this package.
+
+        If `relative_path` is provided, will extract only that file.  Otherwise,
+        will extract entire package.
+        If `extract_path` is provided, will extract there, otherwise to a temp
+        directory.
 
         Returns path to the extracted file and a temp dir that needs to be
-        deleted. """
-        temp_dir = tempfile.mkdtemp()
-        output_path = os.path.join(temp_dir, relative_path)
-        command = ['unar', '-force-overwrite', '-o', temp_dir, self.full_path(), relative_path]
+        deleted.
+        """
+        if extract_path is None:
+            extract_path = tempfile.mkdtemp()
+        command = ['unar', '-force-overwrite', '-o', extract_path, self.full_path()]
+        if relative_path:
+            command.append(relative_path)
+            output_path = os.path.join(extract_path, relative_path)
+        else:
+            # NOTE Assuming first folder in package is same as package name
+            basename = os.path.splitext(os.path.basename(self.full_path()))[0]
+            output_path = os.path.join(extract_path, basename)
+
         logging.info('Extracting file with: {} to {}'.format(command, output_path))
 
         rc = subprocess.call(command)
         logging.debug('Extract file RC: %s', rc)
 
-        return (output_path, temp_dir)
+        return (output_path, extract_path)
 
     def backlog_transfer(self, origin_location, origin_path):
         """

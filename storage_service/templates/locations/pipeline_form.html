@@ -12,7 +12,7 @@
     {% endif %}
     {% csrf_token %}
         {{ form.as_p }}
-        <input type="submit" value="{{action}} Pipeline" />
+        <input type="submit" value="{{action}} Pipeline" class='btn btn-primary' />
     </form>
 </div>
 {% endblock %}
