@@ -15,6 +15,7 @@ from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.forms.models import model_to_dict
 
 # Third party dependencies, alphabetical
+import bagit
 from tastypie.authentication import (BasicAuthentication, ApiKeyAuthentication,
     MultiAuthentication, Authentication)
 from tastypie.authorization import DjangoAuthorization, Authorization
@@ -377,6 +378,9 @@ class PackageResource(ModelResource):
 
     api/v1/file/<uuid>/delete_aip/ supports:
     POST: Create a delete request for that AIP.
+
+    Validate fixity (api/v1/file/<uuid>/validate/) supports:
+    GET: Scan package for fixity
     """
     origin_pipeline = fields.ForeignKey(PipelineResource, 'origin_pipeline')
     origin_location = fields.ForeignKey(LocationResource, None, use_in=lambda x: False)
@@ -418,6 +422,7 @@ class PackageResource(ModelResource):
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/extract_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('extract_file_request'), name="extract_file_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/download%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('download_request'), name="download_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/pointer_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('pointer_file_request'), name="pointer_file_request"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/check_fixity%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('check_fixity_request'), name="check_fixity_request"),
         ]
 
     def obj_create(self, bundle, **kwargs):
@@ -525,3 +530,47 @@ class PackageResource(ModelResource):
         pointer_path = bundle.obj.full_pointer_file_path()
         response = utils.download_file_stream(pointer_path)
         return response
+
+    @_custom_endpoint(expected_methods=['get'])
+    def check_fixity_request(self, request, bundle, **kwargs):
+        success, failures, message = bundle.obj.check_fixity()
+
+        response = {
+            "success": success,
+            "message": message,
+            "failures": {
+                "files": {
+                    "missing": [],
+                    "changed": [],
+                    "untracked": [],
+                }
+            }
+        }
+
+        for failure in failures:
+            if isinstance(failure, bagit.FileMissing):
+                info = {
+                    "path": failure.path,
+                    "message": str(failure)
+                }
+                response["failures"]["files"]["missing"].append(info)
+            if isinstance(failure, bagit.ChecksumMismatch):
+                info = {
+                    "path": failure.path,
+                    "expected": failure.expected,
+                    "actual": failure.found,
+                    "hash_type": failure.algorithm,
+                    "message": str(failure),
+                }
+                response["failures"]["files"]["changed"].append(info)
+            if isinstance(failure, bagit.UnexpectedFile):
+                info = {
+                    "path": failure.path,
+                    "message": str(failure)
+                }
+                response["failures"]["files"]["untracked"].append(info)
+
+        return http.HttpResponse(
+            json.dumps(response),
+            mimetype="application/json"
+        )

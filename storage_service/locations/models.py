@@ -17,6 +17,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 # Third party dependencies, alphabetical
+import bagit
 import jsonfield
 from django_extensions.db.fields import UUIDField
 
@@ -847,6 +848,53 @@ class Package(models.Model):
         self._update_quotas(dest_space, self.current_location)
         self.status = Package.UPLOADED
         self.save()
+
+    def check_fixity(self):
+        """ Scans the package to verify its checksums.
+
+        This is implemented using bagit-python module, using the checksums from the
+        bag's manifest. Note that this does not support packages which are not bags.
+
+        Returns a tuple containing (success, [errors], message).
+        Success will be True or False if the verification succeeds or fails, and
+        None if the scan could not start (for instance, if this package is not
+        a bag).
+
+        [errors] will be a list of zero or more classes representing different
+        classes of errors.
+
+        message will be a human-readable string explaining the report;
+        it will be empty for successful scans.
+
+        Note that if the package is not compressed, the fixity scan will occur
+        in-place. If fixity scans will happen periodically, if packages are very
+        large, or if scans are otherwise expected to contribute to heavy disk load,
+        it is recommended to store packages uncompressed. """
+
+        if not self.package_type in (self.AIC, self.AIP):
+            return (None, [], "Unable to scan; package is not a bag (AIP or AIC)")
+
+        if self.is_compressed():
+            # bagit can't deal with compressed files, so extract before
+            # starting the fixity check.
+            path, temp_dir = self.extract_file()
+        else:
+            path = self.full_path()
+
+        bag = bagit.Bag(path)
+        try:
+            success = bag.validate()
+            failures = []
+            message = ""
+        except bagit.BagValidationError as failure:
+            success = False
+            failures = failure.details
+            message = failure.message
+
+        if self.is_compressed():
+            shutil.rmtree(temp_dir)
+
+        return (success, failures, message)
 
     def delete_from_storage(self):
         """ Deletes the package from filesystem and updates metadata.
