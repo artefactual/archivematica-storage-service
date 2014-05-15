@@ -433,7 +433,7 @@ class PackageResource(ModelResource):
 
         fields = ['current_path', 'package_type', 'size', 'status', 'uuid']
         list_allowed_methods = ['get', 'post']
-        detail_allowed_methods = ['get']
+        detail_allowed_methods = ['get', 'patch']
         detail_uri_name = 'uuid'
         always_return_data = True
         filtering = {
@@ -477,6 +477,13 @@ class PackageResource(ModelResource):
         elif bundle.obj.package_type in (Package.TRANSFER) and bundle.obj.current_location.purpose in (Location.BACKLOG):
             # Move transfer to backlog
             bundle.obj.backlog_transfer(origin_location, origin_path)
+        return bundle
+
+    def hydrate(self, bundle):
+        # If reingest flag exists, this package is not being reingested anymore
+        if 'reingest' in bundle.data:
+            # Always assume this means reingest is done/terminated
+            bundle.obj.misc_attributes.update({'reingest_pipeline': None})
         return bundle
 
     @_custom_endpoint(expected_methods=['post'],
