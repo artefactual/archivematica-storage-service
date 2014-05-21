@@ -1280,22 +1280,21 @@ class Package(models.Model):
         self.save()
 
         # Store AIP Pointer File at
-        # internal_usage_location/uuid/split/into/chunks/pointer.xml
+        # internal_usage_location/uuid/split/into/chunks/pointer.uuid.xml
         if self.package_type in (Package.AIP, Package.AIC):
             self.pointer_file_location = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
-            self.pointer_file_path = os.path.join(uuid_path, 'pointer.xml')
+            self.pointer_file_path = os.path.join(uuid_path, 'pointer.{}.xml'.format(self.uuid))
             pointer_file_src = os.path.join(self.origin_location.relative_path, os.path.dirname(self.origin_path), 'pointer.xml')
-            pointer_file_dst = self.full_pointer_file_path()
+            pointer_file_dst = os.path.join(self.pointer_file_location.relative_path, self.pointer_file_path)
 
         self.status = Package.PENDING
         self.save()
 
         # Move pointer file
         if self.package_type in (Package.AIP, Package.AIC):
-            pointer_file_name = 'pointer-'+self.uuid+'.xml'
             try:
-                src_space.move_to_storage_service(pointer_file_src, pointer_file_name, self.pointer_file_location.space)
-                self.pointer_file_location.space.move_from_storage_service(pointer_file_name, pointer_file_dst)
+                src_space.move_to_storage_service(pointer_file_src, self.pointer_file_path, self.pointer_file_location.space)
+                self.pointer_file_location.space.move_from_storage_service(self.pointer_file_path, pointer_file_dst)
             except:
                 logging.warning("No pointer file found")
                 self.pointer_file_location = None
@@ -1327,7 +1326,8 @@ class Package(models.Model):
 
         # Update pointer file's location information
         if self.pointer_file_path and self.package_type in (Package.AIP, Package.AIC):
-            root = etree.parse(pointer_file_dst)
+            pointer_absolute_path = self.full_pointer_file_path()
+            root = etree.parse(pointer_absolute_path)
             element = root.find('.//mets:file', namespaces=utils.NSMAP)
             flocat = element.find('mets:FLocat', namespaces=utils.NSMAP)
             if self.uuid in element.get('ID', '') and flocat is not None:
@@ -1337,7 +1337,7 @@ class Package(models.Model):
             if not root.find('.//mets:fileGrp[@USE="Archival Information Package"]', namespaces=utils.NSMAP):
                 root.find('.//mets:fileGrp', namespaces=utils.NSMAP).set('USE', 'Archival Information Package')
 
-            with open(pointer_file_dst, 'w') as f:
+            with open(pointer_absolute_path, 'w') as f:
                 f.write(etree.tostring(root, pretty_print=True))
 
     def extract_file(self, relative_path='', extract_path=None):
