@@ -1,4 +1,5 @@
 # stdlib, alphabetical
+import distutils.dir_util
 import json
 import logging
 from lxml import etree
@@ -944,6 +945,106 @@ class Package(models.Model):
         self.save()
 
         return {'error': False, 'status_code': 202, 'message': 'Package {} sent to pipeline {} for re-ingest'.format(self.uuid, pipeline)}
+
+    def finish_reingest(self, origin_location, origin_path):
+        # Check origin pipeline against stored pipeline
+        if self.origin_pipeline.uuid != self.misc_attributes.get('reingest_pipeline'):
+            LOGGER.info('Reingest: Received pipeline %s did not match expected pipeline %s', self.origin_pipeline.uuid, self.misc_attributes.get('reingest_pipeline'))
+            raise Exception('%s did not match the pipeline this AIP was reingested on.' % self.origin_pipeline.uuid)
+        self.misc_attributes.update({'reingest_pipeline': None})
+
+        # Store AIP at
+        # destination_location/uuid/split/into/chunks/destination_path
+        # FIXME update resource to not modify current_path on PUT??
+        uuid_path = utils.uuid_to_path(self.uuid)
+        self.current_path = os.path.join(uuid_path, self.current_path)
+
+        self.save()
+
+        src_space = origin_location.space
+        ss_internal = Location.objects.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
+        internal_space = ss_internal.space
+        dest_space = self.current_location.space
+
+        # Copy actual AIP to ss_internal, extract if needed
+        path, temp_dir = self.extract_file()  # AIP always copied
+
+        # Move reingest AIP to ss_internal
+        src_space.move_to_storage_service(
+            source_path=os.path.join(origin_location.relative_path, origin_path),
+            destination_path=self.current_path,  # This should include Location.path
+            destination_space=internal_space)
+        internal_space.move_from_storage_service(
+            source_path=self.current_path,  # This should include Location.path
+            destination_path=os.path.join(ss_internal.relative_path, self.current_path),
+        )
+        reingested_path = os.path.join(ss_internal.full_path, self.current_path)
+
+        # Extract if needed
+        # HOW?
+        # Move extract code to utils, call from here and extract_file?
+        # FIXME this is extracting on top of original AIP
+        if os.path.isfile(reingested_path):
+            # Extract
+            command = ['unar', '-force-overwrite', '-o', ss_internal.full_path, reingested_path]
+            LOGGER.info('Extracting with: {}'.format(command))
+            rc = subprocess.call(command)
+            LOGGER.debug('Extract file RC: %s', rc)
+            # Get output path
+            command = ['lsar', '-ja', reingested_path]
+            try:
+                output = subprocess.check_output(command)
+                j = json.loads(output)
+                bname = sorted([d['XADFileName'] for d in j['lsarContents'] if d.get('XADIsDirectory', False)], key=len)[0]
+            except (subprocess.CalledProcessError, ValueError):
+                print 'I dunno what to do here'
+                bname = os.path.splitext(os.path.basename(reingested_path))[0]
+            else:
+                os.remove(reingested_path)
+                reingested_path = os.path.join(ss_internal.full_path, bname)
+
+        # Replace METS
+        original_mets_path = os.path.join(path, 'data', 'METS.' + self.uuid + '.xml')
+        reingest_mets_path = os.path.join(reingested_path, 'data', 'METS.' + self.uuid + '.xml')
+        LOGGER.info('Replacing original METS %s with reingested METS %s', original_mets_path, reingest_mets_path)
+        os.remove(original_mets_path)
+        os.rename(reingest_mets_path, original_mets_path)
+
+        # Replace new metadata files
+        reingest_metadata_dir = os.path.join(reingested_path, 'data', 'objects', 'metadata')
+        original_metadata_dir = os.path.join(path, 'data', 'objects', 'metadata')
+        LOGGER.info('Replacing original metadata directory %s with reingested metadata directory %s', original_metadata_dir, reingest_metadata_dir)
+        if os.path.isdir(reingest_metadata_dir):
+            distutils.dir_util.copy_tree(reingest_metadata_dir,
+                original_metadata_dir)
+
+        # Update bag payload and verify
+        bag = bagit.Bag(path)
+        bag.save(manifests=True)
+        bag.validate()  # Raises exception in case of problem
+
+        # Compress
+        # TODO parse pointer file for this and add compress function?
+        out_path = path + '.7z'
+        command = ['/usr/bin/7z', 'a', '-bd', '-t7z', '-y', '-m0=bzip2', '-mx=5', '-mta=on', '-mtc=on', '-mtm=on', '-mmt=on', out_path, path]
+        subprocess.call(command)
+
+        # Move to final destination
+        source_relative = out_path.replace(internal_space.path, '', 1).lstrip(os.sep)
+        internal_space.move_to_storage_service(
+            source_path=source_relative,
+            destination_path=self.current_path,  # This should include Location.path
+            destination_space=dest_space)
+        dest_space.move_from_storage_service(
+            source_path=self.current_path,  # This should include Location.path
+            destination_path=os.path.join(self.current_location.relative_path, self.current_path),
+        )
+
+        # Delete temp files
+        shutil.rmtree(reingested_path)
+        shutil.rmtree(temp_dir)
+        os.remove(out_path)  # Check whether compressed or not for shutil.rmtree
+        self.save()
 
     # SWORD-related methods
     def has_been_submitted_for_processing(self):

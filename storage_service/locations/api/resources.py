@@ -20,9 +20,9 @@ import bagit
 from tastypie.authentication import (BasicAuthentication, ApiKeyAuthentication,
     MultiAuthentication, Authentication)
 from tastypie.authorization import DjangoAuthorization, Authorization
+import tastypie.exceptions
 from tastypie import fields
 from tastypie import http
-from tastypie.exceptions import UnsupportedFormat
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.validation import CleanedDataFormValidation
 from tastypie.utils import trailing_slash
@@ -433,7 +433,8 @@ class PackageResource(ModelResource):
 
         fields = ['current_path', 'package_type', 'size', 'status', 'uuid']
         list_allowed_methods = ['get', 'post']
-        detail_allowed_methods = ['get', 'patch']
+        detail_allowed_methods = ['get', 'put', 'patch']
+        allowed_patch_fields = ['reingest']  # for customized update_in_place
         detail_uri_name = 'uuid'
         always_return_data = True
         filtering = {
@@ -468,9 +469,9 @@ class PackageResource(ModelResource):
     def obj_create(self, bundle, **kwargs):
         bundle = super(PackageResource, self).obj_create(bundle, **kwargs)
         # IDEA add custom endpoints, instead of storing all AIPS that come in?
-        origin_location_uri = bundle.data.get('origin_location', False)
+        origin_location_uri = bundle.data.get('origin_location')
         origin_location = self.origin_location.build_related_resource(origin_location_uri, bundle.request).obj
-        origin_path = bundle.data.get('origin_path', False)
+        origin_path = bundle.data.get('origin_path')
         if bundle.obj.package_type in (Package.AIP, Package.AIC, Package.DIP) and bundle.obj.current_location.purpose in (Location.AIP_STORAGE, Location.DIP_STORAGE):
             # Store AIP/AIC
             bundle.obj.store_aip(origin_location, origin_path)
@@ -479,12 +480,64 @@ class PackageResource(ModelResource):
             bundle.obj.backlog_transfer(origin_location, origin_path)
         return bundle
 
-    def hydrate(self, bundle):
-        # If reingest flag exists, this package is not being reingested anymore
-        if 'reingest' in bundle.data:
-            # Always assume this means reingest is done/terminated
-            bundle.obj.misc_attributes.update({'reingest_pipeline': None})
+    def obj_update(self, bundle, skip_errors=False, **kwargs):
+        """
+        Modified version of the Django ORM implementation of obj_update.
+
+        Identical to original function except obj_update_hook added between hydrating the data and saving the object.
+        """
+        if not bundle.obj or not self.get_bundle_detail_data(bundle):
+            try:
+                lookup_kwargs = self.lookup_kwargs_with_identifiers(bundle, kwargs)
+            except:
+                # if there is trouble hydrating the data, fall back to just
+                # using kwargs by itself (usually it only contains a "pk" key
+                # and this will work fine.
+                lookup_kwargs = kwargs
+            try:
+                bundle.obj = self.obj_get(bundle=bundle, **lookup_kwargs)
+            except ObjectDoesNotExist:
+                raise NotFound("A model instance matching the provided arguments could not be found.")
+        bundle = self.full_hydrate(bundle)
+        bundle = self.obj_update_hook(bundle, **kwargs)
+        return self.save(bundle, skip_errors=skip_errors)
+
+    def obj_update_hook(self, bundle, **kwargs):
+        """
+        Hook to update Package and move files around before package is saved.
+
+        bundle.obj has been updated, but not yet saved.
+        """
+        # PATCH should be only for updating metadata, not actually moving files.
+        # Don't do any additional processing.
+        if bundle.request.method == 'PATCH':
+            # Update reingest - should only be notifications of done/failed
+            if 'reingest' in bundle.data:
+                bundle.obj.misc_attributes.update({'reingest_pipeline': None})
+            return bundle
+        origin_location_uri = bundle.data.get('origin_location')
+        origin_path = bundle.data.get('origin_path')
+        if origin_location_uri and origin_path:
+            # Sending origin information implies that the package should be copied from there
+            origin_location = self.origin_location.build_related_resource(origin_location_uri, bundle.request).obj
+            if bundle.obj.package_type in (Package.AIP, Package.AIC) and bundle.obj.current_location.purpose in (Location.AIP_STORAGE) and 'reingest' in bundle.data:
+                # AIP Reingest
+                bundle.obj.finish_reingest(origin_location, origin_path)
         return bundle
+
+    def update_in_place(self, request, original_bundle, new_data):
+        """
+        Update the object in original_bundle in-place using new_data.
+
+        Overridden to restrict what fields can be updated to only
+        `allowed_patch_fields`.
+        """
+        # From http://stackoverflow.com/questions/13704344/tastypie-where-to-restrict-fields-that-may-be-updated-by-patch
+        if set(new_data.keys()) - set(self._meta.allowed_patch_fields):
+            raise tastypie.exceptions.BadRequest(
+                'PATCH only allowed on %s' % ', '.join(self._meta.allowed_patch_fields)
+            )
+        return super(PackageResource, self).update_in_place(request, original_bundle, new_data)
 
     @_custom_endpoint(expected_methods=['post'],
         required_fields=('event_reason', 'pipeline', 'user_id', 'user_email'))
