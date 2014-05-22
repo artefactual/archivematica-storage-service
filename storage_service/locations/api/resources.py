@@ -513,12 +513,11 @@ class PackageResource(ModelResource):
         """
         # Get AIP details
         package = bundle.obj
-        if package.package_type not in Package.PACKAGE_TYPE_CAN_EXTRACT:
-            # Can only return packages that are a single file
-            # TODO Update to zip up a transfer before returning it?
-            return http.HttpMethodNotAllowed()
 
-        full_path = package.full_path()
+        if not package.is_compressed():
+            full_path, _ = package.compress_package()
+        else:
+            full_path = package.full_path()
 
         response = utils.download_file_stream(full_path)
 
