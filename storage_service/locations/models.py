@@ -1285,8 +1285,14 @@ class Package(models.Model):
         # Move pointer file
         if self.package_type in (Package.AIP, Package.AIC):
             pointer_file_name = 'pointer-'+self.uuid+'.xml'
-            src_space.move_to_storage_service(pointer_file_src, pointer_file_name, self.pointer_file_location.space)
-            self.pointer_file_location.space.move_from_storage_service(pointer_file_name, pointer_file_dst)
+            try:
+                src_space.move_to_storage_service(pointer_file_src, pointer_file_name, self.pointer_file_location.space)
+                self.pointer_file_location.space.move_from_storage_service(pointer_file_name, pointer_file_dst)
+            except:
+                logging.warning("No pointer file found")
+                self.pointer_file_location = None
+                self.pointer_file_path = None
+                self.save()
 
         # Move AIP
         src_space.move_to_storage_service(
@@ -1312,7 +1318,7 @@ class Package(models.Model):
         self.save()
 
         # Update pointer file's location information
-        if self.package_type in (Package.AIP, Package.AIC):
+        if self.pointer_file_path and self.package_type in (Package.AIP, Package.AIC):
             root = etree.parse(pointer_file_dst)
             element = root.find('.//mets:file', namespaces=utils.NSMAP)
             flocat = element.find('mets:FLocat', namespaces=utils.NSMAP)
