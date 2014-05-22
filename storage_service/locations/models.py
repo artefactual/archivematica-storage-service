@@ -669,6 +669,20 @@ class Package(models.Model):
             return os.path.join(self.pointer_file_location.full_path(),
                 self.pointer_file_path)
 
+    def is_compressed(self):
+        """ Determines whether or not the package is a compressed file. """
+        full_path = self.full_path()
+        if os.path.isdir(full_path):
+            return False
+        elif os.path.isfile(full_path):
+            return True
+        else:
+            if not os.path.exists(full_path):
+                message = "Package {} (located at {}) does not exist".format(self.uuid, full_path)
+            else:
+                message = "{} is neither a file nor a directory".format(full_path)
+            raise StorageException(message)
+
     def _check_quotas(self, dest_space, dest_location):
         """
         Verify that there is enough storage space on dest_space and dest_location for this package.  All sizes in bytes.
