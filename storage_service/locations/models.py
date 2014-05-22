@@ -751,8 +751,14 @@ class Package(models.Model):
 
         # Move pointer file
         pointer_file_name = 'pointer-'+self.uuid+'.xml'
-        src_space.move_to_storage_service(pointer_file_src, pointer_file_name, self.pointer_file_location.space)
-        self.pointer_file_location.space.move_from_storage_service(pointer_file_name, pointer_file_dst)
+        try:
+            src_space.move_to_storage_service(pointer_file_src, pointer_file_name, self.pointer_file_location.space)
+            self.pointer_file_location.space.move_from_storage_service(pointer_file_name, pointer_file_dst)
+        except:
+            logging.warn("No pointer file found")
+            self.pointer_file_location = None
+            self.pointer_file_path = None
+            self.save()
 
         # Move AIP
         src_space.move_to_storage_service(
@@ -769,15 +775,16 @@ class Package(models.Model):
         self.save()
 
         # Update pointer file's location infrmation
-        nsmap = {'mets': 'http://www.loc.gov/METS/'}
-        root = etree.parse(pointer_file_dst)
-        element = root.find('mets:fileSec/mets:fileGrp/mets:file', namespaces=nsmap)
-        flocat = element.find('mets:FLocat', namespaces=nsmap)
-        xlink = 'http://www.w3.org/1999/xlink'
-        if self.uuid in element.get('ID', '') and flocat is not None:
-            flocat.set('{{{ns}}}href'.format(ns=xlink), self.full_path())
-        with open(pointer_file_dst, 'w') as f:
-            f.write(etree.tostring(root, pretty_print=True))
+        if self.pointer_file_path:
+            nsmap = {'mets': 'http://www.loc.gov/METS/'}
+            root = etree.parse(pointer_file_dst)
+            element = root.find('mets:fileSec/mets:fileGrp/mets:file', namespaces=nsmap)
+            flocat = element.find('mets:FLocat', namespaces=nsmap)
+            xlink = 'http://www.w3.org/1999/xlink'
+            if self.uuid in element.get('ID', '') and flocat is not None:
+                flocat.set('{{{ns}}}href'.format(ns=xlink), self.full_path())
+            with open(pointer_file_dst, 'w') as f:
+                f.write(etree.tostring(root, pretty_print=True))
 
     def extract_file(self, relative_path='', extract_path=None):
         """
