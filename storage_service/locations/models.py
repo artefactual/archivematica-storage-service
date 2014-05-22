@@ -823,6 +823,39 @@ class Package(models.Model):
 
         return (output_path, extract_path)
 
+    def compress_package(self, extract_path=None):
+        """
+        Produces a compressed copy of the package.
+
+        If `extract_path` is provided, will compress there, otherwise to a temp
+        directory.
+
+        Returns path to the compressed file and its parent directory. Given that
+        compressed packages are likely to be large, this should generally
+        be deleted after use if a temporary directory was used.
+        """
+
+        if extract_path is None:
+            extract_path = tempfile.mkdtemp()
+
+        full_path = self.full_path()
+        basename = os.path.splitext(os.path.basename(full_path))[0]
+        compressed_filename = os.path.join(extract_path, basename + '.tar')
+
+        command = [
+            "tar", "-cf", compressed_filename,
+            # The filenames are transformed to ensure only the
+            # directory basename is present, not the entire path.
+            # FIXME This syntax isn't portable and is only compatible with GNU tar
+            "--xform", "s,{}/,,".format(os.path.dirname(full_path[1:-1])),
+            full_path
+        ]
+        logging.info('Compressing package with: {} to {}'.format(command, compressed_filename))
+        rc = subprocess.call(command)
+        logging.debug('Extract file RC: %s', rc)
+
+        return (compressed_filename, extract_path)
+
     def backlog_transfer(self, origin_location, origin_path):
         """
         Stores a package in backlog.
