@@ -793,19 +793,26 @@ class Package(models.Model):
         """
         if extract_path is None:
             extract_path = tempfile.mkdtemp()
-        command = ['unar', '-force-overwrite', '-o', extract_path, self.full_path()]
+        full_path = self.full_path()
+
+        basename = os.path.splitext(os.path.basename(full_path))[0]
         if relative_path:
-            command.append(relative_path)
             output_path = os.path.join(extract_path, relative_path)
         else:
-            # NOTE Assuming first folder in package is same as package name
-            basename = os.path.splitext(os.path.basename(self.full_path()))[0]
             output_path = os.path.join(extract_path, basename)
 
-        logging.info('Extracting file with: {} to {}'.format(command, output_path))
+        if self.is_compressed():
+            command = ['unar', '-force-overwrite', '-o', extract_path, full_path]
+            if relative_path:
+                command.append(relative_path)
 
-        rc = subprocess.call(command)
-        logging.debug('Extract file RC: %s', rc)
+            logging.info('Extracting file with: {} to {}'.format(command, output_path))
+            rc = subprocess.call(command)
+            logging.debug('Extract file RC: %s', rc)
+        else:
+            aip_path = os.path.join(full_path, basename)
+            logging.info('Copying AIP from: {} to {}'.format(aip_path, output_path))
+            shutil.copytree(aip_path, output_path)
 
         return (output_path, extract_path)
 
