@@ -79,10 +79,11 @@ def startup():
     )
     if created:
         try:
-            os.mkdir(internal_use.full_path())
+            os.mkdir(internal_use.full_path)
         except OSError as e:
             if e.errno != errno.EEXIST:
-                logging.error("Internal storage location {} not accessible.".format(internal_use.full_path()))
+                logging.error("Internal storage location {} not accessible.".format(internal_use.full_path))
+
     if not utils.get_setting('default_transfer_source'):
         utils.set_setting('default_transfer_source', [transfer_source.uuid])
     if not utils.get_setting('default_aip_storage'):

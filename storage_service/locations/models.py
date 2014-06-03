@@ -627,7 +627,7 @@ class Lockssomatic(models.Model):
 
         # Add LOCKSS URLs to each chunk
         if not self.pointer_root:
-            self.pointer_root = etree.parse(package.full_pointer_file_path())
+            self.pointer_root = etree.parse(package.full_pointer_file_path)
         files = self.pointer_root.findall(".//mets:fileSec/mets:fileGrp[@USE='LOCKSS chunk']/mets:file", namespaces=utils.NSMAP)
         # If not files, find AIP fileGrp (package unsplit)
         if not files:
@@ -666,7 +666,7 @@ class Lockssomatic(models.Model):
         logging.info('update_package_status: new status: %s', status)
 
         # Write out pointer file again
-        with open(package.full_pointer_file_path(), 'w') as f:
+        with open(package.full_pointer_file_path, 'w') as f:
             f.write(etree.tostring(self.pointer_root, pretty_print=True))
 
         # Update value if different
@@ -812,7 +812,7 @@ class Lockssomatic(models.Model):
         """
         # Parse pointer file
         if not self.pointer_root:
-            self.pointer_root = etree.parse(package.full_pointer_file_path())
+            self.pointer_root = etree.parse(package.full_pointer_file_path)
 
         # Check if file is already split, and if so just return split files
         if self.pointer_root.xpath('.//premis:eventType[text()="division"]', namespaces=utils.NSMAP):
@@ -820,7 +820,7 @@ class Lockssomatic(models.Model):
             output_files = [c.find('mets:fptr', namespaces=utils.NSMAP).get('FILEID') for c in chunks]
             return output_files
 
-        file_path = package.full_path()
+        file_path = package.full_path
         expected_num_files = math.ceil(os.path.getsize(file_path) / float(self.au_size))
         logging.debug('expected_num_files: %s', expected_num_files)
 
@@ -907,7 +907,7 @@ class Lockssomatic(models.Model):
             flocat.set('{'+utils.NSMAP['xlink']+'}href', out_path)
 
         # Write out pointer file again
-        with open(package.full_pointer_file_path(), 'w') as f:
+        with open(package.full_pointer_file_path, 'w') as f:
             f.write(etree.tostring(self.pointer_root, pretty_print=True))
 
         return output_files
@@ -967,7 +967,7 @@ class Lockssomatic(models.Model):
 
         # Add each chunk to the atom entry
         if not self.pointer_root:
-            self.pointer_root = etree.parse(package.full_pointer_file_path())
+            self.pointer_root = etree.parse(package.full_pointer_file_path)
         entry.register_namespace('lom', utils.NSMAP['lom'])
         for index, file_path in enumerate(output_files):
             # Get external URL
@@ -1087,9 +1087,11 @@ class Location(models.Model):
         return u"{uuid}: {path} ({purpose})".format(
             uuid=self.uuid,
             purpose=self.get_purpose_display(),
-            path=self.full_path(),
+            path=self.full_path,
         )
 
+    # Attributes
+    @property
     def full_path(self):
         """ Returns full path of location: space + location paths. """
         return os.path.normpath(
@@ -1097,7 +1099,7 @@ class Location(models.Model):
 
     def get_description(self):
         """ Returns a user-friendly description (or the path). """
-        return self.description or self.full_path()
+        return self.description or self.full_path
 
 
 class LocationPipeline(models.Model):
@@ -1173,17 +1175,20 @@ class Package(models.Model):
     def __unicode__(self):
         return u"{uuid}: {path}".format(
             uuid=self.uuid,
-            path=self.full_path(),
+            path=self.full_path,
         )
         # return "File: {}".format(self.uuid)
 
+    # Attributes
+    @property
     def full_path(self):
         """ Return the full path of the package's current location.
 
         Includes the space, location, and package paths joined. """
         return os.path.normpath(
-            os.path.join(self.current_location.full_path(), self.current_path))
+            os.path.join(self.current_location.full_path, self.current_path))
 
+    @property
     def full_pointer_file_path(self):
         """ Return the full path of the AIP's pointer file, None if not an AIP.
 
@@ -1191,12 +1196,13 @@ class Package(models.Model):
         if not self.pointer_file_location:
             return None
         else:
-            return os.path.join(self.pointer_file_location.full_path(),
+            return os.path.join(self.pointer_file_location.full_path,
                 self.pointer_file_path)
 
+    @property
     def is_compressed(self):
         """ Determines whether or not the package is a compressed file. """
-        full_path = self.full_path()
+        full_path = self.full_path
         if os.path.isdir(full_path):
             return False
         elif os.path.isfile(full_path):
@@ -1209,9 +1215,9 @@ class Package(models.Model):
             raise StorageException(message)
 
     def get_download_path(self, lockss_au_number=None):
-        full_path = self.full_path()
+        full_path = self.full_path
         if lockss_au_number is None:
-            if not self.is_compressed():
+            if not self.is_compressed:
                 raise StorageException("Cannot return a download path for an uncompressed package")
             path = full_path
         elif self.current_location.space.access_protocol == Space.LOM:
@@ -1326,12 +1332,12 @@ class Package(models.Model):
 
         # Update pointer file's location information
         if self.pointer_file_path and self.package_type in (Package.AIP, Package.AIC):
-            pointer_absolute_path = self.full_pointer_file_path()
+            pointer_absolute_path = self.full_pointer_file_path
             root = etree.parse(pointer_absolute_path)
             element = root.find('.//mets:file', namespaces=utils.NSMAP)
             flocat = element.find('mets:FLocat', namespaces=utils.NSMAP)
             if self.uuid in element.get('ID', '') and flocat is not None:
-                flocat.set('{{{ns}}}href'.format(ns=utils.NSMAP['xlink']), self.full_path())
+                flocat.set('{{{ns}}}href'.format(ns=utils.NSMAP['xlink']), self.full_path)
             # Add USE="Archival Information Package" to fileGrp.  Required for
             # LOCKSS, and not provided in Archivematica <=1.1
             if not root.find('.//mets:fileGrp[@USE="Archival Information Package"]', namespaces=utils.NSMAP):
@@ -1354,11 +1360,11 @@ class Package(models.Model):
         """
         if extract_path is None:
             extract_path = tempfile.mkdtemp()
-        full_path = self.full_path()
+        full_path = self.full_path
 
         # The basename is the base directory containing a package
         # like an AIP inside the compressed file.
-        if self.is_compressed():
+        if self.is_compressed:
             # Use lsar's JSON output to determine the directories in a
             # compressed file. Since the index of the base directory may
             # not be consistent, determine it by filtering all entries
@@ -1380,7 +1386,7 @@ class Package(models.Model):
         else:
             output_path = os.path.join(extract_path, basename)
 
-        if self.is_compressed():
+        if self.is_compressed:
             command = ['unar', '-force-overwrite', '-o', extract_path, full_path]
             if relative_path:
                 command.append(relative_path)
@@ -1410,7 +1416,7 @@ class Package(models.Model):
         if extract_path is None:
             extract_path = tempfile.mkdtemp()
 
-        full_path = self.full_path()
+        full_path = self.full_path
         if os.path.isfile(full_path):
             basename = os.path.splitext(os.path.basename(full_path))[0]
         else:
@@ -1493,12 +1499,12 @@ class Package(models.Model):
         if not self.package_type in (self.AIC, self.AIP):
             return (None, [], "Unable to scan; package is not a bag (AIP or AIC)")
 
-        if self.is_compressed():
+        if self.is_compressed:
             # bagit can't deal with compressed files, so extract before
             # starting the fixity check.
             path, temp_dir = self.extract_file()
         else:
-            path = self.full_path()
+            path = self.full_path
 
         bag = bagit.Bag(path)
         try:
@@ -1510,7 +1516,7 @@ class Package(models.Model):
             failures = failure.details
             message = failure.message
 
-        if self.is_compressed():
+        if self.is_compressed:
             shutil.rmtree(temp_dir)
 
         return (success, failures, message)
@@ -1522,7 +1528,7 @@ class Package(models.Model):
         # TODO move to protocol Spaces
         error = None
         if self.current_location.space.access_protocol in Space.mounted_locally:
-            delete_path = self.full_path()
+            delete_path = self.full_path
             try:
                 if os.path.isfile(delete_path):
                     os.remove(delete_path)
@@ -1533,13 +1539,13 @@ class Package(models.Model):
                 return False, e.strerror
             # Remove uuid quad directories if they're empty
             utils.removedirs(os.path.dirname(self.current_path),
-                base=self.current_location.full_path())
+                base=self.current_location.full_path)
         elif self.current_location.space.access_protocol in Space.ssh_only_access:
             protocol_space = self.current_location.space.get_child_space()
             # TODO try-catch AttributeError if remote_user or remote_name not exist?
             user = protocol_space.remote_user
             host = protocol_space.remote_name
-            command = 'rm -rf '+self.full_path()
+            command = 'rm -rf '+self.full_path
             ssh_command = ["ssh", user+"@"+host, command]
             logging.info("ssh+rm command: %s", ssh_command)
             try:
@@ -1556,25 +1562,25 @@ class Package(models.Model):
                 error = lom._delete_update_lom(self, delete_lom_ids)
             # Delete local copy
             try:
-                shutil.rmtree(os.path.dirname(self.full_path()))
+                shutil.rmtree(os.path.dirname(self.full_path))
             except os.error as e:
                 logging.exception("Error deleting local copy of LOCKSS package.")
                 return False, e.strerror
             # Remove uuid quad directories if they're empty
             utils.removedirs(os.path.dirname(self.current_path),
-                base=self.current_location.full_path())
+                base=self.current_location.full_path)
         else:
             return (False, "Unknown access protocol for storing Space")
 
         # Remove pointer file, and the UUID quad directories if they're empty
-        pointer_path = self.full_pointer_file_path()
+        pointer_path = self.full_pointer_file_path
         if pointer_path:
             try:
                 os.remove(pointer_path)
             except os.error as e:
                 logging.exception("Error deleting pointer file {} for package {}".format(pointer_path, self.uuid))
             utils.removedirs(os.path.dirname(self.pointer_file_path),
-                base=self.pointer_file_location.full_path())
+                base=self.pointer_file_location.full_path)
 
         self.status = self.DELETED
         self.save()

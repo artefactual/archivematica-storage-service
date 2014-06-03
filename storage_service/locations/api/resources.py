@@ -282,7 +282,7 @@ class LocationResource(ModelResource):
         location = bundle.obj
         path = request.GET.get('path', '')
         path = self.decode_path(path)
-        path = os.path.join(str(location.full_path()), path)
+        path = os.path.join(str(location.full_path), path)
 
         objects = self.get_objects(location.space, path)
 
@@ -477,7 +477,7 @@ class PackageResource(ModelResource):
             # This isn't configured by default
             site_url = getattr(settings, "SITE_BASE_URL", None)
             signals.deletion_request.send(sender=self, url=site_url,
-                uuid=package.uuid, location=package.full_path())
+                uuid=package.uuid, location=package.full_path)
         else:
             response = {
                 'error_message': 'A deletion request already exists for this AIP.'
@@ -500,10 +500,10 @@ class PackageResource(ModelResource):
 
         # Get Package details
         package = bundle.obj
-        full_path = package.full_path()
+        full_path = package.full_path
 
         # If local file exists - return that
-        if not package.is_compressed():
+        if not package.is_compressed:
             # The basename of the AIP is included with the request, because
             # all packages contain a base directory. That directory is already
             # inside the full path though, so remove it here.
@@ -547,7 +547,7 @@ class PackageResource(ModelResource):
     @_custom_endpoint(expected_methods=['get'])
     def pointer_file_request(self, request, bundle, **kwargs):
         # Get AIP details
-        pointer_path = bundle.obj.full_pointer_file_path()
+        pointer_path = bundle.obj.full_pointer_file_path
         if not pointer_path:
             response = http.HttpNotFound("Resource with UUID {} does not have a pointer file".format(bundle.obj.uuid))
         else:
@@ -596,7 +596,7 @@ class PackageResource(ModelResource):
         report = json.dumps(response)
         if not success:
             signals.failed_fixity_check.send(sender=self,
-                uuid=bundle.obj.uuid, location=bundle.obj.full_path(),
+                uuid=bundle.obj.uuid, location=bundle.obj.full_path,
                 report=report)
 
         return http.HttpResponse(
