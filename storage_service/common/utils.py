@@ -93,7 +93,7 @@ def download_file_stream(filepath, temp_dir=None):
     """
     # If not found, return 404
     if not os.path.exists(filepath):
-        return http.HttpNotFound("File not found")
+        return http.HttpResponseNotFound("File not found")
 
     filename = os.path.basename(filepath)
     extension = os.path.splitext(filepath)[1].lower()

@@ -1166,6 +1166,10 @@ class Package(models.Model):
     misc_attributes = jsonfield.JSONField(blank=True, null=True, default={},
         help_text='For storing flexible, often Space-specific, attributes')
 
+    # Temporary attributes to track path on locally accessible filesystem
+    local_path = None
+    local_path_location = None
+
     PACKAGE_TYPE_CAN_DELETE = (AIP, AIC, TRANSFER)
     PACKAGE_TYPE_CAN_EXTRACT = (AIP, AIC)
 
@@ -1202,7 +1206,7 @@ class Package(models.Model):
     @property
     def is_compressed(self):
         """ Determines whether or not the package is a compressed file. """
-        full_path = self.full_path
+        full_path = self.get_local_path()
         if os.path.isdir(full_path):
             return False
         elif os.path.isfile(full_path):
@@ -1215,7 +1219,7 @@ class Package(models.Model):
             raise StorageException(message)
 
     def get_download_path(self, lockss_au_number=None):
-        full_path = self.full_path
+        full_path = self.get_local_path()
         if lockss_au_number is None:
             if not self.is_compressed:
                 raise StorageException("Cannot return a download path for an uncompressed package")
@@ -1229,6 +1233,40 @@ class Package(models.Model):
             logging.warning('Trying to download LOCKSS chunk for a non-LOCKSS package.')
             path = full_path
         return path
+
+    def get_local_path(self):
+        """
+        Return a locally accessible path to this Package.
+
+        If the package is available locally, return self.full_path
+        If the package is not available locally, copy to SS Internal location
+        and return that path.
+        """
+        # Return cached copy
+        if self.local_path is not None and os.path.exists(self.local_path):
+            return self.local_path
+        # Package is locally accessible
+        if os.path.exists(self.full_path):
+            # TODO use Space protocol to determine if this is possible?
+            self.local_path = self.full_path
+            return self.local_path
+        # Not locally accessible, so copy to SS internal temp dir
+        ss_internal = Location.objects.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
+        temp_dir = tempfile.mkdtemp(dir=ss_internal.full_path)
+        int_path = os.path.join(temp_dir, self.current_path)
+        self.current_location.space.move_to_storage_service(
+            source_path=os.path.join(self.current_location.relative_path, self.current_path),
+            destination_path=self.current_path,
+            destination_space=ss_internal.space,
+        )
+        relative_path = int_path.replace(ss_internal.space.path, '', 1).lstrip('/')
+        ss_internal.space.move_from_storage_service(
+            source_path=self.current_path,
+            destination_path=relative_path,
+        )
+        self.local_path_location = ss_internal
+        self.local_path = int_path
+        return self.local_path
 
     def _check_quotas(self, dest_space, dest_location):
         """
@@ -1353,14 +1391,17 @@ class Package(models.Model):
         If `relative_path` is provided, will extract only that file.  Otherwise,
         will extract entire package.
         If `extract_path` is provided, will extract there, otherwise to a temp
-        directory.
+        directory in the SS internal location.
+        If extracting the whole package, will set local_path to the extracted path.
+        Fetches the file from remote storage before extracting, if necessary.
 
         Returns path to the extracted file and a temp dir that needs to be
         deleted.
         """
         if extract_path is None:
-            extract_path = tempfile.mkdtemp()
-        full_path = self.full_path
+            ss_internal = Location.objects.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
+            extract_path = tempfile.mkdtemp(dir=ss_internal.full_path)
+        full_path = self.get_local_path()
 
         # The basename is the base directory containing a package
         # like an AIP inside the compressed file.
@@ -1399,6 +1440,10 @@ class Package(models.Model):
             logging.info('Copying AIP from: {} to {}'.format(aip_path, output_path))
             shutil.copytree(aip_path, output_path)
 
+        if not relative_path:
+            self.local_path_location = ss_internal
+            self.local_path = output_path
+
         return (output_path, extract_path)
 
     def compress_package(self, extract_path=None):
@@ -1406,7 +1451,7 @@ class Package(models.Model):
         Produces a compressed copy of the package.
 
         If `extract_path` is provided, will compress there, otherwise to a temp
-        directory.
+        directory in the SS internal location.
 
         Returns path to the compressed file and its parent directory. Given that
         compressed packages are likely to be large, this should generally
@@ -1414,9 +1459,10 @@ class Package(models.Model):
         """
 
         if extract_path is None:
-            extract_path = tempfile.mkdtemp()
+            ss_internal = Location.objects.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
+            extract_path = tempfile.mkdtemp(dir=ss_internal.full_path)
 
-        full_path = self.full_path
+        full_path = self.get_local_path()
         if os.path.isfile(full_path):
             basename = os.path.splitext(os.path.basename(full_path))[0]
         else:
@@ -1474,7 +1520,7 @@ class Package(models.Model):
         self.status = Package.UPLOADED
         self.save()
 
-    def check_fixity(self):
+    def check_fixity(self, delete_after=True):
         """ Scans the package to verify its checksums.
 
         This is implemented using bagit-python module, using the checksums from the
@@ -1504,7 +1550,7 @@ class Package(models.Model):
             # starting the fixity check.
             path, temp_dir = self.extract_file()
         else:
-            path = self.full_path
+            path = self.get_local_path()
 
         bag = bagit.Bag(path)
         try:
@@ -1516,7 +1562,7 @@ class Package(models.Model):
             failures = failure.details
             message = failure.message
 
-        if self.is_compressed:
+        if delete_after and (self.local_path_location != self.current_location or self.local_path != self.full_path):
             shutil.rmtree(temp_dir)
 
         return (success, failures, message)

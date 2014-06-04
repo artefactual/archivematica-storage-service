@@ -381,7 +381,7 @@ class PackageResource(ModelResource):
     api/v1/file/<uuid>/delete_aip/ supports:
     POST: Create a delete request for that AIP.
 
-    Validate fixity (api/v1/file/<uuid>/validate/) supports:
+    Validate fixity (api/v1/file/<uuid>/check_fixity/) supports:
     GET: Scan package for fixity
     """
     origin_pipeline = fields.ForeignKey(PipelineResource, 'origin_pipeline')
@@ -500,7 +500,7 @@ class PackageResource(ModelResource):
 
         # Get Package details
         package = bundle.obj
-        full_path = package.full_path
+        full_path = package.get_local_path()
 
         # If local file exists - return that
         if not package.is_compressed:
