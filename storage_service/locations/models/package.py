@@ -852,42 +852,34 @@ class Package(models.Model):
                 'message': 'This AIP already being reingested on {}'.format(self.misc_attributes['reingest_pipeline'])}
         self.misc_attributes.update({'reingest_pipeline': pipeline.uuid})
 
-        # Copy to storage service internal location
-        # Mostly because we probably need to extract it, and can't extract from
-        # remote to SS internal location
-        ss_internal = Location.objects.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
-        relative_path = os.path.basename(os.path.normpath(self.current_path))
-        self.current_location.space.move_to_storage_service(
-            source_path=os.path.join(self.current_location.relative_path, self.current_path),
-            destination_path=relative_path,
-            destination_space=ss_internal.space,
-        )
-        ss_internal.space.move_from_storage_service(
-            source_path=relative_path,
-            destination_path=os.path.join(ss_internal.relative_path, relative_path)
-        )
-        dest_path = os.path.join(ss_internal.full_path, relative_path)
+        # Fetch and extract if needed
+        if self.is_compressed:
+            local_path, temp_dir = self.extract_file()
+            LOGGER.debug('Reingest: extracted to %s', local_path)
+        else:
+            local_path = self.fetch_local_path()
+            temp_dir = ''
+            LOGGER.debug('Reingest: uncompressed at %s', local_path)
 
-        # Extract if needed
-        if os.path.isfile(dest_path):
-            output_path, _ = self.extract_file(extract_path=os.path.dirname(dest_path))
-            # Delete compressed package on disk
-            os.remove(dest_path)
-            dest_path = output_path
-        relative_path = dest_path.replace(ss_internal.full_path + os.sep, '', 1)
-        LOGGER.debug('dest_path: %s', dest_path)
-        LOGGER.debug('relative_path: %s', relative_path)
+        # Run fixity
+        # Fixity will fetch & extract package if needed
+        success, _, error_msg = self.check_fixity(delete_after=False)
+        LOGGER.debug('Reingest: Fixity response: %s, %s', success, error_msg)
+        if not success:
+            return {'error': True, 'status_code': 500, 'message': error_msg}
 
         # Make list of folders to move
+        current_location = self.local_path_location or self.current_location
+        relative_path = local_path.replace(current_location.full_path, '', 1).lstrip('/')
         reingest_files = [
             os.path.join(relative_path, 'data', 'METS.' + self.uuid + '.xml')
         ]
         if reingest_type == self.OBJECTS:
             # All in objects except submissionDocumentation dir
-            for f in os.listdir(os.path.join(dest_path, 'data', 'objects')):
+            for f in os.listdir(os.path.join(local_path, 'data', 'objects')):
                 if f in ('submissionDocumentation'):
                     continue
-                abs_path = os.path.join(dest_path, 'data', 'objects', f)
+                abs_path = os.path.join(local_path, 'data', 'objects', f)
                 if os.path.isfile(abs_path):
                     reingest_files.append(os.path.join(relative_path, 'data', 'objects', f))
                 elif os.path.isdir(abs_path):
@@ -896,18 +888,19 @@ class Package(models.Model):
         elif reingest_type == self.METADATA_ONLY:
             reingest_files.append(os.path.join(relative_path, 'data', 'objects', 'metadata', ''))
 
-        LOGGER.debug('reingest_files: %s', reingest_files)
+        LOGGER.info('Reingest: files: %s', reingest_files)
 
+        # Copy to pipeline
         try:
             currently_processing = Location.active.filter(pipeline=pipeline).get(purpose=Location.CURRENTLY_PROCESSING)
         except Location.DoesNotExist, Location.MultipleObjectsReturned:
             return {'error': True, 'status_code': 412,
                 'message': 'No currently processing Location is associated with pipeline {}'.format(pipeline.uuid)}
-        # Move-from-SS to move to CP Loc
+        LOGGER.debug('Reingest: Current location: %s', current_location)
         dest_basepath = os.path.join(currently_processing.relative_path, 'tmp', '')
         for path in reingest_files:
-            ss_internal.space.move_to_storage_service(
-                source_path=os.path.join(ss_internal.relative_path, path),
+            current_location.space.move_to_storage_service(
+                source_path=os.path.join(current_location.relative_path, path),
                 destination_path=path,
                 destination_space=currently_processing.space,
             )
@@ -917,7 +910,10 @@ class Package(models.Model):
             )
 
         # Delete local copy of extraction
-        shutil.rmtree(dest_path)
+        if self.local_path_location != self.current_location or self.local_path != self.full_path:
+            shutil.rmtree(local_path)
+        if temp_dir:
+            shutil.rmtree(temp_dir)
 
         # Call reingest AIP API
         reingest_url = 'http://' + pipeline.remote_name + '/api/ingest/reingest'
