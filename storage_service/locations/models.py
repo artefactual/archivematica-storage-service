@@ -100,7 +100,7 @@ class Space(models.Model):
         help_text="Amount used in bytes")
     path = models.TextField(validators=[validate_space_path],
         help_text="Absolute path to the space on the storage service machine.")
-    staging_path=models.TextField(validators=[validate_space_path],
+    staging_path = models.TextField(validators=[validate_space_path],
         help_text="Absolute path to a staging area.  Must be UNIX filesystem compatible, preferably on the same filesystem as the path.")
     verified = models.BooleanField(default=False,
        help_text="Whether or not the space has been verified to be accessible.")
@@ -260,6 +260,9 @@ class Space(models.Model):
         """
         # Create directories
         logging.info("Rsyncing from {} to {}".format(source, destination))
+
+        if source == destination:
+            return
 
         # Rsync file over
         # TODO Do this asyncronously, with restarting failed attempts
@@ -1387,7 +1390,7 @@ class Package(models.Model):
                 flocat.set('{{{ns}}}href'.format(ns=utils.NSMAP['xlink']), self.full_path)
             # Add USE="Archival Information Package" to fileGrp.  Required for
             # LOCKSS, and not provided in Archivematica <=1.1
-            if not root.find('.//mets:fileGrp[@USE="Archival Information Package"]', namespaces=utils.NSMAP):
+            if root.find('.//mets:fileGrp[@USE="Archival Information Package"]', namespaces=utils.NSMAP) is not None:
                 root.find('.//mets:fileGrp', namespaces=utils.NSMAP).set('USE', 'Archival Information Package')
 
             with open(pointer_absolute_path, 'w') as f:

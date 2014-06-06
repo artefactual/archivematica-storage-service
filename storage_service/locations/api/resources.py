@@ -5,8 +5,6 @@
 import json
 import logging
 import os
-import subprocess
-import tempfile
 import urllib
 
 # Core Django, alphabetical
@@ -335,7 +333,7 @@ class LocationResource(ModelResource):
             origin_uuid = origin_uri.split('/')[4]
             origin_location = Location.objects.get(uuid=origin_uuid)
         except (IndexError, Location.DoesNotExist):
-            raise NotFound("The URL provided '%s' was not a link to a valid Location." % origin_uri)
+            raise http.HttpNotFound("The URL provided '%s' was not a link to a valid Location." % origin_uri)
 
         # For each file in files, call move to/from
         origin_space = origin_location.space
@@ -490,7 +488,7 @@ class PackageResource(ModelResource):
                 uuid=package.uuid, location=package.full_path)
         else:
             response = {
-                'error_message': 'A deletion request already exists for this AIP.'
+                'message': 'A deletion request already exists for this AIP.'
             }
             status_code = 200
 
