@@ -130,7 +130,7 @@ class Space(models.Model):
         # TODO try-catch AttributeError if remote_user or remote_name not exist?
         return protocol_space
 
-    def browse(self, path):
+    def browse(self, path, *args, **kwargs):
         """ Returns {'directories': [directory], 'entries': [entries]} at path.
 
         `path` is a full path in this space.
@@ -139,52 +139,13 @@ class Space(models.Model):
             located at that path
         'entries' in the return dict is the name of any file (directory or other)
             located at that path
+
+        If not implemented in the child space, looks locally.
         """
-        if self.access_protocol in self.mounted_locally:
-            # Sorted list of all entries in directory, excluding hidden files
-            # This may need magic for encoding/decoding, but doesn't seem to
-            if isinstance(path, unicode):
-                path = str(path)
-            entries = [name for name in os.listdir(path) if name[0] != '.']
-            entries = sorted(entries, key=lambda s: s.lower())
-            directories = []
-            for name in entries:
-                full_path = os.path.join(path, name)
-                if os.path.isdir(full_path) and os.access(full_path, os.R_OK):
-                    directories.append(name)
-        elif self.access_protocol in self.ssh_only_access:
-            protocol_space = self.get_child_space()
-            user = protocol_space.remote_user
-            host = protocol_space.remote_name
-            private_ssh_key = '/var/lib/archivematica/.ssh/id_rsa'
-            # Get entries
-            command = "python2 -c \"import os; print os.listdir('{path}')\"".format(path=path)
-            ssh_command = ["ssh",  "-i", private_ssh_key, user+"@"+host, command]
-            logging.info("ssh+rsync command: {}".format(ssh_command))
-            try:
-                entries = subprocess.check_output(ssh_command)
-                entries = ast.literal_eval(entries)
-            except Exception as e:
-                logging.warning("ssh+sync failed: {}".format(e))
-                entries = []
-            # Get directories
-            command = "python2 -c \"import os; print [d for d in os.listdir('{path}') if d[0] != '.' and os.path.isdir(os.path.join('{path}', d))]\"".format(path=path)
-            ssh_command = ["ssh",  "-i", private_ssh_key, user+"@"+host, command]
-            logging.info("ssh+rsync command: {}".format(ssh_command))
-            try:
-                directories = subprocess.check_output(ssh_command)
-                directories = ast.literal_eval(directories)
-                print 'directories eval', directories
-            except Exception as e:
-                logging.warning("ssh+sync failed: {}".format(e))
-                print 'exception', e
-                directories = []
-        else:
-            # Error
-            logging.error("Unexpected category of access protocol ({}): browse failed".format(self.access_protocol))
-            directories = []
-            entries = []
-        return {'directories': directories, 'entries': entries}
+        try:
+            return self.get_child_space().browse(path, *args, **kwargs)
+        except AttributeError:
+            return self._browse_local(path)
 
     def move_to_storage_service(self, source_path, destination_path,
                                 destination_space, *args, **kwargs):
@@ -332,6 +293,25 @@ class Space(models.Model):
         except os.error as e:
             logging.warning(e)
 
+    def _browse_local(self, path):
+        """
+        Returns browse results for a locally accessible filesystem.
+        """
+        if isinstance(path, unicode):
+            path = str(path)
+        if not os.path.exists(path):
+            logging.info('%s in %s does not exist', path, self)
+            return {'directories': [], 'entries': []}
+        # Sorted list of all entries in directory, excluding hidden files
+        entries = [name for name in os.listdir(path) if name[0] != '.']
+        entries = sorted(entries, key=lambda s: s.lower())
+        directories = []
+        for name in entries:
+            full_path = os.path.join(path, name)
+            if os.path.isdir(full_path) and os.access(full_path, os.R_OK):
+                directories.append(name)
+        return {'directories': directories, 'entries': entries}
+
 
 class LocalFilesystem(models.Model):
     """ Spaces found in the local filesystem of the storage service."""
@@ -445,6 +425,29 @@ class PipelineLocalFS(models.Model):
     class Meta:
         verbose_name = "Pipeline Local FS"
 
+    def browse(self, path):
+        user = self.remote_user
+        host = self.remote_name
+        private_ssh_key = '/var/lib/archivematica/.ssh/id_rsa'
+
+        # Get entries
+        command = 'ls -p -1 "{}"'.format(path.replace('"', '\"'))
+        ssh_command = ["ssh", "-i", private_ssh_key, user+"@"+host, command]
+        logging.info("ssh+ls command: {}".format(ssh_command))
+        try:
+            output = subprocess.check_output(ssh_command)
+        except Exception as e:
+            logging.warning("ssh+ls failed: {}".format(e), exc_info=True)
+            entries = []
+            directories = []
+        else:
+            entries = output.splitlines()
+            directories = [d for d in entries if d.endswith('/')]
+
+        directories = sorted(directories, key=lambda s: s.lower())
+        entries = sorted(entries, key=lambda s: s.lower())
+        return {'directories': directories, 'entries': entries}
+
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """ Moves src_path to dest_space.staging_path/dest_path. """
         # if dest_space == self:
@@ -532,6 +535,10 @@ class Lockssomatic(models.Model):
     sword_connection = None
     # Parsed pointer file
     pointer_root = None
+
+    def browse(self, path):
+        logging.warning('Lockssomatic does not support browsing')
+        return {'directories': [], 'entries': []}
 
     def move_to_storage_service(self, source_path, destination_path, dest_space):
         """ Moves source_path to dest_space.staging_path/destination_path. """
@@ -1011,7 +1018,6 @@ class Lockssomatic(models.Model):
 #   Add constant for storage protocol
 #   Add constant to ACCESS_PROTOCOL_CHOICES
 #   Add class for protocol-specific fields using template below
-#   Add to Space.browse, using existing categories if possible
 #  locations/forms.py
 #   Add ModelForm for new class
 #  common/constants.py
@@ -1025,6 +1031,9 @@ class Lockssomatic(models.Model):
 #
 #     class Meta:
 #         verbose_name = "Example Space"
+#
+#     def browse(self, path):
+#         pass
 #
 #     def move_to_storage_service(self, src_path, dest_path, dest_space):
 #         """ Moves src_path to dest_space.staging_path/dest_path. """
