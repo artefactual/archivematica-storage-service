@@ -55,23 +55,33 @@ def aip_recover_request(request):
             recover_location_uuid, recover_path_to_aip)
         return (success, message)
 
-    return _handle_aip_request(
-      request, Event.RECOVER, execution_logic, Package.UPLOADED,
-      'AIP restored.', 'AIP restore failed', 'AIP restore rejected.',
-      'aip_recover_request')
+    config = AIPRequestHandlerConfig()
+    config.event_type = Event.RECOVER
+    config.approved_status = Package.UPLOADED
+    config.reject_message = 'AIP restore rejected.'
+    config.execution_success_message = 'AIP restored.'
+    config.execution_fail_message = 'AIP restore failed'
+    config.execution_logic = execution_logic
+
+    return _handle_aip_request(request, config, 'aip_recover_request')
 
 def aip_delete_request(request):
     def execution_logic(aip): 
         return aip.delete_from_storage()
 
-    return _handle_aip_request(
-      request, Event.DELETE, execution_logic, Package.DELETED,
-      'Package deleted successfully.', 'Package was not deleted from disk correctly',
-      'Request rejected, package still stored.', 'aip_delete_request')
+    config = AIPRequestHandlerConfig()
+    config.event_type = Event.DELETE
+    config.approved_status = Package.DELETED
+    config.reject_message = 'Request rejected, package still stored.'
+    config.execution_success_message = 'Package deleted successfully.'
+    config.execution_fail_message = 'Package was not deleted from disk correctly'
+    config.execution_logic = execution_logic
 
-def _handle_aip_request(request, event_type, execution_logic, execution_status, execution_success_message, execution_fail_message, reject_message, view_name):
+    return _handle_aip_request(request, config, 'aip_delete_request')
+
+def _handle_aip_request(request, config, view_name):
     requests = Event.objects.filter(status=Event.SUBMITTED).filter(
-        event_type=event_type)
+        event_type=config.event_type)
     if request.method == 'POST':
         # FIXME won't scale with many pending deletes, since does linear search
         # on all the forms
@@ -85,16 +95,16 @@ def _handle_aip_request(request, event_type, execution_logic, execution_status, 
                 if 'reject' in request.POST:
                     event.status = Event.REJECTED
                     event.package.status = event.store_data
-                    messages.success(request, reject_message)
+                    messages.success(request, config.reject_message)
                 elif 'approve' in request.POST:
                     event.status = Event.APPROVED
-                    event.package.status = execution_status
-                    success, err_msg = execution_logic(event.package)
+                    event.package.status = config.approved_status
+                    success, err_msg = config.execution_logic(event.package)
                     if not success:
                         messages.error(request,
-                            "{}: {}. Please contact an administrator or see logs for details".format(execution_fail_message, err_msg))
+                            "{}: {}. Please contact an administrator or see logs for details".format(config.execution_fail_message, err_msg))
                     else:
-                        messages.success(request, "Request approved. {}".format(execution_success_message))
+                        messages.success(request, "Request approved. {}".format(config.execution_success_message))
                 event.save()
                 event.package.save()
                 return redirect(view_name)
@@ -104,6 +114,16 @@ def _handle_aip_request(request, event_type, execution_logic, execution_status, 
     closed_requests = Event.objects.filter(
         Q(status=Event.APPROVED) | Q(status=Event.REJECTED))
     return render(request, 'locations/aip_request.html', locals())
+
+class AIPRequestHandlerConfig:
+    event_type = ''                # Event type being handled
+    approved_status = ''           # Event status, if approved
+    reject_message = ''            # Message returned if not approved
+    execution_success_message = '' # Message returned if execution success
+    execution_fail_message = ''    # Message returned if execution failed
+
+    def execution_logic(package):  # Logic performed on package if approved
+        pass
 
 
 ########################## LOCATIONS ##########################
