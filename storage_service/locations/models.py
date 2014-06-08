@@ -624,6 +624,7 @@ class Package(models.Model):
     VERIFIED = 'VERIFIED'
     DEL_REQ = 'DEL_REQ'
     DELETED = 'DELETED'
+    RECOVER_REQ = 'RECOVER_REQ'
     FAIL = 'FAIL'
     STATUS_CHOICES = (
         (PENDING, "Upload Pending"),
@@ -642,6 +643,7 @@ class Package(models.Model):
         help_text='For storing flexible, often Space-specific, attributes')
 
     PACKAGE_TYPE_CAN_DELETE = (AIP, AIC, TRANSFER)
+    PACKAGE_TYPE_CAN_RECOVER = (AIP)
     PACKAGE_TYPE_CAN_EXTRACT = (AIP, AIC)
 
     class Meta:
@@ -714,6 +716,59 @@ class Package(models.Model):
         space.save()
         location.used += self.size
         location.save()
+
+    def recover_aip(self, origin_location, origin_path):
+        """ Recovers an AIP using files at a given location.
+
+        Creates a temporary package associated with recovery AIP files within
+        a space. Does fixity check on recovery AIP package. Makes backup of
+        AIP files being replaced by recovery files. Replaces AIP files with
+        recovery files.
+        """
+
+        # Create temporary AIP package
+        temp_aip = Package()
+        temp_aip.package_type = 'AIP'
+        temp_aip.origin_pipeline = self.origin_pipeline
+        temp_aip.current_location = Location.objects.get(uuid=origin_location)
+        temp_aip.current_path = origin_path
+        temp_aip.save()
+
+        # Check integrity of temporary AIP package
+        (success, failures, message) = temp_aip.check_fixity()
+
+        # If the recovered AIP doesn't pass check, delete and return error info
+        if not success:
+            temp_aip.delete()
+            return (success, failures, message)
+
+        # TODO: use post_detail logic to back up aip files
+
+        # Use post_detail logic to copy in recovered files
+        origin_space = temp_aip.current_location.space
+        destination_space = self.current_location.space
+
+        source_path = os.path.join(
+            temp_aip.current_location.relative_path, origin_path)
+        destination_path = os.path.join(
+            self.current_location.relative_path,
+            os.path.dirname(self.current_path))
+
+        # Copy recovery files to storage service staging
+        origin_space.move_to_storage_service(
+            source_path=source_path,
+            destination_path=destination_path,
+            destination_space=destination_space)
+        origin_space.post_move_to_storage_service()
+
+        # Copy recovery files from staging to destination
+        destination_space.move_from_storage_service(
+            source_path=destination_path,
+            destination_path=destination_path)
+        destination_space.post_move_from_storage_service()
+
+        # Do fixity check of AIP with recovered files
+        return self.check_fixity() 
 
     def store_aip(self, origin_location, origin_path):
         """ Stores an AIP in the correct Location.
@@ -1014,8 +1069,10 @@ class Event(models.Model):
     administrator approval.  Who made the request and why is also stored. """
     package = models.ForeignKey('Package', to_field='uuid')
     DELETE = 'DELETE'
+    RECOVER = 'RECOVER'
     EVENT_TYPE_CHOICES = (
         (DELETE, 'delete'),
+        (RECOVER, 'recover'),
     )
     event_type = models.CharField(max_length=8, choices=EVENT_TYPE_CHOICES)
     event_reason = models.TextField()
