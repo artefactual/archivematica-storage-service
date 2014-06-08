@@ -27,8 +27,10 @@ class Event(models.Model):
     administrator approval.  Who made the request and why is also stored. """
     package = models.ForeignKey('Package', to_field='uuid')
     DELETE = 'DELETE'
+    RECOVER = 'RECOVER'
     EVENT_TYPE_CHOICES = (
         (DELETE, 'delete'),
+        (RECOVER, 'recover'),
     )
     event_type = models.CharField(max_length=8, choices=EVENT_TYPE_CHOICES)
     event_reason = models.TextField()

@@ -111,6 +111,14 @@ class DefaultLocationsForm(SettingsForm):
     new_backlog = DefaultLocationField(
         required=False,
         label="New Transfer Backlog:")
+    default_recovery = forms.MultipleChoiceField(
+        choices=[],
+        required=False,
+        label="Default AIP recovery locations for new pipelines:"
+        )
+    new_recovery = DefaultLocationField(
+        required=False,
+        label="New AIP Recovery:")
 
     def __init__(self, *args, **kwargs):
         super(DefaultLocationsForm, self).__init__(*args, **kwargs)
@@ -132,6 +140,11 @@ class DefaultLocationsForm(SettingsForm):
             (l.uuid, l.get_description()) for l in
             Location.active.filter(purpose=Location.BACKLOG)] + \
             [('new', 'Create new location for each pipeline')]
+        self.fields['default_recovery'].choices = [
+            (l.uuid, l.get_description()) for l in
+            Location.active.filter(purpose=Location.AIP_RECOVERY)] + \
+            [('new', 'Create new location for each pipeline')]
+
 
     def clean(self):
         cleaned_data = super(DefaultLocationsForm, self).clean()
@@ -144,6 +157,12 @@ class DefaultLocationsForm(SettingsForm):
                 raise forms.ValidationError("Relative path cannot start with /")
         if 'new' in cleaned_data['default_aip_storage']:
             location_data = cleaned_data.get('new_aip_storage')
+            if location_data and not location_data['relative_path']:
+                raise forms.ValidationError("Relative path is required")
+            if location_data and location_data['relative_path'][0] == '/':
+                raise forms.ValidationError("Relative path cannot start with /")
+        if 'new' in cleaned_data['default_recovery']:
+            location_data = cleaned_data.get('new_aip_recovery')
             if location_data and not location_data['relative_path']:
                 raise forms.ValidationError("Relative path is required")
             if location_data and location_data['relative_path'][0] == '/':
