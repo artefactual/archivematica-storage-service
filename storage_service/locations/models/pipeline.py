@@ -104,6 +104,9 @@ class Pipeline(models.Model):
             {'default': 'default_backlog',
              'new': 'new_backlog',
              'purpose': Location.BACKLOG},
+            {'default': 'default_recovery',
+             'new': 'new_recovery',
+             'purpose': Location.AIP_RECOVERY},
         ]
         for p in purposes:
             defaults = utils.get_setting(p['default'], [])

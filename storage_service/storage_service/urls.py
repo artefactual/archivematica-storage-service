@@ -68,7 +68,7 @@ def startup():
         space=space,
         relative_path=os.path.join('var', 'archivematica', 'sharedDirectory', 'www', 'AIPsStore', 'transferBacklog'),
         description='Default transfer backlog')
-    internal_use, created = locations_models.Location.objects.get_or_create(
+    internal_use, internal_use_created = locations_models.Location.objects.get_or_create(
         purpose=locations_models.Location.STORAGE_SERVICE_INTERNAL,
         defaults={
             'space': space,
@@ -76,13 +76,27 @@ def startup():
             'description': 'For storage service internal usage.'
         }
     )
-    if created:
+    if internal_use_created:
         try:
             os.mkdir(internal_use.full_path)
         except OSError as e:
             if e.errno != errno.EEXIST:
                 LOGGER.error("Internal storage location {} not accessible.".format(internal_use.full_path))
-
+    recovery, recovery_created = locations_models.Location.objects.get_or_create(
+        purpose=locations_models.Location.AIP_RECOVERY,
+        defaults={
+            'space': space,
+            'relative_path': os.path.join('var', 'archivematica', 'storage_service', 'recover'),
+            'description': 'Default AIP recovery'
+        }
+    )
+    if recovery_created:
+        try:
+            os.mkdir(recovery.full_path)
+            os.mkdir(os.path.join(recovery.full_path, 'backup'))
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                logging.error("Recovery location {} not accessible.".format(recovery.full_path))
     if not utils.get_setting('default_transfer_source'):
         utils.set_setting('default_transfer_source', [transfer_source.uuid])
     if not utils.get_setting('default_aip_storage'):
@@ -91,5 +105,7 @@ def startup():
         utils.set_setting('default_dip_storage', [dip_storage.uuid])
     if not utils.get_setting('default_backlog'):
         utils.set_setting('default_backlog', [backlog.uuid])
+    if not utils.get_setting('default_recovery'):
+        utils.set_setting('default_recovery', [recovery.uuid])
 
 startup()

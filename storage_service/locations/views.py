@@ -1,4 +1,6 @@
 import logging
+import os
+from annoying.functions import get_object_or_None
 
 from django.contrib import auth, messages
 from django.core.urlresolvers import reverse
@@ -11,7 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from common import decorators
 from common import utils
-from .models import Callback, Space, Location, Package, Event, Pipeline, LocationPipeline
+from .models import Callback, Space, Location, Package, Event, Pipeline, LocationPipeline, StorageException
 from . import forms
 from .constants import PROTOCOL
 
@@ -43,9 +45,47 @@ def package_list(request):
     packages = Package.objects.all()
     return render(request, 'locations/package_list.html', locals())
 
+def aip_recover_request(request):
+    def execution_logic(aip): 
+        recover_location = LocationPipeline.objects.get(
+            pipeline=aip.origin_pipeline, location__purpose=Location.AIP_RECOVERY).location
+
+        try:
+            (success, failures, message) = aip.recover_aip(
+                recover_location, os.path.basename(aip.current_path))
+        except StorageException:
+            message = 'error accessing restore files'
+            success = False
+
+        return (success, message)
+
+    config = AIPRequestHandlerConfig()
+    config.event_type = Event.RECOVER
+    config.approved_status = Package.UPLOADED
+    config.reject_message = 'AIP restore rejected.'
+    config.execution_success_message = 'AIP restored.'
+    config.execution_fail_message = 'AIP restore failed'
+    config.execution_logic = execution_logic
+
+    return _handle_aip_request(request, config, 'aip_recover_request')
+
 def aip_delete_request(request):
+    def execution_logic(aip): 
+        return aip.delete_from_storage()
+
+    config = AIPRequestHandlerConfig()
+    config.event_type = Event.DELETE
+    config.approved_status = Package.DELETED
+    config.reject_message = 'Request rejected, package still stored.'
+    config.execution_success_message = 'Package deleted successfully.'
+    config.execution_fail_message = 'Package was not deleted from disk correctly'
+    config.execution_logic = execution_logic
+
+    return _handle_aip_request(request, config, 'aip_delete_request')
+
+def _handle_aip_request(request, config, view_name):
     requests = Event.objects.filter(status=Event.SUBMITTED).filter(
-        event_type=Event.DELETE)
+        event_type=config.event_type)
     if request.method == 'POST':
         # FIXME won't scale with many pending deletes, since does linear search
         # on all the forms
@@ -59,27 +99,27 @@ def aip_delete_request(request):
                 if 'reject' in request.POST:
                     event.status = Event.REJECTED
                     event.package.status = event.store_data
-                    messages.success(request, "Request rejected, package still stored.")
+                    messages.success(request, config.reject_message)
                 elif 'approve' in request.POST:
                     event.status = Event.APPROVED
-                    event.package.status = Package.DELETED
-                    success, err_msg = event.package.delete_from_storage()
+                    event.package.status = config.approved_status
+                    success, err_msg = config.execution_logic(event.package)
                     if not success:
                         messages.error(request,
-                            "Package was not deleted from disk correctly: {}. Please contact an administrator or see logs for details".format(err_msg))
+                            "{}: {}. Please contact an administrator or see logs for details".format(config.execution_fail_message, err_msg))
                     else:
-                        messages.success(request, "Request approved.  Package deleted successfully.")
+                        messages.success(request, "Request approved. {}".format(config.execution_success_message))
                         if err_msg:
                             messages.info(request, err_msg)
                 event.save()
                 event.package.save()
-                return redirect('aip_delete_request')
+                return redirect(view_name)
     else:
         for req in requests:
             req.form = forms.ConfirmEventForm(prefix=str(req.id), instance=req)
     closed_requests = Event.objects.filter(
         Q(status=Event.APPROVED) | Q(status=Event.REJECTED))
-    return render(request, 'locations/aip_delete_request.html', locals())
+    return render(request, 'locations/aip_request.html', locals())
 
 def package_update_status(request, uuid):
     package = Package.objects.get(uuid=uuid)
@@ -106,6 +146,16 @@ def package_update_status(request, uuid):
     next_url = request.GET.get('next', reverse('package_list'))
     return redirect(next_url)
 
+class AIPRequestHandlerConfig:
+    event_type = ''                # Event type being handled
+    approved_status = ''           # Event status, if approved
+    reject_message = ''            # Message returned if not approved
+    execution_success_message = '' # Message returned if execution success
+    execution_fail_message = ''    # Message returned if execution failed
+
+    def execution_logic(package):  # Logic performed on package if approved
+        pass
+
 
 ########################## LOCATIONS ##########################
 
@@ -121,22 +171,34 @@ def location_edit(request, space_uuid, location_uuid=None):
     if form.is_valid():
         location = form.save(commit=False)
         location.space = space
-        location.save()
-        # Cannot use form.save_m2m() becuase of 'through' table
-        for pipeline in form.cleaned_data['pipeline']:
-            LocationPipeline.objects.get_or_create(
-                location=location, pipeline=pipeline)
-        # Delete relationships between the location and pipelines not in the form
-        to_delete = LocationPipeline.objects.filter(location=location).exclude(
-            pipeline__in=list(form.cleaned_data['pipeline']))
-        # NOTE Need to convert form.cleaned_data['pipeline'] to a list, or the
-        # SQL generated by pipeline__in is garbage in Django 1.5.
-        LOGGER.debug("LocationPipeline to delete: %s", to_delete)
-        to_delete.delete()
-        messages.success(request, "Location saved.")
-        # TODO make this return to the originating page
-        # http://stackoverflow.com/questions/4203417/django-how-do-i-redirect-to-page-where-form-originated
-        return redirect('location_detail', location.uuid)
+
+        # Don't allow more than one recovery location per pipeline
+        if location.purpose == Location.AIP_RECOVERY:
+            for pipeline in form.cleaned_data['pipeline']:
+                existing_pipeline_recovery_location = get_object_or_None(LocationPipeline,
+                    pipeline=pipeline, location__purpose=Location.AIP_RECOVERY)
+                if existing_pipeline_recovery_location:
+                    messages.warning(request, "Pipeline {} already has an AIP recovery location,".format(pipeline.uuid))
+                    location = None
+
+        if location:
+            location.save()
+            # Cannot use form.save_m2m() because of 'through' table
+            for pipeline in form.cleaned_data['pipeline']:
+                LocationPipeline.objects.get_or_create(
+                    location=location, pipeline=pipeline)
+
+            # Delete relationships between the location and pipelines not in the form
+            to_delete = LocationPipeline.objects.filter(location=location).exclude(
+                pipeline__in=list(form.cleaned_data['pipeline']))
+            # NOTE Need to convert form.cleaned_data['pipeline'] to a list, or the
+            # SQL generated by pipeline__in is garbage in Django 1.5
+            LOGGER.debug("LocationPipeline to delete: {}".format(to_delete))
+            to_delete.delete()
+            messages.success(request, "Location saved.")
+            # TODO make this return to the originating page
+            # http://stackoverflow.com/questions/4203417/django-how-do-i-redirect-to-page-where-form-originated
+            return redirect('location_detail', location.uuid)
     return render(request, 'locations/location_form.html', locals())
 
 def location_list(request):

@@ -446,6 +446,7 @@ class PackageResource(ModelResource):
     def prepend_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/delete_aip%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('delete_aip_request'), name="delete_aip_request"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/recover_aip%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('recover_aip_request'), name="recover_aip_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/extract_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('extract_file_request'), name="extract_file_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/download/(?P<chunk_number>\d+)%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('download_request'), name="download_lockss"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/download%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('download_request'), name="download_request"),
@@ -480,31 +481,16 @@ class PackageResource(ModelResource):
         package = bundle.obj
         if package.package_type not in Package.PACKAGE_TYPE_CAN_DELETE:
             # Can only request deletion on AIPs
-            return http.HttpMethodNotAllowed()
-
-        pipeline = Pipeline.objects.get(uuid=request_info['pipeline'])
-
-        # See if an event already exists
-        existing_requests = Event.objects.filter(package=package,
-            event_type=Event.DELETE, status=Event.SUBMITTED).count()
-        if existing_requests < 1:
-            delete_request = Event(package=package, event_type=Event.DELETE,
-                status=Event.SUBMITTED, event_reason=request_info['event_reason'],
-                pipeline=pipeline, user_id=request_info['user_id'],
-                user_email=request_info['user_email'], store_data=package.status)
-            delete_request.save()
-
-            # Update package status
-            package.status = Package.DEL_REQ
-            package.save()
-
             response = {
-                'message': 'Delete request created successfully.'
+                "message": "Deletes not allowed on this package type."
             }
-
             response_json = json.dumps(response)
-            status_code = 202
+            return http.HttpMethodNotAllowed(response_json, content_type='application/json')
 
+        (status_code, response) = self._attempt_package_request_event(
+            package, request_info, Event.DELETE, Package.DEL_REQ)
+
+        if status_code == 202:
             # This isn't configured by default
             site_url = getattr(settings, "SITE_BASE_URL", None)
             signals.deletion_request.send(sender=self, url=site_url,
@@ -513,7 +499,27 @@ class PackageResource(ModelResource):
             response = {
                 'message': 'A deletion request already exists for this AIP.'
             }
-            status_code = 200
+
+        self.log_throttled_access(request)
+        response_json = json.dumps(response)
+        return http.HttpResponse(status=status_code, content=response_json,
+            mimetype='application/json')
+
+    @_custom_endpoint(expected_methods=['post'],
+        required_fields=('event_reason', 'pipeline', 'user_id', 'user_email'))
+    def recover_aip_request(self, request, bundle, **kwargs):
+        request_info = bundle.data
+        package = bundle.obj
+        if package.package_type not in Package.PACKAGE_TYPE_CAN_RECOVER:
+            # Can only request recovery of AIPs
+            response = {
+                "message": "Recovery not allowed on this package type."
+            }
+            response_json = json.dumps(response)
+            return http.HttpMethodNotAllowed(response_json, content_type='application/json')
+
+        (status_code, response) = self._attempt_package_request_event(
+            package, request_info, Event.RECOVER, Package.RECOVER_REQ)
 
         self.log_throttled_access(request)
         response_json = json.dumps(response)
@@ -636,7 +642,6 @@ class PackageResource(ModelResource):
             report,
             mimetype="application/json"
         )
-        return response
 
     @_custom_endpoint(expected_methods=['get'])
     def aip_store_callback_request(self, request, bundle, **kwargs):
@@ -731,3 +736,36 @@ class PackageResource(ModelResource):
             return http.HttpBadRequest('This is not a SWORD deposit location.')
         self.log_throttled_access(request)
         return sword_views.deposit_state(request, package or kwargs['uuid'])
+
+    def _attempt_package_request_event(self, package, request_info, event_type, event_status):
+        pipeline = Pipeline.objects.get(uuid=request_info['pipeline'])
+        request_description = event_type.replace('_', ' ').lower()
+
+        # See if an event already exists
+        existing_requests = Event.objects.filter(package=package,
+            event_type=event_type, status=Event.SUBMITTED).count()
+        if existing_requests < 1:
+            request_event = Event(package=package, event_type=event_type,
+                status=Event.SUBMITTED, event_reason=request_info['event_reason'],
+                pipeline=pipeline, user_id=request_info['user_id'],
+                user_email=request_info['user_email'], store_data=package.status)
+            request_event.save()
+
+            # Update package status
+            package.status = event_status
+            package.save()
+
+            response = {
+                'message': "{} request created successfully.".format(request_description.title()),
+                'id': request_event.id
+            }
+
+            response_json = json.dumps(response)
+            status_code = 202
+        else:
+            response = {
+                'error_message': "A {} request already exists for this AIP.".format(request_description)
+            }
+            status_code = 200
+
+        return (status_code, response)
