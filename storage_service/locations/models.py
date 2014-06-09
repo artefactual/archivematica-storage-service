@@ -1182,7 +1182,7 @@ class Package(models.Model):
         """ Return the full path of the AIP's pointer file, None if not an AIP.
 
         Includes the space, location and package paths joined."""
-        if self.package_type not in (self.AIP, self.AIC):
+        if not self.pointer_file_location:
             return None
         else:
             return os.path.join(self.pointer_file_location.full_path(),
