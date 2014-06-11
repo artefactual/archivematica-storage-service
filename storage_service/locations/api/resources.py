@@ -10,6 +10,7 @@ import tempfile
 import urllib
 
 # Core Django, alphabetical
+from django.conf import settings
 from django.conf.urls import url
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.forms.models import model_to_dict
@@ -32,6 +33,7 @@ from common import utils
 from ..models import (Event, Package, Location, Space, Pipeline, StorageException)
 from ..forms import LocationForm, SpaceForm
 from ..constants import PROTOCOL
+from locations import signals
 
 LOGGER = logging.getLogger(__name__)
 logging.basicConfig(filename="/tmp/storage_service.log",
@@ -471,6 +473,11 @@ class PackageResource(ModelResource):
 
             response_json = json.dumps(response)
             status_code = 202
+
+            # This isn't configured by default
+            site_url = getattr(settings, "SITE_BASE_URL", None)
+            signals.deletion_request.send(sender=self, url=site_url,
+                uuid=package.uuid, location=package.full_path())
         else:
             response = {
                 'error_message': 'A deletion request already exists for this AIP.'
@@ -586,7 +593,13 @@ class PackageResource(ModelResource):
                 }
                 response["failures"]["files"]["untracked"].append(info)
 
+        report = json.dumps(response)
+        if not success:
+            signals.failed_fixity_check.send(sender=self,
+                uuid=bundle.obj.uuid, location=bundle.obj.full_path(),
+                report=report)
+
         return http.HttpResponse(
-            json.dumps(response),
+            report,
             mimetype="application/json"
         )

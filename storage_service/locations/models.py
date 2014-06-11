@@ -27,6 +27,11 @@ import sword2
 
 # This project, alphabetical
 from common import utils
+# Note that while the signals are not actually used here,
+# they should be imported here to make sure that they
+# are imported very early on globally. This ensures that
+# the signals themselves are registered early.
+from locations import signals
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename="/tmp/storage-service.log",
