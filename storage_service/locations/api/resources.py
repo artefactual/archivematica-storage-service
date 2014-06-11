@@ -530,7 +530,10 @@ class PackageResource(ModelResource):
     def pointer_file_request(self, request, bundle, **kwargs):
         # Get AIP details
         pointer_path = bundle.obj.full_pointer_file_path()
-        response = utils.download_file_stream(pointer_path)
+        if not pointer_path:
+            response = http.HttpNotFound("Resource with UUID {} does not have a pointer file".format(bundle.obj.uuid))
+        else:
+            response = utils.download_file_stream(pointer_path)
         return response
 
     @_custom_endpoint(expected_methods=['get'])
