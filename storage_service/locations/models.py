@@ -1053,6 +1053,7 @@ class Location(models.Model):
         # (QUARANTINE, 'Quarantine'),
         (BACKLOG, 'Transfer Backlog'),
         (CURRENTLY_PROCESSING, 'Currently Processing'),
+        (STORAGE_SERVICE_INTERNAL, 'Storage Service Internal Processing'),
     )
     purpose = models.CharField(max_length=2,
         choices=PURPOSE_CHOICES,
