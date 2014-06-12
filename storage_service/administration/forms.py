@@ -80,6 +80,7 @@ class CommonSettingsForm(SettingsForm):
         label="Pipelines are disabled upon creation?")
     recover_location_uuid = forms.CharField()
     recover_path_within_location = forms.CharField()
+    recover_backup_path_within_location = forms.CharField()
 
 
 class DefaultLocationsForm(SettingsForm):

@@ -753,8 +753,7 @@ class Package(models.Model):
             self.current_path)
         destination_path = os.path.join(
             origin_location.relative_path,
-            utils.get_setting('recover_path_within_location'),
-            'corrupt')
+            utils.get_setting('recover_backup_path_within_location'))
 
         origin_space.move_to_storage_service(
             source_path=source_path,
