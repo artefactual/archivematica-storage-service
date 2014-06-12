@@ -272,21 +272,12 @@ class Lockssomatic(models.Model):
         if not self.keep_local and delete_elements:
             amdsec = self.pointer_root.find('mets:amdSec', namespaces=utils.NSMAP)
             # Add 'deletion' PREMIS:EVENT
-            digiprov_id = 'digiprovMD_{}'.format(len(amdsec))
-            digiprov_split = utils.mets_add_event(
-                digiprov_id=digiprov_id,
+            utils.mets_add_event(
+                amdsec,
                 event_type='deletion',
                 event_outcome_detail_note='AIP deleted from local storage',
             )
-            LOGGER.info('PREMIS:EVENT division: %s', etree.tostring(digiprov_split, pretty_print=True))
-            amdsec.append(digiprov_split)
 
-            # Add PREMIS:AGENT for storage service
-            digiprov_id = 'digiprovMD_{}'.format(len(amdsec))
-            digiprov_agent = utils.mets_ss_agent(amdsec, digiprov_id)
-            if digiprov_agent is not None:
-                LOGGER.info('PREMIS:AGENT SS: %s', etree.tostring(digiprov_agent, pretty_print=True))
-                amdsec.append(digiprov_agent)
             # If file was split
             if self.pointer_root.find(".//mets:fileGrp[@USE='LOCKSS chunk']", namespaces=utils.NSMAP) is not None:
                 # Delete fileGrp USE="AIP"
@@ -386,22 +377,12 @@ class Lockssomatic(models.Model):
             event_detail = subprocess.check_output(['tar', '--version'])
         except subprocess.CalledProcessError as e:
             event_detail = e.output or 'Error: getting tool info; probably GNU tar'
-        digiprov_id = 'digiprovMD_{}'.format(len(amdsec))
-        digiprov_split = utils.mets_add_event(
-            digiprov_id=digiprov_id,
+        utils.mets_add_event(
+            amdsec,
             event_type='division',
             event_detail=event_detail,
             event_outcome_detail_note='{} LOCKSS chunks created'.format(len(output_files)),
         )
-        LOGGER.debug('PREMIS:EVENT division: %s', etree.tostring(digiprov_split, pretty_print=True))
-        amdsec.append(digiprov_split)
-
-        # Add PREMIS:AGENT for storage service
-        digiprov_id = 'digiprovMD_{}'.format(len(amdsec))
-        digiprov_agent = utils.mets_ss_agent(amdsec, digiprov_id)
-        if digiprov_agent is not None:
-            LOGGER.debug('PREMIS:AGENT SS: %s', etree.tostring(digiprov_agent, pretty_print=True))
-            amdsec.append(digiprov_agent)
 
         # Update structMap & fileSec
         self.pointer_root.find('mets:structMap', namespaces=utils.NSMAP).set('TYPE', 'logical')

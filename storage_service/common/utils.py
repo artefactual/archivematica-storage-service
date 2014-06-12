@@ -125,12 +125,35 @@ def _storage_service_agent():
     return 'Archivematica Storage Service-%s' % version.get_version()
 
 
-def mets_add_event(digiprov_id, event_type, event_detail='', event_outcome_detail_note='', agent_type='storage service', agent_value=None):
+def mets_add_event(amdsec, event_type, event_detail='', event_outcome_detail_note=''):
+    """
+    Adds a PREMIS:EVENT and associated PREMIS:AGENT to the provided amdSec.
+    """
+    # Add PREMIS:EVENT
+    digiprov_id = 'digiprovMD_{}'.format(len(amdsec))
+    event = mets_event(
+        digiprov_id=digiprov_id,
+        event_type=event_type,
+        event_detail=event_detail,
+        event_outcome_detail_note=event_outcome_detail_note,
+    )
+    LOGGER.debug('PREMIS:EVENT %s: %s', event_type, etree.tostring(event, pretty_print=True))
+    amdsec.append(event)
+
+    # Add PREMIS:AGENT for storage service
+    digiprov_id = 'digiprovMD_{}'.format(len(amdsec))
+    digiprov_agent = mets_ss_agent(amdsec, digiprov_id)
+    if digiprov_agent is not None:
+        LOGGER.debug('PREMIS:AGENT SS: %s', etree.tostring(digiprov_agent, pretty_print=True))
+        amdsec.append(digiprov_agent)
+
+
+def mets_event(digiprov_id, event_type, event_detail='', event_outcome_detail_note='', agent_type='storage service', agent_value=None):
     """
     Create and return a PREMIS:EVENT.
     """
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-    if agent_value == None:
+    if agent_value is None:
         agent_value = _storage_service_agent()
     # New E with namespace for PREMIS
     EP = ElementMaker(
@@ -173,7 +196,7 @@ def mets_ss_agent(xml, digiprov_id, agent_value=None, agent_type='storage servic
     """
     Create and return a PREMIS:AGENT for the SS, if not found in `xml`.
     """
-    if agent_value == None:
+    if agent_value is None:
         agent_value = _storage_service_agent()
     existing_agent = xml.xpath(".//mets:agentIdentifier[mets:agentIdentifierType='{}' and mets:agentIdentifierValue='{}']".format(agent_type, agent_value), namespaces=NSMAP)
     if existing_agent:
