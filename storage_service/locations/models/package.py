@@ -1027,7 +1027,11 @@ class Package(models.Model):
         # TODO parse pointer file for this and add compress function?
         out_path = path + '.7z'
         command = ['/usr/bin/7z', 'a', '-bd', '-t7z', '-y', '-m0=bzip2', '-mx=5', '-mta=on', '-mtc=on', '-mtm=on', '-mmt=on', out_path, path]
-        subprocess.call(command)
+        compress_output = subprocess.check_output(command)
+
+        # Delete working files
+        shutil.rmtree(reingested_path)
+        shutil.rmtree(temp_dir)
 
         # Move to final destination
         source_relative = out_path.replace(internal_space.path, '', 1).lstrip(os.sep)
@@ -1040,9 +1044,40 @@ class Package(models.Model):
             destination_path=os.path.join(self.current_location.relative_path, self.current_path),
         )
 
-        # Delete temp files
-        shutil.rmtree(reingested_path)
-        shutil.rmtree(temp_dir)
+        # Update pointer file
+        root = etree.parse(self.full_pointer_file_path)
+
+        # Update checksum
+        fixity_elem = root.find('.//premis:fixity', namespaces=utils.NSMAP)
+        algorithm = fixity_elem.findtext('premis:messageDigestAlgorithm', namespaces=utils.NSMAP)
+        try:
+            checksum = utils.generate_checksum(out_path, algorithm)
+        except ValueError:
+            # If incorrectly parsed algorithm, default to sha512, since that is
+            # what AM uses
+            checksum = utils.generate_checksum(out_path, 'sha512')
+        fixity_elem.find('premis:messageDigest', namespaces=utils.NSMAP).text = checksum.hexdigest()
+
+        # Add compression event (if compressed)
+        amdsec = root.find('mets:amdSec', namespaces=utils.NSMAP)
+        # TODO update this for other compression algorithms
+        try:
+            version = [x for x in subprocess.check_output('7z').splitlines() if 'Version' in x][0]
+            event_detail = 'program=\"7z\"; version=\"{}\"'.format(version)
+        except (subprocess.CalledProcessError, Exception):
+            event_detail = 'program=\"7z\"'
+        utils.mets_add_event(
+            amdsec,
+            'compression',
+            event_detail=event_detail,
+            event_outcome_detail_note=compress_output,
+        )
+
+        # Write out pointer file again
+        with open(self.full_pointer_file_path, 'w') as f:
+            f.write(etree.tostring(root, pretty_print=True))
+
+        # Delete working file
         os.remove(out_path)  # Check whether compressed or not for shutil.rmtree
         self.save()
 
