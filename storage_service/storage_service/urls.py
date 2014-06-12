@@ -44,8 +44,9 @@ def startup():
     logging.info("Running startup")
     space, space_created = locations_models.Space.objects.get_or_create(
         access_protocol=locations_models.Space.LOCAL_FILESYSTEM,
-        path=os.sep,
-        staging_path=os.path.join(os.sep, 'var', 'archivematica', 'storage_service'))
+        path=os.sep, defaults={
+            "staging_path": os.path.join(os.sep, 'var', 'archivematica', 'storage_service')
+        })
     if space_created:
         local_fs = locations_models.LocalFilesystem(space=space)
         local_fs.save()
@@ -68,16 +69,20 @@ def startup():
         space=space,
         relative_path=os.path.join('var', 'archivematica', 'sharedDirectory', 'www', 'AIPsStore', 'transferBacklog'),
         description='Default transfer backlog')
-    internal_use, _ = locations_models.Location.objects.get_or_create(
+    internal_use, created = locations_models.Location.objects.get_or_create(
         purpose=locations_models.Location.STORAGE_SERVICE_INTERNAL,
-        space=space,
-        relative_path=os.path.join('var', 'archivematica', 'storage_service'),
-        description='For storage service internal usage.')
-    try:
-        os.mkdir(internal_use.full_path())
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            logging.error("Internal storage location {} not accessible.".format(internal_use.full_path()))
+        defaults={
+            'space': space,
+            'relative_path': os.path.join('var', 'archivematica', 'storage_service'),
+            'description': 'For storage service internal usage.'
+        }
+    )
+    if created:
+        try:
+            os.mkdir(internal_use.full_path())
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                logging.error("Internal storage location {} not accessible.".format(internal_use.full_path()))
     if not utils.get_setting('default_transfer_source'):
         utils.set_setting('default_transfer_source', [transfer_source.uuid])
     if not utils.get_setting('default_aip_storage'):
