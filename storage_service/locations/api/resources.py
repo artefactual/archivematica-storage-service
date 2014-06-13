@@ -419,6 +419,7 @@ class PackageResource(ModelResource):
     def prepend_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/delete_aip%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('delete_aip_request'), name="delete_aip_request"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/recover_aip%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('recover_aip_request'), name="recover_aip_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/extract_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('extract_file_request'), name="extract_file_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/download%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('download_request'), name="download_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/pointer_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('pointer_file_request'), name="pointer_file_request"),
@@ -473,6 +474,48 @@ class PackageResource(ModelResource):
         else:
             response = {
                 'error_message': 'A deletion request already exists for this AIP.'
+            }
+            status_code = 200
+
+        self.log_throttled_access(request)
+        response_json = json.dumps(response)
+        return http.HttpResponse(status=status_code, content=response_json,
+            mimetype='application/json')
+
+    @_custom_endpoint(expected_methods=['post'],
+        required_fields=('event_reason', 'pipeline', 'user_id', 'user_email'))
+    def recover_aip_request(self, request, bundle, **kwargs):
+        request_info = bundle.data
+        package = bundle.obj
+        if package.package_type not in Package.PACKAGE_TYPE_CAN_RECOVER:
+            # Can only request recovery of AIPs
+            return http.HttpMethodNotAllowed()
+
+        pipeline = Pipeline.objects.get(uuid=request_info['pipeline'])
+
+        # See if an event already exists
+        existing_requests = Event.objects.filter(package=package,
+            event_type=Event.RECOVER, status=Event.SUBMITTED).count()
+        if existing_requests < 1:
+            recover_request = Event(package=package, event_type=Event.RECOVER,
+                status=Event.SUBMITTED, event_reason=request_info['event_reason'],
+                pipeline=pipeline, user_id=request_info['user_id'],
+                user_email=request_info['user_email'], store_data=package.status)
+            recover_request.save()
+
+            # Update package status
+            package.status = Package.RECOVER_REQ
+            package.save()
+
+            response = {
+                'message': 'Recover request created successfully.'
+            }
+
+            response_json = json.dumps(response)
+            status_code = 202
+        else:
+            response = {
+                'error_message': 'A recover request already exists for this AIP.'
             }
             status_code = 200
 
