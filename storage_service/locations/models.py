@@ -748,24 +748,29 @@ class Package(models.Model):
         destination_space = self.current_location.space
 
         # Copy corrupt files to storage service staging
-        source_path = os.path.join(
-            self.current_location.relative_path,
-            self.current_path)
-        destination_path = os.path.join(
-            origin_location.relative_path,
-            utils.get_setting('recover_backup_path_within_location'))
+        backup_path = utils.get_setting('recover_backup_path_within_location')
 
-        origin_space.move_to_storage_service(
-            source_path=source_path,
-            destination_path=destination_path,
-            destination_space=destination_space)
-        origin_space.post_move_to_storage_service()
+        if backup_path == None:
+            logging.warn("No AIP restore backup directory found, skipping backup")
+        else:
+            source_path = os.path.join(
+                self.current_location.relative_path,
+                self.current_path)
+            destination_path = os.path.join(
+                origin_location.relative_path,
+                utils.get_setting('recover_backup_path_within_location'))
 
-        # Copy corrupt files from staging to backup directory
-        destination_space.move_from_storage_service(
-            source_path=destination_path,
-            destination_path=destination_path)
-        destination_space.post_move_from_storage_service()
+            origin_space.move_to_storage_service(
+                source_path=source_path,
+                destination_path=destination_path,
+                destination_space=destination_space)
+            origin_space.post_move_to_storage_service()
+
+            # Copy corrupt files from staging to backup directory
+            destination_space.move_from_storage_service(
+                source_path=destination_path,
+                destination_path=destination_path)
+            destination_space.post_move_from_storage_service()
 
         # Copy recovery files to storage service staging
         source_path = os.path.join(

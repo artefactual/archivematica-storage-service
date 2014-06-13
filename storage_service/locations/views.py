@@ -50,6 +50,9 @@ def aip_recover_request(request):
     recover_location = Location.objects.get(uuid=recover_location_uuid)
     recover_path_within_location = utils.get_setting('recover_path_within_location')
 
+    if request.method == 'GET' and utils.get_setting('recover_backup_path_within_location') == None:
+        messages.error(request, 'Recover backup path not set.')
+
     def execution_logic(aip): 
         aip_recover_path = os.path.join(recover_path_within_location,
             os.path.basename(aip.current_path))
