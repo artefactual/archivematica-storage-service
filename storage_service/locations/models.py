@@ -791,6 +791,8 @@ class Package(models.Model):
             destination_path=destination_path)
         destination_space.post_move_from_storage_service()
 
+        temp_aip.delete()
+
         # Do fixity check of AIP with recovered files
         return self.check_fixity() 
 
