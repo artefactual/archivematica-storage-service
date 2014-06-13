@@ -730,7 +730,7 @@ class Package(models.Model):
         temp_aip = Package()
         temp_aip.package_type = 'AIP'
         temp_aip.origin_pipeline = self.origin_pipeline
-        temp_aip.current_location = Location.objects.get(uuid=origin_location)
+        temp_aip.current_location = origin_location
         temp_aip.current_path = origin_path
         temp_aip.save()
 

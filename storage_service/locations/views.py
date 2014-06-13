@@ -1,4 +1,5 @@
 import logging
+import os
 
 from django.contrib import auth, messages
 from django.core.urlresolvers import reverse
@@ -45,14 +46,17 @@ def package_list(request):
     return render(request, 'locations/package_list.html', locals())
 
 def aip_recover_request(request):
-    recover_location_uuid = utils.get_setting('recovery_location')
-
-    # TODO: this should probably be automatically derived from AIP name
-    recover_path_to_aip = utils.get_setting('recover_path_to_aip')
+    recover_location_uuid = utils.get_setting('recover_location_uuid')
+    recover_location = Location.objects.get(uuid=recover_location_uuid)
+    recover_path_within_location = utils.get_setting('recover_path_within_location')
 
     def execution_logic(aip): 
+        aip_recover_path = os.path.join(recover_path_within_location,
+            os.path.basename(aip.current_path))
+
         (success, failures, message) = aip.recover_aip(
-            recover_location_uuid, recover_path_to_aip)
+            recover_location, aip_recover_path)
+
         return (success, message)
 
     config = AIPRequestHandlerConfig()

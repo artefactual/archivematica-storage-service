@@ -78,8 +78,8 @@ class CommonSettingsForm(SettingsForm):
     """ Configures common or generic settings that don't belong elsewhere. """
     pipelines_disabled = forms.BooleanField(required=False,
         label="Pipelines are disabled upon creation?")
-    recovery_location = forms.CharField()
-    recover_path_to_aip = forms.CharField()
+    recover_location_uuid = forms.CharField()
+    recover_path_within_location = forms.CharField()
 
 
 class DefaultLocationsForm(SettingsForm):
