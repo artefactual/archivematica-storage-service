@@ -449,33 +449,8 @@ class PackageResource(ModelResource):
             # Can only request deletion on AIPs
             return http.HttpMethodNotAllowed()
 
-        pipeline = Pipeline.objects.get(uuid=request_info['pipeline'])
-
-        # See if an event already exists
-        existing_requests = Event.objects.filter(package=package,
-            event_type=Event.DELETE, status=Event.SUBMITTED).count()
-        if existing_requests < 1:
-            delete_request = Event(package=package, event_type=Event.DELETE,
-                status=Event.SUBMITTED, event_reason=request_info['event_reason'],
-                pipeline=pipeline, user_id=request_info['user_id'],
-                user_email=request_info['user_email'], store_data=package.status)
-            delete_request.save()
-
-            # Update package status
-            package.status = Package.DEL_REQ
-            package.save()
-
-            response = {
-                'message': 'Delete request created successfully.'
-            }
-
-            response_json = json.dumps(response)
-            status_code = 202
-        else:
-            response = {
-                'error_message': 'A deletion request already exists for this AIP.'
-            }
-            status_code = 200
+        (status_code, response) = self._attempt_package_request_event(
+            package, request_info, Event.DELETE, Package.DEL_REQ)
 
         self.log_throttled_access(request)
         response_json = json.dumps(response)
@@ -491,33 +466,8 @@ class PackageResource(ModelResource):
             # Can only request recovery of AIPs
             return http.HttpMethodNotAllowed()
 
-        pipeline = Pipeline.objects.get(uuid=request_info['pipeline'])
-
-        # See if an event already exists
-        existing_requests = Event.objects.filter(package=package,
-            event_type=Event.RECOVER, status=Event.SUBMITTED).count()
-        if existing_requests < 1:
-            recover_request = Event(package=package, event_type=Event.RECOVER,
-                status=Event.SUBMITTED, event_reason=request_info['event_reason'],
-                pipeline=pipeline, user_id=request_info['user_id'],
-                user_email=request_info['user_email'], store_data=package.status)
-            recover_request.save()
-
-            # Update package status
-            package.status = Package.RECOVER_REQ
-            package.save()
-
-            response = {
-                'message': 'Recover request created successfully.'
-            }
-
-            response_json = json.dumps(response)
-            status_code = 202
-        else:
-            response = {
-                'error_message': 'A recover request already exists for this AIP.'
-            }
-            status_code = 200
+        (status_code, response) = self._attempt_package_request_event(
+            package, request_info, Event.RECOVER, Package.RECOVER_REQ)
 
         self.log_throttled_access(request)
         response_json = json.dumps(response)
@@ -616,3 +566,34 @@ class PackageResource(ModelResource):
             json.dumps(response),
             mimetype="application/json"
         )
+
+    def _attempt_package_request_event(self, package, request_info, event_type, event_status):
+        pipeline = Pipeline.objects.get(uuid=request_info['pipeline'])
+
+        # See if an event already exists
+        existing_requests = Event.objects.filter(package=package,
+            event_type=event_type, status=Event.SUBMITTED).count()
+        if existing_requests < 1:
+            recover_request = Event(package=package, event_type=event_type,
+                status=Event.SUBMITTED, event_reason=request_info['event_reason'],
+                pipeline=pipeline, user_id=request_info['user_id'],
+                user_email=request_info['user_email'], store_data=package.status)
+            recover_request.save()
+
+            # Update package status
+            package.status = event_status
+            package.save()
+
+            response = {
+                'message': 'Recovery request created successfully.'
+            }
+
+            response_json = json.dumps(response)
+            status_code = 202
+        else:
+            response = {
+                'error_message': 'A recovery request already exists for this AIP.'
+            }
+            status_code = 200
+
+        return (status_code, response)
