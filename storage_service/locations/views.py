@@ -44,9 +44,34 @@ def package_list(request):
     packages = Package.objects.all()
     return render(request, 'locations/package_list.html', locals())
 
+def aip_recover_request(request):
+    recover_location_uuid = utils.get_setting('recovery_location')
+
+    # TODO: this should probably be automatically derived from AIP name
+    recover_path_to_aip = utils.get_setting('recover_path_to_aip')
+
+    def execution_logic(aip): 
+        (success, failures, message) = aip.recover_aip(
+            recover_location_uuid, recover_path_to_aip)
+        return (success, message)
+
+    return _handle_aip_request(
+      request, Event.RECOVER, execution_logic, Package.UPLOADED,
+      'AIP restored.', 'AIP restore failed', 'AIP restore rejected.',
+      'aip_recover_request')
+
 def aip_delete_request(request):
+    def execution_logic(aip): 
+        return aip.delete_from_storage()
+
+    return _handle_aip_request(
+      request, Event.DELETE, execution_logic, Package.DELETED,
+      'Package deleted successfully.', 'Package was not deleted from disk correctly',
+      'Request rejected, package still stored.', 'aip_delete_request')
+
+def _handle_aip_request(request, event_type, execution_logic, execution_status, execution_success_message, execution_fail_message, reject_message, view_name):
     requests = Event.objects.filter(status=Event.SUBMITTED).filter(
-        event_type=Event.DELETE)
+        event_type=event_type)
     if request.method == 'POST':
         # FIXME won't scale with many pending deletes, since does linear search
         # on all the forms
@@ -60,25 +85,25 @@ def aip_delete_request(request):
                 if 'reject' in request.POST:
                     event.status = Event.REJECTED
                     event.package.status = event.store_data
-                    messages.success(request, "Request rejected, package still stored.")
+                    messages.success(request, reject_message)
                 elif 'approve' in request.POST:
                     event.status = Event.APPROVED
-                    event.package.status = Package.DELETED
-                    success, err_msg = event.package.delete_from_storage()
+                    event.package.status = execution_status
+                    success, err_msg = execution_logic(event.package)
                     if not success:
                         messages.error(request,
-                            "Package was not deleted from disk correctly: {}. Please contact an administrator or see logs for details".format(err_msg))
+                            "{}: {}. Please contact an administrator or see logs for details".format(execution_fail_message, err_msg))
                     else:
-                        messages.success(request, "Request approved.  Package deleted successfully.")
+                        messages.success(request, "Request approved. {}".format(execution_success_message))
                 event.save()
                 event.package.save()
-                return redirect('aip_delete_request')
+                return redirect(view_name)
     else:
         for req in requests:
             req.form = forms.ConfirmEventForm(prefix=str(req.id), instance=req)
     closed_requests = Event.objects.filter(
         Q(status=Event.APPROVED) | Q(status=Event.REJECTED))
-    return render(request, 'locations/aip_delete_request.html', locals())
+    return render(request, 'locations/aip_request.html', locals())
 
 
 ########################## LOCATIONS ##########################
