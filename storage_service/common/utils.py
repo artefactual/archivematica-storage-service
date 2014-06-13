@@ -1,8 +1,13 @@
 import ast
 import logging
-import os.path
+import mimetypes
+import os
+import shutil
+
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.servers.basehttp import FileWrapper
+from django import http
 
 from administration import models
 
@@ -59,6 +64,42 @@ def dependent_objects(object_):
                  'value': linked_object})
     return dependent_objects
 
+
+############ DOWNLOADING ############
+
+def download_file_stream(filepath, temp_dir=None):
+    """
+    Returns `filepath` as a HttpResponse stream.
+
+    Deletes temp_dir once stream created if it exists.
+    """
+    # If not found, return 404
+    if not os.path.exists(filepath):
+        return http.HttpNotFound("File not found")
+
+    filename = os.path.basename(filepath)
+    extension = os.path.splitext(filepath)[1].lower()
+
+    wrapper = FileWrapper(file(filepath))
+    response = http.HttpResponse(wrapper)
+
+    # force download for certain filetypes
+    extensions_to_download = ['.7z', '.zip']
+    if extension in extensions_to_download:
+        response['Content-Type'] = 'application/force-download'
+        response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
+    else:
+        mimetype = mimetypes.guess_type(filename)[0]
+        response['Content-type'] = mimetype
+
+    response['Content-Length'] = os.path.getsize(filepath)
+
+    # Delete temp dir if created
+    if temp_dir and os.path.exists(temp_dir):
+        shutil.rmtree(temp_dir)
+
+    return response
+
 ############ OTHER ############
 
 def uuid_to_path(uuid):
@@ -78,7 +119,10 @@ def removedirs(relative_path, base=None):
     Cribbed from the implementation of os.removedirs. """
     if not base:
         return os.removedirs(relative_path)
-    os.rmdir(os.path.join(base, relative_path))
+    try:
+        os.rmdir(os.path.join(base, relative_path))
+    except os.error:
+        pass
     head, tail = os.path.split(relative_path)
     if not tail:
         head, tail = os.path.split(head)

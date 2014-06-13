@@ -6,20 +6,20 @@
 
 <div class='user'>
     {% if edit_user %}
-    <form action="{% url 'user_edit' edit_user.username %}" method="post">
+    <form action="{% url 'user_edit' edit_user.id %}" method="post">
     {% else %}
     <form action="{% url 'user_create' %}" method="post">
     {% endif %}
       {% csrf_token %}
       {{ user_form.as_p }}
-      <input type="submit" name='user' value="{{action}} user" />
+      <input type="submit" name='user' value="{{action}} user" class='btn btn-primary' />
     </form>
 
     {% if edit_user %}
-    <form action="{% url 'user_edit' edit_user.username %}" method="post">
+    <form action="{% url 'user_edit' edit_user.id %}" method="post">
       {% csrf_token %}
       {{ password_form.as_p }}
-      <input type="submit" name='password' value="Change Password" />
+      <input type="submit" name='password' value="Change Password" class='btn btn-primary' />
     </form>
     {% endif %}
 

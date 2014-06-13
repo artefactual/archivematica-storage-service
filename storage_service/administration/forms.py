@@ -78,6 +78,9 @@ class CommonSettingsForm(SettingsForm):
     """ Configures common or generic settings that don't belong elsewhere. """
     pipelines_disabled = forms.BooleanField(required=False,
         label="Pipelines are disabled upon creation?")
+    recover_location_uuid = forms.CharField()
+    recover_path_within_location = forms.CharField()
+    recover_backup_path_within_location = forms.CharField()
 
 
 class DefaultLocationsForm(SettingsForm):
@@ -96,6 +99,14 @@ class DefaultLocationsForm(SettingsForm):
     new_aip_storage = DefaultLocationField(
         required=False,
         label="New AIP Storage:")
+    default_backlog = forms.MultipleChoiceField(
+        choices=[],
+        required=False,
+        label="Default transfer backlog locations for new pipelines:"
+        )
+    new_backlog = DefaultLocationField(
+        required=False,
+        label="New Transfer Backlog:")
 
     def __init__(self, *args, **kwargs):
         super(DefaultLocationsForm, self).__init__(*args, **kwargs)
@@ -108,6 +119,10 @@ class DefaultLocationsForm(SettingsForm):
         self.fields['default_aip_storage'].choices = [
             (l.uuid, l.get_description()) for l in
             Location.active.filter(purpose=Location.AIP_STORAGE)] + \
+            [('new', 'Create new location for each pipeline')]
+        self.fields['default_backlog'].choices = [
+            (l.uuid, l.get_description()) for l in
+            Location.active.filter(purpose=Location.BACKLOG)] + \
             [('new', 'Create new location for each pipeline')]
 
     def clean(self):

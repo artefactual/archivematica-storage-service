@@ -1,4 +1,5 @@
 import logging
+import os
 
 from django.contrib import auth, messages
 from django.core.urlresolvers import reverse
@@ -12,7 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 from common import decorators
 from common import utils
 from .models import Space, Location, Package, Event, Pipeline, LocationPipeline
-from .forms import SpaceForm, LocationForm, ConfirmEventForm, PipelineForm
+from . import forms
 from .constants import PROTOCOL
 
 logger = logging.getLogger(__name__)
@@ -44,14 +45,55 @@ def package_list(request):
     packages = Package.objects.all()
     return render(request, 'locations/package_list.html', locals())
 
+def aip_recover_request(request):
+    recover_location_uuid = utils.get_setting('recover_location_uuid')
+    recover_location = Location.objects.get(uuid=recover_location_uuid)
+    recover_path_within_location = utils.get_setting('recover_path_within_location')
+
+    if request.method == 'GET' and utils.get_setting('recover_backup_path_within_location') == None:
+        messages.error(request, 'Recover backup path not set.')
+
+    def execution_logic(aip): 
+        aip_recover_path = os.path.join(recover_path_within_location,
+            os.path.basename(aip.current_path))
+
+        (success, failures, message) = aip.recover_aip(
+            recover_location, aip_recover_path)
+
+        return (success, message)
+
+    config = AIPRequestHandlerConfig()
+    config.event_type = Event.RECOVER
+    config.approved_status = Package.UPLOADED
+    config.reject_message = 'AIP restore rejected.'
+    config.execution_success_message = 'AIP restored.'
+    config.execution_fail_message = 'AIP restore failed'
+    config.execution_logic = execution_logic
+
+    return _handle_aip_request(request, config, 'aip_recover_request')
+
 def aip_delete_request(request):
+    def execution_logic(aip): 
+        return aip.delete_from_storage()
+
+    config = AIPRequestHandlerConfig()
+    config.event_type = Event.DELETE
+    config.approved_status = Package.DELETED
+    config.reject_message = 'Request rejected, package still stored.'
+    config.execution_success_message = 'Package deleted successfully.'
+    config.execution_fail_message = 'Package was not deleted from disk correctly'
+    config.execution_logic = execution_logic
+
+    return _handle_aip_request(request, config, 'aip_delete_request')
+
+def _handle_aip_request(request, config, view_name):
     requests = Event.objects.filter(status=Event.SUBMITTED).filter(
-        event_type=Event.DELETE)
+        event_type=config.event_type)
     if request.method == 'POST':
         # FIXME won't scale with many pending deletes, since does linear search
         # on all the forms
         for req in requests:
-            req.form = ConfirmEventForm(request.POST, prefix=str(req.id),
+            req.form = forms.ConfirmEventForm(request.POST, prefix=str(req.id),
                 instance=req)
             if req.form.is_valid():
                 event = req.form.save()
@@ -60,25 +102,35 @@ def aip_delete_request(request):
                 if 'reject' in request.POST:
                     event.status = Event.REJECTED
                     event.package.status = event.store_data
-                    messages.success(request, "Request rejected, package still stored.")
+                    messages.success(request, config.reject_message)
                 elif 'approve' in request.POST:
                     event.status = Event.APPROVED
-                    event.package.status = Package.DELETED
-                    success, err_msg = event.package.delete_from_storage()
+                    event.package.status = config.approved_status
+                    success, err_msg = config.execution_logic(event.package)
                     if not success:
                         messages.error(request,
-                            "Package was not deleted from disk correctly: {}. Please contact an administrator or see logs for details".format(err_msg))
+                            "{}: {}. Please contact an administrator or see logs for details".format(config.execution_fail_message, err_msg))
                     else:
-                        messages.success(request, "Request approved.  Package deleted successfully.")
+                        messages.success(request, "Request approved. {}".format(config.execution_success_message))
                 event.save()
                 event.package.save()
-                return redirect('aip_delete_request')
+                return redirect(view_name)
     else:
         for req in requests:
-            req.form = ConfirmEventForm(prefix=str(req.id), instance=req)
+            req.form = forms.ConfirmEventForm(prefix=str(req.id), instance=req)
     closed_requests = Event.objects.filter(
         Q(status=Event.APPROVED) | Q(status=Event.REJECTED))
-    return render(request, 'locations/aip_delete_request.html', locals())
+    return render(request, 'locations/aip_request.html', locals())
+
+class AIPRequestHandlerConfig:
+    event_type = ''                # Event type being handled
+    approved_status = ''           # Event status, if approved
+    reject_message = ''            # Message returned if not approved
+    execution_success_message = '' # Message returned if execution success
+    execution_fail_message = ''    # Message returned if execution failed
+
+    def execution_logic(package):  # Logic performed on package if approved
+        pass
 
 
 ########################## LOCATIONS ##########################
@@ -91,7 +143,7 @@ def location_edit(request, space_uuid, location_uuid=None):
     else:
         action = "Create"
         location = None
-    form = LocationForm(request.POST or None, instance=location)
+    form = forms.LocationForm(request.POST or None, instance=location)
     if form.is_valid():
         location = form.save(commit=False)
         location.space = space
@@ -160,14 +212,14 @@ def pipeline_edit(request, uuid=None):
         initial = {'enabled': not utils.get_setting('pipelines_disabled')}
 
     if request.method == 'POST':
-        form = PipelineForm(request.POST, instance=pipeline, initial=initial)
+        form = forms.PipelineForm(request.POST, instance=pipeline, initial=initial)
         if form.is_valid():
             pipeline = form.save()
             pipeline.save(form.cleaned_data['create_default_locations'])
             messages.success(request, "Pipeline saved.")
             return redirect('pipeline_list')
     else:
-        form = PipelineForm(instance=pipeline, initial=initial)
+        form = forms.PipelineForm(instance=pipeline, initial=initial)
     return render(request, 'locations/pipeline_form.html', locals())
 
 def pipeline_list(request):
@@ -225,6 +277,7 @@ def space_detail(request, uuid):
         messages.warning(request, "Space {} does not exist.".format(uuid))
         return redirect('space_list')
     child = space.get_child_space()
+
     child_dict_raw = model_to_dict(child,
         PROTOCOL[space.access_protocol]['fields']or [''])
     child_dict = { child._meta.get_field_by_name(field)[0].verbose_name: value
@@ -235,7 +288,7 @@ def space_detail(request, uuid):
 
 def space_create(request):
     if request.method == 'POST':
-        space_form = SpaceForm(request.POST, prefix='space')
+        space_form = forms.SpaceForm(request.POST, prefix='space')
         if space_form.is_valid():
             # Get access protocol form to validate
             access_protocol = space_form.cleaned_data['access_protocol']
@@ -258,14 +311,14 @@ def space_create(request):
                 protocol_form = PROTOCOL[access_protocol]['form'](
                    request.POST, prefix='protocol')
     else:
-        space_form = SpaceForm(prefix='space')
+        space_form = forms.SpaceForm(prefix='space')
 
     return render(request, 'locations/space_form.html', locals())
 
 def space_edit(request, uuid):
     space = get_object_or_404(Space, uuid=uuid)
     protocol_space = space.get_child_space()
-    space_form = SpaceForm(request.POST or None, prefix='space', instance=space)
+    space_form = forms.SpaceForm(request.POST or None, prefix='space', instance=space)
     protocol_form = PROTOCOL[space.access_protocol]['form'](
                 request.POST or None, prefix='protocol', instance=protocol_space)
     if space_form.is_valid() and protocol_form.is_valid():

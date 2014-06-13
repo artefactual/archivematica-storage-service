@@ -8,7 +8,7 @@
     <form action="{% url 'space_create' %}" method="post">{% csrf_token %}
         {{ space_form.as_p }}
         <div id="protocol_form">{{ protocol_form.as_p|default:"" }}</div>
-        <input type="submit" value="Create Space" />
+        <input type="submit" value="Create Space" class='btn btn-primary' />
     </form>
 </div>
 {% endblock %}

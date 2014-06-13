@@ -6,7 +6,10 @@
 
 {% include 'snippets/package_description.html' %}
 
-<p><a href="{% url 'aip_delete_request' %}">View delete requests</a></p>
+<p>
+  <a href="{% url 'aip_recover_request' %}">View recovery requests</a>
+  | <a href="{% url 'aip_delete_request' %}">View delete requests</a>
+</p>
 
 {% if packages %}
   {% include "snippets/packages_table.html" %}

@@ -27,9 +27,10 @@ function createSingleDirectoryPicker(path, textFieldCssId, triggerElementCssId, 
             description: 'Select directory',
             iconHtml: 'Select',
             logic: function(result) {
-              var path = result.path;
+              // Path with the base path stripped
+              var path = result.path.replace(selector.basePath, '')
 
-              // hack to work around issue
+              // strip leading '/'s
               while (path[0] == '/') {
                 path = path.substr(1, path.length - 1);
               }
@@ -47,6 +48,7 @@ function createSingleDirectoryPicker(path, textFieldCssId, triggerElementCssId, 
         'parent': '',
         'children': []
       };
+      selector.basePath = path
 
       selector.render();
     }

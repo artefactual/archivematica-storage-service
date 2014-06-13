@@ -18,7 +18,7 @@
       {% csrf_token %}
         <p>Space: {{ space }}</p>
         {{ form.as_p }}
-        <input type="submit" value="{{ action }} Location" />
+        <input type="submit" value="{{ action }} Location" class='btn btn-primary' />
     </form>
 </div>
 
@@ -31,10 +31,11 @@
   <script type="text/javascript" src="{{ STATIC_URL }}js/file-explorer.js"></script>
   <script type="text/javascript" src="{{ STATIC_URL }}js/directory_picker.js"></script>
   <script type="text/javascript" src="{{ STATIC_URL }}js/single_directory_picker.js"></script>
+  <script type="text/javascript" src="{{ STATIC_URL }}js/vendor/base64.js"></script>
 
   <script>
     $(document).ready(function() {
-      $('<input id="id_relative_path_browse" type="button" value="Browse" />')
+      $('<input id="id_relative_path_browse" type="button" value="Browse" class="btn" />')
         .insertAfter('#id_relative_path');
 
       createSingleDirectoryPicker(
@@ -42,7 +43,7 @@
         'id_relative_path',
         'id_relative_path_browse',
         'directory_picker',
-        '/api/v1/space/{{ space.uuid }}/browse/'
+        '{% url "browse" "v2" "space" space.uuid %}'
       );
     });
   </script>

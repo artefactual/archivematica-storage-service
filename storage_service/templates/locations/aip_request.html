@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block page_title %}AIP Deletion Requests{% endblock %}
+{% block page_title %}AIP {{ event_type | title }} Requests{% endblock %}
 
 {% block content %}
 
@@ -25,11 +25,11 @@
         <td>{{ req.user_email }} (ID: {{ req.user_id}})</td>
         <td>{{ req.status_time }}</td>
         <td>
-          <form action="{% url 'aip_delete_request' %}" method="post">
+          <form action="{% url view_name %}" method="post">
             {% csrf_token %}
             {{ req.form.as_p }}
-            <input type="submit" name="approve" value="Approve (Delete AIP)" class='btn' />
-            <input type="submit" name="reject" value="Reject (Keep AIP)" class='btn btn-primary' />
+            <input type="submit" name="approve" value="Approve ({{ event_type | title }} AIP)" class='btn' />
+            <input type="submit" name="reject" value="Reject (No change to AIP)" class='btn btn-primary' />
           </form>
         </td>
       </tr>

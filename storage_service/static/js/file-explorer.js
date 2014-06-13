@@ -199,6 +199,10 @@
           var child = entry.children[index]
             , allowDisplay = true;
 
+          // names are base64-encoded from the server; needs to be
+          // decoded for human reading
+          child.attributes.name = Base64.decode(child.attributes.name);
+
           if (self.entryDisplayFilter) {
             allowDisplay = self.entryDisplayFilter(child);
           }

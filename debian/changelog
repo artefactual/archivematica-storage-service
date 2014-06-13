@@ -1,5 +1,11 @@
-archivematica-storage-service (0.2.2ppa15) precise; urgency=high
+archivematica-storage-service (0.3.0.rc10) UNRELEASED; urgency=low
+
+  * Add migrations and uninstall to debian packaging
+
+ -- Justin Simpson <jhs@inex>  Tue, 08 Apr 2014 16:25:34 -0700
+
+archivematica-storage-service (0.2.0) precise; urgency=low
 
   * updated to 0.2.2
 
- -- Austin Trask <austin@artefactual.com>  Wed, 8 Jan 2013 18:17:20 -0800
+ -- Justin Simpson <jhs@inex>  Tue, 05 Nov 2013 18:17:20 -0800

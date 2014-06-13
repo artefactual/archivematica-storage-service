@@ -196,7 +196,7 @@ DJANGO_APPS = (
 )
 
 THIRD_PARTY_APPS = (
-    # 'south',  # DB migration helper
+    'south',  # DB migration helper
     'tastypie',  # REST framework
 )
 
