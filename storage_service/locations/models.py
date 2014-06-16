@@ -1238,6 +1238,18 @@ class Package(models.Model):
     PACKAGE_TYPE_CAN_DELETE = (AIP, AIC, TRANSFER)
     PACKAGE_TYPE_CAN_EXTRACT = (AIP, AIC)
 
+    # Compression options
+    COMPRESSION_7Z_BZIP = '7z with bzip'
+    COMPRESSION_7Z_LZMA = '7z with lzma'
+    COMPRESSION_TAR = 'tar'
+    COMPRESSION_TAR_BZIP2 = 'tar bz2'
+    COMPRESSION_ALGORITHMS = (
+        COMPRESSION_7Z_BZIP,
+        COMPRESSION_7Z_LZMA,
+        COMPRESSION_TAR,
+        COMPRESSION_TAR_BZIP2,
+    )
+
     class Meta:
         verbose_name = "Package"
 
@@ -1511,34 +1523,67 @@ class Package(models.Model):
 
         return (output_path, extract_path)
 
-    def compress_package(self, extract_path=None):
+    def compress_package(self, algorithm, extract_path=None):
         """
         Produces a compressed copy of the package.
 
-        If `extract_path` is provided, will compress there, otherwise to a temp
-        directory in the SS internal location.
-
-        Returns path to the compressed file and its parent directory. Given that
-        compressed packages are likely to be large, this should generally
-        be deleted after use if a temporary directory was used.
+        :param algorithm: Compression algorithm to use. Should be one of
+            :const:`Package.COMPRESSION_ALGORITHMS`
+        :param str extract_path: Path to compress to. If not provided, will
+            compress to a temp directory in the SS internal location.
+        :return: Tuple with (path to the compressed file, parent directory of
+            compressed file)  Given that compressed packages are likely to
+            be large, this should generally be deleted after use if a temporary
+            directory was used.
         """
 
         if extract_path is None:
             ss_internal = Location.objects.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
             extract_path = tempfile.mkdtemp(dir=ss_internal.full_path)
+        if algorithm not in self.COMPRESSION_ALGORITHMS:
+            raise ValueError('Algorithm %s not in %s' % algorithm, self.COMPRESSION_ALGORITHMS)
 
         full_path = self.get_local_path()
+
         if os.path.isfile(full_path):
             basename = os.path.splitext(os.path.basename(full_path))[0]
         else:
             basename = os.path.basename(full_path)
-        relative_path = os.path.dirname(full_path)
-        compressed_filename = os.path.join(extract_path, basename + '.tar')
 
-        command = [
-            "tar", "-cf", compressed_filename,
-            "-C", relative_path, os.path.basename(full_path)
-        ]
+        if algorithm in (self.COMPRESSION_TAR, self.COMPRESSION_TAR_BZIP2):
+            compressed_filename = os.path.join(extract_path, basename + '.tar')
+            relative_path = os.path.dirname(full_path)
+            algo = ''
+            if algorithm == self.COMPRESSION_TAR_BZIP2:
+                algo = '-j'  # Compress with bzip2
+                compressed_filename += '.bz2'
+            command = [
+                'tar', 'c',  # Create tar
+                algo,  # Optional compression flag
+                '-C', relative_path,  # Work in this directory
+                '-f', compressed_filename,  # Output file
+                os.path.basename(full_path),   # Relative path to source files
+            ]
+        elif algorithm in (self.COMPRESSION_7Z_BZIP, self.COMPRESSION_7Z_LZMA):
+            compressed_filename = os.path.join(extract_path, basename + '.7z')
+            if algorithm == self.COMPRESSION_7Z_BZIP:
+                algo = 'bzip2'
+            elif algorithm == self.COMPRESSION_7Z_LZMA:
+                algo = 'lzma'
+            command = [
+                '7z', 'a',  # Add
+                '-bd',  # Disable percentage indicator
+                '-t7z',  # Type of archive
+                '-y',  # Assume Yes on all queries
+                '-m0=' + algo,  # Compression method
+                '-mtc=on', '-mtm=on', '-mta=on',  # Keep timestamps (create, mod, access)
+                '-mmt=on',  # Multithreaded
+                compressed_filename,  # Destination
+                full_path,  # Source
+            ]
+        else:
+            raise NotImplementedError('Algorithm %s not implemented' % algorithm)
+
         logging.info('Compressing package with: {} to {}'.format(command, compressed_filename))
         rc = subprocess.call(command)
         logging.debug('Extract file RC: %s', rc)
