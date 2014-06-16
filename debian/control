@@ -14,7 +14,7 @@ X-Python-Version: 2.7
 
 Package: archivematica-storage-service
 Architecture: i386 amd64
-Depends: ${python:Depends}, ${misc:Depends}, python-lxml, nginx, unar (>= 1.8.1-4), uwsgi, uwsgi-plugin-python
+Depends: ${python:Depends}, ${misc:Depends}, python-lxml, nginx, unar (>= 1.8.1-4~), uwsgi, uwsgi-plugin-python
 Description: Django webapp for managing storage in an Archivematica
     installation.
 Homepage: http://archivematica.org
