@@ -242,6 +242,7 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
     tree = etree.parse(filepath)
     root = tree.getroot()
     deposit_name = root.get('LABEL')
+    object_id = root.get('OBJID')
     logging.info('found deposit name in mets: ' + deposit_name)
 
     # parse XML for content URLs
@@ -266,6 +267,7 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
            raise Exception('If using CHECKSUM attribute, CHECKSUMTYPE attribute value must be set to MD5 in XML')
 
        objects.append({
+           'object_id': object_id,
            'filename': filename,
            'url': url,
            'checksum': checksum

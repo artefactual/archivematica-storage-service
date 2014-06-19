@@ -208,10 +208,8 @@ def _fetch_content(deposit_uuid, objects):
                 os.unlink(temp_filename)
                 raise Exception("Incorrect checksum")
 
-            shutil.move(
-                temp_filename,
-                os.path.join(deposit.full_path(), filename)
-            )
+            new_path = os.path.join(deposit.full_path(), filename)
+            shutil.move(temp_filename, new_path)
 
             # mark download task file record complete or failed
             task_file.completed = True
@@ -219,6 +217,13 @@ def _fetch_content(deposit_uuid, objects):
 
             logging.info('Saved file to ' + os.path.join(deposit.full_path(), filename))
             completed += 1
+
+            file_record = models.File(
+                name=item['filename'],
+                source_id=item['object_id'],
+                checksum=generate_checksum(new_path, 'sha512').hexdigest()
+            )
+            file_record.save()
         except Exception as e:
             logging.error('Package download task encountered an error:' + str(e))
             # an error occurred
