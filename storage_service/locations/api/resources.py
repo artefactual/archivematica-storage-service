@@ -503,6 +503,9 @@ class PackageResource(ModelResource):
             basename = os.path.join(os.path.basename(full_path), '')
             relative_path_to_file = relative_path_to_file.split(basename, 1)[1]
             extracted_file_path = os.path.join(full_path, relative_path_to_file)
+            if not os.path.exists(extracted_file_path):
+                return http.HttpResponse(status=404,
+                    content="Requested file, {}, not found in AIP".format(relative_path_to_file))
         elif package.package_type in Package.PACKAGE_TYPE_CAN_EXTRACT:
             # If file doesn't exist, try to extract it
             (extracted_file_path, temp_dir) = package.extract_file(relative_path_to_file)
