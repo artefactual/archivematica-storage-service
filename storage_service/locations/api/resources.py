@@ -509,6 +509,10 @@ class PackageResource(ModelResource):
         elif package.package_type in Package.PACKAGE_TYPE_CAN_EXTRACT:
             # If file doesn't exist, try to extract it
             (extracted_file_path, temp_dir) = package.extract_file(relative_path_to_file)
+        else:
+            # If the package is compressed and we can't extract it,
+            return http.HttpResponse(status=501,
+                content="Unable to extract package of type: {}".format(package.package_type))
 
         response = utils.download_file_stream(extracted_file_path, temp_dir)
 
