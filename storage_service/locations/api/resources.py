@@ -495,10 +495,14 @@ class PackageResource(ModelResource):
         package = bundle.obj
         full_path = package.full_path()
 
-        local_path = os.path.join(full_path, relative_path_to_file)
-        if os.path.exists(local_path):
-            # Local file exists - return that
-            extracted_file_path = local_path
+        # If local file exists - return that
+        if not package.is_compressed():
+            # The basename of the AIP is included with the request, because
+            # all packages contain a base directory. That directory is already
+            # inside the full path though, so remove it here.
+            basename = os.path.join(os.path.basename(full_path), '')
+            relative_path_to_file = relative_path_to_file.split(basename, 1)[1]
+            extracted_file_path = os.path.join(full_path, relative_path_to_file)
         elif package.package_type in Package.PACKAGE_TYPE_CAN_EXTRACT:
             # If file doesn't exist, try to extract it
             (extracted_file_path, temp_dir) = package.extract_file(relative_path_to_file)
