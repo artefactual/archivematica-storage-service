@@ -946,25 +946,34 @@ class Package(models.Model):
 
         return {'error': False, 'status_code': 202, 'message': 'Package {} sent to pipeline {} for re-ingest'.format(self.uuid, pipeline)}
 
-    def finish_reingest(self, origin_location, origin_path):
+    def finish_reingest(self, origin_location, origin_path, reingest_location, reingest_path):
+        """
+        Updates an existing AIP with the reingested version.
+
+        Fetches the AIP from the origin_location.
+        Replaces the METS with the updated one.
+        Copies the new metadata directory over the old one. New files will be added, updated files will be overwritten.
+        Recreate the bagit manifest.
+        Compress the AIP according to what was selected during reingest in Archivematica.
+        Store the AIP in the reingest_location.
+        Update the pointer file.
+
+        :param Location origin_location: Location the AIP was procesed on.
+        :param str origin_path: Path to AIP in current location.
+        :param Location reingest_location: Location to store the updated AIP in.
+        :param str reingest_path: Path to store the updated AIP at.
+        """
         # Check origin pipeline against stored pipeline
         if self.origin_pipeline.uuid != self.misc_attributes.get('reingest_pipeline'):
             LOGGER.info('Reingest: Received pipeline %s did not match expected pipeline %s', self.origin_pipeline.uuid, self.misc_attributes.get('reingest_pipeline'))
             raise Exception('%s did not match the pipeline this AIP was reingested on.' % self.origin_pipeline.uuid)
         self.misc_attributes.update({'reingest_pipeline': None})
-
-        # Store AIP at
-        # destination_location/uuid/split/into/chunks/destination_path
-        # FIXME update resource to not modify current_path on PUT??
-        uuid_path = utils.uuid_to_path(self.uuid)
-        self.current_path = os.path.join(uuid_path, self.current_path)
-
         self.save()
 
         src_space = origin_location.space
         ss_internal = Location.objects.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
         internal_space = ss_internal.space
-        dest_space = self.current_location.space
+        dest_space = reingest_location.space
 
         # Copy actual AIP to ss_internal, extract if needed
         path, temp_dir = self.extract_file()  # AIP always copied
@@ -972,46 +981,56 @@ class Package(models.Model):
         # Move reingest AIP to ss_internal
         src_space.move_to_storage_service(
             source_path=os.path.join(origin_location.relative_path, origin_path),
-            destination_path=self.current_path,  # This should include Location.path
+            destination_path=reingest_path,  # This should include Location.path
             destination_space=internal_space)
         internal_space.move_from_storage_service(
-            source_path=self.current_path,  # This should include Location.path
-            destination_path=os.path.join(ss_internal.relative_path, self.current_path),
+            source_path=reingest_path,  # This should include Location.path
+            destination_path=os.path.join(ss_internal.relative_path, reingest_path),
         )
-        reingested_path = os.path.join(ss_internal.full_path, self.current_path)
+        reingest_full_path = os.path.join(ss_internal.full_path, reingest_path)
 
         # Extract if needed
-        # HOW?
-        # Move extract code to utils, call from here and extract_file?
-        # FIXME this is extracting on top of original AIP
-        if os.path.isfile(reingested_path):
+        if os.path.isfile(reingest_full_path):
+            # TODO modify extract_file and get_base_directory to handle reingest paths?  Update self.local_path sooner?
             # Extract
-            command = ['unar', '-force-overwrite', '-o', ss_internal.full_path, reingested_path]
+            command = ['unar', '-force-overwrite', '-o', ss_internal.full_path, reingest_full_path]
             LOGGER.info('Extracting with: {}'.format(command))
             rc = subprocess.call(command)
             LOGGER.debug('Extract file RC: %s', rc)
             # Get output path
-            command = ['lsar', '-ja', reingested_path]
+            command = ['lsar', '-ja', reingest_full_path]
             try:
                 output = subprocess.check_output(command)
                 j = json.loads(output)
                 bname = sorted([d['XADFileName'] for d in j['lsarContents'] if d.get('XADIsDirectory', False)], key=len)[0]
             except (subprocess.CalledProcessError, ValueError):
-                print 'I dunno what to do here'
-                bname = os.path.splitext(os.path.basename(reingested_path))[0]
+                bname = os.path.splitext(os.path.basename(reingest_full_path))[0]
+                LOGGER.warning('Unable to parse base directory from package, using basename %s', bname)
             else:
-                os.remove(reingested_path)
-                reingested_path = os.path.join(ss_internal.full_path, bname)
+                LOGGER.debug('AIP extracted, removing original package %s', reingest_full_path)
+                os.remove(reingest_full_path)
+                reingest_full_path = os.path.join(ss_internal.full_path, bname)
+        LOGGER.debug('Reingest AIP full path: %s', reingest_full_path)
+
+        # Copy pointer file if exists
+        # TODO what do if LOCKSS & uncompressed?
+        if self.package_type in (Package.AIP, Package.AIC):
+            reingest_pointer_src = os.path.join(origin_location.relative_path, os.path.dirname(origin_path), 'pointer.xml')
+            reingest_pointer_name = 'pointer.' + self.uuid + '.reingest.xml'
+            reingest_pointer_dst = os.path.join(ss_internal.relative_path, reingest_pointer_name)
+            src_space.move_to_storage_service(reingest_pointer_src, reingest_pointer_name, internal_space)
+            internal_space.move_from_storage_service(reingest_pointer_name, reingest_pointer_dst)
+            reingest_pointer = os.path.join(ss_internal.full_path, reingest_pointer_name)
 
         # Replace METS
         original_mets_path = os.path.join(path, 'data', 'METS.' + self.uuid + '.xml')
-        reingest_mets_path = os.path.join(reingested_path, 'data', 'METS.' + self.uuid + '.xml')
+        reingest_mets_path = os.path.join(reingest_full_path, 'data', 'METS.' + self.uuid + '.xml')
         LOGGER.info('Replacing original METS %s with reingested METS %s', original_mets_path, reingest_mets_path)
         os.remove(original_mets_path)
         os.rename(reingest_mets_path, original_mets_path)
 
         # Replace new metadata files
-        reingest_metadata_dir = os.path.join(reingested_path, 'data', 'objects', 'metadata')
+        reingest_metadata_dir = os.path.join(reingest_full_path, 'data', 'objects', 'metadata')
         original_metadata_dir = os.path.join(path, 'data', 'objects', 'metadata')
         LOGGER.info('Replacing original metadata directory %s with reingested metadata directory %s', original_metadata_dir, reingest_metadata_dir)
         if os.path.isdir(reingest_metadata_dir):
@@ -1024,25 +1043,48 @@ class Package(models.Model):
         bag.validate()  # Raises exception in case of problem
 
         # Compress
-        # TODO parse pointer file for this and add compress function?
-        out_path = path + '.7z'
-        command = ['/usr/bin/7z', 'a', '-bd', '-t7z', '-y', '-m0=bzip2', '-mx=5', '-mta=on', '-mtc=on', '-mtm=on', '-mmt=on', out_path, path]
-        compress_output = subprocess.check_output(command)
+        # TODO update this for uncompressed AIPs
+        reingest_root = etree.parse(reingest_pointer)
+        os.remove(reingest_pointer)
+        puid = reingest_root.findtext('.//premis:formatRegistryKey', namespaces=utils.NSMAP)
+        if puid == 'fmt/484':  # 7 Zip
+            algo = reingest_root.find('.//mets:transformFile', namespaces=utils.NSMAP).get('TRANSFORMALGORITHM')
+            if algo == 'bzip2':
+                compression = self.COMPRESSION_7Z_BZIP
+            elif algo == 'lzma':
+                compression = self.COMPRESSION_7Z_LZMA
+            else:
+                compression = self.COMPRESSION_7Z_BZIP
+                LOGGER.warning('Reingest: Unable to determine reingested compression algorithm, defaulting to bzip2.')
+        elif puid == 'x-fmt/268':  # Bzipped (probably tar)
+            compression = self.COMPRESSION_TAR_BZIP2
+        else:
+            compression = self.COMPRESSION_7Z_BZIP
+            LOGGER.warning('Reingest: Unable to determine reingested file format, defaulting recompression algorithm to %s.', compression)
+        LOGGER.info('Reingest: compressing with %s', compression)
+        # FIXME Do we need compression output for event?
+        out_path, out_dir = self.compress_package(compression)
+        compress_output = ''
 
         # Delete working files
-        shutil.rmtree(reingested_path)
+        shutil.rmtree(reingest_full_path)
         shutil.rmtree(temp_dir)
 
         # Move to final destination
-        source_relative = out_path.replace(internal_space.path, '', 1).lstrip(os.sep)
+        src_path = out_path.replace(ss_internal.space.path, '', 1).lstrip('/')
+        uuid_path = utils.uuid_to_path(self.uuid)
+        dest_path = out_path.replace(out_dir, '', 1).lstrip('/')
+        dest_path = os.path.join(uuid_path, dest_path)
         internal_space.move_to_storage_service(
-            source_path=source_relative,
-            destination_path=self.current_path,  # This should include Location.path
+            source_path=src_path,
+            destination_path=dest_path,  # This should include Location.path
             destination_space=dest_space)
         dest_space.move_from_storage_service(
-            source_path=self.current_path,  # This should include Location.path
-            destination_path=os.path.join(self.current_location.relative_path, self.current_path),
+            source_path=dest_path,  # This should include Location.path
+            destination_path=os.path.join(reingest_location.relative_path, dest_path),
         )
+        self.current_location = reingest_location
+        self.current_path = dest_path
 
         # Update pointer file
         root = etree.parse(self.full_pointer_file_path)
@@ -1060,12 +1102,21 @@ class Package(models.Model):
 
         # Add compression event (if compressed)
         amdsec = root.find('mets:amdSec', namespaces=utils.NSMAP)
-        # TODO update this for other compression algorithms
-        try:
-            version = [x for x in subprocess.check_output('7z').splitlines() if 'Version' in x][0]
-            event_detail = 'program=\"7z\"; version=\"{}\"'.format(version)
-        except (subprocess.CalledProcessError, Exception):
-            event_detail = 'program=\"7z\"'
+        if compression in (self.COMPRESSION_7Z_BZIP, self.COMPRESSION_7Z_LZMA):
+            try:
+                version = [x for x in subprocess.check_output('7z').splitlines() if 'Version' in x][0]
+                event_detail = 'program="7z"; version="{}"'.format(version)
+            except (subprocess.CalledProcessError, Exception):
+                event_detail = 'program="7z"'
+        elif compression in (self.COMPRESSION_TAR_BZIP2, self.COMPRESSION_TAR):
+            try:
+                version = subprocess.check_output(['tar', '--version']).splitlines()[0]
+                event_detail = 'program="tar"; version="{}"'.format(version)
+            except (subprocess.CalledProcessError, Exception):
+                event_detail = 'program="tar"'
+        else:
+            LOGGER.warning('Unknown compression algorithm, cannot correctly update pointer file')
+            event_detail = 'Unknown compression'
         utils.mets_add_event(
             amdsec,
             'compression',
@@ -1078,7 +1129,7 @@ class Package(models.Model):
             f.write(etree.tostring(root, pretty_print=True))
 
         # Delete working file
-        os.remove(out_path)  # Check whether compressed or not for shutil.rmtree
+        shutil.rmtree(out_dir)
         self.save()
 
     # SWORD-related methods
