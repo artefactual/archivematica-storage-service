@@ -1,4 +1,5 @@
 # stdlib, alphabetical
+import datetime
 import distutils.dir_util
 import json
 import logging
@@ -1089,17 +1090,6 @@ class Package(models.Model):
         # Update pointer file
         root = etree.parse(self.full_pointer_file_path)
 
-        # Update checksum
-        fixity_elem = root.find('.//premis:fixity', namespaces=utils.NSMAP)
-        algorithm = fixity_elem.findtext('premis:messageDigestAlgorithm', namespaces=utils.NSMAP)
-        try:
-            checksum = utils.generate_checksum(out_path, algorithm)
-        except ValueError:
-            # If incorrectly parsed algorithm, default to sha512, since that is
-            # what AM uses
-            checksum = utils.generate_checksum(out_path, 'sha512')
-        fixity_elem.find('premis:messageDigest', namespaces=utils.NSMAP).text = checksum.hexdigest()
-
         # Add compression event (if compressed)
         amdsec = root.find('mets:amdSec', namespaces=utils.NSMAP)
         if compression in (self.COMPRESSION_7Z_BZIP, self.COMPRESSION_7Z_LZMA):
@@ -1124,13 +1114,122 @@ class Package(models.Model):
             event_outcome_detail_note=compress_output,
         )
 
-        # Write out pointer file again
-        with open(self.full_pointer_file_path, 'w') as f:
-            f.write(etree.tostring(root, pretty_print=True))
+        self.update_pointer_file(compression, root=root, path=out_path)
 
         # Delete working file
         shutil.rmtree(out_dir)
         self.save()
+
+    def update_pointer_file(self, compression, root=None, path=None):
+        if not root:
+            root = etree.parse(self.full_pointer_file_path)
+        if not path:
+            path = self.fetch_local_path()
+
+        # Update FLocat to full path
+        file_ = root.find('.//mets:fileGrp[@USE="Archival Information Package"]/mets:file', namespaces=utils.NSMAP)
+        flocat = file_.find('mets:FLocat[@OTHERLOCTYPE="SYSTEM"][@LOCTYPE="OTHER"]', namespaces=utils.NSMAP)
+        flocat.set(utils.PREFIX_NS['xlink'] + 'href', self.full_path)
+
+        # Update fixity checksum
+        fixity_elem = root.find('.//premis:fixity', namespaces=utils.NSMAP)
+        algorithm = fixity_elem.findtext('premis:messageDigestAlgorithm', namespaces=utils.NSMAP)
+        try:
+            checksum = utils.generate_checksum(path, algorithm)
+        except ValueError:
+            # If incorrectly parsed algorithm, default to sha512, since that is
+            # what AM uses
+            checksum = utils.generate_checksum(path, 'sha512')
+        fixity_elem.find('premis:messageDigest', namespaces=utils.NSMAP).text = checksum.hexdigest()
+
+        # Update size
+        root.find('.//premis:size', namespaces=utils.NSMAP).text = str(os.path.getsize(path))
+
+        # Set compression related data
+        comp_level = '1'
+        transform_file = []
+        if compression in (self.COMPRESSION_7Z_BZIP, self.COMPRESSION_7Z_LZMA):
+            if compression == self.COMPRESSION_7Z_BZIP:
+                algo = 'bzip2'
+            elif compression == self.COMPRESSION_7Z_LZMA:
+                algo = 'lzma'
+            transform_file.append(
+                etree.Element("transformFile",
+                    TRANSFORMORDER='1',
+                    TRANSFORMTYPE='decompression',
+                    TRANSFORMALGORITHM=algo,
+                )
+            )
+            version = [x for x in subprocess.check_output('7z').splitlines() if 'Version' in x][0]
+            format_info = {
+                'name': '7Zip format',
+                'registry_name': 'PRONOM',
+                'registry_key': 'fmt/484',
+                'program_name': '7-Zip',
+                'program_version': version,
+            }
+
+        elif compression in (self.COMPRESSION_TAR_BZIP2, self.COMPRESSION_TAR):
+            transform_order = '1'
+            if compression == self.COMPRESSION_TAR_BZIP2:
+                comp_level = '2'
+                transform_file.append(
+                    etree.Element("transformFile",
+                        TRANSFORMORDER='1',
+                        TRANSFORMTYPE='decompression',
+                        TRANSFORMALGORITHM='bzip2',
+                    )
+                )
+                transform_order = '2'
+
+            transform_file.append(
+                etree.Element("transformFile",
+                    TRANSFORMORDER=transform_order,
+                    TRANSFORMTYPE='decompression',
+                    TRANSFORMALGORITHM='tar',
+                )
+            )
+            version = subprocess.check_output(['tar', '--version']).splitlines()[0]
+            format_info = {
+                'name': 'BZIP2 Compressed Archive',
+                'registry_name': 'PRONOM',
+                'registry_key': 'x-fmt/268',
+                'program_name': 'tar',
+                'program_version': version,
+            }
+
+        # Update compositionLevel
+        root.find('.//premis:compositionLevel', namespaces=utils.NSMAP).text = comp_level
+
+        # Set new format info
+        fmt = root.find('.//premis:format', namespaces=utils.NSMAP)
+        fmt.clear()
+        fd = etree.SubElement(fmt, utils.PREFIX_NS['premis'] + 'formatDesignation')
+        etree.SubElement(fd, utils.PREFIX_NS['premis'] + 'formatName').text = format_info.get('name')
+        etree.SubElement(fd, utils.PREFIX_NS['premis'] + 'formatVersion').text = format_info.get('version')
+        fr = etree.SubElement(fmt, utils.PREFIX_NS['premis'] + 'formatRegistry')
+        etree.SubElement(fr, utils.PREFIX_NS['premis'] + 'formatRegistryName').text = format_info.get('registry_name')
+        etree.SubElement(fr, utils.PREFIX_NS['premis'] + 'formatRegistryKey').text = format_info.get('registry_key')
+
+        # Creating application info
+        now = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        app = root.find('.//premis:creatingApplication', namespaces=utils.NSMAP)
+        app.clear()
+        etree.SubElement(app, utils.PREFIX_NS['premis'] + 'creatingApplicationName').text = format_info.get('program_name')
+        etree.SubElement(app, utils.PREFIX_NS['premis'] + 'creatingApplicationVersion').text = format_info.get('program_version')
+        etree.SubElement(app, utils.PREFIX_NS['premis'] + 'dateCreatedByApplication').text = str(now)
+
+        # Remove existing transformFiles
+        to_delete = file_.findall('mets:transformFile', namespaces=utils.NSMAP)
+        for elem in to_delete:
+            file_.remove(elem)
+        # Add new ones
+        for elem in transform_file:
+            file_.append(elem)
+
+        # Write out pointer file again
+        with open(self.full_pointer_file_path, 'w') as f:
+            f.write(etree.tostring(root, pretty_print=True))
 
     # SWORD-related methods
     def has_been_submitted_for_processing(self):

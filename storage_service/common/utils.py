@@ -31,6 +31,8 @@ NSMAP = {
     'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
 }
 
+PREFIX_NS = {k: '{' + v + '}' for k, v in NSMAP.iteritems()}
+
 ############ SETTINGS ############
 
 def get_all_settings():
