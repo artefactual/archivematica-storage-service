@@ -227,6 +227,15 @@ class Space(models.Model):
                 source_path, destination_path, *args, **kwargs)
         except AttributeError:
             raise NotImplementedError('{} space has not implemented move_from_storage_service'.format(self.get_access_protocol_display()))
+        # Delete staging copy
+        if source_path != destination_path:
+            try:
+                if os.path.isdir(source_path):
+                    shutil.rmtree(os.path.normpath(source_path))
+                elif os.path.isfile(source_path):
+                    os.remove(os.path.normpath(source_path))
+            except OSError:
+                logging.warning('Unable to remove %s', source_path, exc_info=True)
 
     def post_move_from_storage_service(self, staging_path=None, destination_path=None, package=None, *args, **kwargs):
         """ Hook for any actions that need to be taken after moving from the storage service to the final destination. """
