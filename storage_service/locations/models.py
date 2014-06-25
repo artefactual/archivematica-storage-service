@@ -147,6 +147,22 @@ class Space(models.Model):
         except AttributeError:
             return self._browse_local(path)
 
+    def delete_path(self, delete_path, *args, **kwargs):
+        """
+        Deletes `delete_path` stored in this space.
+
+        `delete_path` is a full path in this space.
+
+        If not implemented in the child space, looks locally.
+        """
+        # Enforce delete_path is in self.path
+        if not delete_path.startswith(self.path):
+            raise ValueError('%s is not within %s', delete_path, self.path)
+        try:
+            return self.get_child_space().delete_path(delete_path, *args, **kwargs)
+        except AttributeError:
+            return self._delete_path_local(delete_path)
+
     def move_to_storage_service(self, source_path, destination_path,
                                 destination_space, *args, **kwargs):
         """ Move source_path to destination_path in the staging area of destination_space.
@@ -315,6 +331,19 @@ class Space(models.Model):
                 directories.append(name)
         return {'directories': directories, 'entries': entries}
 
+    def _delete_path_local(self, delete_path):
+        """
+        Deletes `delete_path` in this space, assuming it is locally accessible.
+        """
+        try:
+            if os.path.isfile(delete_path):
+                os.remove(delete_path)
+            if os.path.isdir(delete_path):
+                shutil.rmtree(delete_path)
+        except (os.error, shutil.Error):
+            logging.warning("Error deleting package %s", delete_path, exc_info=True)
+            raise
+
 
 class LocalFilesystem(models.Model):
     """ Spaces found in the local filesystem of the storage service."""
@@ -450,6 +479,18 @@ class PipelineLocalFS(models.Model):
         directories = sorted(directories, key=lambda s: s.lower())
         entries = sorted(entries, key=lambda s: s.lower())
         return {'directories': directories, 'entries': entries}
+
+    def delete_path(self, delete_path):
+        user = self.remote_user
+        host = self.remote_name
+        command = 'rm -rf "{}"'.format(delete_path.replace('"', '\"'))
+        ssh_command = ["ssh", user + "@" + host, command]
+        logging.info("ssh+rm command: %s", ssh_command)
+        try:
+            subprocess.check_call(ssh_command)
+        except Exception:
+            logging.warning("ssh+rm failed: %s", ssh_command, exc_info=True)
+            raise
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """ Moves src_path to dest_space.staging_path/dest_path. """
@@ -1038,6 +1079,9 @@ class Lockssomatic(models.Model):
 #     def browse(self, path):
 #         pass
 #
+#     def delete_path(self, delete_path):
+#         pass
+#
 #     def move_to_storage_service(self, src_path, dest_path, dest_space):
 #         """ Moves src_path to dest_space.staging_path/dest_path. """
 #         pass
@@ -1583,60 +1627,28 @@ class Package(models.Model):
         """ Deletes the package from filesystem and updates metadata.
 
         Returns (True, None) on success, and (False, error_msg) on failure. """
-        # TODO move to protocol Spaces
         error = None
-        if self.current_location.space.access_protocol in Space.mounted_locally:
-            delete_path = self.full_path
-            try:
-                if os.path.isfile(delete_path):
-                    os.remove(delete_path)
-                if os.path.isdir(delete_path):
-                    shutil.rmtree(delete_path)
-            except (os.error, shutil.Error) as e:
-                logging.exception("Error deleting package.")
-                return False, e.strerror
-            # Remove uuid quad directories if they're empty
-            utils.removedirs(os.path.dirname(self.current_path),
-                base=self.current_location.full_path)
-        elif self.current_location.space.access_protocol in Space.ssh_only_access:
-            protocol_space = self.current_location.space.get_child_space()
-            # TODO try-catch AttributeError if remote_user or remote_name not exist?
-            user = protocol_space.remote_user
-            host = protocol_space.remote_name
-            command = 'rm -rf '+self.full_path
-            ssh_command = ["ssh", user+"@"+host, command]
-            logging.info("ssh+rm command: %s", ssh_command)
-            try:
-                subprocess.check_call(ssh_command)
-            except Exception as e:
-                logging.exception("ssh+rm failed.")
-                return False, "Error connecting to Location"
-        elif self.current_location.space.access_protocol == Space.LOM:
+        # LOCKSS must notify LOM before deleting
+        if self.current_location.space.access_protocol == Space.LOM:
             # Notify LOM that files will be deleted
             if 'num_files' in self.misc_attributes:
                 lom = self.current_location.space.get_child_space()
                 lom.update_service_document()
-                delete_lom_ids = [lom._download_url(self.uuid, idx+1) for idx in range(self.misc_attributes['num_files'])]
+                delete_lom_ids = [lom._download_url(self.uuid, idx + 1) for idx in range(self.misc_attributes['num_files'])]
                 error = lom._delete_update_lom(self, delete_lom_ids)
-            # Delete local copy
-            try:
-                shutil.rmtree(os.path.dirname(self.full_path))
-            except os.error as e:
-                logging.exception("Error deleting local copy of LOCKSS package.")
-                return False, e.strerror
-            # Remove uuid quad directories if they're empty
-            utils.removedirs(os.path.dirname(self.current_path),
-                base=self.current_location.full_path)
-        else:
-            return (False, "Unknown access protocol for storing Space")
+
+        try:
+            self.current_location.space.delete_path(self.full_path)
+        except Exception as e:
+            error = e.message
 
         # Remove pointer file, and the UUID quad directories if they're empty
         pointer_path = self.full_pointer_file_path
         if pointer_path:
             try:
                 os.remove(pointer_path)
-            except os.error as e:
-                logging.exception("Error deleting pointer file {} for package {}".format(pointer_path, self.uuid))
+            except OSError as e:
+                logging.info("Error deleting pointer file %s for package %s", pointer_path, self.uuid, exc_info=True)
             utils.removedirs(os.path.dirname(self.pointer_file_path),
                 base=self.pointer_file_location.full_path)
 
