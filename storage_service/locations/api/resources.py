@@ -29,7 +29,7 @@ from tastypie.utils import trailing_slash
 # This project, alphabetical
 from common import utils
 
-from ..models import (Event, Package, Location, Space, Pipeline)
+from ..models import (Event, Package, Location, Space, Pipeline, StorageException)
 from ..forms import LocationForm, SpaceForm
 from ..constants import PROTOCOL
 
@@ -514,13 +514,13 @@ class PackageResource(ModelResource):
         """
         # Get AIP details
         package = bundle.obj
-        if package.package_type not in Package.PACKAGE_TYPE_CAN_EXTRACT:
-            # Can only return packages that are a single file
-            # TODO Update to zip up a transfer before returning it?
-            return http.HttpMethodNotAllowed()
 
         lockss_au_number = kwargs.get('chunk_number')
-        full_path = package.get_download_path(lockss_au_number)
+        try:
+            temp_dir = None
+            full_path = package.get_download_path(lockss_au_number)
+        except StorageException:
+            full_path, temp_dir = package.compress_package()
 
         response = utils.download_file_stream(full_path)
 

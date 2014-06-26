@@ -1205,6 +1205,8 @@ class Package(models.Model):
     def get_download_path(self, lockss_au_number=None):
         full_path = self.full_path()
         if lockss_au_number is None:
+            if not self.is_compressed():
+                raise StorageException("Cannot return a download path for an uncompressed package")
             path = full_path
         elif self.current_location.space.access_protocol == Space.LOM:
             # Only LOCKSS breaks files into AUs
