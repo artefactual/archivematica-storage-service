@@ -5,6 +5,7 @@
 import json
 import logging
 import os
+import shutil
 import urllib
 
 # Core Django, alphabetical
@@ -30,7 +31,7 @@ from tastypie.utils import trailing_slash
 from common import utils
 from locations.api.sword import views as sword_views
 
-from ..models import (Event, Package, Location, Space, Pipeline, StorageException)
+from ..models import (Callback, CallbackError, Event, File, Package, Location, Space, Pipeline, StorageException)
 from ..forms import LocationForm, SpaceForm
 from ..constants import PROTOCOL
 from locations import signals
@@ -447,6 +448,7 @@ class PackageResource(ModelResource):
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/download%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('download_request'), name="download_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/pointer_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('pointer_file_request'), name="pointer_file_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/check_fixity%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('check_fixity_request'), name="check_fixity_request"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/send_callback/post_store%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('aip_store_callback_request'), name="aip_store_callback_request"),
 
             # FEDORA/SWORD2 endpoints
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit'), name="sword_deposit"),
@@ -632,6 +634,79 @@ class PackageResource(ModelResource):
             mimetype="application/json"
         )
         return response
+
+    @_custom_endpoint(expected_methods=['get'])
+    def aip_store_callback_request(self, request, bundle, **kwargs):
+        package = bundle.obj
+
+        callbacks = Callback.objects.filter(event="post_store")
+        if len(callbacks) == 0:
+            return http.HttpNoContent()
+
+        fail = 0
+
+        if package.is_compressed:
+            # Don't extract the entire AIP, which could take forever;
+            # instead, just extract bagit.txt and manifest-sha512.txt,
+            # which is enough to get bag.entries with the
+            # precalculated sha512 checksums
+            try:
+                basedir = package.get_base_directory()
+            # Currently we only support this for local packages.
+            except NotImplementedError:
+                return http.HttpNoContent()
+
+            _, tmpdir = package.extract_file(os.path.join(basedir, 'bagit.txt'))
+            package.extract_file(os.path.join(basedir, 'manifest-sha512.txt'),
+                extract_path=tmpdir)
+
+            package_dir = os.path.join(tmpdir, basedir)
+        else:
+            package_dir = package.full_path()
+            tmpdir = None
+
+        safe_files = ('bag-info.txt', 'manifest-sha512.txt', 'bagit.txt')
+
+        bag = bagit.Bag(package_dir)
+        for f, checksums in bag.entries.iteritems():
+            try:
+                cksum = checksums['sha512']
+            except KeyError:
+                # These files do not typically have an sha512 hash, so it's
+                # fine for these to be missing that key; every other file should.
+                if f not in safe_files:
+                    logging.warning("Post-store callback: sha512 missing for file %s", f)
+                continue
+
+            files = File.objects.filter(checksum=cksum, stored=False)
+            if len(files) > 1:
+                logging.warning("Multiple File entries found for sha512 {}".format(cksum))
+
+            for file_ in files:
+                for callback in callbacks:
+                    uri = callback.uri.replace('<source_id>', file_.source_id)
+                    try:
+                        callback.execute(uri)
+                        file_.stored = True
+                        file_.save()
+                    except CallbackError:
+                        fail += 1
+
+        if tmpdir is not None:
+            shutil.rmtree(tmpdir)
+
+        if fail > 0:
+            response = {
+                "message": "Failed to POST {} responses to callback URI".format(fail),
+                "failure_count": fail,
+                "callback_uris": [c.uri for c in callbacks]
+            }
+            return http.ApplicationError(
+                json.dumps(response),
+                mimetype="application/json"
+            )
+        else:
+            return http.HttpNoContent()
 
     def sword_deposit(self, request, **kwargs):
         package = get_object_or_None(Package, uuid=kwargs['uuid'])
