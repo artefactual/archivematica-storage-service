@@ -1,5 +1,7 @@
+import json
 import logging
 import os
+import requests
 from annoying.functions import get_object_or_None
 
 from django.contrib import auth, messages
@@ -54,7 +56,8 @@ def aip_recover_request(request):
             (success, failures, message) = aip.recover_aip(
                 recover_location, os.path.basename(aip.current_path))
         except StorageException:
-            message = 'error accessing restore files'
+            recover_path = os.path.join(recover_location.full_path, os.path.basename(aip.full_path))
+            message = 'error accessing restore files at {}'.format(recover_path)
             success = False
 
         return (success, message)
@@ -84,42 +87,101 @@ def aip_delete_request(request):
     return _handle_aip_request(request, config, 'aip_delete_request')
 
 def _handle_aip_request(request, config, view_name):
-    requests = Event.objects.filter(status=Event.SUBMITTED).filter(
+    request_events = Event.objects.filter(status=Event.SUBMITTED).filter(
         event_type=config.event_type)
+
     if request.method == 'POST':
         # FIXME won't scale with many pending deletes, since does linear search
         # on all the forms
-        for req in requests:
+        for req in request_events:
             req.form = forms.ConfirmEventForm(request.POST, prefix=str(req.id),
                 instance=req)
             if req.form.is_valid():
                 event = req.form.save()
                 event.status_reason = req.form.cleaned_data['status_reason']
                 event.admin_id = auth.get_user(request)
+
+                # Handle administrator decision and optionally notify remote REST endpoint
                 if 'reject' in request.POST:
                     event.status = Event.REJECTED
                     event.package.status = event.store_data
+                    notification_message = _handle_aip_request_remote_result_notification(config, event, False)
+                    if notification_message:
+                        config.reject_message += ' ' + notification_message
                     messages.success(request, config.reject_message)
                 elif 'approve' in request.POST:
                     event.status = Event.APPROVED
                     event.package.status = config.approved_status
                     success, err_msg = config.execution_logic(event.package)
                     if not success:
-                        messages.error(request,
-                            "{}: {}. Please contact an administrator or see logs for details".format(config.execution_fail_message, err_msg))
+                        error_message = "{}: {}. Please contact an administrator or see logs for details.".format(
+                            config.execution_fail_message, err_msg)
+                        notification_message = _handle_aip_request_remote_result_notification(config, event, False)
+                        if notification_message:
+                            error_message += ' ' + notification_message
+                        messages.error(request, error_message)
                     else:
-                        messages.success(request, "Request approved. {}".format(config.execution_success_message))
+                        approval_message = "Request approved. {}".format(config.execution_success_message)
+                        notification_message = _handle_aip_request_remote_result_notification(config, event, True)
+                        if notification_message:
+                            approval_message += ' ' + notification_message
+                        messages.success(request, approval_message)
                         if err_msg:
                             messages.info(request, err_msg)
+
                 event.save()
                 event.package.save()
                 return redirect(view_name)
     else:
-        for req in requests:
+        for req in request_events:
             req.form = forms.ConfirmEventForm(prefix=str(req.id), instance=req)
+
     closed_requests = Event.objects.filter(
         Q(status=Event.APPROVED) | Q(status=Event.REJECTED))
+
     return render(request, 'locations/aip_request.html', locals())
+
+def _handle_aip_request_remote_result_notification(config, event, success):
+    response_message = None
+
+    # Setting name is determined using event type
+    setting_prefix = "{}_request_notification".format(config.event_type.lower())
+    request_notification_url = utils.get_setting("{}_url".format(setting_prefix))
+
+    # If notification is configured, attempt
+    if request_notification_url != None:
+        headers = {"Content-type": "application/json"}
+
+        # Status reported may be approved, yet failed during execution
+        status_to_report = event.status
+        if event.status == Event.APPROVED and not success:
+            status_to_report += ' (failed)'
+
+        # Serialize payload
+        payload = json.dumps({
+            "event_id": event.id,
+            "message": "{}: {}".format(status_to_report, event.status_reason),
+            "success": success
+        })
+
+        # Specify basic authentication, if configured
+        request_notification_auth_username = utils.get_setting("{}_auth_username".format(setting_prefix))
+        request_notification_auth_password = utils.get_setting("{}_auth_password".format(setting_prefix))
+
+        if request_notification_auth_username != None:
+            auth = requests.auth.HTTPBasicAuth(request_notification_auth_username, request_notification_auth_password)
+        else:
+            auth = None
+
+        # Make request and set response message, if included in notification request response body
+        notification_response = requests.post(request_notification_url, auth=auth, data=payload, headers=headers)
+        try:
+            responseData = json.loads(notification_response.content)
+            response_message = responseData['message']
+        except ValueError:
+            pass
+
+    return response_message
 
 def package_update_status(request, uuid):
     package = Package.objects.get(uuid=uuid)
