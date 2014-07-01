@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block page_title %}AIP {{ event_type | title }} Requests{% endblock %}
+{% block page_title %}AIP {{ config.event_type | title }} Requests{% endblock %}
 
 {% block content %}
 
-{% if requests %}
+{% if request_events %}
   <table class="datatable">
     <thead>
       <tr>
@@ -17,7 +17,7 @@
       </tr>
     </thead>
     <tbody>
-    {% for req in requests %}
+    {% for req in request_events %}
       <tr>
         <td>{{ req.package }}</td>
         <td>{{ req.event_reason }}</td>

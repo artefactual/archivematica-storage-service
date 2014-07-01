@@ -78,6 +78,9 @@ class CommonSettingsForm(SettingsForm):
     """ Configures common or generic settings that don't belong elsewhere. """
     pipelines_disabled = forms.BooleanField(required=False,
         label="Pipelines are disabled upon creation?")
+    recover_request_notification_url = forms.CharField()
+    recover_request_notification_auth_username = forms.CharField()
+    recover_request_notification_auth_password = forms.CharField()
 
 
 class DefaultLocationsForm(SettingsForm):

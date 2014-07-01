@@ -493,13 +493,11 @@ class PackageResource(ModelResource):
             # This isn't configured by default
             site_url = getattr(settings, "SITE_BASE_URL", None)
             signals.deletion_request.send(sender=self, url=site_url,
-<<<<<<< HEAD
                 uuid=package.uuid, location=package.full_path)
         else:
             response = {
                 'message': 'A deletion request already exists for this AIP.'
-=======
-                uuid=package.uuid, location=package.full_path())
+            }
 
         self.log_throttled_access(request)
         response_json = json.dumps(response)
@@ -515,7 +513,6 @@ class PackageResource(ModelResource):
             # Can only request recovery of AIPs
             response = {
                 "message": "Recovery not allowed on this package type."
->>>>>>> Roughed in AIP recovery functionality.
             }
             response_json = json.dumps(response)
             return http.HttpMethodNotAllowed(response_json, content_type='application/json')
