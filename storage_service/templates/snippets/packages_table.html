@@ -8,6 +8,7 @@
         <th>Type</th>
         <th>Pointer File</th>
         <th>Status</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -30,6 +31,9 @@
           {% if package.status != 'DELETED' and package.status != 'FAIL'%}
           (<a href="{% url 'package_update_status' package.uuid %}?next={{ request.path }}">Update Status</a>)
           {% endif %}
+        </td>
+        <td>
+          <a href="{% url 'download_request' 'v2' 'file' package.uuid %}">Download</a>
         </td>
       </tr>
     {% endfor %}
