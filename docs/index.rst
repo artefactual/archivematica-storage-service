@@ -13,6 +13,7 @@ Contents:
 
    install
    deploy
+   recovery
    tests
 
 
