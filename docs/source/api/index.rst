@@ -3,19 +3,18 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to storage_service's documentation!
-====================================
+REST API
+========
 
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
-   install
-   deploy
-   tests
-
-
+   space
+   location
+   package
+   pipeline
 
 Indices and tables
 ==================
