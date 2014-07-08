@@ -14,6 +14,7 @@ Archivematica Storage Service documentation
    index
    administrators
    users
+   recovery
 
 This documentation describes the Storage Service, used by Archivematica to manage
 archival storage and transfer locations and packages.
