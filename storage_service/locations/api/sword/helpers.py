@@ -7,7 +7,6 @@ import logging
 import os
 from multiprocessing import Process
 import shutil
-import subprocess
 import tempfile
 import time
 import urllib
@@ -24,6 +23,7 @@ import requests
 
 # This project, alphabetical
 from locations import models
+from common.utils import generate_checksum
 
 LOGGER = logging.getLogger(__name__)
 logging.basicConfig(filename="/tmp/storage_service.log",
@@ -74,15 +74,6 @@ def write_request_body_to_temp_file(request):
     filehandle, temp_filepath = tempfile.mkstemp()
     write_file_from_request_body(request, temp_filepath)
     return temp_filepath
-
-"""
-Get the MD5 checksum for a file
-
-Return MD5 checksum
-"""
-def get_file_md5_checksum(filepath):
-    raw_result = subprocess.Popen(["md5sum", filepath],stdout=subprocess.PIPE).communicate()[0]
-    return raw_result[0:32]
 
 def parse_filename_from_content_disposition(header):
     """
@@ -213,7 +204,7 @@ def _fetch_content(deposit_uuid, objects):
 
             temp_filename = os.path.join(temp_dir, filename)
 
-            if item['checksum'] is not None and item['checksum'] != get_file_md5_checksum(temp_filename):
+            if item['checksum'] is not None and item['checksum'] != generate_checksum(temp_filename, 'md5').hexdigest():
                 os.unlink(temp_filename)
                 raise Exception("Incorrect checksum")
 
