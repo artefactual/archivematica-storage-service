@@ -1,8 +1,55 @@
 
 from django import forms
+import django.utils
 
 from locations import models
 
+
+# CUSTOM WIDGETS
+# Move this to a widgets.py file if there are more than a couple
+
+class DisableableSelectWidget(forms.Select):
+    """
+    Modification of Select widget to allow specific choices to be disabled.
+
+    Set disabled_choices to the values of the choices that should be disabled.
+    Custom clean methods should also be added to ensure those values cannot be
+    chosen.
+
+    Example:
+    def __init__(self, *args, **kwargs):
+        super(ThisForm, self).__init__(*args, **kwargs)
+        self.fields['choicesfield'].widget.disabled_choices = (value1, value2)
+    """
+    # From https://djangosnippets.org/snippets/2743/
+    # Updated for Django 1.5 Select widget
+    def __init__(self, attrs=None, disabled_choices=(), choices=()):
+        super(DisableableSelectWidget, self).__init__(attrs, choices)
+        self.disabled_choices = list(disabled_choices)
+
+    def render_option(self, selected_choices, option_value, option_label):
+        option_value = django.utils.encoding.force_text(option_value)
+        if option_value in selected_choices:
+            selected_html = django.utils.safestring.mark_safe(' selected="selected"')
+            if not self.allow_multiple_selected:
+                # Only allow for a single selection.
+                selected_choices.remove(option_value)
+        else:
+            selected_html = ''
+        if option_value in self.disabled_choices:
+            disabled_html = django.utils.safestring.mark_safe(' disabled="disabled"')
+        else:
+            disabled_html = ''
+        return django.utils.html.format_html(
+            '<option value="{0}"{1}{2}>{3}</option>',
+            option_value,
+            selected_html,
+            disabled_html,
+            django.utils.encoding.force_text(option_label)
+        )
+
+
+# FORMS
 
 class PipelineForm(forms.ModelForm):
     create_default_locations = forms.BooleanField(required=False,
