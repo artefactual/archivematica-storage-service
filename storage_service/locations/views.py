@@ -118,7 +118,7 @@ def location_edit(request, space_uuid, location_uuid=None):
     else:
         action = "Create"
         location = None
-    form = forms.LocationForm(request.POST or None, instance=location)
+    form = forms.LocationForm(request.POST or None, space_protocol=space.access_protocol, instance=location)
     if form.is_valid():
         location = form.save(commit=False)
         location.space = space

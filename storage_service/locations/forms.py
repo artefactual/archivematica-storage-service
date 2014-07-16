@@ -1,6 +1,7 @@
 
 from django import forms
 import django.utils
+import django.core.exceptions
 
 from locations import models
 
@@ -123,6 +124,34 @@ class LocationForm(forms.ModelForm):
     class Meta:
         model = models.Location
         fields = ('purpose', 'pipeline', 'relative_path', 'description', 'quota', 'enabled')
+        widgets = {
+            'purpose': DisableableSelectWidget(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        """
+        Should be passed parameter 'space_protocol' which is the entry from
+        Space.ACCESS_PROTOCOL_CHOICES that this Location belongs to.
+        """
+        space_protocol = kwargs.get('space_protocol')
+        del kwargs['space_protocol']
+        super(LocationForm, self).__init__(*args, **kwargs)
+        # Disable purposes that aren't in the Space's whitelist
+        all_ = set(x[0] for x in models.Location.PURPOSE_CHOICES)
+        if space_protocol in [x[0] for x in models.Space.ACCESS_PROTOCOL_CHOICES]:
+            from constants import PROTOCOL
+            self.whitelist = PROTOCOL[space_protocol]['model'].ALLOWED_LOCATION_PURPOSE
+        else:
+            self.whitelist = all_
+        blacklist = all_ - set(self.whitelist)
+        self.fields['purpose'].widget.disabled_choices = blacklist
+
+    def clean_purpose(self):
+        # Server-side enforcement of what Location purposes are allowed
+        data = self.cleaned_data['purpose']
+        if data not in self.whitelist:
+            raise django.core.exceptions.ValidationError('Invalid purpose')
+        return data
 
 
 class ConfirmEventForm(forms.ModelForm):

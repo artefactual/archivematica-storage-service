@@ -11,6 +11,7 @@ from django.db import models
 # This project, alphabetical
 
 # This module, alphabetical
+from location import Location
 
 
 class PipelineLocalFS(models.Model):
@@ -28,6 +29,14 @@ class PipelineLocalFS(models.Model):
     class Meta:
         verbose_name = "Pipeline Local FS"
         app_label = 'locations'
+
+    ALLOWED_LOCATION_PURPOSE = [
+        Location.AIP_STORAGE,
+        Location.DIP_STORAGE,
+        Location.CURRENTLY_PROCESSING,
+        Location.TRANSFER_SOURCE,
+        Location.BACKLOG,
+    ]
 
     def browse(self, path):
         user = self.remote_user

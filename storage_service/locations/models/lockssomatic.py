@@ -18,6 +18,7 @@ import sword2
 from common import utils
 
 # This module, alphabetical
+from location import Location
 from package import Package
 
 
@@ -44,6 +45,10 @@ class Lockssomatic(models.Model):
     class Meta:
         verbose_name = 'LOCKSS-o-matic'
         app_label = 'locations'
+
+    ALLOWED_LOCATION_PURPOSE = [
+        Location.AIP_STORAGE,
+    ]
 
     # Uses the SWORD protocol to talk to LOM
     sword_connection = None

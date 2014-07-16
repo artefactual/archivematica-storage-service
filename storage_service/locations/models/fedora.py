@@ -9,6 +9,7 @@ from django.db import models
 from django_extensions.db.fields import UUIDField
 
 # This project, alphabetical
+from location import Location
 
 
 class Fedora(models.Model):
@@ -26,6 +27,10 @@ class Fedora(models.Model):
     class Meta:
         verbose_name = "FEDORA"
         app_label = 'locations'
+
+    ALLOWED_LOCATION_PURPOSE = [
+        Location.SWORD_DEPOSIT
+    ]
 
     def save(self, *args, **kwargs):
         self.verify()

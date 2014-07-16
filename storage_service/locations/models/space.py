@@ -50,6 +50,15 @@ def validate_space_path(path):
 #         verbose_name = "Example Space"
 #         app_label = 'locations'
 #
+#     ALLOWED_LOCATION_PURPOSE = [
+#         Location.AIP_STORAGE,
+#         Location.DIP_STORAGE,
+#         Location.CURRENTLY_PROCESSING,
+#         Location.STORAGE_SERVICE_INTERNAL,
+#         Location.TRANSFER_SOURCE,
+#         Location.BACKLOG,
+#     ]
+#
 #     def browse(self, path):
 #         pass
 #
