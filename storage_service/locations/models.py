@@ -267,8 +267,8 @@ class Space(models.Model):
         try:
             return self.get_child_space().update_package_status(package)
         except AttributeError:
-            pass  # TODO should this be required?
-            # raise NotImplementedError('{} space has not implemented update_package_status'.format(self.get_access_protocol_display()))
+            message = '{} space has not implemented update_package_status'.format(self.get_access_protocol_display())
+            return (None, message)
 
 
     # HELPER FUNCTIONS
