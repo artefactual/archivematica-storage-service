@@ -1417,7 +1417,7 @@ class Package(models.Model):
 
         command = [
             "tar", "-cf", compressed_filename,
-            "-C", relative_path, full_path
+            "-C", relative_path, basename
         ]
         logging.info('Compressing package with: {} to {}'.format(command, compressed_filename))
         rc = subprocess.call(command)
