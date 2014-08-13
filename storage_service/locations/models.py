@@ -1411,13 +1411,16 @@ class Package(models.Model):
             extract_path = tempfile.mkdtemp()
 
         full_path = self.full_path()
-        basename = os.path.splitext(os.path.basename(full_path))[0]
-        relative_path = ''.join(full_path.rsplit(basename, 1))
+        if os.path.isfile(full_path):
+            basename = os.path.splitext(os.path.basename(full_path))[0]
+        else:
+            basename = os.path.basename(full_path)
+        relative_path = os.path.dirname(full_path)
         compressed_filename = os.path.join(extract_path, basename + '.tar')
 
         command = [
             "tar", "-cf", compressed_filename,
-            "-C", relative_path, basename
+            "-C", relative_path, os.path.basename(full_path)
         ]
         logging.info('Compressing package with: {} to {}'.format(command, compressed_filename))
         rc = subprocess.call(command)
