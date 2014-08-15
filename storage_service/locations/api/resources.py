@@ -508,7 +508,7 @@ class PackageResource(ModelResource):
 
         # Get Package details
         package = bundle.obj
-        full_path = package.get_local_path()
+        full_path = package.fetch_local_path()
 
         # If local file exists - return that
         if not package.is_compressed:

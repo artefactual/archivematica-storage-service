@@ -1283,7 +1283,7 @@ class Package(models.Model):
     @property
     def is_compressed(self):
         """ Determines whether or not the package is a compressed file. """
-        full_path = self.get_local_path()
+        full_path = self.fetch_local_path()
         if os.path.isdir(full_path):
             return False
         elif os.path.isfile(full_path):
@@ -1296,7 +1296,7 @@ class Package(models.Model):
             raise StorageException(message)
 
     def get_download_path(self, lockss_au_number=None):
-        full_path = self.get_local_path()
+        full_path = self.fetch_local_path()
         if lockss_au_number is None:
             if not self.is_compressed:
                 raise StorageException("Cannot return a download path for an uncompressed package")
@@ -1313,11 +1313,13 @@ class Package(models.Model):
 
     def get_local_path(self):
         """
-        Return a locally accessible path to this Package.
+        Return a locally accessible path to this Package if available.
 
-        If the package is available locally, return self.full_path
-        If the package is not available locally, copy to SS Internal location
-        and return that path.
+        If a cached copy of the local path is available (possibly from
+        fetch_local_path), return that. If the package is available locally,
+        return self.full_path. Otherwise, local_path is None.
+
+        :returns: Local path to this package or None
         """
         # Return cached copy
         if self.local_path is not None and os.path.exists(self.local_path):
@@ -1327,6 +1329,21 @@ class Package(models.Model):
             # TODO use Space protocol to determine if this is possible?
             self.local_path = self.full_path
             return self.local_path
+        return None
+
+
+    def fetch_local_path(self):
+        """
+        Fetches a local copy of the package.
+
+        Returns local path if package is already available locally. Otherwise,
+        copy to SS Internal Location, and return that path.
+
+        :returns: Local path to this package.
+        """
+        local_path = self.get_local_path()
+        if local_path:
+            return local_path
         # Not locally accessible, so copy to SS internal temp dir
         ss_internal = Location.objects.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
         temp_dir = tempfile.mkdtemp(dir=ss_internal.full_path)
@@ -1478,7 +1495,7 @@ class Package(models.Model):
         if extract_path is None:
             ss_internal = Location.objects.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
             extract_path = tempfile.mkdtemp(dir=ss_internal.full_path)
-        full_path = self.get_local_path()
+        full_path = self.fetch_local_path()
 
         # The basename is the base directory containing a package
         # like an AIP inside the compressed file.
@@ -1543,7 +1560,7 @@ class Package(models.Model):
         if algorithm not in self.COMPRESSION_ALGORITHMS:
             raise ValueError('Algorithm %s not in %s' % algorithm, self.COMPRESSION_ALGORITHMS)
 
-        full_path = self.get_local_path()
+        full_path = self.fetch_local_path()
 
         if os.path.isfile(full_path):
             basename = os.path.splitext(os.path.basename(full_path))[0]
@@ -1660,7 +1677,7 @@ class Package(models.Model):
             # starting the fixity check.
             path, temp_dir = self.extract_file()
         else:
-            path = self.get_local_path()
+            path = self.fetch_local_path()
 
         bag = bagit.Bag(path)
         try:
