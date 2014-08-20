@@ -6,6 +6,11 @@ import models
 
 # Mapping between access protocol and protocol specific fields
 PROTOCOL = {
+    models.Space.DURACLOUD: {
+        'model': models.Duracloud,
+        'form': forms.DuracloudForm,
+        'fields': []
+    },
     models.Space.FEDORA: {
         'model': models.Fedora,
         'form': forms.FedoraForm,

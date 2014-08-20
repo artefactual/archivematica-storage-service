@@ -83,6 +83,13 @@ class SpaceForm(forms.ModelForm):
         else:
             return self.cleaned_data['access_protocol']
 
+
+class DuracloudForm(forms.ModelForm):
+    class Meta:
+        model = models.Duracloud
+        fields = ()
+
+
 class LocalFilesystemForm(forms.ModelForm):
     class Meta:
         model = models.LocalFilesystem

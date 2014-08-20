@@ -82,12 +82,14 @@ class Space(models.Model):
     uuid = UUIDField(editable=False, unique=True, version=4,
         help_text="Unique identifier")
 
+    DURACLOUD = 'DC'
     FEDORA = 'FEDORA'
     LOCAL_FILESYSTEM = 'FS'
     LOM = 'LOM'
     NFS = 'NFS'
     PIPELINE_LOCAL_FS = 'PIPE_FS'
     ACCESS_PROTOCOL_CHOICES = (
+        (DURACLOUD, 'DuraCloud'),
         (FEDORA, "FEDORA via SWORD2"),
         (LOCAL_FILESYSTEM, "Local Filesystem"),
         (LOM, "LOCKSS-o-matic"),

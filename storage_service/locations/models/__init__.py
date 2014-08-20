@@ -28,6 +28,7 @@ from space import *
 
 # Protocol Spaces
 # Will only have one model, so import that directly
+from duracloud import Duracloud
 from fedora import Fedora, PackageDownloadTask, PackageDownloadTaskFile
 from local_filesystem import LocalFilesystem
 from lockssomatic import Lockssomatic
