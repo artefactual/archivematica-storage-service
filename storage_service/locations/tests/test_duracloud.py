@@ -45,3 +45,27 @@ class TestDuracloud(TestCase):
         os.removedirs('test/subfolder')
         requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/ts/test/test.txt', auth=auth)
         requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/ts/test/subfolder/test2.txt', auth=auth)
+
+    @vcr.use_cassette('locations/fixtures/vcr_cassettes/duracloud_move_to_ss.yaml')
+    def test_move_to_ss(self):
+        # Test file
+        self.ds_object.move_to_storage_service('/ts/test.txt', 'folder/test.txt', None)
+        assert os.path.isdir('folder')
+        assert os.path.isfile('folder/test.txt')
+        assert open('folder/test.txt', 'r').read() == 'test file\n'
+        # Cleanup
+        os.remove('folder/test.txt')
+        os.removedirs('folder')
+        # Test folder
+        self.ds_object.move_to_storage_service('/ts/test/', 'folder/test/', None)
+        assert os.path.isdir('folder')
+        assert os.path.isdir('folder/test')
+        assert os.path.isdir('folder/test/subfolder')
+        assert os.path.isfile('folder/test/test.txt')
+        assert os.path.isfile('folder/test/subfolder/test2.txt')
+        assert open('folder/test/test.txt').read() == 'test file\n'
+        assert open('folder/test/subfolder/test2.txt').read() == 'test file2\n'
+        # Cleanup
+        os.remove('folder/test/test.txt')
+        os.remove('folder/test/subfolder/test2.txt')
+        os.removedirs('folder/test/subfolder')

@@ -1,5 +1,6 @@
 # stdlib, alphabetical
 import os
+from lxml import etree
 
 # Core Django, alphabetical
 from django.db import models
@@ -50,7 +51,38 @@ class Duracloud(models.Model):
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """ Moves src_path to dest_space.staging_path/dest_path. """
-        pass
+        # Try to fetch if it's a file
+        url = self.duraspace_url + src_path
+        response = self.session.get(url)
+        if response.status_code == 404:
+            # File cannot be found - this may be a folder
+            # Get all elements with dest_path as a prefix and fetch them
+            params = {'prefix': src_path}
+            response = self.session.get(self.duraspace_url, params=params)
+            if response.status_code != 200:
+                raise StorageException('Unable to fetch %s' % src_path)
+            # Response is XML in the form:
+            # <space id="self.durastore">
+            #   <item>path</item>
+            #   <item>path</item>
+            # </space>
+            root = etree.fromstring(response.content)
+            to_get = [e.text for e in root]
+            for entry in to_get:
+                dest = entry.replace(src_path, dest_path, 1)
+                url = self.duraspace_url + entry
+                response = self.session.get(url)
+                if response.status_code != 200:
+                    raise StorageException('Unable to fetch %s' % entry)
+                self.space._create_local_directory(dest)
+                with open(dest, 'wb') as f:
+                    f.write(response.content)
+        elif response.status_code != 200:
+            raise StorageException('Unable to fetch %s' % src_path)
+        else:  # status_code == 200
+            self.space._create_local_directory(dest_path)
+            with open(dest_path, 'wb') as f:
+                f.write(response.content)
 
     def _upload_file(self, url, upload_file):
         # Example URL: https://trial.duracloud.org/durastore/trial261//ts/test.txt
