@@ -7,3 +7,4 @@ Sphinx==1.2b1
 ipython==1.1.0
 pytest
 pytest-django
+vcrpy>=1.0.0

@@ -1,4 +1,5 @@
 # stdlib, alphabetical
+import os
 
 # Core Django, alphabetical
 from django.db import models
@@ -9,6 +10,7 @@ import requests
 # This project, alphabetical
 
 # This module, alphabetical
+from . import StorageException
 from location import Location
 
 
@@ -50,6 +52,29 @@ class Duracloud(models.Model):
         """ Moves src_path to dest_space.staging_path/dest_path. """
         pass
 
+    def _upload_file(self, url, upload_file):
+        # Example URL: https://trial.duracloud.org/durastore/trial261//ts/test.txt
+        with open(upload_file, 'rb') as f:
+            response = self.session.put(url, data=f)
+        if response.status_code != 201:
+            raise StorageException('Unable to store %s' % upload_file)
+
     def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
-        pass
+        if os.path.isdir(source_path):
+            # Both source and destination paths should end with /
+            destination_path = os.path.join(destination_path, '')
+            # Duracloud does not accept folders, so upload each file individually
+            for path, _, files in os.walk(source_path):
+                for basename in files:
+                    entry = os.path.join(path, basename)
+                    dest = entry.replace(source_path, destination_path, 1)
+                    url = self.duraspace_url + dest
+                    self._upload_file(url, entry)
+        elif os.path.isfile(source_path):
+            url = self.duraspace_url + destination_path
+            self._upload_file(url, source_path)
+        elif not os.path.exists(source_path):
+            raise StorageException('%s does not exist.' % source_path)
+        else:
+            raise StorageException('%s is not a file or directory.' % source_path)
