@@ -1,0 +1,41 @@
+[
+{
+    "pk": 1, 
+    "model": "locations.duracloud", 
+    "fields": {
+        "space": "6fb34c82-4222-425e-b0ea-30acfd31f52e",
+        "host": "trial.duracloud.org",
+        "user": "trialuser263",
+        "password": "ss6umfHh",
+        "duraspace": "trial263"
+    }
+},
+{
+    "pk": 2, 
+    "model": "locations.space", 
+    "fields": {
+        "last_verified": null, 
+        "used": 0, 
+        "verified": false, 
+        "uuid": "6fb34c82-4222-425e-b0ea-30acfd31f52e", 
+        "access_protocol": "DS", 
+        "staging_path": "/var/archivematica/storage_service/", 
+        "path": "/", 
+        "size": null
+    }
+},
+{
+    "pk": 7, 
+    "model": "locations.location", 
+    "fields": {
+        "used": 0, 
+        "description": "Duraspace AS", 
+        "space": "6fb34c82-4222-425e-b0ea-30acfd31f52e", 
+        "enabled": true, 
+        "quota": null, 
+        "relative_path": "aips", 
+        "purpose": "AS", 
+        "uuid": "d9d7db26-f7a1-40aa-9db1-806b4d3a61cd"
+    }
+}
+]

@@ -9,7 +9,7 @@ PROTOCOL = {
     models.Space.DURACLOUD: {
         'model': models.Duracloud,
         'form': forms.DuracloudForm,
-        'fields': []
+        'fields': ['host', 'user', 'password', 'duraspace'],
     },
     models.Space.FEDORA: {
         'model': models.Fedora,

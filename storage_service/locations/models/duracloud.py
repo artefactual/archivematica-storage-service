@@ -13,6 +13,11 @@ from location import Location
 
 class Duracloud(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
+    host = models.CharField(max_length=256,
+        help_text='Hostname of the DuraCloud instance. Eg. trial.duracloud.org')
+    user = models.CharField(max_length=64, help_text='Username to authenticate as')
+    password = models.CharField(max_length=64, help_text='Password to authenticate with')
+    duraspace = models.CharField(max_length=64, help_text='Name of the Space within DuraCloud')
 
     class Meta:
         verbose_name = "DuraCloud"

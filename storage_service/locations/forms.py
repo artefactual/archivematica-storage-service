@@ -87,7 +87,7 @@ class SpaceForm(forms.ModelForm):
 class DuracloudForm(forms.ModelForm):
     class Meta:
         model = models.Duracloud
-        fields = ()
+        fields = ('host', 'user', 'password', 'duraspace')
 
 
 class LocalFilesystemForm(forms.ModelForm):
