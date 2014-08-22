@@ -4,6 +4,7 @@
 from django.db import models
 
 # Third party dependencies, alphabetical
+import requests
 
 # This project, alphabetical
 
@@ -29,6 +30,21 @@ class Duracloud(models.Model):
         Location.TRANSFER_SOURCE,
         Location.BACKLOG,
     ]
+
+    def __init__(self, *args, **kwargs):
+        super(Duracloud, self).__init__(*args, **kwargs)
+        self._session = None
+
+    @property
+    def session(self):
+        if self._session is None:
+            self._session = requests.Session()
+            self._session.auth = (self.user, self.password)
+        return self._session
+
+    @property
+    def duraspace_url(self):
+        return 'https://' + self.host + '/durastore/' + self.duraspace + '/'
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """ Moves src_path to dest_space.staging_path/dest_path. """
