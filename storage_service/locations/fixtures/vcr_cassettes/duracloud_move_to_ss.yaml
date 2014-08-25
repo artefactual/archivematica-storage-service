@@ -19,10 +19,10 @@ interactions:
       content-encoding: [gzip]
       content-length: ['30']
       content-type: [application/octet-stream]
-      date: ['Mon, 25 Aug 2014 21:35:07 GMT']
+      date: ['Mon, 25 Aug 2014 23:33:39 GMT']
       etag: [b05403212c66bdc8ccc597fedf6cd5fe]
-      last-modified: ['2014-08-25T21:30:33']
-      set-cookie: [JSESSIONID=F755FA41A34856FC515E34D7582B23C5; Path=/durastore/;
+      last-modified: ['2014-08-25T23:26:30']
+      set-cookie: [JSESSIONID=2040914434C2E43B1268B8323806BC51; Path=/durastore/;
           Secure; HttpOnly]
       vary: [Accept-Encoding]
     status: {code: 200, message: OK}
@@ -32,25 +32,25 @@ interactions:
       Accept: ['*/*']
       Accept-Encoding: ['gzip, deflate']
       Authorization: [!!python/unicode 'Basic dHJpYWx1c2VyMjYzOnNzNnVtZkho']
-      Cookie: [JSESSIONID=F755FA41A34856FC515E34D7582B23C5]
+      Cookie: [JSESSIONID=2040914434C2E43B1268B8323806BC51]
       User-Agent: [python-requests/2.3.0 CPython/2.7.3 Linux/3.5.0-52-generic]
     method: GET
     uri: https://trial.duracloud.org:443/durastore/trial263//ts/test/
   response:
     body:
       string: !!binary |
-        H4sIAAAAAAAAA0yQsVLDMBBEf2U7N0xMIsdh3HliZ4YCClxQK/bFEVEkI51g4Os54yFDu7e77+7a
-        EHyAZqbrxMaNYI+RGFPwEwU2FHESQ+8dk2NkOcecKXKewThkHIy2m1JlGBJJtsLeJzvAecbJuOEW
-        NALAp+EzHhvcSuaOTuGY+osw9cXot2JrYvmlRu13R7J69UdYzUaat63QseYUBTVQheK+uEP92qGj
-        8GF6Ueqr/vZz8aK/0HsSmIArtNv6UDaNWu/XDztVbhZH+/uEpc4la/+rTxSjHmXwLCcdfHLDDwAA
-        AP//AwCn3W+tMwEAAA==
+        H4sIAAAAAAAAA0yQsVLDMBBEf2U7N0wcYjsYdxoSz1BAgQtqxb44RxTJSCcY+HpkPGRo93b33d3e
+        e+ehRegyCdsR4jCSYPJuIi9MAcdk6J0VsoIsl5ALBckzsEUmnrXZbIsMQ6SUbfDgohlgneDIdrgG
+        OQHwyXLC4w7XkrmjK3CI/Tkx9Zn1W1lx2H4Vo3Z3BzJ69UdYzUaat23QiZYYEmqgBuW6vIF67dCR
+        /+A+Keqiv91cvOgv9B4TLIEb1PWmVu29auv1Tt1W1eLY/z5hqbPRmP/qE4WgxzR4Tie1LtrhBwAA
+        //8DALEP0pEzAQAA
     headers:
       access-control-allow-headers: [Authorization]
       access-control-allow-methods: ['GET, POST, PUT, DELETE']
       access-control-allow-origin: ['*']
       content-encoding: [gzip]
       content-type: [text/plain]
-      date: ['Mon, 25 Aug 2014 21:35:07 GMT']
+      date: ['Mon, 25 Aug 2014 23:33:39 GMT']
       transfer-encoding: [chunked]
       vary: [Accept-Encoding]
     status: {code: 404, message: Not Found}
@@ -60,7 +60,7 @@ interactions:
       Accept: ['*/*']
       Accept-Encoding: ['gzip, deflate']
       Authorization: [!!python/unicode 'Basic dHJpYWx1c2VyMjYzOnNzNnVtZkho']
-      Cookie: [JSESSIONID=F755FA41A34856FC515E34D7582B23C5]
+      Cookie: [JSESSIONID=2040914434C2E43B1268B8323806BC51]
       User-Agent: [python-requests/2.3.0 CPython/2.7.3 Linux/3.5.0-52-generic]
     method: GET
     uri: https://trial.duracloud.org:443/durastore/trial263/?prefix=%2Fts%2Ftest%2F
@@ -73,9 +73,9 @@ interactions:
       access-control-allow-methods: ['GET, POST, PUT, DELETE']
       access-control-allow-origin: ['*']
       content-type: [application/xml]
-      date: ['Mon, 25 Aug 2014 21:35:07 GMT']
+      date: ['Mon, 25 Aug 2014 23:33:40 GMT']
       transfer-encoding: [chunked]
-      x-dura-meta-space-count: ['4']
+      x-dura-meta-space-count: ['30']
       x-dura-meta-space-created: ['2014-08-25T18:14:35']
     status: {code: 200, message: OK}
 - request:
@@ -84,7 +84,7 @@ interactions:
       Accept: ['*/*']
       Accept-Encoding: ['gzip, deflate']
       Authorization: [!!python/unicode 'Basic dHJpYWx1c2VyMjYzOnNzNnVtZkho']
-      Cookie: [JSESSIONID=F755FA41A34856FC515E34D7582B23C5]
+      Cookie: [JSESSIONID=2040914434C2E43B1268B8323806BC51]
       User-Agent: [python-requests/2.3.0 CPython/2.7.3 Linux/3.5.0-52-generic]
     method: GET
     uri: https://trial.duracloud.org:443/durastore/trial263//ts/test/subfolder/test2.txt
@@ -99,9 +99,9 @@ interactions:
       content-encoding: [gzip]
       content-length: ['31']
       content-type: [application/octet-stream]
-      date: ['Mon, 25 Aug 2014 21:35:08 GMT']
+      date: ['Mon, 25 Aug 2014 23:33:40 GMT']
       etag: [2486c05db2a3f84fc9f07697ebe1ce14]
-      last-modified: ['2014-08-25T21:29:17']
+      last-modified: ['2014-08-25T23:26:31']
       vary: [Accept-Encoding]
     status: {code: 200, message: OK}
 - request:
@@ -110,7 +110,7 @@ interactions:
       Accept: ['*/*']
       Accept-Encoding: ['gzip, deflate']
       Authorization: [!!python/unicode 'Basic dHJpYWx1c2VyMjYzOnNzNnVtZkho']
-      Cookie: [JSESSIONID=F755FA41A34856FC515E34D7582B23C5]
+      Cookie: [JSESSIONID=2040914434C2E43B1268B8323806BC51]
       User-Agent: [python-requests/2.3.0 CPython/2.7.3 Linux/3.5.0-52-generic]
     method: GET
     uri: https://trial.duracloud.org:443/durastore/trial263//ts/test/test.txt
@@ -125,9 +125,162 @@ interactions:
       content-encoding: [gzip]
       content-length: ['30']
       content-type: [application/octet-stream]
-      date: ['Mon, 25 Aug 2014 21:35:08 GMT']
+      date: ['Mon, 25 Aug 2014 23:33:40 GMT']
       etag: [b05403212c66bdc8ccc597fedf6cd5fe]
-      last-modified: ['2014-08-25T21:29:17']
+      last-modified: ['2014-08-25T23:26:31']
+      vary: [Accept-Encoding]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Authorization: [!!python/unicode 'Basic dHJpYWx1c2VyMjYzOnNzNnVtZkho']
+      Cookie: [JSESSIONID=2040914434C2E43B1268B8323806BC51]
+      User-Agent: [python-requests/2.3.0 CPython/2.7.3 Linux/3.5.0-52-generic]
+    method: GET
+    uri: https://trial.duracloud.org:443/durastore/trial263//ts/test/.
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA0yQsVLDMBBEf2U7N0wcIuPMuDOxM5MiFLigVuyLEVEkI51g4Os54yFDu7e77+7a
+        EHyAZqbrxMaNYI+RGFPwEwU2FHEWQ+8dk2NkOcecKXKewThkHIy2m1JlGBJJtsLOJzvAecbZuOEW
+        NALAp+FXHBrcSuaOTuGU+osw9cXot+LBxPJLjdpvT2T16o+wmo00b1uhY80pCmqgCsW6uEP90qGj
+        8GF6Ueqr/vZz8aI/03sSmIArPKpGFbt13bT1/n5bbhZH+/uEpc4la/+rR4pRjzJ4kpP2PrnhBwAA
+        //8DAJ2w/7UzAQAA
+    headers:
+      access-control-allow-headers: [Authorization]
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      content-encoding: [gzip]
+      content-type: [text/plain]
+      date: ['Mon, 25 Aug 2014 23:33:40 GMT']
+      transfer-encoding: [chunked]
+      vary: [Accept-Encoding]
+    status: {code: 404, message: Not Found}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Authorization: [!!python/unicode 'Basic dHJpYWx1c2VyMjYzOnNzNnVtZkho']
+      Cookie: [JSESSIONID=2040914434C2E43B1268B8323806BC51]
+      User-Agent: [python-requests/2.3.0 CPython/2.7.3 Linux/3.5.0-52-generic]
+    method: GET
+    uri: https://trial.duracloud.org:443/durastore/trial263/?prefix=%2Fts%2Ftest%2F.
+  response:
+    body: {string: !!python/unicode "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n\
+        <space id=\"trial263\" />\r\n"}
+    headers:
+      access-control-allow-headers: [Authorization]
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      content-type: [application/xml]
+      date: ['Mon, 25 Aug 2014 23:33:40 GMT']
+      transfer-encoding: [chunked]
+      x-dura-meta-space-count: ['30']
+      x-dura-meta-space-created: ['2014-08-25T18:14:35']
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Authorization: [!!python/unicode 'Basic dHJpYWx1c2VyMjYzOnNzNnVtZkho']
+      Cookie: [JSESSIONID=2040914434C2E43B1268B8323806BC51]
+      User-Agent: [python-requests/2.3.0 CPython/2.7.3 Linux/3.5.0-52-generic]
+    method: GET
+    uri: https://trial.duracloud.org:443/durastore/trial263/?prefix=%2Fts%2Ftest
+  response:
+    body: {string: !!python/unicode "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n\
+        <space id=\"trial263\"><item>/ts/test.txt</item><item>/ts/test/subfolder/test2.txt</item><item>/ts/test/test.txt</item></space>\r\
+        \n"}
+    headers:
+      access-control-allow-headers: [Authorization]
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      content-type: [application/xml]
+      date: ['Mon, 25 Aug 2014 23:33:41 GMT']
+      transfer-encoding: [chunked]
+      x-dura-meta-space-count: ['30']
+      x-dura-meta-space-created: ['2014-08-25T18:14:35']
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Authorization: [!!python/unicode 'Basic dHJpYWx1c2VyMjYzOnNzNnVtZkho']
+      Cookie: [JSESSIONID=2040914434C2E43B1268B8323806BC51]
+      User-Agent: [python-requests/2.3.0 CPython/2.7.3 Linux/3.5.0-52-generic]
+    method: GET
+    uri: https://trial.duracloud.org:443/durastore/trial263//ts/test.txt
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAytJLS5RSMvMSeUCAN6QRt4KAAAA
+    headers:
+      access-control-allow-headers: [Authorization]
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      content-encoding: [gzip]
+      content-length: ['30']
+      content-type: [application/octet-stream]
+      date: ['Mon, 25 Aug 2014 23:33:41 GMT']
+      etag: [b05403212c66bdc8ccc597fedf6cd5fe]
+      last-modified: ['2014-08-25T23:26:30']
+      vary: [Accept-Encoding]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Authorization: [!!python/unicode 'Basic dHJpYWx1c2VyMjYzOnNzNnVtZkho']
+      Cookie: [JSESSIONID=2040914434C2E43B1268B8323806BC51]
+      User-Agent: [python-requests/2.3.0 CPython/2.7.3 Linux/3.5.0-52-generic]
+    method: GET
+    uri: https://trial.duracloud.org:443/durastore/trial263//ts/test/subfolder/test2.txt
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAytJLS5RSMvMSTXiAgArA/1ECwAAAA==
+    headers:
+      access-control-allow-headers: [Authorization]
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      content-encoding: [gzip]
+      content-length: ['31']
+      content-type: [application/octet-stream]
+      date: ['Mon, 25 Aug 2014 23:33:41 GMT']
+      etag: [2486c05db2a3f84fc9f07697ebe1ce14]
+      last-modified: ['2014-08-25T23:26:31']
+      vary: [Accept-Encoding]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Authorization: [!!python/unicode 'Basic dHJpYWx1c2VyMjYzOnNzNnVtZkho']
+      Cookie: [JSESSIONID=2040914434C2E43B1268B8323806BC51]
+      User-Agent: [python-requests/2.3.0 CPython/2.7.3 Linux/3.5.0-52-generic]
+    method: GET
+    uri: https://trial.duracloud.org:443/durastore/trial263//ts/test/test.txt
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAytJLS5RSMvMSeUCAN6QRt4KAAAA
+    headers:
+      access-control-allow-headers: [Authorization]
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      content-encoding: [gzip]
+      content-length: ['30']
+      content-type: [application/octet-stream]
+      date: ['Mon, 25 Aug 2014 23:33:41 GMT']
+      etag: [b05403212c66bdc8ccc597fedf6cd5fe]
+      last-modified: ['2014-08-25T23:26:31']
       vary: [Accept-Encoding]
     status: {code: 200, message: OK}
 version: 1

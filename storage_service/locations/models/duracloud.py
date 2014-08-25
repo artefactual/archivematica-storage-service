@@ -49,6 +49,23 @@ class Duracloud(models.Model):
     def duraspace_url(self):
         return 'https://' + self.host + '/durastore/' + self.duraspace + '/'
 
+    def _get_files_list(self, prefix):
+        """
+        Fetch full path of all files starting with prefix. Helper function.
+        """
+        params = {'prefix': prefix}
+        response = self.session.get(self.duraspace_url, params=params)
+        if response.status_code != 200:
+            raise StorageException('Unable to get list of files in %s' % prefix)
+        # Response is XML in the form:
+        # <space id="self.durastore">
+        #   <item>path</item>
+        #   <item>path</item>
+        # </space>
+        root = etree.fromstring(response.content)
+        paths = [p.text for p in root]
+        return paths
+
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """ Moves src_path to dest_space.staging_path/dest_path. """
         # Try to fetch if it's a file
@@ -56,18 +73,13 @@ class Duracloud(models.Model):
         response = self.session.get(url)
         if response.status_code == 404:
             # File cannot be found - this may be a folder
-            # Get all elements with dest_path as a prefix and fetch them
-            params = {'prefix': src_path}
-            response = self.session.get(self.duraspace_url, params=params)
-            if response.status_code != 200:
-                raise StorageException('Unable to fetch %s' % src_path)
-            # Response is XML in the form:
-            # <space id="self.durastore">
-            #   <item>path</item>
-            #   <item>path</item>
-            # </space>
-            root = etree.fromstring(response.content)
-            to_get = [e.text for e in root]
+            to_get = self._get_files_list(src_path)
+            if not to_get:
+                # If nothing found, trying normalizing src_path to remove possible extra characters like /. /* /  These glob-match on a filesystem, but do not character-match in Duracloud.
+                # Normalize dest_path as well so replace continues to work
+                src_path = os.path.normpath(src_path)
+                dest_path = os.path.normpath(dest_path)
+                to_get = self._get_files_list(src_path)
             for entry in to_get:
                 dest = entry.replace(src_path, dest_path, 1)
                 url = self.duraspace_url + entry

@@ -69,3 +69,18 @@ class TestDuracloud(TestCase):
         os.remove('folder/test/test.txt')
         os.remove('folder/test/subfolder/test2.txt')
         os.removedirs('folder/test/subfolder')
+        # Test with globbing
+        self.ds_object.move_to_storage_service('/ts/test/.', 'folder/test/', None)
+        assert os.path.isdir('folder')
+        assert os.path.isdir('folder/test')
+        assert os.path.isdir('folder/test/subfolder')
+        assert os.path.isfile('folder/test/test.txt')
+        assert os.path.isfile('folder/test/subfolder/test2.txt')
+        assert open('folder/test/test.txt').read() == 'test file\n'
+        assert open('folder/test/subfolder/test2.txt').read() == 'test file2\n'
+        # Cleanup
+        os.remove('folder/test/test.txt')
+        os.remove('folder/test/subfolder/test2.txt')
+        # BUG Globbing may match and fetch extra things (because of use of normpath)
+        os.remove('folder/test.txt')
+        os.removedirs('folder/test/subfolder')
