@@ -16,7 +16,7 @@ from . import forms
 from .constants import PROTOCOL
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(#filename="/tmp/storage-service.log",
+logging.basicConfig(#filename="/tmp/storage_service.log",
     level=logging.INFO)
 
 ########################## HELPERS ##########################

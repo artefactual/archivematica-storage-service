@@ -36,6 +36,6 @@ echo "updating directory permissions"
 chown -R archivematica:archivematica /var/archivematica/
 chown -R archivematica:archivematica /usr/share/python/archivematica-storage-service
 
-rm -f /tmp/storage-service.log
+rm -f /tmp/storage_service.log
 
 #DEBHELPER#
