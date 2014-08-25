@@ -178,8 +178,17 @@ class Space(models.Model):
         logging.debug('TO: src: {}'.format(source_path))
         logging.debug('TO: dst: {}'.format(destination_path))
         logging.debug('TO: staging: {}'.format(destination_space.staging_path))
-        # TODO move the path mangling to here?
+
         # TODO enforce source_path is inside self.path
+        # Path pre-processing
+        source_path = os.path.join(self.path, source_path)
+        # dest_path must be relative
+        if os.path.isabs(destination_path):
+            destination_path = destination_path.lstrip(os.sep)
+            # Alternative implementation
+            # os.path.join(*destination_path.split(os.sep)[1:]) # Strips up to first os.sep
+        destination_path = os.path.join(destination_space.staging_path, destination_path)
+
         try:
             self.get_child_space().move_to_storage_service(
                 source_path, destination_path, destination_space, *args, **kwargs)
@@ -363,15 +372,9 @@ class LocalFilesystem(models.Model):
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """ Moves src_path to dest_space.staging_path/dest_path. """
-        source_path = os.path.join(self.space.path, src_path)
-        # dest_path must be relative
-        if os.path.isabs(dest_path):
-            dest_path = dest_path.lstrip(os.sep)
-            # os.path.join(*dest_path.split(os.sep)[1:]) # Strips up to first os.sep
-        destination_path = os.path.join(dest_space.staging_path, dest_path)
         # Archivematica expects the file to still be on disk even after stored
-        self.space._create_local_directory(destination_path)
-        return self.space._move_rsync(source_path, destination_path)
+        self.space._create_local_directory(dest_path)
+        return self.space._move_rsync(src_path, dest_path)
 
     def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
@@ -406,14 +409,8 @@ class NFS(models.Model):
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """ Moves src_path to dest_space.staging_path/dest_path. """
-        source_path = os.path.join(self.space.path, src_path)
-        # dest_path must be relative
-        if os.path.isabs(dest_path):
-            dest_path = dest_path.lstrip(os.sep)
-            # os.path.join(*dest_path.split(os.sep)[1:]) # Strips up to first os.sep
-        destination_path = os.path.join(dest_space.staging_path, dest_path)
-        self.space._create_local_directory(destination_path)
-        return self.space._move_rsync(source_path, destination_path)
+        self.space._create_local_directory(dest_path)
+        return self.space._move_rsync(src_path, dest_path)
 
     def post_move_to_storage_service(self, *args, **kwargs):
         # TODO delete original file?
@@ -521,17 +518,12 @@ class PipelineLocalFS(models.Model):
         #         logging.warning("ssh+mv failed: {}".format(e))
         #         raise
         # else:
-        source_path = "{user}@{host}:{path}".format(
+        src_path = "{user}@{host}:{path}".format(
             user=self.remote_user,
             host=self.remote_name,
-            path=os.path.join(self.space.path, src_path))
-        # dest_path must be relative
-        if os.path.isabs(dest_path):
-            dest_path = dest_path.lstrip(os.sep)
-            # os.path.join(*dest_path.split(os.sep)[1:]) # Strips up to first os.sep
-        destination_path = os.path.join(dest_space.staging_path, dest_path)
-        self.space._create_local_directory(destination_path)
-        return self.space._move_rsync(source_path, destination_path)
+            path=src_path)
+        self.space._create_local_directory(dest_path)
+        return self.space._move_rsync(src_path, dest_path)
 
     def post_move_to_storage_service(self, *args, **kwargs):
         # TODO delete original file?
