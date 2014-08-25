@@ -20,6 +20,17 @@ class TestDuracloud(TestCase):
         assert self.ds_object.password
         assert self.ds_object.duraspace
 
+    @vcr.use_cassette('locations/fixtures/vcr_cassettes/duracloud_browse.yaml')
+    def test_browse(self):
+        resp = self.ds_object.browse('/aips/')
+        assert resp
+        assert resp['directories'] == ['685e', '7e66', 'aa54']
+        assert resp['entries'] == ['685e', '7e66', 'aa54']
+        resp = self.ds_object.browse('/bl/originals/bl2-4fbd9d26-d143-4049-8a16-4916bd715c6f/')
+        assert resp
+        assert resp['directories'] == ['logs', 'metadata', 'objects']
+        assert resp['entries'] == ['logs', 'metadata', 'objects', 'processingMCP.xml']
+
     @vcr.use_cassette('locations/fixtures/vcr_cassettes/duracloud_move_from_ss.yaml')
     def test_move_from_ss(self):
         # Create test.txt

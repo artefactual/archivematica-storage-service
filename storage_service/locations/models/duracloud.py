@@ -66,6 +66,15 @@ class Duracloud(models.Model):
         paths = [p.text for p in root]
         return paths
 
+    def browse(self, path):
+        if not path.endswith('/'):
+            path += '/'
+        paths = self._get_files_list(path)
+        paths = [p.replace(path, '', 1) for p in paths]
+        entries = sorted(list(set(p.split('/')[0] for p in paths)))
+        directories = sorted(set(p.split('/')[0] for p in paths if len(p.split('/')) > 1))
+        return {'directories': directories, 'entries': entries}
+
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """ Moves src_path to dest_space.staging_path/dest_path. """
         # Try to fetch if it's a file

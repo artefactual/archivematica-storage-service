@@ -1,0 +1,51 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Authorization: [!!python/unicode 'Basic dHJpYWx1c2VyMjYzOnNzNnVtZkho']
+      User-Agent: [python-requests/2.3.0 CPython/2.7.3 Linux/3.5.0-52-generic]
+    method: GET
+    uri: https://trial.duracloud.org:443/durastore/trial263/?prefix=%2Faips%2F
+  response:
+    body: {string: !!python/unicode "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n\
+        <space id=\"trial263\"><item>/aips/685e/c5b3/f28e/4f44/8883/f9f8/0219/d93e/ep3-685ec5b3-f28e-4f44-8883-f9f80219d93e.7z</item><item>/aips/7e66/f138/0cc5/4ede/9e17/64eb/0324/2d57/uc1-7e66f138-0cc5-4ede-9e17-64eb03242d57/bag-info.txt</item><item>/aips/7e66/f138/0cc5/4ede/9e17/64eb/0324/2d57/uc1-7e66f138-0cc5-4ede-9e17-64eb03242d57/bagit.txt</item><item>/aips/7e66/f138/0cc5/4ede/9e17/64eb/0324/2d57/uc1-7e66f138-0cc5-4ede-9e17-64eb03242d57/data/METS.7e66f138-0cc5-4ede-9e17-64eb03242d57.xml</item><item>/aips/7e66/f138/0cc5/4ede/9e17/64eb/0324/2d57/uc1-7e66f138-0cc5-4ede-9e17-64eb03242d57/data/logs/fileFormatIdentification.log</item><item>/aips/7e66/f138/0cc5/4ede/9e17/64eb/0324/2d57/uc1-7e66f138-0cc5-4ede-9e17-64eb03242d57/data/logs/transfers/uc1-a549b079-e66e-4961-8a2b-82d02cb69d54/logs/fileFormatIdentification.log</item><item>/aips/7e66/f138/0cc5/4ede/9e17/64eb/0324/2d57/uc1-7e66f138-0cc5-4ede-9e17-64eb03242d57/data/logs/transfers/uc1-a549b079-e66e-4961-8a2b-82d02cb69d54/logs/filenameCleanup.log</item><item>/aips/7e66/f138/0cc5/4ede/9e17/64eb/0324/2d57/uc1-7e66f138-0cc5-4ede-9e17-64eb03242d57/data/objects/evelyn_s_photo-8ec258e3-5358-4ba7-85fc-3f720637c0fa.tif</item><item>/aips/7e66/f138/0cc5/4ede/9e17/64eb/0324/2d57/uc1-7e66f138-0cc5-4ede-9e17-64eb03242d57/data/objects/evelyn_s_photo.jpg</item><item>/aips/7e66/f138/0cc5/4ede/9e17/64eb/0324/2d57/uc1-7e66f138-0cc5-4ede-9e17-64eb03242d57/data/objects/evelyn_s_second_photo/evelyn_s_second_photo-582ba87d-fb2a-42cd-9522-ead13450cc21.tif</item><item>/aips/7e66/f138/0cc5/4ede/9e17/64eb/0324/2d57/uc1-7e66f138-0cc5-4ede-9e17-64eb03242d57/data/objects/evelyn_s_second_photo/evelyn_s_second_photo.jpg</item><item>/aips/7e66/f138/0cc5/4ede/9e17/64eb/0324/2d57/uc1-7e66f138-0cc5-4ede-9e17-64eb03242d57/data/objects/evelyn_s_third_photo/evelyn_s_third_photo-2399807c-70d9-4949-93b6-60119b438b2c.tif</item><item>/aips/7e66/f138/0cc5/4ede/9e17/64eb/0324/2d57/uc1-7e66f138-0cc5-4ede-9e17-64eb03242d57/data/objects/evelyn_s_third_photo/evelyn_s_third_photo.jpg</item><item>/aips/7e66/f138/0cc5/4ede/9e17/64eb/0324/2d57/uc1-7e66f138-0cc5-4ede-9e17-64eb03242d57/data/objects/submissionDocumentation/transfer-uc1-a549b079-e66e-4961-8a2b-82d02cb69d54/METS.xml</item><item>/aips/7e66/f138/0cc5/4ede/9e17/64eb/0324/2d57/uc1-7e66f138-0cc5-4ede-9e17-64eb03242d57/data/thumbnails/1a8639eb-580a-47aa-b30b-44f559cd8da0.jpg</item><item>/aips/7e66/f138/0cc5/4ede/9e17/64eb/0324/2d57/uc1-7e66f138-0cc5-4ede-9e17-64eb03242d57/data/thumbnails/6cdceae5-51a1-41ec-ace4-5cc33d38ebb6.jpg</item><item>/aips/7e66/f138/0cc5/4ede/9e17/64eb/0324/2d57/uc1-7e66f138-0cc5-4ede-9e17-64eb03242d57/data/thumbnails/9f347a71-9e26-4b9b-a237-407b021b82a9.jpg</item><item>/aips/7e66/f138/0cc5/4ede/9e17/64eb/0324/2d57/uc1-7e66f138-0cc5-4ede-9e17-64eb03242d57/manifest-sha512.txt</item><item>/aips/7e66/f138/0cc5/4ede/9e17/64eb/0324/2d57/uc1-7e66f138-0cc5-4ede-9e17-64eb03242d57/tagmanifest-md5.txt</item><item>/aips/aa54/4def/a3d8/4c58/bd65/92c3/ce13/397c/bl1-aa544def-a3d8-4c58-bd65-92c3ce13397c.7z</item></space>\r\
+        \n"}
+    headers:
+      access-control-allow-headers: [Authorization]
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      content-type: [application/xml]
+      date: ['Mon, 25 Aug 2014 23:34:37 GMT']
+      set-cookie: [JSESSIONID=DBB67DB49B7099228F8E49F8117D9784; Path=/durastore/;
+          Secure; HttpOnly]
+      transfer-encoding: [chunked]
+      x-dura-meta-space-count: ['30']
+      x-dura-meta-space-created: ['2014-08-25T18:14:35']
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Authorization: [!!python/unicode 'Basic dHJpYWx1c2VyMjYzOnNzNnVtZkho']
+      Cookie: [JSESSIONID=DBB67DB49B7099228F8E49F8117D9784]
+      User-Agent: [python-requests/2.3.0 CPython/2.7.3 Linux/3.5.0-52-generic]
+    method: GET
+    uri: https://trial.duracloud.org:443/durastore/trial263/?prefix=%2Fbl%2Foriginals%2Fbl2-4fbd9d26-d143-4049-8a16-4916bd715c6f%2F
+  response:
+    body: {string: !!python/unicode "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n\
+        <space id=\"trial263\"><item>/bl/originals/bl2-4fbd9d26-d143-4049-8a16-4916bd715c6f/logs/fileFormatIdentification.log</item><item>/bl/originals/bl2-4fbd9d26-d143-4049-8a16-4916bd715c6f/logs/filenameCleanup.log</item><item>/bl/originals/bl2-4fbd9d26-d143-4049-8a16-4916bd715c6f/metadata/submissionDocumentation/METS.xml</item><item>/bl/originals/bl2-4fbd9d26-d143-4049-8a16-4916bd715c6f/objects/evelyn_s_photo.jpg</item><item>/bl/originals/bl2-4fbd9d26-d143-4049-8a16-4916bd715c6f/objects/evelyn_s_second_photo/evelyn_s_second_photo.jpg</item><item>/bl/originals/bl2-4fbd9d26-d143-4049-8a16-4916bd715c6f/objects/evelyn_s_third_photo/evelyn_s_third_photo.jpg</item><item>/bl/originals/bl2-4fbd9d26-d143-4049-8a16-4916bd715c6f/processingMCP.xml</item></space>\r\
+        \n"}
+    headers:
+      access-control-allow-headers: [Authorization]
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      content-type: [application/xml]
+      date: ['Mon, 25 Aug 2014 23:34:38 GMT']
+      transfer-encoding: [chunked]
+      x-dura-meta-space-count: ['30']
+      x-dura-meta-space-created: ['2014-08-25T18:14:35']
+    status: {code: 200, message: OK}
+version: 1
