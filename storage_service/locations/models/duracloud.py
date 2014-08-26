@@ -75,6 +75,19 @@ class Duracloud(models.Model):
         directories = sorted(set(p.split('/')[0] for p in paths if len(p.split('/')) > 1))
         return {'directories': directories, 'entries': entries}
 
+    def delete_path(self, delete_path):
+        # Files
+        url = self.duraspace_url + delete_path
+        response = self.session.delete(url)
+        if response.status_code == 404:
+            # File cannot be found - this may be a folder
+            to_delete = self._get_files_list(delete_path)
+            # Do not support globbing for delete - do not want to accidentally
+            # delete something
+            for d in to_delete:
+                url = self.duraspace_url + d
+                response = self.session.delete(url)
+
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """ Moves src_path to dest_space.staging_path/dest_path. """
         # Try to fetch if it's a file

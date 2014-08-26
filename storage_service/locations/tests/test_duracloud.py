@@ -31,6 +31,22 @@ class TestDuracloud(TestCase):
         assert resp['directories'] == ['logs', 'metadata', 'objects']
         assert resp['entries'] == ['logs', 'metadata', 'objects', 'processingMCP.xml']
 
+    @vcr.use_cassette('locations/fixtures/vcr_cassettes/duracloud_delete.yaml')
+    def test_delete(self):
+        # Delete file
+        self.ds_object.delete_path('/ts/test.txt')
+        # Verify deleted
+        auth = requests.auth.HTTPBasicAuth(self.ds_object.user, self.ds_object.password)
+        response = requests.get('https://trial.duracloud.org/durastore/trial263//ts/test.txt', auth=auth)
+        assert response.status_code == 404
+        # Delete folder
+        self.ds_object.delete_path('/ts/test/')
+        # Verify deleted
+        response = requests.get('https://trial.duracloud.org/durastore/trial263//ts/test/test.txt', auth=auth)
+        assert response.status_code == 404
+        response = requests.get('https://trial.duracloud.org/durastore/trial263//ts/test/subfolder/test2.txt', auth=auth)
+        assert response.status_code == 404
+
     @vcr.use_cassette('locations/fixtures/vcr_cassettes/duracloud_move_from_ss.yaml')
     def test_move_from_ss(self):
         # Create test.txt
