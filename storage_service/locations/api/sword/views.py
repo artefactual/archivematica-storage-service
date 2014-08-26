@@ -139,7 +139,10 @@ def collection(request, location):
                         submission_documentation_directory = os.path.join(deposit.full_path(), 'submissionDocumentation')
                         if not os.path.exists(submission_documentation_directory):
                             os.mkdir(submission_documentation_directory)
-                        os.rename(temp_filepath, os.path.join(submission_documentation_directory, 'fedora-METS.xml'))
+
+                        object_id = mets_data.get('object_id', 'fedora')
+                        mets_name = object_id.replace(':', '-') + '-METS.xml'
+                        os.rename(temp_filepath, os.path.join(submission_documentation_directory, mets_name))
 
                         _spawn_batch_download_and_flag_finalization_if_requested(deposit, request, mets_data)
 
@@ -276,7 +279,8 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
 
     return {
         'deposit_name': deposit_name,
-        'objects': objects
+        'objects': objects,
+        'object_id': object_id
     }
 
 def _create_deposit_directory_and_db_entry(location, deposit_name=None, source_path=None, sourceofacquisition=None):
