@@ -135,14 +135,9 @@ def collection(request, location):
                         if deposit is None:
                             return helpers.sword_error_response(request, 500, 'Could not create deposit: contact an administrator.')
 
-                        # copy METS file to submission documentation directory then remove temp file
-                        submission_documentation_directory = os.path.join(deposit.full_path(), 'submissionDocumentation')
-                        if not os.path.exists(submission_documentation_directory):
-                            os.mkdir(submission_documentation_directory)
-
+                        # move METS file to submission documentation directory
                         object_id = mets_data.get('object_id', 'fedora')
-                        mets_name = object_id.replace(':', '-') + '-METS.xml'
-                        os.rename(temp_filepath, os.path.join(submission_documentation_directory, mets_name))
+                        helpers.store_mets_data(temp_filepath, deposit, object_id)
 
                         _spawn_batch_download_and_flag_finalization_if_requested(deposit, request, mets_data)
 
@@ -217,24 +212,6 @@ def _spawn_batch_download_and_flag_finalization_if_requested(deposit, request, m
 
     # create subprocess so content URLs can be downloaded asynchronously
     helpers.spawn_download_task(deposit.uuid, mets_data['objects'])
-
-def _parse_name_and_content_urls_from_request_body(request):
-    """
-    From a request's body, parse deposit name and control URLs from METS XML
-
-    Returns None if parsing fails
-    """
-    logging.debug('Parse name and content from request')
-    temp_filepath = helpers.write_request_body_to_temp_file(request)
-    # parse name and content URLs out of XML
-    try:
-        mets_data = _parse_name_and_content_urls_from_mets_file(temp_filepath)
-        os.unlink(temp_filepath)
-        logging.debug('METS parsed from request: %s',mets_data)
-        return mets_data
-    except etree.XMLSyntaxError:
-        os.unlink(temp_filepath)
-        return None
 
 def _parse_name_and_content_urls_from_mets_file(filepath):
     """
@@ -357,8 +334,18 @@ def deposit_edit(request, deposit):
     elif request.method == 'POST':
         # If METS XML has been sent to indicate a list of files needing downloading, handle it
         if request.body != '':
-            mets_data = _parse_name_and_content_urls_from_request_body(request)
+            temp_filepath = helpers.write_request_body_to_temp_file(request)
+            try:
+                mets_data = _parse_name_and_content_urls_from_mets_file(temp_filepath)
+            except etree.XMLSyntaxError as e:
+                os.unlink(temp_filepath)
+                mets_data = None
+
             if mets_data is not None:
+                # move METS file to submission documentation directory
+                object_id = mets_data.get('object_id', 'fedora')
+                helpers.store_mets_data(temp_filepath, deposit, object_id)
+
                 _spawn_batch_download_and_flag_finalization_if_requested(deposit, request, mets_data)
                 return _deposit_receipt_response(request, deposit, 200)
             else:
@@ -444,8 +431,18 @@ def deposit_media(request, deposit):
         if 'HTTP_PACKAGING' in request.META and request.META['HTTP_PACKAGING'] == 'METS':
             # If METS XML has been sent to indicate a list of files needing downloading, handle it
             if request.body != '':
-                mets_data = _parse_name_and_content_urls_from_request_body(request)
+                temp_filepath = helpers.write_request_body_to_temp_file(request)
+                try:
+                    mets_data = _parse_name_and_content_urls_from_mets_file(temp_filepath)
+                except etree.XMLSyntaxError as e:
+                    os.unlink(temp_filepath)
+                    mets_data = None
+
                 if mets_data != None:
+                    # move METS file to submission documentation directory
+                    object_id = mets_data.get('object_id', 'fedora')
+                    helpers.store_mets_data(temp_filepath, deposit, object_id)
+
                     _spawn_batch_download_and_flag_finalization_if_requested(deposit, request, mets_data)
                     return _deposit_receipt_response(request, deposit, 201)
                 else:

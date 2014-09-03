@@ -382,3 +382,17 @@ def sword_error_response(request, status, summary):
     error_xml = render_to_string('locations/api/sword/error.xml', error_details)
     return HttpResponse(error_xml, status=error_details['status'])
 
+def store_mets_data(mets_path, deposit, object_id):
+    submission_documentation_directory = os.path.join(deposit.full_path(), 'submissionDocumentation')
+    if not os.path.exists(submission_documentation_directory):
+        os.mkdir(submission_documentation_directory)
+
+    mets_name = object_id.replace(':', '-') + '-METS.xml'
+    target = os.path.join(submission_documentation_directory, mets_name)
+
+    # There may be a previous METS file if the same file is being
+    # re-transferred, so remove and update the METS in this case.
+    if os.path.exists(target):
+        os.path.unlink(target)
+
+    os.rename(mets_path, target)
