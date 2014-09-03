@@ -155,17 +155,20 @@ def deposit_downloading_status(deposit):
             return status
     return models.PackageDownloadTask.COMPLETE
 
-def spawn_download_task(deposit_uuid, objects):
+def spawn_download_task(deposit_uuid, objects, subdir=None):
     """
     Spawn an asynchrnous batch download
     """
-    p = Process(target=_fetch_content, args=(deposit_uuid, objects))
+    p = Process(target=_fetch_content, args=(deposit_uuid, objects, subdir))
     p.start()
 
-def _fetch_content(deposit_uuid, objects):
+def _fetch_content(deposit_uuid, objects, subdir=None):
     """
     Download a number of files, keeping track of progress and success using a
     database record. After downloading, finalize deposit if requested.
+
+    If subdir is provided, the file will be moved into a subdirectory of the
+    new transfer; otherwise, it will be placed in the transfer's root.
     """
     # add download task to keep track of progress
     deposit = get_deposit(deposit_uuid)
@@ -208,14 +211,23 @@ def _fetch_content(deposit_uuid, objects):
                 os.unlink(temp_filename)
                 raise Exception("Incorrect checksum")
 
-            new_path = os.path.join(deposit.full_path(), filename)
+            # Some MODS records have no proper filenames
+            if filename == 'MODS Record':
+                filename = item['object_id'].replace(':', '-') + '-MODS.xml'
+
+            if subdir:
+                base_path = os.path.join(deposit.full_path(), subdir)
+            else:
+                base_path = deposit.full_path()
+
+            new_path = os.path.join(base_path, filename)
             shutil.move(temp_filename, new_path)
 
             # mark download task file record complete or failed
             task_file.completed = True
             task_file.save()
 
-            logging.info('Saved file to ' + os.path.join(deposit.full_path(), filename))
+            logging.info('Saved file to ' + new_path)
             completed += 1
 
             file_record = models.File(

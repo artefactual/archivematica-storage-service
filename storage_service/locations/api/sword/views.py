@@ -212,6 +212,7 @@ def _spawn_batch_download_and_flag_finalization_if_requested(deposit, request, m
 
     # create subprocess so content URLs can be downloaded asynchronously
     helpers.spawn_download_task(deposit.uuid, mets_data['objects'])
+    helpers.spawn_download_task(deposit.uuid, mets_data['mods'], 'submissionDocumentation')
 
 def _parse_name_and_content_urls_from_mets_file(filepath):
     """
@@ -227,35 +228,44 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
 
     # parse XML for content URLs
     objects = []
+    mods = []
 
-    elements = root.iterfind("{http://www.loc.gov/METS/}fileSec/"
-        + "{http://www.loc.gov/METS/}fileGrp[@ID='DATASTREAMS']/"
-        + "{http://www.loc.gov/METS/}fileGrp[@ID='OBJ']/"
-        + "{http://www.loc.gov/METS/}file/"
-        + "{http://www.loc.gov/METS/}FLocat"
-    )
+    expression = "{http://www.loc.gov/METS/}fileSec/" + \
+        "{http://www.loc.gov/METS/}fileGrp[@ID='DATASTREAMS']/" + \
+        "{http://www.loc.gov/METS/}fileGrp[@ID='{type}']/" + \
+        "{http://www.loc.gov/METS/}file/" + \
+        "{http://www.loc.gov/METS/}FLocat"
 
-    for element in elements:
-       url = element.get('{http://www.w3.org/1999/xlink}href')
-       filename = element.get('{http://www.w3.org/1999/xlink}title')
+    for type_ in ('OBJ', 'MODS'):
+        elements = root.iterfind(expression.replace('{type}', type_))
 
-       # only MD5 checksums currently supported
-       checksumtype = element.get('CHECKSUMTYPE')
-       checksum = element.get('CHECKSUM')
+        if type_ == 'OBJ':
+            collection = objects
+        elif type_ == 'MODS':
+            collection = mods
 
-       if checksum is not None and checksumtype != 'MD5':
-           raise Exception('If using CHECKSUM attribute, CHECKSUMTYPE attribute value must be set to MD5 in XML')
+        for element in elements:
+            url = element.get('{http://www.w3.org/1999/xlink}href')
+            filename = element.get('{http://www.w3.org/1999/xlink}title')
 
-       objects.append({
-           'object_id': object_id,
-           'filename': filename,
-           'url': url,
-           'checksum': checksum
-       })
-       logging.info('found url in mets: ' + url)
+            # only MD5 checksums currently supported
+            checksumtype = element.get('CHECKSUMTYPE')
+            checksum = element.get('CHECKSUM')
+
+            if checksum is not None and checksumtype != 'MD5':
+                raise Exception('If using CHECKSUM attribute, CHECKSUMTYPE attribute value must be set to MD5 in XML')
+
+            collection.append({
+               'object_id': object_id,
+               'filename': filename,
+               'url': url,
+               'checksum': checksum
+            })
+            logging.info('found url in mets: ' + url)
 
     return {
         'deposit_name': deposit_name,
+        'mods': mods,
         'objects': objects,
         'object_id': object_id
     }
