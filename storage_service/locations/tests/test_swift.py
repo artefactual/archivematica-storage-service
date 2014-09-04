@@ -15,6 +15,12 @@ class TestSwift(TestCase):
     def setUp(self):
         self.swift_object = models.Swift.objects.all()[0]
 
+    def tearDown(self):
+        if os.path.exists('test'):
+            shutil.rmtree('test')
+        if os.path.exists('test.txt'):
+            os.remove('test.txt')
+
     def test_has_required_attributes(self):
         assert self.swift_object.auth_url
         assert self.swift_object.auth_version
@@ -41,3 +47,16 @@ class TestSwift(TestCase):
         assert resp['entries'] == ['799px-Euroleague-LE Roma vs Toulouse IC-27.bmp', 'BBhelmet.ai', 'G31DS.TIF', 'lion.svg', 'Nemastylis_geminiflora_Flower.PNG', 'oakland03.jp2', 'pictures', 'Vector.NET-Free-Vector-Art-Pack-28-Freedom-Flight.eps', 'WFPC01.GIF', u'エブリンの写真.jpg']
         assert resp['properties'][u'エブリンの写真.jpg']['size'] == 158131
         assert resp['properties'][u'エブリンの写真.jpg']['timestamp'] == '2015-04-10T21:56:43.264560'
+
+    @vcr.use_cassette('locations/fixtures/vcr_cassettes/swift_move_from.yaml')
+    def test_move_from_ss(self):
+        # create test.txt
+        open('test.txt', 'w').write('test file\n')
+        # Test
+        self.swift_object.move_from_storage_service('test.txt', 'transfers/SampleTransfers/test.txt')
+        # Verify
+        resp = self.swift_object.browse('transfers/SampleTransfers/')
+        assert 'test.txt' in resp['entries']
+        assert resp['properties']['test.txt']['size'] == 10
+        # Cleanup
+        self.swift_object.delete_path('transfers/SampleTransfers/test.txt')

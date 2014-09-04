@@ -384,13 +384,23 @@ class Space(models.Model):
             raise StorageException(s)
 
     def _create_local_directory(self, path, mode=None):
-        """ Creates a local directory at 'path' with 'mode' (default 775). """
+        """
+        Creates directory structure for `path` with `mode` (default 775).
+        :param path: path to create the directories for.  Should end with a / or
+            a filename, or final directory may not be created. If path is empty,
+            no directories are created.
+        :param mode: (optional) Permissions to create the directories with
+            represented in octal (like bash or the stat module)
+        """
         if mode is None:
             mode = (stat.S_IRUSR + stat.S_IWUSR + stat.S_IXUSR +
                     stat.S_IRGRP + stat.S_IWGRP + stat.S_IXGRP +
                     stat.S_IROTH +                stat.S_IXOTH)
+        dir_path = os.path.dirname(path)
+        if not dir_path:
+            return
         try:
-            os.makedirs(os.path.dirname(path), mode)
+            os.makedirs(dir_path, mode)
         except os.error as e:
             # If the leaf node already exists, that's fine
             if e.errno != errno.EEXIST:
