@@ -128,6 +128,12 @@ class FedoraForm(forms.ModelForm):
         fields = ('fedora_user', 'fedora_password', 'fedora_name', )
 
 
+class SwiftForm(forms.ModelForm):
+    class Meta:
+        model = models.Swift
+        fields = ('auth_url', 'auth_version', 'username', 'password', 'container', 'tenant', 'region')
+
+
 class LocationForm(forms.ModelForm):
     class Meta:
         model = models.Location

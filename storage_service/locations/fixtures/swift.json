@@ -1,0 +1,44 @@
+[
+{
+    "pk": 1, 
+    "model": "locations.swift", 
+    "fields": {
+        "username": "toronto_admin", 
+        "container": "artefactual", 
+        "space": "6fb34c82-4222-425e-b0ea-30acfd31f52e", 
+        "region": "RegionOne", 
+        "auth_version": "2", 
+        "auth_url": "http://142.1.121.240:5000/v2.0/",
+        "password": "torontoAdmin12", 
+        "tenant": "toronto"
+    }
+},
+{
+    "pk": 2, 
+    "model": "locations.space", 
+    "fields": {
+        "last_verified": null, 
+        "used": 0, 
+        "verified": false, 
+        "uuid": "6fb34c82-4222-425e-b0ea-30acfd31f52e", 
+        "access_protocol": "SWIFT", 
+        "staging_path": "/var/archivematica/storage_service/", 
+        "path": "/", 
+        "size": null
+    }
+},
+{
+    "pk": 7, 
+    "model": "locations.location", 
+    "fields": {
+        "used": 0, 
+        "description": "Swift AS", 
+        "space": "6fb34c82-4222-425e-b0ea-30acfd31f52e", 
+        "enabled": true, 
+        "quota": null, 
+        "relative_path": "aips", 
+        "purpose": "AS", 
+        "uuid": "d9d7db26-f7a1-40aa-9db1-806b4d3a61cd"
+    }
+}
+]

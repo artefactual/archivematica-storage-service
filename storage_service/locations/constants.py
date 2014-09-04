@@ -49,4 +49,16 @@ PROTOCOL = {
         'fields': ['remote_user',
                    'remote_name']
     },
+    models.Space.SWIFT: {
+        'model': models.Swift,
+        'form': forms.SwiftForm,
+        'fields': [
+            'auth_url',
+            'auth_version',
+            'username',
+            'password',
+            'container',
+            'tenant',
+            'region']
+    },
 }
