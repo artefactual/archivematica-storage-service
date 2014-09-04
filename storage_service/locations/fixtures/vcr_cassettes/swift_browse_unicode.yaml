@@ -1,0 +1,92 @@
+interactions:
+- request:
+    body: '{"auth": {"tenantName": "toronto", "passwordCredentials": {"username": "toronto_admin",
+      "password": "torontoAdmin12"}}}'
+    headers:
+      Accept: [application/json]
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      Content-Length: ['116']
+      Content-Type: [application/json]
+      User-Agent: [python-keystoneclient]
+    method: POST
+    uri: http://142.1.121.240:5000/v2.0/tokens
+  response:
+    body: {string: !!python/unicode '{"access": {"token": {"issued_at": "2015-04-15T00:21:30.176234",
+        "expires": "3015-04-15T01:21:30Z", "id": "dfff49c3aef44d2191ba739135550a18",
+        "tenant": {"description": null, "enabled": true, "id": "d17890d220184f2fa911536654b1d53b",
+        "name": "toronto"}}, "serviceCatalog": [{"endpoints": [{"adminURL": "http://192.168.128.240:8774/v2/d17890d220184f2fa911536654b1d53b",
+        "region": "RegionOne", "internalURL": "http://192.168.128.240:8774/v2/d17890d220184f2fa911536654b1d53b",
+        "id": "0613bda4e9d94c29952a0e1f4011e5fa", "publicURL": "http://142.1.121.240:8774/v2/d17890d220184f2fa911536654b1d53b"}],
+        "endpoints_links": [], "type": "compute", "name": "nova"}, {"endpoints": [{"adminURL":
+        "http://192.168.128.240:9696", "region": "RegionOne", "internalURL": "http://192.168.128.240:9696",
+        "id": "b510d479241e4b14a51d81c1b8a72a92", "publicURL": "http://142.1.121.240:9696"}],
+        "endpoints_links": [], "type": "network", "name": "neutron"}, {"endpoints":
+        [{"adminURL": "http://192.168.128.240:9292/v1", "region": "RegionOne", "internalURL":
+        "http://192.168.128.240:9292/v1", "id": "bc50f4168ade456ab3a97069cb4401dd",
+        "publicURL": "http://142.1.121.240:9292/v1"}], "endpoints_links": [], "type":
+        "image", "name": "glance"}, {"endpoints": [{"adminURL": "http://192.168.128.240:8776/v1/d17890d220184f2fa911536654b1d53b",
+        "region": "RegionOne", "internalURL": "http://192.168.128.240:8776/v1/d17890d220184f2fa911536654b1d53b",
+        "id": "2a7c4b2b160b4c2682cc632cd1cebffc", "publicURL": "http://142.1.121.240:8776/v1/d17890d220184f2fa911536654b1d53b"}],
+        "endpoints_links": [], "type": "volume", "name": "cinder"}, {"endpoints":
+        [{"adminURL": "http://192.168.128.240:8080/v1", "region": "RegionOne", "internalURL":
+        "http://192.168.128.240:8080/v1/AUTH_d17890d220184f2fa911536654b1d53b", "id":
+        "0e81dc33ad4b4e5da86d5fc073a8ded6", "publicURL": "http://142.1.121.41:8080/v1/AUTH_d17890d220184f2fa911536654b1d53b"}],
+        "endpoints_links": [], "type": "object-store", "name": "swift"}, {"endpoints":
+        [{"adminURL": "http://142.1.121.240:35357/v2.0", "region": "RegionOne", "internalURL":
+        "http://192.168.128.240:5000/v2.0", "id": "40ea2a459bc74bee8488e079a5a97f3a",
+        "publicURL": "http://142.1.121.240:5000/v2.0"}], "endpoints_links": [], "type":
+        "identity", "name": "keystone"}], "user": {"username": "toronto_admin", "roles_links":
+        [], "id": "ce33847da47c42cba08a56a99108b874", "roles": [{"name": "_member_"},
+        {"name": "swiftoperator"}], "name": "toronto_admin"}, "metadata": {"is_admin":
+        0, "roles": ["9fe2ff9ee4384b1894a90878d3e92bab", "f97e148392f74cb3ac56aa7f18ba6d5c"]}}}'}
+    headers:
+      content-length: ['2544']
+      content-type: [application/json]
+      date: ['Wed, 15 Apr 2015 00:21:30 GMT']
+      vary: [X-Auth-Token]
+      x-distribution: [Ubuntu]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      user-agent: [python-swiftclient-2.1.0]
+      x-auth-token: [dfff49c3aef44d2191ba739135550a18]
+    method: GET
+    uri: http://142.1.121.41:8080/v1/AUTH_d17890d220184f2fa911536654b1d53b/artefactual?format=json&prefix=transfers/SampleTransfers/Images/&delimiter=/
+  response:
+    body: {string: !!python/unicode '[{"hash": "4829f38a294d156345922db8abd5e91c",
+        "last_modified": "2015-04-10T21:56:43.176070", "bytes": 1437654, "name": "transfers/SampleTransfers/Images/799px-Euroleague-LE
+        Roma vs Toulouse IC-27.bmp", "content_type": "image/x-ms-bmp"}, {"hash": "c14bda842e2889a732e0f5f9d8c0ae73",
+        "last_modified": "2015-04-10T21:56:42.854240", "bytes": 1080282, "name": "transfers/SampleTransfers/Images/BBhelmet.ai",
+        "content_type": "application/postscript"}, {"hash": "1ea4939968f117de97b15437c6348847",
+        "last_modified": "2015-04-10T21:56:42.014940", "bytes": 125968, "name": "transfers/SampleTransfers/Images/G31DS.TIF",
+        "content_type": "image/tiff"}, {"hash": "0b0f9676ead317f643e9a58f0177d1e6",
+        "last_modified": "2015-04-10T21:56:43.695970", "bytes": 2050617, "name": "transfers/SampleTransfers/Images/Nemastylis_geminiflora_Flower.PNG",
+        "content_type": "image/png"}, {"hash": "8dd3a652970aa7f130414305b92ab8a8",
+        "last_modified": "2015-04-10T21:56:43.724420", "bytes": 1041114, "name": "transfers/SampleTransfers/Images/Vector.NET-Free-Vector-Art-Pack-28-Freedom-Flight.eps",
+        "content_type": "application/postscript"}, {"hash": "2eb15cb1834214b05d0083c691f9545f",
+        "last_modified": "2015-04-10T21:56:43.198720", "bytes": 113318, "name": "transfers/SampleTransfers/Images/WFPC01.GIF",
+        "content_type": "image/gif"}, {"hash": "e5913bebe296eb433fdade7400860e73",
+        "last_modified": "2015-04-10T21:56:43.355320", "bytes": 18324, "name": "transfers/SampleTransfers/Images/lion.svg",
+        "content_type": "image/svg+xml"}, {"hash": "04f7802b45838fed393d45afadaa9dcc",
+        "last_modified": "2015-04-10T21:56:42.578030", "bytes": 527345, "name": "transfers/SampleTransfers/Images/oakland03.jp2",
+        "content_type": "image/jp2"}, {"subdir": "transfers/SampleTransfers/Images/pictures/"},
+        {"hash": "ac63a92ba5a94c337e740d6f189200d0", "last_modified": "2015-04-10T21:56:43.264560",
+        "bytes": 158131, "name": "transfers/SampleTransfers/Images/\u30a8\u30d6\u30ea\u30f3\u306e\u5199\u771f.jpg",
+        "content_type": "image/jpeg"}]'}
+    headers:
+      accept-ranges: [bytes]
+      connection: [keep-alive]
+      content-length: ['1983']
+      content-type: [application/json; charset=utf-8]
+      date: ['Wed, 15 Apr 2015 00:21:30 GMT']
+      x-container-bytes-used: ['12189103']
+      x-container-object-count: ['118']
+      x-timestamp: ['1428536548.02463']
+      x-trans-id: [tx58f4e6373d8e407db7d65-00552daf0a]
+    status: {code: 200, message: OK}
+version: 1
