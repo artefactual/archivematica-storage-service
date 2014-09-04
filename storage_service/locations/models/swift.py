@@ -103,7 +103,21 @@ class Swift(models.Model):
         }
 
     def delete_path(self, delete_path):
-        pass
+        # Try to delete object
+        try:
+            self.connection.delete_object(self.container, delete_path)
+        except swiftclient.exceptions.ClientException:
+            # Swift only stores objects and fakes having folders. If delete_path
+            # doesn't exist, assume it is supposed to be a folder and fetch all
+            # items with that prefix to delete.
+            try:
+                _, content = self.connection.get_container(self.container, prefix=delete_path)
+            except swiftclient.exceptions.ClientException:
+                LOGGER.warning('Neither file %s nor container %s exist; unable to delete any content.', delete_path, self.container)
+                return
+            to_delete = [x['name'] for x in content if x.get('name')]
+            for d in to_delete:
+                self.connection.delete_object(self.container, d)
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """ Moves src_path to dest_space.staging_path/dest_path. """

@@ -100,3 +100,27 @@ class TestSwift(TestCase):
         assert resp['properties']['test.txt']['size'] == 10
         # Cleanup
         self.swift_object.delete_path('transfers/SampleTransfers/test.txt')
+
+    @vcr.use_cassette('locations/fixtures/vcr_cassettes/swift_delete.yaml')
+    def test_delete_path(self):
+        # Setup
+        test_file = 'transfers/SampleTransfers/test.txt'
+        resp = self.swift_object.browse('transfers/SampleTransfers/')
+        assert 'test.txt' in resp['entries']
+        # Test
+        self.swift_object.delete_path(test_file)
+        # Verify deleted
+        resp = self.swift_object.browse('transfers/SampleTransfers/')
+        assert 'test.txt' not in resp['entries']
+
+    @vcr.use_cassette('locations/fixtures/vcr_cassettes/swift_delete_folder.yaml')
+    def test_delete_folder(self):
+        # Check that exists already
+        test_file = 'transfers/SampleTransfers/test/'
+        resp = self.swift_object.browse('transfers/SampleTransfers/')
+        assert 'test' in resp['directories']
+        # Test
+        self.swift_object.delete_path(test_file)
+        # Verify deleted
+        resp = self.swift_object.browse('transfers/SampleTransfers/')
+        assert 'test' not in resp['directories']
