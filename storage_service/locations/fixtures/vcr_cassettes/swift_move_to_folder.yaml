@@ -1,0 +1,148 @@
+interactions:
+- request:
+    body: '{"auth": {"tenantName": "toronto", "passwordCredentials": {"username": "toronto_admin",
+      "password": "torontoAdmin12"}}}'
+    headers:
+      Accept: [application/json]
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      Content-Length: ['116']
+      Content-Type: [application/json]
+      User-Agent: [python-keystoneclient]
+    method: POST
+    uri: http://142.1.121.240:5000/v2.0/tokens
+  response:
+    body: {string: !!python/unicode '{"access": {"token": {"issued_at": "2015-04-15T00:37:34.964606",
+        "expires": "3015-04-15T01:37:34Z", "id": "947a13593e78427cbdfa3bb8a51e4571",
+        "tenant": {"description": null, "enabled": true, "id": "d17890d220184f2fa911536654b1d53b",
+        "name": "toronto"}}, "serviceCatalog": [{"endpoints": [{"adminURL": "http://192.168.128.240:8774/v2/d17890d220184f2fa911536654b1d53b",
+        "region": "RegionOne", "internalURL": "http://192.168.128.240:8774/v2/d17890d220184f2fa911536654b1d53b",
+        "id": "0613bda4e9d94c29952a0e1f4011e5fa", "publicURL": "http://142.1.121.240:8774/v2/d17890d220184f2fa911536654b1d53b"}],
+        "endpoints_links": [], "type": "compute", "name": "nova"}, {"endpoints": [{"adminURL":
+        "http://192.168.128.240:9696", "region": "RegionOne", "internalURL": "http://192.168.128.240:9696",
+        "id": "b510d479241e4b14a51d81c1b8a72a92", "publicURL": "http://142.1.121.240:9696"}],
+        "endpoints_links": [], "type": "network", "name": "neutron"}, {"endpoints":
+        [{"adminURL": "http://192.168.128.240:9292/v1", "region": "RegionOne", "internalURL":
+        "http://192.168.128.240:9292/v1", "id": "bc50f4168ade456ab3a97069cb4401dd",
+        "publicURL": "http://142.1.121.240:9292/v1"}], "endpoints_links": [], "type":
+        "image", "name": "glance"}, {"endpoints": [{"adminURL": "http://192.168.128.240:8776/v1/d17890d220184f2fa911536654b1d53b",
+        "region": "RegionOne", "internalURL": "http://192.168.128.240:8776/v1/d17890d220184f2fa911536654b1d53b",
+        "id": "2a7c4b2b160b4c2682cc632cd1cebffc", "publicURL": "http://142.1.121.240:8776/v1/d17890d220184f2fa911536654b1d53b"}],
+        "endpoints_links": [], "type": "volume", "name": "cinder"}, {"endpoints":
+        [{"adminURL": "http://192.168.128.240:8080/v1", "region": "RegionOne", "internalURL":
+        "http://192.168.128.240:8080/v1/AUTH_d17890d220184f2fa911536654b1d53b", "id":
+        "0e81dc33ad4b4e5da86d5fc073a8ded6", "publicURL": "http://142.1.121.41:8080/v1/AUTH_d17890d220184f2fa911536654b1d53b"}],
+        "endpoints_links": [], "type": "object-store", "name": "swift"}, {"endpoints":
+        [{"adminURL": "http://142.1.121.240:35357/v2.0", "region": "RegionOne", "internalURL":
+        "http://192.168.128.240:5000/v2.0", "id": "40ea2a459bc74bee8488e079a5a97f3a",
+        "publicURL": "http://142.1.121.240:5000/v2.0"}], "endpoints_links": [], "type":
+        "identity", "name": "keystone"}], "user": {"username": "toronto_admin", "roles_links":
+        [], "id": "ce33847da47c42cba08a56a99108b874", "roles": [{"name": "_member_"},
+        {"name": "swiftoperator"}], "name": "toronto_admin"}, "metadata": {"is_admin":
+        0, "roles": ["9fe2ff9ee4384b1894a90878d3e92bab", "f97e148392f74cb3ac56aa7f18ba6d5c"]}}}'}
+    headers:
+      content-length: ['2544']
+      content-type: [application/json]
+      date: ['Wed, 15 Apr 2015 00:37:34 GMT']
+      vary: [X-Auth-Token]
+      x-distribution: [Ubuntu]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      user-agent: [python-swiftclient-2.1.0]
+      x-auth-token: [947a13593e78427cbdfa3bb8a51e4571]
+    method: GET
+    uri: http://142.1.121.41:8080/v1/AUTH_d17890d220184f2fa911536654b1d53b/artefactual/transfers/SampleTransfers/badNames/objects/%25/
+  response:
+    body: {string: !!python/unicode '<html><h1>Not Found</h1><p>The resource could
+        not be found.</p></html>'}
+    headers:
+      connection: [keep-alive]
+      content-length: ['70']
+      content-type: [text/html; charset=UTF-8]
+      date: ['Wed, 15 Apr 2015 00:37:35 GMT']
+      x-trans-id: [tx19a8f7d36b094347bc83a-00552db2cf]
+    status: {code: 404, message: Not Found}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      user-agent: [python-swiftclient-2.1.0]
+      x-auth-token: [947a13593e78427cbdfa3bb8a51e4571]
+    method: GET
+    uri: http://142.1.121.41:8080/v1/AUTH_d17890d220184f2fa911536654b1d53b/artefactual?format=json&prefix=transfers/SampleTransfers/badNames/objects/%25/
+  response:
+    body: {string: !!python/unicode '[{"hash": "6137cde4893c59f76f005a8123d8e8e6",
+        "last_modified": "2015-04-10T21:53:49.216490", "bytes": 5, "name": "transfers/SampleTransfers/badNames/objects/%/@at.txt",
+        "content_type": "text/plain"}, {"hash": "b05403212c66bdc8ccc597fedf6cd5fe",
+        "last_modified": "2015-04-15T00:13:56.534580", "bytes": 10, "name": "transfers/SampleTransfers/badNames/objects/%/control.txt",
+        "content_type": "text/plain"}]'}
+    headers:
+      accept-ranges: [bytes]
+      connection: [keep-alive]
+      content-length: ['403']
+      content-type: [application/json; charset=utf-8]
+      date: ['Wed, 15 Apr 2015 00:37:35 GMT']
+      x-container-bytes-used: ['12189103']
+      x-container-object-count: ['118']
+      x-timestamp: ['1428536548.02463']
+      x-trans-id: [tx8a13e8e4ef3648f7b3dff-00552db2cf]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      user-agent: [python-swiftclient-2.1.0]
+      x-auth-token: [947a13593e78427cbdfa3bb8a51e4571]
+    method: GET
+    uri: http://142.1.121.41:8080/v1/AUTH_d17890d220184f2fa911536654b1d53b/artefactual/transfers/SampleTransfers/badNames/objects/%25/%40at.txt
+  response:
+    body: {string: !!python/unicode 'data
+
+        '}
+    headers:
+      accept-ranges: [bytes]
+      connection: [keep-alive]
+      content-length: ['5']
+      content-type: [text/plain]
+      date: ['Wed, 15 Apr 2015 00:37:35 GMT']
+      etag: [6137cde4893c59f76f005a8123d8e8e6]
+      last-modified: ['Fri, 10 Apr 2015 21:53:50 GMT']
+      x-object-meta-mtime: ['1370034176.000000']
+      x-timestamp: ['1428702829.21649']
+      x-trans-id: [txb57eecdc691c42f8bd00a-00552db2cf]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      user-agent: [python-swiftclient-2.1.0]
+      x-auth-token: [947a13593e78427cbdfa3bb8a51e4571]
+    method: GET
+    uri: http://142.1.121.41:8080/v1/AUTH_d17890d220184f2fa911536654b1d53b/artefactual/transfers/SampleTransfers/badNames/objects/%25/control.txt
+  response:
+    body: {string: !!python/unicode 'test file
+
+        '}
+    headers:
+      accept-ranges: [bytes]
+      connection: [keep-alive]
+      content-length: ['10']
+      content-type: [text/plain]
+      date: ['Wed, 15 Apr 2015 00:37:35 GMT']
+      etag: [b05403212c66bdc8ccc597fedf6cd5fe]
+      last-modified: ['Wed, 15 Apr 2015 00:13:57 GMT']
+      x-timestamp: ['1429056836.53458']
+      x-trans-id: [tx1cfabfdf05244e2a9aaf2-00552db2cf]
+    status: {code: 200, message: OK}
+version: 1

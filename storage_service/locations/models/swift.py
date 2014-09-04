@@ -107,7 +107,33 @@ class Swift(models.Model):
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """ Moves src_path to dest_space.staging_path/dest_path. """
-        pass
+        # TODO find a way to stream content to dest_path, instead of having to put it in memory
+        try:
+            _, content = self.connection.get_object(self.container, src_path)
+            self.space._create_local_directory(dest_path)
+            with open(dest_path, 'wb') as f:
+                f.write(content)
+        except swiftclient.exceptions.ClientException:
+            # Swift only stores objects and fakes having folders. If src_path
+            # doesn't exist, assume it is supposed to be a folder and fetch all
+            # items with that prefix.
+            _, content = self.connection.get_container(self.container, prefix=src_path)
+            to_get = [x['name'] for x in content if x.get('name')]
+            if not to_get:
+                # If nothing found, try normalizing src_path to remove possible
+                # extra characters like / /* /.  These glob-match on a
+                # filesystem, but do not character-match in Swift.
+                # Normalize dest_path as well, so replace continues to work
+                src_path = os.path.normpath(src_path)
+                dest_path = os.path.normpath(dest_path)
+                _, content = self.connection.get_container(self.container, prefix=src_path)
+                to_get = [x['name'] for x in content if x.get('name')]
+            for entry in to_get:
+                dest = entry.replace(src_path, dest_path, 1)
+                self.space._create_local_directory(dest)
+                _, content = self.connection.get_object(self.container, entry)
+                with open(dest, 'wb') as f:
+                    f.write(content)
 
     def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """

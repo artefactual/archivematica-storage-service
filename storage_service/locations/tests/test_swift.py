@@ -48,6 +48,46 @@ class TestSwift(TestCase):
         assert resp['properties'][u'エブリンの写真.jpg']['size'] == 158131
         assert resp['properties'][u'エブリンの写真.jpg']['timestamp'] == '2015-04-10T21:56:43.264560'
 
+    @vcr.use_cassette('locations/fixtures/vcr_cassettes/swift_move_to.yaml')
+    def test_move_to_ss(self):
+        test_file = 'test/%percent.txt'
+        # Not here already
+        try:
+            os.remove(test_file)
+        except OSError:
+            pass
+        assert not os.path.exists(test_file)
+        # Test
+        self.swift_object.move_to_storage_service('transfers/SampleTransfers/badNames/objects/%percent.txt', test_file, None)
+        # Verify
+        assert os.path.isdir('test')
+        assert os.path.isfile(test_file)
+        assert open(test_file, 'r').read() == '%percent\n'
+
+    @vcr.use_cassette('locations/fixtures/vcr_cassettes/swift_move_to_not_exist.yaml')
+    def test_move_to_ss_not_exist(self):
+        test_file = 'test/dne.txt'
+        assert not os.path.exists(test_file)
+        self.swift_object.move_to_storage_service('transfers/SampleTransfers/does_not_exist.txt', test_file, None)
+        # TODO is this what we want to happen?  Or should it fail louder?
+        assert not os.path.exists(test_file)
+
+    @vcr.use_cassette('locations/fixtures/vcr_cassettes/swift_move_to_folder.yaml')
+    def test_move_to_ss_folder(self):
+        test_dir = 'test/subdir/'
+        try:
+            shutil.rmtree(test_dir)
+        except (OSError, shutil.Error):
+            pass
+        assert not os.path.exists(test_dir)
+        self.swift_object.move_to_storage_service('transfers/SampleTransfers/badNames/objects/%/', test_dir, None)
+        # Verify
+        assert os.path.isdir(test_dir)
+        assert os.path.isfile(os.path.join(test_dir, '@at.txt'))
+        assert open(os.path.join(test_dir, '@at.txt'), 'r').read() == 'data\n'
+        assert os.path.isfile(os.path.join(test_dir, 'control.txt'))
+        assert open(os.path.join(test_dir, 'control.txt'), 'r').read() == 'test file\n'
+
     @vcr.use_cassette('locations/fixtures/vcr_cassettes/swift_move_from.yaml')
     def test_move_from_ss(self):
         # create test.txt
