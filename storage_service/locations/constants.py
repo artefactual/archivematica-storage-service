@@ -6,6 +6,11 @@ import models
 
 # Mapping between access protocol and protocol specific fields
 PROTOCOL = {
+    models.Space.ARKIVUM: {
+        'model': models.Arkivum,
+        'form': forms.ArkivumForm,
+        'fields': []
+    },
     models.Space.DURACLOUD: {
         'model': models.Duracloud,
         'form': forms.DuracloudForm,
