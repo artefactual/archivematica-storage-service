@@ -1,0 +1,76 @@
+interactions:
+- request:
+    body: '{"auth": {"tenantName": "toronto", "passwordCredentials": {"username": "toronto_admin",
+      "password": "torontoAdmin12"}}}'
+    headers:
+      Accept: [application/json]
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      Content-Length: ['116']
+      Content-Type: [application/json]
+      User-Agent: [python-keystoneclient]
+    method: POST
+    uri: http://142.1.121.240:5000/v2.0/tokens
+  response:
+    body: {string: !!python/unicode '{"access": {"token": {"issued_at": "2015-04-15T18:25:13.833137",
+        "expires": "3015-04-15T19:25:13Z", "id": "e2b0f48e7b0e436faf01931e8b049270",
+        "tenant": {"description": null, "enabled": true, "id": "d17890d220184f2fa911536654b1d53b",
+        "name": "toronto"}}, "serviceCatalog": [{"endpoints": [{"adminURL": "http://192.168.128.240:8774/v2/d17890d220184f2fa911536654b1d53b",
+        "region": "RegionOne", "internalURL": "http://192.168.128.240:8774/v2/d17890d220184f2fa911536654b1d53b",
+        "id": "0613bda4e9d94c29952a0e1f4011e5fa", "publicURL": "http://142.1.121.240:8774/v2/d17890d220184f2fa911536654b1d53b"}],
+        "endpoints_links": [], "type": "compute", "name": "nova"}, {"endpoints": [{"adminURL":
+        "http://192.168.128.240:9696", "region": "RegionOne", "internalURL": "http://192.168.128.240:9696",
+        "id": "b510d479241e4b14a51d81c1b8a72a92", "publicURL": "http://142.1.121.240:9696"}],
+        "endpoints_links": [], "type": "network", "name": "neutron"}, {"endpoints":
+        [{"adminURL": "http://192.168.128.240:9292/v1", "region": "RegionOne", "internalURL":
+        "http://192.168.128.240:9292/v1", "id": "bc50f4168ade456ab3a97069cb4401dd",
+        "publicURL": "http://142.1.121.240:9292/v1"}], "endpoints_links": [], "type":
+        "image", "name": "glance"}, {"endpoints": [{"adminURL": "http://192.168.128.240:8776/v1/d17890d220184f2fa911536654b1d53b",
+        "region": "RegionOne", "internalURL": "http://192.168.128.240:8776/v1/d17890d220184f2fa911536654b1d53b",
+        "id": "2a7c4b2b160b4c2682cc632cd1cebffc", "publicURL": "http://142.1.121.240:8776/v1/d17890d220184f2fa911536654b1d53b"}],
+        "endpoints_links": [], "type": "volume", "name": "cinder"}, {"endpoints":
+        [{"adminURL": "http://192.168.128.240:8080/v1", "region": "RegionOne", "internalURL":
+        "http://192.168.128.240:8080/v1/AUTH_d17890d220184f2fa911536654b1d53b", "id":
+        "0e81dc33ad4b4e5da86d5fc073a8ded6", "publicURL": "http://142.1.121.41:8080/v1/AUTH_d17890d220184f2fa911536654b1d53b"}],
+        "endpoints_links": [], "type": "object-store", "name": "swift"}, {"endpoints":
+        [{"adminURL": "http://142.1.121.240:35357/v2.0", "region": "RegionOne", "internalURL":
+        "http://192.168.128.240:5000/v2.0", "id": "40ea2a459bc74bee8488e079a5a97f3a",
+        "publicURL": "http://142.1.121.240:5000/v2.0"}], "endpoints_links": [], "type":
+        "identity", "name": "keystone"}], "user": {"username": "toronto_admin", "roles_links":
+        [], "id": "ce33847da47c42cba08a56a99108b874", "roles": [{"name": "_member_"},
+        {"name": "swiftoperator"}], "name": "toronto_admin"}, "metadata": {"is_admin":
+        0, "roles": ["9fe2ff9ee4384b1894a90878d3e92bab", "f97e148392f74cb3ac56aa7f18ba6d5c"]}}}'}
+    headers:
+      content-length: ['2544']
+      content-type: [application/json]
+      date: ['Wed, 15 Apr 2015 18:25:13 GMT']
+      vary: [X-Auth-Token]
+      x-distribution: [Ubuntu]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      user-agent: [python-swiftclient-2.1.0]
+      x-auth-token: [e2b0f48e7b0e436faf01931e8b049270]
+    method: GET
+    uri: http://142.1.121.41:8080/v1/AUTH_d17890d220184f2fa911536654b1d53b/artefactual/transfers/SampleTransfers/badNames/objects/%25percent.txt
+  response:
+    body: {string: !!python/unicode '%percent
+
+        '}
+    headers:
+      accept-ranges: [bytes]
+      connection: [keep-alive]
+      content-length: ['9']
+      content-type: [text/plain]
+      date: ['Wed, 15 Apr 2015 18:25:14 GMT']
+      etag: [badbadbadbadbadbadbadbadbadbadbadbad]
+      last-modified: ['Fri, 10 Apr 2015 21:53:52 GMT']
+      x-object-meta-mtime: ['1370034176.000000']
+      x-timestamp: ['1428702831.15115']
+      x-trans-id: [tx7ebdf96deda643bf9658d-00552ead09]
+    status: {code: 200, message: OK}
+version: 1

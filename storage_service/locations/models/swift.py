@@ -9,6 +9,7 @@ from django.db import models
 import swiftclient
 
 # This project, alphabetical
+from common import utils
 
 # This module, alphabetical
 from . import StorageException
@@ -119,14 +120,31 @@ class Swift(models.Model):
             for d in to_delete:
                 self.connection.delete_object(self.container, d)
 
+    def _download_file(self, remote_path, download_path):
+        """
+        Download the file from download_path in this Space to remote_path.
+
+        :param str remote_path: Full path in Swift
+        :param str download_path: Full path to save the file to
+        :raises: swiftclient.exceptions.ClientException may be raised and is not caught
+        """
+        # TODO find a way to stream content to dest_path, instead of having to put it in memory
+        headers, content = self.connection.get_object(self.container, remote_path)
+        self.space._create_local_directory(download_path)
+        with open(download_path, 'wb') as f:
+            f.write(content)
+        # Check ETag matches checksum of this file
+        if 'etag' in headers:
+            checksum = utils.generate_checksum(download_path)
+            if checksum.hexdigest() != headers['etag']:
+                message = 'ETag {} for {} does not match {}'.format(remote_path, headers['etag'], checksum.hexdigest())
+                logging.warning(message)
+                raise StorageException(message)
+
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """ Moves src_path to dest_space.staging_path/dest_path. """
-        # TODO find a way to stream content to dest_path, instead of having to put it in memory
         try:
-            _, content = self.connection.get_object(self.container, src_path)
-            self.space._create_local_directory(dest_path)
-            with open(dest_path, 'wb') as f:
-                f.write(content)
+            self._download_file(src_path, dest_path)
         except swiftclient.exceptions.ClientException:
             # Swift only stores objects and fakes having folders. If src_path
             # doesn't exist, assume it is supposed to be a folder and fetch all
@@ -144,10 +162,7 @@ class Swift(models.Model):
                 to_get = [x['name'] for x in content if x.get('name')]
             for entry in to_get:
                 dest = entry.replace(src_path, dest_path, 1)
-                self.space._create_local_directory(dest)
-                _, content = self.connection.get_object(self.container, entry)
-                with open(dest, 'wb') as f:
-                    f.write(content)
+                self._download_file(entry, dest)
 
     def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
@@ -159,19 +174,23 @@ class Swift(models.Model):
                 for basename in files:
                     entry = os.path.join(path, basename)
                     dest = entry.replace(source_path, destination_path, 1)
+                    checksum = utils.generate_checksum(entry)
                     with open(entry, 'rb') as f:
                         self.connection.put_object(
                             self.container,
                             obj=dest,
                             contents=f,
+                            etag=checksum.hexdigest(),
                             content_length=os.path.getsize(entry)
                         )
         elif os.path.isfile(source_path):
+            checksum = utils.generate_checksum(source_path)
             with open(source_path, 'rb') as f:
                 self.connection.put_object(
                     self.container,
                     obj=destination_path,
                     contents=f,
+                    etag=checksum.hexdigest(),
                     content_length=os.path.getsize(source_path),
                 )
         else:

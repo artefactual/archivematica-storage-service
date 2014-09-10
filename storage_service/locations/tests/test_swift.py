@@ -3,6 +3,7 @@ import os
 import shutil
 
 from django.test import TestCase
+import pytest
 import vcr
 
 from locations import models
@@ -87,6 +88,19 @@ class TestSwift(TestCase):
         assert open(os.path.join(test_dir, '@at.txt'), 'r').read() == 'data\n'
         assert os.path.isfile(os.path.join(test_dir, 'control.txt'))
         assert open(os.path.join(test_dir, 'control.txt'), 'r').read() == 'test file\n'
+
+    @vcr.use_cassette('locations/fixtures/vcr_cassettes/swift_move_to_bad_etag.yaml')
+    def test_move_to_ss_bad_etag(self):
+        test_file = 'test/%percent.txt'
+        # Not here already
+        try:
+            os.remove(test_file)
+        except OSError:
+            pass
+        assert not os.path.exists(test_file)
+        # Test
+        with pytest.raises(models.StorageException):
+            self.swift_object.move_to_storage_service('transfers/SampleTransfers/badNames/objects/%percent.txt', test_file, None)
 
     @vcr.use_cassette('locations/fixtures/vcr_cassettes/swift_move_from.yaml')
     def test_move_from_ss(self):
