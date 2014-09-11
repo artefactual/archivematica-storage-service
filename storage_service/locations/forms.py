@@ -88,7 +88,7 @@ class SpaceForm(forms.ModelForm):
 class ArkivumForm(forms.ModelForm):
     class Meta:
         model = models.Arkivum
-        fields = ()
+        fields = ('host', 'remote_user', 'remote_name')
 
 
 class DuracloudForm(forms.ModelForm):

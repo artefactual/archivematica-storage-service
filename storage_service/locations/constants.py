@@ -9,7 +9,9 @@ PROTOCOL = {
     models.Space.ARKIVUM: {
         'model': models.Arkivum,
         'form': forms.ArkivumForm,
-        'fields': []
+        'fields': ['host',
+                   'remote_user',
+                   'remote_name']
     },
     models.Space.DURACLOUD: {
         'model': models.Duracloud,

@@ -12,6 +12,9 @@ class Migration(SchemaMigration):
         db.create_table(u'locations_arkivum', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('space', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['locations.Space'], to_field='uuid', unique=True)),
+            ('host', self.gf('django.db.models.fields.CharField')(max_length=256)),
+            ('remote_user', self.gf('django.db.models.fields.CharField')(max_length=64, null=True, blank=True)),
+            ('remote_name', self.gf('django.db.models.fields.CharField')(max_length=256, null=True, blank=True)),
         ))
         db.send_create_signal('locations', ['Arkivum'])
 
@@ -60,7 +63,10 @@ class Migration(SchemaMigration):
         },
         'locations.arkivum': {
             'Meta': {'object_name': 'Arkivum'},
+            'host': ('django.db.models.fields.CharField', [], {'max_length': '256'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'remote_name': ('django.db.models.fields.CharField', [], {'max_length': '256', 'null': 'True', 'blank': 'True'}),
+            'remote_user': ('django.db.models.fields.CharField', [], {'max_length': '64', 'null': 'True', 'blank': 'True'}),
             'space': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['locations.Space']", 'to_field': "'uuid'", 'unique': 'True'})
         },
         'locations.callback': {
