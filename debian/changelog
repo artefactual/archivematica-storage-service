@@ -1,11 +1,6 @@
-archivematica-storage-service (0.3.0.rc10) UNRELEASED; urgency=low
+archivematica-storage-service (0.4.0-1~precise1) precise; urgency=high
 
-  * Add migrations and uninstall to debian packaging
+  * Archivematica Storage Service 0.4.0 release
 
- -- Justin Simpson <jhs@inex>  Tue, 08 Apr 2014 16:25:34 -0700
+ -- Justin Simpson <jsimpson@artefactual.com>  Wed, 10 Sep 2014 18:05:34 -0700
 
-archivematica-storage-service (0.2.0) precise; urgency=low
-
-  * updated to 0.2.2
-
- -- Justin Simpson <jhs@inex>  Tue, 05 Nov 2013 18:17:20 -0800
