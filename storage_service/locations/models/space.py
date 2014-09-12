@@ -16,6 +16,9 @@ from django_extensions.db.fields import UUIDField
 # This project, alphabetical
 logger = logging.getLogger()
 
+# This module, alphabetical
+from . import StorageException
+
 __all__ = ('Space', )
 
 
@@ -292,13 +295,15 @@ class Space(models.Model):
 
         # Rsync file over
         # TODO Do this asyncronously, with restarting failed attempts
-        command = ['rsync', '--chmod=ugo+rw', '-r', source, destination]
+        command = ['rsync', '-vv', '--chmod=ugo+rw', '-r', source, destination]
         logging.info("rsync command: {}".format(command))
-        try:
-            subprocess.check_call(command)
-        except subprocess.CalledProcessError as e:
-            logging.warning("Rsync failed: {}".format(e))
-            raise
+
+        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        stdout, _ = p.communicate()
+        if p.returncode != 0:
+            s = "Rsync failed with status {}: {}".format(p.returncode, stdout)
+            logging.warning(s)
+            raise StorageException(s)
 
     def _create_local_directory(self, path, mode=None):
         """ Creates a local directory at 'path' with 'mode' (default 775). """
