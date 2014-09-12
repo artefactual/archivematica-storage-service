@@ -216,6 +216,34 @@ class Space(models.Model):
             # This is optional for the child class to implement
             pass
 
+    def _move_from_path_mangling(self, staging_path, destination_path):
+        """
+        Does path pre-processing before passing to move_from_* functions.
+
+        Given a staging_path relative to self.staging_path, converts to an absolute path.
+        If staging_path is absolute (starts with /), force to be relative.
+        If staging_path is a directory, ensure ends with /
+        Given a destination_path relative to this space, converts to an absolute path.
+
+        :param str staging_path: Path to the staging copy relative to the SS internal location.
+        :param str destination_path: Path to the destination copy relative to this Space's path.
+        :return: Tuple of absolute paths (staging_path, destination_path)
+        """
+        # Path pre-processing
+        # source_path must be relative
+        if os.path.isabs(staging_path):
+            staging_path = staging_path.lstrip(os.sep)
+            # Alternate implementation:
+            # os.path.join(*staging_path.split(os.sep)[1:]) # Strips up to first os.sep
+        staging_path = os.path.join(self.staging_path, staging_path)
+        if os.path.isdir(staging_path):
+            staging_path += os.sep
+        destination_path = os.path.join(self.path, destination_path)
+
+        # TODO enforce destination_path is inside self.path
+
+        return staging_path, destination_path
+
     def move_from_storage_service(self, source_path, destination_path,
                                   *args, **kwargs):
         """ Move source_path in this Space's staging area to destination_path in this Space.
@@ -232,18 +260,7 @@ class Space(models.Model):
         LOGGER.debug('FROM: src: %s', source_path)
         LOGGER.debug('FROM: dst: %s', destination_path)
 
-        # Path pre-processing
-        # source_path must be relative
-        if os.path.isabs(source_path):
-            source_path = source_path.lstrip(os.sep)
-            # Alternate implementation:
-            # os.path.join(*source_path.split(os.sep)[1:]) # Strips up to first os.sep
-        source_path = os.path.join(self.staging_path, source_path)
-        if os.path.isdir(source_path):
-            source_path += os.sep
-        destination_path = os.path.join(self.path, destination_path)
-
-        # TODO enforce destination_path is inside self.path
+        source_path, destination_path = self._move_from_path_mangling(source_path, destination_path)
         try:
             self.get_child_space().move_from_storage_service(
                 source_path, destination_path, *args, **kwargs)
@@ -265,8 +282,19 @@ class Space(models.Model):
             except OSError:
                 LOGGER.warning('Unable to remove %s', source_path, exc_info=True)
 
-    def post_move_from_storage_service(self, staging_path=None, destination_path=None, package=None, *args, **kwargs):
-        """ Hook for any actions that need to be taken after moving from the storage service to the final destination. """
+    def post_move_from_storage_service(self, staging_path, destination_path, package=None, *args, **kwargs):
+        """
+        Hook for any actions that need to be taken after moving from the storage
+        service to the final destination.
+
+        :param str staging_path: Path to the staging copy relative to the SS internal location. Can be None if destination_path is also None.
+        :param str destination_path: Path to the destination copy relative to this Space's path. Can be None if staging_path is also None.
+        :param package: (Optional) :class:`Package` that is being moved.
+        """
+        if staging_path is None or destination_path is None:
+            staging_path = destination_path = None
+        if staging_path and destination_path:
+            staging_path, destination_path = self._move_from_path_mangling(staging_path, destination_path)
         try:
             self.get_child_space().post_move_from_storage_service(
                 staging_path=staging_path,

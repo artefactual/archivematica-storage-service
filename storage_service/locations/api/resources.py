@@ -370,7 +370,8 @@ class LocationResource(ModelResource):
                     source_path=destination_path,
                     destination_path=destination_path,
                 )
-                destination_space.post_move_from_storage_service()
+                destination_space.post_move_from_storage_service(
+                    destination_path, destination_path)
 
             else:
                 return http.HttpBadRequest
