@@ -5,6 +5,7 @@ import os
 import shutil
 import stat
 import subprocess
+import tempfile
 
 # Core Django, alphabetical
 from django.core.exceptions import ValidationError
@@ -416,6 +417,43 @@ class Space(models.Model):
             os.chmod(os.path.dirname(path), mode)
         except os.error as e:
             LOGGER.warning(e)
+
+    def _create_rsync_directory(self, destination_path, user, host):
+        """
+        Creates a remote directory structure for destination_path.
+
+        :param path: path to create the directories for.  Should end with a / or
+            a filename, or final directory may not be created. If path is empty,
+            no directories are created.
+        :param user: Username on remote host
+        :param host: Hostname of remote host
+        """
+        # Assemble a set of directories to create on the remote server;
+        # these will be created one at a time
+        directories = []
+        path = os.path.dirname(destination_path)
+        while path != '' and path != '/':
+            directories.insert(0, path)
+            path = os.path.dirname(path)
+
+        # Syncing an empty directory will ensure no files get transferred
+        temp_dir = os.path.join(tempfile.mkdtemp(), '')
+
+        # Creates the destination_path directory without copying any files
+        # Dir must end in a / for rsync to create it
+        for directory in directories:
+            path = os.path.join(os.path.dirname(directory), '')
+            path = "{}@{}:{}".format(user, host, utils.coerce_str(path))
+            cmd = ['rsync', '-vv', '--protect-args', '--recursive', temp_dir, path]
+            LOGGER.info("rsync path creation command: %s", cmd)
+            try:
+                subprocess.check_call(cmd)
+            except subprocess.CalledProcessError as e:
+                shutil.rmtree(temp_dir)
+                LOGGER.warning("rsync path creation failed: %s", e)
+                raise
+
+        shutil.rmtree(temp_dir)
 
     def _count_objects_in_directory(self, path):
         """

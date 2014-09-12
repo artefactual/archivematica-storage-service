@@ -1,4 +1,3 @@
-
 import os
 import requests
 import shutil
@@ -34,3 +33,22 @@ class TestArkivum(TestCase):
         assert self.arkivum_object.host
         # Both or neither of remote_user/remote_name
         assert bool(self.arkivum_object.remote_user) == bool(self.arkivum_object.remote_name)
+
+    # def test_move_from_ss(self):
+    #     # TODO need to fake filesystem interactions
+    #     # Create test.txt
+    #     open('unittest.txt', 'w').write('test file\n')
+    #     # Upload
+    #     self.arkivum_object.move_from_storage_service('unittest.txt', '/mnt/arkivum/test/unittest.txt')
+    #     # Verify
+    #     url = 'https://' + self.arkivum_object.host + '/files/'
+    #     response = requests.get(url, verify=False)
+    #     assert 'test' in [x['name'] for x in response.json()['files']]
+    #     url += 'test'
+    #     response = requests.get(url, verify=False)
+    #     assert 'unittest.txt' in [x['name'] for x in response.json()['files']]
+    #     # Cleanup
+    #     os.remove('unittest.txt')
+    #     shutil.rmtree('/mnt/arkivum/test')
+
+    #     # TODO test folder in new test

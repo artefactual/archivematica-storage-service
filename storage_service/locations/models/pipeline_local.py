@@ -171,31 +171,7 @@ class PipelineLocalFS(models.Model):
     def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
 
-        # Assemble a set of directories to create on the remote server;
-        # these will be created one at a time
-        directories = []
-        path = destination_path
-        while path != '' and path != '/':
-            directories.insert(0, path)
-            path = os.path.dirname(path)
-
-        # Syncing an empty directory will ensure no files get transferred
-        temp_dir = os.path.join(tempfile.mkdtemp(), '')
-
-        # Creates the destination_path directory without copying any files
-        # Dir must end in a / for rsync to create it
-        for directory in directories:
-            path = self._format_host_path(os.path.join(os.path.dirname(directory), ''))
-            cmd = ['rsync', '-vv', '--protect-args', '--recursive', temp_dir, path]
-            LOGGER.info("rsync path creation command: %s", cmd)
-            try:
-                subprocess.check_call(cmd)
-            except subprocess.CalledProcessError as e:
-                shutil.rmtree(temp_dir)
-                LOGGER.warning("rsync path creation failed: %s", e)
-                raise
-
-        shutil.rmtree(temp_dir)
+        self.space._create_rsync_directory(destination_path, self.remote_name, self.remote_name)
 
         # Prepend user and host to destination
         destination_path = self._format_host_path(destination_path)

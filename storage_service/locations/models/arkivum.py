@@ -1,5 +1,8 @@
 # stdlib, alphabetical
+import json
 import logging
+import os
+import requests
 
 # Core Django, alphabetical
 from django.conf import settings
@@ -8,6 +11,7 @@ from django.db import models
 # Third party dependencies, alphabetical
 
 # This project, alphabetical
+from common import utils
 
 # This module, alphabetical
 from location import Location
@@ -53,7 +57,15 @@ class Arkivum(models.Model):
 
     def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
-        pass
+        # Rsync to Arkivum watched directory
+        if self.remote_user and self.remote_name:
+            self.space._create_rsync_directory(destination_path, self.remote_user, self.remote_name)
+            rsync_dest = "{}@{}:{}".format(self.remote_user, self.remote_name, utils.coerce_str(destination_path))
+        else:
+            rsync_dest = destination_path
+            self.space._create_local_directory(destination_path)
+        self.space._move_rsync(source_path, rsync_dest)
+
 
     def update_package_status(self, package):
         pass
