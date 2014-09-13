@@ -36,5 +36,49 @@
         "purpose": "AS", 
         "uuid": "d9d7db26-f7a1-40aa-9db1-806b4d3a61cd"
     }
+},
+{
+    "pk": 1,
+    "model": "locations.pipeline",
+    "fields": {
+        "api_key": null,
+        "uuid": "7691b4bc-b76a-411c-b6a2-d16964018220",
+        "enabled": true,
+        "api_username": null,
+        "remote_name": null,
+        "description": "Archivematica"
+    }
+},
+{
+    "pk": 3, 
+    "model": "locations.location", 
+    "fields": {
+        "used": 0, 
+        "description": "For storage service internal usage.", 
+        "space": "7d20c992-bc92-4f92-a794-7161ff2cc08b", 
+        "enabled": true, 
+        "quota": null, 
+        "relative_path": "var/archivematica/storage_service", 
+        "purpose": "SS", 
+        "uuid": "72ee3a1a-9497-46db-aa58-56ea8d7fedc5"
+    }
+},
+{
+    "pk": 9,
+    "model": "locations.package",
+    "fields": {
+        "status": "STAGING",
+        "package_type": "AIP",
+        "origin_pipeline": "7691b4bc-b76a-411c-b6a2-d16964018220",
+        "uuid": "c0f8498f-b92e-4a8b-8941-1b34ba062ed8",
+        "current_path": "c0f8/498f/b92e/4a8b/8941/1b34/ba06/2ed8/ep9-c0f8498f-b92e-4a8b-8941-1b34ba062ed8.7z",
+        "misc_attributes": {},
+        "current_location": "d9d7db26-f7a1-40aa-9db1-806b4d3a61cd",
+        "pointer_file_location": "Why does this not work?",
+        "pointer_file_location": "72ee3a1a-9497-46db-aa58-56ea8d7fedc5",
+        "pointer_file_path": "c0f8/498f/b92e/4a8b/8941/1b34/ba06/2ed8/pointer.c0f8498f-b92e-4a8b-8941-1b34ba062ed8.xml",
+        "size": 2344125
+    }
 }
+
 ]

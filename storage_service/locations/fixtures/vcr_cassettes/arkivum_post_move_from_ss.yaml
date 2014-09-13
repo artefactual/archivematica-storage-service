@@ -1,0 +1,37 @@
+interactions:
+- request:
+    body: '{"compressionAlgorithm": ["c0f8/498f/b92e/4a8b/8941/1b34/ba06/2ed8/ep9-c0f8498f-b92e-4a8b-8941-1b34ba062ed8",
+      ".7z"], "checksum": "b05403212c66bdc8ccc597fedf6cd5fe", "checksumAlgorithm":
+      "md5", "size": "10"}'
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Content-Length: ['207']
+      Content-Type: [application/json]
+      User-Agent: [python-requests/2.3.0 CPython/2.7.3 Linux/3.5.0-52-generic]
+    method: POST
+    uri: https://198.50.244.148:8443/api/2/files/release/aips/c0f8/498f/b92e/4a8b/8941/1b34/ba06/2ed8/ep9-c0f8498f-b92e-4a8b-8941-1b34ba062ed8.7z
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAJ1UTU/cMBC98ytWOePGcRzH5rbiUHFAQkAPbdWDY4/ZiGycOk4poP732vnYhYVS
+        2lOkN28mb8Yz7/FotUqk8oNsTjegbvthm6xOVu3QNMcvQ8t33dxYV/vNq1y77Rz0fW3bt2hX9QNE
+        GI+YCkkNeNARymhGcE4w5ZjxMWzqBs7GWKJZKUSZYYQpM4gSnqOqyBgiXDFjVJZxWSb7pNZYt5U+
+        iInZjwGPCgZvTxuQLmLeDXA84WoztLc9+D11B0bo6+rb8YJCq9x9Nws2sulhH+qVs3ehzKR46XuM
+        1S8hBz/qftaHR/DXIseBnP+QEJxRhAUi4prkJ5idEPIlecqzYzNJayur75eIll5eWNsss8tBMZEV
+        SJYkzM7kFAltSgRShRHmwoAku9TagQpV7w8anNu7lh08H0oCPz20GvTae1dXg5/ij7t24nscDDxC
+        51aPcJ5nnM94/Y9vHVPaG+j9lQ8TG3MvLs/O15efl3Aje79WKuzlOwYayacbGSq+jxtaqE39HrJV
+        sjmYwVYXz3ciaeV26gE6gRQ2nApuUCUIICp5hbigGcqqnFYSMwKafygflj/YuxbcR2eHbnpzIZ4G
+        PvXgDvBOOmjnVU2Y4SUmrEAMcIlC/bAqRhnEMlEoQnWJqU52iX4zJqWy7vo06kyj0DQKTaPQNApN
+        o9A0Kk2j1PQ/enLQNbUaj3j/vg52SvrZSkhO87zkR/MFLVsksTBCZRxpQypES2oQV6VBBYYqD/ta
+        STKVSoJZ3dTtcydMKlzQ4EYZUYxVWnGlVCFKA9owpQsDr6e+7ZQ79t+8ciEubplNdhkOvp8cY8d0
+        8H0IB/AnB+3D4IbxIJMrtQE9NIF59Os3LohH4/8FAAA=
+    headers:
+      accept-ranges: [bytes]
+      content-encoding: [gzip]
+      content-type: [application/json; charset=ISO-8859-1]
+      date: ['Mon, 29 Sep 2014 23:07:28 GMT']
+      server: [A-Stor/2.2.9.8409 (Noelios-Restlet-Engine/1.1.10)]
+      transfer-encoding: [chunked]
+    status: {code: 202, message: Accepted}
+version: 1

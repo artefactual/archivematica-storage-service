@@ -14,6 +14,7 @@ from django.db import models
 from common import utils
 
 # This module, alphabetical
+from . import StorageException
 from location import Location
 
 LOGGER = logging.getLogger(__name__)
@@ -66,6 +67,48 @@ class Arkivum(models.Model):
             self.space._create_local_directory(destination_path)
         self.space._move_rsync(source_path, rsync_dest)
 
+    def post_move_from_storage_service(self, staging_path, destination_path, package):
+        """ POST to Arkivum with information about the newly stored Package. """
+        if package is None:
+            return
+
+        # Get size, checksum, checksum algorithm (md5sum), compression algorithm
+        checksum = utils.generate_checksum(staging_path, 'md5')
+        payload = {
+            'size': str(os.path.getsize(staging_path)),
+            'checksum': checksum.hexdigest(),
+            'checksumAlgorithm': 'md5',
+            'compressionAlgorithm': os.path.splitext(package.current_path)[1],
+        }
+        payload = json.dumps(payload)
+
+        # POST to Arkivum host/api/2/files/release/relative_path
+        relative_path = os.path.relpath(destination_path, self.space.path)
+        url = 'https://' + self.host + '/api/2/files/release/' + relative_path
+        LOGGER.info('URL: %s, Payload: %s', url, payload)
+
+        try:
+            response = requests.post(url, headers={'Content-Type': 'application/json'}, data=payload, verify=VERIFY)
+        except requests.exceptions.ConnectionError:
+            LOGGER.exception('Error in connection for POST to %s', url)
+            raise StorageException('Error in connection for POST to %s', url)
+
+        LOGGER.info('Response: %s, Response text: %s', response.status_code, response.text)
+        if response.status_code not in (requests.codes.ok, requests.codes.accepted):
+            LOGGER.warning('Arkivum responded with %s: %s', response.status_code, response.text)
+            raise StorageException('Unable to notify Arkivum of %s', package)
+        # Response has request ID for polling status
+        try:
+            response_json = response.json()
+        except json.JSONDecodeError:
+            raise StorageException("Could not get request ID from Arkivum's response %s", response.text)
+        request_id = response_json['id']
+
+        # Store request ID in misc_attributes
+        package.misc_attributes.update({'request_id': request_id})
+        package.save()
+
+        # TODO Uncompressed: Post info about bag (really only support AIPs)
 
     def update_package_status(self, package):
         pass

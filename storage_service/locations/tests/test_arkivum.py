@@ -19,6 +19,7 @@ class TestArkivum(TestCase):
         self.arkivum_object = models.Arkivum.objects.all()[0]
         self.arkivum_object.space.path = ARKIVUM_DIR
         self.arkivum_object.space.save()
+        self.package = models.Package.objects.all()[0]
         # Create filesystem to interact with
         os.mkdir(ARKIVUM_DIR)
         os.mkdir(os.path.join(ARKIVUM_DIR, 'aips'))
@@ -52,3 +53,12 @@ class TestArkivum(TestCase):
     #     shutil.rmtree('/mnt/arkivum/test')
 
     #     # TODO test folder in new test
+
+    @vcr.use_cassette('locations/fixtures/vcr_cassettes/arkivum_post_move_from_ss.yaml')
+    def test_post_move_from_ss(self):
+        # POST to Arkivum about file
+        open('unittest.txt', 'w').write('test file\n')
+        self.arkivum_object.post_move_from_storage_service('unittest.txt', self.package.full_path, self.package)
+        assert self.package.misc_attributes['request_id'] == 'a09f9c18-df2b-474f-8c7f-50eb3dedba2d'
+        # Cleanup
+        os.remove('unittest.txt')
