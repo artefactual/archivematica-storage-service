@@ -266,21 +266,6 @@ class Space(models.Model):
                 source_path, destination_path, *args, **kwargs)
         except AttributeError:
             raise NotImplementedError('{} space has not implemented move_from_storage_service'.format(self.get_access_protocol_display()))
-        # Delete staging copy
-        if source_path != destination_path:
-            try:
-                if os.path.isdir(source_path):
-                    # Need to convert this to an str - if this is a
-                    # unicode string, rmtree will use os.path.join
-                    # on the directory and the names of its children,
-                    # which can result in an attempt to join mixed encodings;
-                    # this blows up if the filename cannot be converted to
-                    # unicode.
-                    shutil.rmtree(str(os.path.normpath(source_path)))
-                elif os.path.isfile(source_path):
-                    os.remove(os.path.normpath(source_path))
-            except OSError:
-                LOGGER.warning('Unable to remove %s', source_path, exc_info=True)
 
     def post_move_from_storage_service(self, staging_path, destination_path, package=None, *args, **kwargs):
         """
@@ -304,6 +289,22 @@ class Space(models.Model):
         except AttributeError:
             # This is optional for the child class to implement
             pass
+        # Delete staging copy
+        if staging_path != destination_path:
+            try:
+                if os.path.isdir(staging_path):
+                    # Need to convert this to an str - if this is a
+                    # unicode string, rmtree will use os.path.join
+                    # on the directory and the names of its children,
+                    # which can result in an attempt to join mixed encodings;
+                    # this blows up if the filename cannot be converted to
+                    # unicode
+                    shutil.rmtree(str(os.path.normpath(staging_path)))
+                elif os.path.isfile(staging_path):
+                    os.remove(os.path.normpath(staging_path))
+            except OSError:
+                logging.warning('Unable to remove %s', staging_path, exc_info=True)
+
 
     def update_package_status(self, package):
         """

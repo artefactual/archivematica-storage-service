@@ -128,7 +128,3 @@ class PipelineLocalFS(models.Model):
 
         # Move file
         return self.space._move_rsync(source_path, destination_path)
-
-    def post_move_from_storage_service(self, staging_path, destination_path, package):
-        # TODO Remove the staging file, since rsync leaves it behind
-        pass
