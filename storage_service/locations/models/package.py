@@ -422,7 +422,7 @@ class Package(models.Model):
             destination_path=os.path.join(self.current_location.relative_path, self.current_path),
         )
         # Update package status once transferred to SS
-        if dest_space.access_protocol not in (Space.LOM, ):
+        if dest_space.access_protocol not in (Space.LOM, Space.ARKIVUM):
             self.status = Package.UPLOADED
         self.save()
         dest_space.post_move_from_storage_service(
