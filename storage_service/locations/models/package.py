@@ -411,23 +411,24 @@ class Package(models.Model):
             source_path=os.path.join(self.origin_location.relative_path, self.origin_path),
             destination_path=self.current_path,  # This should include Location.path
             destination_space=dest_space)
+        self.status = Package.STAGING
+        self.save()
         src_space.post_move_to_storage_service()
+
         dest_space.move_from_storage_service(
             source_path=self.current_path,  # This should include Location.path
             destination_path=os.path.join(self.current_location.relative_path, self.current_path),
         )
+        # Update package status once transferred to SS
+        if dest_space.access_protocol not in (Space.LOM, ):
+            self.status = Package.UPLOADED
+        self.save()
         dest_space.post_move_from_storage_service(
             staging_path=self.current_path,
             destination_path=os.path.join(self.current_location.relative_path, self.current_path),
             package=self)
 
-        # Save new space/location usage, package status
         self._update_quotas(dest_space, self.current_location)
-        if dest_space.access_protocol == Space.LOM:
-            self.status = Package.STAGING
-        else:
-            self.status = Package.UPLOADED
-        self.save()
 
         # Update pointer file's location information
         if self.pointer_file_path and self.package_type in (Package.AIP, Package.AIC):
