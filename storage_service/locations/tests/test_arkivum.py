@@ -35,6 +35,23 @@ class TestArkivum(TestCase):
         # Both or neither of remote_user/remote_name
         assert bool(self.arkivum_object.remote_user) == bool(self.arkivum_object.remote_name)
 
+    @vcr.use_cassette('locations/fixtures/vcr_cassettes/arkivum_delete.yaml')
+    def test_delete(self):
+        # Verify exists
+        url = 'https://' + self.arkivum_object.host + '/files/ts'
+        response = requests.get(url, verify=False)
+        assert 'unittest.txt' in [x['name'] for x in response.json()['files']]
+        # Delete file
+        self.arkivum_object.delete_path('/ts/unittest.txt')
+        # Verify deleted
+        url = 'https://' + self.arkivum_object.host + '/files/ts'
+        response = requests.get(url, verify=False)
+        assert 'unittest.txt' not in [x['name'] for x in response.json()['files']]
+
+        # Delete folder
+        # self.arkivum_object.delete_path('/ts/test/')
+        # Verify deleted
+
     # def test_move_from_ss(self):
     #     # TODO need to fake filesystem interactions
     #     # Create test.txt

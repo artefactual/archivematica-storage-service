@@ -1,0 +1,77 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      User-Agent: [python-requests/2.3.0 CPython/2.7.3 Linux/3.5.0-52-generic]
+    method: GET
+    uri: https://198.50.244.148:8443/files/ts
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAK2UXWvbMBSG/0rx7aLkSPL3XaEUAmsoXXYxxgjykdSYObaxFUgW+t93nDirSRNI
+        211Z51PnvH7QzrNVoU3zqNzSS72Ja72RV6vGlO7oIofNC9N66c+dpxBN2xpNAQHcZ5AwHsyFSH2e
+        inDM4+gLcACqUWtXYWFUQ6muWRtyYWOUu6ZW541BVzXb11rToqqNXtT/Bp040zqKLHOtTUk+q4q2
+        S82x6sxJ920nPNzwcHLYclyXz11CN4LMLOogTJgvpGF+kIUsQRuxyJdxjFpLFSddbvlM13xzNDgV
+        fZ9NZ9M5uYsKVTG4c1Xp3ObX7FaqVdepH/4gNdkm1joymDEljaKZuGYJCM60lTIygCITYp9/uj5p
+        qquyGEjVmLrIUbm8Ko9zNzTZyGvzP51BJ7etu9P9XpXeXuxl8V5GO+/hLsClwd/tekWuDAIfpOAC
+        wzDTGCNikETWaBuSgra78iIWAtIgGAPAB7A41HL/LBZH4S9wMXabq9lwZuMWdaHycshHIFFFmS+Y
+        1ADEB4Qs8yWwWElEUNYX4Vs+7qez268DPPoNL9IheMphKM+Ajn6FTxLSd7mKErXK9jT0nHC4ybbU
+        45WXOSl1c1fhetWNNMSm03Cy13AP0DkewjlACnHqw5jz+H08nK+9kod1mbv/xARAwBObMYwl0i9Q
+        limDAaPHgyeCItqoN0w8Pk0fbp9+XEfF+UV7Kk4W+QQZJ53e/4Z8lI1fFKgcCX9oI45tXv4CQU8T
+        bYkGAAA=
+    headers:
+      accept-ranges: [bytes]
+      content-encoding: [gzip]
+      content-type: [application/json; charset=ISO-8859-1]
+      date: ['Mon, 15 Sep 2014 23:08:51 GMT']
+      server: [A-Stor/2.2.8.8348 (Noelios-Restlet-Engine/1.1.10)]
+      transfer-encoding: [chunked]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Content-Length: ['0']
+      User-Agent: [python-requests/2.3.0 CPython/2.7.3 Linux/3.5.0-52-generic]
+    method: DELETE
+    uri: https://198.50.244.148:8443/files//ts/unittest.txt
+  response:
+    body: {string: !!python/unicode ''}
+    headers:
+      accept-ranges: [bytes]
+      content-length: ['0']
+      date: ['Mon, 15 Sep 2014 23:08:51 GMT']
+      server: [A-Stor/2.2.8.8348 (Noelios-Restlet-Engine/1.1.10)]
+    status: {code: 204, message: No Content}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      User-Agent: [python-requests/2.3.0 CPython/2.7.3 Linux/3.5.0-52-generic]
+    method: GET
+    uri: https://198.50.244.148:8443/files/ts
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAKWS24rbMBCGX2XxbaNYB5/vCstCoA2FplelBHk02pg6trEVSBry7h0lzq7ZNhB2
+        r6QZzYz++fmOgW1rg/037TZBEYRuCGZBp3ts3DVFCVvVOATFz2OgAXAY0NCD5CJiPGciXklZRKKQ
+        yVxk6ScuOKcevXMt1Kh7KnX9DikFPWp3T6+pegTX9ofXXhxAd2jW3YvQ0OHg6GVTGYMN5ayuB19a
+        QevD0J9DKJK9SMLLlvOuefYFXoIqLZg4yVkkFbIoLhOWg01ZGqksA2OUznJf2zzTN98dCaemH8vF
+        crGidN2Crid/bltT2eqe3Rq99ZNG8RerKcbMmBShZFqhJk3CsJxLwYxVKkUOspTyXP92ffLUtE09
+        sarHrq5Au6ptrrp7UjYLhuqPD+jmDp2/PZ1dGeP12ZbgNDsGXx9j2CD8HnZbSpU8jriSQkKSlAYy
+        AIjz1KKxCTlo/Zc3sZC8iOM55/wdWFx6RfRfLK7G3+Bi7vZ3s+Fw79ZdratmykesQKdlJJkynBMf
+        PGFlpDjLtALg2kYy+ZePp8Xy85cJHuOGN+mQohB8as+EjnGFDxIyTrmLEr0tzzSMnAj+UB5oxisv
+        K3Lq4bGF3dZLmmLjPQzPHganX/TQOjL8zZjTX8+N0PttBAAA
+    headers:
+      accept-ranges: [bytes]
+      content-encoding: [gzip]
+      content-type: [application/json; charset=ISO-8859-1]
+      date: ['Mon, 15 Sep 2014 23:08:52 GMT']
+      server: [A-Stor/2.2.8.8348 (Noelios-Restlet-Engine/1.1.10)]
+      transfer-encoding: [chunked]
+    status: {code: 200, message: OK}
+version: 1
