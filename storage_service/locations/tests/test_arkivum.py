@@ -62,3 +62,26 @@ class TestArkivum(TestCase):
         assert self.package.misc_attributes['request_id'] == 'a09f9c18-df2b-474f-8c7f-50eb3dedba2d'
         # Cleanup
         os.remove('unittest.txt')
+
+    # def test_move_to_ss(self):
+    #     # Test file
+    #     self.arkivum_object.move_to_storage_service('/mnt/arkivum/ts/test.txt', 'folder/test.txt', None)
+    #     assert os.path.isdir('folder')
+    #     assert os.path.isfile('folder/test.txt')
+    #     assert open('folder/test.txt', 'r').read() == 'test file\n'
+    #     # Cleanup
+    #     os.remove('folder/test.txt')
+    #     os.removedirs('folder')
+    #     # Test folder
+    #     self.arkivum_object.move_to_storage_service('/mnt/arkivum/ts/test/', 'folder/test/', None)
+    #     assert os.path.isdir('folder')
+    #     assert os.path.isdir('folder/test')
+    #     assert os.path.isdir('folder/test/subfolder')
+    #     assert os.path.isfile('folder/test/test.txt')
+    #     assert os.path.isfile('folder/test/subfolder/test2.txt')
+    #     assert open('folder/test/test.txt').read() == 'test file\n'
+    #     assert open('folder/test/subfolder/test2.txt').read() == 'test file2\n'
+    #     # Cleanup
+    #     os.remove('folder/test/test.txt')
+    #     os.remove('folder/test/subfolder/test2.txt')
+    #     os.removedirs('folder/test/subfolder')

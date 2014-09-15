@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import requests
+import subprocess
 
 # Core Django, alphabetical
 from django.conf import settings
@@ -54,7 +55,15 @@ class Arkivum(models.Model):
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """ Moves src_path to dest_space.staging_path/dest_path. """
-        pass
+        # Get from watched dir
+        if self.remote_user and self.remote_name:
+            # Rsync from remote
+            src_path = "{user}@{host}:{path}".format(
+                user=self.remote_user,
+                host=self.remote_name,
+                path=src_path)
+        self.space._create_local_directory(dest_path)
+        self.space._move_rsync(src_path, dest_path)
 
     def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
