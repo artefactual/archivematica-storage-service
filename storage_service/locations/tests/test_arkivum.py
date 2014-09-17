@@ -111,3 +111,22 @@ class TestArkivum(TestCase):
     #     os.remove('folder/test/test.txt')
     #     os.remove('folder/test/subfolder/test2.txt')
     #     os.removedirs('folder/test/subfolder')
+
+    @vcr.use_cassette('locations/fixtures/vcr_cassettes/arkivum_update_package_status.yaml')
+    def test_update_package_status(self):
+        # Setup request_id
+        self.package.misc_attributes.update({'request_id': '2e75c8ad-cded-4f7e-8ac7-85627a116e39'})
+        self.package.save()
+        # Verify status is STAGING
+        assert self.package.status == models.Package.STAGING
+        # Test (response yellow)
+        self.arkivum_object.update_package_status(self.package)
+        # Verify is still staged
+        assert self.package.status == models.Package.STAGING
+        # Test (response green)
+        self.arkivum_object.update_package_status(self.package)
+        # Verify UPLOADED
+        assert self.package.status == models.Package.UPLOADED
+        # Test (response yellow)
+        self.arkivum_object.update_package_status(self.package)
+        # Verify what?
