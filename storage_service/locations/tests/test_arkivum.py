@@ -35,6 +35,15 @@ class TestArkivum(TestCase):
         # Both or neither of remote_user/remote_name
         assert bool(self.arkivum_object.remote_user) == bool(self.arkivum_object.remote_name)
 
+    def test_browse(self):
+        response = self.arkivum_object.browse(ARKIVUM_DIR)
+        assert response
+        assert response['directories'] == ['aips', 'ts']
+        assert response['entries'] == ['aips', 'test.txt', 'ts']
+        assert response['properties']['test.txt']['size'] == 17
+        assert response['properties']['aips']['object count'] == 0
+        assert response['properties']['ts']['object count'] == 0
+
     @vcr.use_cassette('locations/fixtures/vcr_cassettes/arkivum_delete.yaml')
     def test_delete(self):
         # Verify exists

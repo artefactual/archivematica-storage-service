@@ -56,69 +56,9 @@ class PipelineLocalFS(models.Model):
         return "{}@{}:{}".format(user, host, utils.coerce_str(path))
 
     def browse(self, path):
-        """
-        Returns information about the files and simulated-folders in Duracloud.
-
-        See Space.browse for full documentation.
-
-        Properties provided:
-        'size': Size of the object
-        'timestamp': Last modified timestamp of the object or directory
-        """
-        private_ssh_key = '/var/lib/archivematica/.ssh/id_rsa'
-        path = os.path.join(path, '')  # Rsync requires a / on the end of dirs to list contents
-
-        # Get entries
-        command = [
-            'rsync',
-            '--protect-args',
-            '--list-only',
-            '--exclude', '.*',  # Ignore hidden files
-            '--rsh', 'ssh -i ' + private_ssh_key,  # Specify identify file
-            self._format_host_path(path)]
-        LOGGER.info('rsync list command: %s', command)
-        LOGGER.debug('"%s"', '" "'.join(command))  # For copying to shell
-        try:
-            output = subprocess.check_output(command)
-        except Exception as e:
-            LOGGER.warning("rsync list failed: %s", e, exc_info=True)
-            entries = []
-            directories = []
-        else:
-            output = output.splitlines()
-            LOGGER.debug('rsync list output: %s', output)
-            # Output is lines in format:
-            # <type><permissions>  <size>  <date> <time> <path>
-            # Eg: drwxrws---          4,096 2015/03/02 17:05:20 tmp
-            # Eg: -rw-r--r--            201 2013/05/13 13:26:48 LICENSE.md
-            # Eg: lrwxrwxrwx             78 2015/02/19 12:13:40 sharedDirectory
-            # Parse out the path and type
-            # Define groups for type, permissions, size, timestamp and name
-            regex = r'^(?P<type>.)(?P<permissions>.{9}) +(?P<size>[\d,]+) (?P<timestamp>..../../.. ..:..:..) (?P<name>.*)$'
-            matches = [re.match(regex, e) for e in output]
-            # Take the last entry. Ignore empty lines and '.'
-            entries = [e.group('name') for e in matches
-                if e and e.group('name') != '.']
-            # Only items whose type is not '-'. Links count as dirs.
-            directories = [e.group('name') for e in matches
-                if e and e.group('name') != '.' and e.group('type') != '-']
-            # Generate properties for each entry
-            properties = {}
-            for e in matches:
-                name = e.group('name')
-                if name not in entries:
-                    continue
-                properties[name] = {}
-                properties[name]['timestamp'] = datetime.isoformat(datetime.strptime(e.group('timestamp'), '%Y/%m/%d %H:%M:%S'))
-                if name not in directories:
-                    properties[name]['size'] = int(e.group('size').replace(',', ''))
-
-        directories = sorted(directories, key=lambda s: s.lower())
-        entries = sorted(entries, key=lambda s: s.lower())
-        LOGGER.debug('entries: %s', entries)
-        LOGGER.debug('directories: %s', directories)
-        LOGGER.debug('properties: %s', properties)
-        return {'directories': directories, 'entries': entries, 'properties': properties}
+        path = os.path.join(path, '')
+        ssh_path = self._format_host_path(path)
+        return self.space._browse_rsync(ssh_path)
 
     def delete_path(self, delete_path):
         # Sync from an empty directory to delete the contents of delete_path;

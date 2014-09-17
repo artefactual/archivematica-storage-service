@@ -46,9 +46,13 @@ class Arkivum(models.Model):
     ]
 
     def browse(self, path):
-        # This is AIP storage only - do not support browse
-        logging.warning('Arkivum does not support browsing')
-        return {'directories': [], 'entries': []}
+        # Support browse so that the Location select works
+        if self.remote_user and self.remote_name:
+            path = os.path.join(path, '')
+            ssh_path = "{}@{}:{}".format(self.remote_user, self.remote_name, utils.coerce_str(path))
+            return self.space._browse_rsync(ssh_path)
+        else:
+            return self.space._browse_local(path)
 
     def delete_path(self, delete_path):
         # Can this be done by just deleting the file on disk?
