@@ -24,6 +24,7 @@ import bagit
 import jsonfield
 from django_extensions.db.fields import UUIDField
 import sword2
+import requests
 
 # This project, alphabetical
 from common import utils
@@ -1970,3 +1971,78 @@ class Pipeline(models.Model):
                     p['purpose'], location, self))
                 LocationPipeline.objects.get_or_create(
                     pipeline=self, location=location)
+
+
+class CallbackError(Exception):
+    pass
+
+
+class Callback(models.Model):
+    """
+    Allows REST callbacks to be associated with specific Storage Service events.
+
+    A callback is a call to a given URL (usually a REST API) using a
+    particular HTTP method.
+    """
+    EVENTS = (
+        ('post_store', 'Post-store'),
+    )
+
+    HTTP_METHODS = (
+        ('delete', 'DELETE'),
+        ('get', 'GET'),
+        ('head', 'HEAD'),
+        ('options', 'OPTIONS'),
+        ('patch', 'PATCH'),
+        ('post', 'POST'),
+        ('put', 'PUT'),
+    )
+
+    uuid = UUIDField()
+    uri = models.CharField(max_length=1024,
+        help_text="URL to contact upon callback execution.")
+    event = models.CharField(max_length=15, choices=EVENTS,
+        help_text="Type of event when this callback should be executed.")
+    method = models.CharField(max_length=10, choices=HTTP_METHODS,
+        help_text="HTTP request method to use in connecting to the URL.")
+    expected_status = models.IntegerField(default=200,
+        help_text="Expected HTTP response from the server, used to validate the callback response.")
+    enabled = models.BooleanField(default=True,
+        help_text="Enabled if this callback should be executed.")
+
+    def execute(self, url=None):
+        """
+        Execute the callback by contacting the external service.
+
+        The url parameter can be provided in case the URL needs to be
+        altered. For instance, the URL might contain a placeholder such
+        as <file_uuid>, which will be replaced with the real file UUID
+        before executing.
+
+        If the connection does not succeed, returns a CallbackError
+        with explanatory text.
+
+        If the response from the server did not match the expected
+        status code, raises a a CallbackError with the body of the
+        response; otherwise, returns None.
+        """
+        if not url:
+            url = self.uri
+
+        try:
+            response = getattr(requests, self.method)(url)
+        except requests.exceptions.ConnectionError as e:
+            raise CallbackError(str(e))
+
+        if not response.status_code == self.expected_status:
+            raise CallbackError(response.body)
+
+
+class File(models.Model):
+    uuid = UUIDField(editable=False, unique=True, version=4,
+        help_text="Unique identifier")
+    name = models.TextField(max_length=1000)
+    source_id = models.TextField(max_length=128)
+    # Sized to fit sha512
+    checksum = models.TextField(max_length=128)
+    stored = models.BooleanField(default=False)
