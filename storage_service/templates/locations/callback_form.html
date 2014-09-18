@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block page_title %}{{action}} Callback{% endblock %}
+
+{% block content %}
+
+<div class='callback'>
+    {% if callback %}
+    <form action="{% url 'callback_edit' callback.uuid %}" method="post">
+    {% else %}
+    <form action="{% url 'callback_create' %}" method="post">
+    {% endif %}
+    {% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="{{action}} Callback" class='btn btn-primary' />
+    </form>
+</div>
+{% endblock %}

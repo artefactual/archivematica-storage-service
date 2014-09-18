@@ -86,3 +86,8 @@ class ConfirmEventForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(ConfirmEventForm, self).__init__(*args, **kwargs)
         self.fields['status_reason'].required = True
+
+class CallbackForm(forms.ModelForm):
+    class Meta:
+        model = models.Callback
+        fields = ('uri', 'event', 'method', 'expected_status')

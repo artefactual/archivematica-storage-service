@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block page_title %}{{ callback.uri }} Callback Information{% endblock %}
+
+{% block content %}
+
+<div class="callback">
+  <dl>
+    <dt>URI</dt> <dd>{{ callback.uri }}</dd>
+    <dt>Event</dt> <dd>{{ callback.event }}</dd>
+    <dt>HTTP Method</dt> <dd>{{ callback.method }}</dd>
+    <dt>Expected status</dt> <dd>{{ callback.expected_status }}</dd>
+    <dt>Enabled</dt> <dd>{{ callback.enabled|yesno:"Enabled,Disabled"}}</dd>
+    <dt>Actions</dt> <dd>
+      <ul>
+        <li><a href="{% url 'callback_edit' callback.uuid %}">Edit</a></li>
+        <li><a href="{% url 'callback_switch_enabled' callback.uuid %}?next={{ request.path }}">{{ callback.enabled|yesno:"Disable,Enable" }}</a></li>
+        <li><a href="{% url 'callback_delete' callback.uuid %}">Delete</a></li>
+      </ul>
+    </dd>
+  </dl>
+</div>
+
+{% endblock %}

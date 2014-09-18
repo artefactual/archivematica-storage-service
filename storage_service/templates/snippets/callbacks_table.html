@@ -1,0 +1,26 @@
+  <table class="datatable">
+    <thead>
+      <tr>
+        <th>Event</th>
+        <th>URI</th>
+        <th>Method</th>
+        <th>Expected response</th>
+        <th>UUID</th>
+        <th>Enabled</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for callback in callbacks %}
+      <tr>
+        <td>{{ callback.event }}</td>
+        <td>{{ callback.uri }}</td>
+        <td>{{ callback.method }}</td>
+        <td>{{ callback.expected_status }}</td>
+        <td>{{ callback.uuid }}</td>
+        <td>{{ callback.enabled|yesno:"Enabled,Disabled" }}</td>
+        <td><a href="{% url 'callback_edit' callback.uuid %}">Edit</a> | <a href="{% url 'callback_switch_enabled' callback.uuid %}?next={{ request.path }}">{{ callback.enabled|yesno:"Disable,Enable" }}</a> | <a href="{% url 'callback_delete' callback.uuid %}?next={{ request.path }}">Delete</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>

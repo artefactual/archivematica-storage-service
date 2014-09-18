@@ -11,7 +11,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from common import decorators
 from common import utils
-from .models import Space, Location, Package, Event, Pipeline, LocationPipeline
+from .models import Callback, Space, Location, Package, Event, Pipeline, LocationPipeline
 from . import forms
 from .constants import PROTOCOL
 
@@ -332,3 +332,44 @@ def space_delete(request, uuid):
     next_url = request.GET.get('next', reverse('space_list'))
     return redirect(next_url)
 
+########################## CALLBACKS ##########################
+
+def callback_detail(request, uuid):
+    try:
+        callback = Callback.objects.get(uuid=uuid)
+    except Callback.DoesNotExist:
+        messages.warning(request, "Callback {} does not exist.".format(location_uuid))
+        return redirect('callback_list')
+    return render(request, 'locations/callback_detail.html', locals())
+
+def callback_switch_enabled(request, uuid):
+    callback = get_object_or_404(Callback, uuid=uuid)
+    callback.enabled = not callback.enabled
+    callback.save()
+    next_url = request.GET.get('next', reverse('callback_detail', args=[callback.uuid]))
+    return redirect(next_url)
+
+def callback_list(request):
+    callbacks = Callback.objects.all()
+    return render(request, 'locations/callback_list.html', locals())
+
+def callback_edit(request, uuid=None):
+    if uuid:
+        action = "Edit"
+        callback = get_object_or_404(Callback, uuid=uuid)
+    else:
+        action = "Create"
+        callback = None
+
+    form = forms.CallbackForm(request.POST or None, instance=callback)
+    if form.is_valid():
+        callback = form.save()
+        messages.success(request, "Callback saved.")
+        return redirect('callback_detail', callback.uuid)
+    return render(request, 'locations/callback_form.html', locals())
+
+def callback_delete(request, uuid):
+    callback = get_object_or_404(Callback, uuid=uuid)
+    callback.delete()
+    next_url = request.GET.get('next', reverse('callback_list'))
+    return redirect(next_url)

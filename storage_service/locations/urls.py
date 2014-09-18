@@ -55,4 +55,18 @@ urlpatterns = patterns('locations.views',
     # Spaces AJAX
     url(r'^spaces/get_form_type/$', 'ajax_space_create_protocol_form',
         name='ajax_space_create_protocol_form'),
+
+    # Callbacks
+    url(r'^callbacks/$', 'callback_list',
+        name='callback_list'),
+    url(r'^callbacks/(?P<uuid>'+UUID+')/$', 'callback_detail',
+        name='callback_detail'),
+    url(r'^callbacks/create/$', 'callback_edit',
+        name='callback_create'),
+    url(r'^callbacks/(?P<uuid>'+UUID+')/edit/$', 'callback_edit',
+        name='callback_edit'),
+    url(r'^callbacks/(?P<uuid>'+UUID+')/delete/$', 'callback_delete',
+        name='callback_delete'),
+    url(r'^callbacks/(?P<uuid>'+UUID+')/switch_enabled/$', 'callback_switch_enabled',
+        name='callback_switch_enabled'),
 )
