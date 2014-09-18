@@ -1462,6 +1462,45 @@ class Package(models.Model):
         self.local_path = int_path
         return self.local_path
 
+    def get_base_directory(self):
+        """
+        Returns the base directory of a package. This is the directory in
+        which all of the contents of the package are nested. For example,
+        given the following bag:
+
+        .
+        |-- package-00000000-0000-0000-0000-000000000000
+            |-- bagit.txt
+            |-- manifest-sha512.txt
+            ...
+
+        The string "package-00000000-0000-0000-0000-000000000000" would be
+        returned.
+
+        Note that this currently only supports locally-available packages.
+        If the package is stored externally, raises NotImplementedError.
+        """
+        full_path = self.get_local_path()
+        if full_path is None:
+            raise NotImplementedError("This method currently only retrieves base directories for locally-available AIPs.")
+
+        if self.is_compressed:
+            # Use lsar's JSON output to determine the directories in a
+            # compressed file. Since the index of the base directory may
+            # not be consistent, determine it by filtering all entries
+            # for directories, then determine the directory with the
+            # shortest name. (e.g. foo is the parent of foo/bar)
+            # NOTE: lsar's JSON output is broken in certain circumstances in
+            #       all released versions; make sure to use a patched version
+            #       for this to work.
+            command = ['lsar', '-ja', full_path]
+            output = json.loads(subprocess.check_output(command))
+            directories = [d['XADFileName'] for d in output['lsarContents'] if d.get('XADIsDirectory', False)]
+            directories = sorted(directories, key=len)
+            return directories[0]
+        else:
+            return os.path.basename(full_path)
+
     def _check_quotas(self, dest_space, dest_location):
         """
         Verify that there is enough storage space on dest_space and dest_location for this package.  All sizes in bytes.
@@ -1599,22 +1638,7 @@ class Package(models.Model):
 
         # The basename is the base directory containing a package
         # like an AIP inside the compressed file.
-        if self.is_compressed:
-            # Use lsar's JSON output to determine the directories in a
-            # compressed file. Since the index of the base directory may
-            # not be consistent, determine it by filtering all entries
-            # for directories, then determine the directory with the
-            # shortest name. (e.g. foo is the parent of foo/bar)
-            # NOTE: lsar's JSON output is broken in certain circumstances in
-            #       all released versions; make sure to use a patched version
-            #       for this to work.
-            command = ['lsar', '-ja', full_path]
-            output = json.loads(subprocess.check_output(command))
-            directories = [d['XADFileName'] for d in output['lsarContents'] if d.get('XADIsDirectory', False)]
-            directories = sorted(directories, key=len)
-            basename = directories[0]
-        else:
-            basename = os.path.basename(full_path)
+        basename = self.get_base_directory()
 
         if relative_path:
             output_path = os.path.join(extract_path, relative_path)
