@@ -31,6 +31,47 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal(u'locations', ['Callback'])
 
+        # Adding model 'Fedora'
+        db.create_table(u'locations_fedora', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('space', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['locations.Space'], to_field='uuid', unique=True)),
+            ('fedora_user', self.gf('django.db.models.fields.CharField')(max_length=64)),
+            ('fedora_password', self.gf('django.db.models.fields.CharField')(max_length=256)),
+            ('fedora_name', self.gf('django.db.models.fields.CharField')(max_length=256)),
+        ))
+        db.send_create_signal('locations', ['Fedora'])
+
+        # Adding model 'PackageDownloadTask'
+        db.create_table(u'locations_packagedownloadtask', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('uuid', self.gf('django.db.models.fields.CharField')(unique=True, max_length=36, blank=True)),
+            ('package', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['locations.Package'], to_field='uuid')),
+            ('downloads_attempted', self.gf('django.db.models.fields.IntegerField')(default=0)),
+            ('downloads_completed', self.gf('django.db.models.fields.IntegerField')(default=0)),
+            ('download_completion_time', self.gf('django.db.models.fields.DateTimeField')(default=None, null=True, blank=True)),
+        ))
+        db.send_create_signal(u'locations', ['PackageDownloadTask'])
+
+        # Adding model 'PackageDownloadTaskFile'
+        db.create_table(u'locations_packagedownloadtaskfile', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('uuid', self.gf('django.db.models.fields.CharField')(unique=True, max_length=36, blank=True)),
+            ('task', self.gf('django.db.models.fields.related.ForeignKey')(related_name='download_file_set', to_field='uuid', to=orm['locations.PackageDownloadTask'])),
+            ('filename', self.gf('django.db.models.fields.CharField')(max_length=256)),
+            ('url', self.gf('django.db.models.fields.TextField')()),
+            ('completed', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('failed', self.gf('django.db.models.fields.BooleanField')(default=False)),
+        ))
+        db.send_create_signal('locations', ['PackageDownloadTaskFile'])
+
+        # Adding field 'Package.description'
+        db.add_column(u'locations_package', 'description',
+                      self.gf('django.db.models.fields.CharField')(default=None, max_length=256, null=True, blank=True),
+                      keep_default=False)
+
+
+        # Changing field 'Package.origin_pipeline'
+        db.alter_column(u'locations_package', 'origin_pipeline_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['locations.Pipeline'], to_field='uuid', null=True))
 
     def backwards(self, orm):
         # Deleting model 'File'
@@ -39,6 +80,25 @@ class Migration(SchemaMigration):
         # Deleting model 'Callback'
         db.delete_table(u'locations_callback')
 
+        # Deleting model 'Fedora'
+        db.delete_table(u'locations_fedora')
+
+        # Deleting model 'PackageDownloadTask'
+        db.delete_table(u'locations_packagedownloadtask')
+
+        # Deleting model 'PackageDownloadTaskFile'
+        db.delete_table(u'locations_packagedownloadtaskfile')
+
+        # Deleting field 'Package.description'
+        db.delete_column(u'locations_package', 'description')
+
+
+        # User chose to not deal with backwards NULL issues for 'Package.origin_pipeline'
+        raise RuntimeError("Cannot reverse this migration. 'Package.origin_pipeline' and its values cannot be restored.")
+        
+        # The following code is provided here to aid in writing a correct migration
+        # Changing field 'Package.origin_pipeline'
+        db.alter_column(u'locations_package', 'origin_pipeline_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['locations.Pipeline'], to_field='uuid'))
 
     models = {
         u'auth.group': {
