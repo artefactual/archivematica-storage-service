@@ -620,6 +620,6 @@ def _deposit_receipt_response(request, deposit, status_code):
     current_datetime = timezone.now()
     receipt_xml = render_to_string('locations/api/sword/deposit_receipt.xml', locals())
 
-    response = HttpResponse(receipt_xml, mimetype='text/xml', status=status_code)
+    response = HttpResponse(receipt_xml, content_type='text/xml', status=status_code)
     response['Location'] = location
     return response
