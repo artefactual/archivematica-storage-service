@@ -88,6 +88,7 @@ class Space(models.Model):
     LOM = 'LOM'
     NFS = 'NFS'
     PIPELINE_LOCAL_FS = 'PIPE_FS'
+    OBJECT_STORAGE = {DURACLOUD}
     ACCESS_PROTOCOL_CHOICES = (
         (DURACLOUD, 'DuraCloud'),
         (FEDORA, "FEDORA via SWORD2"),
@@ -103,7 +104,7 @@ class Space(models.Model):
         help_text="Size in bytes (optional)")
     used = models.BigIntegerField(default=0,
         help_text="Amount used in bytes")
-    path = models.TextField(validators=[validate_space_path],
+    path = models.TextField(default='', blank=True,
         help_text="Absolute path to the space on the storage service machine.")
     staging_path = models.TextField(validators=[validate_space_path],
         help_text="Absolute path to a staging area.  Must be UNIX filesystem compatible, preferably on the same filesystem as the path.")
@@ -111,9 +112,6 @@ class Space(models.Model):
        help_text="Whether or not the space has been verified to be accessible.")
     last_verified = models.DateTimeField(default=None, null=True, blank=True,
         help_text="Time this location was last verified to be accessible.")
-
-    mounted_locally = set([LOCAL_FILESYSTEM, NFS, FEDORA])
-    ssh_only_access = set([PIPELINE_LOCAL_FS])
 
     class Meta:
         verbose_name = 'Space'
@@ -125,6 +123,13 @@ class Space(models.Model):
             access_protocol=self.get_access_protocol_display(),
             path=self.path,
         )
+
+    def clean(self):
+        # Object storage spaces do not require a path, or for it to start with /
+        if self.access_protocol not in self.OBJECT_STORAGE:
+            if not self.path:
+                raise ValidationError('Path is required')
+            validate_space_path(self.path)
 
     def get_child_space(self):
         """ Returns the protocol-specific space object. """
