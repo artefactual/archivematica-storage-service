@@ -66,7 +66,8 @@ class Duracloud(models.Model):
         paths = [p.text for p in root]
         return paths
 
-    def browse(self, path):
+    def browse(self, location_path, path):
+        path = os.path.join(location_path, path)
         if path and not path.endswith('/'):
             path += '/'
         paths = self._get_files_list(path)

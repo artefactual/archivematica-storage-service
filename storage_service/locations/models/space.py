@@ -141,23 +141,25 @@ class Space(models.Model):
         # TODO try-catch AttributeError if remote_user or remote_name not exist?
         return protocol_space
 
-    def browse(self, path, *args, **kwargs):
-        """ Returns {'directories': [directory], 'entries': [entries]} at path.
+    def browse(self, location_path, relative_path, *args, **kwargs):
+        """
+        Returns {'directories': [directory], 'entries': [entries]} for path inside location_path.
 
-        `path` is a full path in this space.
-
-        'directories' in the return dict is the name of all the directories
-            located at that path
-        'entries' in the return dict is the name of any file (directory or other)
-            located at that path
+        Asks the protocol space to return a dict containing a sorted list of all
+        the entries at that path, and a sorted list of only directories at that
+        path. {'directories': [directory], 'entries': [entries]}
 
         If not implemented in the child space, looks locally.
+
+        :param str location_path: Path of the Location in this Space.
+        :param str relative_path: Path within the Location
+        :returns: Returns a dict containing a list of all the entries, and a list of just the directories.
         """
         LOGGER.info('path: %s', relative_path)
         try:
-            return self.get_child_space().browse(path, *args, **kwargs)
+            return self.get_child_space().browse(location_path, relative_path, *args, **kwargs)
         except AttributeError:
-            return self._browse_local(path)
+            return self._browse_local(location_path, relative_path)
 
     def delete_path(self, delete_path, *args, **kwargs):
         """
@@ -344,12 +346,16 @@ class Space(models.Model):
         except os.error as e:
             LOGGER.warning(e)
 
-    def _browse_local(self, path):
+    def _browse_local(self, location_path, relative_path):
         """
         Returns browse results for a locally accessible filesystem.
         """
-        if isinstance(path, unicode):
-            path = str(path)
+        if isinstance(location_path, unicode):
+            path = str(location_path)
+        if isinstance(relative_path, unicode):
+            path = str(relative_path)
+        path = os.path.join(self.path, location_path, relative_path)
+
         if not os.path.exists(path):
             LOGGER.info('%s in %s does not exist', path, self)
             return {'directories': [], 'entries': []}

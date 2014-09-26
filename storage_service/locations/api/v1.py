@@ -19,8 +19,8 @@ class LocationResource(resources.LocationResource):
     description = fields.CharField(attribute='get_description', readonly=True)
     pipeline = fields.ToManyField(PipelineResource, 'pipeline')
 
-    def get_objects(self, space, path):
-        return space.browse(path)
+    def get_objects(self, space, location_path, path):
+        return space.browse(location_path, path)
 
 
 class PackageResource(resources.PackageResource):

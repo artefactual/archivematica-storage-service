@@ -11,8 +11,8 @@ class PipelineResource(resources.PipelineResource):
 
 
 class SpaceResource(resources.SpaceResource):
-    def get_objects(self, space, path):
-        objects = space.browse(path)
+    def get_objects(self, space, location_path, path):
+        objects = space.browse(location_path, path)
         objects['entries'] = map(base64.b64encode, objects['entries'])
         objects['directories'] = map(base64.b64encode, objects['directories'])
 
@@ -28,8 +28,8 @@ class LocationResource(resources.LocationResource):
     def decode_path(self, path):
         return str(base64.b64decode(path))
 
-    def get_objects(self, space, path):
-        objects = space.browse(path)
+    def get_objects(self, space, location_path, path):
+        objects = space.browse(location_path, path)
         objects['entries'] = map(base64.b64encode, objects['entries'])
         objects['directories'] = map(base64.b64encode, objects['directories'])
 

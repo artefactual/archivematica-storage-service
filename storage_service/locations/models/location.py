@@ -80,8 +80,7 @@ class Location(models.Model):
     @property
     def full_path(self):
         """ Returns full path of location: space + location paths. """
-        return os.path.normpath(
-            os.path.join(self.space.path, self.relative_path))
+        return os.path.join(self.space.path, self.relative_path)
 
     def get_description(self):
         """ Returns a user-friendly description (or the path). """

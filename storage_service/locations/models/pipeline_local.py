@@ -40,10 +40,11 @@ class PipelineLocalFS(models.Model):
         Location.BACKLOG,
     ]
 
-    def browse(self, path):
+    def browse(self, location_path, path):
         user = self.remote_user
         host = self.remote_name
         private_ssh_key = '/var/lib/archivematica/.ssh/id_rsa'
+        path = os.path.join(self.space.path, location_path, path)
 
         # Get entries
         command = 'ls -p -1 "{}"'.format(path.replace('"', '\"'))

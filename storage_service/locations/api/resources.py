@@ -227,10 +227,18 @@ class SpaceResource(ModelResource):
 
         space = bundle.obj
         path = request.GET.get('path', '')
-        if not path.startswith(space.path):
-            path = os.path.join(space.path, path)
 
-        objects = self.get_objects(space, path)
+        # Make it an absolute path within this space if not
+        if not path.startswith(space.path):
+            path = os.path.join(space.path, path.lstrip('/'))
+
+        # Make relative
+        if path == space.path:
+            relative_path = ''
+        else:
+            relative_path = os.path.relpath(path, space.path)
+
+        objects = self.get_objects(space, '', relative_path)
 
         return self.create_response(request, objects)
 
@@ -296,10 +304,17 @@ class LocationResource(ModelResource):
         location = bundle.obj
         path = request.GET.get('path', '')
         path = self.decode_path(path)
-        if not path.startswith(location.full_path):
-            path = os.path.join(location.full_path, path)
 
-        objects = self.get_objects(location.space, path)
+        # Make it an absolute path within this location
+        if not path.startswith(location.full_path):
+            path = os.path.join(location.full_path, path.lstrip('/'))
+
+        # Make relative
+        if path == location.full_path:
+            relative_path = ''
+        else:
+            relative_path = os.path.relpath(path, location.full_path)
+        objects = self.get_objects(location.space, location.relative_path, relative_path)
 
         return self.create_response(request, objects)
 
