@@ -37,7 +37,10 @@
     },
 
     path: function() {
-      return this.get('parent') + '/' + this.get('name');
+      parent = this.get('parent');
+      return (parent != undefined)
+        ? parent + '/' + this.get('name')
+        : this.get('name') || '';
     },
 
     type: function() {
@@ -57,7 +60,7 @@
 
       parent = (parent != undefined)
         ? parent + '/' + this.get('name')
-        : this.get('name');
+        : this.get('name') || '';
 
       child.set({parent: parent});
 

@@ -229,7 +229,8 @@ class SpaceResource(ModelResource):
 
         space = bundle.obj
         path = request.GET.get('path', '')
-        path = os.path.join(space.path, path)
+        if not path.startswith(space.path):
+            path = os.path.join(space.path, path)
 
         objects = self.get_objects(space, path)
 
@@ -297,7 +298,8 @@ class LocationResource(ModelResource):
         location = bundle.obj
         path = request.GET.get('path', '')
         path = self.decode_path(path)
-        path = os.path.join(str(location.full_path), path)
+        if not path.startswith(location.full_path):
+            path = os.path.join(location.full_path, path)
 
         objects = self.get_objects(location.space, path)
 

@@ -45,7 +45,7 @@ function createSingleDirectoryPicker(path, textFieldCssId, triggerElementCssId, 
 
       selector.structure = {
         'name': path,
-        'parent': '',
+        'parent': undefined,
         'children': []
       };
       selector.basePath = path

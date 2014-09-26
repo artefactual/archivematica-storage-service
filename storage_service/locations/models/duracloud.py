@@ -67,12 +67,12 @@ class Duracloud(models.Model):
         return paths
 
     def browse(self, path):
-        if not path.endswith('/'):
+        if path and not path.endswith('/'):
             path += '/'
         paths = self._get_files_list(path)
         paths = [p.replace(path, '', 1) for p in paths]
-        entries = sorted(list(set(p.split('/')[0] for p in paths)))
-        directories = sorted(set(p.split('/')[0] for p in paths if len(p.split('/')) > 1))
+        entries = sorted(set(p.split('/')[0] for p in paths if p.split('/')[0]))
+        directories = sorted(set(p.split('/')[0] for p in paths if len(p.split('/')) > 1 and p.split('/')[0]))
         return {'directories': directories, 'entries': entries}
 
     def delete_path(self, delete_path):

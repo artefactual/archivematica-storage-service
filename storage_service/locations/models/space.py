@@ -153,6 +153,7 @@ class Space(models.Model):
 
         If not implemented in the child space, looks locally.
         """
+        logging.info('Browse: path: %s', path)
         try:
             return self.get_child_space().browse(path, *args, **kwargs)
         except AttributeError:
