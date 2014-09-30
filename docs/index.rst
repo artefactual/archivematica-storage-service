@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to storage_service's documentation!
-====================================
+Archivematica Storage Service documentation
+===========================================
 
 Contents:
 
@@ -14,6 +14,9 @@ Contents:
    install
    deploy
    tests
+   administrators
+   users
+
 
 
 
