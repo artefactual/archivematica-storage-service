@@ -4,3 +4,6 @@
 
 # Sqlite DBs
 *.db
+
+# Sphinx docs
+/docs/_build
