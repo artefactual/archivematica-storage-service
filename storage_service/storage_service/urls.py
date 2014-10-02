@@ -39,9 +39,8 @@ def startup():
     from locations import models as locations_models
     from common import utils
     import logging
-    logger = logging.getLogger(__name__)
-    logging.basicConfig(level=logging.INFO)
-    logging.info("Running startup")
+    LOGGER = logging.getLogger(__name__)
+    LOGGER.info("Running startup")
     space, space_created = locations_models.Space.objects.get_or_create(
         access_protocol=locations_models.Space.LOCAL_FILESYSTEM,
         path=os.sep, defaults={
@@ -82,7 +81,7 @@ def startup():
             os.mkdir(internal_use.full_path)
         except OSError as e:
             if e.errno != errno.EEXIST:
-                logging.error("Internal storage location {} not accessible.".format(internal_use.full_path))
+                LOGGER.error("Internal storage location {} not accessible.".format(internal_use.full_path))
 
     if not utils.get_setting('default_transfer_source'):
         utils.set_setting('default_transfer_source', [transfer_source.uuid])

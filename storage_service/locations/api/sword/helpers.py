@@ -26,8 +26,6 @@ from locations import models
 from common.utils import generate_checksum
 
 LOGGER = logging.getLogger(__name__)
-logging.basicConfig(filename="/tmp/storage_service.log",
-    level=logging.INFO)
 
 def get_deposit(uuid):
     """
@@ -107,7 +105,7 @@ filename (using the filename at the end of the URL otherwise)
 Returns filename of downloaded resource
 """
 def download_resource(url, destination_path, filename=None, username=None, password=None):
-    logging.info('downloading url: ' + url)
+    LOGGER.info('downloading url: ' + url)
     request = urllib2.Request(url)
 
     if username != None and password != None:
@@ -121,7 +119,7 @@ def download_resource(url, destination_path, filename=None, username=None, passw
             filename = parse_filename_from_content_disposition(info['content-disposition'])
         else:
             filename = os.path.basename(url)
-    logging.info('Filename set to ' + filename)
+    LOGGER.info('Filename set to ' + filename)
 
     filepath = os.path.join(destination_path, filename)
     buffer_size = 16 * 1024
@@ -227,7 +225,7 @@ def _fetch_content(deposit_uuid, objects, subdir=None):
             task_file.completed = True
             task_file.save()
 
-            logging.info('Saved file to ' + new_path)
+            LOGGER.info('Saved file to ' + new_path)
             completed += 1
 
             file_record = models.File(
@@ -237,7 +235,7 @@ def _fetch_content(deposit_uuid, objects, subdir=None):
             )
             file_record.save()
         except Exception as e:
-            logging.error('Package download task encountered an error:' + str(e))
+            LOGGER.error('Package download task encountered an error:' + str(e))
             # an error occurred
             task_file.failed = True
             task_file.save()
@@ -291,7 +289,7 @@ def _finalize_if_not_empty(deposit_uuid):
             pipeline = deposit.current_location.pipeline.all()[0]
             result = activate_transfer_and_request_approval_from_pipeline(deposit, pipeline)
             if result.get('error', False):
-                logging.warning('Error creating transfer: %s', result)
+                LOGGER.warning('Error creating transfer: %s', result)
             else:
                 completed = True
 
@@ -374,7 +372,7 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
     try:
         approve_response = urllib2.urlopen(approve_request)
     except Exception:
-        logging.exception('Automatic approval of transfer for deposit %s failed', deposit.uuid)
+        LOGGER.exception('Automatic approval of transfer for deposit %s failed', deposit.uuid)
         # move back to deposit directory
         # FIXME moving the files out from under Archivematica leaves a transfer that will always error out - leave it?
         shutil.move(destination_path, deposit.full_path())
