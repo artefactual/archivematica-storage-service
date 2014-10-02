@@ -16,7 +16,7 @@ from django import http
 from administration import models
 from common import version
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 NSMAP = {
     'atom': 'http://www.w3.org/2005/Atom',  # Atom Syndication Format
@@ -219,7 +219,7 @@ def uuid_to_path(uuid):
     uuid = uuid.replace("-", "")
     path = [uuid[i:i+4] for i in range(0, len(uuid), 4)]
     path = os.path.join(*path)
-    logging.debug("path {}".format(path))
+    LOGGER.debug("path {}".format(path))
     return path
 
 def removedirs(relative_path, base=None):

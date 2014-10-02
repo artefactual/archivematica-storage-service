@@ -3,10 +3,7 @@ from django.dispatch import receiver, Signal
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(filename="/tmp/storage_service.log",
-                    level=logging.INFO)
-
+LOGGER = logging.getLogger(__name__)
 
 deletion_request = Signal(providing_args=["uuid", "location", "url"])
 failed_fixity_check = Signal(providing_args=["uuid", "location", "report"])
@@ -18,7 +15,7 @@ def _notify_administrators(subject, message):
         try:
             user.email_user(subject, message)
         except Exception:
-            logging.exception("Unable to send email to %s", user.email)
+            LOGGER.exception("Unable to send email to %s", user.email)
 
 
 @receiver(deletion_request, dispatch_uid="deletion_request")

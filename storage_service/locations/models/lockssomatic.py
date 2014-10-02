@@ -21,6 +21,8 @@ from common import utils
 from location import Location
 from package import Package
 
+LOGGER = logging.getLogger(__name__)
+
 
 class Lockssomatic(models.Model):
     """ Spaces that store their contents in LOCKSS, via LOCKSS-o-matic. """
@@ -56,7 +58,7 @@ class Lockssomatic(models.Model):
     pointer_root = None
 
     def browse(self, path):
-        logging.warning('Lockssomatic does not support browsing')
+        LOGGER.warning('Lockssomatic does not support browsing')
         return {'directories': [], 'entries': []}
 
     def move_to_storage_service(self, source_path, destination_path, dest_space):
@@ -75,7 +77,7 @@ class Lockssomatic(models.Model):
         if package is None:
             return
         # Post to Lockss-o-matic with the create resource atom entry
-        logging.info('Storing %s in LOCKSS', package.current_path)
+        LOGGER.info('Storing %s in LOCKSS', package.current_path)
 
         # Update Service Document, including maxUploadSize and Collection IRI
         # If SD cannot be updated, LOM probably down.  Terminate now, as
@@ -98,10 +100,10 @@ class Lockssomatic(models.Model):
             # If something goes wrong with the parsing, receipt may not be a
             # sword.Deposit_Recipt (might be None, or sword.Error_Document) and
             # may not have the required attributes
-            logging.warning('Unable to contact LOCKSS for package %s', package.uuid)
+            LOGGER.warning('Unable to contact LOCKSS for package %s', package.uuid)
         else:
-            logging.info("LOCKSS State IRI for %s: %s", package.uuid, state_iri)
-            logging.info("LOCKSS Edit IRI for %s: %s", package.uuid, edit_iri)
+            LOGGER.info("LOCKSS State IRI for %s: %s", package.uuid, state_iri)
+            LOGGER.info("LOCKSS Edit IRI for %s: %s", package.uuid, edit_iri)
 
             if state_iri and edit_iri:
                 misc = {'state_iri': state_iri, 'edit_iri': edit_iri, 'num_files': len(output_files)}
@@ -144,7 +146,7 @@ class Lockssomatic(models.Model):
 
         # Package not safely stored, return immediately
         servers = statement_root.findall('.//lom:server', namespaces=utils.NSMAP)
-        logging.info('All states are agreement: %s', all(s.get('state') == 'agreement' for s in servers))
+        LOGGER.info('All states are agreement: %s', all(s.get('state') == 'agreement' for s in servers))
         if not all(s.get('state') == 'agreement' for s in servers):
             # TODO update pointer file for new failed status?
             return (status, 'LOCKSS servers not in agreement')
@@ -161,14 +163,14 @@ class Lockssomatic(models.Model):
 
         # Add new FLocat elements for each LOCKSS URL to each file element
         for index, file_e in enumerate(files):
-            logging.debug('file element: %s', etree.tostring(file_e, pretty_print=True))
+            LOGGER.debug('file element: %s', etree.tostring(file_e, pretty_print=True))
             if len(files) == 1:
                 lom_id = self._download_url(package.uuid)
             else:
                 lom_id = self._download_url(package.uuid, index + 1)
-            logging.debug('LOM id: %s', lom_id)
+            LOGGER.debug('LOM id: %s', lom_id)
             lom_servers = statement_root.find(".//lom:content[@id='{}']/lom:serverlist".format(lom_id), namespaces=utils.NSMAP)
-            logging.debug('lom_servers: %s', lom_servers)
+            LOGGER.debug('lom_servers: %s', lom_servers)
             # Remove existing LOCKSS URLs, if they exist
             for old_url in file_e.findall("mets:FLocat[@LOCTYPE='URL']", namespaces=utils.NSMAP):
                 file_e.remove(old_url)
@@ -176,7 +178,7 @@ class Lockssomatic(models.Model):
             for server in lom_servers:
                 # TODO check that size and checksum are the same
                 # TODO what to do if size & checksum different?
-                logging.debug('LOM URL: %s', server.get('src'))
+                LOGGER.debug('LOM URL: %s', server.get('src'))
                 flocat = etree.SubElement(file_e, 'FLocat', LOCTYPE="URL")
                 flocat.set('{' + utils.NSMAP['xlink'] + '}href', server.get('src'))
 
@@ -189,7 +191,7 @@ class Lockssomatic(models.Model):
         if error is None:
             self._delete_files()
 
-        logging.info('update_package_status: new status: %s', status)
+        LOGGER.info('update_package_status: new status: %s', status)
 
         # Write out pointer file again
         with open(package.full_pointer_file_path, 'w') as f:
@@ -212,7 +214,7 @@ class Lockssomatic(models.Model):
         for lom_id in delete_lom_ids:
             if lom_id:
                 etree.SubElement(entry.entry, '{' + utils.NSMAP['lom'] + '}content', recrawl='false').text = lom_id
-        logging.debug('edit entry: %s', entry)
+        LOGGER.debug('edit entry: %s', entry)
         # SWORD2 client doesn't handle 202 respose correctly - implementing here
         # Correct function is self.sword_connection.update_metadata_for_resource
         headers = {
@@ -227,7 +229,7 @@ class Lockssomatic(models.Model):
             payload=str(entry))
 
         # Return with error message if response not 200
-        logging.debug('response code: %s', response['status'])
+        LOGGER.debug('response code: %s', response['status'])
         if response['status'] != 200:
             if response['status'] == 202:  # Accepted - pushing new config
                 return 'Lockss-o-matic is updating the config to stop harvesting.  Please try again to delete local files.'
@@ -251,17 +253,17 @@ class Lockssomatic(models.Model):
         else:
             # Get all local path FLocats
             delete_elements = self.pointer_root.xpath(".//mets:FLocat[@LOCTYPE='OTHER' and @OTHERLOCTYPE='SYSTEM']", namespaces=utils.NSMAP)
-        logging.debug('delete_elements: %s', delete_elements)
+        LOGGER.debug('delete_elements: %s', delete_elements)
 
         # Delete paths from delete_elements from disk, and remove from METS
         for element in delete_elements:
             path = element.get('{' + utils.NSMAP['xlink'] + '}href')
-            logging.debug('path to delete: %s', path)
+            LOGGER.debug('path to delete: %s', path)
             try:
                 os.remove(path)
             except os.error as e:
                 if e.errno != errno.ENOENT:
-                    logging.exception('Could not delete {}'.format(path))
+                    LOGGER.exception('Could not delete {}'.format(path))
             element.getparent().remove(element)
 
         # Update pointer file
@@ -276,14 +278,14 @@ class Lockssomatic(models.Model):
                 event_type='deletion',
                 event_outcome_detail_note='AIP deleted from local storage',
             )
-            logging.info('PREMIS:EVENT division: %s', etree.tostring(digiprov_split, pretty_print=True))
+            LOGGER.info('PREMIS:EVENT division: %s', etree.tostring(digiprov_split, pretty_print=True))
             amdsec.append(digiprov_split)
 
             # Add PREMIS:AGENT for storage service
             digiprov_id = 'digiprovMD_{}'.format(len(amdsec))
             digiprov_agent = utils.mets_ss_agent(amdsec, digiprov_id)
             if digiprov_agent is not None:
-                logging.info('PREMIS:AGENT SS: %s', etree.tostring(digiprov_agent, pretty_print=True))
+                LOGGER.info('PREMIS:AGENT SS: %s', etree.tostring(digiprov_agent, pretty_print=True))
                 amdsec.append(digiprov_agent)
             # If file was split
             if self.pointer_root.find(".//mets:fileGrp[@USE='LOCKSS chunk']", namespaces=utils.NSMAP) is not None:
@@ -305,7 +307,7 @@ class Lockssomatic(models.Model):
             self.sword_connection = sword2.Connection(self.sd_iri, download_service_document=True,
                 on_behalf_of=self.content_provider_id)
         except Exception:  # TODO make this more specific
-            logging.exception("Error getting service document from SWORD server.")
+            LOGGER.exception("Error getting service document from SWORD server.")
             return False
         # AU size
         self.au_size = self.sword_connection.maxUploadSize * 1000  # Convert from kB
@@ -316,7 +318,7 @@ class Lockssomatic(models.Model):
         try:
             self.collection_iri = self.sword_connection.workspaces[0][1][0].href
         except IndexError:
-            logging.warning("No collection IRI found in LOCKSS-o-matic service document.")
+            LOGGER.warning("No collection IRI found in LOCKSS-o-matic service document.")
             return False
 
         # Checksum type - LOM specific tag
@@ -348,14 +350,14 @@ class Lockssomatic(models.Model):
 
         file_path = package.full_path
         expected_num_files = math.ceil(os.path.getsize(file_path) / float(self.au_size))
-        logging.debug('expected_num_files: %s', expected_num_files)
+        LOGGER.debug('expected_num_files: %s', expected_num_files)
 
         # No split needed - just return the file path
         if expected_num_files <= 1:
-            logging.debug('Only one file expected, not splitting')
+            LOGGER.debug('Only one file expected, not splitting')
             output_files = [file_path]
             # No events or structMap changes needed
-            logging.info('LOCKSS: after splitting: {}'.format(output_files))
+            LOGGER.info('LOCKSS: after splitting: {}'.format(output_files))
             return output_files
 
         # Split file
@@ -366,11 +368,11 @@ class Lockssomatic(models.Model):
             '--new-volume-script', 'common/tar_new_volume.sh',
             '-f', output_path, file_path]
         # TODO reserve space in quota for extra files
-        logging.info('LOCKSS split command: %s', command)
+        LOGGER.info('LOCKSS split command: %s', command)
         try:
             subprocess.check_call(command)
         except Exception:
-            logging.exception("Split of %s failed with command %s", file_path, command)
+            LOGGER.exception("Split of %s failed with command %s", file_path, command)
             raise
         output_path = output_path[:-2]  # Remove '-1'
         dirname, basename = os.path.split(output_path)
@@ -391,14 +393,14 @@ class Lockssomatic(models.Model):
             event_detail=event_detail,
             event_outcome_detail_note='{} LOCKSS chunks created'.format(len(output_files)),
         )
-        logging.debug('PREMIS:EVENT division: %s', etree.tostring(digiprov_split, pretty_print=True))
+        LOGGER.debug('PREMIS:EVENT division: %s', etree.tostring(digiprov_split, pretty_print=True))
         amdsec.append(digiprov_split)
 
         # Add PREMIS:AGENT for storage service
         digiprov_id = 'digiprovMD_{}'.format(len(amdsec))
         digiprov_agent = utils.mets_ss_agent(amdsec, digiprov_id)
         if digiprov_agent is not None:
-            logging.debug('PREMIS:AGENT SS: %s', etree.tostring(digiprov_agent, pretty_print=True))
+            LOGGER.debug('PREMIS:AGENT SS: %s', etree.tostring(digiprov_agent, pretty_print=True))
             amdsec.append(digiprov_agent)
 
         # Update structMap & fileSec
@@ -529,5 +531,5 @@ class Lockssomatic(models.Model):
             content_entry.set('checksumType', checksum_name)
             content_entry.set('checksumValue', checksum_value)
 
-        logging.debug('LOCKSS atom entry: {}'.format(entry))
+        LOGGER.debug('LOCKSS atom entry: {}'.format(entry))
         return entry, slug

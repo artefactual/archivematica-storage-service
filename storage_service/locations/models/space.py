@@ -14,7 +14,7 @@ from django.db import models
 from django_extensions.db.fields import UUIDField
 
 # This project, alphabetical
-logger = logging.getLogger()
+LOGGER = logging.getLogger(__name__)
 
 # This module, alphabetical
 from . import StorageException
@@ -153,7 +153,7 @@ class Space(models.Model):
 
         If not implemented in the child space, looks locally.
         """
-        logging.info('Browse: path: %s', path)
+        LOGGER.info('path: %s', relative_path)
         try:
             return self.get_child_space().browse(path, *args, **kwargs)
         except AttributeError:
@@ -187,9 +187,9 @@ class Space(models.Model):
 
         This is implemented by the child protocol spaces.
         """
-        logging.debug('TO: src: {}'.format(source_path))
-        logging.debug('TO: dst: {}'.format(destination_path))
-        logging.debug('TO: staging: {}'.format(destination_space.staging_path))
+        LOGGER.debug('TO: src: {}'.format(source_path))
+        LOGGER.debug('TO: dst: {}'.format(destination_path))
+        LOGGER.debug('TO: staging: {}'.format(destination_space.staging_path))
 
         # TODO enforce source_path is inside self.path
         # Path pre-processing
@@ -228,8 +228,8 @@ class Space(models.Model):
 
         This is implemented by the child protocol spaces.
         """
-        logging.debug('FROM: src: {}'.format(source_path))
-        logging.debug('FROM: dst: {}'.format(destination_path))
+        LOGGER.debug('FROM: src: {}'.format(source_path))
+        LOGGER.debug('FROM: dst: {}'.format(destination_path))
 
         # Path pre-processing
         # source_path must be relative
@@ -256,7 +256,7 @@ class Space(models.Model):
                 elif os.path.isfile(source_path):
                     os.remove(os.path.normpath(source_path))
             except OSError:
-                logging.warning('Unable to remove %s', source_path, exc_info=True)
+                LOGGER.warning('Unable to remove %s', source_path, exc_info=True)
 
     def post_move_from_storage_service(self, staging_path=None, destination_path=None, package=None, *args, **kwargs):
         """ Hook for any actions that need to be taken after moving from the storage service to the final destination. """
@@ -290,7 +290,7 @@ class Space(models.Model):
         # When copying from folder/. to folder2/. it failed because the folder
         # already existed.  Copying folder/ or folder to folder/ or folder also
         # has errors.  Should uses shutil.move()
-        logging.info("Moving from {} to {}".format(source_path, destination_path))
+        LOGGER.info("Moving from {} to {}".format(source_path, destination_path))
 
         # Create directories
         self._create_local_directory(destination_path, mode)
@@ -305,7 +305,7 @@ class Space(models.Model):
         Space._create_local_directory may be useful.
         """
         # Create directories
-        logging.info("Rsyncing from {} to {}".format(source, destination))
+        LOGGER.info("Rsyncing from {} to {}".format(source, destination))
 
         if source == destination:
             return
@@ -313,13 +313,13 @@ class Space(models.Model):
         # Rsync file over
         # TODO Do this asyncronously, with restarting failed attempts
         command = ['rsync', '-vv', '--chmod=ugo+rw', '-r', source, destination]
-        logging.info("rsync command: {}".format(command))
+        LOGGER.info("rsync command: {}".format(command))
 
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         stdout, _ = p.communicate()
         if p.returncode != 0:
             s = "Rsync failed with status {}: {}".format(p.returncode, stdout)
-            logging.warning(s)
+            LOGGER.warning(s)
             raise StorageException(s)
 
     def _create_local_directory(self, path, mode=None):
@@ -333,7 +333,7 @@ class Space(models.Model):
         except os.error as e:
             # If the leaf node already exists, that's fine
             if e.errno != errno.EEXIST:
-                logging.warning("Could not create storage directory: {}".format(e))
+                LOGGER.warning("Could not create storage directory: {}".format(e))
                 raise
 
         # os.makedirs may ignore the mode when creating directories, so force
@@ -342,7 +342,7 @@ class Space(models.Model):
         try:
             os.chmod(os.path.dirname(path), mode)
         except os.error as e:
-            logging.warning(e)
+            LOGGER.warning(e)
 
     def _browse_local(self, path):
         """
@@ -351,7 +351,7 @@ class Space(models.Model):
         if isinstance(path, unicode):
             path = str(path)
         if not os.path.exists(path):
-            logging.info('%s in %s does not exist', path, self)
+            LOGGER.info('%s in %s does not exist', path, self)
             return {'directories': [], 'entries': []}
         # Sorted list of all entries in directory, excluding hidden files
         entries = [name for name in os.listdir(path) if name[0] != '.']
@@ -373,5 +373,5 @@ class Space(models.Model):
             if os.path.isdir(delete_path):
                 shutil.rmtree(delete_path)
         except (os.error, shutil.Error):
-            logging.warning("Error deleting package %s", delete_path, exc_info=True)
+            LOGGER.warning("Error deleting package %s", delete_path, exc_info=True)
             raise

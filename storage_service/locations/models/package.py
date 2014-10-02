@@ -25,6 +25,8 @@ from space import Space
 
 __all__ = ('Package', )
 
+LOGGER = logging.getLogger(__name__)
+
 
 class Package(models.Model):
     """ A package stored in a specific location. """
@@ -160,7 +162,7 @@ class Package(models.Model):
             # self.pointer_root.find("mets:structMap/*/mets:div[@ORDER='{}']".format(lockss_au_number), namespaces=NSMAP)
             path = os.path.splitext(full_path)[0] + '.tar-' + str(lockss_au_number)
         else:  # LOCKSS AU number specified, but not a LOCKSS package
-            logging.warning('Trying to download LOCKSS chunk for a non-LOCKSS package.')
+            LOGGER.warning('Trying to download LOCKSS chunk for a non-LOCKSS package.')
             path = full_path
         return path
 
@@ -325,7 +327,7 @@ class Package(models.Model):
                 src_space.move_to_storage_service(pointer_file_src, self.pointer_file_path, self.pointer_file_location.space)
                 self.pointer_file_location.space.move_from_storage_service(self.pointer_file_path, pointer_file_dst)
             except:
-                logging.warning("No pointer file found")
+                LOGGER.warning("No pointer file found")
                 self.pointer_file_location = None
                 self.pointer_file_path = None
                 self.save()
@@ -402,12 +404,12 @@ class Package(models.Model):
             if relative_path:
                 command.append(relative_path)
 
-            logging.info('Extracting file with: {} to {}'.format(command, output_path))
+            LOGGER.info('Extracting file with: {} to {}'.format(command, output_path))
             rc = subprocess.call(command)
-            logging.debug('Extract file RC: %s', rc)
+            LOGGER.debug('Extract file RC: %s', rc)
         else:
             aip_path = os.path.join(full_path, basename)
-            logging.info('Copying AIP from: {} to {}'.format(aip_path, output_path))
+            LOGGER.info('Copying AIP from: {} to {}'.format(aip_path, output_path))
             shutil.copytree(aip_path, output_path)
 
         if not relative_path:
@@ -477,9 +479,9 @@ class Package(models.Model):
         else:
             raise NotImplementedError('Algorithm %s not implemented' % algorithm)
 
-        logging.info('Compressing package with: {} to {}'.format(command, compressed_filename))
+        LOGGER.info('Compressing package with: {} to {}'.format(command, compressed_filename))
         rc = subprocess.call(command)
-        logging.debug('Extract file RC: %s', rc)
+        LOGGER.debug('Extract file RC: %s', rc)
 
         return (compressed_filename, extract_path)
 
@@ -595,7 +597,7 @@ class Package(models.Model):
             try:
                 os.remove(pointer_path)
             except OSError as e:
-                logging.info("Error deleting pointer file %s for package %s", pointer_path, self.uuid, exc_info=True)
+                LOGGER.info("Error deleting pointer file %s for package %s", pointer_path, self.uuid, exc_info=True)
             utils.removedirs(os.path.dirname(self.pointer_file_path),
                 base=self.pointer_file_location.full_path)
 

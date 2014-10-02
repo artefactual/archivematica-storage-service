@@ -239,19 +239,52 @@ LOGGING = {
             '()': 'django.utils.log.RequireDebugFalse'
         }
     },
+    'formatters': {
+        'simple': {
+            'format': '%(levelname)s:%(name)s.%(funcName)s:  %(message)s',
+        },
+        'detailed': {
+            'format': '%(asctime)s %(levelname)s %(name)s:%(module)s:%(funcName)s:%(lineno)d:  %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S'
+        },
+    },
     'handlers': {
+        'null': {
+            'level': 'DEBUG',
+            'class': 'logging.NullHandler'
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
         'mail_admins': {
             'level': 'ERROR',
             'filters': ['require_debug_false'],
             'class': 'django.utils.log.AdminEmailHandler'
-        }
+        },
+        'logfile': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/tmp/storage_service.log',
+            'formatter': 'detailed'
+        },
     },
     'loggers': {
+        'django': {
+            'handlers': ['null'],
+            'propagate': True,
+            'level': 'INFO',
+        },
         'django.request': {
             'handlers': ['mail_admins'],
             'level': 'ERROR',
             'propagate': True,
         },
+    },
+    'root': {
+        'handlers': ['console', 'logfile'],
+        'level': 'NOTSET',
     }
 }
 ########## END LOGGING CONFIGURATION

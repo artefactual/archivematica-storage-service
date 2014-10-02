@@ -1,4 +1,5 @@
 # stdlib, alphabetical
+import logging
 import os
 
 # Core Django, alphabetical
@@ -13,6 +14,8 @@ from django_extensions.db.fields import UUIDField
 from managers import Enabled
 
 __all__ = ('Location', 'LocationPipeline')
+
+LOGGER = logging.getLogger(__name__)
 
 
 class Location(models.Model):
