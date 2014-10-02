@@ -1,16 +1,8 @@
-import logging
-
 # Note that while the signals are not actually used here,
 # they should be imported here to make sure that they
 # are imported very early on globally. This ensures that
 # the signals themselves are registered early.
 from .. import signals
-
-# TODO Define logging intelligently here
-logger = logging.getLogger(__name__)
-logging.basicConfig(filename="/tmp/storage_service.log",
-    level=logging.INFO)
-
 
 # Required by other files
 class StorageException(Exception):

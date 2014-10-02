@@ -40,9 +40,8 @@ def startup():
     from locations import models as locations_models
     from common import utils
     import logging
-    logger = logging.getLogger(__name__)
-    logging.basicConfig(level=logging.INFO)
-    logger.info("Running startup")
+    LOGGER = logging.getLogger(__name__)
+    LOGGER.info("Running startup")
     try:
         space, space_created = locations_models.Space.objects.get_or_create(
             access_protocol=locations_models.Space.LOCAL_FILESYSTEM,
@@ -51,9 +50,9 @@ def startup():
             })
         if space_created:
             locations_models.LocalFilesystem.objects.create(space=space)
-            logger.info('Created default Space %s', space)
+            LOGGER.info('Created default Space %s', space)
     except django.core.exceptions.MultipleObjectsReturned:
-        logger.info('Multiple default Spaces exist, done default setup.')
+        LOGGER.info('Multiple default Spaces exist, done default setup.')
         return
 
     default_locations = [
@@ -105,12 +104,12 @@ def startup():
                 relative_path=loc_info['relative_path'],
                 description=loc_info['description'])
             if created:
-                logger.info('Created default %s Location %s', loc_info['purpose'], new_loc)
+                LOGGER.info('Created default %s Location %s', loc_info['purpose'], new_loc)
         except locations_models.Location.MultipleObjectsReturned:
             continue
 
         if created and loc_info.get('create_dirs'):
-            logger.info('Creating %s Location %s', loc_info['purpose'], new_loc)
+            LOGGER.info('Creating %s Location %s', loc_info['purpose'], new_loc)
             try:
                 os.mkdir(new_loc.full_path)
                 # Hack for extra recovery dir
@@ -118,11 +117,11 @@ def startup():
                     os.mkdir(os.path.join(new_loc.full_path, 'backup'))
             except OSError as e:
                 if e.errno != errno.EEXIST:
-                    logger.error("%s location %s not accessible.", loc_info['purpose'], new_loc.full_path)
+                    LOGGER.error("%s location %s not accessible.", loc_info['purpose'], new_loc.full_path)
 
         if loc_info['default_setting'] and utils.get_setting(loc_info['default_setting']) is None:
             utils.set_setting(loc_info['default_setting'], [new_loc.uuid])
-            logger.info('Set %s as %s', new_loc, loc_info['default_setting'])
+            LOGGER.info('Set %s as %s', new_loc, loc_info['default_setting'])
 
 
 startup()

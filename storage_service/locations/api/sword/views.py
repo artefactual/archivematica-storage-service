@@ -18,8 +18,6 @@ import helpers
 from locations import models
 
 LOGGER = logging.getLogger(__name__)
-logging.basicConfig(filename="/tmp/storage_service.log",
-    level=logging.INFO)
 
 
 def service_document(request):
@@ -224,7 +222,7 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
     root = tree.getroot()
     deposit_name = root.get('LABEL')
     object_id = root.get('OBJID')
-    logging.info('found deposit name in mets: ' + deposit_name)
+    LOGGER.info('found deposit name in mets: ' + deposit_name)
 
     # parse XML for content URLs
     objects = []
@@ -261,7 +259,7 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
                'url': url,
                'checksum': checksum
             })
-            logging.info('found url in mets: ' + url)
+            LOGGER.info('found url in mets: ' + url)
 
     return {
         'deposit_name': deposit_name,

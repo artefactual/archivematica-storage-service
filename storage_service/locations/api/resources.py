@@ -37,8 +37,6 @@ from ..constants import PROTOCOL
 from locations import signals
 
 LOGGER = logging.getLogger(__name__)
-logging.basicConfig(filename="/tmp/storage_service.log",
-    level=logging.INFO)
 
 # FIXME ModelResources with ForeignKeys to another model don't work with
 # validation = CleanedDataFormValidation  On creation, it errors with:
@@ -685,12 +683,12 @@ class PackageResource(ModelResource):
                 # These files do not typically have an sha512 hash, so it's
                 # fine for these to be missing that key; every other file should.
                 if f not in safe_files:
-                    logging.warning("Post-store callback: sha512 missing for file %s", f)
+                    LOGGER.warning("Post-store callback: sha512 missing for file %s", f)
                 continue
 
             files = File.objects.filter(checksum=cksum, stored=False)
             if len(files) > 1:
-                logging.warning("Multiple File entries found for sha512 %s", cksum)
+                LOGGER.warning("Multiple File entries found for sha512 %s", cksum)
 
             for file_ in files:
                 for callback in callbacks:

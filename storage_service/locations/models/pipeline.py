@@ -19,6 +19,8 @@ from space import Space
 
 __all__ = ('Pipeline', )
 
+LOGGER = logging.getLogger(__name__)
+
 
 class Pipeline(models.Model):
     """ Information about Archivematica instances using the storage service. """
@@ -73,21 +75,21 @@ class Pipeline(models.Model):
         if not shared_path:
             shared_path = '/var/archivematica/sharedDirectory'
         shared_path = shared_path.strip('/') + '/'
-        logging.info("Creating default locations for pipeline %s.", self)
+        LOGGER.info("Creating default locations for pipeline %s.", self)
 
         space, space_created = Space.objects.get_or_create(
             access_protocol=Space.LOCAL_FILESYSTEM, path='/')
         if space_created:
             local_fs = LocalFilesystem(space=space)
             local_fs.save()
-            logging.info("Protocol Space created: %s", local_fs)
+            LOGGER.info("Protocol Space created: %s", local_fs)
         currently_processing, _ = Location.objects.get_or_create(
             purpose=Location.CURRENTLY_PROCESSING,
             space=space,
             relative_path=shared_path)
         LocationPipeline.objects.get_or_create(
             pipeline=self, location=currently_processing)
-        logging.info("Currently processing: %s", currently_processing)
+        LOGGER.info("Currently processing: %s", currently_processing)
 
         purposes = [
             {'default': 'default_transfer_source',
@@ -118,7 +120,7 @@ class Pipeline(models.Model):
                     # Fetch existing location
                     location = Location.objects.get(uuid=uuid)
                     assert location.purpose == p['purpose']
-                logging.info("Adding new %s %s to %s",
+                LOGGER.info("Adding new %s %s to %s",
                     p['purpose'], location, self)
                 LocationPipeline.objects.get_or_create(
                     pipeline=self, location=location)

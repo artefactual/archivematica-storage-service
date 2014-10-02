@@ -13,6 +13,8 @@ from django.db import models
 # This module, alphabetical
 from location import Location
 
+LOGGER = logging.getLogger(__name__)
+
 
 class PipelineLocalFS(models.Model):
     """ Spaces local to the creating machine, but not to the storage service.
@@ -47,11 +49,11 @@ class PipelineLocalFS(models.Model):
         # Get entries
         command = 'ls -p -1 "{}"'.format(path.replace('"', '\"'))
         ssh_command = ["ssh", "-i", private_ssh_key, user + "@" + host, command]
-        logging.info("ssh+ls command: %s", ssh_command)
+        LOGGER.info("ssh+ls command: %s", ssh_command)
         try:
             output = subprocess.check_output(ssh_command)
         except Exception as e:
-            logging.warning("ssh+ls failed: %s", e, exc_info=True)
+            LOGGER.warning("ssh+ls failed: %s", e, exc_info=True)
             entries = []
             directories = []
         else:
@@ -67,11 +69,11 @@ class PipelineLocalFS(models.Model):
         host = self.remote_name
         command = 'rm -rf "{}"'.format(delete_path.replace('"', '\"'))
         ssh_command = ["ssh", user + "@" + host, command]
-        logging.info("ssh+rm command: %s", ssh_command)
+        LOGGER.info("ssh+rm command: %s", ssh_command)
         try:
             subprocess.check_call(ssh_command)
         except Exception:
-            logging.warning("ssh+rm failed: %s", ssh_command, exc_info=True)
+            LOGGER.warning("ssh+rm failed: %s", ssh_command, exc_info=True)
             raise
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
@@ -87,11 +89,11 @@ class PipelineLocalFS(models.Model):
         #         src_path=src_path, dest_path=dest_path,
         #         )
         #     ssh_command = ["ssh", self.remote_user+"@"+self.remote_name, command]
-        #     logging.info("ssh+mv command: %s", ssh_command)
+        #     LOGGER.info("ssh+mv command: %s", ssh_command)
         #     try:
         #         subprocess.check_call(ssh_command)
         #     except subprocess.CalledProcessError as e:
-        #         logging.warning("ssh+mv failed: %s", e)
+        #         LOGGER.warning("ssh+mv failed: %s", e)
         #         raise
         # else:
         src_path = "{user}@{host}:{path}".format(
@@ -111,11 +113,11 @@ class PipelineLocalFS(models.Model):
         # Need to make sure destination exists
         command = 'mkdir -p {}'.format(os.path.dirname(destination_path))
         ssh_command = ["ssh", self.remote_user + "@" + self.remote_name, command]
-        logging.info("ssh+mkdir command: %s", ssh_command)
+        LOGGER.info("ssh+mkdir command: %s", ssh_command)
         try:
             subprocess.check_call(ssh_command)
         except subprocess.CalledProcessError as e:
-            logging.warning("ssh+mkdir failed: %s", e)
+            LOGGER.warning("ssh+mkdir failed: %s", e)
             raise
 
         # Prepend user and host to destination
