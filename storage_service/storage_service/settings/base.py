@@ -38,6 +38,9 @@ DEBUG = False
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#template-debug
 TEMPLATE_DEBUG = DEBUG
+
+# See: https://docs.djangoproject.com/en/dev/ref/settings/#test-runner
+TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 ########## END DEBUG CONFIGURATION
 
 
@@ -196,7 +199,6 @@ DJANGO_APPS = (
 )
 
 THIRD_PARTY_APPS = (
-    'south',  # DB migration helper
     'tastypie',  # REST framework
 )
 
