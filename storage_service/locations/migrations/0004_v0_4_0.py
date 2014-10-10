@@ -22,21 +22,6 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal(u'locations', ['Lockssomatic'])
 
-        # Adding field 'Pipeline.remote_name'
-        db.add_column(u'locations_pipeline', 'remote_name',
-                      self.gf('django.db.models.fields.CharField')(default=None, max_length=256, null=True, blank=True),
-                      keep_default=False)
-
-        # Adding field 'Pipeline.api_username'
-        db.add_column(u'locations_pipeline', 'api_username',
-                      self.gf('django.db.models.fields.CharField')(default=None, max_length=256, null=True, blank=True),
-                      keep_default=False)
-
-        # Adding field 'Pipeline.api_key'
-        db.add_column(u'locations_pipeline', 'api_key',
-                      self.gf('django.db.models.fields.CharField')(default=None, max_length=256, null=True, blank=True),
-                      keep_default=False)
-
         # Adding field 'Package.misc_attributes'
         db.add_column(u'locations_package', 'misc_attributes',
                       self.gf('jsonfield.fields.JSONField')(default={}, null=True, blank=True),
@@ -51,15 +36,6 @@ class Migration(SchemaMigration):
     def backwards(self, orm):
         # Deleting model 'Lockssomatic'
         db.delete_table(u'locations_lockssomatic')
-
-        # Deleting field 'Pipeline.remote_name'
-        db.delete_column(u'locations_pipeline', 'remote_name')
-
-        # Deleting field 'Pipeline.api_username'
-        db.delete_column(u'locations_pipeline', 'api_username')
-
-        # Deleting field 'Pipeline.api_key'
-        db.delete_column(u'locations_pipeline', 'api_key')
 
         # Deleting field 'Package.misc_attributes'
         db.delete_column(u'locations_package', 'misc_attributes')
@@ -181,12 +157,9 @@ class Migration(SchemaMigration):
         },
         u'locations.pipeline': {
             'Meta': {'object_name': 'Pipeline'},
-            'api_key': ('django.db.models.fields.CharField', [], {'default': 'None', 'max_length': '256', 'null': 'True', 'blank': 'True'}),
-            'api_username': ('django.db.models.fields.CharField', [], {'default': 'None', 'max_length': '256', 'null': 'True', 'blank': 'True'}),
             'description': ('django.db.models.fields.CharField', [], {'default': 'None', 'max_length': '256', 'null': 'True', 'blank': 'True'}),
             'enabled': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'remote_name': ('django.db.models.fields.CharField', [], {'default': 'None', 'max_length': '256', 'null': 'True', 'blank': 'True'}),
             'uuid': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '36'})
         },
         u'locations.pipelinelocalfs': {

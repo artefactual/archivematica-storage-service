@@ -64,6 +64,21 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal('locations', ['PackageDownloadTaskFile'])
 
+        # Adding field 'Pipeline.remote_name'
+        db.add_column(u'locations_pipeline', 'remote_name',
+                      self.gf('django.db.models.fields.CharField')(default=None, max_length=256, null=True, blank=True),
+                      keep_default=False)
+
+        # Adding field 'Pipeline.api_username'
+        db.add_column(u'locations_pipeline', 'api_username',
+                      self.gf('django.db.models.fields.CharField')(default=None, max_length=256, null=True, blank=True),
+                      keep_default=False)
+
+        # Adding field 'Pipeline.api_key'
+        db.add_column(u'locations_pipeline', 'api_key',
+                      self.gf('django.db.models.fields.CharField')(default=None, max_length=256, null=True, blank=True),
+                      keep_default=False)
+
         # Adding field 'Package.description'
         db.add_column(u'locations_package', 'description',
                       self.gf('django.db.models.fields.CharField')(default=None, max_length=256, null=True, blank=True),
@@ -88,6 +103,15 @@ class Migration(SchemaMigration):
 
         # Deleting model 'PackageDownloadTaskFile'
         db.delete_table(u'locations_packagedownloadtaskfile')
+
+        # Deleting field 'Pipeline.remote_name'
+        db.delete_column(u'locations_pipeline', 'remote_name')
+
+        # Deleting field 'Pipeline.api_username'
+        db.delete_column(u'locations_pipeline', 'api_username')
+
+        # Deleting field 'Pipeline.api_key'
+        db.delete_column(u'locations_pipeline', 'api_key')
 
         # Deleting field 'Package.description'
         db.delete_column(u'locations_package', 'description')
