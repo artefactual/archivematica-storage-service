@@ -39,7 +39,9 @@ within locations, which are organized subdivisions of a space.
 Locations
 ^^^^^^^^^
 
-A location is a subdivision of a space. Each location is assigned a specific purpose, such as AIP storage, DIP storage, transfer source or transfer backlog, in order to provide an organized way to structure content within a space.
+A location is a subdivision of a space. Each location is assigned a specific
+purpose, such as AIP storage, DIP storage, transfer source or transfer backlog,
+in order to provide an organized way to structure content within a space.
 
 Archivematica Configuration
 ---------------------------
@@ -176,11 +178,42 @@ Local Filesystem.
 
 **Fields**
 
-    Path: Absolute path to the space on the remote machine.
-    Size: (Optional) Maximum size allowed for this space. Set to 0 or leave blank for unlimited.
-    Remote name: Hostname or IP address of the computer running Archivematica. Should be SSH accessible from the Storage Service computer.
-    Remote user: Username on the remote host
+* Path: Absolute path to the space on the remote machine.
+* Size: (Optional) Maximum size allowed for this space. Set to 0 or leave blank
+  for unlimited.
+* Remote name: Hostname or IP address of the computer running Archivematica.
+  Should be SSH accessible from the Storage Service computer.
+* Remote user: Username on the remote host
 
+.. _lockss:
+
+LOCKSS
+^^^^^^
+
+Archivematica can store AIPs in a `LOCKSS <http://www.lockss.org/>`_ network via
+LOCKSS-O-Matic, which uses SWORD to communicate between the Storage Service
+and a Private LOCKSS Network (PLN).
+
+**Fields:**
+
+* Size: (Optional) Maximum size allowed for this space. Set to 0 or leave blank
+  for unlimited.
+* Path: Absolute path to the space on the remote machine.
+* Staging path:  Absolute path to a staging area. Must be UNIX filesystem
+  compatible, preferably on the same filesystem as the path.
+* Service document IRI: URL of LOCKSS-o-matic service document IRI, eg.
+  http://lockssomatic.example.org/api/sword/2.0/sd-iri
+* Content Provider ID: On-Behalf-Of value when communicating with LOCKSS-o-matic
+* Externally available domain: Base URL for this server that LOCKSS will be
+  able to access. Generally this is the URL for the home page of the Storage
+  Service.
+* Keep local copy? Check the box if you wish to store a local copy of the AIPs
+  even after they are stored in LOCKSS.
+
+.. note::
+
+   When creating a Location for a LOCKSS space (see below), the Purpose of the
+   Location must be AIP Storage.
 
 Locations
 ---------
