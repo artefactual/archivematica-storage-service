@@ -212,7 +212,7 @@ def _spawn_batch_download_and_flag_finalization_if_requested(deposit, request, m
 
     # create subprocess so content URLs can be downloaded asynchronously
     helpers.spawn_download_task(deposit.uuid, mets_data['objects'])
-    helpers.spawn_download_task(deposit.uuid, mets_data['mods'], 'submissionDocumentation')
+    helpers.spawn_download_task(deposit.uuid, mets_data['mods'], ['submissionDocumentation', 'mods'])
 
 def _parse_name_and_content_urls_from_mets_file(filepath):
     """

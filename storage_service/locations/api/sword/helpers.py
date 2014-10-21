@@ -162,12 +162,12 @@ def spawn_download_task(deposit_uuid, objects, subdir=None):
     p = Process(target=_fetch_content, args=(deposit_uuid, objects, subdir))
     p.start()
 
-def _fetch_content(deposit_uuid, objects, subdir=None):
+def _fetch_content(deposit_uuid, objects, subdirs=None):
     """
     Download a number of files, keeping track of progress and success using a
     database record. After downloading, finalize deposit if requested.
 
-    If subdir is provided, the file will be moved into a subdirectory of the
+    If subdirs is provided, the file will be moved into a subdirectory of the
     new transfer; otherwise, it will be placed in the transfer's root.
     """
     # add download task to keep track of progress
@@ -215,8 +215,8 @@ def _fetch_content(deposit_uuid, objects, subdir=None):
             if filename == 'MODS Record':
                 filename = item['object_id'].replace(':', '-') + '-MODS.xml'
 
-            if subdir:
-                base_path = os.path.join(deposit.full_path(), subdir)
+            if subdirs:
+                base_path = os.path.join(deposit.full_path(), *subdirs)
             else:
                 base_path = deposit.full_path()
 
