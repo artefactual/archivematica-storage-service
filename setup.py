@@ -25,9 +25,9 @@ from setuptools import setup, find_packages
 
 setup(name='archivematica-storage-service',
       packages=find_packages(),
-      version='0.2.2',
-      author=u'Justin Simpson',
-      author_email='jsimpson@artefactual.com',
+      version='0.5.0',
+      author=u'Artefactual Systems Inc',
+      author_email='info@artefactual.com',
       url='https://github.com/artefacutal/archivematica-storage-service',
       description='Django based webapp for managing storage in an Archivematica installation',
       license='Affero GNU General Public License v3 or later',
