@@ -11,7 +11,10 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import sys
+import os
+import urllib2
+import json
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -34,10 +37,8 @@ extensions = [
 inventory = 'https://gist.githubusercontent.com/qubot/2dd2f7f96e51121061d4/raw/sphinxdoc-inventory.json'
 response = urllib2.urlopen(inventory)
 intersphinx_mapping = json.load(response)
-intersphinx_mapping['storageservice'] = intersphinx_mapping.pop('storageService')
 for item in intersphinx_mapping:
     intersphinx_mapping[item] = tuple(intersphinx_mapping[item])
-print(intersphinx_mapping)
 
 # Obtain extlinks dictionary
 inventory = 'https://gist.githubusercontent.com/qubot/3969ebadc9c48574d16a/raw/sphinxdoc-extlinks.json'
