@@ -12,9 +12,9 @@ Contents:
    :hidden:
 
    index
-   /install
-   /administrators
-   /users
+   install
+   administrators
+   users
 
 This documentation describes the Storage Service, used by Archivematica to manage
 archival storage and transfer locations and packages.
