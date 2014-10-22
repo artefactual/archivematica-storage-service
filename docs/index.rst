@@ -10,16 +10,17 @@ Archivematica Storage Service documentation
    :hidden:
 
    index
-   install
    administrators
    users
 
 This documentation describes the Storage Service, used by Archivematica to manage
 archival storage and transfer locations and packages.
 
+For installation instructions, please see
+:ref:`Archivematica installation <archivematica:installation>`.
+
 Contents:
 
-* :ref:`Install <install>`
 * :ref:`Administrators page <administrators>`
 * :ref:`Users page <users>`
 
