@@ -1,3 +1,5 @@
+.. _install:
+
 :Authors:
     Justin Simpson
     Holly Becker

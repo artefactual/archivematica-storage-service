@@ -6,8 +6,6 @@
 Archivematica Storage Service documentation
 ===========================================
 
-Contents:
-
 .. toctree::
    :hidden:
 
