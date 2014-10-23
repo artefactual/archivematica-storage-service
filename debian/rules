@@ -4,4 +4,4 @@
 	dh $@ --with python-virtualenv
 
 override_dh_virtualenv:
-	dh_virtualenv --local-wheel-dir lib 
+	dh_virtualenv --extra-pip-arg --no-index --extra-pip-arg --find-links=lib 
