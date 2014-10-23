@@ -342,7 +342,7 @@ class LocationResource(ModelResource):
             origin_uuid = origin_uri.split('/')[4]
             origin_location = Location.objects.get(uuid=origin_uuid)
         except (IndexError, Location.DoesNotExist):
-            raise http.HttpNotFound("The URL provided '%s' was not a link to a valid Location." % origin_uri)
+            return http.HttpNotFound("The URL provided '%s' was not a link to a valid Location." % origin_uri)
 
         # For each file in files, call move to/from
         origin_space = origin_location.space
