@@ -1,10 +1,10 @@
-archivematica-storage-service (0.5.0.rc.4-1~precise1) precise; urgency=high
+archivematica-storage-service (0.5.0-4~12.04) precise; urgency=high
 
   * Archivematica Storage Service 0.5.0 release adding DuraCloud integration
 
- -- Justin Simpson <jsimpson@artefactual.com>  Thu, 23 Oct 2014 15:05:34 -0700
+ -- Justin Simpson <jsimpson@artefactual.com>  Thu, 23 Oct 2014 18:49:47 -0700
 
- archivematica-storage-service (0.4.0-1~precise1) precise; urgency=high
+archivematica-storage-service (0.4.0-1~precise1) precise; urgency=high
 
   * Archivematica Storage Service 0.4.0 release
 
