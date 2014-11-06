@@ -1,4 +1,5 @@
 # stdlib, alphabetical
+import itertools
 import os
 from lxml import etree
 
@@ -51,7 +52,10 @@ class Duracloud(models.Model):
 
     def _get_files_list(self, prefix):
         """
-        Fetch full path of all files starting with prefix. Helper function.
+        Generator function to return the full path of all files starting with prefix.
+
+        :param prefix: All paths returned will start with prefix
+        :returns: Iterator of paths
         """
         params = {'prefix': prefix}
         response = self.session.get(self.duraspace_url, params=params)
@@ -64,18 +68,38 @@ class Duracloud(models.Model):
         # </space>
         root = etree.fromstring(response.content)
         paths = [p.text for p in root]
-        return paths
+        while paths:
+            for p in paths:
+                yield p
+            params['marker'] = paths[-1]
+            response = self.session.get(self.duraspace_url, params=params)
+            if response.status_code != 200:
+                raise StorageException('Unable to get list of files in %s' % prefix)
+            root = etree.fromstring(response.content)
+            paths = [p.text for p in root]
 
     def browse(self, path):
         if path and not path.endswith('/'):
             path += '/'
+        entries = set()
+        directories = set()
+        # Handle paths one at a time to deal with lots of files
         paths = self._get_files_list(path)
-        paths = [p.replace(path, '', 1) for p in paths]
-        entries = sorted(set(p.split('/')[0] for p in paths if p.split('/')[0]))
-        directories = sorted(set(p.split('/')[0] for p in paths if len(p.split('/')) > 1 and p.split('/')[0]))
+        for p in paths:
+            path_parts = p.replace(path, '', 1).split('/')
+            dirname = path_parts[0]
+            if not dirname:
+                continue
+            entries.add(dirname)
+            if len(path_parts) > 1:
+                directories.add(dirname)
+
+        entries = sorted(entries, key=lambda s: s.lower())  # Also converts to list
+        directories = sorted(directories, key=lambda s: s.lower())  # Also converts to list
         return {'directories': directories, 'entries': entries}
 
     def delete_path(self, delete_path):
+        # BUG If delete_path is a folder but provided without a trailing /, will delete a file with the same name.
         # Files
         url = self.duraspace_url + delete_path
         response = self.session.delete(url)
@@ -96,12 +120,18 @@ class Duracloud(models.Model):
         if response.status_code == 404:
             # File cannot be found - this may be a folder
             to_get = self._get_files_list(src_path)
-            if not to_get:
+            # Check if anything was found
+            try:
+                peek = to_get.next()
+            except StopIteration:
                 # If nothing found, trying normalizing src_path to remove possible extra characters like /. /* /  These glob-match on a filesystem, but do not character-match in Duracloud.
                 # Normalize dest_path as well so replace continues to work
                 src_path = os.path.normpath(src_path)
                 dest_path = os.path.normpath(dest_path)
                 to_get = self._get_files_list(src_path)
+            else:
+                # Put peek back into the iterator
+                to_get = itertools.chain([peek], to_get)
             for entry in to_get:
                 dest = entry.replace(src_path, dest_path, 1)
                 url = self.duraspace_url + entry

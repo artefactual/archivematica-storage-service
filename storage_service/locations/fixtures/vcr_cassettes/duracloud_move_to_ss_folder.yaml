@@ -1,0 +1,135 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.4.3 CPython/2.7.3 Linux/3.5.0-54-generic]
+    method: GET
+    uri: https://archivematica.duracloud.org:443/durastore/testing/test/foo/
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA0yQvVLDMBCEX2U7N0wCjiEZdyE/MxRQ4IJaWGdHxNEZ6ZRk/PScMZOhvL3db0/a
+        hcABRoROvTjfQhgtCfrAPQVxFNGooWYv5AWZUJR5wzzP4Pw0aiqDTaTREhtOnYVnQeO8veWc8nFx
+        csDLFjfGiKgW+Ez1USvN0ZkvXwxDf7nyle1Zgpn9FcxGH423lqjESIraZKlEcV/cYf1RoaJwdrUq
+        65MZeORO+jt9J2Vob4l8/7B8zp/yxWpZFPnqcXLsfr9gwvnUdf/VV4rRtLp40xftOXn7AwAA//8D
+        AK0bXn0xAQAA
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-type: [text/plain]
+      date: ['Fri, 07 Nov 2014 00:38:49 GMT']
+      keep-alive: ['timeout=5, max=100']
+      set-cookie: [JSESSIONID=2BD32C7F1690DAC1047FB393A7FB18BE; Path=/durastore/;
+          Secure; HttpOnly]
+      transfer-encoding: [chunked]
+      vary: [Accept-Encoding]
+    status: {code: 404, message: Not Found}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      Cookie: [JSESSIONID=2BD32C7F1690DAC1047FB393A7FB18BE]
+      User-Agent: [python-requests/2.4.3 CPython/2.7.3 Linux/3.5.0-54-generic]
+    method: GET
+    uri: https://archivematica.duracloud.org:443/durastore/testing/?prefix=test%2Ffoo%2F
+  response:
+    body: {string: !!python/unicode "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n\
+        <space id=\"testing\"><item>test/foo/subfolder/test2.txt</item><item>test/foo/test.txt</item></space>\r\
+        \n"}
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-type: [application/xml]
+      date: ['Fri, 07 Nov 2014 00:38:49 GMT']
+      keep-alive: ['timeout=5, max=99']
+      transfer-encoding: [chunked]
+      x-dura-meta-space-count: ['23']
+      x-dura-meta-space-created: ['2014-11-06T22:27:13']
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      Cookie: [JSESSIONID=2BD32C7F1690DAC1047FB393A7FB18BE]
+      User-Agent: [python-requests/2.4.3 CPython/2.7.3 Linux/3.5.0-54-generic]
+    method: GET
+    uri: https://archivematica.duracloud.org:443/durastore/testing/test/foo/subfolder/test2.txt
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAytJLS5RSMvMSTXiAgArA/1ECwAAAA==
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-length: ['31']
+      content-type: [application/octet-stream]
+      date: ['Fri, 07 Nov 2014 00:38:50 GMT']
+      etag: [2486c05db2a3f84fc9f07697ebe1ce14]
+      keep-alive: ['timeout=5, max=98']
+      last-modified: ['2014-11-07T00:35:41']
+      vary: [Accept-Encoding]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      Cookie: [JSESSIONID=2BD32C7F1690DAC1047FB393A7FB18BE]
+      User-Agent: [python-requests/2.4.3 CPython/2.7.3 Linux/3.5.0-54-generic]
+    method: GET
+    uri: https://archivematica.duracloud.org:443/durastore/testing/test/foo/test.txt
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAytJLS5RSMvMSeUCAN6QRt4KAAAA
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-length: ['30']
+      content-type: [application/octet-stream]
+      date: ['Fri, 07 Nov 2014 00:38:50 GMT']
+      etag: [b05403212c66bdc8ccc597fedf6cd5fe]
+      keep-alive: ['timeout=5, max=97']
+      last-modified: ['2014-11-07T00:35:41']
+      vary: [Accept-Encoding]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      Cookie: [JSESSIONID=2BD32C7F1690DAC1047FB393A7FB18BE]
+      User-Agent: [python-requests/2.4.3 CPython/2.7.3 Linux/3.5.0-54-generic]
+    method: GET
+    uri: https://archivematica.duracloud.org:443/durastore/testing/?marker=test%2Ffoo%2Ftest.txt&prefix=test%2Ffoo%2F
+  response:
+    body: {string: !!python/unicode "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n\
+        <space id=\"testing\" />\r\n"}
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-type: [application/xml]
+      date: ['Fri, 07 Nov 2014 00:38:50 GMT']
+      keep-alive: ['timeout=5, max=96']
+      transfer-encoding: [chunked]
+      x-dura-meta-space-count: ['23']
+      x-dura-meta-space-created: ['2014-11-06T22:27:13']
+    status: {code: 200, message: OK}
+version: 1

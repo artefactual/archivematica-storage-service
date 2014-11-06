@@ -1,0 +1,60 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      Content-Length: ['0']
+      User-Agent: [python-requests/2.4.3 CPython/2.7.3 Linux/3.5.0-54-generic]
+    method: DELETE
+    uri: https://archivematica.duracloud.org:443/durastore/testing/delete/delete.zip
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA3LOzytJzStRSEnNSS1J1YdQelWZBVCRFIXi0uTk1OLitNKcnEoAAAAA//8DAExL
+        IuAuAAAA
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-type: [text/plain]
+      date: ['Thu, 06 Nov 2014 23:56:46 GMT']
+      keep-alive: ['timeout=5, max=100']
+      set-cookie: [JSESSIONID=A60B412669C7953A228B89410776112D; Path=/durastore/;
+          Secure; HttpOnly]
+      transfer-encoding: [chunked]
+      vary: [Accept-Encoding]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.4.3 CPython/2.7.3 Linux/3.5.0-54-generic]
+    method: GET
+    uri: https://archivematica.duracloud.org:443/durastore/testing/delete/delete.zip
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA2SQMU/DMBCF/8rbsqAAwl2yNU0sMdCBDMwmvgbT1Hbtc1vl12MThJCYTnr37nt3
+        14fgAhQznTwbO4EdJmL44DwFNhRxyIbRWSbLqDTNxHS/lnoxvoKxqJhima6gE2VEg51Ls4Z1jIOx
+        +nfe5BxcDX/gucM/VkENT3hP4zGvoI5GfVqxLP56czenLxxU/RNUFx+V3RsMrDjFnKipgXgQd9i+
+        DRgoXMyYle1JLa5wV/2Vzikzcn6DzUZ0fSt3snuUshXt6ui/X7LibJrnv+oLxaim3Njny6RLVn8B
+        AAD//wMAEIxlZ0EBAAA=
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-type: [text/plain]
+      date: ['Thu, 06 Nov 2014 23:56:47 GMT']
+      keep-alive: ['timeout=5, max=100']
+      set-cookie: [JSESSIONID=58542F9890E0293B77E2B449DB5AD8CE; Path=/durastore/;
+          Secure; HttpOnly]
+      transfer-encoding: [chunked]
+      vary: [Accept-Encoding]
+    status: {code: 404, message: Not Found}
+version: 1

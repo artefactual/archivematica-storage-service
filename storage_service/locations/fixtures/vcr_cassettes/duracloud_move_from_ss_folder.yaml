@@ -1,0 +1,172 @@
+interactions:
+- request:
+    body: !!python/object:__builtin__.file {}
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      Content-Length: ['10']
+      User-Agent: [python-requests/2.4.3 CPython/2.7.3 Linux/3.5.0-54-generic]
+    method: PUT
+    uri: https://archivematica.duracloud.org:443/durastore/testing/test/foo/test.txt
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwMAAAAAAAAAAAA=
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-length: ['20']
+      content-type: [text/plain]
+      date: ['Fri, 07 Nov 2014 00:30:10 GMT']
+      etag: [b05403212c66bdc8ccc597fedf6cd5fe]
+      keep-alive: ['timeout=5, max=100']
+      location: ['https://archivematica.duracloud.org/durastore/testing/test/foo/test.txt']
+      set-cookie: [JSESSIONID=6A6690F9AEA9693B4EC359DC97F811FD; Path=/durastore/;
+          Secure; HttpOnly]
+      vary: [Accept-Encoding]
+    status: {code: 201, message: Created}
+- request:
+    body: !!python/object:__builtin__.file {}
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      Content-Length: ['11']
+      Cookie: [JSESSIONID=6A6690F9AEA9693B4EC359DC97F811FD]
+      User-Agent: [python-requests/2.4.3 CPython/2.7.3 Linux/3.5.0-54-generic]
+    method: PUT
+    uri: https://archivematica.duracloud.org:443/durastore/testing/test/foo/subfolder/test2.txt
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwMAAAAAAAAAAAA=
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-length: ['20']
+      content-type: [text/plain]
+      date: ['Fri, 07 Nov 2014 00:30:10 GMT']
+      etag: [2486c05db2a3f84fc9f07697ebe1ce14]
+      keep-alive: ['timeout=5, max=99']
+      location: ['https://archivematica.duracloud.org/durastore/testing/test/foo/subfolder/test2.txt']
+      vary: [Accept-Encoding]
+    status: {code: 201, message: Created}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.4.3 CPython/2.7.3 Linux/3.5.0-54-generic]
+    method: GET
+    uri: https://archivematica.duracloud.org:443/durastore/testing/test/foo/test.txt
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAytJLS5RSMvMSeUCAN6QRt4KAAAA
+    headers:
+      access-control-allow-headers: [Authorization]
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-length: ['30']
+      content-type: [application/octet-stream]
+      date: ['Fri, 07 Nov 2014 00:30:11 GMT']
+      etag: [b05403212c66bdc8ccc597fedf6cd5fe]
+      keep-alive: ['timeout=5, max=100']
+      last-modified: ['2014-11-07T00:32:02']
+      set-cookie: [JSESSIONID=444F12E83B0B63FE2E1A2988ECEF672E; Path=/durastore/;
+          Secure; HttpOnly]
+      vary: [Accept-Encoding]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.4.3 CPython/2.7.3 Linux/3.5.0-54-generic]
+    method: GET
+    uri: https://archivematica.duracloud.org:443/durastore/testing/test/foo/subfolder/test2.txt
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAytJLS5RSMvMSTXiAgArA/1ECwAAAA==
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-length: ['31']
+      content-type: [application/octet-stream]
+      date: ['Fri, 07 Nov 2014 00:30:11 GMT']
+      etag: [2486c05db2a3f84fc9f07697ebe1ce14]
+      keep-alive: ['timeout=5, max=100']
+      last-modified: ['2014-11-07T00:32:02']
+      set-cookie: [JSESSIONID=8FF16AAD5341724F00CFCD80FD31D052; Path=/durastore/;
+          Secure; HttpOnly]
+      vary: [Accept-Encoding]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      Content-Length: ['0']
+      User-Agent: [python-requests/2.4.3 CPython/2.7.3 Linux/3.5.0-54-generic]
+    method: DELETE
+    uri: https://archivematica.duracloud.org:443/durastore/testing/test/foo/test.txt
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA3LOzytJzStRKEktLtFPy8/XBzH0SipKFFJSc1JLUlMUikuTk1OLi9NKc3IqAQAA
+        AP//AwCXISM4LgAAAA==
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-type: [text/plain]
+      date: ['Fri, 07 Nov 2014 00:30:12 GMT']
+      keep-alive: ['timeout=5, max=100']
+      set-cookie: [JSESSIONID=CA8088A545C4A499AFC7ED99FA1EFACE; Path=/durastore/;
+          Secure; HttpOnly]
+      transfer-encoding: [chunked]
+      vary: [Accept-Encoding]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      Content-Length: ['0']
+      User-Agent: [python-requests/2.4.3 CPython/2.7.3 Linux/3.5.0-54-generic]
+    method: DELETE
+    uri: https://archivematica.duracloud.org:443/durastore/testing/test/foo/subfolder/test2.txt
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA3LOzytJzStRKEktLtFPy8/XLy5NSsvPSUkt0gcJGemVVJQopKTmpJakpigUlyYn
+        pxYXp5Xm5FQCAAAA//8DACT4OnE5AAAA
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-type: [text/plain]
+      date: ['Fri, 07 Nov 2014 00:30:12 GMT']
+      keep-alive: ['timeout=5, max=100']
+      set-cookie: [JSESSIONID=AECFAE85E93007D7DE94F9E933C129AE; Path=/durastore/;
+          Secure; HttpOnly]
+      transfer-encoding: [chunked]
+      vary: [Accept-Encoding]
+    status: {code: 200, message: OK}
+version: 1
