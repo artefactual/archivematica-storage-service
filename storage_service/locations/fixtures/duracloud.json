@@ -4,10 +4,10 @@
     "model": "locations.duracloud", 
     "fields": {
         "space": "6fb34c82-4222-425e-b0ea-30acfd31f52e",
-        "host": "trial.duracloud.org",
+        "host": "archivematica.duracloud.org",
         "user": "trialuser263",
         "password": "ss6umfHh",
-        "duraspace": "trial263"
+        "duraspace": "testing"
     }
 },
 {
@@ -20,7 +20,7 @@
         "uuid": "6fb34c82-4222-425e-b0ea-30acfd31f52e", 
         "access_protocol": "DS", 
         "staging_path": "/var/archivematica/storage_service/", 
-        "path": "/", 
+        "path": "",
         "size": null
     }
 },
