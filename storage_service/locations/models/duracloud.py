@@ -18,6 +18,8 @@ from common import utils
 from . import StorageException
 from location import Location
 
+LOGGER = logging.getLogger(__name__)
+
 
 class Duracloud(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
@@ -61,8 +63,11 @@ class Duracloud(models.Model):
         :returns: Iterator of paths
         """
         params = {'prefix': prefix}
+        LOGGER.debug('URL: %s, params: %s', self.duraspace_url, params)
         response = self.session.get(self.duraspace_url, params=params)
+        LOGGER.debug('Response: %s', response)
         if response.status_code != 200:
+            LOGGER.warning('%s: Response: %s', response, response.text)
             raise StorageException('Unable to get list of files in %s' % prefix)
         # Response is XML in the form:
         # <space id="self.durastore">
@@ -71,15 +76,22 @@ class Duracloud(models.Model):
         # </space>
         root = etree.fromstring(response.content)
         paths = [p.text for p in root]
+        LOGGER.debug('Paths first 10: %s', paths[:10])
+        LOGGER.debug('Paths last 10: %s', paths[-10:])
         while paths:
             for p in paths:
                 yield utils.coerce_str(p)
             params['marker'] = paths[-1]
+            LOGGER.debug('URL: %s, params: %s', self.duraspace_url, params)
             response = self.session.get(self.duraspace_url, params=params)
+            LOGGER.debug('Response: %s', response)
             if response.status_code != 200:
+                LOGGER.warning('%s: Response: %s', response, response.text)
                 raise StorageException('Unable to get list of files in %s' % prefix)
             root = etree.fromstring(response.content)
             paths = [p.text for p in root]
+            LOGGER.debug('Paths first 10: %s', paths[:10])
+            LOGGER.debug('Paths last 10: %s', paths[-10:])
 
     def browse(self, path):
         if path and not path.endswith('/'):
@@ -125,6 +137,7 @@ class Duracloud(models.Model):
         url = self.duraspace_url + urllib.quote(src_path)
         response = self.session.get(url)
         if response.status_code == 404:
+            LOGGER.debug('%s not found, trying as folder', src_path)
             # File cannot be found - this may be a folder
             # Remove /. and /* at the end of the string. These glob-match on a
             # filesystem, but do not character-match in Duracloud.
@@ -132,20 +145,26 @@ class Duracloud(models.Model):
             find_regex = r'/[\.\*]$'
             src_path = re.sub(find_regex, '/', src_path)
             dest_path = re.sub(find_regex, '/', dest_path)
+            LOGGER.debug('Modified paths: src: %s dest: %s', src_path, dest_path)
             to_get = self._get_files_list(src_path)
             for entry in to_get:
                 dest = entry.replace(src_path, dest_path, 1)
                 url = self.duraspace_url + urllib.quote(entry)
+                LOGGER.debug('Getting %s', url)
                 response = self.session.get(url)
                 if response.status_code != 200:
+                    LOGGER.warning('Response: %s when fetching %s', response, url)
+                    LOGGER.warning('Response text: %s', response.text)
                     raise StorageException('Unable to fetch %s' % entry)
                 self.space._create_local_directory(dest)
+                LOGGER.debug('Writing %s to %s', entry, dest)
                 with open(dest, 'wb') as f:
                     f.write(response.content)
         elif response.status_code != 200:
             raise StorageException('Unable to fetch %s' % src_path)
         else:  # status_code == 200
             self.space._create_local_directory(dest_path)
+            LOGGER.debug('Writing to %s', dest_path)
             with open(dest_path, 'wb') as f:
                 f.write(response.content)
 
@@ -153,7 +172,9 @@ class Duracloud(models.Model):
         # Example URL: https://trial.duracloud.org/durastore/trial261//ts/test.txt
         with open(upload_file, 'rb') as f:
             response = self.session.put(url, data=f)
+        LOGGER.info('Response from %s: %s', url, response)
         if response.status_code != 201:
+            LOGGER.warning('Response text: %s', response.text)
             raise StorageException('Unable to store %s' % upload_file)
 
     def move_from_storage_service(self, source_path, destination_path):
