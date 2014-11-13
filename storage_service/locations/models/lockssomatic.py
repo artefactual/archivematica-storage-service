@@ -261,7 +261,7 @@ class Lockssomatic(models.Model):
                 os.remove(path)
             except os.error as e:
                 if e.errno != errno.ENOENT:
-                    logging.exception('Could not delete {}'.format(path))
+                    logging.exception('Could not delete %s', path)
             element.getparent().remove(element)
 
         # Update pointer file
@@ -355,7 +355,7 @@ class Lockssomatic(models.Model):
             logging.debug('Only one file expected, not splitting')
             output_files = [file_path]
             # No events or structMap changes needed
-            logging.info('LOCKSS: after splitting: {}'.format(output_files))
+            logging.info('LOCKSS: after splitting: %s', output_files)
             return output_files
 
         # Split file
@@ -529,5 +529,5 @@ class Lockssomatic(models.Model):
             content_entry.set('checksumType', checksum_name)
             content_entry.set('checksumValue', checksum_value)
 
-        logging.debug('LOCKSS atom entry: {}'.format(entry))
+        logging.debug('LOCKSS atom entry: %s', entry)
         return entry, slug

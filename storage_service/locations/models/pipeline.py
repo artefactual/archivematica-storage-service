@@ -73,21 +73,21 @@ class Pipeline(models.Model):
         if not shared_path:
             shared_path = '/var/archivematica/sharedDirectory'
         shared_path = shared_path.strip('/') + '/'
-        logging.info("Creating default locations for pipeline {}.".format(self))
+        logging.info("Creating default locations for pipeline %s.", self)
 
         space, space_created = Space.objects.get_or_create(
             access_protocol=Space.LOCAL_FILESYSTEM, path='/')
         if space_created:
             local_fs = LocalFilesystem(space=space)
             local_fs.save()
-            logging.info("Protocol Space created: {}".format(local_fs))
+            logging.info("Protocol Space created: %s", local_fs)
         currently_processing, _ = Location.objects.get_or_create(
             purpose=Location.CURRENTLY_PROCESSING,
             space=space,
             relative_path=shared_path)
         LocationPipeline.objects.get_or_create(
             pipeline=self, location=currently_processing)
-        logging.info("Currently processing: {}".format(currently_processing))
+        logging.info("Currently processing: %s", currently_processing)
 
         purposes = [
             {'default': 'default_transfer_source',
@@ -118,7 +118,7 @@ class Pipeline(models.Model):
                     # Fetch existing location
                     location = Location.objects.get(uuid=uuid)
                     assert location.purpose == p['purpose']
-                logging.info("Adding new {} {} to {}".format(
-                    p['purpose'], location, self))
+                logging.info("Adding new %s %s to %s",
+                    p['purpose'], location, self)
                 LocationPipeline.objects.get_or_create(
                     pipeline=self, location=location)

@@ -690,7 +690,7 @@ class PackageResource(ModelResource):
 
             files = File.objects.filter(checksum=cksum, stored=False)
             if len(files) > 1:
-                logging.warning("Multiple File entries found for sha512 {}".format(cksum))
+                logging.warning("Multiple File entries found for sha512 %s", cksum)
 
             for file_ in files:
                 for callback in callbacks:

@@ -187,9 +187,9 @@ class Space(models.Model):
 
         This is implemented by the child protocol spaces.
         """
-        logging.debug('TO: src: {}'.format(source_path))
-        logging.debug('TO: dst: {}'.format(destination_path))
-        logging.debug('TO: staging: {}'.format(destination_space.staging_path))
+        logging.debug('TO: src: %s', source_path)
+        logging.debug('TO: dst: %s', destination_path)
+        logging.debug('TO: staging: %s', destination_space.staging_path)
 
         # TODO enforce source_path is inside self.path
         # Path pre-processing
@@ -228,8 +228,8 @@ class Space(models.Model):
 
         This is implemented by the child protocol spaces.
         """
-        logging.debug('FROM: src: {}'.format(source_path))
-        logging.debug('FROM: dst: {}'.format(destination_path))
+        logging.debug('FROM: src: %s', source_path)
+        logging.debug('FROM: dst: %s', destination_path)
 
         # Path pre-processing
         # source_path must be relative
@@ -290,7 +290,7 @@ class Space(models.Model):
         # When copying from folder/. to folder2/. it failed because the folder
         # already existed.  Copying folder/ or folder to folder/ or folder also
         # has errors.  Should uses shutil.move()
-        logging.info("Moving from {} to {}".format(source_path, destination_path))
+        logging.info("Moving from %s to %s", source_path, destination_path)
 
         # Create directories
         self._create_local_directory(destination_path, mode)
@@ -305,7 +305,7 @@ class Space(models.Model):
         Space._create_local_directory may be useful.
         """
         # Create directories
-        logging.info("Rsyncing from {} to {}".format(source, destination))
+        logging.info("Rsyncing from %s to %s", source, destination)
 
         if source == destination:
             return
@@ -313,7 +313,7 @@ class Space(models.Model):
         # Rsync file over
         # TODO Do this asyncronously, with restarting failed attempts
         command = ['rsync', '-vv', '--chmod=ugo+rw', '-r', source, destination]
-        logging.info("rsync command: {}".format(command))
+        logging.info("rsync command: %s", command)
 
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         stdout, _ = p.communicate()
@@ -333,7 +333,7 @@ class Space(models.Model):
         except os.error as e:
             # If the leaf node already exists, that's fine
             if e.errno != errno.EEXIST:
-                logging.warning("Could not create storage directory: {}".format(e))
+                logging.warning("Could not create storage directory: %s", e)
                 raise
 
         # os.makedirs may ignore the mode when creating directories, so force

@@ -46,11 +46,11 @@ class PipelineLocalFS(models.Model):
         # Get entries
         command = 'ls -p -1 "{}"'.format(path.replace('"', '\"'))
         ssh_command = ["ssh", "-i", private_ssh_key, user + "@" + host, command]
-        logging.info("ssh+ls command: {}".format(ssh_command))
+        logging.info("ssh+ls command: %s", ssh_command)
         try:
             output = subprocess.check_output(ssh_command)
         except Exception as e:
-            logging.warning("ssh+ls failed: {}".format(e), exc_info=True)
+            logging.warning("ssh+ls failed: %s", e, exc_info=True)
             entries = []
             directories = []
         else:
@@ -86,11 +86,11 @@ class PipelineLocalFS(models.Model):
         #         src_path=src_path, dest_path=dest_path,
         #         )
         #     ssh_command = ["ssh", self.remote_user+"@"+self.remote_name, command]
-        #     logging.info("ssh+mv command: {}".format(ssh_command))
+        #     logging.info("ssh+mv command: %s", ssh_command)
         #     try:
         #         subprocess.check_call(ssh_command)
         #     except subprocess.CalledProcessError as e:
-        #         logging.warning("ssh+mv failed: {}".format(e))
+        #         logging.warning("ssh+mv failed: %s", e)
         #         raise
         # else:
         src_path = "{user}@{host}:{path}".format(
@@ -110,11 +110,11 @@ class PipelineLocalFS(models.Model):
         # Need to make sure destination exists
         command = 'mkdir -p {}'.format(os.path.dirname(destination_path))
         ssh_command = ["ssh", self.remote_user + "@" + self.remote_name, command]
-        logging.info("ssh+mkdir command: {}".format(ssh_command))
+        logging.info("ssh+mkdir command: %s", ssh_command)
         try:
             subprocess.check_call(ssh_command)
         except subprocess.CalledProcessError as e:
-            logging.warning("ssh+mkdir failed: {}".format(e))
+            logging.warning("ssh+mkdir failed: %s", e)
             raise
 
         # Prepend user and host to destination

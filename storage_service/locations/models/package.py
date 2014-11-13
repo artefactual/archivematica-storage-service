@@ -476,12 +476,12 @@ class Package(models.Model):
             if relative_path:
                 command.append(relative_path)
 
-            logging.info('Extracting file with: {} to {}'.format(command, output_path))
+            logging.info('Extracting file with: %s to %s', command, output_path)
             rc = subprocess.call(command)
             logging.debug('Extract file RC: %s', rc)
         else:
             aip_path = os.path.join(full_path, basename)
-            logging.info('Copying AIP from: {} to {}'.format(aip_path, output_path))
+            logging.info('Copying AIP from: %s to %s', aip_path, output_path)
             shutil.copytree(aip_path, output_path)
 
         if not relative_path:
@@ -551,7 +551,7 @@ class Package(models.Model):
         else:
             raise NotImplementedError('Algorithm %s not implemented' % algorithm)
 
-        logging.info('Compressing package with: {} to {}'.format(command, compressed_filename))
+        logging.info('Compressing package with: %s to %s', command, compressed_filename)
         rc = subprocess.call(command)
         logging.debug('Extract file RC: %s', rc)
 
