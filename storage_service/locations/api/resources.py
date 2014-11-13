@@ -298,8 +298,11 @@ class LocationResource(ModelResource):
         location = bundle.obj
         path = request.GET.get('path', '')
         path = self.decode_path(path)
-        if not path.startswith(location.full_path):
-            path = os.path.join(location.full_path, path)
+        location_path = location.full_path
+        if isinstance(location_path, unicode):
+            location_path = location_path.encode('utf8')
+        if not path.startswith(location_path):
+            path = os.path.join(location_path, path)
 
         objects = self.get_objects(location.space, path)
 
