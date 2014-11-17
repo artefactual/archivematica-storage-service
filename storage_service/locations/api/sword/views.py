@@ -122,8 +122,8 @@ def collection(request, location):
                     if mets_data != None:
                         if mets_data['deposit_name'] == None:
                             return helpers.sword_error_response(request, 400, 'No deposit name found in XML.')
-                        if not os.path.isdir(location.full_path()):
-                            return helpers.sword_error_response(request, 500, 'Collection path (%s) does not exist: contact an administrator.' % (location.full_path()))
+                        if not os.path.isdir(location.full_path):
+                            return helpers.sword_error_response(request, 500, 'Collection path (%s) does not exist: contact an administrator.' % (location.full_path))
 
                         # TODO: should get this from author header or provided XML metadata
                         sourceofacquisition = request.META['HTTP_ON_BEHALF_OF'] if 'HTTP_ON_BEHALF_OF' in request.META else None
@@ -185,7 +185,7 @@ def deposit_from_location_relative_path(source_location_uuid, relative_path_to_f
 
     # a deposit of files stored on the storage server is being done
     source_location = models.Location.objects.get(uuid=source_location_uuid)
-    path_to_deposit_files = os.path.join(source_location.full_path(), relative_path_to_files.rstrip('/'))
+    path_to_deposit_files = os.path.join(source_location.full_path, relative_path_to_files.rstrip('/'))
 
     deposit = _create_deposit_directory_and_db_entry(
         location,
@@ -280,7 +280,7 @@ def _create_deposit_directory_and_db_entry(location, deposit_name=None, source_p
         deposit_name = 'Untitled'
 
     # Formulate deposit path using space path and deposit name
-    deposit_path = os.path.join(location.full_path(), deposit_name)
+    deposit_path = os.path.join(location.full_path, deposit_name)
 
     # Pad deposit path, if it already exists, and either copy source data to it or just create it
     deposit_path = helpers.pad_destination_filepath_if_it_already_exists(deposit_path)
@@ -371,7 +371,7 @@ def deposit_edit(request, deposit):
         return HttpResponse(status=204) # No content
     elif request.method == 'DELETE':
         # Delete files
-        shutil.rmtree(deposit.full_path())
+        shutil.rmtree(deposit.full_path)
         # Delete all PackageDownloadTaskFile and PackageDownloadTask for this deposit
         models.PackageDownloadTaskFile.objects.filter(task__package=deposit).delete()
         models.PackageDownloadTask.objects.filter(package=deposit).delete()
@@ -432,7 +432,7 @@ def deposit_media(request, deposit):
 
     if request.method == 'GET':
         # TODO should this be returned in SWORD XML?
-        return HttpResponse(str(os.listdir(deposit.full_path())))
+        return HttpResponse(str(os.listdir(deposit.full_path)))
     elif request.method == 'PUT':
         # replace a file in the deposit
         return _handle_adding_to_or_replacing_file_in_deposit(request, deposit, replace_file=True)
@@ -470,7 +470,7 @@ def deposit_media(request, deposit):
             # Delete empty PackageDownloadTasks for this deposit
             models.PackageDownloadTask.objects.filter(package=deposit).filter(download_file_set=None).delete()
             # Delete file
-            file_path = os.path.join(deposit.full_path(), filename)
+            file_path = os.path.join(deposit.full_path, filename)
             if os.path.exists(file_path):
                 os.remove(file_path)
                 return HttpResponse(status=204) # No content
@@ -481,8 +481,8 @@ def deposit_media(request, deposit):
             models.PackageDownloadTaskFile.objects.filter(task__package=deposit).delete()
             models.PackageDownloadTask.objects.filter(package=deposit).delete()
             # Delete all files
-            for filename in os.listdir(deposit.full_path()):
-                filepath = os.path.join(deposit.full_path(), filename)
+            for filename in os.listdir(deposit.full_path):
+                filepath = os.path.join(deposit.full_path, filename)
                 if os.path.isfile(filepath):
                     os.remove(filepath)
                 elif os.path.isdir(filepath):
@@ -549,7 +549,7 @@ def _handle_adding_to_or_replacing_file_in_deposit(request, deposit, replace_fil
         filename = helpers.parse_filename_from_content_disposition(request.META['HTTP_CONTENT_DISPOSITION']) 
 
         if filename != '':
-            file_path = os.path.join(deposit.full_path(), filename)
+            file_path = os.path.join(deposit.full_path, filename)
 
             if replace_file:
                 # if doing a file replace, the file being replaced must exist

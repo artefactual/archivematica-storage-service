@@ -216,9 +216,9 @@ def _fetch_content(deposit_uuid, objects, subdirs=None):
                 filename = item['object_id'].replace(':', '-') + '-MODS.xml'
 
             if subdirs:
-                base_path = os.path.join(deposit.full_path(), *subdirs)
+                base_path = os.path.join(deposit.full_path, *subdirs)
             else:
-                base_path = deposit.full_path()
+                base_path = deposit.full_path
 
             new_path = os.path.join(base_path, filename)
             shutil.move(temp_filename, new_path)
@@ -281,7 +281,7 @@ def _finalize_if_not_empty(deposit_uuid):
     }
     # don't finalize if still downloading
     if deposit_downloading_status(deposit) == models.PackageDownloadTask.COMPLETE:
-        if len(os.listdir(deposit.full_path())) > 0:
+        if len(os.listdir(deposit.full_path)) > 0:
             # get sword server so we can access pipeline information
             if not deposit.current_location.pipeline.exists():
                 return {
@@ -335,14 +335,14 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
         purpose=models.Location.CURRENTLY_PROCESSING)
 
     destination_path = os.path.join(
-        processing_location.full_path(),
+        processing_location.full_path,
         'watchedDirectories', 'activeTransfers', 'standardTransfer',
         deposit.current_path)
 
     # FIXME this should use Space.move_[to|from]_storage_service
     # move to standard transfers directory
     destination_path = pad_destination_filepath_if_it_already_exists(destination_path)
-    shutil.move(deposit.full_path(), destination_path)
+    shutil.move(deposit.full_path, destination_path)
 
     params = {
         'username': pipeline.api_username,
@@ -377,7 +377,7 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
         logging.exception('Automatic approval of transfer for deposit %s failed', deposit.uuid)
         # move back to deposit directory
         # FIXME moving the files out from under Archivematica leaves a transfer that will always error out - leave it?
-        shutil.move(destination_path, deposit.full_path())
+        shutil.move(destination_path, deposit.full_path)
         return {
             'error': True,
             'message': 'Request to pipeline ' + pipeline.uuid + ' transfer approval API failed: check credentials and REST API IP whitelist.'
@@ -395,9 +395,13 @@ def sword_error_response(request, status, summary):
     return HttpResponse(error_xml, status=error_details['status'])
 
 def store_mets_data(mets_path, deposit, object_id):
-    submission_documentation_directory = os.path.join(deposit.full_path(), 'submissionDocumentation')
+    submission_documentation_directory = os.path.join(deposit.full_path, 'submissionDocumentation')
     if not os.path.exists(submission_documentation_directory):
         os.mkdir(submission_documentation_directory)
+
+    mods_directory = os.path.join(submission_documentation_directory, 'mods')
+    if not os.path.exists(mods_directory):
+        os.mkdir(mods_directory)
 
     mets_name = object_id.replace(':', '-') + '-METS.xml'
     target = os.path.join(submission_documentation_directory, mets_name)
