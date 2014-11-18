@@ -252,7 +252,13 @@ class Space(models.Model):
         if source_path != destination_path:
             try:
                 if os.path.isdir(source_path):
-                    shutil.rmtree(os.path.normpath(source_path))
+                    # Need to convert this to an str - if this is a
+                    # unicode string, rmtree will use os.path.join
+                    # on the directory and the names of its children,
+                    # which can result in an attempt to join mixed encodings;
+                    # this blows up if the filename cannot be converted to
+                    # unicode.
+                    shutil.rmtree(str(os.path.normpath(source_path)))
                 elif os.path.isfile(source_path):
                     os.remove(os.path.normpath(source_path))
             except OSError:
