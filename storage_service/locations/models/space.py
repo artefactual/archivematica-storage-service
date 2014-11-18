@@ -51,9 +51,10 @@ def validate_space_path(path):
 #         app_label = 'locations'
 #
 #     ALLOWED_LOCATION_PURPOSE = [
+#         Location.AIP_RECOVERY,
 #         Location.AIP_STORAGE,
-#         Location.DIP_STORAGE,
 #         Location.CURRENTLY_PROCESSING,
+#         Location.DIP_STORAGE,
 #         Location.STORAGE_SERVICE_INTERNAL,
 #         Location.TRANSFER_SOURCE,
 #         Location.BACKLOG,
