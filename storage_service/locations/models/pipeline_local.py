@@ -37,6 +37,7 @@ class PipelineLocalFS(models.Model):
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [
+        Location.AIP_RECOVERY,
         Location.AIP_STORAGE,
         Location.DIP_STORAGE,
         Location.CURRENTLY_PROCESSING,
