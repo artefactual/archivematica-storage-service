@@ -1,0 +1,120 @@
+[
+{
+    "pk": 1, 
+    "model": "locations.space", 
+    "fields": {
+        "last_verified": null, 
+        "used": 0, 
+        "verified": false, 
+        "uuid": "7d20c992-bc92-4f92-a794-7161ff2cc08b", 
+        "access_protocol": "FS", 
+        "path": "/", 
+        "size": null
+    }
+},
+{
+    "pk": 1, 
+    "model": "locations.localfilesystem", 
+    "fields": {
+        "space": "7d20c992-bc92-4f92-a794-7161ff2cc08b"
+    }
+},
+{
+    "pk": 1, 
+    "model": "locations.location", 
+    "fields": {
+        "used": 0, 
+        "description": null, 
+        "space": "7d20c992-bc92-4f92-a794-7161ff2cc08b", 
+        "enabled": true, 
+        "quota": null, 
+        "relative_path": "home", 
+        "purpose": "TS", 
+        "uuid": "4056b25d-6a85-4557-b9a5-9c85565fd892"
+    }
+},
+{
+    "pk": 2, 
+    "model": "locations.location", 
+    "fields": {
+        "used": 0, 
+        "description": "Store AIP in standard Archivematica Directory", 
+        "space": "7d20c992-bc92-4f92-a794-7161ff2cc08b", 
+        "enabled": true, 
+        "quota": null, 
+        "relative_path": "var/archivematica/sharedDirectory/www/AIPsStore", 
+        "purpose": "AS", 
+        "uuid": "99536e72-97af-4f0c-811e-06160a995c36"
+    }
+},
+{
+    "pk": 3, 
+    "model": "locations.location", 
+    "fields": {
+        "used": 0, 
+        "description": "Store DIP in standard Archivematica Directory", 
+        "space": "7d20c992-bc92-4f92-a794-7161ff2cc08b",
+        "enabled": true, 
+        "quota": null, 
+        "relative_path": "var/archivematica/sharedDirectory/www/DIPsStore", 
+        "purpose": "DS", 
+        "uuid": "83805e08-44cf-408b-b805-49a312528e05"
+    }
+},
+{
+    "pk": 4, 
+    "model": "locations.location", 
+    "fields": {
+        "used": 0, 
+        "description": "Default transfer backlog", 
+        "space": "7d20c992-bc92-4f92-a794-7161ff2cc08b",
+        "enabled": true, 
+        "quota": null, 
+        "relative_path": "var/archivematica/sharedDirectory/www/AIPsStore/transferBacklog", 
+        "purpose": "BL", 
+        "uuid": "6e61aacf-8492-4382-8ef3-262cc5420259"
+    }
+},
+{
+    "pk": 5, 
+    "model": "locations.location", 
+    "fields": {
+        "used": 0, 
+        "description": "For storage service internal usage.", 
+        "space": "7d20c992-bc92-4f92-a794-7161ff2cc08b", 
+        "enabled": true, 
+        "quota": null, 
+        "relative_path": "var/archivematica/storage_service", 
+        "purpose": "SS", 
+        "uuid": "72ee3a1a-9497-46db-aa58-56ea8d7fedc5"
+    }
+},
+{
+    "pk": 6, 
+    "model": "locations.location", 
+    "fields": {
+        "used": 0, 
+        "description": "Default AIP recovery", 
+        "space": "7d20c992-bc92-4f92-a794-7161ff2cc08b",
+        "enabled": true, 
+        "quota": null, 
+        "relative_path": "var/archivematica/storage_service/recover", 
+        "purpose": "AR", 
+        "uuid": "932aeff2-f700-4098-bad0-91672363ec3f"
+    }
+},
+{
+    "pk": 7, 
+    "model": "locations.location", 
+    "fields": {
+        "used": 0, 
+        "description": null, 
+        "space": "7d20c992-bc92-4f92-a794-7161ff2cc08b",
+        "enabled": true, 
+        "quota": null, 
+        "relative_path": "var/archivematica/sharedDirectory/", 
+        "purpose": "CP", 
+        "uuid": "213086c8-232e-4b9e-bb03-98fbc7a7966a"
+    }
+}
+]
