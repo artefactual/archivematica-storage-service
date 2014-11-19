@@ -1,0 +1,114 @@
+[
+{
+    "pk": 1, 
+    "model": "locations.pipeline", 
+    "fields": {
+        "api_key": null, 
+        "uuid": "b25f6b71-3ebf-4fcc-823c-1feb0a2553dd", 
+        "enabled": true, 
+        "api_username": null, 
+        "remote_name": "127.0.0.1", 
+        "description": "Archivematica on alouette"
+    }
+},
+{
+    "pk": 2, 
+    "model": "locations.pipeline", 
+    "fields": {
+        "api_key": "", 
+        "uuid": "d2df89dc-9443-48dd-8983-55e9d1f92bcb", 
+        "enabled": true, 
+        "api_username": "", 
+        "remote_name": "", 
+        "description": "Test"
+    }
+},
+{
+    "pk": 1, 
+    "model": "locations.locationpipeline", 
+    "fields": {
+        "pipeline": "b25f6b71-3ebf-4fcc-823c-1feb0a2553dd", 
+        "location": "4056b25d-6a85-4557-b9a5-9c85565fd892"
+    }
+},
+{
+    "pk": 2, 
+    "model": "locations.locationpipeline", 
+    "fields": {
+        "pipeline": "b25f6b71-3ebf-4fcc-823c-1feb0a2553dd", 
+        "location": "99536e72-97af-4f0c-811e-06160a995c36"
+    }
+},
+{
+    "pk": 3, 
+    "model": "locations.locationpipeline", 
+    "fields": {
+        "pipeline": "b25f6b71-3ebf-4fcc-823c-1feb0a2553dd", 
+        "location": "213086c8-232e-4b9e-bb03-98fbc7a7966a"
+    }
+},
+{
+    "pk": 4, 
+    "model": "locations.locationpipeline", 
+    "fields": {
+        "pipeline": "b25f6b71-3ebf-4fcc-823c-1feb0a2553dd", 
+        "location": "6e61aacf-8492-4382-8ef3-262cc5420259"
+    }
+},
+{
+    "pk": 5, 
+    "model": "locations.locationpipeline", 
+    "fields": {
+        "pipeline": "b25f6b71-3ebf-4fcc-823c-1feb0a2553dd", 
+        "location": "83805e08-44cf-408b-b805-49a312528e05"
+    }
+},
+{
+    "pk": 7, 
+    "model": "locations.locationpipeline", 
+    "fields": {
+        "pipeline": "d2df89dc-9443-48dd-8983-55e9d1f92bcb", 
+        "location": "4056b25d-6a85-4557-b9a5-9c85565fd892"
+    }
+},
+{
+    "pk": 8, 
+    "model": "locations.locationpipeline", 
+    "fields": {
+        "pipeline": "d2df89dc-9443-48dd-8983-55e9d1f92bcb", 
+        "location": "99536e72-97af-4f0c-811e-06160a995c36"
+    }
+},
+{
+    "pk": 9, 
+    "model": "locations.locationpipeline", 
+    "fields": {
+        "pipeline": "d2df89dc-9443-48dd-8983-55e9d1f92bcb", 
+        "location": "213086c8-232e-4b9e-bb03-98fbc7a7966a"
+    }
+},
+{
+    "pk": 10, 
+    "model": "locations.locationpipeline", 
+    "fields": {
+        "pipeline": "d2df89dc-9443-48dd-8983-55e9d1f92bcb", 
+        "location": "6e61aacf-8492-4382-8ef3-262cc5420259"
+    }
+},
+{
+    "pk": 11, 
+    "model": "locations.locationpipeline", 
+    "fields": {
+        "pipeline": "d2df89dc-9443-48dd-8983-55e9d1f92bcb", 
+        "location": "83805e08-44cf-408b-b805-49a312528e05"
+    }
+},
+{
+    "pk": 14, 
+    "model": "locations.locationpipeline", 
+    "fields": {
+        "pipeline": "b25f6b71-3ebf-4fcc-823c-1feb0a2553dd", 
+        "location": "932aeff2-f700-4098-bad0-91672363ec3f"
+    }
+}
+]

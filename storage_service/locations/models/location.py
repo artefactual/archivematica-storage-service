@@ -75,7 +75,7 @@ class Location(models.Model):
         return u"{uuid}: {path} ({purpose})".format(
             uuid=self.uuid,
             purpose=self.get_purpose_display(),
-            path=self.full_path,
+            path=self.relative_path,
         )
 
     # Attributes

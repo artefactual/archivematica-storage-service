@@ -2,6 +2,7 @@
 from django import forms
 import django.utils
 import django.core.exceptions
+from django.db.models import Count
 
 from locations import models
 
@@ -152,6 +153,27 @@ class LocationForm(forms.ModelForm):
             self.whitelist = all_
         blacklist = all_ - set(self.whitelist)
         self.fields['purpose'].widget.disabled_choices = blacklist
+
+    def clean(self):
+        cleaned_data = super(LocationForm, self).clean()
+        purpose = cleaned_data.get('purpose')
+        if purpose == models.Location.AIP_RECOVERY:
+            # Don't allow more than one recovery location per pipeline
+            # Fetch all LocationPipelines linked to an AIP Recovery location and
+            # one of the Pipeline's we're adding
+            # Exclude this Location, since we already know it's associated
+            # Group by pipeline and count the number of Locations
+            # Any Location indicates a duplicate
+            existing_recovery_rel = models.LocationPipeline.objects.filter(
+                location__purpose=models.Location.AIP_RECOVERY,
+                pipeline__in=list(cleaned_data.get('pipeline', []))
+                ).exclude(location_id=self.instance.uuid
+                ).values('pipeline'  # Group by pipeline
+                ).annotate(total=Count('location'))  # Count associated locations
+            pipelines = [d['pipeline'] for d in existing_recovery_rel]
+            if pipelines:
+                raise forms.ValidationError('Pipeline(s) {} already have an AIP recovery location.'.format(', '.join(pipelines)))
+        return cleaned_data
 
     def clean_purpose(self):
         # Server-side enforcement of what Location purposes are allowed
