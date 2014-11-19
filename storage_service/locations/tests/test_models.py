@@ -6,7 +6,7 @@ from locations import models
 
 class TestLockssomatic(TestCase):
 
-    fixtures = ['initial_data.json', 'lockssomatic.json']
+    fixtures = ['base.json', 'lockssomatic.json']
 
     def setUp(self):
         self.lom_object = models.Lockssomatic.objects.all()[0]
