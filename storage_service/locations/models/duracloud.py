@@ -1,7 +1,8 @@
 # stdlib, alphabetical
-import itertools
-import os
+import logging
 from lxml import etree
+import os
+import re
 
 # Core Django, alphabetical
 from django.db import models
@@ -119,19 +120,13 @@ class Duracloud(models.Model):
         response = self.session.get(url)
         if response.status_code == 404:
             # File cannot be found - this may be a folder
+            # Remove /. and /* at the end of the string. These glob-match on a
+            # filesystem, but do not character-match in Duracloud.
+            # Normalize dest_path as well so replace continues to work
+            find_regex = r'/[\.\*]$'
+            src_path = re.sub(find_regex, '/', src_path)
+            dest_path = re.sub(find_regex, '/', dest_path)
             to_get = self._get_files_list(src_path)
-            # Check if anything was found
-            try:
-                peek = to_get.next()
-            except StopIteration:
-                # If nothing found, trying normalizing src_path to remove possible extra characters like /. /* /  These glob-match on a filesystem, but do not character-match in Duracloud.
-                # Normalize dest_path as well so replace continues to work
-                src_path = os.path.normpath(src_path)
-                dest_path = os.path.normpath(dest_path)
-                to_get = self._get_files_list(src_path)
-            else:
-                # Put peek back into the iterator
-                to_get = itertools.chain([peek], to_get)
             for entry in to_get:
                 dest = entry.replace(src_path, dest_path, 1)
                 url = self.duraspace_url + entry
