@@ -133,6 +133,4 @@ class TestDuracloud(TestCase):
         # Cleanup
         os.remove('folder/test/test.txt')
         os.remove('folder/test/subfolder/test2.txt')
-        # BUG Globbing may match and fetch extra things (because of use of normpath)
-        os.remove('folder/test.txt')
         os.removedirs('folder/test/subfolder')
