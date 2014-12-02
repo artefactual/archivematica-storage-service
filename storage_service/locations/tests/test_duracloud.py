@@ -134,3 +134,41 @@ class TestDuracloud(TestCase):
         os.remove('folder/test/test.txt')
         os.remove('folder/test/subfolder/test2.txt')
         os.removedirs('folder/test/subfolder')
+
+    @vcr.use_cassette('locations/fixtures/vcr_cassettes/duracloud_move_to_ss_percent_encoding.yaml')
+    def test_move_to_ss_percent_encoding(self):
+        # Move to SS with # in path & filename
+        self.ds_object.move_to_storage_service('test/bad #name/bad #name.txt', 'folder/bad #name.txt', None)
+        # Verify
+        assert os.path.isdir('folder')
+        assert os.path.isfile('folder/bad #name.txt')
+        assert open('folder/bad #name.txt').read() == 'test file\n'
+        # Cleanup
+        os.remove('folder/bad #name.txt')
+        os.removedirs('folder')
+
+    @vcr.use_cassette('locations/fixtures/vcr_cassettes/duracloud_move_from_ss_percent_encoding.yaml')
+    def test_move_from_ss_percent_encoding(self):
+        auth = requests.auth.HTTPBasicAuth(self.ds_object.user, self.ds_object.password)
+        # Create bad #name.txt
+        open('bad #name.txt', 'w').write('bad #name file\n')
+        # Upload
+        self.ds_object.move_from_storage_service('bad #name.txt', 'test/bad #name.txt')
+        # Verify
+        response = requests.get('https://archivematica.duracloud.org/durastore/testing/test/bad%20%23name.txt', auth=auth)
+        assert response.status_code == 200
+        assert response.text == 'bad #name file\n'
+        # Cleanup
+        os.remove('bad #name.txt')
+        requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/test/bad%20%23name.txt', auth=auth)
+
+    @vcr.use_cassette('locations/fixtures/vcr_cassettes/duracloud_delete_percent_encoding.yaml')
+    def test_delete_percent_encoding(self):
+        auth = requests.auth.HTTPBasicAuth(self.ds_object.user, self.ds_object.password)
+        response = requests.get('https://archivematica.duracloud.org/durastore/testing/delete/delete%20%23.txt', auth=auth)
+        assert response.status_code == 200
+        # Delete file
+        self.ds_object.delete_path('delete/delete #.txt')
+        # Verify deleted
+        response = requests.get('https://archivematica.duracloud.org/durastore/testing/delete/delete%20%23.txt', auth=auth)
+        assert response.status_code == 404

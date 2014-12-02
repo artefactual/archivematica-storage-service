@@ -3,6 +3,7 @@ import logging
 from lxml import etree
 import os
 import re
+import urllib
 
 # Core Django, alphabetical
 from django.db import models
@@ -58,7 +59,7 @@ class Duracloud(models.Model):
         :param prefix: All paths returned will start with prefix
         :returns: Iterator of paths
         """
-        params = {'prefix': prefix}
+        params = {'prefix': urllib.quote(prefix)}
         response = self.session.get(self.duraspace_url, params=params)
         if response.status_code != 200:
             raise StorageException('Unable to get list of files in %s' % prefix)
@@ -72,7 +73,7 @@ class Duracloud(models.Model):
         while paths:
             for p in paths:
                 yield p
-            params['marker'] = paths[-1]
+            params['marker'] = urllib.quote(paths[-1])
             response = self.session.get(self.duraspace_url, params=params)
             if response.status_code != 200:
                 raise StorageException('Unable to get list of files in %s' % prefix)
@@ -102,7 +103,7 @@ class Duracloud(models.Model):
     def delete_path(self, delete_path):
         # BUG If delete_path is a folder but provided without a trailing /, will delete a file with the same name.
         # Files
-        url = self.duraspace_url + delete_path
+        url = self.duraspace_url + urllib.quote(delete_path)
         response = self.session.delete(url)
         if response.status_code == 404:
             # File cannot be found - this may be a folder
@@ -110,13 +111,13 @@ class Duracloud(models.Model):
             # Do not support globbing for delete - do not want to accidentally
             # delete something
             for d in to_delete:
-                url = self.duraspace_url + d
+                url = self.duraspace_url + urllib.quote(d)
                 response = self.session.delete(url)
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """ Moves src_path to dest_space.staging_path/dest_path. """
         # Try to fetch if it's a file
-        url = self.duraspace_url + src_path
+        url = self.duraspace_url + urllib.quote(src_path)
         response = self.session.get(url)
         if response.status_code == 404:
             # File cannot be found - this may be a folder
@@ -129,7 +130,7 @@ class Duracloud(models.Model):
             to_get = self._get_files_list(src_path)
             for entry in to_get:
                 dest = entry.replace(src_path, dest_path, 1)
-                url = self.duraspace_url + entry
+                url = self.duraspace_url + urllib.quote(entry)
                 response = self.session.get(url)
                 if response.status_code != 200:
                     raise StorageException('Unable to fetch %s' % entry)
@@ -160,10 +161,10 @@ class Duracloud(models.Model):
                 for basename in files:
                     entry = os.path.join(path, basename)
                     dest = entry.replace(source_path, destination_path, 1)
-                    url = self.duraspace_url + dest
+                    url = self.duraspace_url + urllib.quote(dest)
                     self._upload_file(url, entry)
         elif os.path.isfile(source_path):
-            url = self.duraspace_url + destination_path
+            url = self.duraspace_url + urllib.quote(destination_path)
             self._upload_file(url, source_path)
         elif not os.path.exists(source_path):
             raise StorageException('%s does not exist.' % source_path)
