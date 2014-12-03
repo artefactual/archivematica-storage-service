@@ -266,10 +266,18 @@ LOGGING = {
         'logfile': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/tmp/storage_service.log',
+            'filename': '/var/log/archivematica/storage_service.log',
             'formatter': 'detailed',
             'backupCount': 5,
             'maxBytes': 20 * 1024 * 1024,  # 20 MiB
+        },
+        'verboselogfile': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/var/log/archivematica/storage_service_debug.log',
+            'formatter': 'detailed',
+            'backupCount': 5,
+            'maxBytes': 100 * 1024 * 1024,  # 100 MiB
         },
     },
     'loggers': {
@@ -284,18 +292,18 @@ LOGGING = {
             'propagate': True,
         },
         'administration': {
-            'handlers': ['console', 'logfile'],
-            'level': 'INFO',
+            'handlers': ['logfile', 'verboselogfile'],
+            'level': 'DEBUG',
             'propagate': True,
         },
         'common': {
-            'handlers': ['console', 'logfile'],
-            'level': 'INFO',
+            'handlers': ['logfile', 'verboselogfile'],
+            'level': 'DEBUG',
             'propagate': True,
         },
         'locations': {
-            'handlers': ['console', 'logfile'],
-            'level': 'INFO',
+            'handlers': ['logfile', 'verboselogfile'],
+            'level': 'DEBUG',
             'propagate': True,
         },
     },
