@@ -59,7 +59,7 @@ class Duracloud(models.Model):
         :param prefix: All paths returned will start with prefix
         :returns: Iterator of paths
         """
-        params = {'prefix': urllib.quote(prefix)}
+        params = {'prefix': prefix}
         response = self.session.get(self.duraspace_url, params=params)
         if response.status_code != 200:
             raise StorageException('Unable to get list of files in %s' % prefix)
@@ -73,7 +73,7 @@ class Duracloud(models.Model):
         while paths:
             for p in paths:
                 yield p
-            params['marker'] = urllib.quote(paths[-1])
+            params['marker'] = paths[-1]
             response = self.session.get(self.duraspace_url, params=params)
             if response.status_code != 200:
                 raise StorageException('Unable to get list of files in %s' % prefix)
