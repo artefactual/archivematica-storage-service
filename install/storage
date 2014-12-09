@@ -18,6 +18,8 @@ server {
 
     location / {
         uwsgi_pass storage;
+        uwsgi_read_timeout 3600;
+        uwsgi_send_timeout 3600;
         include /etc/nginx/uwsgi_params;
     }
 
