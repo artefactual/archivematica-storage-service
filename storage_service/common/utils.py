@@ -242,3 +242,13 @@ def removedirs(relative_path, base=None):
         except os.error:
             break
         head, tail = os.path.split(head)
+
+def coerce_str(string):
+    """ Return string as a str, not a unicode, encoded in utf-8.
+
+    :param basestring string: String to convert
+    :return: string converted to str, encoded in utf-8 if needed.
+    """
+    if isinstance(string, unicode):
+        return string.encode('utf-8')
+    return string
