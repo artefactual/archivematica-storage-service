@@ -12,6 +12,7 @@ from django.db import models
 import requests
 
 # This project, alphabetical
+from common import utils
 
 # This module, alphabetical
 from . import StorageException
@@ -72,7 +73,7 @@ class Duracloud(models.Model):
         paths = [p.text for p in root]
         while paths:
             for p in paths:
-                yield p
+                yield utils.coerce_str(p)
             params['marker'] = paths[-1]
             response = self.session.get(self.duraspace_url, params=params)
             if response.status_code != 200:
@@ -116,6 +117,10 @@ class Duracloud(models.Model):
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """ Moves src_path to dest_space.staging_path/dest_path. """
+        # Convert unicode strings to byte strings
+        #  .replace() doesn't handle mixed unicode/str well, and it's easiest to put it all in strs
+        src_path = utils.coerce_str(src_path)
+        dest_path = utils.coerce_str(dest_path)
         # Try to fetch if it's a file
         url = self.duraspace_url + urllib.quote(src_path)
         response = self.session.get(url)
@@ -153,6 +158,8 @@ class Duracloud(models.Model):
 
     def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
+        source_path = utils.coerce_str(source_path)
+        destination_path = utils.coerce_str(destination_path)
         if os.path.isdir(source_path):
             # Both source and destination paths should end with /
             destination_path = os.path.join(destination_path, '')
