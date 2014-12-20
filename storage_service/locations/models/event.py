@@ -130,12 +130,20 @@ class Callback(models.Model):
 class File(models.Model):
     uuid = UUIDField(editable=False, unique=True, version=4,
         help_text="Unique identifier")
+    package = models.ForeignKey('Package', null=True)
     name = models.TextField(max_length=1000)
     source_id = models.TextField(max_length=128)
+    source_package = models.TextField(blank=True,
+        help_text="Unique identifier of originating unit")
     # Sized to fit sha512
     checksum = models.TextField(max_length=128)
     stored = models.BooleanField(default=False)
+    accessionid = models.TextField(blank=True,
+        help_text="Accession ID of originating transfer")
+    origin = UUIDField(editable=False, unique=False, version=4, blank=True,
+        help_text="Unique identifier of originating Archivematica dashboard")
+
 
     class Meta:
-        verbose_name = "Callback File"
+        verbose_name = "File"
         app_label = 'locations'
