@@ -454,6 +454,8 @@ class PackageResource(ModelResource):
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/pointer_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('pointer_file_request'), name="pointer_file_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/check_fixity%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('check_fixity_request'), name="check_fixity_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/send_callback/post_store%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('aip_store_callback_request'), name="aip_store_callback_request"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/contents%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view("package_contents"), name="package_contents"),
+            url(r"^(?P<resource_name>%s)/metadata%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view("file_data"), name="file_data"),
 
             # FEDORA/SWORD2 endpoints
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit'), name="sword_deposit"),
@@ -770,3 +772,95 @@ class PackageResource(ModelResource):
             status_code = 200
 
         return (status_code, response)
+
+    @_custom_endpoint(expected_methods=['get'])
+    def package_contents(self, request, bundle, **kwargs):
+        """
+        Returns metadata about every file within a specified Storage Service
+        package, specified via Storage Service UUID.
+
+        The file properties provided are the properties of the ~:class:`~locations.models.event.File` class; see the class definition for more information.
+
+        :returns: a JSON object in the following format:
+        {
+            "success": True,
+            "package": "UUID (as string)",
+            "files": [
+                # array containing zero or more objects containing
+                # all of the file's properties, in the format:
+                {
+                    "source_id": "",
+                    # ...
+                }
+            ]
+        }
+        """
+        response = {
+            "success": True,
+            "package": bundle.obj.uuid,
+            "files": []
+        }
+
+        for f in bundle.obj.file_set.all():
+            response["files"].append({attr: getattr(f, attr) for attr in ('source_id', 'name', 'source_package', 'checksum', 'accessionid', 'origin')})
+
+        return http.HttpResponse(status=200, content=json.dumps(response),
+            content_type='application/json')
+
+    def file_data(self, request, **kwargs):
+        """
+        Returns file metadata as a JSON array of objects.
+
+        This maps properties of the File class to the names of the
+        Elasticsearch indices' Transferfile index, allowing this to directly
+        substitute for Elasticsearch when looking up metadata on specific files.
+
+        Acceptable parameters are:
+            * relative_path (searches the `name` field)
+            * fileuuid (searches the `source_id` field)
+            * accessionid (searches the `accessionid` field)
+            * sipuuid (searches the `source_package` field)
+
+        :returns: an array of one or more objects. See the transferfile
+        index for information on the return format.
+        If no results are found for the specified query, returns 404.
+        If no acceptable query parameters are found, returns 400.
+        """
+        property_map = {
+            "relative_path": "name",
+            "fileuuid": "source_id",
+            "accessionid": "accessionid",
+            "sipuuid": "source_package"
+        }
+        query = {}
+        for source, dest in property_map.iteritems():
+            try:
+                query[dest] = request.GET[source]
+            except KeyError:
+                pass
+
+        if not query:
+            response = {
+                "success": False,
+                "error": "No supported query properties found!"
+            }
+            return http.HttpBadRequest(content=json.dumps(response),
+                content_type="application/json")
+
+        files = File.objects.filter(**query)
+        if not files.exists():
+            return http.HttpNotFound()
+
+        response = []
+        for f in files:
+            response.append({
+                "accessionid": f.accessionid,
+                "file_extension": os.path.splitext(f.name)[1],
+                "filename": os.path.basename(f.name),
+                "relative_path": f.name,
+                "fileuuid": f.source_id,
+                "origin": f.origin,
+                "sipuuid": f.source_package
+            })
+
+        return http.HttpResponse(content=json.dumps(response), content_type="application/json")

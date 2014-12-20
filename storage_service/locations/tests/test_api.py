@@ -60,3 +60,30 @@ class TestAPI(TestCase):
         response = self.client.post('/api/v2/location/213086c8-232e-4b9e-bb03-98fbc7a7966a/', data=json.dumps(data), content_type='application/json')
         # Verify error
         assert response.status_code == 404
+
+    def test_file_data_returns_metadata_given_relative_path(self):
+        path = 'test_sip/objects/file.txt'
+        response = self.client.get('/api/v2/file/metadata/',
+                                   {'relative_path': path})
+        assert response.status_code == 200
+        assert response['content-type'] == 'application/json'
+        body = json.loads(response.content)
+        assert body[0]['relative_path'] == path
+        assert body[0]['fileuuid'] == '86bfde11-e2a1-4ee7-b98d-9556b5f05198'
+
+    def test_file_data_returns_bad_response_with_no_accepted_parameters(self):
+        response = self.client.post('/api/v2/file/metadata/')
+        assert response.status_code == 400
+
+    def test_file_data_returns_404_if_no_file_found(self):
+        response = self.client.get('/api/v2/file/metadata/', {'fileuuid': 'nosuchfile'})
+        assert response.status_code == 404
+
+    def test_package_contents_returns_metadata(self):
+        response = self.client.get('/api/v2/file/e0a41934-c1d7-45ba-9a95-a7531c063ed1/contents/')
+        assert response.status_code == 200
+        assert response['content-type'] == 'application/json'
+        body = json.loads(response.content)
+        assert body['success'] is True
+        assert len(body['files']) == 1
+        assert body['files'][0]['name'] == 'test_sip/objects/file.txt'
