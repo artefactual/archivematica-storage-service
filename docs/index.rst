@@ -17,7 +17,7 @@ This documentation describes the Storage Service, used by Archivematica to manag
 archival storage and transfer locations and packages.
 
 For installation instructions, please see
-:ref:`Archivematica installation <archivematica:installation>`.
+:ref:`Archivematica installation <archivematica:installation>`
 
 Contents:
 
