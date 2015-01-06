@@ -32,6 +32,14 @@ class TestDuracloud(TestCase):
         assert resp['directories'] == ['pictures']
         assert resp['entries'] == ['799px-Euroleague-LE Roma vs Toulouse IC-27.bmp', 'BBhelmet.ai', 'G31DS.TIF', 'lion.svg', 'Nemastylis_geminiflora_Flower.PNG', 'oakland03.jp2', 'pictures', 'Vector.NET-Free-Vector-Art-Pack-28-Freedom-Flight.eps', 'WFPC01.GIF']
 
+    @vcr.use_cassette('locations/fixtures/vcr_cassettes/duracloud_browse_split_files.yaml')
+    def test_browse_split_files(self):
+        # Hide split files
+        resp = self.ds_object.browse('chunked')
+        assert resp
+        assert resp['directories'] == []
+        assert resp['entries'] == ['chunked_image.jpg']
+
     @vcr.use_cassette('locations/fixtures/vcr_cassettes/duracloud_delete_file.yaml')
     def test_delete_file(self):
         # Delete file

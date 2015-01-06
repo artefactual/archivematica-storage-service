@@ -41,6 +41,8 @@ class Duracloud(models.Model):
         Location.BACKLOG,
     ]
 
+    MANIFEST_SUFFIX = '.dura-manifest'
+
     def __init__(self, *args, **kwargs):
         super(Duracloud, self).__init__(*args, **kwargs)
         self._session = None
@@ -56,11 +58,12 @@ class Duracloud(models.Model):
     def duraspace_url(self):
         return 'https://' + self.host + '/durastore/' + self.duraspace + '/'
 
-    def _get_files_list(self, prefix):
+    def _get_files_list(self, prefix, show_split_files=True):
         """
         Generator function to return the full path of all files starting with prefix.
 
         :param prefix: All paths returned will start with prefix
+        :param bool show_split_files: If True, will show files ending with .dura-chunk-#### and .dura-manifest. If False, will show the original file name (everything before .dura-manifest)
         :returns: Iterator of paths
         """
         params = {'prefix': prefix}
@@ -79,8 +82,19 @@ class Duracloud(models.Model):
         paths = [p.text for p in root]
         LOGGER.debug('Paths first 10: %s', paths[:10])
         LOGGER.debug('Paths last 10: %s', paths[-10:])
+        durachunk_regex = r'.dura-chunk-\d{4}$'
+        duramanifest_len = len(self.MANIFEST_SUFFIX)
         while paths:
             for p in paths:
+                if not show_split_files:
+                    # There is exactly one .dura-manifest for chunked files
+                    # Return the original filename when we find a manifest file
+                    if p.endswith(self.MANIFEST_SUFFIX):
+                        yield p[:-duramanifest_len]
+                        continue
+                    # File chunks skipped - manifest returns original filename
+                    if re.search(durachunk_regex, p):
+                        continue
                 yield utils.coerce_str(p)
             params['marker'] = paths[-1]
             LOGGER.debug('URL: %s, params: %s', self.duraspace_url, params)
@@ -100,7 +114,7 @@ class Duracloud(models.Model):
         entries = set()
         directories = set()
         # Handle paths one at a time to deal with lots of files
-        paths = self._get_files_list(path)
+        paths = self._get_files_list(path, show_split_files=False)
         for p in paths:
             path_parts = p.replace(path, '', 1).split('/')
             dirname = path_parts[0]
