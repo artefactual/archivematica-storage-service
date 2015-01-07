@@ -3,6 +3,7 @@ import json
 import logging
 from lxml import etree
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -22,6 +23,7 @@ from common import utils
 from . import StorageException
 from location import Location
 from space import Space
+from event import File
 
 __all__ = ('Package', )
 
@@ -560,6 +562,137 @@ class Package(models.Model):
 
         return (compressed_filename, extract_path)
 
+    def _parse_mets(self, prefix=None, relative_path=['metadata', 'submissionDocumentation', 'METS.xml']):
+        """
+        Parses a transfer's METS file, and returns a dict with metadata about
+        the transfer and each file it contains.
+
+        :param prefix: The location of the transfer containing the METS file
+            to parse. If not provided, self.full_path is used.
+        :param relative_path: An array containing one or more path components.
+            These will be joined together with the prefix to produce the
+            complete path of the METS within this transfer.
+        :return: A dict in the following structure:
+            {
+                "transfer_uuid": "The UUID of the originating transfer",
+                "creation_date": "The date the transfer METS was created, in ISO 8601 format",
+                "dashboard_uuid": "The UUID of the originating dashboard",
+                "files": [
+                    # An array of zero or more dicts representing file
+                    # metadata, in the following format:
+                    {
+                        "file_uuid": "The UUID of the file",
+                        "path": "The full path of the file within the transfer,
+                                 including the transfer's root directory."
+                    }
+                ]
+            }
+        :raises StorageException: if the requested METS file cannot be found,
+            or if required elements are missing.
+        """
+        if prefix is None:
+            prefix = self.full_path
+
+        mets_path = os.path.join(prefix, *relative_path)
+        if not os.path.isfile(mets_path):
+            raise StorageException("No METS found at location: {}".format(mets_path))
+
+        doc = etree.parse(mets_path)
+
+        namespaces = {'m': utils.NSMAP['mets'],
+                      'p': utils.NSMAP['premis']}
+        mets = doc.xpath('/m:mets', namespaces=namespaces)
+        if not mets:
+            raise StorageException("<mets> element not found in METS file!")
+        else:
+            mets = mets[0]
+
+        try:
+            transfer_uuid = mets.attrib['OBJID']
+        except KeyError:
+            raise StorageException("<mets> element did not have an OBJID attribute!")
+
+        header = doc.find('m:metsHdr', namespaces=namespaces)
+        if header is None:
+            raise StorageException("<metsHdr> element not found in METS file!")
+
+        try:
+            creation_date = header.attrib['CREATEDATE']
+        except KeyError:
+            raise StorageException("<metsHdr> element did not have a CREATEDATE attribute!")
+
+        accession_id = header.findtext('./m:altRecordID[@TYPE="Accession number"]', namespaces=namespaces) or ''
+
+        agent = header.xpath('./m:agent[@ROLE="CREATOR"][@TYPE="OTHER"][@OTHERTYPE="SOFTWARE"]/m:note[.="Archivematica dashboard UUID"]/../m:name',
+                             namespaces=namespaces)
+        if not agent:
+            raise StorageException("No <agent> element found!")
+        dashboard_uuid = agent[0].text
+
+        files = mets.xpath('.//m:FLocat', namespaces=namespaces)
+        package_basename = os.path.basename(self.current_path)
+
+        files_data = []
+        for f in files:
+            file_id = f.getparent().attrib['ID']
+
+            # Only include files listed in the "processed" structMap;
+            # some files may not be present in this transfer.
+            if mets.find('./m:structMap[@LABEL="processed"]//m:fptr[@FILEID="{}"]'.format(file_id), namespaces=namespaces) is None:
+                continue
+
+            relative_path = f.attrib['{' + utils.NSMAP['xlink'] + '}href']
+            uuid = file_id[-36:]
+
+            # If the filename has been sanitized, the path in the fileSec
+            # may be outdated; check for a cleanup event and use that,
+            # if present.
+            cleanup_events = mets.xpath('m:amdSec[@ID="digiprov-{}"]/m:digiprovMD/m:mdWrap/m:xmlData/p:event/p:eventType[text()="name cleanup"]/../p:eventOutcomeInformation/p:eventOutcomeDetail/p:eventOutcomeDetailNote/text()'.format(uuid), namespaces=namespaces)
+            if cleanup_events:
+                cleaned_up_name = re.match(r'.*cleaned up name="(.*)"$', cleanup_events[0])
+                if cleaned_up_name:
+                    relative_path = cleaned_up_name.groups()[0].replace('%transferDirectory%', '', 1)
+
+            file_data = {
+                "path": os.path.join(package_basename, relative_path),
+                "file_uuid": uuid
+            }
+
+            files_data.append(file_data)
+
+        return {
+            "transfer_uuid": transfer_uuid,
+            "creation_date": creation_date,
+            "dashboard_uuid": dashboard_uuid,
+            "accession_id": accession_id,
+            "files": files_data
+        }
+
+    def index_file_data_from_transfer_mets(self, prefix=None):
+        """
+        Attempts to read an Archivematica transfer METS file inside this
+        package, then uses the retrieved metadata to generate one entry in the
+        File table in the database for each file inside the package.
+
+        :param prefix: The location of the transfer containing the METS file
+            to parse. If not provided, self.full_path is used.
+        :raises StorageException: if the transfer METS cannot be found,
+            or if required elements are missing.
+        """
+        if prefix is None:
+            prefix = self.full_path
+
+        file_data = self._parse_mets(prefix=prefix)
+
+        for f in file_data['files']:
+            File.objects.create(source_id=f['file_uuid'],
+                                source_package=file_data['transfer_uuid'],
+                                accessionid=file_data['accession_id'],
+                                package=self,
+                                name=f['path'],
+                                origin=file_data['dashboard_uuid'])
+
+
     def backlog_transfer(self, origin_location, origin_path):
         """
         Stores a package in backlog.
@@ -590,6 +723,12 @@ class Package(models.Model):
             source_path=os.path.join(self.origin_location.relative_path, self.origin_path),
             destination_path=self.current_path,  # This should include Location.path
             destination_space=dest_space)
+
+        try:
+            self.index_file_data_from_transfer_mets(prefix=os.path.join(dest_space.staging_path, self.current_path))  # create File entries for every file in the transfer
+        except StorageException as e:
+            LOGGER.warning("Transfer METS data could not be read: %s", str(e))
+
         dest_space.move_from_storage_service(
             source_path=self.current_path,  # This should include Location.path
             destination_path=os.path.join(self.current_location.relative_path, self.current_path),
