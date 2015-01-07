@@ -3,6 +3,7 @@ import logging
 from lxml import etree
 import os
 import re
+import shutil
 import urllib
 
 # Core Django, alphabetical
@@ -142,6 +143,71 @@ class Duracloud(models.Model):
                 url = self.duraspace_url + urllib.quote(d)
                 response = self.session.delete(url)
 
+    def _download_file(self, url, download_path, expected_size=0, checksum=None):
+        """
+        Helper to download files from DuraCloud.
+
+        :param url: URL to fetch the file from.
+        :param download_path: Absolute path to store the downloaded file at.
+        :return: True on success, False if file not found
+        :raises: StorageException if response code not 200 or 404
+        """
+        LOGGER.debug('URL: %s', url)
+        response = self.session.get(url)
+        LOGGER.debug('Response: %s', response)
+        if response.status_code == 404:
+            # Check if chunked by looking for a .dura-manifest
+            manifest_url = url + self.MANIFEST_SUFFIX
+            LOGGER.debug('Manifest URL: %s', manifest_url)
+            response = self.session.get(manifest_url)
+            LOGGER.debug('Response: %s', response)
+            # No manifest - this file does not exist
+            if not response.ok:
+                return False
+
+            # Get chunks, expected size, checksum
+            root = etree.fromstring(response.content)
+            expected_size = int(root.findtext('header/sourceContent/byteSize'))
+            checksum = root.findtext('header/sourceContent/md5')
+            chunk_elements = [e for e in root.findall('chunks/chunk')]
+            # Download each chunk and append to original file
+            self.space._create_local_directory(download_path)
+            LOGGER.debug('Writing to %s', download_path)
+            with open(download_path, 'wb') as output_f:
+                for e in chunk_elements:
+                    # Parse chunk element
+                    chunk = e.attrib['chunkId']
+                    size = int(e.findtext('byteSize'))
+                    md5 = e.findtext('md5')
+                    # Download
+                    chunk_url = self.duraspace_url + urllib.quote(chunk)
+                    LOGGER.debug('Chunk URL: %s', chunk_url)
+                    chunk_path = chunk_url.replace(url, download_path)
+                    LOGGER.debug('Chunk path: %s', chunk_path)
+                    self._download_file(chunk_url, chunk_path, size, md5)
+                    # Append to output
+                    shutil.copyfileobj(open(chunk_path, 'rb'), output_f)
+                    # Delete chunk_path
+                    os.remove(chunk_path)
+        elif response.status_code != 200:
+            LOGGER.warning('Response: %s when fetching %s', response, url)
+            LOGGER.warning('Response text: %s', response.text)
+            raise StorageException('Unable to fetch %s' % url)
+        else:  # Status code 200 - file exists
+            self.space._create_local_directory(download_path)
+            LOGGER.debug('Writing to %s', download_path)
+            with open(download_path, 'wb') as f:
+                f.write(response.content)
+
+        # Verify file, if size or checksum is known
+        if expected_size and os.path.getsize(download_path) != expected_size:
+            raise StorageException('File %s does not match expected size of %s bytes, but was actually %s bytes', download_path, expected_size, os.path.getsize(download_path))
+        calculated_checksum = utils.generate_checksum(download_path, 'md5')
+        if checksum and checksum != calculated_checksum.hexdigest():
+            raise StorageException('File %s does not match expected checksum of %s, but was actually %s', download_path, checksum, calculated_checksum.hexdigest())
+
+        return True
+
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """ Moves src_path to dest_space.staging_path/dest_path. """
         # Convert unicode strings to byte strings
@@ -150,8 +216,8 @@ class Duracloud(models.Model):
         dest_path = utils.coerce_str(dest_path)
         # Try to fetch if it's a file
         url = self.duraspace_url + urllib.quote(src_path)
-        response = self.session.get(url)
-        if response.status_code == 404:
+        success = self._download_file(url, dest_path)
+        if not success:
             LOGGER.debug('%s not found, trying as folder', src_path)
             # File cannot be found - this may be a folder
             # Remove /. and /* at the end of the string. These glob-match on a
@@ -161,27 +227,11 @@ class Duracloud(models.Model):
             src_path = re.sub(find_regex, '/', src_path)
             dest_path = re.sub(find_regex, '/', dest_path)
             LOGGER.debug('Modified paths: src: %s dest: %s', src_path, dest_path)
-            to_get = self._get_files_list(src_path)
+            to_get = self._get_files_list(src_path, show_split_files=False)
             for entry in to_get:
-                dest = entry.replace(src_path, dest_path, 1)
                 url = self.duraspace_url + urllib.quote(entry)
-                LOGGER.debug('Getting %s', url)
-                response = self.session.get(url)
-                if response.status_code != 200:
-                    LOGGER.warning('Response: %s when fetching %s', response, url)
-                    LOGGER.warning('Response text: %s', response.text)
-                    raise StorageException('Unable to fetch %s' % entry)
-                self.space._create_local_directory(dest)
-                LOGGER.debug('Writing %s to %s', entry, dest)
-                with open(dest, 'wb') as f:
-                    f.write(response.content)
-        elif response.status_code != 200:
-            raise StorageException('Unable to fetch %s' % src_path)
-        else:  # status_code == 200
-            self.space._create_local_directory(dest_path)
-            LOGGER.debug('Writing to %s', dest_path)
-            with open(dest_path, 'wb') as f:
-                f.write(response.content)
+                dest = entry.replace(src_path, dest_path, 1)
+                self._download_file(url, dest)
 
     def _upload_file(self, url, upload_file):
         # Example URL: https://trial.duracloud.org/durastore/trial261//ts/test.txt

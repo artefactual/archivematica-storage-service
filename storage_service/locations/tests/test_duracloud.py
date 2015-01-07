@@ -175,3 +175,19 @@ class TestDuracloud(TestCase):
         # Cleanup
         os.remove('move_to_ss_percent_dir/bad #name.txt')
         os.removedirs('move_to_ss_percent_dir')
+
+    @vcr.use_cassette('locations/fixtures/vcr_cassettes/duracloud_move_to_ss_chunked_file.yaml')
+    def test_move_to_ss_chunked_file(self):
+        # chunked #image.jpg is actually chunked
+        self.ds_object.move_to_storage_service('chunked/chunked #image.jpg', 'move_to_ss_chunked/chunked #image.jpg', None)
+        # Verify
+        assert os.path.isdir('move_to_ss_chunked')
+        assert not os.path.exists('move_to_ss_chunked/chunked #image.jpg.dura-manifest')
+        assert not os.path.exists('move_to_ss_chunked/chunked #image.jpg.dura-chunk-0000')
+        assert not os.path.exists('move_to_ss_chunked/chunked #image.jpg.dura-chunk-0001')
+        assert os.path.isfile('move_to_ss_chunked/chunked #image.jpg')
+        assert os.path.getsize('move_to_ss_chunked/chunked #image.jpg') == 158131
+
+        # Cleanup
+        os.remove('move_to_ss_chunked/chunked #image.jpg')
+        os.removedirs('move_to_ss_chunked')
