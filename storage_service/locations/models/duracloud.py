@@ -43,6 +43,7 @@ class Duracloud(models.Model):
     ]
 
     MANIFEST_SUFFIX = '.dura-manifest'
+    CHUNK_SIZE = 5 * 1024 * 1024 * 1024  # 5 GB
 
     def __init__(self, *args, **kwargs):
         super(Duracloud, self).__init__(*args, **kwargs)
@@ -234,13 +235,86 @@ class Duracloud(models.Model):
                 self._download_file(url, dest)
 
     def _upload_file(self, url, upload_file):
-        # Example URL: https://trial.duracloud.org/durastore/trial261//ts/test.txt
-        with open(upload_file, 'rb') as f:
-            response = self.session.put(url, data=f)
-        LOGGER.info('Response from %s: %s', url, response)
-        if response.status_code != 201:
-            LOGGER.warning('Response text: %s', response.text)
-            raise StorageException('Unable to store %s' % upload_file)
+        """
+        Helper to upload files to Duracloud.
+
+        :param url: URL to upload the file to.
+        :param upload_file: Absolute path to the file to upload.
+        :returns: None
+        :raises: StorageException if error storing file
+        """
+        LOGGER.debug('Upload %s to %s', upload_file, url)
+        filesize = os.path.getsize(upload_file)
+        if filesize > self.CHUNK_SIZE:
+            LOGGER.debug('%s size (%s) larger than %s', upload_file, filesize, self.CHUNK_SIZE)
+            # Create manifest info for complete file.  Eg:
+            # <header schemaVersion="0.2">
+            #   <sourceContent contentId="chunked/chunked_image.jpg">
+            #     <mimetype>application/octet-stream</mimetype>
+            #     <byteSize>2222135</byteSize>
+            #     <md5>9497f70a1a17943ddfcbed567538900d</md5>
+            #   </sourceContent>
+            # </header>
+            relative_path = urllib.unquote(url.replace(self.duraspace_url, '', 1))
+            LOGGER.debug('File name: %s', relative_path)
+            checksum = utils.generate_checksum(upload_file, 'md5')
+            root = etree.Element('{duracloud.org}chunksManifest', nsmap={'dur': 'duracloud.org'})
+            header = etree.SubElement(root, 'header', schemaVersion="0.2")
+            content = etree.SubElement(header, 'sourceContent', contentId=relative_path)
+            etree.SubElement(content, 'mimetype').text = 'application/octet-stream'
+            etree.SubElement(content, 'byteSize').text = str(filesize)
+            etree.SubElement(content, 'md5').text = checksum.hexdigest()
+            chunks = etree.SubElement(root, 'chunks')
+            # Split file into chunks
+            with open(upload_file, 'rb') as f:
+                i = 0
+                chunk_data = f.read(self.CHUNK_SIZE)
+                while chunk_data:
+                    # Setup chunk info
+                    chunk_suffix = '.dura-chunk-' + str(i).zfill(4)
+                    chunk_path = upload_file + chunk_suffix
+                    LOGGER.debug('Chunk path: %s', chunk_path)
+                    chunk_url = url + chunk_suffix
+                    LOGGER.debug('Chunk URL: %s', chunk_url)
+                    chunkid = relative_path + chunk_suffix
+                    LOGGER.debug('Chunk ID: %s', chunkid)
+                    # Write chunk
+                    with open(chunk_path, 'wb') as fchunk:
+                        fchunk.write(chunk_data)
+                    # Make chunk element
+                    # <chunk chunkId="chunked/chunked_image.jpg.dura-chunk-0000" index="0">
+                    #   <byteSize>2097152</byteSize>
+                    #   <md5>ddbb227beaac5a9dc34eb49608997abf</md5>
+                    # </chunk>
+                    checksum = utils.generate_checksum(chunk_path)
+                    chunk_e = etree.SubElement(chunks, 'chunk', chunkId=chunkid)
+                    etree.SubElement(chunk_e, 'byteSize').text = str(os.path.getsize(chunk_path))
+                    etree.SubElement(chunk_e, 'md5').text = checksum.hexdigest()
+                    # Upload chunk
+                    self._upload_file(chunk_url, chunk_path)
+                    # Delete chunk
+                    os.remove(chunk_path)
+                    # Read next chunk
+                    chunk_data = f.read(self.CHUNK_SIZE)
+                    i += 1
+            # Write .dura-manifest
+            manifest_path = upload_file + self.MANIFEST_SUFFIX
+            manifest_url = url + self.MANIFEST_SUFFIX
+            with open(manifest_path, 'w') as f:
+                f.write(etree.tostring(root, pretty_print=True, xml_declaration=True, encoding='UTF-8'))
+            # Upload .dura-manifest
+            self._upload_file(manifest_url, manifest_path)
+            os.remove(manifest_path)
+            # TODO what if .dura-manifest over chunksize?
+        else:
+            # Example URL: https://trial.duracloud.org/durastore/trial261//ts/test.txt
+            LOGGER.debug('PUT URL: %s', url)
+            with open(upload_file, 'rb') as f:
+                response = self.session.put(url, data=f)
+            LOGGER.debug('Response: %s', response)
+            if response.status_code != 201:
+                LOGGER.warning('%s: Response: %s', response, response.text)
+                raise StorageException('Unable to store %s' % upload_file)
 
     def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
