@@ -125,6 +125,26 @@ class TestDuracloud(TestCase):
         os.remove('bad #name.txt')
         requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/test/bad%20%23name.txt', auth=self.auth)
 
+    @vcr.use_cassette('locations/fixtures/vcr_cassettes/duracloud_move_from_ss_chunked.yaml')
+    def test_move_from_ss_chunked_file(self):
+        file_path = 'locations/fixtures/chunk_file.jpg'
+        self.ds_object.CHUNK_SIZE = 100 * 1024  # Set testing chunk size
+        # Upload
+        self.ds_object.move_from_storage_service(file_path, 'chunked/chunked #image.jpg')
+        # Verify
+        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked%20%23image.jpg', auth=self.auth)
+        assert response.status_code == 404
+        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked%20%23image.jpg.dura-manifest', auth=self.auth)
+        assert response.status_code == 200
+        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked%20%23image.jpg.dura-chunk-0000', auth=self.auth)
+        assert response.status_code == 200
+        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked%20%23image.jpg.dura-chunk-0001', auth=self.auth)
+        assert response.status_code == 200
+        # Cleanup
+        requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/chunked/chunked%20%23image.jpg.dura-manifest', auth=self.auth)
+        requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/chunked/chunked%20%23image.jpg.dura-chunk-0000', auth=self.auth)
+        requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/chunked/chunked%20%23image.jpg.dura-chunk-0001', auth=self.auth)
+
     @vcr.use_cassette('locations/fixtures/vcr_cassettes/duracloud_move_to_ss_file.yaml')
     def test_move_to_ss_file(self):
         # Test file
