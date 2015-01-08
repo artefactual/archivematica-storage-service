@@ -134,10 +134,24 @@ class Duracloud(models.Model):
         # BUG If delete_path is a folder but provided without a trailing /, will delete a file with the same name.
         # Files
         url = self.duraspace_url + urllib.quote(delete_path)
+        LOGGER.debug('URL: %s', url)
         response = self.session.delete(url)
+        LOGGER.debug('Response: %s', response)
         if response.status_code == 404:
-            # File cannot be found - this may be a folder
-            to_delete = self._get_files_list(delete_path)
+            # Check if this is a chunked file
+            manifest_url = url + self.MANIFEST_SUFFIX
+            LOGGER.debug('Manifest URL: %s', manifest_url)
+            response = self.session.get(manifest_url)
+            LOGGER.debug('Response: %s', response)
+            if response.ok:
+                # Get list of file chunks
+                root = etree.fromstring(response.content)
+                to_delete = [e.attrib['chunkId'] for e in root.findall('chunks/chunk')]
+                to_delete.append(delete_path + self.MANIFEST_SUFFIX)
+                LOGGER.debug('Chunks to delete: %s', to_delete)
+            else:
+                # File cannot be found - this may be a folder
+                to_delete = self._get_files_list(delete_path, show_split_files=True)
             # Do not support globbing for delete - do not want to accidentally
             # delete something
             for d in to_delete:

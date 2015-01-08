@@ -42,33 +42,66 @@ class TestDuracloud(TestCase):
 
     @vcr.use_cassette('locations/fixtures/vcr_cassettes/duracloud_delete_file.yaml')
     def test_delete_file(self):
+        # Verify exists
+        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg', auth=self.auth)
+        assert response.status_code == 200
         # Delete file
-        self.ds_object.delete_path('delete/delete.zip')
+        self.ds_object.delete_path('delete/delete.svg')
         # Verify deleted
-        response = requests.get('https://archivematica.duracloud.org/durastore/testing/delete/delete.zip', auth=self.auth)
+        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg', auth=self.auth)
         assert response.status_code == 404
 
     @vcr.use_cassette('locations/fixtures/vcr_cassettes/duracloud_delete_folder.yaml')
     def test_delete_folder(self):
+        # Verify exists
+        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete/delete.svg', auth=self.auth)
+        assert response.status_code == 200
+        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg', auth=self.auth)
+        assert response.status_code == 200
         # Delete folder
         # BUG If delete_path is a folder but provided without a trailing /, will deleted a file with the same name.
-        self.ds_object.delete_path('SampleTransfers/delete/')
+        self.ds_object.delete_path('delete/delete/')
         # Verify deleted
-        response = requests.get('https://archivematica.duracloud.org/durastore/testing/SampleTransfers/delete/delete.svg', auth=self.auth)
+        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete/delete.svg', auth=self.auth)
         assert response.status_code == 404
         # Verify that file with same prefix not deleted
-        response = requests.get('https://archivematica.duracloud.org/durastore/testing/SampleTransfers/delete.svg', auth=self.auth)
+        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg', auth=self.auth)
         assert response.status_code == 200
 
     @vcr.use_cassette('locations/fixtures/vcr_cassettes/duracloud_delete_percent_encoding.yaml')
     def test_delete_percent_encoding(self):
-        response = requests.get('https://archivematica.duracloud.org/durastore/testing/delete/delete%20%23.txt', auth=self.auth)
+        # Verify exists
+        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete%20%23.svg', auth=self.auth)
         assert response.status_code == 200
         # Delete file
-        self.ds_object.delete_path('delete/delete #.txt')
+        self.ds_object.delete_path('delete/delete #.svg')
         # Verify deleted
-        response = requests.get('https://archivematica.duracloud.org/durastore/testing/delete/delete%20%23.txt', auth=self.auth)
+        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete%20%23.svg', auth=self.auth)
         assert response.status_code == 404
+
+    @vcr.use_cassette('locations/fixtures/vcr_cassettes/duracloud_delete_chunked_file.yaml')
+    def test_delete_chunked_file(self):
+        # Ensure file exists
+        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg', auth=self.auth)
+        assert response.status_code == 404
+        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dura-manifest', auth=self.auth)
+        assert response.status_code == 200
+        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dnd', auth=self.auth)
+        assert response.status_code == 200
+        # Delete file
+        self.ds_object.delete_path('delete/delete.svg')
+        # Verify deleted
+        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg', auth=self.auth)
+        assert response.status_code == 404
+        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dura-manifest', auth=self.auth)
+        assert response.status_code == 404
+        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dura-chunk-0000', auth=self.auth)
+        assert response.status_code == 404
+        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dura-chunk-0001', auth=self.auth)
+        assert response.status_code == 404
+        # Verify file with same prefix not deleted
+        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dnd', auth=self.auth)
+        assert response.status_code == 200
 
     @vcr.use_cassette('locations/fixtures/vcr_cassettes/duracloud_move_from_ss_file.yaml')
     def test_move_from_ss_file(self):
