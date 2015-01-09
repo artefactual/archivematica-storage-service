@@ -28,7 +28,7 @@
           <form action="{% url view_name %}" method="post">
             {% csrf_token %}
             {{ req.form.as_p }}
-            <input type="submit" name="approve" value="Approve ({{ event_type | title }} AIP)" class='btn' />
+            <input type="submit" name="approve" value="Approve ({{ config.event_type | title }} AIP)" class='btn' />
             <input type="submit" name="reject" value="Reject (No change to AIP)" class='btn btn-primary' />
           </form>
         </td>
