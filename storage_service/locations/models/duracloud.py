@@ -1,4 +1,5 @@
 # stdlib, alphabetical
+import datetime
 import logging
 from lxml import etree
 import os
@@ -179,13 +180,19 @@ class Duracloud(models.Model):
         :raises: StorageException if response code not 200 or 404
         """
         LOGGER.debug('URL: %s', url)
+        start = datetime.datetime.now()
         response = self.session.get(url)
+        end = datetime.datetime.now()
+        LOGGER.info('Fetching URL: %s', end - start)
         LOGGER.debug('Response: %s', response)
         if response.status_code == 404:
             # Check if chunked by looking for a .dura-manifest
             manifest_url = url + self.MANIFEST_SUFFIX
             LOGGER.debug('Manifest URL: %s', manifest_url)
+            start = datetime.datetime.now()
             response = self.session.get(manifest_url)
+            end = datetime.datetime.now()
+            LOGGER.info('Fetching manifest: %s', end - start)
             LOGGER.debug('Response: %s', response)
             # No manifest - this file does not exist
             if not response.ok:
@@ -223,15 +230,21 @@ class Duracloud(models.Model):
         else:  # Status code 200 - file exists
             self.space._create_local_directory(download_path)
             LOGGER.debug('Writing to %s', download_path)
+            start = datetime.datetime.now()
             with open(download_path, 'wb') as f:
                 f.write(response.content)
+            end = datetime.datetime.now()
+            LOGGER.info('Writing to disk: %s', end - start)
 
         # Verify file, if size or checksum is known
+        start = datetime.datetime.now()
         if expected_size and os.path.getsize(download_path) != expected_size:
             raise StorageException('File %s does not match expected size of %s bytes, but was actually %s bytes', download_path, expected_size, os.path.getsize(download_path))
         calculated_checksum = utils.generate_checksum(download_path, 'md5')
         if checksum and checksum != calculated_checksum.hexdigest():
             raise StorageException('File %s does not match expected checksum of %s, but was actually %s', download_path, checksum, calculated_checksum.hexdigest())
+        end = datetime.datetime.now()
+        LOGGER.info('Verify size & checksum: %s', end - start)
 
         return True
 

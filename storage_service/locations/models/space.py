@@ -1,4 +1,5 @@
 # stdlib, alphabetical
+import datetime
 import errno
 import logging
 import os
@@ -212,7 +213,7 @@ class Space(models.Model):
         LOGGER.debug('TO: src: %s', source_path)
         LOGGER.debug('TO: dst: %s', destination_path)
         LOGGER.debug('TO: staging: %s', destination_space.staging_path)
-
+        start = datetime.datetime.now()
         # TODO enforce source_path is inside self.path
         # Path pre-processing
         source_path = os.path.join(self.path, source_path)
@@ -228,6 +229,8 @@ class Space(models.Model):
                 source_path, destination_path, destination_space, *args, **kwargs)
         except AttributeError:
             raise NotImplementedError('{} space has not implemented move_to_storage_service'.format(self.get_access_protocol_display()))
+        end = datetime.datetime.now()
+        LOGGER.info('Total: %s', end - start)
 
     def post_move_to_storage_service(self, *args, **kwargs):
         """ Hook for any actions that need to be taken after moving to the storage service. """
