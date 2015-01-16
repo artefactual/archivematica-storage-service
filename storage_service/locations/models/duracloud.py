@@ -181,7 +181,7 @@ class Duracloud(models.Model):
         """
         LOGGER.debug('URL: %s', url)
         start = datetime.datetime.now()
-        response = self.session.get(url)
+        response = self.session.get(url, stream=True)
         end = datetime.datetime.now()
         LOGGER.info('Fetching URL: %s', end - start)
         LOGGER.debug('Response: %s', response)
@@ -232,7 +232,8 @@ class Duracloud(models.Model):
             LOGGER.debug('Writing to %s', download_path)
             start = datetime.datetime.now()
             with open(download_path, 'wb') as f:
-                f.write(response.content)
+                for chunk in response.iter_content(4 * 1024):
+                    f.write(chunk)
             end = datetime.datetime.now()
             LOGGER.info('Writing to disk: %s', end - start)
 
