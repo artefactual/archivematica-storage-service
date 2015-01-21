@@ -43,7 +43,7 @@ class Duracloud(models.Model):
     ]
 
     MANIFEST_SUFFIX = '.dura-manifest'
-    CHUNK_SIZE = 5 * 1024 * 1024 * 1024  # 5 GB
+    CHUNK_SIZE = 1 * 1024 * 1024 * 1024  # 1 GB 
 
     def __init__(self, *args, **kwargs):
         super(Duracloud, self).__init__(*args, **kwargs)
