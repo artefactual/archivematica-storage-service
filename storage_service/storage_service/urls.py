@@ -93,9 +93,11 @@ def startup():
         try:
             new_loc, created = locations_models.Location.objects.get_or_create(
                 purpose=loc_info['purpose'],
-                space=space,
-                relative_path=loc_info['relative_path'],
-                description=loc_info['description'])
+                defaults={
+                    'space': space,
+                    'relative_path': loc_info['relative_path'],
+                    'description': loc_info['description']
+                })
             if created:
                 LOGGER.info('Created default %s Location %s', loc_info['purpose'], new_loc)
         except locations_models.Location.MultipleObjectsReturned:
