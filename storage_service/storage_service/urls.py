@@ -91,7 +91,7 @@ def startup():
 
     for loc_info in default_locations:
         try:
-            new_loc, created = locations_models.Location.objects.get_or_create(
+            new_loc, created = locations_models.Location.active.get_or_create(
                 purpose=loc_info['purpose'],
                 defaults={
                     'space': space,
