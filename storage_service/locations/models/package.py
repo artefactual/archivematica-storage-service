@@ -201,7 +201,7 @@ class Package(models.Model):
         if local_path:
             return local_path
         # Not locally accessible, so copy to SS internal temp dir
-        ss_internal = Location.objects.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
+        ss_internal = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
         temp_dir = tempfile.mkdtemp(dir=ss_internal.full_path)
         int_path = os.path.join(temp_dir, self.current_path)
         self.current_location.space.move_to_storage_service(
@@ -460,7 +460,7 @@ class Package(models.Model):
         deleted.
         """
         if extract_path is None:
-            ss_internal = Location.objects.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
+            ss_internal = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
             extract_path = tempfile.mkdtemp(dir=ss_internal.full_path)
         full_path = self.fetch_local_path()
 
@@ -507,7 +507,7 @@ class Package(models.Model):
         """
 
         if extract_path is None:
-            ss_internal = Location.objects.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
+            ss_internal = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
             extract_path = tempfile.mkdtemp(dir=ss_internal.full_path)
         if algorithm not in self.COMPRESSION_ALGORITHMS:
             raise ValueError('Algorithm %s not in %s' % algorithm, self.COMPRESSION_ALGORITHMS)

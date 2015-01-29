@@ -325,7 +325,7 @@ class LocationResource(ModelResource):
 
         # Get the object for this endpoint
         try:
-            destination_location = Location.objects.get(uuid=kwargs['uuid'])
+            destination_location = Location.active.get(uuid=kwargs['uuid'])
         except Location.DoesNotExist:
             return http.HttpNotFound()
 
@@ -341,7 +341,7 @@ class LocationResource(ModelResource):
             # splitting origin_uri on / results in:
             # ['', 'api', 'v1', '<resource_name>', '<uuid>', '']
             origin_uuid = origin_uri.split('/')[4]
-            origin_location = Location.objects.get(uuid=origin_uuid)
+            origin_location = Location.active.get(uuid=origin_uuid)
         except (IndexError, Location.DoesNotExist):
             return http.HttpNotFound("The URL provided '%s' was not a link to a valid Location." % origin_uri)
 
