@@ -337,7 +337,7 @@ def callback_detail(request, uuid):
     try:
         callback = Callback.objects.get(uuid=uuid)
     except Callback.DoesNotExist:
-        messages.warning(request, "Callback {} does not exist.".format(location_uuid))
+        messages.warning(request, "Callback {} does not exist.".format(uuid))
         return redirect('callback_list')
     return render(request, 'locations/callback_detail.html', locals())
 
