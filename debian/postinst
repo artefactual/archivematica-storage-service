@@ -20,9 +20,10 @@ sed -i "s/<replace-with-key>/\"$KEYCMD\"/g" /etc/uwsgi/apps-available/storage.in
 . /var/archivematica/.storage-service
 
 echo "creating symlink in /usr/lib/archivematica"
-ln -s /usr/share/python/archivematica-storage-service/lib/python2.7/site-packages/storage_service/ /usr/lib/archivematica/storage-service
-mv /var/archivematica/storage-service/static /usr/lib/archivematica/storage-service/static
-mv /var/archivematica/storage-service/templates /usr/lib/archivematica/storage-service/templates
+rm -f /usr/lib/archivematica/storage-service
+ln -s -f /usr/share/python/archivematica-storage-service/lib/python2.7/site-packages/storage_service/ /usr/lib/archivematica/storage-service
+rsync -a /var/archivematica/storage-service/static /usr/lib/archivematica/storage-service
+rsync -a /var/archivematica/storage-service/templates /usr/lib/archivematica/storage-service
 
 cd /usr/lib/archivematica/storage-service
 
