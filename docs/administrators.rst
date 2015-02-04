@@ -20,7 +20,7 @@ Storage Service entities and organization
 Packages
 ^^^^^^^^
 
-The Storage Service is oriented storing packages. A "package" is a bundle of
+The Storage Service is oriented to storing packages. A "package" is a bundle of
 one or more files transferred from an external service; for example, a package
 may be an AIP, a backlogged transfer, or a DIP. Each package is stored in a
 location.
