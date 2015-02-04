@@ -3,24 +3,28 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to storage_service's documentation!
-====================================
+.. _index:
+
+Archivematica Storage Service documentation
+===========================================
+
+.. toctree::
+   :hidden:
+
+   index
+   administrators
+   users
+
+This documentation describes the Storage Service, used by Archivematica to manage
+archival storage and transfer locations and packages.
+
+For installation instructions, please see
+:ref:`Archivematica installation <archivematica:installation>`
 
 Contents:
 
-.. toctree::
-   :maxdepth: 2
+* :ref:`Administrators page <administrators>`
+* :ref:`Users page <users>`
 
-   install
-   deploy
-   recovery
-   tests
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+Go to the :ref:`Archivematica User and Administrator <archivematica:home>`
+documentation.
