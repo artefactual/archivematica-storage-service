@@ -266,7 +266,7 @@ LOGGING = {
         'logfile': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/var/log/archivematica/storage_service.log',
+            'filename': '/var/log/archivematica/storage-service/storage_service.log',
             'formatter': 'detailed',
             'backupCount': 5,
             'maxBytes': 20 * 1024 * 1024,  # 20 MiB
@@ -274,7 +274,7 @@ LOGGING = {
         'verboselogfile': {
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/var/log/archivematica/storage_service_debug.log',
+            'filename': '/var/log/archivematica/storage-service/storage_service_debug.log',
             'formatter': 'detailed',
             'backupCount': 5,
             'maxBytes': 100 * 1024 * 1024,  # 100 MiB

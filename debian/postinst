@@ -38,6 +38,7 @@ chown -R archivematica:archivematica /var/archivematica/storage-service
 chown -R archivematica:archivematica /var/archivematica/storage_service
 chown -R archivematica:archivematica /var/archivematica/.storage-service
 chown -R archivematica:archivematica /usr/share/python/archivematica-storage-service
+chown -R archivematica:archivematica /var/log/archivematica/storage-service
 
 rm -f /tmp/storage_service.log
 
