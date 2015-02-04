@@ -20,7 +20,7 @@ Storage Service entities and organization
 Packages
 ^^^^^^^^
 
-The Storage Service is oriented storing packages. A "package" is a bundle of
+The Storage Service is oriented to storing packages. A "package" is a bundle of
 one or more files transferred from an external service; for example, a package
 may be an AIP, a backlogged transfer, or a DIP. Each package is stored in a
 location.
@@ -85,7 +85,7 @@ The storage services uses nginx by default, so you can edit
 
 ``listen 8000;``
 
-change ``8000`` to whatever port you prefer to use.
+by changing ``8000`` to whatever port you prefer to use.
 
 Keep in mind that in a default installation of Archivematica, the dashboard is
 running in Apache on port 80. So it is not possible to make nginx run on port
@@ -370,11 +370,11 @@ To create and configure a new Location:
 ..  note::
 
     If the path you are defining in your Location  doesn't exist, you must
-    create it manually and make sure it is writable by  the archivematica
+    create it manually and make sure it is writable by the Archivematica
     user.
 
 4. Save the Location settings.
-5. The new location will now be available as an option under the appropriate
+5. The new Location will now be available as an option under the appropriate
    options in the Dashboard, for example as a Transfer location (which must be
    enabled under the Dashboard "Administration" tab) or as a destination for AIP
    storage.
