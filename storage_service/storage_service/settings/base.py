@@ -291,6 +291,11 @@ LOGGING = {
             'level': 'ERROR',
             'propagate': True,
         },
+        'django.request.tastypie': {
+            'handlers': ['logfile', 'verboselogfile'],
+            'propagate': True,
+            'level': 'ERROR',
+        },
         'administration': {
             'handlers': ['logfile', 'verboselogfile'],
             'level': 'DEBUG',

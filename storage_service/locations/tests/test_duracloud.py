@@ -9,7 +9,7 @@ from locations import models
 
 class TestDuracloud(TestCase):
 
-    fixtures = ['initial_data.json', 'duracloud.json']
+    fixtures = ['base.json', 'duracloud.json']
 
     def setUp(self):
         self.ds_object = models.Duracloud.objects.all()[0]
