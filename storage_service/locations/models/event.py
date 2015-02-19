@@ -124,7 +124,7 @@ class Callback(models.Model):
             raise CallbackError(str(e))
 
         if not response.status_code == self.expected_status:
-            raise CallbackError(response.body)
+            raise CallbackError(response.text)
 
 
 class File(models.Model):
