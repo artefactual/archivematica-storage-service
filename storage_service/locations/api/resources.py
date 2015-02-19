@@ -709,7 +709,7 @@ class PackageResource(ModelResource):
                 "failure_count": fail,
                 "callback_uris": [c.uri for c in callbacks]
             }
-            return http.ApplicationError(
+            return http.HttpApplicationError(
                 json.dumps(response),
                 mimetype="application/json"
             )
