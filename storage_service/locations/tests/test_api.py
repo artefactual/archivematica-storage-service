@@ -87,3 +87,68 @@ class TestAPI(TestCase):
         assert body['success'] is True
         assert len(body['files']) == 1
         assert body['files'][0]['name'] == 'test_sip/objects/file.txt'
+
+    def test_adding_package_files_returns_400_with_empty_post_body(self):
+        response = self.client.put('/api/v2/file/e0a41934-c1d7-45ba-9a95-a7531c063ed1/contents/',
+                                   data="", content_type="application/json")
+        assert response.status_code == 400
+
+    def test_adding_package_files_returns_400_if_post_body_is_not_json(self):
+        response = self.client.put('/api/v2/file/e0a41934-c1d7-45ba-9a95-a7531c063ed1/contents/',
+                                   data="not json!",
+                                   content_type="application/json")
+        assert response.status_code == 400
+
+    def test_adding_package_files_returns_400_if_post_body_is_not_a_list(self):
+        response = self.client.put('/api/v2/file/e0a41934-c1d7-45ba-9a95-a7531c063ed1/contents/',
+                                   data="{}", content_type="application/json")
+        assert response.status_code == 400
+
+    def test_adding_package_files_returns_400_if_expected_fields_are_missing(self):
+        body = [{
+            "relative_path": "/dev/null"
+        }]
+        response = self.client.put('/api/v2/file/e0a41934-c1d7-45ba-9a95-a7531c063ed1/contents/',
+                                   data=json.dumps(body),
+                                   content_type="application/json")
+        assert response.status_code == 400
+
+    def test_adding_files_to_package_returns_200_for_empty_list(self):
+        response = self.client.put('/api/v2/file/79245866-ca80-4f84-b904-a02b3e0ab621/contents/',
+                                   data='[]', content_type="application/json")
+        assert response.status_code == 200
+
+    def test_adding_files_to_package(self):
+        p = models.Package.objects.get(uuid="79245866-ca80-4f84-b904-a02b3e0ab621")
+        assert p.file_set.count() == 0
+
+        body = [
+            {
+                "relative_path": "empty-transfer-79245866-ca80-4f84-b904-a02b3e0ab621/1.txt",
+                "fileuuid": "7bffcce7-63f5-4b2e-af57-d266bfa2e3eb",
+                "accessionid": "",
+                "sipuuid": "79245866-ca80-4f84-b904-a02b3e0ab621",
+                "origin": "36398145-6e49-4b5b-af02-209b127f2726",
+            },
+            {
+                "relative_path": "empty-transfer-79245866-ca80-4f84-b904-a02b3e0ab621/2.txt",
+                "fileuuid": "152be912-819f-49c4-968f-d5ce959c1cb1",
+                "accessionid": "",
+                "sipuuid": "79245866-ca80-4f84-b904-a02b3e0ab621",
+                "origin": "36398145-6e49-4b5b-af02-209b127f2726",
+            },
+        ]
+
+        response = self.client.put('/api/v2/file/79245866-ca80-4f84-b904-a02b3e0ab621/contents/',
+                                   data=json.dumps(body),
+                                   content_type="application/json")
+        assert response.status_code == 201
+        assert p.file_set.count() == 2
+
+    def test_removing_file_from_package(self):
+        p = models.Package.objects.get(uuid="a59033c2-7fa7-41e2-9209-136f07174692")
+        assert p.file_set.count() == 1
+
+        response = self.client.delete('/api/v2/file/a59033c2-7fa7-41e2-9209-136f07174692/contents/')
+        assert response.status_code == 204
+        assert p.file_set.count() == 0

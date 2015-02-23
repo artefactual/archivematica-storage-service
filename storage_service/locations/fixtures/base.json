@@ -148,5 +148,54 @@
         "accessionid": "",
         "origin": "bd17e3cf-afb6-4067-b7d0-472482767ee2"
     }
+},
+{
+    "pk": 2,
+    "model": "locations.package",
+    "fields": {
+        "uuid": "79245866-ca80-4f84-b904-a02b3e0ab621",
+        "description": "Package with no files",
+        "origin_pipeline": null,
+        "current_location": "4056b25d-6a85-4557-b9a5-9c85565fd892",
+        "current_path": "/dev/null/empty-transfer-79245866-ca80-4f84-b904-a02b3e0ab621",
+        "pointer_file_location": "",
+        "pointer_file_path": "",
+        "size": 0,
+        "package_type": "Transfer",
+        "status": "Uploaded",
+        "misc_attributes": ""
+    }
+},
+{
+    "pk": 3,
+    "model": "locations.package",
+    "fields": {
+        "uuid": "a59033c2-7fa7-41e2-9209-136f07174692",
+        "description": "Package with one file",
+        "origin_pipeline": null,
+        "current_location": "4056b25d-6a85-4557-b9a5-9c85565fd892",
+        "current_path": "/dev/null/transfer-with-one-file-a59033c2-7fa7-41e2-9209-136f07174692",
+        "pointer_file_location": "",
+        "pointer_file_path": "",
+        "size": 0,
+        "package_type": "Transfer",
+        "status": "Uploaded",
+        "misc_attributes": ""
+    }
+},
+{
+    "pk": 2,
+    "model": "locations.file",
+    "fields": {
+        "uuid": "bcd59769-0c6b-48cd-b54a-63092b9718fc",
+        "package": 3,
+        "name": "test_sip/objects/file.txt",
+        "source_id": "2b24a977-ad7a-4886-b17c-8b32ab4a7955",
+        "source_package": "a59033c2-7fa7-41e2-9209-136f07174692",
+        "checksum": "",
+        "stored": false,
+        "accessionid": "",
+        "origin": "91d13621-d2c1-4c70-a67e-77e96dced036"
+    }
 }
 ]

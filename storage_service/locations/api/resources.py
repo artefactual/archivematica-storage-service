@@ -454,7 +454,7 @@ class PackageResource(ModelResource):
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/pointer_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('pointer_file_request'), name="pointer_file_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/check_fixity%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('check_fixity_request'), name="check_fixity_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/send_callback/post_store%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('aip_store_callback_request'), name="aip_store_callback_request"),
-            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/contents%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view("package_contents"), name="package_contents"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/contents%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view("manage_contents"), name="manage_contents"),
             url(r"^(?P<resource_name>%s)/metadata%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view("file_data"), name="file_data"),
 
             # FEDORA/SWORD2 endpoints
@@ -773,8 +773,95 @@ class PackageResource(ModelResource):
 
         return (status_code, response)
 
-    @_custom_endpoint(expected_methods=['get'])
-    def package_contents(self, request, bundle, **kwargs):
+    @_custom_endpoint(expected_methods=['get', 'put', 'delete'])
+    def manage_contents(self, request, bundle, **kwargs):
+        if request.method == 'PUT':
+            return self._add_files_to_package(request, bundle, **kwargs)
+        elif request.method == 'DELETE':
+            return self._remove_files_from_package(request, bundle, **kwargs)
+        elif request.method == 'GET':
+            return self._package_contents(request, bundle, **kwargs)
+
+    def _remove_files_from_package(self, request, bundle, **kwargs):
+        """
+        Removes all file records associated with this package.
+        """
+
+        bundle.obj.file_set.all().delete()
+        return http.HttpNoContent()
+
+    def _add_files_to_package(self, request, bundle, **kwargs):
+        """
+        Adds a set of files to a package.
+
+        The PUT body must be a list of zero or more JavaScript objects in the following format:
+        {
+            "relative_path": "string",
+            "fileuuid": "string",
+            "accessionid", "string",
+            "sipuuid": "string",
+            "origin": "string"
+        }
+        """
+
+        try:
+            files_list = json.load(request)
+        except ValueError:
+            response = {
+                "success": False,
+                "error": "No JSON object could be decoded from POST body."
+            }
+            return http.HttpBadRequest(json.dumps(response),
+                content_type="application/json")
+
+        if not isinstance(files_list, list):
+            response = {
+                "success": False,
+                "error": "JSON request must contain a list of objects."
+            }
+            return http.HttpBadRequest(json.dumps(response),
+                content_type="application/json")
+
+        property_map = {
+            "relative_path": "name",
+            "fileuuid": "source_id",
+            "accessionid": "accessionid",
+            "sipuuid": "source_package",
+            "origin": "origin",
+        }
+
+        if len(files_list) == 0:
+            return http.HttpResponse()
+
+        created_files = []
+        for f in files_list:
+            kwargs = {
+                "package": bundle.obj
+            }
+            for source, dest in property_map.iteritems():
+                try:
+                    kwargs[dest] = f[source]
+                except KeyError:
+                    response = {
+                        "success": False,
+                        "error": "File object was missing key: " + source
+                    }
+                    return http.HttpBadRequest(json.dumps(response),
+                        content_type="application_json")
+
+            created_files.append(File(**kwargs))
+
+        for f in created_files:
+            f.save()
+
+        response = {
+            "success": True,
+            "message": "{} files created in package {}".format(len(created_files), bundle.obj.uuid)
+        }
+        return http.HttpCreated(json.dumps(response),
+            content_type="application_json")
+
+    def _package_contents(self, request, bundle, **kwargs):
         """
         Returns metadata about every file within a specified Storage Service
         package, specified via Storage Service UUID.
