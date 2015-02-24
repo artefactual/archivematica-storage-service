@@ -319,7 +319,7 @@ class Space(models.Model):
 
         # Rsync file over
         # TODO Do this asyncronously, with restarting failed attempts
-        command = ['rsync', '-vv', '--chmod=ugo+rw', '-r', source, destination]
+        command = ['rsync', '-a', '-vv', '--chmod=ugo+rw', '-r', source, destination]
         LOGGER.info("rsync command: %s", command)
 
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
