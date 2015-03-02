@@ -111,7 +111,7 @@ class PipelineLocalFS(models.Model):
         """ Moves self.staging_path/src_path to dest_path. """
 
         # Need to make sure destination exists
-        command = 'mkdir -p {}'.format(os.path.dirname(destination_path))
+        command = 'mkdir -p "{}"'.format(os.path.dirname(destination_path).replace('"', '\"'))
         ssh_command = ["ssh", self.remote_user + "@" + self.remote_name, command]
         LOGGER.info("ssh+mkdir command: %s", ssh_command)
         try:
