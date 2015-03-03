@@ -302,7 +302,7 @@ class Space(models.Model):
 
         # Rsync file over
         # TODO Do this asyncronously, with restarting failed attempts
-        command = ['rsync', '--chmod=ugo+rw', '-r', source, destination]
+        command = ['rsync', '--protect-args', '--chmod=ugo+rw', '-r', source, destination]
         logging.info("rsync command: {}".format(command))
         try:
             subprocess.check_call(command)
