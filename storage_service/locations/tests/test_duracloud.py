@@ -26,10 +26,14 @@ class TestDuracloud(TestCase):
         assert resp
         assert resp['directories'] == ['Images', 'Multimedia', 'OCRImage']
         assert resp['entries'] == ['BagTransfer.zip', 'Images', 'Multimedia', 'OCRImage']
+        assert resp['properties']['Images']['object count'] == 10
+        assert resp['properties']['Multimedia']['object count'] == 7
+        assert resp['properties']['OCRImage']['object count'] == 1
         resp = self.ds_object.browse('SampleTransfers/Images')
         assert resp
         assert resp['directories'] == ['pictures']
         assert resp['entries'] == ['799px-Euroleague-LE Roma vs Toulouse IC-27.bmp', 'BBhelmet.ai', 'G31DS.TIF', 'lion.svg', 'Nemastylis_geminiflora_Flower.PNG', 'oakland03.jp2', 'pictures', 'Vector.NET-Free-Vector-Art-Pack-28-Freedom-Flight.eps', 'WFPC01.GIF']
+        assert resp['properties']['pictures']['object count'] == 2
 
     @vcr.use_cassette('locations/fixtures/vcr_cassettes/duracloud_delete_file.yaml')
     def test_delete_file(self):

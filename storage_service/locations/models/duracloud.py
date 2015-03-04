@@ -99,6 +99,9 @@ class Duracloud(models.Model):
         Returns information about the files and simulated-folders in Duracloud.
 
         See Space.browse for full documentation.
+
+        Properties provided:
+        'object count': Number of objects in the directory, including children
         """
         if path and not path.endswith('/'):
             path += '/'
@@ -115,6 +118,8 @@ class Duracloud(models.Model):
             entries.add(dirname)
             if len(path_parts) > 1:
                 directories.add(dirname)
+                properties[dirname] = properties.get(dirname, {})  # Default empty dict
+                properties[dirname]['object count'] = properties[dirname].get('object count', 0) + 1  # Increment object count
 
         entries = sorted(entries, key=lambda s: s.lower())  # Also converts to list
         directories = sorted(directories, key=lambda s: s.lower())  # Also converts to list

@@ -166,6 +166,11 @@ class Space(models.Model):
             },
         }
 
+        Values in the properties dict vary depending on the providing Space but may include:
+        'size': Size of the object
+        'object count': Number of objects in the directory, including children
+        See each Space's browse for details.
+
         :param str path: Full path to return info for
         :return: Dictionary of object information detailed above.
         """
@@ -395,9 +400,22 @@ class Space(models.Model):
         except os.error as e:
             LOGGER.warning(e)
 
+    def _count_objects_in_directory(self, path):
+        """
+        Returns all the files in a directory, including children.
+        """
+        total_files = 0
+        for _, _, files in os.walk(path):
+            total_files += len(files)
+        return total_files
+
     def _browse_local(self, path):
         """
         Returns browse results for a locally accessible filesystem.
+
+        Properties provided:
+        'size': Size of the object, as determined by os.path.getsize. May be misleading for directories, suggest use 'object count'
+        'object count': Number of objects in the directory, including children
         """
         if isinstance(path, unicode):
             path = str(path)
@@ -411,8 +429,10 @@ class Space(models.Model):
         directories = []
         for name in entries:
             full_path = os.path.join(path, name)
+            properties[name] = {'size': os.path.getsize(full_path)}
             if os.path.isdir(full_path) and os.access(full_path, os.R_OK):
                 directories.append(name)
+                properties[name]['object count'] = self._count_objects_in_directory(full_path)
         return {'directories': directories, 'entries': entries, 'properties': properties}
 
     def _delete_path_local(self, delete_path):
