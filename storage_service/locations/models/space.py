@@ -143,16 +143,31 @@ class Space(models.Model):
         return protocol_space
 
     def browse(self, path, *args, **kwargs):
-        """ Returns {'directories': [directory], 'entries': [entries]} at path.
+        """
+        Return information about the objects (files, directories) at `path`.
 
-        `path` is a full path in this space.
+        Attempts to call the child space's implementation.  If not found, falls
+        back to looking for the path locally.
 
-        'directories' in the return dict is the name of all the directories
-            located at that path
-        'entries' in the return dict is the name of any file (directory or other)
-            located at that path
+        Returns a dictionary with keys 'entries', 'directories' and 'properties'.
 
-        If not implemented in the child space, looks locally.
+        'entries' is a list of strings, one for each entry in that directory, both file-like and folder-like.
+        'directories' is a list of strings for each folder-like entry. Each entry should also be listed in 'entries'.
+        'properties' is a dictionary that may contain additional information for the entries.  Keys are the entry name found in 'entries', values are a dictionary containing extra information. 'properties' may not contain all values from 'entries'.
+
+        E.g.
+        {
+            'entries': ['BagTransfer.zip', 'Images', 'Multimedia', 'OCRImage'],
+            'directories': ['Images', 'Multimedia', 'OCRImage'],
+            'properties': {
+                'Images': {'object count': 10},
+                'Multimedia': {'object count': 7},
+                'OCRImage': {'object count': 1}
+            },
+        }
+
+        :param str path: Full path to return info for
+        :return: Dictionary of object information detailed above.
         """
         LOGGER.info('path: %s', path)
         try:
@@ -388,7 +403,8 @@ class Space(models.Model):
             path = str(path)
         if not os.path.exists(path):
             LOGGER.info('%s in %s does not exist', path, self)
-            return {'directories': [], 'entries': []}
+            return {'directories': [], 'entries': [], 'properties': []}
+        properties = {}
         # Sorted list of all entries in directory, excluding hidden files
         entries = [name for name in os.listdir(path) if name[0] != '.']
         entries = sorted(entries, key=lambda s: s.lower())
@@ -397,7 +413,7 @@ class Space(models.Model):
             full_path = os.path.join(path, name)
             if os.path.isdir(full_path) and os.access(full_path, os.R_OK):
                 directories.append(name)
-        return {'directories': directories, 'entries': entries}
+        return {'directories': directories, 'entries': entries, 'properties': properties}
 
     def _delete_path_local(self, delete_path):
         """

@@ -95,10 +95,16 @@ class Duracloud(models.Model):
             LOGGER.debug('Paths last 10: %s', paths[-10:])
 
     def browse(self, path):
+        """
+        Returns information about the files and simulated-folders in Duracloud.
+
+        See Space.browse for full documentation.
+        """
         if path and not path.endswith('/'):
             path += '/'
         entries = set()
         directories = set()
+        properties = {}
         # Handle paths one at a time to deal with lots of files
         paths = self._get_files_list(path)
         for p in paths:
@@ -112,7 +118,7 @@ class Duracloud(models.Model):
 
         entries = sorted(entries, key=lambda s: s.lower())  # Also converts to list
         directories = sorted(directories, key=lambda s: s.lower())  # Also converts to list
-        return {'directories': directories, 'entries': entries}
+        return {'directories': directories, 'entries': entries, 'properties': properties}
 
     def delete_path(self, delete_path):
         # BUG If delete_path is a folder but provided without a trailing /, will delete a file with the same name.
