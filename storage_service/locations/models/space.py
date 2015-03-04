@@ -14,6 +14,7 @@ from django.db import models
 from django_extensions.db.fields import UUIDField
 
 # This project, alphabetical
+from common import utils
 LOGGER = logging.getLogger(__name__)
 
 # This module, alphabetical
@@ -360,7 +361,8 @@ class Space(models.Model):
         All directories leading to destination must exist.
         Space._create_local_directory may be useful.
         """
-        # Create directories
+        source = utils.coerce_str(source)
+        destination = utils.coerce_str(destination)
         LOGGER.info("Rsyncing from %s to %s", source, destination)
 
         if source == destination:
