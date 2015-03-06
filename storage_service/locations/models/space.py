@@ -170,6 +170,7 @@ class Space(models.Model):
         Values in the properties dict vary depending on the providing Space but may include:
         'size': Size of the object
         'object count': Number of objects in the directory, including children
+        'timestamp': Last modified timestamp.
         See each Space's browse for details.
 
         :param str path: Full path to return info for
