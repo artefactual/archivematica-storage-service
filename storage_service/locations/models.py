@@ -7,6 +7,7 @@ import logging
 from lxml import etree
 import math
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -484,15 +485,31 @@ class PipelineLocalFS(models.Model):
     def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
 
-        # Need to make sure destination exists
-        command = 'mkdir -p {}'.format(os.path.dirname(destination_path))
-        ssh_command = ["ssh", self.remote_user+"@"+self.remote_name, command]
-        logging.info("ssh+mkdir command: {}".format(ssh_command))
+        # Assemble a set of directories to create on the remote server;
+        # these will be created one at a time
+        directories = []
+        path = destination_path
+        while path != '' and path != '/':
+            directories.insert(0, path)
+            path = os.path.dirname(path)
+
+        # Syncing an empty directory will ensure no files get transferred
+        temp_dir = os.path.join(tempfile.mkdtemp(), '')
+
+        # Creates the destination_path directory without copying any files
+        # Dir must end in a / for rsync to create it
+        for directory in directories:
+            path = os.path.join(self.remote_user + "@" + self.remote_host + ":" + directory, '')
+            cmd = ['rsync', '-vv', '--protect-args', '--recursive', temp_dir, path]
+            logging.info("ssh+mkdir command: {}".format(cmd))
         try:
-            subprocess.check_call(ssh_command)
+            subprocess.check_call(cmd)
         except subprocess.CalledProcessError as e:
-            logging.warning("ssh+mkdir failed: {}".format(e))
+            shutil.rmtree(temp_dir)
+            logging.warning("rsync path creation failed: {}".format(e))
             raise
+
+        shutil.rmtree(temp_dir)
 
         # Prepend user and host to destination
         destination_path = "{user}@{host}:{path}".format(
@@ -1539,14 +1556,24 @@ class Package(models.Model):
             # TODO try-catch AttributeError if remote_user or remote_name not exist?
             user = protocol_space.remote_user
             host = protocol_space.remote_name
-            command = 'rm -rf '+self.full_path()
-            ssh_command = ["ssh", user+"@"+host, command]
-            logging.info("ssh+rm command: %s", ssh_command)
+            # Sync from an empty directory to delete the contents of delete_path;
+            # passing --delete to rsync causes it to delete all contents from the
+            # destination path that don't exist in the source which, since it's an
+            # empty directory, is everything.
+            temp_dir = tempfile.mkdtemp()
+            dest_path = user + "@" + host + ":" + self.full_path()
+            command = ['rsync', '-vv', '--itemize-changes', '--protect-args',
+                       '--delete', '--dirs',
+                       os.path.join(temp_dir, ''),
+                       dest_path]
+            logging.info("rsync delete command: %s", command)
             try:
-                subprocess.check_call(ssh_command)
+                subprocess.check_call(command)
             except Exception as e:
                 logging.exception("ssh+rm failed.")
                 return False, "Error connecting to Location"
+            finally:
+                shutil.rmtree(temp_dir)
         elif self.current_location.space.access_protocol == Space.LOM:
             # Notify LOM that files will be deleted
             if 'num_files' in self.misc_attributes:
