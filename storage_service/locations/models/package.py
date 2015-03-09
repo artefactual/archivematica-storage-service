@@ -770,6 +770,7 @@ class Package(models.Model):
             path, temp_dir = self.extract_file()
         else:
             path = self.fetch_local_path()
+            temp_dir = None
 
         bag = bagit.Bag(path)
         try:
@@ -781,7 +782,7 @@ class Package(models.Model):
             failures = failure.details
             message = failure.message
 
-        if delete_after and (self.local_path_location != self.current_location or self.local_path != self.full_path):
+        if temp_dir and delete_after and (self.local_path_location != self.current_location or self.local_path != self.full_path):
             shutil.rmtree(temp_dir)
 
         return (success, failures, message)
