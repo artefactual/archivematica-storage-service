@@ -28,7 +28,6 @@ rsync -a /var/archivematica/storage-service/templates /usr/lib/archivematica/sto
 cd /usr/lib/archivematica/storage-service
 
 echo "configuring django database and static files"
-/usr/share/python/archivematica-storage-service/bin/python manage.py syncdb
 /usr/share/python/archivematica-storage-service/bin/python manage.py migrate
 /usr/share/python/archivematica-storage-service/bin/python manage.py collectstatic --noinput
 
