@@ -7,3 +7,4 @@ dev (0.7.0)
 * Provide API to browse transfers and search transfer contents (#7714)
 * Browse: Return additional properties, e.g. number of objects, size (#7853)
 * Fix scanning fixity for uncompressed packages (#7777)
+* Display callback administration link in the administration sidebar
