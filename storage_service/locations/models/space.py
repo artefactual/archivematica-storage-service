@@ -323,7 +323,7 @@ class Space(models.Model):
                     # which can result in an attempt to join mixed encodings;
                     # this blows up if the filename cannot be converted to
                     # unicode
-                    shutil.rmtree(str(os.path.normpath(staging_path)))
+                    shutil.rmtree(utils.coerce_str(os.path.normpath(staging_path)))
                 elif os.path.isfile(staging_path):
                     os.remove(os.path.normpath(staging_path))
             except OSError:
