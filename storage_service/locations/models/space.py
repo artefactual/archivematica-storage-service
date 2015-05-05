@@ -91,7 +91,7 @@ class Space(models.Model):
     NFS = 'NFS'
     PIPELINE_LOCAL_FS = 'PIPE_FS'
     SWIFT = 'SWIFT'
-    OBJECT_STORAGE = {DURACLOUD}
+    OBJECT_STORAGE = {DURACLOUD, SWIFT}
     ACCESS_PROTOCOL_CHOICES = (
         (DURACLOUD, 'DuraCloud'),
         (FEDORA, "FEDORA via SWORD2"),
