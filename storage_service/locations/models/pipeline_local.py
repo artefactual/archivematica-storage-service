@@ -111,7 +111,7 @@ class PipelineLocalFS(models.Model):
     def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
 
-        self.space._create_rsync_directory(destination_path, self.remote_name, self.remote_name)
+        self.space._create_rsync_directory(destination_path, self.remote_user, self.remote_name)
 
         # Prepend user and host to destination
         destination_path = self._format_host_path(destination_path)

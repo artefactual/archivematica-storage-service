@@ -433,7 +433,7 @@ class Space(models.Model):
         # Assemble a set of directories to create on the remote server;
         # these will be created one at a time
         directories = []
-        path = os.path.dirname(destination_path)
+        path = destination_path
         while path != '' and path != '/':
             directories.insert(0, path)
             path = os.path.dirname(path)
