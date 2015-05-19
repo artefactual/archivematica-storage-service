@@ -36,6 +36,8 @@ echo "configuring django database and static files"
 /usr/share/python/archivematica-storage-service/bin/python manage.py migrate
 /usr/share/python/archivematica-storage-service/bin/python manage.py collectstatic --noinput
 
+echo "create /var/archivematica/storage_service directory"
+mkdir -p /var/archivematica/storage_service
 
 echo "updating directory permissions"
 chown -R archivematica:archivematica /var/archivematica/storage-service
