@@ -14,5 +14,6 @@ requests>=2.3.0
 #httplib2 is a dependency of sword2
 httplib2
 sword2
-python-keystoneclient==1.3.0
-python-swiftclient==2.4.0
+#python-keystoneclient==1.3.0
+#python-swiftclient==2.4.0
+

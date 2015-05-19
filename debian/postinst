@@ -27,6 +27,10 @@ rsync -a /var/archivematica/storage-service/templates /usr/lib/archivematica/sto
 
 cd /usr/lib/archivematica/storage-service
 
+echo "installing swift dependencies"
+/usr/share/python/archivematica-storage-service/bin/pip install python-swiftclient
+/usr/share/python/archivematica-storage-service/bin/pip install python-keystoneclient
+
 echo "configuring django database and static files"
 /usr/share/python/archivematica-storage-service/bin/python manage.py syncdb
 /usr/share/python/archivematica-storage-service/bin/python manage.py migrate
