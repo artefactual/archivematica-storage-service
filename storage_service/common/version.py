@@ -1,5 +1,5 @@
 
-STORAGE_SERVICE_VERSION = (0, 4, 0)
+STORAGE_SERVICE_VERSION = (0, 7, 0)
 
 def get_version():
     """ Returns the version number as a string. """
