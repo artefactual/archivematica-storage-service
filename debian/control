@@ -5,6 +5,8 @@ Maintainer: Artefactual Systems Inc. <ops@artefactual.com>
 Build-Depends: 
     python (>= 2.7.3),
     debhelper (>= 9),
+    libffi-dev,
+    libssl-dev,
     libxml2-dev,
     libxslt-dev,
     python-dev,

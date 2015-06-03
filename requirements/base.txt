@@ -16,3 +16,6 @@ httplib2
 sword2
 python-keystoneclient==1.3.0
 python-swiftclient==2.4.0
+pyopenssl
+ndg-httpsclient
+pyasn1
