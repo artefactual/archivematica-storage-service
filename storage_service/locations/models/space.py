@@ -464,6 +464,9 @@ class Space(models.Model):
         total_files = 0
         for _, _, files in os.walk(path):
             total_files += len(files)
+            # Limit the number of files counted to keep it from being too slow
+            if total_files > 5000:
+                return '5000+'
         return total_files
 
     def _browse_local(self, path):
