@@ -260,7 +260,7 @@ class Duracloud(models.Model):
                 dest = entry.replace(src_path, dest_path, 1)
                 self._download_file(url, dest)
 
-    def _upload_file(self, url, upload_file):
+    def _upload_file(self, url, upload_file, resume=False):
         """
         Upload a file of any size to Duracloud.
 
@@ -296,6 +296,10 @@ class Duracloud(models.Model):
             chunks = etree.SubElement(root, 'chunks')
             # Split file into chunks
             with open(upload_file, 'rb') as f:
+                # If resume, check if chunks already exists
+                if resume:
+                    chunklist = set(self._get_files_list(relative_path))
+                    LOGGER.debug('Chunklist %s', chunklist)
                 i = 0
                 chunk_data = f.read(self.CHUNK_SIZE)
                 while chunk_data:
@@ -320,7 +324,11 @@ class Duracloud(models.Model):
                     etree.SubElement(chunk_e, 'byteSize').text = str(os.path.getsize(chunk_path))
                     etree.SubElement(chunk_e, 'md5').text = checksum.hexdigest()
                     # Upload chunk
-                    self._upload_chunk(chunk_url, chunk_path)
+                    # Check if chunk exists already
+                    if resume and chunkid in chunklist:
+                        LOGGER.info('%s already in Duracloud, skipping upload', chunk_path)
+                    else:
+                        self._upload_chunk(chunk_url, chunk_path)
                     # Delete chunk
                     os.remove(chunk_path)
                     # Read next chunk
@@ -363,7 +371,7 @@ class Duracloud(models.Model):
             LOGGER.warning('%s: Response: %s', response, response.text)
             raise StorageException('Unable to store %s' % upload_file)
 
-    def move_from_storage_service(self, source_path, destination_path):
+    def move_from_storage_service(self, source_path, destination_path, resume=False):
         """ Moves self.staging_path/src_path to dest_path. """
         source_path = utils.coerce_str(source_path)
         destination_path = utils.coerce_str(destination_path)
@@ -376,10 +384,10 @@ class Duracloud(models.Model):
                     entry = os.path.join(path, basename)
                     dest = entry.replace(source_path, destination_path, 1)
                     url = self.duraspace_url + urllib.quote(dest)
-                    self._upload_file(url, entry)
+                    self._upload_file(url, entry, resume=resume)
         elif os.path.isfile(source_path):
             url = self.duraspace_url + urllib.quote(destination_path)
-            self._upload_file(url, source_path)
+            self._upload_file(url, source_path, resume=resume)
         elif not os.path.exists(source_path):
             raise StorageException('%s does not exist.' % source_path)
         else:

@@ -191,6 +191,49 @@ class TestDuracloud(TestCase):
         requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/chunked/chunked%20%23image.txt.dura-chunk-0000', auth=self.auth)
         requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/chunked/chunked%20%23image.txt.dura-chunk-0001', auth=self.auth)
 
+    @vcr.use_cassette('locations/fixtures/vcr_cassettes/duracloud_move_from_ss_chunked_resume.yaml')
+    def test_move_from_ss_chunked_resume(self):
+        # Setup
+        file_path = 'locations/fixtures/chunk_file.txt'
+        self.ds_object.CHUNK_SIZE = 10 * 1024  # Set testing chunk size
+        requests.put('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/chunked/chunked_image.txt.dura-chunk-0000', auth=self.auth, data='Placeholder')
+        # Verify initial state
+        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt', auth=self.auth)
+        assert response.status_code == 404
+        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-manifest', auth=self.auth)
+        assert response.status_code == 404
+        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0000', auth=self.auth)
+        assert response.status_code == 200
+        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0001', auth=self.auth)
+        assert response.status_code == 404
+        # Upload
+        self.ds_object.move_from_storage_service(file_path, 'chunked/chunked_image.txt', resume=True)
+        # Verify
+        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt', auth=self.auth)
+        assert response.status_code == 404
+        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-manifest', auth=self.auth)
+        assert response.status_code == 200
+        # Verify manifest
+        root = etree.fromstring(response.content)
+        assert root.find('header/sourceContent').attrib['contentId'] == 'chunked/chunked_image.txt'
+        assert root.find('header/sourceContent/byteSize').text == '11037'
+        assert root.find('header/sourceContent/md5').text == 'e7aba5d09b490b9f91c65867754ae190'
+        assert root.find('chunks')[0].attrib['chunkId'] == 'chunked/chunked_image.txt.dura-chunk-0000'
+        assert root.find('chunks')[0].find('byteSize').text == '10240'
+        assert root.find('chunks')[0].find('md5').text == '2147aa269812cac6204ad66ec953ccfe'
+        assert root.find('chunks')[1].attrib['chunkId'] == 'chunked/chunked_image.txt.dura-chunk-0001'
+        assert root.find('chunks')[1].find('byteSize').text == '797'
+        assert root.find('chunks')[1].find('md5').text == 'aa9d2932a31f4b81cbfd1bcdb2c75020'
+        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0000', auth=self.auth)
+        assert response.status_code == 200
+        assert response.text == 'Placeholder'
+        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0001', auth=self.auth)
+        assert response.status_code == 200
+        # Cleanup
+        requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/chunked/chunked_image.txt.dura-manifest', auth=self.auth)
+        requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/chunked/chunked_image.txt.dura-chunk-0000', auth=self.auth)
+        requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/chunked/chunked_image.txt.dura-chunk-0001', auth=self.auth)
+
     @vcr.use_cassette('locations/fixtures/vcr_cassettes/duracloud_move_to_ss_file.yaml')
     def test_move_to_ss_file(self):
         # Test file
