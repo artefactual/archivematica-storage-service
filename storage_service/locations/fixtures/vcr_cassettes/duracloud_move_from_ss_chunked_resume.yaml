@@ -1,0 +1,499 @@
+interactions:
+- request:
+    body: Placeholder
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      Content-Length: ['11']
+      User-Agent: [python-requests/2.7.0 CPython/2.7.9 Linux/4.0.4-2-ARCH]
+    method: PUT
+    uri: https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0000
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwMAAAAAAAAAAAA=
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-length: ['20']
+      content-type: [text/plain]
+      date: ['Fri, 05 Jun 2015 20:05:28 GMT']
+      etag: [68753d36ec0c4d7768b20993268d68d1]
+      keep-alive: ['timeout=5, max=100']
+      location: ['https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0000']
+      set-cookie: [JSESSIONID=FFE657CA174784EB95FB45590D2DF2CB; Path=/durastore/;
+          Secure; HttpOnly]
+      vary: [Accept-Encoding]
+    status: {code: 201, message: Created}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.7.0 CPython/2.7.9 Linux/4.0.4-2-ARCH]
+    method: GET
+    uri: https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA3WQwU6DQBCGX+W/YS9IA9YAp9pi4sWDPIBZ2SldgR1cZlvC07to483TJH8m3/fP
+        VM6xgxKhYRRjWwijJcHoeCQnhiacwkLDVsgKoubsbUf6/jbfzaBaimWWCMYiEppWSgTtKaAKHNj3
+        GpYFJ2P1H8cEH65Gzng54l/miqxTfPimC5VUZ9SnzZZlvM48s76IU/FNGK97tN5S4DXIntkH211N
+        7mIaKrAf1MIrrEQtSvwUiumQZ0lWovr5wW9gfd+XeKMvH8ChXIFd+pBv0+3T4yFJdnlebb4BIyL6
+        /jMBAAA=
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-length: ['233']
+      content-type: [text/plain]
+      date: ['Fri, 05 Jun 2015 20:05:29 GMT']
+      keep-alive: ['timeout=5, max=100']
+      set-cookie: [JSESSIONID=D5DFFF138DF600F17D730490C142D51A; Path=/durastore/;
+          Secure; HttpOnly]
+      vary: [Accept-Encoding]
+    status: {code: 404, message: Not Found}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.7.0 CPython/2.7.9 Linux/4.0.4-2-ARCH]
+    method: GET
+    uri: https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-manifest
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA42QwU7DMBBEf2VugQOhag0Vyak0QeqFA/kAZOJN6iaxU2fdRvl6bKg4c9rVaDRv
+        dkvnrINkpmFkbVqwRUuM0dmRHGua0ARDbQ2TYST10ZuO1ONtfupBtpTyzKnyTj4M0uiGJk6gDRIO
+        W8hMoDyF4Ax763sFYxmNNuovVQc6rpqPOBT4JyECqg2+fN2FurLT8mTEsozX2c5WXdjJ9IZPo4/i
+        nRneA/rN+sC+q8hddE0ZdoNcbAzLUbFkP4WaKuhiJXKUP//5FYzv+xwfdPaRfygyPK3KZyG2r+tC
+        7Dbb9cv9NzE5do5PAQAA
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-length: ['243']
+      content-type: [text/plain]
+      date: ['Fri, 05 Jun 2015 20:05:29 GMT']
+      keep-alive: ['timeout=5, max=100']
+      set-cookie: [JSESSIONID=E1E8215ED2239787AC09C2D2AB5E0200; Path=/durastore/;
+          Secure; HttpOnly]
+      vary: [Accept-Encoding]
+    status: {code: 404, message: Not Found}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.7.0 CPython/2.7.9 Linux/4.0.4-2-ARCH]
+    method: GET
+    uri: https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0000
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwvISUxOzcjPSUktAgDVEHpzCwAAAA==
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-length: ['31']
+      content-type: [application/octet-stream]
+      date: ['Fri, 05 Jun 2015 20:05:30 GMT']
+      etag: [68753d36ec0c4d7768b20993268d68d1, 68753d36ec0c4d7768b20993268d68d1]
+      keep-alive: ['timeout=5, max=100']
+      last-modified: ['2015-06-05T20:04:31', '2015-06-05T20:04:31']
+      set-cookie: [JSESSIONID=9695C39A78A3C360973D131A9F976862; Path=/durastore/;
+          Secure; HttpOnly]
+      vary: [Accept-Encoding]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.7.0 CPython/2.7.9 Linux/4.0.4-2-ARCH]
+    method: GET
+    uri: https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0001
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA42QQW6DMBBFr/J3tItQUJBQYZUQInXTRTlA5eIJcQCbmnGCOH3tNOq6q5G+Ru/9
+        mdpaYyGYaZxY6Q5s0BFjsmYiy4pmnPxCazSTZkTt2eme5MtjfqpRdBTzwrF0Vmzu8SZJkjSC0oiY
+        5kCNIB15dIHKuEFCG8ZJafnHVd6Pm+Iz3g74tyMomi2+XNv7yqJX4qKzdZ1ui1mMvLIV8aNAHPYo
+        3Frg3cuPxnn7U0P2qloqsBvFagKsRMOC3eyLSp9nSVaivv/oN9BuGEp80LfzYF+2wD5/TbNDVe32
+        aZ7XWfX8A9Sr+8FTAQAA
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-length: ['243']
+      content-type: [text/plain]
+      date: ['Fri, 05 Jun 2015 20:05:31 GMT']
+      keep-alive: ['timeout=5, max=100']
+      set-cookie: [JSESSIONID=233454B89DC1D740CA49DD3AEFFD2E00; Path=/durastore/;
+          Secure; HttpOnly]
+      vary: [Accept-Encoding]
+    status: {code: 404, message: Not Found}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.7.0 CPython/2.7.9 Linux/4.0.4-2-ARCH]
+    method: GET
+    uri: https://archivematica.duracloud.org/durastore/testing/?prefix=chunked%2Fchunked_image.txt
+  response:
+    body: {string: !!python/unicode "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<space
+        id=\"testing\"><item>chunked/chunked_image.txt.dura-chunk-0000</item></space>\r\n"}
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-length: ['124']
+      content-type: [application/xml]
+      date: ['Fri, 05 Jun 2015 20:05:31 GMT']
+      keep-alive: ['timeout=5, max=100']
+      set-cookie: [JSESSIONID=02D30EC7F44161F6732A227562A85FEF; Path=/durastore/;
+          Secure; HttpOnly]
+      x-dura-meta-space-count: ['99']
+      x-dura-meta-space-created: ['2014-11-06T22:27:13']
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      Cookie: [JSESSIONID=02D30EC7F44161F6732A227562A85FEF]
+      User-Agent: [python-requests/2.7.0 CPython/2.7.9 Linux/4.0.4-2-ARCH]
+    method: GET
+    uri: https://archivematica.duracloud.org/durastore/testing/?marker=chunked%2Fchunked_image.txt.dura-chunk-0000&prefix=chunked%2Fchunked_image.txt
+  response:
+    body: {string: !!python/unicode "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<space
+        id=\"testing\" />\r\n"}
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-length: ['64']
+      content-type: [application/xml]
+      date: ['Fri, 05 Jun 2015 20:05:31 GMT']
+      keep-alive: ['timeout=5, max=99']
+      x-dura-meta-space-count: ['99']
+      x-dura-meta-space-created: ['2014-11-06T22:27:13']
+    status: {code: 200, message: OK}
+- request:
+    body: !!python/object:StringIO.StringIO
+      buf: 'ro sed leo. Maecenas venenatis, ante sed malesuada semper, tellus nisl
+        scelerisque est, at fringilla mi odio et massa. Sed rhoncus augue eget mauris
+        gravida malesuada nec vitae sapien. Sed eget lectus mattis, pharetra metus
+        nec, laoreet est. Aliquam blandit enim lacus, id venenatis tortor ornare vitae.
+        Ut quis dignissim felis, sit amet eleifend ipsum. Donec in pharetra ligula.
+        Maecenas vitae ipsum non lorem convallis egestas. Sed nisl neque, accumsan
+        at diam quis, aliquet varius eros. Ut rutrum lorem sed tincidunt suscipit.
+        Sed tempor tristique ipsum, nec sodales sapien ornare ut. Cras neque metus,
+        sodales non lacus sit amet, maximus egestas augue. Cras sed sem orci.
+
+
+        Duis ultricies faucibus metus, at ultrices neque gravida a. Ut ex erat, semper
+        egestas volutpat ac, rutrum non posuere.
+
+'
+      buflist: []
+      closed: false
+      len: 797
+      pos: 0
+      softspace: 0
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      Content-Length: ['797']
+      Cookie: [JSESSIONID=02D30EC7F44161F6732A227562A85FEF]
+      User-Agent: [python-requests/2.7.0 CPython/2.7.9 Linux/4.0.4-2-ARCH]
+    method: PUT
+    uri: https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0001
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwMAAAAAAAAAAAA=
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-length: ['20']
+      content-type: [text/plain]
+      date: ['Fri, 05 Jun 2015 20:05:32 GMT']
+      etag: [aa9d2932a31f4b81cbfd1bcdb2c75020]
+      keep-alive: ['timeout=5, max=98']
+      location: ['https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0001']
+      vary: [Accept-Encoding]
+    status: {code: 201, message: Created}
+- request:
+    body: !!python/object:StringIO.StringIO
+      buf: "<?xml version='1.0' encoding='UTF-8'?>\n<dur:chunksManifest xmlns:dur=\"duracloud.org\">\n
+        \ <header schemaVersion=\"0.2\">\n    <sourceContent contentId=\"chunked/chunked_image.txt\">\n
+        \     <mimetype>application/octet-stream</mimetype>\n      <byteSize>11037</byteSize>\n
+        \     <md5>e7aba5d09b490b9f91c65867754ae190</md5>\n    </sourceContent>\n
+        \ </header>\n  <chunks>\n    <chunk chunkId=\"chunked/chunked_image.txt.dura-chunk-0000\">\n
+        \     <byteSize>10240</byteSize>\n      <md5>2147aa269812cac6204ad66ec953ccfe</md5>\n
+        \   </chunk>\n    <chunk chunkId=\"chunked/chunked_image.txt.dura-chunk-0001\">\n
+        \     <byteSize>797</byteSize>\n      <md5>aa9d2932a31f4b81cbfd1bcdb2c75020</md5>\n
+        \   </chunk>\n  </chunks>\n</dur:chunksManifest>\n"
+      buflist: []
+      closed: false
+      len: 706
+      pos: 0
+      softspace: 0
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      Content-Length: ['706']
+      Cookie: [JSESSIONID=02D30EC7F44161F6732A227562A85FEF]
+      User-Agent: [python-requests/2.7.0 CPython/2.7.9 Linux/4.0.4-2-ARCH]
+    method: PUT
+    uri: https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-manifest
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwMAAAAAAAAAAAA=
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-length: ['20']
+      content-type: [text/plain]
+      date: ['Fri, 05 Jun 2015 20:05:32 GMT']
+      etag: [b8fb5713f4b99e3405890887ca9977fa]
+      keep-alive: ['timeout=5, max=97']
+      location: ['https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-manifest']
+      vary: [Accept-Encoding]
+    status: {code: 201, message: Created}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.7.0 CPython/2.7.9 Linux/4.0.4-2-ARCH]
+    method: GET
+    uri: https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA3WQwU7DQAxEf2VugUtoIahNcgJaJC4cyAegJeumS5J12HjbKF+PAxU3fLE0Gr0Z
+        ex8CBxgR6gdxvoEwGhIMgQcK4mjEQQ01eyEvSOpj9C3Zm8t+d71pKJVJEjiPRGhcKAlsJEUVeOLY
+        WXgWHJy3fxyneTg7OeJlh3+ZC7K6w0esW61kWmc+fTbPw3niie1Jgkkvgenio+WWAq8a9sxR064q
+        CidXU4GH3sy8wEpUYiSOWsyqnq2yEvufH/wKPnZdiTf6igrWcgXybb7J19tHndX97W5z/Q3471D9
+        MwEAAA==
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-length: ['232']
+      content-type: [text/plain]
+      date: ['Fri, 05 Jun 2015 20:05:33 GMT']
+      keep-alive: ['timeout=5, max=100']
+      set-cookie: [JSESSIONID=E3993CE663EE195E32010E7908B7262B; Path=/durastore/;
+          Secure; HttpOnly]
+      vary: [Accept-Encoding]
+    status: {code: 404, message: Not Found}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.7.0 CPython/2.7.9 Linux/4.0.4-2-ARCH]
+    method: GET
+    uri: https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-manifest
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA6VSTW+DMAy991cgLpyAJHymAnqYNGmHnfZxnYxjWrQCFYSp3a9fBqxStXaX5eDY
+        8bP9npVsc2z21gf1Q921ucM95ljUYqfqdps7L8/3bupsilWmxn6Nu7F9Hx6hrSsatGUK22FtErlt
+        DOC+G5XX9Vu7WFlWtiNQ1FsD7qiB16W/zTwxpQ1g6MYe6a5rNbXawvl+ULk9jSHlL/db3cCWPH3U
+        S6WpbeqG9OlABRwO+xpBm+Z+h5q0O+ieoMn8M+Snpjxpeqo/qeCcBUnmn+NzUxUVlEAJkWKyDCUr
+        ZSU5xlEaJ0kUAnHJTF+DmgX4Fwom0f6sevLnbS3YKbAm+6dE73uT7vTsMnPsK/SZCNkN+oKHCYCI
+        ZcoFAsaChaDimFBGAWJFF/SnKf/jx6/wS+St5QJIJWQgIOBVWKYcy0rxElUpMImYYNfZLa7ZZOb/
+        /oXF6gtDi5g+wgIAAA==
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-length: ['355']
+      content-type: [application/octet-stream]
+      date: ['Fri, 05 Jun 2015 20:05:33 GMT']
+      etag: [b8fb5713f4b99e3405890887ca9977fa, b8fb5713f4b99e3405890887ca9977fa]
+      keep-alive: ['timeout=5, max=100']
+      last-modified: ['2015-06-05T20:04:34', '2015-06-05T20:04:34']
+      set-cookie: [JSESSIONID=565EB2433326C0FCD3B4CFB3D51F6AF5; Path=/durastore/;
+          Secure; HttpOnly]
+      vary: [Accept-Encoding]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.7.0 CPython/2.7.9 Linux/4.0.4-2-ARCH]
+    method: GET
+    uri: https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0000
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwvISUxOzcjPSUktAgDVEHpzCwAAAA==
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-length: ['31']
+      content-type: [application/octet-stream]
+      date: ['Fri, 05 Jun 2015 20:05:34 GMT']
+      etag: [68753d36ec0c4d7768b20993268d68d1, 68753d36ec0c4d7768b20993268d68d1]
+      keep-alive: ['timeout=5, max=100']
+      last-modified: ['2015-06-05T20:04:31', '2015-06-05T20:04:31']
+      set-cookie: [JSESSIONID=7588492E0EB49549EABBDD6C55AAFC21; Path=/durastore/;
+          Secure; HttpOnly]
+      vary: [Accept-Encoding]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.7.0 CPython/2.7.9 Linux/4.0.4-2-ARCH]
+    method: GET
+    uri: https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0001
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA01SSW7kMAy89yv4AMN/CJLrnAbzAEZmuwlocYuUkeenJPUygAHBElkbWQuZbBSl
+        rPSHJUhmo1MyTldbiLPLqEgcxRpvjL90SF3IJcZmlNUiWZAoVe3ehMQcfU7XqnnXGJmSUtm0kDhg
+        zHilv0Cst5IDALjtvWsfrw0gtFc+FUxvziyBTnWGFj5U8kQYPVGCAyWxD8HHjat4RbP0azQuFLlU
+        QSmUrfQR9d440XfkvCkusyZUQMlCur29k5eKj0rNQJzsK/1zujc8brrDuKH1KrHzGqA4dZIoepW8
+        kR7W0kpfpYvX/FYWdW+R/897OBv1lEumCLmJQsknR4B3n+Zs0/TIOwuSRsohtGSce9ybwlTXhutu
+        EVJOrooMpBYbymvzCooJ34fqmoNuLTtZs6CH+uRwjBjWHcPwDjW1LWMMVrY+lscgnvE0dH5Wtqls
+        hr+8aoepHvErpgUD+9HUXubmGjxAujasGcCDrpfLV0+8RcgJCrQrt6DffeaTBebnozzpnwvEw7b8
+        IAIG5dzcF+NZYvMD3YwdeWTTlR7FmlRZL78YVgiaHQMAAA==
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-length: ['433']
+      content-type: [application/octet-stream]
+      date: ['Fri, 05 Jun 2015 20:05:34 GMT']
+      etag: [aa9d2932a31f4b81cbfd1bcdb2c75020, aa9d2932a31f4b81cbfd1bcdb2c75020]
+      keep-alive: ['timeout=5, max=100']
+      last-modified: ['2015-06-05T20:04:34', '2015-06-05T20:04:34']
+      set-cookie: [JSESSIONID=107AA5BEA0EE400D00880368089886B3; Path=/durastore/;
+          Secure; HttpOnly]
+      vary: [Accept-Encoding]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      Content-Length: ['0']
+      User-Agent: [python-requests/2.7.0 CPython/2.7.9 Linux/4.0.4-2-ARCH]
+    method: DELETE
+    uri: https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-manifest
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA3POzytJzStRSM4ozctOTdGH0vGZuYnpqXolFSV6KaVFibq5iXmZaanFJQopqTmp
+        JakpCsWlycmpxcVppTk5lQBx6wy/RAAAAA==
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-length: ['82']
+      content-type: [text/plain]
+      date: ['Fri, 05 Jun 2015 20:05:35 GMT']
+      keep-alive: ['timeout=5, max=100']
+      set-cookie: [JSESSIONID=3084DCC8D90BB22910910A264B549ADE; Path=/durastore/;
+          Secure; HttpOnly]
+      vary: [Accept-Encoding]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      Content-Length: ['0']
+      User-Agent: [python-requests/2.7.0 CPython/2.7.9 Linux/4.0.4-2-ARCH]
+    method: DELETE
+    uri: https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0000
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA3POzytJzStRSM4ozctOTdGH0vGZuYnpqXolFSV6KaVFibpgYV0DIFBISc1JLUlN
+        USguTU5OLS5OK83JqQQAgizcxUYAAAA=
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-length: ['80']
+      content-type: [text/plain]
+      date: ['Fri, 05 Jun 2015 20:05:35 GMT']
+      keep-alive: ['timeout=5, max=100']
+      set-cookie: [JSESSIONID=334AF2F83292DB115373E7C54520A680; Path=/durastore/;
+          Secure; HttpOnly]
+      vary: [Accept-Encoding]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      Content-Length: ['0']
+      User-Agent: [python-requests/2.7.0 CPython/2.7.9 Linux/4.0.4-2-ARCH]
+    method: DELETE
+    uri: https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0001
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA3POzytJzStRSM4ozctOTdGH0vGZuYnpqXolFSV6KaVFibpgYV0DAwNDhZTUnNSS
+        1BSF4tLk5NTi4rTSnJxKAEJI9NJGAAAA
+    headers:
+      access-control-allow-methods: ['GET, POST, PUT, DELETE']
+      access-control-allow-origin: ['*']
+      connection: [Keep-Alive]
+      content-encoding: [gzip]
+      content-length: ['81']
+      content-type: [text/plain]
+      date: ['Fri, 05 Jun 2015 20:05:36 GMT']
+      keep-alive: ['timeout=5, max=100']
+      set-cookie: [JSESSIONID=FBCE4FC95019705D9377B89C1A7D6376; Path=/durastore/;
+          Secure; HttpOnly]
+      vary: [Accept-Encoding]
+    status: {code: 200, message: OK}
+version: 1
