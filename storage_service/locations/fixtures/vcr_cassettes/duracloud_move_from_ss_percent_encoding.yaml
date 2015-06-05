@@ -1,6 +1,14 @@
 interactions:
 - request:
-    body: !!python/object:__builtin__.file {}
+    body: !!python/object:StringIO.StringIO
+      buf: 'bad #name file
+
+        '
+      buflist: []
+      closed: false
+      len: 15
+      pos: 0
+      softspace: 0
     headers:
       Accept: ['*/*']
       Accept-Encoding: ['gzip, deflate']
