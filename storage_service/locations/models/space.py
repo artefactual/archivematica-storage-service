@@ -187,6 +187,7 @@ class Space(models.Model):
         try:
             return self.get_child_space().browse(path, *args, **kwargs)
         except AttributeError:
+            LOGGER.debug('Falling back to default browse local', exc_info=True)
             return self._browse_local(path)
 
     def delete_path(self, delete_path, *args, **kwargs):
@@ -552,7 +553,7 @@ class Space(models.Model):
                 if name not in entries:
                     continue
                 properties[name] = {}
-                properties[name]['timestamp'] = datetime.isoformat(datetime.strptime(e.group('timestamp'), '%Y/%m/%d %H:%M:%S'))
+                properties[name]['timestamp'] = datetime.datetime.strptime(e.group('timestamp'), '%Y/%m/%d %H:%M:%S').isoformat()
                 if name not in directories:
                     properties[name]['size'] = int(e.group('size').replace(',', ''))
 
