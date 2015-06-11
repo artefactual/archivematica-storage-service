@@ -446,7 +446,7 @@ class Space(models.Model):
         for directory in directories:
             path = os.path.join(os.path.dirname(directory), '')
             path = "{}@{}:{}".format(user, host, utils.coerce_str(path))
-            cmd = ['rsync', '-vv', '--protect-args', '--recursive', temp_dir, path]
+            cmd = ['rsync', '-vv', '--protect-args', '--chmod=ugo+rw', '--recursive', temp_dir, path]
             LOGGER.info("rsync path creation command: %s", cmd)
             try:
                 subprocess.check_call(cmd)
