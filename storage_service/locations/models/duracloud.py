@@ -347,7 +347,7 @@ class Duracloud(models.Model):
             # Example URL: https://trial.duracloud.org/durastore/trial261//ts/test.txt
             self._upload_chunk(url, upload_file)
 
-    def _upload_chunk(self, url, upload_file):
+    def _upload_chunk(self, url, upload_file, retry_attempts=3):
         """
         Upload a single file to Duracloud.
 
@@ -356,6 +356,7 @@ class Duracloud(models.Model):
 
         :param url: URL to upload the file to.
         :param upload_file: Absolute path to the file to upload.
+        :param int retry_attempts: Number of retry attempts left.
         :returns: None
         :raises: StorageException if error storing file
         """
@@ -366,10 +367,18 @@ class Duracloud(models.Model):
             LOGGER.debug('Response: %s', response)
         except Exception:
             LOGGER.exception('Error in PUT to %s', url)
-            raise
+            if retry_attempts > 0:
+                LOGGER.info('Retrying %s', upload_file)
+                self._upload_chunk(url, upload_file, retry_attempts - 1)
+            else:
+                raise
         if response.status_code != 201:
             LOGGER.warning('%s: Response: %s', response, response.text)
-            raise StorageException('Unable to store %s' % upload_file)
+            if retry_attempts > 0:
+                LOGGER.info('Retrying %s', upload_file)
+                self._upload_chunk(url, upload_file, retry_attempts - 1)
+            else:
+                raise StorageException('Unable to store %s' % upload_file)
 
     def move_from_storage_service(self, source_path, destination_path, resume=False):
         """ Moves self.staging_path/src_path to dest_path. """
