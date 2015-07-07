@@ -262,7 +262,9 @@ class Duracloud(models.Model):
 
     def _upload_file(self, url, upload_file):
         """
-        Helper to upload files to Duracloud.
+        Upload a file of any size to Duracloud.
+
+        If the file is larger that self.CHUNK_SIZE, will chunk it and upload chunks and manifest.
 
         :param url: URL to upload the file to.
         :param upload_file: Absolute path to the file to upload.
@@ -284,6 +286,7 @@ class Duracloud(models.Model):
             relative_path = urllib.unquote(url.replace(self.duraspace_url, '', 1))
             LOGGER.debug('File name: %s', relative_path)
             checksum = utils.generate_checksum(upload_file, 'md5')
+            LOGGER.debug('Checksum for %s: %s', upload_file, checksum.hexdigest())
             root = etree.Element('{duracloud.org}chunksManifest', nsmap={'dur': 'duracloud.org'})
             header = etree.SubElement(root, 'header', schemaVersion="0.2")
             content = etree.SubElement(header, 'sourceContent', contentId=relative_path)
@@ -317,7 +320,7 @@ class Duracloud(models.Model):
                     etree.SubElement(chunk_e, 'byteSize').text = str(os.path.getsize(chunk_path))
                     etree.SubElement(chunk_e, 'md5').text = checksum.hexdigest()
                     # Upload chunk
-                    self._upload_file(chunk_url, chunk_path)
+                    self._upload_chunk(chunk_url, chunk_path)
                     # Delete chunk
                     os.remove(chunk_path)
                     # Read next chunk
@@ -329,18 +332,36 @@ class Duracloud(models.Model):
             with open(manifest_path, 'w') as f:
                 f.write(etree.tostring(root, pretty_print=True, xml_declaration=True, encoding='UTF-8'))
             # Upload .dura-manifest
-            self._upload_file(manifest_url, manifest_path)
+            self._upload_chunk(manifest_url, manifest_path)
             os.remove(manifest_path)
             # TODO what if .dura-manifest over chunksize?
         else:
             # Example URL: https://trial.duracloud.org/durastore/trial261//ts/test.txt
+            self._upload_chunk(url, upload_file)
+
+    def _upload_chunk(self, url, upload_file):
+        """
+        Upload a single file to Duracloud.
+
+        The file size must be less than self.CHUNK_SIZE.
+        Call _upload_file_check_chunking if the file might be larger.
+
+        :param url: URL to upload the file to.
+        :param upload_file: Absolute path to the file to upload.
+        :returns: None
+        :raises: StorageException if error storing file
+        """
+        try:
             LOGGER.debug('PUT URL: %s', url)
             with open(upload_file, 'rb') as f:
                 response = self.session.put(url, data=f)
             LOGGER.debug('Response: %s', response)
-            if response.status_code != 201:
-                LOGGER.warning('%s: Response: %s', response, response.text)
-                raise StorageException('Unable to store %s' % upload_file)
+        except Exception:
+            LOGGER.exception('Error in PUT to %s', url)
+            raise
+        if response.status_code != 201:
+            LOGGER.warning('%s: Response: %s', response, response.text)
+            raise StorageException('Unable to store %s' % upload_file)
 
     def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
