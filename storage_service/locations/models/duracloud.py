@@ -372,13 +372,14 @@ class Duracloud(models.Model):
                 self._upload_chunk(url, upload_file, retry_attempts - 1)
             else:
                 raise
-        if response.status_code != 201:
-            LOGGER.warning('%s: Response: %s', response, response.text)
-            if retry_attempts > 0:
-                LOGGER.info('Retrying %s', upload_file)
-                self._upload_chunk(url, upload_file, retry_attempts - 1)
-            else:
-                raise StorageException('Unable to store %s' % upload_file)
+        else:
+            if response.status_code != 201:
+                LOGGER.warning('%s: Response: %s', response, response.text)
+                if retry_attempts > 0:
+                    LOGGER.info('Retrying %s', upload_file)
+                    self._upload_chunk(url, upload_file, retry_attempts - 1)
+                else:
+                    raise StorageException('Unable to store %s' % upload_file)
 
     def move_from_storage_service(self, source_path, destination_path, resume=False):
         """ Moves self.staging_path/src_path to dest_path. """
