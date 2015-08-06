@@ -1,5 +1,7 @@
 #!/bin/sh
 
+echo "postinst called with:" $1 $2
+
 echo "creating archivematica user"
 userID=`id -u archivematica`
 
@@ -28,6 +30,26 @@ rsync -a /var/archivematica/storage-service/templates /usr/lib/archivematica/sto
 cd /usr/lib/archivematica/storage-service
 
 echo "configuring django database and static files"
+find /usr/lib/archivematica/storage-service/ -name '*.pyc'  -delete
+# 0.3.0 will automatically fake the first migration
+if [[ $2 == '0.7.'* || $2 == '0.6.'* || $2 == '0.5.'* || $2 == '0.4.'* ]]; then
+    echo 'Faking the 0.4 migration'
+    /usr/share/python/archivematica-storage-service/bin/python manage.py migrate locations 0002_v0_4 --fake
+fi
+if [[ $2 == '0.7.'* || $2 == '0.6.'* || $2 == '0.5.'* ]]; then
+    echo 'Faking 0.5 migration'
+    /usr/share/python/archivematica-storage-service/bin/python manage.py migrate locations 0003_v0_5 --fake
+fi
+
+if [[ $2 == '0.7.'* || $2 == '0.6.'* ]]; then
+    echo 'No migrations in 0.6'
+fi
+
+if [[ $2 == '0.7.'* ]]; then
+    echo 'Faking 0.7 migration'
+    /usr/share/python/archivematica-storage-service/bin/python manage.py migrate locations 0004_v0_7 --fake
+fi
+
 /usr/share/python/archivematica-storage-service/bin/python manage.py migrate
 /usr/share/python/archivematica-storage-service/bin/python manage.py collectstatic --noinput
 
