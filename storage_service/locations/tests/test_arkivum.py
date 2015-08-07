@@ -13,13 +13,13 @@ ARKIVUM_DIR = os.path.abspath(os.path.join(THIS_DIR, '..', 'fixtures', 'arkivum'
 
 class TestArkivum(TestCase):
 
-    fixtures = ['initial_data.json', 'arkivum.json']
+    fixtures = ['base.json', 'arkivum.json']
 
     def setUp(self):
         self.arkivum_object = models.Arkivum.objects.all()[0]
         self.arkivum_object.space.path = ARKIVUM_DIR
         self.arkivum_object.space.save()
-        self.package = models.Package.objects.all()[0]
+        self.package = models.Package.objects.get(uuid='c0f8498f-b92e-4a8b-8941-1b34ba062ed8')
         # Create filesystem to interact with
         os.mkdir(ARKIVUM_DIR)
         os.mkdir(os.path.join(ARKIVUM_DIR, 'aips'))

@@ -24,7 +24,7 @@
     }
 },
 {
-    "pk": 7, 
+    "pk": 8,
     "model": "locations.location", 
     "fields": {
         "used": 0, 
@@ -47,20 +47,6 @@
         "api_username": null,
         "remote_name": null,
         "description": "Archivematica"
-    }
-},
-{
-    "pk": 3, 
-    "model": "locations.location", 
-    "fields": {
-        "used": 0, 
-        "description": "For storage service internal usage.", 
-        "space": "7d20c992-bc92-4f92-a794-7161ff2cc08b", 
-        "enabled": true, 
-        "quota": null, 
-        "relative_path": "var/archivematica/storage_service", 
-        "purpose": "SS", 
-        "uuid": "72ee3a1a-9497-46db-aa58-56ea8d7fedc5"
     }
 },
 {
