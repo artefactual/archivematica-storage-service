@@ -344,7 +344,9 @@ class Package(models.Model):
         destination_space.move_from_storage_service(
             source_path=destination_path,
             destination_path=destination_path)
-        destination_space.post_move_from_storage_service()
+        destination_space.post_move_from_storage_service(
+            staging_path=None,
+            destination_path=None)
 
         # Copy recovery files to storage service staging
         source_path = os.path.join(
@@ -363,7 +365,9 @@ class Package(models.Model):
         destination_space.move_from_storage_service(
             source_path=destination_path,
             destination_path=destination_path)
-        destination_space.post_move_from_storage_service()
+        destination_space.post_move_from_storage_service(
+            staging_path=None,
+            destination_path=None)
 
         temp_aip.delete()
 
