@@ -482,7 +482,7 @@ class Space(models.Model):
             path = str(path)
         if not os.path.exists(path):
             LOGGER.info('%s in %s does not exist', path, self)
-            return {'directories': [], 'entries': [], 'properties': []}
+            return {'directories': [], 'entries': [], 'properties': {}}
         properties = {}
         # Sorted list of all entries in directory, excluding hidden files
         entries = [name for name in os.listdir(path) if name[0] != '.']
