@@ -87,7 +87,9 @@ class Space(models.Model):
     uuid = UUIDField(editable=False, unique=True, version=4,
         help_text="Unique identifier")
 
+    # Max length 8 (see access_protocol definition)
     ARKIVUM = 'ARKIVUM'
+    DATAVERSE = 'DV'
     DURACLOUD = 'DC'
     FEDORA = 'FEDORA'
     LOCAL_FILESYSTEM = 'FS'
@@ -95,9 +97,10 @@ class Space(models.Model):
     NFS = 'NFS'
     PIPELINE_LOCAL_FS = 'PIPE_FS'
     SWIFT = 'SWIFT'
-    OBJECT_STORAGE = {DURACLOUD, SWIFT}
+    OBJECT_STORAGE = {DATAVERSE, DURACLOUD, SWIFT}
     ACCESS_PROTOCOL_CHOICES = (
         (ARKIVUM, 'Arkivum'),
+        (DATAVERSE, 'Dataverse'),
         (DURACLOUD, 'DuraCloud'),
         (FEDORA, "FEDORA via SWORD2"),
         (LOCAL_FILESYSTEM, "Local Filesystem"),

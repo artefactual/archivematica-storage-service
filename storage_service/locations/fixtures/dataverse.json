@@ -1,0 +1,39 @@
+[
+{
+    "fields": {
+        "host": "apitest.dataverse.org",
+        "api_key": "testkeys-77a8-49a3-874e-be1148e7c970",
+        "space": "216bec3b-c4c1-4eff-97ef-728244e58dd0"
+    },
+    "model": "locations.dataverse",
+    "pk": 2
+},
+{
+    "fields": {
+        "last_verified": null,
+        "used": 0,
+        "verified": false,
+        "uuid": "216bec3b-c4c1-4eff-97ef-728244e58dd0",
+        "access_protocol": "DV",
+        "staging_path": "/var/archivematica/storage_service/",
+        "path": "",
+        "size": null
+    },
+    "model": "locations.space",
+    "pk": 3
+},
+{
+    "fields": {
+        "used": 0,
+        "description": "",
+        "space": "216bec3b-c4c1-4eff-97ef-728244e58dd0",
+        "enabled": true,
+        "quota": null,
+        "relative_path": "*",
+        "purpose": "TS",
+        "uuid": "da1c729d-0b17-4c48-91d5-127f38f7542d"
+    },
+    "model": "locations.location",
+    "pk": 8
+}
+]

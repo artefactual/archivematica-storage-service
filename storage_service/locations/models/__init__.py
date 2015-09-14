@@ -21,6 +21,7 @@ from space import *
 # Protocol Spaces
 # Will only have one model, so import that directly
 from arkivum import Arkivum
+from dataverse import Dataverse
 from duracloud import Duracloud
 from fedora import Fedora, PackageDownloadTask, PackageDownloadTaskFile
 from local_filesystem import LocalFilesystem

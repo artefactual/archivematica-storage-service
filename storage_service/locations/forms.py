@@ -91,6 +91,12 @@ class ArkivumForm(forms.ModelForm):
         fields = ('host', 'remote_user', 'remote_name')
 
 
+class DataverseForm(forms.ModelForm):
+    class Meta:
+        model = models.Dataverse
+        fields = ('host', 'api_key')
+
+
 class DuracloudForm(forms.ModelForm):
     class Meta:
         model = models.Duracloud

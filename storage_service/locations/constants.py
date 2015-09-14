@@ -13,6 +13,11 @@ PROTOCOL = {
                    'remote_user',
                    'remote_name']
     },
+    models.Space.DATAVERSE: {
+        'model': models.Dataverse,
+        'form': forms.DataverseForm,
+        'fields': ['host'],
+    },
     models.Space.DURACLOUD: {
         'model': models.Duracloud,
         'form': forms.DuracloudForm,
