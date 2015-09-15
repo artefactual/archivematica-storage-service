@@ -181,6 +181,7 @@ class Space(models.Model):
         'size': Size of the object
         'object count': Number of objects in the directory, including children
         'timestamp': Last modified timestamp.
+        'verbose name': Verbose name of the object
         See each Space's browse for details.
 
         :param str path: Full path to return info for

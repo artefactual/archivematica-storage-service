@@ -30,10 +30,13 @@ class TestDataverse(TestCase):
         assert len(resp['directories']) == 15
         assert len(resp['entries']) == 15
         assert resp['entries'] == resp['directories']
-        assert resp['entries'][0] == 'Ad hoc observational study of the trees outside my window'
-        assert resp['entries'][1] == 'Constitive leaf ORAC'
-        assert resp['entries'][14] == 'testjpg'
-        assert len(resp['properties']) == 0
+        assert resp['entries'][0] == '82'
+        assert resp['entries'][1] == '25'
+        assert resp['entries'][14] == '14'
+        assert len(resp['properties']) == 15
+        assert resp['properties']['82']['verbose name'] == 'Ad hoc observational study of the trees outside my window'
+        assert resp['properties']['25']['verbose name'] == 'Constitive leaf ORAC'
+        assert resp['properties']['14']['verbose name'] == 'testjpg'
 
     @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'dataverse_browse_filter.yaml'))
     def test_browse_filter(self):
@@ -45,8 +48,12 @@ class TestDataverse(TestCase):
         assert len(resp['directories']) == 4
         assert len(resp['entries']) == 4
         assert resp['entries'] == resp['directories']
-        assert resp['entries'][0] == 'Metadata mapping test study'
-        assert resp['entries'][1] == 'Restricted Studies Test'
-        assert resp['entries'][2] == 'testdocx'
-        assert resp['entries'][3] == 'testjpg'
-        assert len(resp['properties']) == 0
+        assert resp['entries'][0] == '90'
+        assert resp['entries'][1] == '93'
+        assert resp['entries'][2] == '16'
+        assert resp['entries'][3] == '14'
+        assert len(resp['properties']) == 4
+        assert resp['properties']['90']['verbose name'] == 'Metadata mapping test study'
+        assert resp['properties']['93']['verbose name'] == 'Restricted Studies Test'
+        assert resp['properties']['16']['verbose name'] == 'testdocx'
+        assert resp['properties']['14']['verbose name'] == 'testjpg'

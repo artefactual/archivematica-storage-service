@@ -67,8 +67,12 @@ class Dataverse(models.Model):
                 LOGGER.error('Could not parse JSON from response to %s', url)
                 raise StorageException('Unable parse JSON from response to %s with query %s' % (url, path))
 
-            # WARNING 'name' is not unique - may generate incorrect properties
-            entries += [x['name'] for x in data['items']]
+            entries += [str(x['entity_id']) for x in data['items']]
+
+            properties.update({
+                str(x['entity_id']): {'verbose name': x['name']}
+                for x in data['items']
+            })
 
             if params['start'] + data['count_in_response'] < data['total_count']:
                 params['start'] += data['count_in_response']
