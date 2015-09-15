@@ -1,0 +1,33 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.7.0 CPython/2.7.6 Linux/3.13.0-43-generic]
+    method: GET
+    uri: https://apitest.dataverse.org/api/search/?sort=name&show_entity_ids=True&q=title%3Atest%2A&start=0&key=testkeys-77a8-49a3-874e-be1148e7c970&per_page=10&type=dataset&order=asc
+  response:
+    body: {string: !!python/unicode '{"status":"OK","data":{"q":"title:test*","total_count":4,"start":0,"spelling_alternatives":{},"items":[{"name":"Metadata
+        mapping test study","type":"dataset","url":"http://dx.doi.org/10.5072/FK2/0MOPJM","image_url":"https://apitest.dataverse.org/api/access/dsCardImage/40","global_id":"doi:10.5072/FK2/0MOPJM","description":"This
+        study tests the types of metadata that are exported from Dataverse and how
+        they can be mapped to standard schemas.","published_at":"2015-08-24T16:32:00Z","citation":"McLellan,
+        Evelyn, 2015, \"Metadata mapping test study\", <a href=\"http://dx.doi.org/10.5072/FK2/0MOPJM\">http://dx.doi.org/10.5072/FK2/0MOPJM</a>,  API
+        Test Dataverse,  V1 [UNF:6:r5Z8n0CKSeRcAvjcTINpmQ==]","entity_id":90,"authors":["McLellan,
+        Evelyn"]},{"name":"Restricted Studies Test","type":"dataset","url":"http://dx.doi.org/10.5072/FK2/IRSXYF","image_url":"https://apitest.dataverse.org/api/access/dsCardImage/41","global_id":"doi:10.5072/FK2/IRSXYF","description":"test","published_at":"2015-08-25T01:30:18Z","citation":"barboza,
+        dags, 2015, \"Restricted Studies Test\", <a href=\"http://dx.doi.org/10.5072/FK2/IRSXYF\">http://dx.doi.org/10.5072/FK2/IRSXYF</a>,  API
+        Test Dataverse,  V1","entity_id":93,"authors":["barboza, dags"]},{"name":"testdocx","type":"dataset","url":"http://dx.doi.org/10.5072/FK2/ECUYCX","image_url":"https://apitest.dataverse.org/api/access/dsCardImage/35","global_id":"doi:10.5072/FK2/ECUYCX","description":"test
+        docx","published_at":"2015-08-06T16:46:05Z","citation":"Liu, Susan, 2015,
+        \"testdocx\", <a href=\"http://dx.doi.org/10.5072/FK2/ECUYCX\">http://dx.doi.org/10.5072/FK2/ECUYCX</a>,  API
+        Test Dataverse,  V5","entity_id":16,"authors":["Liu, Susan"]},{"name":"testjpg","type":"dataset","url":"http://dx.doi.org/10.5072/FK2/TPNDZ2","image_url":"https://apitest.dataverse.org/api/access/dsCardImage/3","global_id":"doi:10.5072/FK2/TPNDZ2","description":"test
+        jpg","published_at":"2015-06-29T08:27:24Z","citation":"Liu, Susan, 2015, \"testjpg\",
+        <a href=\"http://dx.doi.org/10.5072/FK2/TPNDZ2\">http://dx.doi.org/10.5072/FK2/TPNDZ2</a>,  API
+        Test Dataverse,  V1","entity_id":14,"authors":["Liu, Susan"]}],"count_in_response":4}}'}
+    headers:
+      connection: [close]
+      content-length: ['2163']
+      content-type: [application/json]
+      date: ['Tue, 15 Sep 2015 22:34:52 GMT']
+    status: {code: 200, message: OK}
+version: 1
