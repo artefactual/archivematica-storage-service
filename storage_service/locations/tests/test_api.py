@@ -8,7 +8,7 @@ from locations import models
 
 class TestAPI(TestCase):
 
-    fixtures = ['base.json', 'pipelines.json']
+    fixtures = ['base.json', 'pipelines.json', 'package.json']
 
     def setUp(self):
         self.client = Client()

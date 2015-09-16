@@ -7,7 +7,7 @@ from locations import models
 
 class TestPackage(TestCase):
 
-    fixtures = ['base.json']
+    fixtures = ['base.json', 'package.json']
 
     def setUp(self):
         self.package = models.Package.objects.all()[0]
