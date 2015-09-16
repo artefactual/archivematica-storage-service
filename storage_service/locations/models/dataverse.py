@@ -1,6 +1,7 @@
 # stdlib, alphabetical
 import json
 import logging
+import os
 
 # Core Django, alphabetical
 from django.db import models
@@ -87,5 +88,49 @@ class Dataverse(models.Model):
         }
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
-        """ Moves src_path to dest_space.staging_path/dest_path. """
-        pass
+        """
+        Fetch dataset with ID `src_path` to dest_space.staging_path/dest_path.
+        """
+        # Verify src_path has to be a number
+        if not src_path.isdigit():
+            raise StorageException('Invalid value for src_path: %s. Must be a numberic entity_id' % src_path)
+        # Fetch dataset info
+        url = 'https://' + self.host + '/api/datasets/' + src_path
+        params = {
+            'key': self.api_key,
+        }
+        LOGGER.debug('URL: %s, params: %s', url, params)
+        response = requests.get(url, params=params)
+        LOGGER.debug('Response: %s', response)
+        if response.status_code != 200:
+            LOGGER.warning('%s: Response: %s', response, response.text)
+            raise StorageException('Unable to fetch dataset %s from %s' % (src_path, url))
+        try:
+            dataset = response.json()['data']
+        except json.JSONDecodeError:
+            LOGGER.error('Could not parse JSON from response to %s', url)
+            raise StorageException('Unable parse JSON from response to %s' % url,)
+
+        # Create directories
+        self.space.create_local_directory(dest_path)
+
+        # Write out dataset info as dataset.json
+        datasetjson_path = os.path.join(dest_path, 'dataset.json')
+        with open(datasetjson_path, 'w') as f:
+            json.dump(dataset, f)
+
+        # Fetch all files in dataset.json
+        for file_entry in dataset['latestVersion']['files']:
+            entry_id = str(file_entry['datafile']['id'])
+            if not file_entry['label'].endswith('.tab'):
+                download_path = os.path.join(dest_path, file_entry['datafile']['name'])
+                url = 'https://' + self.host + '/api/access/datafile/' + entry_id
+            else:
+                # If the file is the tab file, download the bundle instead
+                download_path = os.path.join(dest_path, file_entry['label'][:-4] + '.zip')
+                url = 'https://' + self.host + '/api/access/datafile/bundle/' + entry_id
+            LOGGER.debug('URL: %s, params: %s', url, params)
+            response = requests.get(url, params=params)
+            LOGGER.debug('Response: %s', response)
+            with open(download_path, 'wb') as f:
+                f.write(response.content)

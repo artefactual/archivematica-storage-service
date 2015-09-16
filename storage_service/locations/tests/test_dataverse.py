@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.test import TestCase
 import os
+import shutil
 import vcr
 
 from locations import models
@@ -15,6 +16,16 @@ class TestDataverse(TestCase):
     def setUp(self):
         self.dataverse = models.Dataverse.objects.all()[0]
         self.dataverse_location = models.Location.objects.get(space=self.dataverse.space)
+
+        self.space = models.Space.objects.get(access_protocol='FS')
+        self.space.staging_path = os.path.join(FIXTURES_DIR)  # Make staging path the fixtures dir
+        self.dest_path = os.path.join(self.space.staging_path, 'dataverse/')
+
+    def tearDown(self):
+        try:
+            shutil.rmtree(self.dest_path)
+        except Exception:
+            pass
 
     def test_has_required_attributes(self):
         assert self.dataverse.host
@@ -57,3 +68,15 @@ class TestDataverse(TestCase):
         assert resp['properties']['93']['verbose name'] == 'Restricted Studies Test'
         assert resp['properties']['16']['verbose name'] == 'testdocx'
         assert resp['properties']['14']['verbose name'] == 'testjpg'
+
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'dataverse_move_to.yaml'))
+    def test_move_to(self):
+        """
+        It should fetch the files listed in the dataset.
+        It should fetch the bundle for tha dataset.
+        """
+        assert os.path.exists(self.dest_path) is False
+        self.dataverse.space.move_to_storage_service('90', 'dataverse/', self.space)
+        assert 'dataset.json' in os.listdir(self.dest_path)
+        assert 'chelan 052.jpg' in os.listdir(self.dest_path)
+        assert 'Weather_data.zip' in os.listdir(self.dest_path)
