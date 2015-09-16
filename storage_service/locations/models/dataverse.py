@@ -39,6 +39,8 @@ class Dataverse(models.Model):
 
         Datasets are considered directories when browsing.
         """
+        # Remove things earlier layers added
+        path = path.rstrip('/')
         # Use http://guides.dataverse.org/en/latest/api/search.html to search and return datasets
         # Location path is query string
         # FIXME only browse one layer deep
@@ -91,6 +93,9 @@ class Dataverse(models.Model):
         """
         Fetch dataset with ID `src_path` to dest_space.staging_path/dest_path.
         """
+        # TODO how to strip location path if location isn't passed in?
+        # HACK strip everything that isn't a number
+        src_path = ''.join(c for c in src_path if c.isdigit())
         # Verify src_path has to be a number
         if not src_path.isdigit():
             raise StorageException('Invalid value for src_path: %s. Must be a numberic entity_id' % src_path)
