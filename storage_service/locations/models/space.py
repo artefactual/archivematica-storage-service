@@ -335,7 +335,6 @@ class Space(models.Model):
             except OSError:
                 logging.warning('Unable to remove %s', staging_path, exc_info=True)
 
-
     def update_package_status(self, package):
         """
         Check and update the status of `package` stored in this Space.
@@ -346,6 +345,17 @@ class Space(models.Model):
             message = '{} space has not implemented update_package_status'.format(self.get_access_protocol_display())
             return (None, message)
 
+    def check_package_fixity(self, package):
+        """
+        Check and return the fixity status of `package` stored in this space.
+
+        :param package: Package to check
+        """
+        child = self.get_child_space()
+        if hasattr(child, 'check_package_fixity'):
+            return child.check_package_fixity(package)
+        else:
+            raise NotImplementedError('Space %s does not implement check_package_fixity' % self.get_access_protocol_display())
 
     # HELPER FUNCTIONS
 
