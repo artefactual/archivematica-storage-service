@@ -757,9 +757,10 @@ class Package(models.Model):
         self.status = Package.UPLOADED
         self.save()
 
-    def check_fixity(self, delete_after=True):
+    def check_fixity(self, ignore_space=False, delete_after=True):
         """ Scans the package to verify its checksums.
 
+        This will check if the Space can run a fixity and use that. If not, it will run fixity locally.
         This is implemented using bagit-python module, using the checksums from the
         bag's manifest. Note that this does not support packages which are not bags.
 
@@ -777,10 +778,23 @@ class Package(models.Model):
         Note that if the package is not compressed, the fixity scan will occur
         in-place. If fixity scans will happen periodically, if packages are very
         large, or if scans are otherwise expected to contribute to heavy disk load,
-        it is recommended to store packages uncompressed. """
+        it is recommended to store packages uncompressed.
+
+        :param bool ignore_space: If True, will always fetch and run fixity locally. If not, it will use a Space's fixity check if available.
+        :param bool delete_after: If True and the package was copied to a local path, will delete the temporary copy once fixity is run.
+        """
 
         if self.package_type not in (self.AIC, self.AIP):
             return (None, [], "Unable to scan; package is not a bag (AIP or AIC)")
+
+        if not ignore_space:
+            try:
+                (success, failures, message) = self.current_location.space.check_package_fixity(self)
+            except NotImplementedError:
+                pass
+            else:
+                if success is not None:
+                    return (success, failures, message)
 
         if self.is_compressed:
             # bagit can't deal with compressed files, so extract before
