@@ -14,7 +14,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from common import decorators
 from common import utils
-from .models import Callback, Space, Location, Package, Event, Pipeline, LocationPipeline, StorageException
+from .models import Callback, Space, Location, Package, Event, Pipeline, LocationPipeline, StorageException, FixityLog
 from . import forms
 from .constants import PROTOCOL
 
@@ -43,8 +43,13 @@ def get_delete_context_dict(request, model, object_uuid, default_cancel='/'):
 ########################## FILES ##########################
 
 def package_list(request):
-    packages = Package.objects.all()
-    return render(request, 'locations/package_list.html', locals())
+    context = {'packages': Package.objects.all()}
+    return render(request, 'locations/package_list.html', context)
+
+def package_fixity(request, package_uuid):
+    log_entries = FixityLog.objects.filter(package__uuid=package_uuid).order_by('-datetime_reported')
+    context = {'log_entries': log_entries}
+    return render(request, 'locations/fixity_results.html', context)
 
 class PackageRequestHandlerConfig:
     event_type = ''                # Event type being handled
