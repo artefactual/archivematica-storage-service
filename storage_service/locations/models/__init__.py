@@ -16,6 +16,7 @@ from location import *
 from package import *
 from pipeline import *
 from space import *
+from fixity_log import *
 # not importing managers as that is internal
 
 # Protocol Spaces
