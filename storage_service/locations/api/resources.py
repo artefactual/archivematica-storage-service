@@ -747,6 +747,10 @@ class PackageResource(ModelResource):
             signals.failed_fixity_check.send(sender=self,
                 uuid=bundle.obj.uuid, location=bundle.obj.full_path,
                 report=report)
+        else:
+            signals.successful_fixity_check.send(sender=self,
+                uuid=bundle.obj.uuid, location=bundle.obj.full_path,
+                report=report)
 
         return http.HttpResponse(
             report,
