@@ -27,6 +27,7 @@ from . import StorageException
 from location import Location
 from space import Space
 from event import File
+from fixity_log import FixityLog
 
 __all__ = ('Package', )
 
@@ -162,6 +163,22 @@ class Package(models.Model):
             else:
                 message = "{} is neither a file nor a directory".format(full_path)
             raise StorageException(message)
+
+    @property
+    def latest_fixity_check_datetime(self):
+        latest_check = self._latest_fixity_check()
+        return latest_check.datetime_reported if latest_check is not None else None
+
+    @property
+    def latest_fixity_check_result(self):
+        latest_check = self._latest_fixity_check()
+        return latest_check.success if latest_check is not None else None
+
+    def _latest_fixity_check(self):
+        try:
+            return FixityLog.objects.filter(package=self).order_by('-datetime_reported')[0]  # limit 1
+        except IndexError:
+            return None
 
     def get_download_path(self, lockss_au_number=None):
         full_path = self.fetch_local_path()
