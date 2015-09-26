@@ -31,6 +31,14 @@ echo "installing swift dependencies"
 /usr/share/python/archivematica-storage-service/bin/pip install python-swiftclient
 /usr/share/python/archivematica-storage-service/bin/pip install python-keystoneclient
 
+echo "installing locksomatic dependencies"
+/usr/share/python/archivematica-storage-service/bin/pip install git+https://github.com/swordapp/python-client-sword2.git
+
+echo "installing other dependencies"
+/usr/share/python/archivematica-storage-service/bin/pip install pyopenssl
+/usr/share/python/archivematica-storage-service/bin/pip ndg-httpsclient
+/usr/share/python/archivematica-storage-service/bin/pip pyasn1
+
 echo "configuring django database and static files"
 /usr/share/python/archivematica-storage-service/bin/python manage.py syncdb
 /usr/share/python/archivematica-storage-service/bin/python manage.py migrate
