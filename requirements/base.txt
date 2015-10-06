@@ -9,9 +9,11 @@ brotli==0.5.2  # Better compression library for WhiteNoise
 defusedxml==0.5.0
 Django>=1.8,<1.9
 dj-database-url==0.4.2
+djangorestframework==3.2.4
 django-annoying==0.10.3
 django-braces==1.11.0
 django-extensions==1.7.9
+django-filter==0.11.0
 django-model-utils==3.0.0
 #tastypie 0.13.3 has breaking changes
 django-tastypie==0.13.1
