@@ -230,6 +230,7 @@ DJANGO_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
+    'rest_framework',  # REST framework
     'tastypie',  # REST framework
     'longerusername', # Longer (> 30 characters) username
 ]
@@ -243,7 +244,15 @@ LOCAL_APPS = [
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+<<<<<<< bc985918ccbad598b7e4a95d82363e2b773b568c
 # ######## END APP CONFIGURATION
+
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    ),
+    'PAGE_SIZE': 10
+}
 
 
 # ######## LOGIN REQUIRED MIDDLEWARE CONFIGURATION
