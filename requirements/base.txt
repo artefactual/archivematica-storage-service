@@ -22,3 +22,5 @@ python-swiftclient==2.4.0
 requests>=2.3.0
 git+https://github.com/swordapp/python-client-sword2.git@0c241438f2ced13ec3364caa03edf28d5ed5c02c#egg=sword2
 msgpack-python>=0.4.0
+djangorestframework==3.2.4
+django-filter==0.11.0
