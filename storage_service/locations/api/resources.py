@@ -4,6 +4,7 @@
 # stdlib, alphabetical
 import json
 import logging
+from multiprocessing import Process
 import os
 import re
 import shutil
@@ -555,6 +556,10 @@ class PackageResource(ModelResource):
         if bundle.obj.package_type in (Package.AIP, Package.AIC, Package.DIP) and bundle.obj.current_location.purpose in (Location.AIP_STORAGE, Location.DIP_STORAGE):
             # Store AIP/AIC
             bundle.obj.store_aip(origin_location, origin_path, related_package_uuid)
+
+            # Asynchronously index AIP files
+            p = Process(target=bundle.obj.index_file_data_from_aip_mets)
+            p.start()
         elif bundle.obj.package_type in (Package.TRANSFER,) and bundle.obj.current_location.purpose in (Location.BACKLOG,):
             # Move transfer to backlog
             bundle.obj.backlog_transfer(origin_location, origin_path)

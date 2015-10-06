@@ -19,6 +19,7 @@ from django.utils.translation import ugettext as _, ugettext_lazy as _l
 # Third party dependencies, alphabetical
 import bagit
 import jsonfield
+import metsrw
 from django_extensions.db.fields import UUIDField
 import requests
 
@@ -226,7 +227,6 @@ class Package(models.Model):
             # TODO use Space protocol to determine if this is possible?
             self.local_path = self.full_path
             return self.local_path
-        return None
 
     def fetch_local_path(self):
         """Fetches a local copy of the package.
@@ -766,7 +766,8 @@ class Package(models.Model):
         file_data = self._parse_mets(prefix=prefix)
 
         for f in file_data['files']:
-            File.objects.update_or_create(source_id=f['file_uuid'],
+            File.objects.update_or_create(file_type=File.TRANSFER
+                                          source_id=f['file_uuid'],
                                           source_package=file_data['transfer_uuid'],
                                           accessionid=file_data['accession_id'],
                                           package=self,
@@ -819,6 +820,106 @@ class Package(models.Model):
         self._update_quotas(dest_space, self.current_location)
         self.status = Package.UPLOADED
         self.save()
+
+    def index_file_data_from_aip_mets(self):
+        """
+        Attempts to read an Archivematica AIP METS file inside this
+        package, then uses the retrieved metadata to generate one entry in the
+        File table in the database for each file inside the package.
+
+        :raises StorageException: if the transfer METS cannot be found,
+            or if required elements are missing.
+        """
+        aip_dir_name = os.path.basename(os.path.splitext(self.full_path)[0])
+        relative_path = os.path.join(aip_dir_name, "data", "METS." + self.uuid + ".xml")
+
+        path_to_mets, temp_dir = self.extract_file(relative_path)
+
+        mw = metsrw.mets.METSWriter()
+        mw.fromfile(path_to_mets)
+
+        for fsentry in mw.all_files():
+            metadata = self._parse_file_metadata(fsentry)
+
+            if metadata is not None:
+                aip_file = File()
+                aip_file.file_type = File.AIP
+                aip_file.package = self
+                aip_file.source_id = metadata['uuid']
+                aip_file.origin = self.origin_pipeline.uuid
+                aip_file.name = os.path.join(aip_dir_name, fsentry.path)
+                aip_file.ingestion_time = mw.createdate
+                if 'format_name' in metadata:
+                    aip_file.format_name = metadata['format_name']
+                if 'size' in metadata:
+                    aip_file.size = int(metadata['size'])
+                if 'pronom_id' in metadata:
+                    aip_file.pronom_id = metadata['pronom_id']
+                if 'normalized' in metadata:
+                    aip_file.normalized = metadata['normalized']
+                if 'validated' in metadata:
+                    aip_file.validated = metadata['validated']
+                aip_file.save()
+
+        shutil.rmtree(temp_dir)
+
+    def _parse_file_metadata(self, fsentry):
+        """
+        Cycle through an FSEntry object's AMDsec subsections and consolidate
+        PREMIS object/event metadata.
+        """
+        metadata = None
+
+        if fsentry.path != 'None':
+            metadata = {}
+
+            # Get technical metadata
+            if len(fsentry.techmds):
+                techmd = fsentry.techmds[0]
+                premis_object = metsrw.premis.Object.parse(techmd.contents.document, False)
+
+                # Don't provide metadata for METS files
+                if premis_object.characteristics[0]['is_mets']:
+                    return
+
+                metadata['filename'] = premis_object.original_name
+
+                if len(premis_object.object_identifiers[0]):
+                    if premis_object.object_identifiers[0]['type'] == 'UUID':
+                        metadata['uuid'] = premis_object.object_identifiers[0]['value']
+
+                if premis_object.characteristics[0]['size'] is not None:
+                    metadata['size'] = premis_object.characteristics[0]['size']
+
+                # Add file format to metadata
+                if len(premis_object.characteristics[0]['formats']):
+                    first_format = premis_object.characteristics[0]['formats'][0]
+                    if first_format['name'] is not None:
+                        metadata['format_name'] = first_format['name']
+                    if first_format['version'] is not None:
+                        metadata['format_version'] = first_format['version']
+                    if first_format['registry_name'] == 'PRONOM':
+                        metadata['pronom_id'] = first_format['registry_key']
+
+                # Add normalization status to metadata
+                if len(premis_object.relationships) and premis_object.relationships[0]['type'] == 'derivation':
+                    if premis_object.relationships[0]['subtype'] == 'has source':
+                        metadata['derivative'] = True
+
+                    if premis_object.relationships[0]['subtype'] == 'is source of':
+                        metadata['normalized'] = True
+
+            # Cycle through event data to see if file has been validated and if it passed
+            for digiprovmd in fsentry.digiprovmds:
+                if digiprovmd.contents.mdtype == 'PREMIS:EVENT':
+                    # Parse PREMIS event
+                    premis_event = metsrw.premis.Event.parse(digiprovmd.contents.document)
+
+                    # Indicate whether or not a file has been validated in metadata and if it passed
+                    if premis_event.event_type == 'validation':
+                        metadata['validated'] = premis_event.outcomes[0]['outcome'] == "pass"
+
+        return metadata
 
     def check_fixity(self, force_local=False, delete_after=True):
         """ Scans the package to verify its checksums.

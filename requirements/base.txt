@@ -40,3 +40,4 @@ git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git
 # This may not actually be needed as SS uses sqlite by default which doesn't really care about length.
 # But better to make sure Django doesn't have any validation issues (and also, keep db backend easily swappable)
 git+https://github.com/seatme/django-longer-username.git@seatme#egg=longerusername
+-e git://github.com/mcantelon/mets-reader-writer.git@dev/issue-8894-premis-parsing#egg=metsrw

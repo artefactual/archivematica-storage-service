@@ -135,9 +135,22 @@ class File(models.Model):
         help_text=_l("Unique identifier"))
     package = models.ForeignKey('Package', null=True)
     name = models.TextField(max_length=1000)
+    ingestion_time = models.DateTimeField(null=True)
+
+    AIP = "AIP"
+    TRANSFER = "transfer"
+    FILE_TYPE_CHOICES = (
+        (AIP, 'AIP'),
+        (TRANSFER, 'Transfer')
+    )
+    file_type = models.CharField(max_length=8, choices=FILE_TYPE_CHOICES, null=True)
+
     source_id = models.TextField(max_length=128)
     source_package = models.TextField(blank=True,
         help_text=_l("Unique identifier of originating unit"))
+    size = models.IntegerField(default=0, help_text='Size in bytes of the file')
+    format_name = models.TextField(blank=True, max_length=128)
+    pronom_id = models.TextField(blank=True, max_length=128)
     # Sized to fit sha512
     checksum = models.TextField(max_length=128)
     stored = models.BooleanField(default=False)
@@ -145,6 +158,11 @@ class File(models.Model):
         help_text=_l("Accession ID of originating transfer"))
     origin = UUIDField(editable=False, unique=False, version=4, blank=True,
         help_text=_l("Unique identifier of originating Archivematica dashboard"))
+    normalized = models.NullBooleanField(blank=True, default=None, null=True,
+        help_text="Whether or not file has been normalized")
+    validated = models.NullBooleanField(blank=True, default=None, null=True,
+        help_text="Whether or not file has been validated")
+
 
     class Meta:
         verbose_name = _l("File")
