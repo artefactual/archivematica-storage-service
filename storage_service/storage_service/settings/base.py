@@ -283,36 +283,27 @@ LOGGING = {
         },
     },
     'loggers': {
-        'django': {
-            'handlers': ['null'],
-            'propagate': True,
-            'level': 'INFO',
-        },
         'django.request': {
             'handlers': ['mail_admins'],
             'level': 'ERROR',
             'propagate': True,
         },
         'django.request.tastypie': {
-            'handlers': ['logfile', 'verboselogfile'],
-            'propagate': True,
             'level': 'ERROR',
         },
         'administration': {
-            'handlers': ['logfile', 'verboselogfile'],
             'level': 'DEBUG',
-            'propagate': True,
         },
         'common': {
-            'handlers': ['logfile', 'verboselogfile'],
             'level': 'DEBUG',
-            'propagate': True,
         },
         'locations': {
-            'handlers': ['logfile', 'verboselogfile'],
             'level': 'DEBUG',
-            'propagate': True,
         },
+    },
+    'root': {
+        'handlers': ['logfile', 'verboselogfile'],
+        'level': 'WARNING',
     },
 }
 ########## END LOGGING CONFIGURATION
