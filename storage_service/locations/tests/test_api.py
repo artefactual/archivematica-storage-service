@@ -6,7 +6,7 @@ from django.test.client import Client
 
 from locations import models
 
-class TestAPI(TestCase):
+class TestLocationAPI(TestCase):
 
     fixtures = ['base.json', 'pipelines.json', 'package.json']
 
@@ -60,6 +60,13 @@ class TestAPI(TestCase):
         response = self.client.post('/api/v2/location/213086c8-232e-4b9e-bb03-98fbc7a7966a/', data=json.dumps(data), content_type='application/json')
         # Verify error
         assert response.status_code == 404
+
+class TestPackageAPI(TestCase):
+
+    fixtures = ['base.json', 'package.json']
+
+    def setUp(self):
+        self.client = Client()
 
     def test_file_data_returns_metadata_given_relative_path(self):
         path = 'test_sip/objects/file.txt'
