@@ -1,5 +1,19 @@
 [
 {
+    "pk": 8,
+    "model": "locations.location",
+    "fields": {
+        "used": 0,
+        "description": "Testing directory AIP storage",
+        "space": "7d20c992-bc92-4f92-a794-7161ff2cc08b",
+        "enabled": true,
+        "quota": null,
+        "relative_path": "",
+        "purpose": "AS",
+        "uuid": "615103f0-0ee0-4a12-ba17-43192d1143ea"
+    }
+},
+{
     "pk": 1,
     "model": "locations.package",
     "fields": {
@@ -14,21 +28,6 @@
         "package_type": "Transfer",
         "status": "Uploaded",
         "misc_attributes": ""
-    }
-},
-{
-    "pk": 1,
-    "model": "locations.file",
-    "fields": {
-        "uuid": "86bfde11-e2a1-4ee7-b98d-9556b5f05198",
-        "package": 1,
-        "name": "test_sip/objects/file.txt",
-        "source_id": "86bfde11-e2a1-4ee7-b98d-9556b5f05198",
-        "source_package": "4b6c796b-0757-4d5f-8e79-51dede362520",
-        "checksum": "",
-        "stored": false,
-        "accessionid": "",
-        "origin": "bd17e3cf-afb6-4067-b7d0-472482767ee2"
     }
 },
 {
@@ -66,35 +65,6 @@
     }
 },
 {
-    "pk": 2,
-    "model": "locations.file",
-    "fields": {
-        "uuid": "bcd59769-0c6b-48cd-b54a-63092b9718fc",
-        "package": 3,
-        "name": "test_sip/objects/file.txt",
-        "source_id": "2b24a977-ad7a-4886-b17c-8b32ab4a7955",
-        "source_package": "a59033c2-7fa7-41e2-9209-136f07174692",
-        "checksum": "",
-        "stored": false,
-        "accessionid": "",
-        "origin": "91d13621-d2c1-4c70-a67e-77e96dced036"
-    }
-},
-{
-    "pk": 8,
-    "model": "locations.location",
-    "fields": {
-        "used": 0,
-        "description": "Testing directory AIP storage",
-        "space": "7d20c992-bc92-4f92-a794-7161ff2cc08b",
-        "enabled": true,
-        "quota": null,
-        "relative_path": "",
-        "purpose": "AS",
-        "uuid": "615103f0-0ee0-4a12-ba17-43192d1143ea"
-    }
-},
-{
     "pk": 4,
     "model": "locations.package",
     "fields": {
@@ -126,6 +96,36 @@
         "package_type": "AIP",
         "status": "Uploaded",
         "misc_attributes": ""
+    }
+},
+{
+    "pk": 1,
+    "model": "locations.file",
+    "fields": {
+        "uuid": "86bfde11-e2a1-4ee7-b98d-9556b5f05198",
+        "package": 1,
+        "name": "test_sip/objects/file.txt",
+        "source_id": "86bfde11-e2a1-4ee7-b98d-9556b5f05198",
+        "source_package": "4b6c796b-0757-4d5f-8e79-51dede362520",
+        "checksum": "",
+        "stored": false,
+        "accessionid": "",
+        "origin": "bd17e3cf-afb6-4067-b7d0-472482767ee2"
+    }
+},
+{
+    "pk": 2,
+    "model": "locations.file",
+    "fields": {
+        "uuid": "bcd59769-0c6b-48cd-b54a-63092b9718fc",
+        "package": 3,
+        "name": "test_sip/objects/file.txt",
+        "source_id": "2b24a977-ad7a-4886-b17c-8b32ab4a7955",
+        "source_package": "a59033c2-7fa7-41e2-9209-136f07174692",
+        "checksum": "",
+        "stored": false,
+        "accessionid": "",
+        "origin": "91d13621-d2c1-4c70-a67e-77e96dced036"
     }
 }
 ]
