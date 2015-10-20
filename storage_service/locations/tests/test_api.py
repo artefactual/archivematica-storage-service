@@ -206,3 +206,23 @@ class TestPackageAPI(TestCase):
         response = self.client.get('/api/v2/file/dnednedn-edne-dned-nedn-ednednednedn/download/', data={'chunk_number': 1})
         assert response.status_code == 404
 
+    def test_download_file_no_path(self):
+        """ It should return 400 Bad Request """
+        response = self.client.get('/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/extract_file/')
+        assert response.status_code == 400
+        assert 'relative_path_to_file' in response.content
+
+    def test_download_file_from_compressed(self):
+        """ It should extract and return the file. """
+        response = self.client.get('/api/v2/file/6aebdb24-1b6b-41ab-b4a3-df9a73726a34/extract_file/', data={'relative_path_to_file': 'working_bag/data/test.txt'})
+        assert response.status_code == 200
+        assert response['content-type'] == 'text/plain'
+        assert response.content == 'test'
+
+    def test_download_file_from_uncompressed(self):
+        """ It should return the file. """
+        response = self.client.get('/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/extract_file/', data={'relative_path_to_file': 'working_bag/data/test.txt'})
+        assert response.status_code == 200
+        assert response['content-type'] == 'text/plain'
+        assert response.content == 'test'
+
