@@ -607,6 +607,8 @@ class PackageResource(ModelResource):
         Returns a single file from the Package, extracting if necessary.
         """
         relative_path_to_file = request.GET.get('relative_path_to_file')
+        if not relative_path_to_file:
+            return http.HttpBadRequest('All of these fields must be provided: relative_path_to_file')
         relative_path_to_file = urllib.unquote(relative_path_to_file)
         temp_dir = extracted_file_path = ''
 
