@@ -98,20 +98,13 @@ def download_file_stream(filepath, temp_dir=None):
         return http.HttpResponseNotFound("File not found")
 
     filename = os.path.basename(filepath)
-    extension = os.path.splitext(filepath)[1].lower()
 
     # Open file in binary mode
     response = http.FileResponse(open(filepath, 'rb'))
 
-    # force download for certain filetypes
-    extensions_to_download = ['.7z', '.zip']
-    if extension in extensions_to_download:
-        response['Content-Type'] = 'application/force-download'
-        response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
-    else:
-        mimetype = mimetypes.guess_type(filename)[0]
-        response['Content-type'] = mimetype
-
+    mimetype = mimetypes.guess_type(filename)[0]
+    response['Content-type'] = mimetype
+    response['Content-Disposition'] = 'attachment; filename="' + filename + '"'
     response['Content-Length'] = os.path.getsize(filepath)
 
     # Delete temp dir if created

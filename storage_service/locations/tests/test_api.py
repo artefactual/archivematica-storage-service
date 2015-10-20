@@ -204,7 +204,7 @@ class TestPackageAPI(TestCase):
         """ It should return the package. """
         response = self.client.get('/api/v2/file/6aebdb24-1b6b-41ab-b4a3-df9a73726a34/download/')
         assert response.status_code == 200
-        assert response['content-type'] == 'application/force-download'
+        assert response['content-type'] == 'application/zip'
         assert response['content-disposition'] == 'attachment; filename="working_bag.zip"'
 
     def test_download_uncompressed_package(self):
@@ -212,6 +212,7 @@ class TestPackageAPI(TestCase):
         response = self.client.get('/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/download/')
         assert response.status_code == 200
         assert response['content-type'] == 'application/x-tar'
+        assert response['content-disposition'] == 'attachment; filename="working_bag.tar"'
         content = ''.join(response.streaming_content)  # Convert to one string
         assert 'bag-info.txt' in content
         assert 'bagit.txt' in content
@@ -224,6 +225,7 @@ class TestPackageAPI(TestCase):
         response = self.client.get('/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/download/', data={'chunk_number': 1})
         assert response.status_code == 200
         assert response['content-type'] == 'application/x-tar'
+        assert response['content-disposition'] == 'attachment; filename="working_bag.tar"'
         content = ''.join(response.streaming_content)  # Convert to one string
         assert 'bag-info.txt' in content
         assert 'bagit.txt' in content
@@ -247,6 +249,7 @@ class TestPackageAPI(TestCase):
         response = self.client.get('/api/v2/file/6aebdb24-1b6b-41ab-b4a3-df9a73726a34/extract_file/', data={'relative_path_to_file': 'working_bag/data/test.txt'})
         assert response.status_code == 200
         assert response['content-type'] == 'text/plain'
+        assert response['content-disposition'] == 'attachment; filename="test.txt"'
         content = ''.join(response.streaming_content)  # Convert to one string
         assert content == 'test'
 
@@ -255,5 +258,6 @@ class TestPackageAPI(TestCase):
         response = self.client.get('/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/extract_file/', data={'relative_path_to_file': 'working_bag/data/test.txt'})
         assert response.status_code == 200
         assert response['content-type'] == 'text/plain'
+        assert response['content-disposition'] == 'attachment; filename="test.txt"'
         content = ''.join(response.streaming_content)  # Convert to one string
         assert content == 'test'
