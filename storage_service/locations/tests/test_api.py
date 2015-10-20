@@ -1,17 +1,17 @@
 
 import json
+import os
+import shutil
 
 from django.test import TestCase
-from django.test.client import Client
 
 from locations import models
+
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 class TestLocationAPI(TestCase):
 
     fixtures = ['base.json', 'pipelines.json', 'package.json']
-
-    def setUp(self):
-        self.client = Client()
 
     def test_cant_move_from_non_existant_locations(self):
         data = {
@@ -64,9 +64,21 @@ class TestLocationAPI(TestCase):
 class TestPackageAPI(TestCase):
 
     fixtures = ['base.json', 'package.json']
+    fixtures_dir = os.path.abspath(os.path.join(THIS_DIR, '..', 'fixtures', ''))
 
     def setUp(self):
-        self.client = Client()
+        self.test_location = models.Location.objects.get(uuid='615103f0-0ee0-4a12-ba17-43192d1143ea')
+        # Set up locations to point to fixtures directory
+        self.test_location.relative_path = self.fixtures_dir[1:]
+        self.test_location.save()
+        ss_int = models.Location.objects.get(purpose='SS')
+        ss_int.relative_path = self.fixtures_dir[1:]
+        ss_int.save()
+
+    def tearDown(self):
+        for entry in os.listdir(self.fixtures_dir):
+            if entry.startswith('tmp'):
+                shutil.rmtree(os.path.join(self.fixtures_dir, entry))
 
     def test_file_data_returns_metadata_given_relative_path(self):
         path = 'test_sip/objects/file.txt'
@@ -159,3 +171,38 @@ class TestPackageAPI(TestCase):
         response = self.client.delete('/api/v2/file/a59033c2-7fa7-41e2-9209-136f07174692/contents/')
         assert response.status_code == 204
         assert p.file_set.count() == 0
+
+    def test_download_compressed_package(self):
+        """ It should return the package. """
+        response = self.client.get('/api/v2/file/6aebdb24-1b6b-41ab-b4a3-df9a73726a34/download/')
+        assert response.status_code == 200
+        assert response['content-type'] == 'application/force-download'
+        assert response['content-disposition'] == 'attachment; filename="working_bag.zip"'
+
+    def test_download_uncompressed_package(self):
+        """ It should tar a package before downloading. """
+        response = self.client.get('/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/download/')
+        assert response.status_code == 200
+        assert response['content-type'] == 'application/x-tar'
+        assert 'bag-info.txt' in response.content
+        assert 'bagit.txt' in response.content
+        assert 'manifest-md5.txt' in response.content
+        assert 'tagmanifest-md5.txt' in response.content
+        assert 'test.txt' in response.content
+
+    def test_download_lockss_chunk_incorrect(self):
+        """ It should default to the local path if a chunk ID is provided but package isn't in LOCKSS. """
+        response = self.client.get('/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/download/', data={'chunk_number': 1})
+        assert response.status_code == 200
+        assert response['content-type'] == 'application/x-tar'
+        assert 'bag-info.txt' in response.content
+        assert 'bagit.txt' in response.content
+        assert 'manifest-md5.txt' in response.content
+        assert 'tagmanifest-md5.txt' in response.content
+        assert 'test.txt' in response.content
+
+    def test_download_package_not_exist(self):
+        """ It should return 404 for a non-existant package. """
+        response = self.client.get('/api/v2/file/dnednedn-edne-dned-nedn-ednednednedn/download/', data={'chunk_number': 1})
+        assert response.status_code == 404
+

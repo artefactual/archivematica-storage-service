@@ -99,6 +99,22 @@
     }
 },
 {
+    "pk": 6,
+    "model": "locations.package",
+    "fields": {
+        "uuid": "6aebdb24-1b6b-41ab-b4a3-df9a73726a34",
+        "description": "Small zipped bagged package",
+        "origin_pipeline": null,
+        "current_location": "615103f0-0ee0-4a12-ba17-43192d1143ea",
+        "current_path": "working_bag.zip",
+        "pointer_file_location": "",
+        "pointer_file_path": "",
+        "size": 0,
+        "package_type": "AIP",
+        "status": "Uploaded",
+        "misc_attributes": ""
+    }
+},{
     "pk": 1,
     "model": "locations.file",
     "fields": {
