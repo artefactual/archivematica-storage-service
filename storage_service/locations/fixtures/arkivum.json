@@ -24,7 +24,7 @@
     }
 },
 {
-    "pk": 8,
+    "pk": 10,
     "model": "locations.location", 
     "fields": {
         "used": 0, 
@@ -32,7 +32,7 @@
         "space": "6fb34c82-4222-425e-b0ea-30acfd31f52e", 
         "enabled": true, 
         "quota": null, 
-        "relative_path": "aips/", 
+        "relative_path": "",
         "purpose": "AS", 
         "uuid": "d9d7db26-f7a1-40aa-9db1-806b4d3a61cd"
     }
@@ -50,14 +50,14 @@
     }
 },
 {
-    "pk": 9,
+    "pk": 10,
     "model": "locations.package",
     "fields": {
         "status": "STAGING",
         "package_type": "AIP",
         "origin_pipeline": "7691b4bc-b76a-411c-b6a2-d16964018220",
         "uuid": "c0f8498f-b92e-4a8b-8941-1b34ba062ed8",
-        "current_path": "c0f8/498f/b92e/4a8b/8941/1b34/ba06/2ed8/ep9-c0f8498f-b92e-4a8b-8941-1b34ba062ed8.7z",
+        "current_path": "working_bag.zip",
         "misc_attributes": {},
         "current_location": "d9d7db26-f7a1-40aa-9db1-806b4d3a61cd",
         "pointer_file_location": "Why does this not work?",
