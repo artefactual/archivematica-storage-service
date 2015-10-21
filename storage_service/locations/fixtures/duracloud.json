@@ -25,7 +25,7 @@
     }
 },
 {
-    "pk": 7, 
+    "pk": 10,
     "model": "locations.location", 
     "fields": {
         "used": 0, 

@@ -1,16 +1,14 @@
 interactions:
 - request:
-    body: '{"compressionAlgorithm": ["c0f8/498f/b92e/4a8b/8941/1b34/ba06/2ed8/ep9-c0f8498f-b92e-4a8b-8941-1b34ba062ed8",
-      ".7z"], "checksum": "b05403212c66bdc8ccc597fedf6cd5fe", "checksumAlgorithm":
+    body: '{"compressionAlgorithm": "zip", "checksum": "b05403212c66bdc8ccc597fedf6cd5fe", "checksumAlgorithm":
       "md5", "size": "10"}'
     headers:
       Accept: ['*/*']
       Accept-Encoding: ['gzip, deflate']
-      Content-Length: ['207']
       Content-Type: [application/json]
       User-Agent: [python-requests/2.3.0 CPython/2.7.3 Linux/3.5.0-52-generic]
     method: POST
-    uri: https://198.50.244.148:8443/api/2/files/release/aips/c0f8/498f/b92e/4a8b/8941/1b34/ba06/2ed8/ep9-c0f8498f-b92e-4a8b-8941-1b34ba062ed8.7z
+    uri: https://localhost:8443/api/2/files/release/working_bag.zip
   response:
     body:
       string: !!binary |

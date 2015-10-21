@@ -6,7 +6,7 @@ interactions:
       Connection: [keep-alive]
       User-Agent: [python-requests/2.4.3 CPython/2.7.3 Linux/3.5.0-54-generic]
     method: GET
-    uri: https://198.50.244.148:8443/api/2/files/release/2e75c8ad-cded-4f7e-8ac7-85627a116e39
+    uri: https://localhost:8443/api/2/files/release/2e75c8ad-cded-4f7e-8ac7-85627a116e39
   response:
     body: {string: !!python/unicode '{"id" : "2e75c8ad-cded-4f7e-8ac7-85627a116e39","status" : "Scheduled","originalSize" : "775702","actualSize" : "775702","originalChecksum" : "5a44c7ba5bbe4ec867233d67e4806848","originalChecksumAlgorithm" : "md5","originalCompressionAlgorithm" : "", "fileInformation": {"replicationState": "yellow"}}'}
     headers:
@@ -21,7 +21,7 @@ interactions:
       Connection: [keep-alive]
       User-Agent: [python-requests/2.4.3 CPython/2.7.3 Linux/3.5.0-54-generic]
     method: GET
-    uri: https://198.50.244.148:8443/api/2/files/release/2e75c8ad-cded-4f7e-8ac7-85627a116e39
+    uri: https://localhost:8443/api/2/files/release/2e75c8ad-cded-4f7e-8ac7-85627a116e39
   response:
     body: {string: !!python/unicode '{"id" : "2e75c8ad-cded-4f7e-8ac7-85627a116e39","status" : "Scheduled","originalSize" : "775702","actualSize" : "775702","originalChecksum" : "5a44c7ba5bbe4ec867233d67e4806848","originalChecksumAlgorithm" : "md5","originalCompressionAlgorithm" : "", "fileInformation": {"replicationState": "green"}}'}
     headers:
@@ -36,7 +36,7 @@ interactions:
       Connection: [keep-alive]
       User-Agent: [python-requests/2.4.3 CPython/2.7.3 Linux/3.5.0-54-generic]
     method: GET
-    uri: https://198.50.244.148:8443/api/2/files/release/2e75c8ad-cded-4f7e-8ac7-85627a116e39
+    uri: https://localhost:8443/api/2/files/release/2e75c8ad-cded-4f7e-8ac7-85627a116e39
   response:
     body: {string: !!python/unicode '{"id" : "2e75c8ad-cded-4f7e-8ac7-85627a116e39","status" : "Scheduled","originalSize" : "775702","actualSize" : "775702","originalChecksum" : "5a44c7ba5bbe4ec867233d67e4806848","originalChecksumAlgorithm" : "md5","originalCompressionAlgorithm" : "", "fileInformation": {"replicationState": "yellow"}}'}
     headers:
