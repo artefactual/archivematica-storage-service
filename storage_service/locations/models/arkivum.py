@@ -131,8 +131,10 @@ class Arkivum(models.Model):
 
         # TODO Uncompressed: Post info about bag (really only support AIPs)
 
-    def update_package_status(self, package):
-        LOGGER.info('Package status: %s', package.status)
+    def _get_package_info(self, package):
+        """
+        Return status and file info for a package in Arkivum.
+        """
         # If no request ID, try POSTing to Arkivum again
         if 'request_id' not in package.misc_attributes:
             # Get local copy
@@ -140,20 +142,39 @@ class Arkivum(models.Model):
             self.post_move_from_storage_service(local_path, package.full_path, package)
         # If still no request ID, cannot check status
         if 'request_id' not in package.misc_attributes:
-            return (None, 'Unable to contact Arkivum')
+            msg = 'Unable to contact Arkivum'
+            LOGGER.warning(msg)
+            return {'error': True, 'error_message': msg}
 
         # Ask Arkivum for replication status
         url = 'https://' + self.host + '/api/2/files/release/' + package.misc_attributes['request_id']
         LOGGER.info('URL: %s', url)
-
-        response = requests.get(url, verify=VERIFY)
-
+        try:
+            response = requests.get(url, verify=VERIFY)
+        except Exception:
+            msg = 'Error fetching package status'
+            LOGGER.warning(msg, exc_info=True)
+            return {'error': True, 'error_message': msg}
         LOGGER.info('Response: %s, Response text: %s', response.status_code, response.text)
         if response.status_code != 200:
-            return (None, 'Response from Arkivum server was {}'.format(response))
+            msg = 'Response from Arkivum server was {}'.format(response)
+            LOGGER.warning(msg)
+            return {'error': True, 'error_message': msg}
 
+        try:
+            response_json = response.json()
+        except ValueError:
+            msg = 'JSON could not be parsed from package info'
+            LOGGER.warning(msg)
+            return {'error': True, 'error_message': msg}
+        return response_json
+
+    def update_package_status(self, package):
+        LOGGER.info('Package status: %s', package.status)
+        response_json = self._get_package_info(package)
+        if response_json.get('error'):
+            return (None, response_json['error_message'])
         # Look for ['fileInformation']['replicationState'] == 'green'
-        response_json = response.json()
         replication = response_json['fileInformation'].get('replicationState')
         if replication == 'green':
             # Set status to UPLOADED
@@ -162,3 +183,19 @@ class Arkivum(models.Model):
 
         LOGGER.info('Package status: %s', package.status)
         return (package.status, None)
+
+    def is_file_local(self, package, path=None):
+        """
+        Check if (a file in) this package is locally available.
+
+        :return: True if file is locally available, False if not, None on error.
+        """
+        package_info = self._get_package_info(package)
+        if package_info.get('error'):
+            return None
+        # Look for ['fileInformation']['local'] == True
+        LOGGER.debug('File info local: %s', package_info['fileInformation'].get('local'))
+        if package_info['fileInformation'].get('local'):
+            return True
+        else:
+            return False
