@@ -1,0 +1,84 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.4.3 CPython/2.7.3 Linux/3.5.0-54-generic]
+    method: GET
+    uri: https://localhost:8443/api/2/files/release/2e75c8ad-cded-4f7e-8ac7-85627a116e39
+  response:
+    body: {string: !!python/unicode '{
+  "actualChecksum" : null,
+  "actualChecksumChecksumAlgorithm" : null,
+  "actualCompressionAlgorithm" : null,
+  "actualSize" : 0,
+  "completed" : 1445549709552,
+  "fileId" : "27dd9047-59a7-41a3-b58b-9d8ca58e0c82",
+  "fileInformation" : {
+    "autoClear" : true,
+    "chunkset" : {
+      "chunks" : [ {
+        "chunkInstances" : [ {
+          "id" : "193134e4-0de4-4c46-a748-5ddca23ad8ad",
+          "storage" : {
+            "id" : "f6909253-211b-41f4-9201-73a2e20bc6a2",
+            "name" : "Arkivum Cloud Service",
+            "type" : "arkcloud"
+          }
+        }, {
+          "id" : "9770bc1d-41bc-46dd-b30d-3d891b3886d0",
+          "storage" : {
+            "id" : "887d06c5-6598-4b5d-851b-42398e5776f3",
+            "name" : "Locally Cached Data",
+            "type" : "file"
+          }
+        } ],
+        "id" : "a2809268-6696-48b9-ba2b-d6ff562f69d2",
+        "md5" : "ca378eca44bbd5e7ac963212d95c35e",
+        "offset" : 0,
+        "sequenceNumber" : 1,
+        "size" : 2342754
+      } ],
+      "encrypted" : true,
+      "escrowsetId" : "c0b1c3bb-b152-4cea-9d5a-a19297f8f902",
+      "id" : "f0c7864a-04f8-46dd-b738-59b671a58d5e",
+      "revision" : 1
+    },
+    "created" : "2015-10-19T17:49:23Z",
+    "creator" : "ASTORSERVER",
+    "dataPoolId" : "1d03259e-c1d9-4894-ad51-5593330413bc",
+    "directory" : false,
+    "escrowTapes" : [ ],
+    "file" : true,
+    "fileMode" : 33261,
+    "id" : "2e75c8ad-cded-4f7e-8ac7-85627a116e39",
+    "ingestState" : "FINAL",
+    "lastAccessed" : "2015-10-19T17:49:21Z",
+    "lastChanged" : "2015-10-19T17:49:21Z",
+    "lastModified" : "2015-10-19T17:48:28Z",
+    "local" : false,
+    "md5" : "e917f867114dedf9bdb430e838da647d",
+    "name" : "working_bag.zip",
+    "ownerGroupId" : 99,
+    "ownerUserId" : 99,
+    "parentId" : "462b837c-1307-40a9-b5ca-ca5537ba70a4",
+    "path" : "working_bag.zip",
+    "replicationState" : "amber",
+    "size" : 2342754
+  },
+  "id" : "dd90f6db-04dd-47ae-b8e1-c33227b4dba0",
+  "originalChecksum" : "e917f867114dedf9bdb430e838da647d",
+  "originalChecksumChecksumAlgorithm" : "md5",
+  "originalCompressionAlgorithm" : ".zip",
+  "originalSize" : 2342754,
+  "reason" : null,
+  "requested" : 1445549709552,
+  "status" : "Scheduled"
+}
+'}
+    headers:
+      connection: [Keep-Alive]
+      content-type: [application/json]
+      keep-alive: ['timeout=5, max=99']
+    status: {code: 200, message: OK}
