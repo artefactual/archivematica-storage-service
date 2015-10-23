@@ -487,7 +487,7 @@ class PackageResource(ModelResource):
             try:
                 bundle.obj = self.obj_get(bundle=bundle, **lookup_kwargs)
             except ObjectDoesNotExist:
-                raise NotFound("A model instance matching the provided arguments could not be found.")
+                raise tastypie.exceptions.NotFound("A model instance matching the provided arguments could not be found.")
         bundle = self.full_hydrate(bundle)
         bundle = self.obj_update_hook(bundle, **kwargs)
         return self.save(bundle, skip_errors=skip_errors)
