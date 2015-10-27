@@ -1,0 +1,16 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.4.3 CPython/2.7.3 Linux/3.5.0-54-generic]
+    method: GET
+    uri: https://198.50.244.148:8443/api/3/ingest-manifest/status/5afe9428-c6d6-4d0f-9196-5e7fd028726d
+  response:
+    body: {string: !!python/unicode '{"id": "5afe9428-c6d6-4d0f-9196-5e7fd028726d", "status": "Scheduled"}'}
+    headers:
+      connection: [Keep-Alive]
+      content-type: [application/json]
+      keep-alive: ['timeout=5, max=99']
+    status: {code: 200, message: OK}
