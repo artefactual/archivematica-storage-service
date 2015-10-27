@@ -60,11 +60,25 @@
         "current_path": "working_bag.zip",
         "misc_attributes": {},
         "current_location": "d9d7db26-f7a1-40aa-9db1-806b4d3a61cd",
-        "pointer_file_location": "Why does this not work?",
         "pointer_file_location": "72ee3a1a-9497-46db-aa58-56ea8d7fedc5",
         "pointer_file_path": "c0f8/498f/b92e/4a8b/8941/1b34/ba06/2ed8/pointer.c0f8498f-b92e-4a8b-8941-1b34ba062ed8.xml",
         "size": 2344125
     }
+},
+{
+    "pk": 11,
+    "model": "locations.package",
+    "fields": {
+        "status": "STAGING",
+        "package_type": "AIP",
+        "origin_pipeline": "7691b4bc-b76a-411c-b6a2-d16964018220",
+        "uuid": "e52c518d-fcf4-46cc-8581-bbc01aff7af3",
+        "current_path": "working_bag/",
+        "misc_attributes": {},
+        "current_location": "d9d7db26-f7a1-40aa-9db1-806b4d3a61cd",
+        "pointer_file_location": null,
+        "pointer_file_path": null,
+        "size": 2344125
+    }
 }
-
 ]
