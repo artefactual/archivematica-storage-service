@@ -1,26 +1,27 @@
 import os
+import vcr
 
 from django.test import TestCase
 
 from locations import models
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-
+FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, '..', 'fixtures', ''))
 class TestPackage(TestCase):
 
-    fixtures = ['base.json', 'package.json']
+    fixtures = ['base.json', 'package.json', 'arkivum.json']
 
     def setUp(self):
         self.package = models.Package.objects.all()[0]
         self.mets_path = os.path.normpath(os.path.join(__file__, "..", "..", "fixtures"))
         self.test_location = models.Location.objects.get(uuid='615103f0-0ee0-4a12-ba17-43192d1143ea')
         # Set up locations to point to fixtures directory
-        fixtures_dir = os.path.abspath(os.path.join(THIS_DIR, '..', 'fixtures', ''))
-        self.test_location.relative_path = fixtures_dir[1:]
+        self.test_location.relative_path = FIXTURES_DIR[1:]
         self.test_location.save()
-        ss_int = models.Location.objects.get(purpose='SS')
-        ss_int.relative_path = fixtures_dir[1:]
-        ss_int.save()
+        # SS int points at fixtures directory
+        models.Location.objects.filter(purpose='SS').update(relative_path=FIXTURES_DIR[1:])
+        # Arkivum space points at fixtures directory
+        models.Space.objects.filter(uuid='6fb34c82-4222-425e-b0ea-30acfd31f52e').update(path=FIXTURES_DIR)
 
     def test_parsing_mets_data(self):
         mets_data = self.package._parse_mets(prefix=self.mets_path)
@@ -60,7 +61,7 @@ class TestPackage(TestCase):
         assert success is False
         # Failures are: missing file (dne.txt), bad checksum (dne.txt, test.txt, manifest-md5.txt)
         assert len(failures) == 4
-        assert message
+        assert message == 'invalid bag'
 
     def test_fixity_package_type(self):
         """ It should only fixity bags. """
@@ -70,3 +71,22 @@ class TestPackage(TestCase):
         assert failures == []
         assert 'package is not a bag' in message
 
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'package_fixity_use_arkivum.yaml'))
+    def test_fixity_use_arkivum(self):
+        """ It should return Arkivum's fixity not generate its own. """
+        # TODO fix this to actually call Arkivum
+        package = models.Package.objects.get(uuid='e52c518d-fcf4-46cc-8581-bbc01aff7af3')
+        package.misc_attributes.update({'arkivum_identifier': '5afe9428-c6d6-4d0f-9196-5e7fd028726d'})
+        package.save()
+        success, failures, message = package.check_fixity(ignore_space=False)
+        assert success is True
+        assert message == 'Fixity check scheduled in Arkivum'
+        assert failures == []
+
+    def test_fixity_ignore_space(self):
+        """ It should do checksum locally if required. """
+        package = models.Package.objects.get(uuid='e52c518d-fcf4-46cc-8581-bbc01aff7af3')
+        success, failures, message = package.check_fixity(ignore_space=True)
+        assert success is True
+        assert failures == []
+        assert message == ''

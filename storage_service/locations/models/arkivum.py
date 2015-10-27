@@ -212,3 +212,36 @@ class Arkivum(models.Model):
             return True
         else:
             return False
+
+    def check_package_fixity(self, package):
+        """
+        Check fixity for package stored in this space. See Package.check_fixity for detailed description.
+
+        Returns a tuple containing (success, [errors], message).
+        Success will be True or False if the verification succeeds or fails, and None if the scan could not start (for instance, if this package is not a bag).
+        [errors] will be a list of zero or more dicts with {'reason': 'string describing the problem', 'filepath': 'relative path to file'}
+        message will be a human-readable string explaining the report; it will be an empty string for successful scans.
+
+        :return: Tuple of (success, [errors], message)
+        """
+        if package.is_compressed:
+            raise NotImplementedError("Arkivum does not implement fixity for compressed packages")
+        package_info = self._get_package_info(package)
+        if package_info.get('error'):
+            return (None, [], package_info['error_message'])
+
+        # Looking for ['status'] == "Failed", "Completed" or "Scheduled"
+        success = package_info['status'] in ('Completed', 'Scheduled')
+        # Looking for ['failures'] == [] or [{"reason": .., "filepath": ...}]
+        # TODO Is other munging of failures list required?
+        errors = package_info.get('failures', [])
+        if package_info['status'] == 'Scheduled':
+            message = 'Fixity check scheduled in Arkivum'
+        elif success:
+            message = ''
+        elif len(errors) > 1:  # Failed, multiple errors
+            message = 'invalid bag'
+        else: # Failed, only one error
+            message = errors[0]['reason']
+
+        return (success, errors, message)
