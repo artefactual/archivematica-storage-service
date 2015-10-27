@@ -78,7 +78,7 @@ class TestPackageAPI(TestCase):
         ss_int.relative_path = FIXTURES_DIR[1:]
         ss_int.save()
         # Set Arkivum package request ID
-        models.Package.objects.filter(uuid='c0f8498f-b92e-4a8b-8941-1b34ba062ed8').update(misc_attributes={'request_id': '2e75c8ad-cded-4f7e-8ac7-85627a116e39'})
+        models.Package.objects.filter(uuid='c0f8498f-b92e-4a8b-8941-1b34ba062ed8').update(misc_attributes={'arkivum_identifier': '2e75c8ad-cded-4f7e-8ac7-85627a116e39'})
 
     def tearDown(self):
         for entry in os.listdir(FIXTURES_DIR):
