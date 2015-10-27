@@ -93,28 +93,36 @@ class Arkivum(models.Model):
         if package is None:
             return
 
-        # Get size, checksum, checksum algorithm (md5sum), compression algorithm
-        checksum = utils.generate_checksum(staging_path, 'md5')
-        payload = {
-            'size': str(os.path.getsize(staging_path)),
-            'checksum': checksum.hexdigest(),
-            'checksumAlgorithm': 'md5',
-            'compressionAlgorithm': os.path.splitext(package.current_path)[1],
-        }
-        payload = json.dumps(payload)
-
-        # POST to Arkivum host/api/2/files/release/relative_path
         relative_path = os.path.relpath(destination_path, self.space.path)
-        url = 'https://' + self.host + '/api/2/files/release/' + relative_path
-        LOGGER.info('URL: %s, Payload: %s', url, payload)
+        if package.is_compressed:  # Single-file package
+            url = 'https://' + self.host + '/api/2/files/release/' + relative_path
+            headers = {'Content-Type': 'application/json'}
 
+            # Get size, checksum, checksum algorithm (md5sum), compression algorithm
+            checksum = utils.generate_checksum(staging_path, 'md5')
+            payload = {
+                'size': str(os.path.getsize(staging_path)),
+                'checksum': checksum.hexdigest(),
+                'checksumAlgorithm': 'md5',
+                'compressionAlgorithm': os.path.splitext(package.current_path)[1],
+            }
+            payload = json.dumps(payload)
+            files = None
+        else:  # uncompressed bag
+            url = 'https://' + self.host + '/api/3/ingest-manifest/release'
+            headers = None
+            # FIXME Destination path has to exclude mount path, but what is part of the mounth path? Let's pretend it's the Space path
+            payload = {'bagitPath': os.path.join('/', relative_path)}
+            files = {'': ('', '')}
+
+        LOGGER.debug('POST URL: %s; Header: %s; Payload: %s; Files: %s', url, headers, payload, files)
         try:
-            response = requests.post(url, headers={'Content-Type': 'application/json'}, data=payload, verify=VERIFY)
+            response = requests.post(url, headers=headers, data=payload, files=files, verify=VERIFY)
         except requests.exceptions.ConnectionError:
             LOGGER.exception('Error in connection for POST to %s', url)
             raise StorageException('Error in connection for POST to %s', url)
 
-        LOGGER.info('Response: %s, Response text: %s', response.status_code, response.text)
+        LOGGER.debug('Response: %s, Response text: %s', response.status_code, response.text)
         if response.status_code not in (requests.codes.ok, requests.codes.accepted):
             LOGGER.warning('Arkivum responded with %s: %s', response.status_code, response.text)
             raise StorageException('Unable to notify Arkivum of %s', package)
@@ -123,31 +131,33 @@ class Arkivum(models.Model):
             response_json = response.json()
         except json.JSONDecodeError:
             raise StorageException("Could not get request ID from Arkivum's response %s", response.text)
-        request_id = response_json['id']
 
         # Store request ID in misc_attributes
-        package.misc_attributes.update({'request_id': request_id})
+        request_id = response_json['id']
+        package.misc_attributes.update({'arkivum_identifier': request_id})
         package.save()
-
-        # TODO Uncompressed: Post info about bag (really only support AIPs)
 
     def _get_package_info(self, package):
         """
         Return status and file info for a package in Arkivum.
         """
         # If no request ID, try POSTing to Arkivum again
-        if 'request_id' not in package.misc_attributes:
+        if 'arkivum_identifier' not in package.misc_attributes:
             # Get local copy
             local_path = package.fetch_local_path()
             self.post_move_from_storage_service(local_path, package.full_path, package)
         # If still no request ID, cannot check status
-        if 'request_id' not in package.misc_attributes:
+        if 'arkivum_identifier' not in package.misc_attributes:
             msg = 'Unable to contact Arkivum'
             LOGGER.warning(msg)
             return {'error': True, 'error_message': msg}
 
         # Ask Arkivum for replication status
-        url = 'https://' + self.host + '/api/2/files/release/' + package.misc_attributes['request_id']
+        if package.is_compressed:
+            url = 'https://' + self.host + '/api/2/files/release/' + package.misc_attributes['arkivum_identifier']
+        else:
+            url = 'https://' + self.host + '/api/3/ingest-manifest/status/' + package.misc_attributes['arkivum_identifier']
+
         LOGGER.info('URL: %s', url)
         try:
             response = requests.get(url, verify=VERIFY)
@@ -174,15 +184,18 @@ class Arkivum(models.Model):
         response_json = self._get_package_info(package)
         if response_json.get('error'):
             return (None, response_json['error_message'])
-        # Look for ['fileInformation']['replicationState'] == 'green'
-        replication = response_json['fileInformation'].get('replicationState')
-        if replication == 'green':
+        if package.is_compressed:
+            # Look for ['fileInformation']['replicationState'] == 'green'
+            replication = response_json.get('fileInformation', {}).get('replicationState', '')
+        else:  # uncompressed bag
+            # Look for ['replicationState'] == 'green'
+            replication = response_json.get('replicationState', '')
+        if replication.lower() == 'green':
             # Set status to UPLOADED
             package.status = Package.UPLOADED
             package.save()
-
         LOGGER.info('Package status: %s', package.status)
-        return (package.status, None)
+        return (package.status, "Replication status: " + replication)
 
     def is_file_local(self, package, path=None):
         """
