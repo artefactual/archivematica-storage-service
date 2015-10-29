@@ -46,7 +46,7 @@ def package_list(request):
     packages = Package.objects.all()
     return render(request, 'locations/package_list.html', locals())
 
-class AIPRequestHandlerConfig:
+class PackageRequestHandlerConfig:
     event_type = ''                # Event type being handled
     approved_status = ''           # Event status, if approved
     reject_message = ''            # Message returned if not approved
@@ -57,7 +57,7 @@ class AIPRequestHandlerConfig:
         pass
 
 def aip_recover_request(request):
-    def execution_logic(aip): 
+    def execution_logic(aip):
         recover_location = LocationPipeline.objects.get(
             pipeline=aip.origin_pipeline, location__purpose=Location.AIP_RECOVERY).location
 
@@ -71,7 +71,7 @@ def aip_recover_request(request):
 
         return (success, message)
 
-    config = AIPRequestHandlerConfig()
+    config = PackageRequestHandlerConfig()
     config.event_type = Event.RECOVER
     config.approved_status = Package.UPLOADED
     config.reject_message = 'AIP restore rejected.'
@@ -79,13 +79,13 @@ def aip_recover_request(request):
     config.execution_fail_message = 'AIP restore failed'
     config.execution_logic = execution_logic
 
-    return _handle_aip_request(request, config, 'aip_recover_request')
+    return _handle_package_request(request, config, 'aip_recover_request')
 
-def aip_delete_request(request):
-    def execution_logic(aip): 
-        return aip.delete_from_storage()
+def package_delete_request(request):
+    def execution_logic(package):
+        return package.delete_from_storage()
 
-    config = AIPRequestHandlerConfig()
+    config = PackageRequestHandlerConfig()
     config.event_type = Event.DELETE
     config.approved_status = Package.DELETED
     config.reject_message = 'Request rejected, package still stored.'
@@ -93,9 +93,9 @@ def aip_delete_request(request):
     config.execution_fail_message = 'Package was not deleted from disk correctly'
     config.execution_logic = execution_logic
 
-    return _handle_aip_request(request, config, 'aip_delete_request')
+    return _handle_package_request(request, config, 'package_delete_request')
 
-def _handle_aip_request(request, config, view_name):
+def _handle_package_request(request, config, view_name):
     request_events = Event.objects.filter(status=Event.SUBMITTED).filter(
         event_type=config.event_type)
 
@@ -114,7 +114,7 @@ def _handle_aip_request(request, config, view_name):
                 if 'reject' in request.POST:
                     event.status = Event.REJECTED
                     event.package.status = event.store_data
-                    notification_message = _handle_aip_request_remote_result_notification(config, event, False)
+                    notification_message = _handle_package_request_remote_result_notification(config, event, False)
                     if notification_message:
                         config.reject_message += ' ' + notification_message
                     messages.success(request, config.reject_message)
@@ -125,13 +125,13 @@ def _handle_aip_request(request, config, view_name):
                     if not success:
                         error_message = "{}: {}. Please contact an administrator or see logs for details.".format(
                             config.execution_fail_message, err_msg)
-                        notification_message = _handle_aip_request_remote_result_notification(config, event, False)
+                        notification_message = _handle_package_request_remote_result_notification(config, event, False)
                         if notification_message:
                             error_message += ' ' + notification_message
                         messages.error(request, error_message)
                     else:
                         approval_message = "Request approved. {}".format(config.execution_success_message)
-                        notification_message = _handle_aip_request_remote_result_notification(config, event, True)
+                        notification_message = _handle_package_request_remote_result_notification(config, event, True)
                         if notification_message:
                             approval_message += ' ' + notification_message
                         messages.success(request, approval_message)
@@ -148,9 +148,9 @@ def _handle_aip_request(request, config, view_name):
     closed_requests = Event.objects.filter(
         Q(status=Event.APPROVED) | Q(status=Event.REJECTED))
 
-    return render(request, 'locations/aip_request.html', locals())
+    return render(request, 'locations/package_request.html', locals())
 
-def _handle_aip_request_remote_result_notification(config, event, success):
+def _handle_package_request_remote_result_notification(config, event, success):
     response_message = None
 
     # Setting name is determined using event type

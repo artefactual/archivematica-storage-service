@@ -30,7 +30,7 @@ A package deletion request was received for the package with UUID {}. This packa
     if kwargs["url"]:
         message = message + """
 To approve this deletion request, visit: {}{}
-""".format(kwargs["url"], reverse('aip_delete_request'))
+""".format(kwargs["url"], reverse('package_delete_request'))
 
     _notify_administrators(subject, message)
 
