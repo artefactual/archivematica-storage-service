@@ -9,6 +9,7 @@
     <thead>
       <tr>
         <th>File</th>
+        <th>Type</th>
         <th>Reason</th>
         <th>Pipeline</th>
         <th>User</th>
@@ -20,6 +21,7 @@
     {% for req in request_events %}
       <tr>
         <td>{{ req.package }}</td>
+        <td>{{ req.package.get_package_type_display }}</td>
         <td>{{ req.event_reason }}</td>
         <td>{{ req.pipeline }}</td>
         <td>{{ req.user_email }} (ID: {{ req.user_id}})</td>
@@ -46,6 +48,7 @@
     <thead>
       <tr>
         <th>File</th>
+        <th>Type</th>
         <th>Reason</th>
         <th>Pipeline</th>
         <th>User</th>
@@ -59,6 +62,7 @@
     {% for req in closed_requests %}
       <tr>
         <td>{{ req.package }}</td>
+        <td>{{ req.package.get_package_type_display }}</td>
         <td>{{ req.event_reason }}</td>
         <td>{{ req.pipeline }}</td>
         <td>{{ req.user_email }} (ID: {{ req.user_id}})</td>
