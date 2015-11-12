@@ -1164,7 +1164,7 @@ class Package(models.Model):
             elif compression == self.COMPRESSION_7Z_LZMA:
                 algo = 'lzma'
             transform_file.append(
-                etree.Element("transformFile",
+                etree.Element(utils.PREFIX_NS['mets'] + "transformFile",
                     TRANSFORMORDER='1',
                     TRANSFORMTYPE='decompression',
                     TRANSFORMALGORITHM=algo,
@@ -1184,7 +1184,7 @@ class Package(models.Model):
             if compression == self.COMPRESSION_TAR_BZIP2:
                 comp_level = '2'
                 transform_file.append(
-                    etree.Element("transformFile",
+                    etree.Element(utils.PREFIX_NS['mets'] + "transformFile",
                         TRANSFORMORDER='1',
                         TRANSFORMTYPE='decompression',
                         TRANSFORMALGORITHM='bzip2',
@@ -1193,7 +1193,7 @@ class Package(models.Model):
                 transform_order = '2'
 
             transform_file.append(
-                etree.Element("transformFile",
+                etree.Element(utils.PREFIX_NS['mets'] + "transformFile",
                     TRANSFORMORDER=transform_order,
                     TRANSFORMTYPE='decompression',
                     TRANSFORMALGORITHM='tar',

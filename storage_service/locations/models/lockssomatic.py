@@ -179,7 +179,7 @@ class Lockssomatic(models.Model):
                 # TODO check that size and checksum are the same
                 # TODO what to do if size & checksum different?
                 LOGGER.debug('LOM URL: %s', server.get('src'))
-                flocat = etree.SubElement(file_e, 'FLocat', LOCTYPE="URL")
+                flocat = etree.SubElement(file_e, utils.PREFIX_NS['mets'] + 'FLocat', LOCTYPE="URL")
                 flocat.set('{' + utils.NSMAP['xlink'] + '}href', server.get('src'))
 
         # Delete local files
@@ -388,19 +388,19 @@ class Lockssomatic(models.Model):
         self.pointer_root.find('mets:structMap', namespaces=utils.NSMAP).set('TYPE', 'logical')
         aip_div = self.pointer_root.find("mets:structMap/mets:div[@TYPE='Archival Information Package']", namespaces=utils.NSMAP)
         filesec = self.pointer_root.find('mets:fileSec', namespaces=utils.NSMAP)
-        filegrp = etree.SubElement(filesec, 'fileGrp', USE='LOCKSS chunk')
+        filegrp = etree.SubElement(filesec, utils.PREFIX_NS['mets'] + 'fileGrp', USE='LOCKSS chunk')
 
         # Move ftpr to Local copy div
         local_ftpr = aip_div.find('mets:fptr', namespaces=utils.NSMAP)
         if local_ftpr is not None:
-            div = etree.SubElement(aip_div, 'div', TYPE='Local copy')
+            div = etree.SubElement(aip_div, utils.PREFIX_NS['mets'] + 'div', TYPE='Local copy')
             div.append(local_ftpr)  # This moves local_fptr
 
         # Add each split chunk to structMap & fileSec
         for idx, out_path in enumerate(output_files):
             # Add div to structMap
-            div = etree.SubElement(aip_div, 'div', TYPE='LOCKSS chunk', ORDER=str(idx + 1))
-            etree.SubElement(div, 'fptr', FILEID=os.path.basename(out_path))
+            div = etree.SubElement(aip_div, utils.PREFIX_NS['mets'] + 'div', TYPE='LOCKSS chunk', ORDER=str(idx + 1))
+            etree.SubElement(div, utils.PREFIX_NS['mets'] + 'fptr', FILEID=os.path.basename(out_path))
             # Get checksum and size for fileSec
             try:
                 checksum = utils.generate_checksum(out_path, self.checksum_type)
@@ -409,10 +409,10 @@ class Lockssomatic(models.Model):
             checksum_name = checksum.name.upper().replace('SHA', 'SHA-')
             size = os.path.getsize(out_path)
             # Add file & FLocat to fileSec
-            file_e = etree.SubElement(filegrp, 'file',
+            file_e = etree.SubElement(filegrp, utils.PREFIX_NS['mets'] + 'file',
                 ID=os.path.basename(out_path), SIZE=str(size),
                 CHECKSUM=checksum.hexdigest(), CHECKSUMTYPE=checksum_name)
-            flocat = etree.SubElement(file_e, 'FLocat', OTHERLOCTYPE="SYSTEM", LOCTYPE="OTHER")
+            flocat = etree.SubElement(file_e, utils.PREFIX_NS['mets'] + 'FLocat', OTHERLOCTYPE="SYSTEM", LOCTYPE="OTHER")
             flocat.set('{' + utils.NSMAP['xlink'] + '}href', out_path)
 
         # Write out pointer file again

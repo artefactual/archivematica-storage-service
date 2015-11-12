@@ -3,7 +3,7 @@ import datetime
 import hashlib
 import logging
 from lxml import etree
-from lxml.builder import E, ElementMaker
+from lxml.builder import ElementMaker
 import mimetypes
 import os
 import shutil
@@ -160,7 +160,10 @@ def mets_event(digiprov_id, event_type, event_detail='', event_outcome_detail_no
     # New E with namespace for PREMIS
     EP = ElementMaker(
         namespace=NSMAP['premis'],
-        nsmap={None: NSMAP['premis']})
+        nsmap={'premis': NSMAP['premis']})
+    EM = ElementMaker(
+        namespace=NSMAP['mets'],
+        nsmap={'mets': NSMAP['mets']})
     premis_event = EP.event(
         EP.eventIdentifier(
             EP.eventIdentifierType('UUID'),
@@ -184,9 +187,9 @@ def mets_event(digiprov_id, event_type, event_detail='', event_outcome_detail_no
     premis_event.set('{'+NSMAP['xsi']+'}schemaLocation', 'info:lc/xmlns/premis-v2 http://www.loc.gov/standards/premis/v2/premis-v2-2.xsd')
 
     # digiprovMD to wrap PREMIS event
-    digiprov_event = E.digiprovMD(
-        E.mdWrap(
-            E.xmlData(premis_event),
+    digiprov_event = EM.digiprovMD(
+        EM.mdWrap(
+            EM.xmlData(premis_event),
             MDTYPE="PREMIS:EVENT",
         ),
         ID=digiprov_id,
@@ -203,16 +206,22 @@ def mets_ss_agent(xml, digiprov_id, agent_value=None, agent_type='storage servic
     existing_agent = xml.xpath(".//mets:agentIdentifier[mets:agentIdentifierType='{}' and mets:agentIdentifierValue='{}']".format(agent_type, agent_value), namespaces=NSMAP)
     if existing_agent:
         return None
-    digiprov_agent = E.digiprovMD(
-        E.mdWrap(
-            E.xmlData(
-                E.agent(
-                    E.agentIdentifier(
-                        E.agentIdentifierType(agent_type),
-                        E.agentIdentifierValue(agent_value),
+    EP = ElementMaker(
+        namespace=NSMAP['premis'],
+        nsmap={'premis': NSMAP['premis']})
+    EM = ElementMaker(
+        namespace=NSMAP['mets'],
+        nsmap={'mets': NSMAP['mets']})
+    digiprov_agent = EM.digiprovMD(
+        EM.mdWrap(
+            EM.xmlData(
+                EP.agent(
+                    EP.agentIdentifier(
+                        EP.agentIdentifierType(agent_type),
+                        EP.agentIdentifierValue(agent_value),
                     ),
-                    E.agentName('Archivematica Storage Service'),
-                    E.agentType('software'),
+                    EP.agentName('Archivematica Storage Service'),
+                    EP.agentType('software'),
                 )
             ),
             MDTYPE='PREMIS:AGENT',
