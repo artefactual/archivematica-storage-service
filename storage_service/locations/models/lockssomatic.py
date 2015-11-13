@@ -180,7 +180,7 @@ class Lockssomatic(models.Model):
                 # TODO what to do if size & checksum different?
                 LOGGER.debug('LOM URL: %s', server.get('src'))
                 flocat = etree.SubElement(file_e, utils.PREFIX_NS['mets'] + 'FLocat', LOCTYPE="URL")
-                flocat.set('{' + utils.NSMAP['xlink'] + '}href', server.get('src'))
+                flocat.set(utils.PREFIX_NS['xlink'] + 'href', server.get('src'))
 
         # Delete local files
         # Note: This will tell LOCKSS to stop harvesting, even if the file was
@@ -213,7 +213,7 @@ class Lockssomatic(models.Model):
         entry.register_namespace('lom', utils.NSMAP['lom'])
         for lom_id in delete_lom_ids:
             if lom_id:
-                etree.SubElement(entry.entry, '{' + utils.NSMAP['lom'] + '}content', recrawl='false').text = lom_id
+                etree.SubElement(entry.entry, utils.PREFIX_NS['lom'] + 'content', recrawl='false').text = lom_id
         LOGGER.debug('edit entry: %s', entry)
         # SWORD2 client doesn't handle 202 respose correctly - implementing here
         # Correct function is self.sword_connection.update_metadata_for_resource
@@ -257,7 +257,7 @@ class Lockssomatic(models.Model):
 
         # Delete paths from delete_elements from disk, and remove from METS
         for element in delete_elements:
-            path = element.get('{' + utils.NSMAP['xlink'] + '}href')
+            path = element.get(utils.PREFIX_NS['xlink'] + 'href')
             LOGGER.debug('path to delete: %s', path)
             try:
                 os.remove(path)
@@ -413,7 +413,7 @@ class Lockssomatic(models.Model):
                 ID=os.path.basename(out_path), SIZE=str(size),
                 CHECKSUM=checksum.hexdigest(), CHECKSUMTYPE=checksum_name)
             flocat = etree.SubElement(file_e, utils.PREFIX_NS['mets'] + 'FLocat', OTHERLOCTYPE="SYSTEM", LOCTYPE="OTHER")
-            flocat.set('{' + utils.NSMAP['xlink'] + '}href', out_path)
+            flocat.set(utils.NSMAP['xlink'] + 'href', out_path)
 
         # Write out pointer file again
         with open(package.full_pointer_file_path, 'w') as f:
