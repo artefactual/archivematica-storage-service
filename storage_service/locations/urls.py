@@ -25,7 +25,7 @@ urlpatterns = [
         name='package_update_status'),
     url(r'^packages/aip_recover_request$', views.aip_recover_request,
         name='aip_recover_request'),
-    url(r'^packages/(?P<package_uuid>' + UUID + ')/reingest/$', 'aip_reingest',
+    url(r'^packages/(?P<package_uuid>' + UUID + ')/reingest/$', views.aip_reingest,
         name='aip_reingest'),
 
     # Pipelines
