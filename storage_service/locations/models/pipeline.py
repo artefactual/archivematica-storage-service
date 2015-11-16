@@ -1,5 +1,6 @@
 # stdlib, alphabetical
 import logging
+import sys
 
 # Core Django, alphabetical
 from django.core import validators
@@ -7,6 +8,7 @@ from django.db import models
 
 # Third party dependencies, alphabetical
 from django_extensions.db.fields import UUIDField
+import requests
 
 # This project, alphabetical
 from common import utils
@@ -126,3 +128,67 @@ class Pipeline(models.Model):
                     p['purpose'], location, self)
                 LocationPipeline.objects.get_or_create(
                     pipeline=self, location=location)
+
+    # HTTP API CALLS
+
+    def _request_api(self, method, path, **kwargs):
+        url = 'http://{}/api/{}'.format(
+            self.remote_name,
+            path.lstrip('/'),
+        )
+        fields = {
+            'username': self.api_username,
+            'api_key': self.api_key
+        }
+        if 'fields' in kwargs:
+            fields.update(kwargs['fields'])
+
+        LOGGER.debug('URL: %s; fields: %s', url, fields)
+        try:
+            resp = requests.request(method, url, data=fields, allow_redirects=True)
+        except requests.exceptions.RequestException, e:
+            LOGGER.error('Unable to connect to pipeline %s.', self)
+            et, ei, tb = sys.exc_info()
+            raise PipelineClientException, PipelineClientException(e), tb
+        else:
+            LOGGER.debug('Response: %s %s', resp.status_code, resp.text)
+            return resp
+
+    def get_processing_config(self, name):
+        """Obtain a processing configuration XML document given its name. The
+        content is returned as a string, which may be empty in case of errors.
+        """
+        if not name:
+            raise ValueError('Parameter name is empty.')
+        url = 'processing-configuration/' + name
+        resp = self._request_api('GET', url)
+        if resp.status_code != requests.codes.ok:
+            raise PipelineClientUnexpectedCodeException(self, resp.status_code)
+        if not resp.text:
+            raise PipelineClientException('Pipeline {}: empty processing configuration ({}).'.format(self, name))
+        return resp.text
+
+    def reingest(self, name, uuid, target='transfer'):
+        if not name:
+            raise ValueError('Parameter name is empty.')
+        if not uuid:
+            raise ValueError('Parameter uuid is empty.')
+        fields = {
+            'name': name,
+            'uuid': uuid,
+            'target': target
+        }
+        url = 'reingest'
+        resp = self._request_api('POST', url, fields=fields)
+        if resp.status_code != requests.codes.ok:
+            raise PipelineClientUnexpectedCodeException(self, resp.status_code)
+        return resp.text
+
+
+class PipelineClientException(Exception):
+    pass
+
+
+class PipelineClientUnexpectedCodeException(PipelineClientException):
+    def __init__(self, pipeline, status_code):
+        super(PipelineClientException, self).__init__('Pipeline {} returned an unexpected status code: {}.'.format(pipeline, status_code))
