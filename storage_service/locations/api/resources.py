@@ -838,8 +838,9 @@ class PackageResource(ModelResource):
             response = {'error': True, 'message': 'Pipeline UUID {} failed to return a pipeline'.format(bundle.data['pipeline'])}
             return self.create_response(request, response, response_class=http.HttpBadRequest)
         reingest_type = bundle.data['reingest_type']
+        processing_config = bundle.data.get('processing_config', 'default')
 
-        response = bundle.obj.start_reingest(pipeline, reingest_type)
+        response = bundle.obj.start_reingest(pipeline, reingest_type, processing_config)
         status_code = response.get('status_code', 500)
 
         return self.create_response(request, response, status=status_code)

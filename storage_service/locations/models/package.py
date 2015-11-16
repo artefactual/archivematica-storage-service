@@ -7,7 +7,6 @@ import logging
 from lxml import etree
 import os
 import re
-import requests
 import shutil
 import subprocess
 import tempfile
@@ -20,6 +19,7 @@ from django.utils import timezone
 import bagit
 import jsonfield
 from django_extensions.db.fields import UUIDField
+import requests
 
 # This project, alphabetical
 from common import utils
@@ -117,9 +117,10 @@ class Package(models.Model):
     )
 
     # Reingest type options
-    METADATA_ONLY = 'metadata'
-    OBJECTS = 'objects'
-    REINGEST_CHOICES = (METADATA_ONLY, OBJECTS)
+    METADATA_ONLY = 'metadata' # Re-ingest metadata only
+    OBJECTS = 'objects'        # Re-ingest metadata and objects for DIP generation
+    FULL = 'full'              # Full re-ingest
+    REINGEST_CHOICES = (METADATA_ONLY, OBJECTS, FULL)
 
     class Meta:
         verbose_name = "Package"
@@ -883,13 +884,14 @@ class Package(models.Model):
 
     # REINGEST
 
-    def start_reingest(self, pipeline, reingest_type):
+    def start_reingest(self, pipeline, reingest_type, processing_config='default'):
         """
         Copies this package to `pipeline` for reingest.
 
         Fetches the AIP from storage, extracts and runs fixity on it to verify integrity.
         If reingest_type is METADATA_ONLY, sends the METS and all files in the metadata directory.
         If reingest_type is OBJECTS, sends METS, all files in metadata directory and all objects, preservation and original.
+        If reingest_type is FULL, we do like in OBJECTS but sending the package to the transfer source location.
         Calls Archivematica endpoint /api/ingest/reingest/ to start reingest.
 
         :param pipeline: Pipeline object to send reingested AIP to.
@@ -903,7 +905,7 @@ class Package(models.Model):
         # Check and set reingest pipeline
         if self.misc_attributes.get('reingest_pipeline', None):
             return {'error': True, 'status_code': 409,
-                'message': 'This AIP already being reingested on {}'.format(self.misc_attributes['reingest_pipeline'])}
+                'message': 'This AIP is already being reingested on {}'.format(self.misc_attributes['reingest_pipeline'])}
         self.misc_attributes.update({'reingest_pipeline': pipeline.uuid})
 
         # Fetch and extract if needed
@@ -928,7 +930,10 @@ class Package(models.Model):
         reingest_files = [
             os.path.join(relative_path, 'data', 'METS.' + self.uuid + '.xml')
         ]
-        if reingest_type == self.OBJECTS:
+        if reingest_type == self.FULL:
+            # All the things!
+            reingest_files = [relative_path]
+        elif reingest_type == self.OBJECTS:
             # All in objects except submissionDocumentation dir
             for f in os.listdir(os.path.join(local_path, 'data', 'objects')):
                 if f in ('submissionDocumentation'):
@@ -941,6 +946,27 @@ class Package(models.Model):
                     reingest_files.append(os.path.join(relative_path, 'data', 'objects', f, ''))
         elif reingest_type == self.METADATA_ONLY:
             reingest_files.append(os.path.join(relative_path, 'data', 'objects', 'metadata', ''))
+
+        # Fetch processing configuration, put it in the root of the package and
+        # include the file in reingest_files.
+        if reingest_type == self.FULL and processing_config != 'default':
+            try:
+                config = pipeline.get_processing_config(processing_config)
+            except requests.exceptions.RequestException:
+                LOGGER.error('Reingest: processing configuration %s could not be loaded', processing_config)
+            else:
+                config_path = os.path.join(local_path, 'processingMCP.xml')
+                try:
+                    # It's not expected to find an existing processingMCP.xml
+                    # file in the original AIP, but we are using the w+ mode
+                    # just in case.
+                    with open(config_path, 'w+') as f:
+                        f.write(config)
+                    LOGGER.debug('Reingest: processing configuration %s written, location: %s', processing_config, config_path)
+                    reingest_files.append(os.path.join(relative_path, 'processingMCP.xml'))
+                except IOError:
+                    LOGGER.exception('Reingest: processing configuration %s could not be written', processing_config)
+                    raise
 
         LOGGER.info('Reingest: files: %s', reingest_files)
 
@@ -969,31 +995,14 @@ class Package(models.Model):
         if temp_dir:
             shutil.rmtree(temp_dir)
 
-        # Call reingest AIP API
-        reingest_url = 'http://' + pipeline.remote_name + '/api/ingest/reingest'
-        params = {
-            'username': pipeline.api_username,
-            'api_key': pipeline.api_key,
-            'name': relative_path,
-            'uuid': self.uuid,
-        }
-        LOGGER.debug('Reingest: URL: %s; params: %s', reingest_url, params)
+        # Call reingest API
+        reingest_target = 'transfer' if self.FULL else 'ingest'
         try:
-            response = requests.post(reingest_url, data=params, allow_redirects=True)
-        except requests.exceptions.RequestException:
-            LOGGER.exception('Unable to connect to pipeline %s', pipeline)
-            return {'error': True, 'status_code': 502,
-                'message': 'Unable to connect to pipeline'}
-        LOGGER.debug('Response: %s %s', response.status_code, response.text)
-        if response.status_code != requests.codes.ok:
-            try:
-                json_error = response.json().get('message',
-                    'Error in approve reingest API.')
-            except ValueError:  # Failed to decode JSON
-                json_error = 'Error in approve reingest API.'
-            LOGGER.error(json_error)
-            return {'error': True, 'status_code': 502,
-                'message': 'Error from pipeline: %s' % json_error}
+            resp = pipeline.reingest(relative_path, self.uuid, reingest_target)
+        except requests.exceptions.RequestException as e:
+            message = 'Error in approve reingest API. {}'.format(e)
+            LOGGER.exception('Error approving reingest in pipeline for package %s', self.uuid)
+            return {'error': True, 'status_code': 502, 'message': message}
 
         self.save()
 

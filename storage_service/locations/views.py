@@ -233,7 +233,8 @@ def aip_reingest(request, package_uuid):
     if form.is_valid():
         pipeline = form.cleaned_data['pipeline']
         reingest_type = form.cleaned_data['reingest_type']
-        response = package.start_reingest(pipeline, reingest_type)
+        processing_config = form.cleaned_data.get('processing_config', 'default')
+        response = package.start_reingest(pipeline, reingest_type, processing_config)
         error = response.get('error', True)
         message = response.get('message', 'An unknown error occurred')
         if not error:
