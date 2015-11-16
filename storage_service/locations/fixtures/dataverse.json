@@ -3,7 +3,10 @@
     "fields": {
         "host": "apitest.dataverse.org",
         "api_key": "testkeys-77a8-49a3-874e-be1148e7c970",
-        "space": "216bec3b-c4c1-4eff-97ef-728244e58dd0"
+        "space": "216bec3b-c4c1-4eff-97ef-728244e58dd0",
+        "agent_name": "Example Dataverse Network",
+        "agent_type": "organization",
+        "agent_identifier": "http://dataverse.example.com/dvn/"
     },
     "model": "locations.dataverse",
     "pk": 2

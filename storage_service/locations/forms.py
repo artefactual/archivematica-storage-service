@@ -94,7 +94,7 @@ class ArkivumForm(forms.ModelForm):
 class DataverseForm(forms.ModelForm):
     class Meta:
         model = models.Dataverse
-        fields = ('host', 'api_key')
+        fields = ('host', 'api_key', 'agent_name', 'agent_type', 'agent_identifier')
 
 
 class DuracloudForm(forms.ModelForm):

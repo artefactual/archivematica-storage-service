@@ -16,7 +16,7 @@ PROTOCOL = {
     models.Space.DATAVERSE: {
         'model': models.Dataverse,
         'form': forms.DataverseForm,
-        'fields': ['host'],
+        'fields': ['host', 'agent_name', 'agent_type', 'agent_identifier'],
     },
     models.Space.DURACLOUD: {
         'model': models.Duracloud,
