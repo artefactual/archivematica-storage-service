@@ -1,5 +1,6 @@
 # stdlib, alphabetical
 import logging
+import sys
 
 # Core Django, alphabetical
 from django.core import validators
@@ -7,6 +8,7 @@ from django.db import models
 
 # Third party dependencies, alphabetical
 from django_extensions.db.fields import UUIDField
+import requests
 
 # This project, alphabetical
 from common import utils
@@ -126,3 +128,56 @@ class Pipeline(models.Model):
                     p['purpose'], location, self)
                 LocationPipeline.objects.get_or_create(
                     pipeline=self, location=location)
+
+    # HTTP API CALLS
+
+    def _request_api(self, method, path, fields=None):
+        url = 'http://{}/api/{}'.format(
+            self.remote_name,
+            path.lstrip('/'),
+        )
+        data = {
+            'username': self.api_username,
+            'api_key': self.api_key
+        }
+        if fields:
+            data.update(fields)
+
+        LOGGER.debug('URL: %s; data: %s', url, data)
+        try:
+            resp = requests.request(method, url, data=data, allow_redirects=True)
+        except requests.exceptions.RequestException:
+            LOGGER.exception('Unable to connect to pipeline %s.', self)
+            raise
+        else:
+            LOGGER.debug('Response: %s %s', resp.status_code, resp.text)
+            return resp
+
+    def get_processing_config(self, name):
+        """
+        Obtain a processing configuration XML document given its name. The
+        content is returned as a string. An exception is raised if the
+        string is empty.
+        """
+        url = 'processing-configuration/' + name
+        resp = self._request_api('GET', url)
+        if resp.status_code != requests.codes.ok:
+            raise requests.exceptions.RequestException('Pipeline {} returned an unexpected status code: {}'.format(self, resp.status_code))
+        if not resp.text:
+            raise requests.exceptions.RequestException('Pipeline {}: empty processing configuration ({}).'.format(self, name))
+        return resp.text
+
+    def reingest(self, name, uuid, target='transfer'):
+        """
+        Approve reingest in the pipeline.
+        """
+        url = '{}/reingest'.format(target)
+        fields = {'name': name, 'uuid': uuid}
+        resp = self._request_api('POST', url, fields=fields)
+        if resp.status_code != requests.codes.ok:
+            try:
+                json_error = resp.json().get('message')
+                raise requests.exceptions.RequestException('Pipeline {} returned an unexpected status code: {} ({})'.format(self, resp.status_code, json_error))
+            except ValueError:  # Failed to decode JSON
+                raise requests.exceptions.RequestException('Pipeline {} returned an unexpected status code: {}'.format(self, resp.status_code))
+        return resp.json()
