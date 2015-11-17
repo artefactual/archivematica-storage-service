@@ -260,6 +260,22 @@ class Duracloud(models.Model):
                 dest = entry.replace(src_path, dest_path, 1)
                 self._download_file(url, dest)
 
+    def _process_chunk(self, f, chunk_path):
+        bytes_read = 0
+        bytes_to_read = 1024 * 1024  # 1MB
+
+        with open(chunk_path, 'w') as fchunk:
+            while bytes_read < self.CHUNK_SIZE:
+                data = f.read(bytes_to_read)
+                fchunk.write(data)
+
+                length = len(data)
+
+                if length < bytes_to_read:
+                    raise StopIteration("End of file reached")
+                else:
+                    bytes_read += length
+
     def _upload_file(self, url, upload_file, resume=False):
         """
         Upload a file of any size to Duracloud.
@@ -300,9 +316,9 @@ class Duracloud(models.Model):
                 if resume:
                     chunklist = set(self._get_files_list(relative_path))
                     LOGGER.debug('Chunklist %s', chunklist)
+                file_complete = False
                 i = 0
-                chunk_data = f.read(self.CHUNK_SIZE)
-                while chunk_data:
+                while not file_complete:
                     # Setup chunk info
                     chunk_suffix = '.dura-chunk-' + str(i).zfill(4)
                     chunk_path = upload_file + chunk_suffix
@@ -311,9 +327,10 @@ class Duracloud(models.Model):
                     LOGGER.debug('Chunk URL: %s', chunk_url)
                     chunkid = relative_path + chunk_suffix
                     LOGGER.debug('Chunk ID: %s', chunkid)
-                    # Write chunk
-                    with open(chunk_path, 'wb') as fchunk:
-                        fchunk.write(chunk_data)
+                    try:
+                        self._process_chunk(f, chunk_path)
+                    except StopIteration:
+                        file_complete = True
                     # Make chunk element
                     # <chunk chunkId="chunked/chunked_image.jpg.dura-chunk-0000" index="0">
                     #   <byteSize>2097152</byteSize>
@@ -331,8 +348,6 @@ class Duracloud(models.Model):
                         self._upload_chunk(chunk_url, chunk_path)
                     # Delete chunk
                     os.remove(chunk_path)
-                    # Read next chunk
-                    chunk_data = f.read(self.CHUNK_SIZE)
                     i += 1
             # Write .dura-manifest
             manifest_path = upload_file + self.MANIFEST_SUFFIX
