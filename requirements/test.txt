@@ -4,5 +4,4 @@ coverage==3.6
 django-discover-runner==0.4
 pytest
 pytest-django
-pytest-pythonpath
 vcrpy>=1.0.0
