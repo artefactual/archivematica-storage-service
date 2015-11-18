@@ -8,6 +8,9 @@ import vcr
 
 from locations import models
 
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, '..', 'fixtures'))
+
 
 class TestSwift(TestCase):
 
@@ -31,7 +34,7 @@ class TestSwift(TestCase):
         if self.swift_object.auth_version in ("2", "2.0", 2):
             assert self.swift_object.tenant
 
-    @vcr.use_cassette('locations/fixtures/vcr_cassettes/swift_browse.yaml')
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'swift_browse.yaml'))
     def test_browse(self):
         resp = self.swift_object.browse('transfers/SampleTransfers')
         assert resp
@@ -40,7 +43,7 @@ class TestSwift(TestCase):
         assert resp['properties']['BagTransfer.zip']['size'] == 13187
         assert resp['properties']['BagTransfer.zip']['timestamp'] == '2015-04-10T21:52:09.559240'
 
-    @vcr.use_cassette('locations/fixtures/vcr_cassettes/swift_browse_unicode.yaml')
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'swift_browse_unicode.yaml'))
     def test_browse_unicode(self):
         resp = self.swift_object.browse('transfers/SampleTransfers/Images')
         assert resp
@@ -49,7 +52,7 @@ class TestSwift(TestCase):
         assert resp['properties'][u'エブリンの写真.jpg']['size'] == 158131
         assert resp['properties'][u'エブリンの写真.jpg']['timestamp'] == '2015-04-10T21:56:43.264560'
 
-    @vcr.use_cassette('locations/fixtures/vcr_cassettes/swift_move_to.yaml')
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'swift_move_to.yaml'))
     def test_move_to_ss(self):
         test_file = 'test/%percent.txt'
         # Not here already
@@ -65,7 +68,7 @@ class TestSwift(TestCase):
         assert os.path.isfile(test_file)
         assert open(test_file, 'r').read() == '%percent\n'
 
-    @vcr.use_cassette('locations/fixtures/vcr_cassettes/swift_move_to_not_exist.yaml')
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'swift_move_to_not_exist.yaml'))
     def test_move_to_ss_not_exist(self):
         test_file = 'test/dne.txt'
         assert not os.path.exists(test_file)
@@ -73,7 +76,7 @@ class TestSwift(TestCase):
         # TODO is this what we want to happen?  Or should it fail louder?
         assert not os.path.exists(test_file)
 
-    @vcr.use_cassette('locations/fixtures/vcr_cassettes/swift_move_to_folder.yaml')
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'swift_move_to_folder.yaml'))
     def test_move_to_ss_folder(self):
         test_dir = 'test/subdir/'
         try:
@@ -89,7 +92,7 @@ class TestSwift(TestCase):
         assert os.path.isfile(os.path.join(test_dir, 'control.txt'))
         assert open(os.path.join(test_dir, 'control.txt'), 'r').read() == 'test file\n'
 
-    @vcr.use_cassette('locations/fixtures/vcr_cassettes/swift_move_to_bad_etag.yaml')
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'swift_move_to_bad_etag.yaml'))
     def test_move_to_ss_bad_etag(self):
         test_file = 'test/%percent.txt'
         # Not here already
@@ -102,7 +105,7 @@ class TestSwift(TestCase):
         with pytest.raises(models.StorageException):
             self.swift_object.move_to_storage_service('transfers/SampleTransfers/badNames/objects/%percent.txt', test_file, None)
 
-    @vcr.use_cassette('locations/fixtures/vcr_cassettes/swift_move_from.yaml')
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'swift_move_from.yaml'))
     def test_move_from_ss(self):
         # create test.txt
         open('test.txt', 'w').write('test file\n')
@@ -115,7 +118,7 @@ class TestSwift(TestCase):
         # Cleanup
         self.swift_object.delete_path('transfers/SampleTransfers/test.txt')
 
-    @vcr.use_cassette('locations/fixtures/vcr_cassettes/swift_delete.yaml')
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'swift_delete.yaml'))
     def test_delete_path(self):
         # Setup
         test_file = 'transfers/SampleTransfers/test.txt'
@@ -127,7 +130,7 @@ class TestSwift(TestCase):
         resp = self.swift_object.browse('transfers/SampleTransfers/')
         assert 'test.txt' not in resp['entries']
 
-    @vcr.use_cassette('locations/fixtures/vcr_cassettes/swift_delete_folder.yaml')
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'swift_delete_folder.yaml'))
     def test_delete_folder(self):
         # Check that exists already
         test_file = 'transfers/SampleTransfers/test/'

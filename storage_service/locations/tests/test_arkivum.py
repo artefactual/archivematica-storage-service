@@ -7,9 +7,10 @@ from django.test import TestCase
 
 from locations import models
 
-
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-ARKIVUM_DIR = os.path.abspath(os.path.join(THIS_DIR, '..', 'fixtures', 'arkivum'))
+FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, '..', 'fixtures'))
+ARKIVUM_DIR = os.path.abspath(os.path.join(FIXTURES_DIR, 'arkivum'))
+
 
 class TestArkivum(TestCase):
 
@@ -44,7 +45,7 @@ class TestArkivum(TestCase):
         assert response['properties']['aips']['object count'] == 0
         assert response['properties']['ts']['object count'] == 0
 
-    @vcr.use_cassette('locations/fixtures/vcr_cassettes/arkivum_delete.yaml')
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'arkivum_delete.yaml'))
     def test_delete(self):
         # Verify exists
         url = 'https://' + self.arkivum_object.host + '/files/ts'
@@ -80,7 +81,7 @@ class TestArkivum(TestCase):
 
     #     # TODO test folder in new test
 
-    @vcr.use_cassette('locations/fixtures/vcr_cassettes/arkivum_post_move_from_ss.yaml')
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'arkivum_post_move_from_ss.yaml'))
     def test_post_move_from_ss(self):
         # POST to Arkivum about file
         open('unittest.txt', 'w').write('test file\n')
@@ -112,7 +113,7 @@ class TestArkivum(TestCase):
     #     os.remove('folder/test/subfolder/test2.txt')
     #     os.removedirs('folder/test/subfolder')
 
-    @vcr.use_cassette('locations/fixtures/vcr_cassettes/arkivum_update_package_status.yaml')
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'arkivum_update_package_status.yaml'))
     def test_update_package_status(self):
         # Setup request_id
         self.package.misc_attributes.update({'request_id': '2e75c8ad-cded-4f7e-8ac7-85627a116e39'})
