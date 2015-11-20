@@ -3,19 +3,25 @@ from django.test import TestCase
 
 from locations import models
 
-from urls import startup
-
 class TestStartup(TestCase):
     """
     Test startup code that creates default Space & Locations.
     """
+
+    def setUp(self):
+        # Importing from urls must happen after TestCase has instantiated
+        from urls import startup
+        self.startup = startup
+        # startup is run on import, so delete anything that was already created
+        models.Space.objects.all().delete()
+        models.Location.objects.all().delete()
 
     def test_create_default_locations(self):
         # Assert no Space or Location exists
         assert not models.Space.objects.all().exists()
         assert not models.Location.objects.all().exists()
         # Run test
-        startup()
+        self.startup()
         # Assert Space & Locations created
         assert models.Space.objects.get(access_protocol='FS')
         assert models.Location.objects.get(purpose='TS')
@@ -34,7 +40,7 @@ class TestStartup(TestCase):
         models.Space.objects.create(path='/', access_protocol='FS')
         assert len(models.Space.objects.filter(access_protocol='FS')) == 2
         # Run test
-        startup()
+        self.startup()
         # Verify no locations exist - space errored gracefully
         assert len(models.Space.objects.filter(access_protocol='FS')) == 2
         assert not models.Location.objects.all().exists()
@@ -47,7 +53,7 @@ class TestStartup(TestCase):
         assert len(models.Space.objects.filter(access_protocol='FS')) == 1
         assert len(models.Location.objects.filter(purpose='SS')) == 2
         # Run test
-        startup()
+        self.startup()
         # Verify no new Location was created
         assert len(models.Space.objects.filter(access_protocol='FS')) == 1
         assert len(models.Location.objects.filter(purpose='SS')) == 2
@@ -63,6 +69,6 @@ class TestStartup(TestCase):
         models.Location.objects.create(space=s, purpose='AR', relative_path='mnt/aips/recovery')
         assert len(models.Location.objects.all()) == 6
         # Run test
-        startup()
+        self.startup()
         # Verify no new Locations created
         assert len(models.Location.objects.all()) == 6
