@@ -615,17 +615,7 @@ class PackageResource(ModelResource):
         # Get Package details
         package = bundle.obj
 
-        # Check if the package is in Arkivum and not actually there
-        if package.current_location.space.access_protocol == Space.ARKIVUM:
-            is_local = package.current_location.space.get_child_space().is_file_local(package)
-            if is_local is False:
-                # Need to fetch from tape, return 202
-                return http.HttpAccepted(json.dumps({"error": False, 'message': "File is not locally available.  Contact your storage administrator to fetch it."}))
-            if is_local is None:
-                # Arkivum error, return 502
-                return http.HttpResponse(json.dumps({"error": True, "message": "Error checking if file in Arkivum in locally available."}), content_type='application/json', status=502)
-
-        # If local file exists - return that
+        # Handle package name duplication in path for compressed packages
         if not package.is_compressed:
             full_path = package.fetch_local_path()
             # The basename of the AIP may be included with the request, because
@@ -635,6 +625,19 @@ class PackageResource(ModelResource):
             basename = os.path.join(os.path.basename(full_path), '')
             if relative_path_to_file.startswith(basename):
                 relative_path_to_file = relative_path_to_file.replace(basename, '', 1)
+
+        # Check if the package is in Arkivum and not actually there
+        if package.current_location.space.access_protocol == Space.ARKIVUM:
+            is_local = package.current_location.space.get_child_space().is_file_local(package, path=relative_path_to_file)
+            if is_local is False:
+                # Need to fetch from tape, return 202
+                return http.HttpAccepted(json.dumps({"error": False, 'message': "File is not locally available.  Contact your storage administrator to fetch it."}))
+            if is_local is None:
+                # Arkivum error, return 502
+                return http.HttpResponse(json.dumps({"error": True, "message": "Error checking if file in Arkivum in locally available."}), content_type='application/json', status=502)
+
+        # If local file exists - return that
+        if not package.is_compressed:
             extracted_file_path = os.path.join(full_path, relative_path_to_file)
             if not os.path.exists(extracted_file_path):
                 return http.HttpResponse(status=404,

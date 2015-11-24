@@ -3,7 +3,7 @@ import json
 import logging
 import os
 import requests
-import subprocess
+import urllib
 
 # Core Django, alphabetical
 from django.conf import settings
@@ -201,14 +201,44 @@ class Arkivum(models.Model):
         """
         Check if (a file in) this package is locally available.
 
+        :param package: Package object that contains the file
+        :param str path: Relative path to the file inside the package to check. If None, checks the whole package.
         :return: True if file is locally available, False if not, None on error.
+        :raises: NotImplementedError if package is uncompressed and path is None
         """
-        package_info = self._get_package_info(package)
-        if package_info.get('error'):
-            return None
-        # Look for ['fileInformation']['local'] == True
-        LOGGER.debug('File info local: %s', package_info['fileInformation'].get('local'))
-        if package_info['fileInformation'].get('local'):
+        LOGGER.debug('Checking if file %s in package %s is local', path, package)
+        if package.is_compressed:
+            package_info = self._get_package_info(package)
+            if package_info.get('error'):
+                return None
+            # Look for ['fileInformation']['local'] == True
+            package_info = package_info['fileInformation']
+        else:  # uncompressed
+            if path:
+                url_path = package.current_location.relative_path + '/' + package.current_path + '/' + path
+                url_path = urllib.quote_plus(url_path, safe='/')
+                url = 'https://' + self.host + '/api/2/files/fileInfo/' + url_path
+                LOGGER.info('URL: %s', url)
+                try:
+                    response = requests.get(url, verify=VERIFY)
+                except Exception:
+                    LOGGER.warning('Error fetching file information', exc_info=True)
+                    return None
+                LOGGER.info('Response: %s, Response text: %s', response.status_code, response.text)
+                if response.status_code != 200:
+                    LOGGER.warning('Response from Arkivum server was %s', response)
+                    return None
+                try:
+                    package_info = response.json()
+                except ValueError:
+                    LOGGER.warning('JSON could not be parsed from package info')
+                    return None
+            else:
+                # TODO Implement checking all files in an uncompressed package
+                # TODO This may be available from _get_package_info in future
+                return None
+        LOGGER.debug('File info local: %s', package_info.get('local'))
+        if package_info.get('local'):
             return True
         else:
             return False
