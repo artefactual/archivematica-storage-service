@@ -27,7 +27,7 @@ LOGGER = logging.getLogger(__name__)
 if settings.DEBUG:
     VERIFY = False
 else:
-    VERIFY = True
+    VERIFY = False
 
 
 class Arkivum(models.Model):
