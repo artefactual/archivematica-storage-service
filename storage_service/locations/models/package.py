@@ -372,7 +372,7 @@ class Package(models.Model):
         temp_aip.delete()
 
         # Do fixity check of AIP with recovered files
-        return self.check_fixity() 
+        return self.check_fixity()
 
     def store_aip(self, origin_location, origin_path):
         """ Stores an AIP in the correct Location.
@@ -498,9 +498,8 @@ class Package(models.Model):
             rc = subprocess.call(command)
             LOGGER.debug('Extract file RC: %s', rc)
         else:
-            aip_path = os.path.join(full_path, basename)
-            LOGGER.info('Copying AIP from: %s to %s', aip_path, output_path)
-            shutil.copytree(aip_path, output_path)
+            LOGGER.info('Copying AIP from: %s to %s', full_path, output_path)
+            shutil.copytree(full_path, output_path)
 
         if not relative_path:
             self.local_path_location = ss_internal
@@ -980,6 +979,9 @@ class Package(models.Model):
         internal_space = ss_internal.space
         dest_space = reingest_location.space
 
+        # Take note of whether old version of AIP was compressed
+        was_compressed = self.is_compressed
+
         # Copy actual AIP to ss_internal, extract if needed
         path, temp_dir = self.extract_file()  # AIP always copied
 
@@ -993,6 +995,9 @@ class Package(models.Model):
             destination_path=os.path.join(ss_internal.relative_path, reingest_path),
         )
         reingest_full_path = os.path.join(ss_internal.full_path, reingest_path)
+
+        # Take note of whether new version of AIP should be compressed
+        to_be_compressed = os.path.isfile(reingest_full_path)
 
         # Extract if needed
         if os.path.isfile(reingest_full_path):
@@ -1018,14 +1023,31 @@ class Package(models.Model):
         LOGGER.debug('Reingest AIP full path: %s', reingest_full_path)
 
         # Copy pointer file if exists
-        # TODO what do if LOCKSS & uncompressed?
-        if self.package_type in (Package.AIP, Package.AIC):
+        # TODO what do if LOCKSS?
+        if self.package_type in (Package.AIP, Package.AIC) and to_be_compressed:
             reingest_pointer_src = os.path.join(origin_location.relative_path, os.path.dirname(origin_path), 'pointer.xml')
-            reingest_pointer_name = 'pointer.' + self.uuid + '.reingest.xml'
-            reingest_pointer_dst = os.path.join(ss_internal.relative_path, reingest_pointer_name)
+
+            # If reingesting a previously compressed AIP, make a temporary "reingest" pointer (otherwise make a normal one)
+            if was_compressed:
+                reingest_pointer_name = 'pointer.' + self.uuid + '.reingest.xml'
+                reingest_pointer_dst = os.path.join(ss_internal.relative_path, reingest_pointer_name)
+            else:
+                reingest_pointer_name = 'pointer.' + self.uuid + '.xml'
+                reingest_pointer_dst = os.path.join(ss_internal.relative_path, utils.uuid_to_path(self.uuid), reingest_pointer_name)
+
+                self.pointer_file_location = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
+                self.pointer_file_path = os.path.join(utils.uuid_to_path(self.uuid), 'pointer.{}.xml'.format(self.uuid))
+
             src_space.move_to_storage_service(reingest_pointer_src, reingest_pointer_name, internal_space)
             internal_space.move_from_storage_service(reingest_pointer_name, reingest_pointer_dst)
-            reingest_pointer = os.path.join(ss_internal.full_path, reingest_pointer_name)
+
+            if was_compressed:
+                reingest_pointer = os.path.join(ss_internal.full_path, reingest_pointer_name)
+            else:
+                reingest_pointer = os.path.join(ss_internal.full_path, utils.uuid_to_path(self.uuid), reingest_pointer_name)
+
+                # Remove initial copy of pointer
+                os.remove(os.path.join(ss_internal.full_path, reingest_pointer_name))
 
         # Replace METS
         original_mets_path = os.path.join(path, 'data', 'METS.' + self.uuid + '.xml')
@@ -1047,36 +1069,46 @@ class Package(models.Model):
         bag.save(manifests=True)
         bag.validate()  # Raises exception in case of problem
 
-        # Compress
-        # TODO update this for uncompressed AIPs
-        reingest_root = etree.parse(reingest_pointer)
-        os.remove(reingest_pointer)
-        puid = reingest_root.findtext('.//premis:formatRegistryKey', namespaces=utils.NSMAP)
-        if puid == 'fmt/484':  # 7 Zip
-            algo = reingest_root.find('.//mets:transformFile', namespaces=utils.NSMAP).get('TRANSFORMALGORITHM')
-            if algo == 'bzip2':
-                compression = self.COMPRESSION_7Z_BZIP
-            elif algo == 'lzma':
-                compression = self.COMPRESSION_7Z_LZMA
+        # Compress if necessary
+        if to_be_compressed:
+            reingest_root = etree.parse(reingest_pointer)
+            # If updating, rather than creating a new pointer file, delete this pointer file
+            if was_compressed:
+                os.remove(reingest_pointer)
+            puid = reingest_root.findtext('.//premis:formatRegistryKey', namespaces=utils.NSMAP)
+            if puid == 'fmt/484':  # 7 Zip
+                algo = reingest_root.find('.//mets:transformFile', namespaces=utils.NSMAP).get('TRANSFORMALGORITHM')
+                if algo == 'bzip2':
+                    compression = self.COMPRESSION_7Z_BZIP
+                elif algo == 'lzma':
+                    compression = self.COMPRESSION_7Z_LZMA
+                else:
+                    compression = self.COMPRESSION_7Z_BZIP
+                    LOGGER.warning('Reingest: Unable to determine reingested compression algorithm, defaulting to bzip2.')
+            elif puid == 'x-fmt/268':  # Bzipped (probably tar)
+                compression = self.COMPRESSION_TAR_BZIP2
             else:
                 compression = self.COMPRESSION_7Z_BZIP
-                LOGGER.warning('Reingest: Unable to determine reingested compression algorithm, defaulting to bzip2.')
-        elif puid == 'x-fmt/268':  # Bzipped (probably tar)
-            compression = self.COMPRESSION_TAR_BZIP2
-        else:
-            compression = self.COMPRESSION_7Z_BZIP
-            LOGGER.warning('Reingest: Unable to determine reingested file format, defaulting recompression algorithm to %s.', compression)
-        LOGGER.info('Reingest: compressing with %s', compression)
-        # FIXME Do we need compression output for event?
-        out_path, out_dir = self.compress_package(compression)
-        compress_output = ''
+                LOGGER.warning('Reingest: Unable to determine reingested file format, defaulting recompression algorithm to %s.', compression)
+            LOGGER.info('Reingest: compressing with %s', compression)
+            # FIXME Do we need compression output for event?
+            out_path, out_dir = self.compress_package(compression)
+            compress_output = ''
 
-        # Delete working files
-        shutil.rmtree(reingest_full_path)
-        shutil.rmtree(temp_dir)
+            # Delete working files
+            shutil.rmtree(reingest_full_path)
+            shutil.rmtree(temp_dir)
+        else:
+            out_path = self.fetch_local_path()
+            out_dir = os.path.dirname(out_path)
 
         # Move to final destination
         src_path = out_path.replace(ss_internal.space.path, '', 1).lstrip('/')
+
+        # This allows uncompressed AIP to be rsynced properly
+        if not to_be_compressed:
+            src_path = src_path + '/'
+
         uuid_path = utils.uuid_to_path(self.uuid)
         dest_path = out_path.replace(out_dir, '', 1).lstrip('/')
         dest_path = os.path.join(uuid_path, dest_path)
@@ -1097,38 +1129,45 @@ class Package(models.Model):
         self.current_location = reingest_location
         self.current_path = dest_path
 
-        # Update pointer file
-        root = etree.parse(self.full_pointer_file_path)
+        if to_be_compressed:
+            # Update pointer file
+            root = etree.parse(self.full_pointer_file_path)
 
-        # Add compression event (if compressed)
-        amdsec = root.find('mets:amdSec', namespaces=utils.NSMAP)
-        if compression in (self.COMPRESSION_7Z_BZIP, self.COMPRESSION_7Z_LZMA):
-            try:
-                version = [x for x in subprocess.check_output('7z').splitlines() if 'Version' in x][0]
-                event_detail = 'program="7z"; version="{}"'.format(version)
-            except (subprocess.CalledProcessError, Exception):
-                event_detail = 'program="7z"'
-        elif compression in (self.COMPRESSION_TAR_BZIP2, self.COMPRESSION_TAR):
-            try:
-                version = subprocess.check_output(['tar', '--version']).splitlines()[0]
-                event_detail = 'program="tar"; version="{}"'.format(version)
-            except (subprocess.CalledProcessError, Exception):
-                event_detail = 'program="tar"'
-        else:
-            LOGGER.warning('Unknown compression algorithm, cannot correctly update pointer file')
-            event_detail = 'Unknown compression'
-        utils.mets_add_event(
-            amdsec,
-            'compression',
-            event_detail=event_detail,
-            event_outcome_detail_note=compress_output,
-        )
+            # Add compression event (if compressed)
+            amdsec = root.find('mets:amdSec', namespaces=utils.NSMAP)
+            if compression in (self.COMPRESSION_7Z_BZIP, self.COMPRESSION_7Z_LZMA):
+                try:
+                    version = [x for x in subprocess.check_output('7z').splitlines() if 'Version' in x][0]
+                    event_detail = 'program="7z"; version="{}"'.format(version)
+                except (subprocess.CalledProcessError, Exception):
+                    event_detail = 'program="7z"'
+            elif compression in (self.COMPRESSION_TAR_BZIP2, self.COMPRESSION_TAR):
+                try:
+                    version = subprocess.check_output(['tar', '--version']).splitlines()[0]
+                    event_detail = 'program="tar"; version="{}"'.format(version)
+                except (subprocess.CalledProcessError, Exception):
+                    event_detail = 'program="tar"'
+            else:
+                LOGGER.warning('Unknown compression algorithm, cannot correctly update pointer file')
+                event_detail = 'Unknown compression'
+            utils.mets_add_event(
+                amdsec,
+                'compression',
+                event_detail=event_detail,
+                event_outcome_detail_note=compress_output,
+            )
 
-        self.update_pointer_file(compression, root=root, path=out_path)
+            self.update_pointer_file(compression, root=root, path=out_path)
+        elif was_compressed:
+            # AIP used to be compressed, but is no longer so delete pointer file
+            os.remove(self.full_pointer_file_path)
+            self.pointer_file_location = None
+            self.pointer_file_path = None
 
-        # Delete working file
-        shutil.rmtree(out_dir)
         self.save()
+
+        # Delete working files
+        shutil.rmtree(out_dir)
 
     def update_pointer_file(self, compression, root=None, path=None):
         if not root:
