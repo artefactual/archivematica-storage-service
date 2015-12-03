@@ -213,8 +213,8 @@ class CallbackForm(forms.ModelForm):
 
 class ReingestForm(forms.Form):
     REINGEST_CHOICES = (
-        (models.Package.METADATA_ONLY, 'Re-ingest metadata only'),
-        (models.Package.OBJECTS, 'Re-ingest metadata and objects for DIP generation'),
+        (models.Package.METADATA_ONLY, 'Metadata re-ingest'),
+        (models.Package.OBJECTS, 'Partial re-ingest'),
         (models.Package.FULL, 'Full re-ingest'),
     )
 

@@ -856,9 +856,9 @@ class Package(models.Model):
                 'message': 'Package with type {} cannot be re-ingested.'.format(self.get_package_type_display())}
 
         # Check and set reingest pipeline
-        if self.misc_attributes.get('reingest_pipeline', None):
-            return {'error': True, 'status_code': 409,
-                'message': 'This AIP is already being reingested on {}'.format(self.misc_attributes['reingest_pipeline'])}
+        # if self.misc_attributes.get('reingest_pipeline', None):
+        #     return {'error': True, 'status_code': 409,
+        #         'message': 'This AIP is already being reingested on {}'.format(self.misc_attributes['reingest_pipeline'])}
         self.misc_attributes.update({'reingest_pipeline': pipeline.uuid})
 
         # Fetch and extract if needed
@@ -947,19 +947,11 @@ class Package(models.Model):
 
         # Call reingest API
         reingest_target = 'transfer' if self.FULL else 'ingest'
-        reingest_api_error = 'Error in approve reingest API.'
         try:
             resp = pipeline.reingest(relative_path, self.uuid, reingest_target)
-        except PipelineClientException:
-            LOGGER.exception(reingest_api_error)
-            return {'error': True, 'status_code': 405, 'message': reingest_api_error}
-        else:
-            try:
-                json_error = resp.json().get('message', reingest_api_error)
-            except ValueError:  # Failed to decode JSON
-                json_error = reingest_api_error
-            LOGGER.error(json_error)
-            return {'error': True, 'status_code': 502, 'message': 'Error from pipeline: %s: %s' % (self, json_error)}
+        except PipelineClientException as e:
+            message = 'Error in approve reingest API. {}'.format(e)
+            return {'error': True, 'status_code': 502, 'message': message}
 
         self.save()
 

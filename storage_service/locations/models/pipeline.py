@@ -155,7 +155,8 @@ class Pipeline(models.Model):
             return resp
 
     def get_processing_config(self, name):
-        """Obtain a processing configuration XML document given its name. The
+        """
+        Obtain a processing configuration XML document given its name. The
         content is returned as a string, which may be empty in case of errors.
         """
         if not name:
@@ -169,20 +170,25 @@ class Pipeline(models.Model):
         return resp.text
 
     def reingest(self, name, uuid, target='transfer'):
+        """
+        Approve reingest in the pipeline.
+        """
         if not name:
             raise ValueError('Parameter name is empty.')
         if not uuid:
             raise ValueError('Parameter uuid is empty.')
-        fields = {
-            'name': name,
-            'uuid': uuid,
-            'target': target
-        }
-        url = 'reingest'
+        if not target in ('transfer', 'ingest'):
+            raise ValueError('Parameter target has an unexpected value.')
+        url = '{}/reingest'.format(target)
+        fields = {'name': name, 'uuid': uuid}
         resp = self._request_api('POST', url, fields=fields)
         if resp.status_code != requests.codes.ok:
-            raise PipelineClientUnexpectedCodeException(self, resp.status_code)
-        return resp.text
+            try:
+                json_error = resp.json().get('message')
+                raise PipelineClientUnexpectedCodeException(self, resp.status_code, json_error)
+            except ValueError:  # Failed to decode JSON
+                raise PipelineClientUnexpectedCodeException(self, resp.status_code)
+        return resp.json()
 
 
 class PipelineClientException(Exception):
@@ -190,5 +196,8 @@ class PipelineClientException(Exception):
 
 
 class PipelineClientUnexpectedCodeException(PipelineClientException):
-    def __init__(self, pipeline, status_code):
-        super(PipelineClientException, self).__init__('Pipeline {} returned an unexpected status code: {}.'.format(pipeline, status_code))
+    def __init__(self, pipeline, status_code, details=None):
+        message = 'Pipeline {} returned an unexpected status code: {}.'.format(pipeline, status_code)
+        if details:
+            message += ' ' + details
+        super(PipelineClientException, self).__init__(message)
