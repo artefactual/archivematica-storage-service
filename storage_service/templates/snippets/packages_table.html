@@ -24,14 +24,16 @@
           None
           {% endif %}
         </td>
-        <td><a href="{% url 'location_detail' package.current_location.uuid %}">{{ package.full_path }}</a></td>
+        <td style="max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          <a href="{% url 'location_detail' package.current_location.uuid %}">{{ package.full_path }}</a>
+        </td>
         <td>{{ package.size|filesizeformat }}</td>
         <td>{{ package.get_package_type_display }}</td>
         <td>
           {% if package.pointer_file_location %}
             <a href="{% url 'pointer_file_request' 'v2' 'file' package.uuid %}">Pointer File</a>
           {% else %}
-          None
+            None
           {% endif %}
         </td>
         <td>

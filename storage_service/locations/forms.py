@@ -204,6 +204,7 @@ class ConfirmEventForm(forms.ModelForm):
         super(ConfirmEventForm, self).__init__(*args, **kwargs)
         self.fields['status_reason'].required = True
 
+
 class CallbackForm(forms.ModelForm):
     class Meta:
         model = models.Callback
@@ -211,9 +212,14 @@ class CallbackForm(forms.ModelForm):
 
 
 class ReingestForm(forms.Form):
-    pipeline = forms.ModelChoiceField(queryset=models.Pipeline.active.all())
     REINGEST_CHOICES = (
-        (models.Package.METADATA_ONLY, 'Re-ingest metadata only'),
-        (models.Package.OBJECTS, 'Re-ingest metadata and objects')
+        (models.Package.METADATA_ONLY, 'Metadata re-ingest'),
+        (models.Package.OBJECTS, 'Partial re-ingest'),
+        (models.Package.FULL, 'Full re-ingest'),
     )
+
+    pipeline = forms.ModelChoiceField(queryset=models.Pipeline.active.all())
     reingest_type = forms.ChoiceField(choices=REINGEST_CHOICES, widget=forms.RadioSelect)
+    processing_config = forms.CharField(required=False, initial='default',
+        help_text='Only needed in full re-ingest',
+        widget=forms.TextInput(attrs={'placeholder': 'default'}))
