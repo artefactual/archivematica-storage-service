@@ -77,8 +77,8 @@ class TestDataverse(TestCase):
         """
         assert os.path.exists(self.dest_path) is False
         self.dataverse.space.move_to_storage_service('90', 'dataverse/', self.space)
-        assert 'dataset.json' in os.listdir(self.dest_path)
         assert 'chelan 052.jpg' in os.listdir(self.dest_path)
         assert 'Weather_data.zip' in os.listdir(self.dest_path)
         assert 'metadata' in os.listdir(self.dest_path)
         assert 'agents.json' in os.listdir(os.path.join(self.dest_path, 'metadata'))
+        assert 'dataset.json' in os.listdir(os.path.join(self.dest_path, 'metadata'))

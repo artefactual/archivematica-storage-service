@@ -125,8 +125,9 @@ class Dataverse(models.Model):
         # Create directories
         self.space.create_local_directory(dest_path)
 
-        # Write out dataset info as dataset.json
-        datasetjson_path = os.path.join(dest_path, 'dataset.json')
+        # Write out dataset info as dataset.json to the metadata directory
+        os.makedirs(os.path.join(dest_path, 'metadata'))
+        datasetjson_path = os.path.join(dest_path, 'metadata', 'dataset.json')
         with open(datasetjson_path, 'w') as f:
             json.dump(dataset, f)
 
@@ -155,7 +156,6 @@ class Dataverse(models.Model):
                 'agentType': self.agent_type,
             }
         ]
-        os.mkdir(os.path.join(dest_path, 'metadata'))
         agentjson_path = os.path.join(dest_path, 'metadata', 'agents.json')
         with open(agentjson_path, 'w') as f:
             json.dump(agent_info, f)
