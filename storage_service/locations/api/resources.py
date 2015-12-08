@@ -416,6 +416,7 @@ class PackageResource(ModelResource):
     current_location = fields.ForeignKey(LocationResource, 'current_location')
 
     current_full_path = fields.CharField(attribute='full_path', readonly=True)
+    related_packages = fields.ManyToManyField('self', 'related_packages', null=True)
 
     class Meta:
         queryset = Package.objects.all()
@@ -431,7 +432,7 @@ class PackageResource(ModelResource):
         # that name.
         resource_name = 'file'
 
-        fields = ['current_path', 'package_type', 'size', 'status', 'uuid']
+        fields = ['current_path', 'package_type', 'size', 'status', 'uuid', 'related_packages']
         list_allowed_methods = ['get', 'post']
         detail_allowed_methods = ['get', 'put', 'patch']
         allowed_patch_fields = ['reingest']  # for customized update_in_place
@@ -443,6 +444,7 @@ class PackageResource(ModelResource):
             'path': ALL,
             'uuid': ALL,
             'status': ALL,
+            'related_packages': ALL_WITH_RELATIONS
         }
 
     def prepend_urls(self):
@@ -468,13 +470,14 @@ class PackageResource(ModelResource):
 
     def obj_create(self, bundle, **kwargs):
         bundle = super(PackageResource, self).obj_create(bundle, **kwargs)
+        related_package_uuid = bundle.data.get('related_package_uuid')
         # IDEA add custom endpoints, instead of storing all AIPS that come in?
         origin_location_uri = bundle.data.get('origin_location')
         origin_location = self.origin_location.build_related_resource(origin_location_uri, bundle.request).obj
         origin_path = bundle.data.get('origin_path')
         if bundle.obj.package_type in (Package.AIP, Package.AIC, Package.DIP) and bundle.obj.current_location.purpose in (Location.AIP_STORAGE, Location.DIP_STORAGE):
             # Store AIP/AIC
-            bundle.obj.store_aip(origin_location, origin_path)
+            bundle.obj.store_aip(origin_location, origin_path, related_package_uuid)
         elif bundle.obj.package_type in (Package.TRANSFER,) and bundle.obj.current_location.purpose in (Location.BACKLOG,):
             # Move transfer to backlog
             bundle.obj.backlog_transfer(origin_location, origin_path)

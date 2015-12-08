@@ -63,6 +63,7 @@ class Package(models.Model):
         (DEPOSIT, 'FEDORA Deposit')
     )
     package_type = models.CharField(max_length=8, choices=PACKAGE_TYPE_CHOICES)
+    related_packages = models.ManyToManyField('self', related_name='related')
 
     PENDING = 'PENDING'
     STAGING = 'STAGING'
@@ -374,7 +375,7 @@ class Package(models.Model):
         # Do fixity check of AIP with recovered files
         return self.check_fixity()
 
-    def store_aip(self, origin_location, origin_path):
+    def store_aip(self, origin_location, origin_path, related_package_uuid=None):
         """ Stores an AIP in the correct Location.
 
         Invokes different transfer mechanisms depending on what the source and
@@ -437,6 +438,9 @@ class Package(models.Model):
         # Update package status once transferred to SS
         if dest_space.access_protocol not in (Space.LOM, Space.ARKIVUM):
             self.status = Package.UPLOADED
+        if related_package_uuid is not None:
+            related_package = Package.objects.get(uuid=related_package_uuid)
+            self.related_packages.add(related_package)
         self.save()
         dest_space.post_move_from_storage_service(
             staging_path=self.current_path,
