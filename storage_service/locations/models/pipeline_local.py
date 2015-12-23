@@ -58,7 +58,7 @@ class PipelineLocalFS(models.Model):
     def browse(self, path):
         path = os.path.join(path, '')
         ssh_path = self._format_host_path(path)
-        return self.space._browse_rsync(ssh_path)
+        return self.space.browse_rsync(ssh_path)
 
     def delete_path(self, delete_path):
         # Sync from an empty directory to delete the contents of delete_path;
@@ -101,8 +101,8 @@ class PipelineLocalFS(models.Model):
         #         raise
         # else:
         src_path = self._format_host_path(src_path)
-        self.space._create_local_directory(dest_path)
-        return self.space._move_rsync(src_path, dest_path)
+        self.space.create_local_directory(dest_path)
+        return self.space.move_rsync(src_path, dest_path)
 
     def post_move_to_storage_service(self, *args, **kwargs):
         # TODO delete original file?
@@ -111,10 +111,10 @@ class PipelineLocalFS(models.Model):
     def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
 
-        self.space._create_rsync_directory(destination_path, self.remote_user, self.remote_name)
+        self.space.create_rsync_directory(destination_path, self.remote_user, self.remote_name)
 
         # Prepend user and host to destination
         destination_path = self._format_host_path(destination_path)
 
         # Move file
-        return self.space._move_rsync(source_path, destination_path)
+        return self.space.move_rsync(source_path, destination_path)

@@ -68,8 +68,8 @@ class Lockssomatic(models.Model):
 
     def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/source_path to destination_path. """
-        self.space._create_local_directory(destination_path)
-        return self.space._move_rsync(source_path, destination_path)
+        self.space.create_local_directory(destination_path)
+        return self.space.move_rsync(source_path, destination_path)
 
     def post_move_from_storage_service(self, staging_path, destination_path, package):
         # LOCKSS can only save packages in the storage service, since it needs

@@ -197,7 +197,7 @@ class Duracloud(models.Model):
             checksum = root.findtext('header/sourceContent/md5')
             chunk_elements = [e for e in root.findall('chunks/chunk')]
             # Download each chunk and append to original file
-            self.space._create_local_directory(download_path)
+            self.space.create_local_directory(download_path)
             LOGGER.debug('Writing to %s', download_path)
             with open(download_path, 'wb') as output_f:
                 for e in chunk_elements:
@@ -221,7 +221,7 @@ class Duracloud(models.Model):
             LOGGER.warning('Response text: %s', response.text)
             raise StorageException('Unable to fetch %s' % url)
         else:  # Status code 200 - file exists
-            self.space._create_local_directory(download_path)
+            self.space.create_local_directory(download_path)
             LOGGER.debug('Writing to %s', download_path)
             with open(download_path, 'wb') as f:
                 f.write(response.content)

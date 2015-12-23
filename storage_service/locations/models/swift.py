@@ -130,7 +130,7 @@ class Swift(models.Model):
         """
         # TODO find a way to stream content to dest_path, instead of having to put it in memory
         headers, content = self.connection.get_object(self.container, remote_path)
-        self.space._create_local_directory(download_path)
+        self.space.create_local_directory(download_path)
         with open(download_path, 'wb') as f:
             f.write(content)
         # Check ETag matches checksum of this file

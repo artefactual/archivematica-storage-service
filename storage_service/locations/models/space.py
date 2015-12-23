@@ -188,7 +188,7 @@ class Space(models.Model):
             return self.get_child_space().browse(path, *args, **kwargs)
         except AttributeError:
             LOGGER.debug('Falling back to default browse local', exc_info=False)
-            return self._browse_local(path)
+            return self.browse_local(path)
 
     def delete_path(self, delete_path, *args, **kwargs):
         """
@@ -359,16 +359,16 @@ class Space(models.Model):
         LOGGER.info("Moving from %s to %s", source_path, destination_path)
 
         # Create directories
-        self._create_local_directory(destination_path, mode)
+        self.create_local_directory(destination_path, mode)
 
         # Move the file
         os.rename(source_path, destination_path)
 
-    def _move_rsync(self, source, destination):
+    def move_rsync(self, source, destination):
         """ Moves a file from source to destination using rsync.
 
         All directories leading to destination must exist.
-        Space._create_local_directory may be useful.
+        Space.create_local_directory may be useful.
         """
         source = utils.coerce_str(source)
         destination = utils.coerce_str(destination)
@@ -389,7 +389,7 @@ class Space(models.Model):
             LOGGER.warning(s)
             raise StorageException(s)
 
-    def _create_local_directory(self, path, mode=None):
+    def create_local_directory(self, path, mode=None):
         """
         Creates directory structure for `path` with `mode` (default 775).
         :param path: path to create the directories for.  Should end with a / or
@@ -421,7 +421,7 @@ class Space(models.Model):
         except os.error as e:
             LOGGER.warning(e)
 
-    def _create_rsync_directory(self, destination_path, user, host):
+    def create_rsync_directory(self, destination_path, user, host):
         """
         Creates a remote directory structure for destination_path.
 
@@ -470,7 +470,7 @@ class Space(models.Model):
                 return '5000+'
         return total_files
 
-    def _browse_local(self, path):
+    def browse_local(self, path):
         """
         Returns browse results for a locally accessible filesystem.
 
@@ -496,7 +496,7 @@ class Space(models.Model):
                 properties[name]['object count'] = self._count_objects_in_directory(full_path)
         return {'directories': directories, 'entries': entries, 'properties': properties}
 
-    def _browse_rsync(self, path, ssh_key=None):
+    def browse_rsync(self, path, ssh_key=None):
         """
         Returns browse results for a ssh (rsync) accessible space.
 

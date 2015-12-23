@@ -44,8 +44,8 @@ class NFS(models.Model):
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """ Moves src_path to dest_space.staging_path/dest_path. """
-        self.space._create_local_directory(dest_path)
-        return self.space._move_rsync(src_path, dest_path)
+        self.space.create_local_directory(dest_path)
+        return self.space.move_rsync(src_path, dest_path)
 
     def post_move_to_storage_service(self, *args, **kwargs):
         # TODO delete original file?
@@ -54,8 +54,8 @@ class NFS(models.Model):
     def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
         # TODO optimization - check if the staging path and destination path are on the same device and use os.rename/self.space._move_locally if so
-        self.space._create_local_directory(destination_path)
-        return self.space._move_rsync(source_path, destination_path)
+        self.space.create_local_directory(destination_path)
+        return self.space.move_rsync(source_path, destination_path)
 
     def save(self, *args, **kwargs):
         self.verify()

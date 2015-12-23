@@ -51,9 +51,9 @@ class Arkivum(models.Model):
         if self.remote_user and self.remote_name:
             path = os.path.join(path, '')
             ssh_path = "{}@{}:{}".format(self.remote_user, self.remote_name, utils.coerce_str(path))
-            return self.space._browse_rsync(ssh_path)
+            return self.space.browse_rsync(ssh_path)
         else:
-            return self.space._browse_local(path)
+            return self.space.browse_local(path)
 
     def delete_path(self, delete_path):
         # Can this be done by just deleting the file on disk?
@@ -74,19 +74,19 @@ class Arkivum(models.Model):
                 user=self.remote_user,
                 host=self.remote_name,
                 path=src_path)
-        self.space._create_local_directory(dest_path)
-        self.space._move_rsync(src_path, dest_path)
+        self.space.create_local_directory(dest_path)
+        self.space.move_rsync(src_path, dest_path)
 
     def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
         # Rsync to Arkivum watched directory
         if self.remote_user and self.remote_name:
-            self.space._create_rsync_directory(destination_path, self.remote_user, self.remote_name)
+            self.space.create_rsync_directory(destination_path, self.remote_user, self.remote_name)
             rsync_dest = "{}@{}:{}".format(self.remote_user, self.remote_name, utils.coerce_str(destination_path))
         else:
             rsync_dest = destination_path
-            self.space._create_local_directory(destination_path)
-        self.space._move_rsync(source_path, rsync_dest)
+            self.space.create_local_directory(destination_path)
+        self.space.move_rsync(source_path, rsync_dest)
 
     def post_move_from_storage_service(self, staging_path, destination_path, package):
         """ POST to Arkivum with information about the newly stored Package. """
