@@ -53,9 +53,8 @@ class NFS(models.Model):
 
     def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
-        # TODO optimization - check if the staging path and destination path are on the same device and use os.rename/self.space._move_locally if so
         self.space.create_local_directory(destination_path)
-        return self.space.move_rsync(source_path, destination_path)
+        return self.space.move_rsync(source_path, destination_path, try_mv_local=True)
 
     def save(self, *args, **kwargs):
         self.verify()

@@ -363,33 +363,40 @@ class Space(models.Model):
 
     # HELPER FUNCTIONS
 
-    def _move_locally(self, source_path, destination_path, mode=None):
-        """ Moves a file from source_path to destination_path on the local filesystem. """
-        # FIXME this does not work properly when moving folders troubleshoot
-        # and fix before using.
-        # When copying from folder/. to folder2/. it failed because the folder
-        # already existed.  Copying folder/ or folder to folder/ or folder also
-        # has errors.  Should uses shutil.move()
-        LOGGER.info("Moving from %s to %s", source_path, destination_path)
+    def move_rsync(self, source, destination, try_mv_local=False):
+        """ Moves a file from source to destination.
 
-        # Create directories
-        self.create_local_directory(destination_path, mode)
+        By default, uses rsync to move files.
+        All directories leading to destination must exist; Space.create_local_directory may be useful.
 
-        # Move the file
-        os.rename(source_path, destination_path)
+        If try_mv_local is True, will attempt to use os.rename, which only works on the same device.
+        This will not leave a copy at the source.
 
-    def move_rsync(self, source, destination):
-        """ Moves a file from source to destination using rsync.
-
-        All directories leading to destination must exist.
-        Space.create_local_directory may be useful.
+        :param source: Path to source file or directory. May have user@host: at beginning.
+        :param destination: Path to destination file or directory. May have user@host: at the beginning.
+        :param bool try_mv_local: If true, try moving/renaming instead of copying.  Should be False if source or destination specify a user@host.  Warning: this will not leave a copy at the source.
         """
         source = utils.coerce_str(source)
         destination = utils.coerce_str(destination)
-        LOGGER.info("Rsyncing from %s to %s", source, destination)
+        LOGGER.info("Moving from %s to %s", source, destination)
 
         if source == destination:
             return
+
+        if try_mv_local:
+            # Try using mv, and if that fails, fallback to rsync
+            try:
+                os.rename(source, destination)
+                return
+            except OSError:
+                LOGGER.debug('os.rename failed, trying with normalized paths', exc_info=True)
+            source_norm = os.path.normpath(source)
+            dest_norm = os.path.normpath(destination)
+            try:
+                os.rename(source_norm, dest_norm)
+                return
+            except OSError:
+                LOGGER.debug('os.rename failed, falling back to rsync. Source: %s; Destination: %s', source_norm, dest_norm, exc_info=True)
 
         # Rsync file over
         # TODO Do this asyncronously, with restarting failed attempts

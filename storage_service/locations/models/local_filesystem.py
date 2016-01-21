@@ -40,7 +40,7 @@ class LocalFilesystem(models.Model):
     def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
         self.space.create_local_directory(destination_path)
-        return self.space.move_rsync(source_path, destination_path)
+        return self.space.move_rsync(source_path, destination_path, try_mv_local=True)
 
     def verify(self):
         """ Verify that the space is accessible to the storage service. """

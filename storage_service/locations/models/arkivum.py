@@ -82,6 +82,7 @@ class Arkivum(models.Model):
 
     def move_from_storage_service(self, source_path, destination_path):
         """ Moves self.staging_path/src_path to dest_path. """
+        try_mv_local = False
         # Rsync to Arkivum watched directory
         if self.remote_user and self.remote_name:
             self.space.create_rsync_directory(destination_path, self.remote_user, self.remote_name)
@@ -89,7 +90,8 @@ class Arkivum(models.Model):
         else:
             rsync_dest = destination_path
             self.space.create_local_directory(destination_path)
-        self.space.move_rsync(source_path, rsync_dest)
+            try_mv_local = True
+        self.space.move_rsync(source_path, rsync_dest, try_mv_local=try_mv_local)
 
     def post_move_from_storage_service(self, staging_path, destination_path, package):
         """ POST to Arkivum with information about the newly stored Package. """
