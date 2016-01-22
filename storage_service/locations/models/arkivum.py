@@ -236,7 +236,12 @@ class Arkivum(models.Model):
             else:
                 # TODO Implement checking all files in an uncompressed package
                 # TODO This may be available from _get_package_info in future
-                return None
+                package_info = self._get_package_info(package)
+                if package_info.get('error'):
+                    return None
+                if 'local' not in package_info:
+                    LOGGER.warning("Cannot determine if uncompressed package is locally available! Returning error.")
+                    return None
         LOGGER.debug('File info local: %s', package_info.get('local'))
         if package_info.get('local'):
             return True
