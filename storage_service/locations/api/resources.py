@@ -654,7 +654,7 @@ class PackageResource(ModelResource):
 
         return response
 
-    @_custom_endpoint(expected_methods=['get'])
+    @_custom_endpoint(expected_methods=['get', 'head'])
     def download_request(self, request, bundle, **kwargs):
         """
         Returns the entire Package to be downloaded.
