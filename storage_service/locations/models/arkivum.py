@@ -204,7 +204,6 @@ class Arkivum(models.Model):
         :param package: Package object that contains the file
         :param str path: Relative path to the file inside the package to check. If None, checks the whole package.
         :return: True if file is locally available, False if not, None on error.
-        :raises: NotImplementedError if package is uncompressed and path is None
         """
         LOGGER.debug('Checking if file %s in package %s is local', path, package)
         if package.is_compressed:
@@ -240,8 +239,15 @@ class Arkivum(models.Model):
                 if package_info.get('error'):
                     return None
                 if 'local' not in package_info:
-                    LOGGER.warning("Cannot determine if uncompressed package is locally available! Returning error.")
-                    return None
+                    LOGGER.warning("Cannot determine if uncompressed package is locally available! Checking single file.")
+                    # Pick a random file and check the locality of it.
+                    # WARNING assumes the package is local/not local as a unit.
+                    for dirpath, _, files in os.walk(package.full_path):
+                        if files:
+                            file_path = os.path.join(dirpath, files[0])
+                            break
+                    file_path = os.path.relpath(file_path, package.full_path)
+                    return self.is_file_local(package, file_path)
         LOGGER.debug('File info local: %s', package_info.get('local'))
         if package_info.get('local'):
             return True
