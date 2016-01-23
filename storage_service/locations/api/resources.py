@@ -592,9 +592,12 @@ class PackageResource(ModelResource):
         return http.HttpResponse(status=status_code, content=response_json,
             content_type='application/json')
 
-    @_custom_endpoint(expected_methods=['get'])
+    @_custom_endpoint(expected_methods=['get', 'head'])
     def extract_file_request(self, request, bundle, **kwargs):
         """Return a single file from the Package, extracting if necessary."""
+        # NOTE this responds to HEAD because AtoM uses HEAD to check for the existence of a file. The storage service has no way to check if a file exists except by downloading and extracting this AIP
+        # TODO this needs to be fixed so that HEAD is not identical to GET
+
         relative_path_to_file = request.GET.get('relative_path_to_file')
         if not relative_path_to_file:
             return http.HttpBadRequest('All of these fields must be provided: relative_path_to_file')
@@ -647,9 +650,12 @@ class PackageResource(ModelResource):
 
         return response
 
-    @_custom_endpoint(expected_methods=['get'])
+    @_custom_endpoint(expected_methods=['get', 'head'])
     def download_request(self, request, bundle, **kwargs):
         """Return the entire Package to be downloaded."""
+        # NOTE this responds to HEAD because AtoM uses HEAD to check for the existence of a package. The storage service has no way to check if the package still exists except by downloading it
+        # TODO this needs to be fixed so that HEAD is not identical to GET
+
         # Get AIP details
         package = bundle.obj
 
