@@ -601,7 +601,7 @@ class PackageResource(ModelResource):
         return http.HttpResponse(status=status_code, content=response_json,
             content_type='application/json')
 
-    @_custom_endpoint(expected_methods=['get'])
+    @_custom_endpoint(expected_methods=['get', 'head'])
     def extract_file_request(self, request, bundle, **kwargs):
         """
         Returns a single file from the Package, extracting if necessary.
@@ -654,7 +654,7 @@ class PackageResource(ModelResource):
 
         return response
 
-    @_custom_endpoint(expected_methods=['get'])
+    @_custom_endpoint(expected_methods=['get', 'head'])
     def download_request(self, request, bundle, **kwargs):
         """
         Returns the entire Package to be downloaded.
