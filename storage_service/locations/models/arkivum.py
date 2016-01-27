@@ -7,6 +7,8 @@ import urllib
 
 # Core Django, alphabetical
 from django.conf import settings
+import django.core.mail
+from django.contrib.auth import get_user_model
 from django.db import models
 
 # Third party dependencies, alphabetical
@@ -197,15 +199,16 @@ class Arkivum(models.Model):
         LOGGER.info('Package status: %s', package.status)
         return (package.status, "Replication status: " + replication)
 
-    def is_file_local(self, package, path=None):
+    def is_file_local(self, package, path=None, email_nonlocal=False):
         """
         Check if (a file in) this package is locally available.
 
         :param package: Package object that contains the file
-        :param str path: Relative path to the file inside the package to check. If None, checks the whole package.
+        :param str path: Relative path to the file inside the package to check. If None, checks the whole package.n
+        :param bool email_nonlocal: True if it should email superusers when the file is not cached by Arkivum.
         :return: True if file is locally available, False if not, None on error.
         """
-        LOGGER.debug('Checking if file %s in package %s is local', path, package)
+        LOGGER.debug('Checking if file %s in package %s is local (email if not cached: %s)', path, package, email_nonlocal)
         if package.is_compressed:
             package_info = self._get_package_info(package)
             if package_info.get('error'):
@@ -247,11 +250,24 @@ class Arkivum(models.Model):
                             file_path = os.path.join(dirpath, files[0])
                             break
                     file_path = os.path.relpath(file_path, package.full_path)
-                    return self.is_file_local(package, file_path)
+                    return self.is_file_local(package, file_path, email_nonlocal)
         LOGGER.debug('File info local: %s', package_info.get('local'))
         if package_info.get('local'):
             return True
         else:
+            if email_nonlocal:
+                if path:
+                    message = 'File {} in package {}'.format(path, package)
+                else:
+                    message = 'Package {}'.format(package)
+                message += ' with Arkivum ID of {} has been requested but is not available in the Arkivum cache.'.format(package_info.get('id'))
+
+                django.core.mail.send_mail(
+                    from_email='archivematica-storage-service@localhost',
+                    recipient_list=get_user_model().objects.filter(is_superuser=True, is_active=True).distinct().values_list('email', flat=True),
+                    subject='Arkivum file not locally available',
+                    message=message,
+                )
             return False
 
     def check_package_fixity(self, package):
