@@ -660,7 +660,7 @@ class Package(models.Model):
             # If the filename has been sanitized, the path in the fileSec
             # may be outdated; check for a cleanup event and use that,
             # if present.
-            cleanup_events = mets.xpath('m:amdSec[@ID="digiprov-{}"]/m:digiprovMD/m:mdWrap/m:xmlData/p:event/p:eventType[text()="name cleanup"]/../p:eventOutcomeInformation/p:eventOutcomeDetail/p:eventOutcomeDetailNote/text()'.format(uuid), namespaces=namespaces)
+            cleanup_events = mets.xpath('m:amdSec[@ID="digiprov-{}"]/m:digiprovMD/m:mdWrap/m:xmlData/p:event/p:eventType[text()="name cleanup"]/../p:eventOutcomeInformation/p:eventOutcomeDetail/p:eventOutcomeDetailNote/text()'.format(uuid), namespaces=namespaces, smart_strings=False)
             if cleanup_events:
                 cleaned_up_name = re.match(r'.*cleaned up name="(.*)"$', cleanup_events[0])
                 if cleaned_up_name:
