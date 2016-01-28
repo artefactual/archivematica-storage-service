@@ -11,9 +11,7 @@ import urllib
 # Core Django, alphabetical
 from django.conf import settings
 from django.conf.urls import url
-from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
-import django.core.mail
 from django.forms.models import model_to_dict
 
 # Third party dependencies, alphabetical
@@ -630,15 +628,9 @@ class PackageResource(ModelResource):
 
         # Check if the package is in Arkivum and not actually there
         if package.current_location.space.access_protocol == Space.ARKIVUM:
-            is_local = package.current_location.space.get_child_space().is_file_local(package, path=relative_path_to_file)
+            is_local = package.current_location.space.get_child_space().is_file_local(package, path=relative_path_to_file, email_nonlocal=True)
             if is_local is False:
                 # Need to fetch from tape, return 202
-                django.core.mail.send_mail(
-                    from_email='archivematica-storage-service@localhost',
-                    recipient_list=get_user_model().objects.filter(is_superuser=True, is_active=True).values_list('email', flat=True),
-                    subject='Arkivum file not locally available',
-                    message='File {} in package {} has been requested but is not available in the Arkivum cache.'.format(relative_path_to_file, package)
-                )
                 return http.HttpAccepted(json.dumps({"error": False, 'message': "File is not locally available.  Contact your storage administrator to fetch it."}))
             if is_local is None:
                 # Arkivum error, return 502
@@ -673,15 +665,9 @@ class PackageResource(ModelResource):
 
         # Check if the package is in Arkivum and not actually there
         if package.current_location.space.access_protocol == Space.ARKIVUM:
-            is_local = package.current_location.space.get_child_space().is_file_local(package)
+            is_local = package.current_location.space.get_child_space().is_file_local(package, email_nonlocal=True)
             if is_local is False:
                 # Need to fetch from tape, return 202
-                django.core.mail.send_mail(
-                    from_email='archivematica-storage-service@localhost',
-                    recipient_list=get_user_model().objects.filter(is_superuser=True, is_active=True).values_list('email', flat=True),
-                    subject='Arkivum file not locally available',
-                    message='Package {} has been requested but is not available in the Arkivum cache.'.format(package)
-                )
                 return http.HttpAccepted(json.dumps({"error": False, 'message': "File is not locally available.  Contact your storage administrator to fetch it."}))
             if is_local is None:
                 # Arkivum error, return 502
