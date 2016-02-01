@@ -208,7 +208,7 @@ class Arkivum(models.Model):
         :param bool email_nonlocal: True if it should email superusers when the file is not cached by Arkivum.
         :return: True if file is locally available, False if not, None on error.
         """
-        LOGGER.debug('Checking if file %s in package %s is local', path, package)
+        LOGGER.debug('Checking if file %s in package %s is local (email if not cached: %s)', path, package, email_nonlocal)
         if package.is_compressed:
             package_info = self._get_package_info(package)
             if package_info.get('error'):

@@ -628,7 +628,11 @@ class PackageResource(ModelResource):
 
         # Check if the package is in Arkivum and not actually there
         if package.current_location.space.access_protocol == Space.ARKIVUM:
-            is_local = package.current_location.space.get_child_space().is_file_local(package, path=relative_path_to_file, email_nonlocal=True)
+            is_local = package.current_location.space.get_child_space().is_file_local(
+                package,
+                path=relative_path_to_file,
+                email_nonlocal=request.method == 'GET',
+            )
             if is_local is False:
                 # Need to fetch from tape, return 202
                 return http.HttpAccepted(json.dumps({"error": False, 'message': "File is not locally available.  Contact your storage administrator to fetch it."}))
@@ -665,7 +669,10 @@ class PackageResource(ModelResource):
 
         # Check if the package is in Arkivum and not actually there
         if package.current_location.space.access_protocol == Space.ARKIVUM:
-            is_local = package.current_location.space.get_child_space().is_file_local(package, email_nonlocal=True)
+            is_local = package.current_location.space.get_child_space().is_file_local(
+                package,
+                email_nonlocal=request.method == 'GET',
+            )
             if is_local is False:
                 # Need to fetch from tape, return 202
                 return http.HttpAccepted(json.dumps({"error": False, 'message': "File is not locally available.  Contact your storage administrator to fetch it."}))
