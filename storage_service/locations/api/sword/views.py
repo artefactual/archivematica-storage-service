@@ -321,7 +321,7 @@ def deposit_edit(request, deposit):
     """
     if isinstance(deposit, basestring):
         try:
-            deposit = models.Package.active.get(uuid=deposit)
+            deposit = models.Package.objects.get(uuid=deposit)
         except models.Package.DoesNotExist:
             return helpers.sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=deposit))
 
@@ -421,7 +421,7 @@ def deposit_media(request, deposit):
 
     if isinstance(deposit, basestring):
         try:
-            deposit = models.Package.active.get(uuid=deposit)
+            deposit = models.Package.objects.get(uuid=deposit)
         except models.Package.DoesNotExist:
             return helpers.sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=deposit))
 
@@ -499,7 +499,7 @@ def deposit_state(request, deposit):
     """
     if isinstance(deposit, basestring):
         try:
-            deposit = models.Package.active.get(uuid=deposit)
+            deposit = models.Package.objects.get(uuid=deposit)
         except models.Package.DoesNotExist:
             return helpers.sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=deposit))
 
