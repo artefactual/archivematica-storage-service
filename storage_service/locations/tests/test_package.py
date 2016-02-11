@@ -1,4 +1,5 @@
 import os
+import re
 import vcr
 
 from django.test import TestCase
@@ -7,6 +8,8 @@ from locations import models
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, '..', 'fixtures', ''))
+DATETIME_TZ_REGEX = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{6}\+\d{2}:\d{2}'
+
 class TestPackage(TestCase):
 
     fixtures = ['base.json', 'package.json', 'arkivum.json']
@@ -45,10 +48,11 @@ class TestPackage(TestCase):
         It should have an empty message.
         """
         package = models.Package.objects.get(uuid='0d4e739b-bf60-4b87-bc20-67a379b28cea')
-        success, failures, message = package.check_fixity()
+        success, failures, message, timestamp = package.check_fixity()
         assert success is True
         assert failures == []
         assert message == ''
+        assert re.match(DATETIME_TZ_REGEX, timestamp)
 
     def test_fixity_failure(self):
         """
@@ -57,36 +61,51 @@ class TestPackage(TestCase):
         It should have an error message.
         """
         package = models.Package.objects.get(uuid='9f260047-a9b7-4a75-bb6a-e8d94c83edd2')
-        success, failures, message = package.check_fixity()
+        success, failures, message, timestamp = package.check_fixity()
         assert success is False
         # Failures are: missing file (dne.txt), bad checksum (dne.txt, test.txt, manifest-md5.txt)
         assert len(failures) == 4
         assert message == 'invalid bag'
+        assert re.match(DATETIME_TZ_REGEX, timestamp)
 
     def test_fixity_package_type(self):
         """ It should only fixity bags. """
         package = models.Package.objects.get(uuid='79245866-ca80-4f84-b904-a02b3e0ab621')
-        success, failures, message = package.check_fixity()
+        success, failures, message, timestamp = package.check_fixity()
         assert success is None
         assert failures == []
         assert 'package is not a bag' in message
+        assert timestamp is None
 
     @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'package_fixity_use_arkivum.yaml'))
     def test_fixity_use_arkivum(self):
         """ It should return Arkivum's fixity not generate its own. """
-        # TODO fix this to actually call Arkivum
         package = models.Package.objects.get(uuid='e52c518d-fcf4-46cc-8581-bbc01aff7af3')
         package.misc_attributes.update({'arkivum_identifier': '5afe9428-c6d6-4d0f-9196-5e7fd028726d'})
         package.save()
-        success, failures, message = package.check_fixity(ignore_space=False)
+        success, failures, message, timestamp = package.check_fixity(ignore_space=False)
         assert success is False
         assert message == 'Fixity check scheduled in Arkivum'
         assert failures == []
+        assert timestamp is None
+
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'package_fixity_success_arkivum.yaml'))
+    def test_fixity_success_arkivum(self):
+        """ It should return Arkivum's fixity not generate its own. """
+        package = models.Package.objects.get(uuid='e52c518d-fcf4-46cc-8581-bbc01aff7af3')
+        package.misc_attributes.update({'arkivum_identifier': '5afe9428-c6d6-4d0f-9196-5e7fd028726d'})
+        package.save()
+        success, failures, message, timestamp = package.check_fixity(ignore_space=False)
+        assert success is True
+        assert message == ''
+        assert failures == []
+        assert timestamp == '2015-11-24'
 
     def test_fixity_ignore_space(self):
         """ It should do checksum locally if required. """
         package = models.Package.objects.get(uuid='e52c518d-fcf4-46cc-8581-bbc01aff7af3')
-        success, failures, message = package.check_fixity(ignore_space=True)
+        success, failures, message, timestamp = package.check_fixity(ignore_space=True)
         assert success is True
         assert failures == []
         assert message == ''
+        assert re.match(DATETIME_TZ_REGEX, timestamp)

@@ -693,7 +693,7 @@ class PackageResource(ModelResource):
 
     @_custom_endpoint(expected_methods=['get'])
     def check_fixity_request(self, request, bundle, **kwargs):
-        success, failures, message = bundle.obj.check_fixity()
+        success, failures, message, timestamp = bundle.obj.check_fixity()
 
         response = {
             "success": success,
@@ -704,7 +704,8 @@ class PackageResource(ModelResource):
                     "changed": [],
                     "untracked": [],
                 }
-            }
+            },
+            "timestamp": timestamp,
         }
 
         for failure in failures:

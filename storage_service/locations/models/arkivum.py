@@ -278,14 +278,15 @@ class Arkivum(models.Model):
         Success will be True or False if the verification succeeds or fails, and None if the scan could not start (for instance, if this package is not a bag).
         [errors] will be a list of zero or more dicts with {'reason': 'string describing the problem', 'filepath': 'relative path to file'}
         message will be a human-readable string explaining the report; it will be an empty string for successful scans.
+        timestamp will be the date the last fixity check was performed, or None on error.
 
-        :return: Tuple of (success, [errors], message)
+        :return: Tuple of (success, [errors], message, timestamp)
         """
         if package.is_compressed:
             raise NotImplementedError("Arkivum does not implement fixity for compressed packages")
         package_info = self._get_package_info(package)
         if package_info.get('error'):
-            return (None, [], package_info['error_message'])
+            return (None, [], package_info['error_message'], None)
 
         # Looking for ['status'] == "Failed", "Completed" or "Scheduled"
         success = package_info['status'] in ('Completed', )
@@ -300,5 +301,6 @@ class Arkivum(models.Model):
             message = 'invalid bag'
         else: # Failed, only one error
             message = errors[0]['reason']
+        timestamp = package_info.get('fixityLastChecked')
 
-        return (success, errors, message)
+        return (success, errors, message, timestamp)
