@@ -13,6 +13,7 @@ import tempfile
 
 # Core Django, alphabetical
 from django.db import models
+from django.utils import timezone
 
 # Third party dependencies, alphabetical
 import bagit
@@ -759,7 +760,7 @@ class Package(models.Model):
         This is implemented using bagit-python module, using the checksums from the
         bag's manifest. Note that this does not support packages which are not bags.
 
-        Returns a tuple containing (success, [errors], message).
+        Returns a tuple containing (success, [errors], message, timestamp)
         Success will be True or False if the verification succeeds or fails, and
         None if the scan could not start (for instance, if this package is not
         a bag).
@@ -769,6 +770,11 @@ class Package(models.Model):
 
         message will be a human-readable string explaining the report;
         it will be empty for successful scans.
+
+        timestamp will be a string with the datetime of the last fixity check.
+        If the check was performed by an external system, this will be provided
+        by that system. If not, it will be the current datetime. On error it
+        will be None.
 
         Note that if the package is not compressed, the fixity scan will occur
         in-place. If fixity scans will happen periodically, if packages are very
@@ -780,16 +786,16 @@ class Package(models.Model):
         """
 
         if self.package_type not in (self.AIC, self.AIP):
-            return (None, [], "Unable to scan; package is not a bag (AIP or AIC)")
+            return (None, [], "Unable to scan; package is not a bag (AIP or AIC)", None)
 
         if not ignore_space:
             try:
-                (success, failures, message) = self.current_location.space.check_package_fixity(self)
+                success, failures, message, timestamp = self.current_location.space.check_package_fixity(self)
             except NotImplementedError:
                 pass
             else:
                 if success is not None:
-                    return (success, failures, message)
+                    return (success, failures, message, timestamp)
 
         if self.is_compressed:
             # bagit can't deal with compressed files, so extract before
@@ -812,7 +818,7 @@ class Package(models.Model):
         if temp_dir and delete_after and (self.local_path_location != self.current_location or self.local_path != self.full_path):
             shutil.rmtree(temp_dir)
 
-        return (success, failures, message)
+        return (success, failures, message, timezone.now().isoformat())
 
     def delete_from_storage(self):
         """ Deletes the package from filesystem and updates metadata.
