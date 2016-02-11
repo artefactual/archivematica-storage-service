@@ -79,7 +79,7 @@ class TestPackage(TestCase):
         package.misc_attributes.update({'arkivum_identifier': '5afe9428-c6d6-4d0f-9196-5e7fd028726d'})
         package.save()
         success, failures, message = package.check_fixity(ignore_space=False)
-        assert success is True
+        assert success is False
         assert message == 'Fixity check scheduled in Arkivum'
         assert failures == []
 

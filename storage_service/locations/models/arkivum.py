@@ -288,7 +288,7 @@ class Arkivum(models.Model):
             return (None, [], package_info['error_message'])
 
         # Looking for ['status'] == "Failed", "Completed" or "Scheduled"
-        success = package_info['status'] in ('Completed', 'Scheduled')
+        success = package_info['status'] in ('Completed', )
         # Looking for ['failures'] == [] or [{"reason": .., "filepath": ...}]
         # TODO Is other munging of failures list required?
         errors = package_info.get('failures', [])
