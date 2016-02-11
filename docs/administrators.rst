@@ -337,8 +337,7 @@ A Package is a file that Archivematica has stored in the Storage Service,
 commonly an Archival Information Package (AIP). They cannot be created or
 deleted through the Storage Service interface, though a deletion request can
 be submitted through Archivematica that must be approved or rejected by the
-storage service administrator. To learn more about deleting an AIP, see
-:ref:`Deleting an AIP <archivematica:delete-aip>`.
+storage service administrator. To learn more about deleting an AIP, see `Deleting an AIP <https://www.archivematica.org/en/docs/archivematica-1.5/user-manual/archival-storage/archival-storage/#delete-aip>`_
 
 Administration
 --------------
