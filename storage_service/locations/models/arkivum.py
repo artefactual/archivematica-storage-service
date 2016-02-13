@@ -275,7 +275,7 @@ class Arkivum(models.Model):
         Check fixity for package stored in this space. See Package.check_fixity for detailed description.
 
         Returns a tuple containing (success, [errors], message).
-        Success will be True or False if the verification succeeds or fails, and None if the scan could not start (for instance, if this package is not a bag).
+        Success will be True or False if the verification succeeds or fails, and None if the scan could not start (for instance, if this package fixity is Scheduled).
         [errors] will be a list of zero or more dicts with {'reason': 'string describing the problem', 'filepath': 'relative path to file'}
         message will be a human-readable string explaining the report; it will be an empty string for successful scans.
         timestamp will be the date the last fixity check was performed, or None on error.
@@ -286,20 +286,23 @@ class Arkivum(models.Model):
             raise NotImplementedError("Arkivum does not implement fixity for compressed packages")
         package_info = self._get_package_info(package)
         if package_info.get('error'):
-            return (None, [], package_info['error_message'], None)
+            return (False, [], package_info['error_message'], None)
 
         # Looking for ['status'] == "Failed", "Completed" or "Scheduled"
-        success = package_info['status'] in ('Completed', )
         # Looking for ['failures'] == [] or [{"reason": .., "filepath": ...}]
-        # TODO Is other munging of failures list required?
         errors = package_info.get('failures', [])
-        if package_info['status'] == 'Scheduled':
-            message = 'Fixity check scheduled in Arkivum'
-        elif success:
+        replication = package_info.get('replicationState')
+        if package_info['status'] == 'Completed' and replication == 'green':
+            success = True
             message = ''
+        elif package_info['status'] == 'Scheduled' or replication == 'amber':
+            success = None
+            message = 'Arkivum fixity check in progress'
         elif len(errors) > 1:  # Failed, multiple errors
+            success = False
             message = 'invalid bag'
-        else: # Failed, only one error
+        else:  # Failed, only one error
+            success = False
             message = errors[0]['reason']
         timestamp = package_info.get('fixityLastChecked')
 

@@ -794,8 +794,7 @@ class Package(models.Model):
             except NotImplementedError:
                 pass
             else:
-                if success is not None:
-                    return (success, failures, message, timestamp)
+                return (success, failures, message, timestamp)
 
         if self.is_compressed:
             # bagit can't deal with compressed files, so extract before
