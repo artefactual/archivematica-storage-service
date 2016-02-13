@@ -77,21 +77,33 @@ class TestPackage(TestCase):
         assert 'package is not a bag' in message
         assert timestamp is None
 
-    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'package_fixity_use_arkivum.yaml'))
-    def test_fixity_use_arkivum(self):
-        """ It should return Arkivum's fixity not generate its own. """
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'package_fixity_scheduled_arkivum.yaml'))
+    def test_fixity_scheduled_arkivum(self):
+        """ It should return success of None. """
         package = models.Package.objects.get(uuid='e52c518d-fcf4-46cc-8581-bbc01aff7af3')
         package.misc_attributes.update({'arkivum_identifier': '5afe9428-c6d6-4d0f-9196-5e7fd028726d'})
         package.save()
         success, failures, message, timestamp = package.check_fixity(ignore_space=False)
-        assert success is False
-        assert message == 'Fixity check scheduled in Arkivum'
+        assert success is None
+        assert message == 'Arkivum fixity check in progress'
         assert failures == []
         assert timestamp is None
 
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'package_fixity_amber_arkivum.yaml'))
+    def test_fixity_amber_arkivum(self):
+        """ It should return success of None. """
+        package = models.Package.objects.get(uuid='e52c518d-fcf4-46cc-8581-bbc01aff7af3')
+        package.misc_attributes.update({'arkivum_identifier': '5afe9428-c6d6-4d0f-9196-5e7fd028726d'})
+        package.save()
+        success, failures, message, timestamp = package.check_fixity(ignore_space=False)
+        assert success is None
+        assert message == 'Arkivum fixity check in progress'
+        assert failures == []
+        assert timestamp == '2015-11-24'
+
     @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'package_fixity_success_arkivum.yaml'))
     def test_fixity_success_arkivum(self):
-        """ It should return Arkivum's fixity not generate its own. """
+        """ It should return Arkivum's successful fixity not generate its own. """
         package = models.Package.objects.get(uuid='e52c518d-fcf4-46cc-8581-bbc01aff7af3')
         package.misc_attributes.update({'arkivum_identifier': '5afe9428-c6d6-4d0f-9196-5e7fd028726d'})
         package.save()
@@ -100,6 +112,20 @@ class TestPackage(TestCase):
         assert message == ''
         assert failures == []
         assert timestamp == '2015-11-24'
+
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'package_fixity_failure_arkivum.yaml'))
+    def test_fixity_failure_arkivum(self):
+        """ It should return success of False from Arkivum. """
+        package = models.Package.objects.get(uuid='e52c518d-fcf4-46cc-8581-bbc01aff7af3')
+        package.misc_attributes.update({'arkivum_identifier': '5afe9428-c6d6-4d0f-9196-5e7fd028726d'})
+        package.save()
+        success, failures, message, timestamp = package.check_fixity(ignore_space=False)
+        assert success is False
+        assert message == 'invalid bag'
+        assert len(failures) == 2
+        assert {"filepath": "data/test/test1.txt", "reason": "Initial verification failed"} in failures
+        assert {"reason": "Initial verification failed", "filepath": "manifest-md5.txt"} in failures
+        assert timestamp is None
 
     def test_fixity_ignore_space(self):
         """ It should do checksum locally if required. """
