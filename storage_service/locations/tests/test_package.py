@@ -83,7 +83,7 @@ class TestPackage(TestCase):
         package = models.Package.objects.get(uuid='e52c518d-fcf4-46cc-8581-bbc01aff7af3')
         package.misc_attributes.update({'arkivum_identifier': '5afe9428-c6d6-4d0f-9196-5e7fd028726d'})
         package.save()
-        success, failures, message, timestamp = package.check_fixity(ignore_space=False)
+        success, failures, message, timestamp = package.check_fixity(force_local=False)
         assert success is None
         assert message == 'Arkivum fixity check in progress'
         assert failures == []
@@ -95,7 +95,7 @@ class TestPackage(TestCase):
         package = models.Package.objects.get(uuid='e52c518d-fcf4-46cc-8581-bbc01aff7af3')
         package.misc_attributes.update({'arkivum_identifier': '5afe9428-c6d6-4d0f-9196-5e7fd028726d'})
         package.save()
-        success, failures, message, timestamp = package.check_fixity(ignore_space=False)
+        success, failures, message, timestamp = package.check_fixity(force_local=False)
         assert success is None
         assert message == 'Arkivum fixity check in progress'
         assert failures == []
@@ -107,7 +107,7 @@ class TestPackage(TestCase):
         package = models.Package.objects.get(uuid='e52c518d-fcf4-46cc-8581-bbc01aff7af3')
         package.misc_attributes.update({'arkivum_identifier': '5afe9428-c6d6-4d0f-9196-5e7fd028726d'})
         package.save()
-        success, failures, message, timestamp = package.check_fixity(ignore_space=False)
+        success, failures, message, timestamp = package.check_fixity(force_local=False)
         assert success is True
         assert message == ''
         assert failures == []
@@ -119,7 +119,7 @@ class TestPackage(TestCase):
         package = models.Package.objects.get(uuid='e52c518d-fcf4-46cc-8581-bbc01aff7af3')
         package.misc_attributes.update({'arkivum_identifier': '5afe9428-c6d6-4d0f-9196-5e7fd028726d'})
         package.save()
-        success, failures, message, timestamp = package.check_fixity(ignore_space=False)
+        success, failures, message, timestamp = package.check_fixity(force_local=False)
         assert success is False
         assert message == 'invalid bag'
         assert len(failures) == 2
@@ -127,10 +127,10 @@ class TestPackage(TestCase):
         assert {"reason": "Initial verification failed", "filepath": "manifest-md5.txt"} in failures
         assert timestamp is None
 
-    def test_fixity_ignore_space(self):
+    def test_fixity_force_local(self):
         """ It should do checksum locally if required. """
         package = models.Package.objects.get(uuid='e52c518d-fcf4-46cc-8581-bbc01aff7af3')
-        success, failures, message, timestamp = package.check_fixity(ignore_space=True)
+        success, failures, message, timestamp = package.check_fixity(force_local=True)
         assert success is True
         assert failures == []
         assert message == ''

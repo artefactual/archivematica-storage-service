@@ -753,7 +753,7 @@ class Package(models.Model):
         self.status = Package.UPLOADED
         self.save()
 
-    def check_fixity(self, ignore_space=False, delete_after=True):
+    def check_fixity(self, force_local=False, delete_after=True):
         """ Scans the package to verify its checksums.
 
         This will check if the Space can run a fixity and use that. If not, it will run fixity locally.
@@ -781,14 +781,14 @@ class Package(models.Model):
         large, or if scans are otherwise expected to contribute to heavy disk load,
         it is recommended to store packages uncompressed.
 
-        :param bool ignore_space: If True, will always fetch and run fixity locally. If not, it will use a Space's fixity check if available.
+        :param bool force_local: If True, will always fetch and run fixity locally. If not, it will use a Space's fixity check if available.
         :param bool delete_after: If True and the package was copied to a local path, will delete the temporary copy once fixity is run.
         """
 
         if self.package_type not in (self.AIC, self.AIP):
             return (None, [], "Unable to scan; package is not a bag (AIP or AIC)", None)
 
-        if not ignore_space:
+        if not force_local:
             try:
                 success, failures, message, timestamp = self.current_location.space.check_package_fixity(self)
             except NotImplementedError:

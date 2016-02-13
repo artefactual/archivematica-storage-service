@@ -703,7 +703,15 @@ class PackageResource(ModelResource):
 
     @_custom_endpoint(expected_methods=['get'])
     def check_fixity_request(self, request, bundle, **kwargs):
-        success, failures, message, timestamp = bundle.obj.check_fixity()
+        """
+        Check a package's bagit/fixity.
+
+        :param force_local: GET parameter. If True, will ignore any space-specific bagit checks and run it locally.
+        """
+        force_local = False
+        if request.GET.get('force_local') in ('True', 'true', '1'):
+            force_local = True
+        success, failures, message, timestamp = bundle.obj.check_fixity(force_local=force_local)
 
         response = {
             "success": success,
