@@ -12,6 +12,7 @@ from django.contrib.auth import get_user_model
 from django.db import models
 
 # Third party dependencies, alphabetical
+import dateutil.parser
 
 # This project, alphabetical
 from common import utils
@@ -278,7 +279,7 @@ class Arkivum(models.Model):
         Success will be True or False if the verification succeeds or fails, and None if the scan could not start (for instance, if this package fixity is Scheduled).
         [errors] will be a list of zero or more dicts with {'reason': 'string describing the problem', 'filepath': 'relative path to file'}
         message will be a human-readable string explaining the report; it will be an empty string for successful scans.
-        timestamp will be the date the last fixity check was performed, or None on error.
+        timestamp will be the ISO-formated date the last fixity check was performed, or None on error.
 
         :return: Tuple of (success, [errors], message, timestamp)
         """
@@ -305,5 +306,7 @@ class Arkivum(models.Model):
             success = False
             message = errors[0]['reason']
         timestamp = package_info.get('fixityLastChecked')
+        if timestamp:
+            timestamp = dateutil.parser.parse(timestamp).isoformat()
 
         return (success, errors, message, timestamp)

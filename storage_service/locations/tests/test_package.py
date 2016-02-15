@@ -1,5 +1,4 @@
 import os
-import re
 import vcr
 
 from django.test import TestCase
@@ -8,7 +7,6 @@ from locations import models
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, '..', 'fixtures', ''))
-DATETIME_TZ_REGEX = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{6}\+\d{2}:\d{2}'
 
 class TestPackage(TestCase):
 
@@ -52,7 +50,7 @@ class TestPackage(TestCase):
         assert success is True
         assert failures == []
         assert message == ''
-        assert re.match(DATETIME_TZ_REGEX, timestamp)
+        assert timestamp is None
 
     def test_fixity_failure(self):
         """
@@ -66,7 +64,7 @@ class TestPackage(TestCase):
         # Failures are: missing file (dne.txt), bad checksum (dne.txt, test.txt, manifest-md5.txt)
         assert len(failures) == 4
         assert message == 'invalid bag'
-        assert re.match(DATETIME_TZ_REGEX, timestamp)
+        assert timestamp is None
 
     def test_fixity_package_type(self):
         """ It should only fixity bags. """
@@ -99,7 +97,7 @@ class TestPackage(TestCase):
         assert success is None
         assert message == 'Arkivum fixity check in progress'
         assert failures == []
-        assert timestamp == '2015-11-24'
+        assert timestamp == '2015-11-24T00:00:00'
 
     @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'package_fixity_success_arkivum.yaml'))
     def test_fixity_success_arkivum(self):
@@ -111,7 +109,7 @@ class TestPackage(TestCase):
         assert success is True
         assert message == ''
         assert failures == []
-        assert timestamp == '2015-11-24'
+        assert timestamp == '2015-11-24T00:00:00'
 
     @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'package_fixity_failure_arkivum.yaml'))
     def test_fixity_failure_arkivum(self):
@@ -134,4 +132,4 @@ class TestPackage(TestCase):
         assert success is True
         assert failures == []
         assert message == ''
-        assert re.match(DATETIME_TZ_REGEX, timestamp)
+        assert timestamp is None
