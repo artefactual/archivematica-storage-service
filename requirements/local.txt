@@ -1,8 +1,5 @@
 # Local development dependencies go here
 -r base.txt
-coverage==3.6
-django-discover-runner==0.4
-django-debug-toolbar==0.9.4
 ipython==1.1.0
 gunicorn==19.4.1
 Sphinx==1.2b1
