@@ -1,5 +1,6 @@
 # Base requirements - for all installations
 bagit==1.5.0
+defusedxml==0.4.1
 Django>=1.7,<1.8
 django-annoying==0.7.7
 django-braces==1.0.0
