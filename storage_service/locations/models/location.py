@@ -51,7 +51,7 @@ class Location(models.Model):
         choices=PURPOSE_CHOICES,
         help_text="Purpose of the space.  Eg. AIP storage, Transfer source")
     pipeline = models.ManyToManyField('Pipeline', through='LocationPipeline',
-        null=True, blank=True,
+        blank=True,
         help_text="UUID of the Archivematica instance using this location.")
 
     relative_path = models.TextField(help_text="Path to location, relative to the storage space's path.")
