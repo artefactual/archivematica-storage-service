@@ -9,10 +9,10 @@ class Enabled(models.Manager):
     returns all items if neither is found.  """
     def get_queryset(self):
         try:
-            self.model._meta.get_field_by_name('enabled')
+            self.model._meta.get_field('enabled')
         except models.FieldDoesNotExist:
             try:
-                self.model._meta.get_field_by_name('disabled')
+                self.model._meta.get_field('disabled')
             except models.FieldDoesNotExist:
                 return super(Enabled, self).get_queryset()
             else:
