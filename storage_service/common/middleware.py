@@ -28,7 +28,7 @@ class LoginRequiredMiddleware:
  requires authentication middleware to be installed. Edit your\
  MIDDLEWARE_CLASSES setting to insert\
  'django.contrib.auth.middlware.AuthenticationMiddleware'. If that doesn't\
- work, ensure your TEMPLATE_CONTEXT_PROCESSORS setting includes\
+ work, ensure your TEMPLATES setting includes\
  'django.core.context_processors.auth'."
         if not request.user.is_authenticated():
             path = request.path_info.lstrip('/')
