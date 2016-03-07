@@ -13,6 +13,7 @@ import tempfile
 
 # Core Django, alphabetical
 from django.db import models
+from django.utils import timezone
 
 # Third party dependencies, alphabetical
 import bagit
@@ -316,7 +317,7 @@ class Package(models.Model):
         temp_aip.save()
 
         # Check integrity of temporary AIP package
-        (success, failures, message) = temp_aip.check_fixity()
+        (success, failures, message, _) = temp_aip.check_fixity(force_local=True)
 
         # If the recovered AIP doesn't pass check, delete and return error info
         if not success:
@@ -372,7 +373,8 @@ class Package(models.Model):
         temp_aip.delete()
 
         # Do fixity check of AIP with recovered files
-        return self.check_fixity() 
+        success, failures, message, _ = self.check_fixity(force_local=True)
+        return success, failures, message
 
     def store_aip(self, origin_location, origin_path):
         """ Stores an AIP in the correct Location.
@@ -752,13 +754,14 @@ class Package(models.Model):
         self.status = Package.UPLOADED
         self.save()
 
-    def check_fixity(self, delete_after=True):
+    def check_fixity(self, force_local=False, delete_after=True):
         """ Scans the package to verify its checksums.
 
+        This will check if the Space can run a fixity and use that. If not, it will run fixity locally.
         This is implemented using bagit-python module, using the checksums from the
         bag's manifest. Note that this does not support packages which are not bags.
 
-        Returns a tuple containing (success, [errors], message).
+        Returns a tuple containing (success, [errors], message, timestamp)
         Success will be True or False if the verification succeeds or fails, and
         None if the scan could not start (for instance, if this package is not
         a bag).
@@ -769,13 +772,29 @@ class Package(models.Model):
         message will be a human-readable string explaining the report;
         it will be empty for successful scans.
 
+        timestamp will be an ISO-formated string with the datetime of the last
+        fixity check or None. If the check was performed by an external system,
+        this will be provided by that system. If not or on error, it will be None.
+
         Note that if the package is not compressed, the fixity scan will occur
         in-place. If fixity scans will happen periodically, if packages are very
         large, or if scans are otherwise expected to contribute to heavy disk load,
-        it is recommended to store packages uncompressed. """
+        it is recommended to store packages uncompressed.
+
+        :param bool force_local: If True, will always fetch and run fixity locally. If not, it will use a Space's fixity check if available.
+        :param bool delete_after: If True and the package was copied to a local path, will delete the temporary copy once fixity is run.
+        """
 
         if self.package_type not in (self.AIC, self.AIP):
-            return (None, [], "Unable to scan; package is not a bag (AIP or AIC)")
+            return (None, [], "Unable to scan; package is not a bag (AIP or AIC)", None)
+
+        if not force_local:
+            try:
+                success, failures, message, timestamp = self.current_location.space.check_package_fixity(self)
+            except NotImplementedError:
+                pass
+            else:
+                return (success, failures, message, timestamp)
 
         if self.is_compressed:
             # bagit can't deal with compressed files, so extract before
@@ -798,7 +817,7 @@ class Package(models.Model):
         if temp_dir and delete_after and (self.local_path_location != self.current_location or self.local_path != self.full_path):
             shutil.rmtree(temp_dir)
 
-        return (success, failures, message)
+        return (success, failures, message, None)
 
     def delete_from_storage(self):
         """ Deletes the package from filesystem and updates metadata.
@@ -869,7 +888,7 @@ class Package(models.Model):
 
         # Run fixity
         # Fixity will fetch & extract package if needed
-        success, _, error_msg = self.check_fixity(delete_after=False)
+        success, _, error_msg, _ = self.check_fixity(delete_after=False)
         LOGGER.debug('Reingest: Fixity response: %s, %s', success, error_msg)
         if not success:
             return {'error': True, 'status_code': 500, 'message': error_msg}
