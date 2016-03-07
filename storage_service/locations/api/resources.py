@@ -497,7 +497,7 @@ class PackageResource(ModelResource):
             try:
                 bundle.obj = self.obj_get(bundle=bundle, **lookup_kwargs)
             except ObjectDoesNotExist:
-                raise NotFound("A model instance matching the provided arguments could not be found.")
+                raise tastypie.exceptions.NotFound("A model instance matching the provided arguments could not be found.")
         bundle = self.full_hydrate(bundle)
         bundle = self.obj_update_hook(bundle, **kwargs)
         return self.save(bundle, skip_errors=skip_errors)
@@ -615,6 +615,16 @@ class PackageResource(ModelResource):
         # Get Package details
         package = bundle.obj
 
+        # Check if the package is in Arkivum and not actually there
+        if package.current_location.space.access_protocol == Space.ARKIVUM:
+            is_local = package.current_location.space.get_child_space().is_file_local(package)
+            if is_local is False:
+                # Need to fetch from tape, return 202
+                return http.HttpAccepted(json.dumps({"error": False, 'message': "File is not locally available.  Contact your storage administrator to fetch it."}))
+            if is_local is None:
+                # Arkivum error, return 502
+                return http.HttpResponse(json.dumps({"error": True, "message": "Error checking if file in Arkivum in locally available."}), content_type='application/json', status=502)
+
         # If local file exists - return that
         if not package.is_compressed:
             full_path = package.fetch_local_path()
@@ -648,6 +658,16 @@ class PackageResource(ModelResource):
         """
         # Get AIP details
         package = bundle.obj
+
+        # Check if the package is in Arkivum and not actually there
+        if package.current_location.space.access_protocol == Space.ARKIVUM:
+            is_local = package.current_location.space.get_child_space().is_file_local(package)
+            if is_local is False:
+                # Need to fetch from tape, return 202
+                return http.HttpAccepted(json.dumps({"error": False, 'message': "File is not locally available.  Contact your storage administrator to fetch it."}))
+            if is_local is None:
+                # Arkivum error, return 502
+                return http.HttpResponse(json.dumps({"error": True, "message": "Error checking if file in Arkivum in locally available."}), content_type='application/json', status=502)
 
         lockss_au_number = kwargs.get('chunk_number')
         try:

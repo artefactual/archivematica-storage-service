@@ -2,12 +2,15 @@
 import json
 import os
 import shutil
+import vcr
 
 from django.test import TestCase
 
 from locations import models
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, '..', 'fixtures', ''))
+
 
 class TestLocationAPI(TestCase):
 
@@ -63,22 +66,24 @@ class TestLocationAPI(TestCase):
 
 class TestPackageAPI(TestCase):
 
-    fixtures = ['base.json', 'package.json']
-    fixtures_dir = os.path.abspath(os.path.join(THIS_DIR, '..', 'fixtures', ''))
+    fixtures = ['base.json', 'package.json', 'arkivum.json']
 
     def setUp(self):
         self.test_location = models.Location.objects.get(uuid='615103f0-0ee0-4a12-ba17-43192d1143ea')
         # Set up locations to point to fixtures directory
-        self.test_location.relative_path = self.fixtures_dir[1:]
+        self.test_location.relative_path = FIXTURES_DIR[1:]
         self.test_location.save()
+        models.Space.objects.filter(uuid='6fb34c82-4222-425e-b0ea-30acfd31f52e').update(path=FIXTURES_DIR)
         ss_int = models.Location.objects.get(purpose='SS')
-        ss_int.relative_path = self.fixtures_dir[1:]
+        ss_int.relative_path = FIXTURES_DIR[1:]
         ss_int.save()
+        # Set Arkivum package request ID
+        models.Package.objects.filter(uuid='c0f8498f-b92e-4a8b-8941-1b34ba062ed8').update(misc_attributes={'request_id': '2e75c8ad-cded-4f7e-8ac7-85627a116e39'})
 
     def tearDown(self):
-        for entry in os.listdir(self.fixtures_dir):
+        for entry in os.listdir(FIXTURES_DIR):
             if entry.startswith('tmp'):
-                shutil.rmtree(os.path.join(self.fixtures_dir, entry))
+                shutil.rmtree(os.path.join(FIXTURES_DIR, entry))
 
     def test_file_data_returns_metadata_given_relative_path(self):
         path = 'test_sip/objects/file.txt'
@@ -176,7 +181,7 @@ class TestPackageAPI(TestCase):
         """ It should return the package. """
         response = self.client.get('/api/v2/file/6aebdb24-1b6b-41ab-b4a3-df9a73726a34/download/')
         assert response.status_code == 200
-        assert response['content-type'] == 'application/force-download'
+        assert response['content-type'] == 'application/zip'
         assert response['content-disposition'] == 'attachment; filename="working_bag.zip"'
 
     def test_download_uncompressed_package(self):
@@ -184,6 +189,7 @@ class TestPackageAPI(TestCase):
         response = self.client.get('/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/download/')
         assert response.status_code == 200
         assert response['content-type'] == 'application/x-tar'
+        assert response['content-disposition'] == 'attachment; filename="working_bag.tar"'
         assert 'bag-info.txt' in response.content
         assert 'bagit.txt' in response.content
         assert 'manifest-md5.txt' in response.content
@@ -195,6 +201,7 @@ class TestPackageAPI(TestCase):
         response = self.client.get('/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/download/', data={'chunk_number': 1})
         assert response.status_code == 200
         assert response['content-type'] == 'application/x-tar'
+        assert response['content-disposition'] == 'attachment; filename="working_bag.tar"'
         assert 'bag-info.txt' in response.content
         assert 'bagit.txt' in response.content
         assert 'manifest-md5.txt' in response.content
@@ -205,6 +212,24 @@ class TestPackageAPI(TestCase):
         """ It should return 404 for a non-existant package. """
         response = self.client.get('/api/v2/file/dnednedn-edne-dned-nedn-ednednednedn/download/', data={'chunk_number': 1})
         assert response.status_code == 404
+
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'arkivum_update_package_status.yaml'))
+    def test_download_package_arkivum_not_available(self):
+        """ It should return 202 if the file is in Arkivum but only on tape. """
+        response = self.client.get('/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/download/')
+        assert response.status_code == 202
+        j = json.loads(response.content)
+        assert j['error'] is False
+        assert j['message'] == 'File is not locally available.  Contact your storage administrator to fetch it.'
+
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'api_download_package_arkivum_error.yaml'))
+    def test_download_package_arkivum_error(self):
+        """ It should return 502 error from Arkivum. """
+        response = self.client.get('/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/download/')
+        assert response.status_code == 502
+        j = json.loads(response.content)
+        assert j['error'] is True
+        assert 'Error' in j['message'] and 'Arkivum' in j['message']
 
     def test_download_file_no_path(self):
         """ It should return 400 Bad Request """
@@ -217,6 +242,7 @@ class TestPackageAPI(TestCase):
         response = self.client.get('/api/v2/file/6aebdb24-1b6b-41ab-b4a3-df9a73726a34/extract_file/', data={'relative_path_to_file': 'working_bag/data/test.txt'})
         assert response.status_code == 200
         assert response['content-type'] == 'text/plain'
+        assert response['content-disposition'] == 'attachment; filename="test.txt"'
         assert response.content == 'test'
 
     def test_download_file_from_uncompressed(self):
@@ -224,5 +250,23 @@ class TestPackageAPI(TestCase):
         response = self.client.get('/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/extract_file/', data={'relative_path_to_file': 'working_bag/data/test.txt'})
         assert response.status_code == 200
         assert response['content-type'] == 'text/plain'
+        assert response['content-disposition'] == 'attachment; filename="test.txt"'
         assert response.content == 'test'
 
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'arkivum_update_package_status.yaml'))
+    def test_download_file_arkivum_not_available(self):
+        """ It should return 202 if the file is in Arkivum but only on tape. """
+        response = self.client.get('/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/extract_file/', data={'relative_path_to_file': 'working_bag/data/test.txt'})
+        assert response.status_code == 202
+        j = json.loads(response.content)
+        assert j['error'] is False
+        assert j['message'] == 'File is not locally available.  Contact your storage administrator to fetch it.'
+
+    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'api_download_package_arkivum_error.yaml'))
+    def test_download_file_arkivum_error(self):
+        """ It should return 502 error from Arkivum. """
+        response = self.client.get('/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/extract_file/', data={'relative_path_to_file': 'working_bag/data/test.txt'})
+        assert response.status_code == 502
+        j = json.loads(response.content)
+        assert j['error'] is True
+        assert 'Error' in j['message'] and 'Arkivum' in j['message']
