@@ -996,7 +996,7 @@ class Package(models.Model):
             shutil.rmtree(temp_dir)
 
         # Call reingest API
-        reingest_target = 'transfer' if self.FULL else 'ingest'
+        reingest_target = 'transfer' if reingest_type == self.FULL else 'ingest'
         try:
             resp = pipeline.reingest(relative_path, self.uuid, reingest_target)
         except requests.exceptions.RequestException as e:
