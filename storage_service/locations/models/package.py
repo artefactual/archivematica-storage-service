@@ -1072,7 +1072,7 @@ class Package(models.Model):
         # Copy to pipeline
         try:
             currently_processing = Location.active.filter(pipeline=pipeline).get(purpose=Location.CURRENTLY_PROCESSING)
-        except Location.DoesNotExist, Location.MultipleObjectsReturned:
+        except (Location.DoesNotExist, Location.MultipleObjectsReturned):
             return {'error': True, 'status_code': 412,
                 'message': 'No currently processing Location is associated with pipeline {}'.format(pipeline.uuid)}
         LOGGER.debug('Reingest: Current location: %s', current_location)
@@ -1095,7 +1095,7 @@ class Package(models.Model):
             shutil.rmtree(temp_dir)
 
         # Call reingest API
-        reingest_target = 'transfer' if self.FULL else 'ingest'
+        reingest_target = 'transfer' if reingest_type == self.FULL else 'ingest'
         try:
             resp = pipeline.reingest(relative_path, self.uuid, reingest_target)
         except requests.exceptions.RequestException as e:
