@@ -10,7 +10,6 @@ import shutil
 import uuid
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.servers.basehttp import FileWrapper
 from django import http
 
 from administration import models
@@ -100,8 +99,8 @@ def download_file_stream(filepath, temp_dir=None):
     filename = os.path.basename(filepath)
     extension = os.path.splitext(filepath)[1].lower()
 
-    wrapper = FileWrapper(file(filepath))
-    response = http.HttpResponse(wrapper)
+    # Open file in binary mode
+    response = http.FileResponse(open(filepath, 'rb'))
 
     # force download for certain filetypes
     extensions_to_download = ['.7z', '.zip']
