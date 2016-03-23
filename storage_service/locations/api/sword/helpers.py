@@ -407,6 +407,6 @@ def store_mets_data(mets_path, deposit, object_id):
     # There may be a previous METS file if the same file is being
     # re-transferred, so remove and update the METS in this case.
     if os.path.exists(target):
-        os.path.unlink(target)
+        os.unlink(target)
 
     os.rename(mets_path, target)
