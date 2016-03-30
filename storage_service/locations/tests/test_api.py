@@ -184,22 +184,24 @@ class TestPackageAPI(TestCase):
         response = self.client.get('/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/download/')
         assert response.status_code == 200
         assert response['content-type'] == 'application/x-tar'
-        assert 'bag-info.txt' in response.content
-        assert 'bagit.txt' in response.content
-        assert 'manifest-md5.txt' in response.content
-        assert 'tagmanifest-md5.txt' in response.content
-        assert 'test.txt' in response.content
+        content = ''.join(response.streaming_content)  # Convert to one string
+        assert 'bag-info.txt' in content
+        assert 'bagit.txt' in content
+        assert 'manifest-md5.txt' in content
+        assert 'tagmanifest-md5.txt' in content
+        assert 'test.txt' in content
 
     def test_download_lockss_chunk_incorrect(self):
         """ It should default to the local path if a chunk ID is provided but package isn't in LOCKSS. """
         response = self.client.get('/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/download/', data={'chunk_number': 1})
         assert response.status_code == 200
         assert response['content-type'] == 'application/x-tar'
-        assert 'bag-info.txt' in response.content
-        assert 'bagit.txt' in response.content
-        assert 'manifest-md5.txt' in response.content
-        assert 'tagmanifest-md5.txt' in response.content
-        assert 'test.txt' in response.content
+        content = ''.join(response.streaming_content)  # Convert to one string
+        assert 'bag-info.txt' in content
+        assert 'bagit.txt' in content
+        assert 'manifest-md5.txt' in content
+        assert 'tagmanifest-md5.txt' in content
+        assert 'test.txt' in content
 
     def test_download_package_not_exist(self):
         """ It should return 404 for a non-existant package. """
@@ -217,12 +219,13 @@ class TestPackageAPI(TestCase):
         response = self.client.get('/api/v2/file/6aebdb24-1b6b-41ab-b4a3-df9a73726a34/extract_file/', data={'relative_path_to_file': 'working_bag/data/test.txt'})
         assert response.status_code == 200
         assert response['content-type'] == 'text/plain'
-        assert response.content == 'test'
+        content = ''.join(response.streaming_content)  # Convert to one string
+        assert content == 'test'
 
     def test_download_file_from_uncompressed(self):
         """ It should return the file. """
         response = self.client.get('/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/extract_file/', data={'relative_path_to_file': 'working_bag/data/test.txt'})
         assert response.status_code == 200
         assert response['content-type'] == 'text/plain'
-        assert response.content == 'test'
-
+        content = ''.join(response.streaming_content)  # Convert to one string
+        assert content == 'test'
