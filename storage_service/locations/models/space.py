@@ -46,6 +46,11 @@ def validate_space_path(path):
 #    'model' is the model object
 #    'form' is the ModelForm for creating the space
 #    'fields' is a whitelist of fields to display to the user
+#  locations/migrations/####_<spacename>.py
+#   Run `manage.py makemigrations locations` to create a migration.
+#   Rename the migration after the feature. Eg. 0005_auto_20160331_1337.py -> 0005_dspace.py
+#  locations/tests/test_<spacename>.py
+#   Add class for tests. Example template below
 
 # class Example(models.Model):
 #     space = models.OneToOneField('Space', to_field='uuid')
@@ -76,6 +81,38 @@ def validate_space_path(path):
 #
 #     def move_from_storage_service(self, source_path, destination_path):
 #         """ Moves self.staging_path/src_path to dest_path. """
+#         pass
+
+
+# from django.test import TestCase
+# import vcr
+#
+# from locations import models
+#
+# THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+# FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, '..', 'fixtures'))
+#
+# class TestExample(TestCase):
+#
+#     fixtures = ['base.json', 'example.json']
+#
+#     def setUp(self):
+#         self.example_object = models.Example.objects.all()[0]
+#
+#     @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'example_browse.yaml'))
+#     def test_browse(self):
+#         pass
+#
+#     @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'example_delete.yaml'))
+#     def test_delete(self):
+#         pass
+#
+#     @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'example_move_from_ss.yaml'))
+#     def test_move_from_ss(self):
+#         pass
+#
+#     @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'example_move_to_ss.yaml'))
+#     def test_move_to_ss(self):
 #         pass
 
 
