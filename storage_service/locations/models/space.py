@@ -128,17 +128,19 @@ class Space(models.Model):
     ARKIVUM = 'ARKIVUM'
     DATAVERSE = 'DV'
     DURACLOUD = 'DC'
+    DSPACE = 'DSPACE'
     FEDORA = 'FEDORA'
     LOCAL_FILESYSTEM = 'FS'
     LOM = 'LOM'
     NFS = 'NFS'
     PIPELINE_LOCAL_FS = 'PIPE_FS'
     SWIFT = 'SWIFT'
-    OBJECT_STORAGE = {DATAVERSE, DURACLOUD, SWIFT}
+    OBJECT_STORAGE = {DATAVERSE, DSPACE, DURACLOUD, SWIFT}
     ACCESS_PROTOCOL_CHOICES = (
         (ARKIVUM, 'Arkivum'),
         (DATAVERSE, 'Dataverse'),
         (DURACLOUD, 'DuraCloud'),
+        (DSPACE, 'DSpace via SWORD2 API'),
         (FEDORA, "FEDORA via SWORD2"),
         (LOCAL_FILESYSTEM, "Local Filesystem"),
         (LOM, "LOCKSS-o-matic"),

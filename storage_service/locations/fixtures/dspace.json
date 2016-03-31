@@ -1,0 +1,40 @@
+[
+{
+    "pk": 1,
+    "model": "locations.dspace",
+    "fields": {
+        "space": "e764565a-5150-486a-93c6-ae78bec4b54b",
+        "sd_iri": "http://demo.dspace.org/swordv2/servicedocument",
+        "user": "dspacedemo+admin@gmail.com",
+        "password": "dspace"
+    }
+},
+{
+    "pk": 2,
+    "model": "locations.space",
+    "fields": {
+        "last_verified": null,
+        "used": 0,
+        "verified": false,
+        "uuid": "e764565a-5150-486a-93c6-ae78bec4b54b",
+        "access_protocol": "DSPACE",
+        "staging_path": "/var/archivematica/storage_service/",
+        "path": "",
+        "size": null
+    }
+},
+{
+    "pk": 7,
+    "model": "locations.location",
+    "fields": {
+        "used": 0,
+        "description": "DSpace AS",
+        "space": "e764565a-5150-486a-93c6-ae78bec4b54b",
+        "enabled": true,
+        "quota": null,
+        "relative_path": "http://demo.dspace.org/swordv2/collection/10673/9",
+        "purpose": "AS",
+        "uuid": "d9d7db26-f7a1-40aa-9db1-806b4d3a61cd"
+    }
+}
+]

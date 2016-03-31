@@ -23,6 +23,11 @@ PROTOCOL = {
         'form': forms.DuracloudForm,
         'fields': ['host', 'user', 'duraspace'],
     },
+    models.Space.DSPACE: {
+        'model': models.DSpace,
+        'form': forms.DSpaceForm,
+        'fields': ['sd_iri', 'user']
+    },
     models.Space.FEDORA: {
         'model': models.Fedora,
         'form': forms.FedoraForm,
