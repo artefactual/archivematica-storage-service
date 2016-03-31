@@ -25,6 +25,7 @@ from .fixity_log import *
 from .arkivum import Arkivum
 from .dataverse import Dataverse
 from .duracloud import Duracloud
+from .dspace import DSpace
 from .fedora import Fedora, PackageDownloadTask, PackageDownloadTaskFile
 from .local_filesystem import LocalFilesystem
 from .lockssomatic import Lockssomatic
