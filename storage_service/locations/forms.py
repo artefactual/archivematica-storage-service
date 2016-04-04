@@ -165,6 +165,8 @@ class LocationForm(forms.ModelForm):
             self.whitelist = all_
         blacklist = all_ - set(self.whitelist)
         self.fields['purpose'].widget.disabled_choices = blacklist
+        # Associated with all enabled pipelines by default
+        self.fields['pipeline'].initial = models.Pipeline.active.values_list('pk', flat=True)
 
     def clean(self):
         cleaned_data = super(LocationForm, self).clean()
