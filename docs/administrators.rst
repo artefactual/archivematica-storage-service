@@ -264,27 +264,46 @@ Locations
    :width: 80%
    :alt: Storage Service locations screen.
 
-A storage Location is contained in a Space, and knows its purpose in the
-Archivematica system. A Location is also where Packages are stored. Each
-Location is associated with a pipeline and can only be accessed by that
-pipeline.
+A storage Location is contained in a Space, and knows its purpose in the Archivematica system.
+Each Location is associated with a pipeline and can only be accessed by that pipeline.
+Currently, a Location can have one of eight purposes: Transfer Source, Transfer Backlog, AIP Storage, DIP Storage, Currently Processing, Storage Service Internal Processing, AIP Recovery or FEDORA Deposit.
 
-Currently, a Location can have one of six purposes: Transfer Source, Transfer
-Backlog, Currently Processing, Storage Service Internal Processing, AIP
-Storage, or DIP Storage. Transfer source locations display in Archivematica's
-Transfer tab, and any folder in a transfer source can be selected to become a
-Transfer. Transfer backlog stores transfers until such a time that the
-archivist contiues processing them. AIP storage locations are where the
-completed AIPs are  put for long- term storage. Likewise, DIP storage is used
-for storing DIPs until such a time that they can be uploaded to an access
-system. During processing, Archivematica uses the currently processing
-location associated with that pipeline.
+Transfer source locations display in Archivematica's Transfer tab, and any folder in a transfer source can be selected to become a Transfer.
+The default value is '/home' in a Local Filesystem.
+This is required to start transfers.
 
-Only one currently processing location should be associated with a given
-pipeline. Likewise, there should only be one Storage Service Internal Processing
-location for each Storage Service installation. If you want the same directory on
-disk to have multiple purposes, multiple Locations with different purposes can
-be created.
+Transfer backlog stores transfers until such a time that the user continues processing them.
+The default value is '/var/archivematica/sharedDirectory/www/AIPsStore/transferBacklog' in a Local Filesystem.
+This is required to store and retrieve transfers in backlog.
+
+AIP storage locations are where the completed AIPs are put for long-term storage.
+The default value is '/var/archivematica/sharedDirectory/www/AIPsStore' in a Local Filesystem.
+This is required to store and retrieve AIPs.
+
+Likewise, DIP storage is used for storing DIPs until such a time that they can be uploaded to an access system.
+The default value is '/var/archivematica/sharedDirectory/www/DIPsStore' in a Local Filesystem.
+This is required to store and retrieve DIPs.
+This is not required to upload DIPs to access systems.
+
+During processing, Archivematica uses the currently processing location associated with that pipeline.
+Exactly one currently processing location should be associated with a given pipeline.
+The default value is '/var/archivematica/sharedDirectory' in a Local Filesystem.
+This is required for Archivematica to run.
+
+Likewise, there should only be exactly one Storage Service Internal Processing location for each Storage Service installation.
+The default value is '/var/archivematica/storage_service' in a Local Filesystem.
+This is required for the Storage Service to run, and must be locally available to the storage service.
+It should not be associated with any pipelines.
+
+AIP Recovery is where the :ref:`AIP recovery <recovery>` feature looks for an AIP to recover.
+No more than one AIP recovery locatio should be associated with a given pipeline.
+The default value is '/var/archivematica/storage_service/recover' in a Local Filesystem.
+This is only required if AIP recovery is used.
+
+FEDORA Deposit is used with the Archidora plugin to ingest material from Islandora.
+This is only available to the FEDORA Space, and is only required for that space.
+
+If you want the same directory on disk to have multiple purposes, multiple Locations with different purposes can be created.
 
 **Fields**
 
