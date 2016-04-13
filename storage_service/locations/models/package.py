@@ -1015,6 +1015,7 @@ class Package(models.Model):
         Fetches the AIP from the origin_location.
         Replaces the METS with the updated one.
         Copies the new metadata directory over the old one. New files will be added, updated files will be overwritten.
+        Copies preservation derivatives
         Recreate the bagit manifest.
         Compress the AIP according to what was selected during reingest in Archivematica.
         Store the AIP in the reingest_location.
@@ -1057,7 +1058,7 @@ class Package(models.Model):
         # Take note of whether new version of AIP should be compressed
         to_be_compressed = os.path.isfile(reingest_full_path)
 
-        # Extract if needed
+        # Extract reingested AIP if needed
         if os.path.isfile(reingest_full_path):
             # TODO modify extract_file and get_base_directory to handle reingest paths?  Update self.local_path sooner?
             # Extract
@@ -1122,9 +1123,37 @@ class Package(models.Model):
             distutils.dir_util.copy_tree(reingest_metadata_dir,
                 original_metadata_dir)
 
+        # Replace preservation derivatives
+        reingest_objects_dir = os.path.join(reingest_full_path, 'data', 'objects')
+        original_objects_dir = os.path.join(path, 'data', 'objects')
+        preservation_regex = r'(.+)-\w{8}-\w{4}-\w{4}-\w{4}-\w{12}(.*)'
+        # Walk through all files
+        for dirpath, _, filepaths in os.walk(reingest_objects_dir):
+            for filepath in filepaths:
+                match = re.match(preservation_regex, filepath)
+                # If preservation file, copy and delete the old one
+                if match:
+                    reingest_preservation_path = os.path.join(dirpath, filepath)
+                    original_preservation_path = reingest_preservation_path.replace(reingest_objects_dir, original_objects_dir)
+                    # Check for another preservation derivative and delete
+                    dest_dir = os.path.dirname(original_preservation_path)
+                    dupe_preservation_regex = match.group(1) + r'-\w{8}-\w{4}-\w{4}-\w{4}-\w{12}' + match.group(2)
+                    for p in os.listdir(dest_dir):
+                        # Don't delete if the 'duplicate' is the original
+                        if filepath == p:
+                            continue
+                        if re.match(dupe_preservation_regex, p):
+                            del_path = os.path.join(dest_dir, p)
+                            LOGGER.info('Deleting %s', del_path)
+                            os.remove(del_path)
+                    # Copy new preservation derivative
+                    LOGGER.info('Moving %s to %s', reingest_preservation_path, original_preservation_path)
+                    shutil.copy2(reingest_preservation_path, original_preservation_path)
+
         # Update bag payload and verify
         bag = bagit.Bag(path)
         bag.save(manifests=True)
+        bag = bagit.Bag(path)  # Workaround for bug https://github.com/LibraryOfCongress/bagit-python/pull/63
         bag.validate()  # Raises exception in case of problem
 
         # Compress if necessary
