@@ -997,16 +997,24 @@ class Package(models.Model):
 
         # Call reingest API
         reingest_target = 'transfer' if reingest_type == self.FULL else 'ingest'
+        reingest_uuid = self.uuid
         try:
             resp = pipeline.reingest(relative_path, self.uuid, reingest_target)
         except requests.exceptions.RequestException as e:
             message = 'Error in approve reingest API. {}'.format(e)
             LOGGER.exception('Error approving reingest in pipeline for package %s', self.uuid)
             return {'error': True, 'status_code': 502, 'message': message}
-
+        else:
+            reingest_uuid = resp.get('reingest_uuid')
+        LOGGER.debug('Reingest UUID: %s', reingest_uuid)
         self.save()
 
-        return {'error': False, 'status_code': 202, 'message': 'Package {} sent to pipeline {} for re-ingest'.format(self.uuid, pipeline)}
+        return {
+            'error': False,
+            'status_code': 202,
+            'message': 'Package {} sent to pipeline {} for re-ingest'.format(self.uuid, pipeline),
+            'reingest_uuid': reingest_uuid,
+        }
 
     def finish_reingest(self, origin_location, origin_path, reingest_location, reingest_path):
         """
