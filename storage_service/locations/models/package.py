@@ -1116,11 +1116,20 @@ class Package(models.Model):
                 # Remove initial copy of pointer
                 os.remove(os.path.join(ss_internal.full_path, reingest_pointer_name))
 
-        # Replace METS
+        # If there's no reingest-saved METS, copy the original METS there
+        # WARNING If submission documentation is copied later, the original METS will be overwritten.
         original_mets_path = os.path.join(path, 'data', 'METS.' + self.uuid + '.xml')
+        backup_mets_path = os.path.join(path, 'data', 'objects', 'submissionDocumentation', 'METS.' + self.uuid + '.xml')
+        if not os.path.exists(backup_mets_path):
+            LOGGER.info('Moving original METS from %s to %s', original_mets_path, backup_mets_path)
+            os.rename(original_mets_path, backup_mets_path)
+        else:
+            LOGGER.info('Removing intermediate METS %s', original_mets_path)
+            os.remove(original_mets_path)
+
+        # Replace METS
         reingest_mets_path = os.path.join(reingest_full_path, 'data', 'METS.' + self.uuid + '.xml')
-        LOGGER.info('Replacing original METS %s with reingested METS %s', original_mets_path, reingest_mets_path)
-        os.remove(original_mets_path)
+        LOGGER.info('Replacing AIP METS %s with reingested METS %s', original_mets_path, reingest_mets_path)
         os.rename(reingest_mets_path, original_mets_path)
 
         # Replace new metadata files
