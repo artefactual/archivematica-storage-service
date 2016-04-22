@@ -498,9 +498,8 @@ class Package(models.Model):
             rc = subprocess.call(command)
             LOGGER.debug('Extract file RC: %s', rc)
         else:
-            aip_path = os.path.join(full_path, basename)
-            LOGGER.info('Copying AIP from: %s to %s', aip_path, output_path)
-            shutil.copytree(aip_path, output_path)
+            LOGGER.info('Copying AIP from: %s to %s', full_path, output_path)
+            shutil.copytree(full_path, output_path)
 
         if not relative_path:
             self.local_path_location = ss_internal
@@ -1018,14 +1017,16 @@ class Package(models.Model):
         LOGGER.debug('Reingest AIP full path: %s', reingest_full_path)
 
         # Copy pointer file if exists
-        # TODO what do if LOCKSS & uncompressed?
+        # TODO what do if LOCKSS?
         if self.package_type in (Package.AIP, Package.AIC):
             reingest_pointer_src = os.path.join(origin_location.relative_path, os.path.dirname(origin_path), 'pointer.xml')
-            reingest_pointer_name = 'pointer.' + self.uuid + '.reingest.xml'
-            reingest_pointer_dst = os.path.join(ss_internal.relative_path, reingest_pointer_name)
-            src_space.move_to_storage_service(reingest_pointer_src, reingest_pointer_name, internal_space)
-            internal_space.move_from_storage_service(reingest_pointer_name, reingest_pointer_dst)
-            reingest_pointer = os.path.join(ss_internal.full_path, reingest_pointer_name)
+
+            if os.path.isfile(reingest_pointer_src):
+                reingest_pointer_name = 'pointer.' + self.uuid + '.reingest.xml'
+                reingest_pointer_dst = os.path.join(ss_internal.relative_path, reingest_pointer_name)
+                src_space.move_to_storage_service(reingest_pointer_src, reingest_pointer_name, internal_space)
+                internal_space.move_from_storage_service(reingest_pointer_name, reingest_pointer_dst)
+                reingest_pointer = os.path.join(ss_internal.full_path, reingest_pointer_name)
 
         # Replace METS
         original_mets_path = os.path.join(path, 'data', 'METS.' + self.uuid + '.xml')
@@ -1049,30 +1050,39 @@ class Package(models.Model):
 
         # Compress
         # TODO update this for uncompressed AIPs
-        reingest_root = etree.parse(reingest_pointer)
-        os.remove(reingest_pointer)
-        puid = reingest_root.findtext('.//premis:formatRegistryKey', namespaces=utils.NSMAP)
-        if puid == 'fmt/484':  # 7 Zip
-            algo = reingest_root.find('.//mets:transformFile', namespaces=utils.NSMAP).get('TRANSFORMALGORITHM')
-            if algo == 'bzip2':
-                compression = self.COMPRESSION_7Z_BZIP
-            elif algo == 'lzma':
-                compression = self.COMPRESSION_7Z_LZMA
+        if self.is_compressed:
+            reingest_root = etree.parse(reingest_pointer)
+            os.remove(reingest_pointer)
+            puid = reingest_root.findtext('.//premis:formatRegistryKey', namespaces=utils.NSMAP)
+            if puid == 'fmt/484':  # 7 Zip
+                algo = reingest_root.find('.//mets:transformFile', namespaces=utils.NSMAP).get('TRANSFORMALGORITHM')
+                if algo == 'bzip2':
+                    compression = self.COMPRESSION_7Z_BZIP
+                elif algo == 'lzma':
+                    compression = self.COMPRESSION_7Z_LZMA
+                else:
+                    compression = self.COMPRESSION_7Z_BZIP
+                    LOGGER.warning('Reingest: Unable to determine reingested compression algorithm, defaulting to bzip2.')
+            elif puid == 'x-fmt/268':  # Bzipped (probably tar)
+                compression = self.COMPRESSION_TAR_BZIP2
             else:
                 compression = self.COMPRESSION_7Z_BZIP
-                LOGGER.warning('Reingest: Unable to determine reingested compression algorithm, defaulting to bzip2.')
-        elif puid == 'x-fmt/268':  # Bzipped (probably tar)
-            compression = self.COMPRESSION_TAR_BZIP2
-        else:
-            compression = self.COMPRESSION_7Z_BZIP
-            LOGGER.warning('Reingest: Unable to determine reingested file format, defaulting recompression algorithm to %s.', compression)
-        LOGGER.info('Reingest: compressing with %s', compression)
-        # FIXME Do we need compression output for event?
-        out_path, out_dir = self.compress_package(compression)
-        compress_output = ''
+                LOGGER.warning('Reingest: Unable to determine reingested file format, defaulting recompression algorithm to %s.', compression)
+            LOGGER.info('Reingest: compressing with %s', compression)
+            # FIXME Do we need compression output for event?
+            out_path, out_dir = self.compress_package(compression)
+            compress_output = ''
 
         # Delete working files
         shutil.rmtree(reingest_full_path)
+
+        if not self.is_compressed:
+            # If temp files are deleted before compression check, the wrong result is returned 
+            shutil.rmtree(temp_dir)
+            self.save()
+            return
+
+        # Delete temp files
         shutil.rmtree(temp_dir)
 
         # Move to final destination
