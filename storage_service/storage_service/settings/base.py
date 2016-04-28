@@ -197,6 +197,7 @@ DJANGO_APPS = (
 
 THIRD_PARTY_APPS = (
     'tastypie',  # REST framework
+    'channels',  # Websockets and background tasks
 )
 
 # Apps specific for this project go here.
@@ -255,28 +256,12 @@ LOGGING = {
         'console': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
-            'formatter': 'simple',
+            'formatter': 'detailed',
         },
         'mail_admins': {
             'level': 'ERROR',
             'filters': ['require_debug_false'],
             'class': 'django.utils.log.AdminEmailHandler'
-        },
-        'logfile': {
-            'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/var/log/archivematica/storage-service/storage_service.log',
-            'formatter': 'detailed',
-            'backupCount': 5,
-            'maxBytes': 20 * 1024 * 1024,  # 20 MiB
-        },
-        'verboselogfile': {
-            'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/var/log/archivematica/storage-service/storage_service_debug.log',
-            'formatter': 'detailed',
-            'backupCount': 5,
-            'maxBytes': 100 * 1024 * 1024,  # 100 MiB
         },
     },
     'loggers': {
@@ -299,8 +284,8 @@ LOGGING = {
         },
     },
     'root': {
-        'handlers': ['logfile', 'verboselogfile'],
-        'level': 'WARNING',
+        'handlers': ['console'],
+        'level': 'DEBUG',
     },
 }
 ########## END LOGGING CONFIGURATION
@@ -316,3 +301,15 @@ SESSION_COOKIE_NAME = 'storageapi_sessionid'
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#wsgi-application
 WSGI_APPLICATION = '%s.wsgi.application' % SITE_NAME
 ########## END WSGI CONFIGURATION
+
+########## CHANNELS CONFIGURATION
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "asgi_redis.RedisChannelLayer",
+        "ROUTING": "storage_service.ch_urls.channel_routing",
+        "CONFIG": {
+            "hosts": get_env_variable('SS_CHANNELS_REDIS_URL').split(','),
+        }
+    },
+}
+########## END CHANNELS CONFIGURATION

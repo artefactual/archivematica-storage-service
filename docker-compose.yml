@@ -1,0 +1,104 @@
+---
+version: "2"
+
+volumes:
+
+  percona_data:
+    driver: local
+
+  redis_data:
+    driver: local
+
+networks:
+
+  net1:
+
+  net2:
+
+  net3:
+
+services:
+
+  percona:
+    image: "percona:5.7"
+    environment:
+      - "MYSQL_ROOT_PASSWORD=ss"
+      - "MYSQL_DATABASE=ss"
+      - "MYSQL_USER=ss"
+      - "MYSQL_PASSWORD=ss"
+    volumes:
+      - "percona_data:/var/lib/mysql:rw"
+    expose:
+      - "3306"
+    networks:
+      - "net1"
+
+  redis:
+    image: "redis:3.0-alpine"
+    volumes:
+      - "redis_data:/data:rw"
+    expose:
+      - "6379"
+    networks:
+      - "net2"
+
+  storage_service:
+    build:
+      context: "."
+      dockerfile: "./Dockerfile"
+    command: "daphne -b 0.0.0.0 -p 65000 --access-log - storage_service.asgi:channel_layer"
+    networks:
+      - "net1"
+      - "net2"
+      - "net3"
+    volumes:
+      - "./:/src:rw"
+    depends_on:
+      - "redis"
+    environment:
+      - "DJANGO_SETTINGS_MODULE=storage_service.settings.production"
+      - "DJANGO_SECRET_KEY=CHANGE_ME"
+      - "SS_CHANNELS_REDIS_URL=redis://redis:6379"
+      - "SS_DB_ENGINE=django.db.backends.mysql"
+      - "SS_DB_HOST=percona"
+      - "SS_DB_PORT=3306"
+      - "SS_DB_NAME=ss"
+      - "SS_DB_USER=ss"
+      - "SS_DB_PASSWORD=ss"
+    expose:
+      - "65000"
+
+  storage_service_worker:
+    build:
+      context: "."
+      dockerfile: "./Dockerfile"
+    command: "python manage.py runworker"
+    networks:
+      - "net1"
+      - "net2"
+    volumes:
+      - "./:/src:rw"
+    depends_on:
+      - "redis"
+    environment:
+      - "DJANGO_SETTINGS_MODULE=storage_service.settings.production"
+      - "DJANGO_SECRET_KEY=CHANGE_ME"
+      - "SS_CHANNELS_REDIS_URL=redis://redis:6379"
+      - "SS_DB_ENGINE=django.db.backends.mysql"
+      - "SS_DB_HOST=percona"
+      - "SS_DB_PORT=3306"
+      - "SS_DB_NAME=ss"
+      - "SS_DB_USER=ss"
+      - "SS_DB_PASSWORD=ss"
+
+  nginx:
+    image: "nginx:latest"
+    networks:
+      - "net3"
+    volumes:
+      - "./:/src:ro"
+      - "./install/nginx.conf:/etc/nginx/nginx.conf:ro"
+    depends_on:
+      - "storage_service"
+    ports:
+      - "8000"
