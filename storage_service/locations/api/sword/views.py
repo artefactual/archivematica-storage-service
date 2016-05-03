@@ -12,6 +12,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 # External dependencies, alphabetical
+from channels import Channel
 
 # This project, alphabetical
 import helpers
@@ -208,9 +209,20 @@ def _spawn_batch_download_and_flag_finalization_if_requested(deposit, request, m
         deposit.misc_attributes.update({'ready_for_finalization': True})
         deposit.save()
 
-    # create subprocess so content URLs can be downloaded asynchronously
-    helpers.spawn_download_task(deposit.uuid, mets_data['objects'])
-    helpers.spawn_download_task(deposit.uuid, mets_data['mods'], ['submissionDocumentation', 'mods'])
+    # Download objects asynchronously
+    downloads = {
+        'deposit_uuid': deposit.uuid,
+        'objects': mets_data['objects']
+    }
+    Channel('download').send(downloads)
+
+    # Download submission documentation asynchronously
+    downloads = {
+        'deposit_uuid': deposit.uuid,
+        'objects': mets_data['mods'],
+        'subdirs': ['submissionDocumentation', 'mods']
+    }
+    Channel('download').send(downloads)
 
 def _parse_name_and_content_urls_from_mets_file(filepath):
     """
