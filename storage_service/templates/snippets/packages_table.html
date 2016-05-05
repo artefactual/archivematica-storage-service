@@ -9,6 +9,8 @@
         <th>Type</th>
         <th>Pointer File</th>
         <th>Status</th>
+        <th>Fixity Date</th>
+        <th>Fixity Status</th>
         <th>Actions</th>
       </tr>
     </thead>
@@ -39,6 +41,12 @@
           {% if package.status != 'DELETED' and package.status != 'FAIL'%}
           (<a href="{% url 'package_update_status' package.uuid %}?next={{ request.path }}">Update Status</a>)
           {% endif %}
+        </td>
+        <td>
+          {{ package.latest_fixity_check_datetime|default_if_none:"" }}
+        </td>
+        <td>
+          <a href="{% url 'package_fixity' package.uuid %}">{{ package.latest_fixity_check_result|yesno:"Success,Failed," }}</a>
         </td>
         <td>
           <a href="{% url 'download_request' 'v2' 'file' package.uuid %}">Download</a>

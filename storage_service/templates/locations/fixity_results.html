@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block page_title %}Fixity Checks{% endblock %}
+
+{% block content %}
+
+{% if log_entries %}
+  <table class="datatable">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Error</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for entry in log_entries %}
+      <tr>
+        <td>{{ entry.datetime_reported }}</td>
+        <td>{{ entry.error_details }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p>No fixity checks found.</p>
+{% endif %}
+
+{% endblock %}

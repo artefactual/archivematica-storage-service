@@ -28,6 +28,10 @@ urlpatterns = [
     url(r'^packages/(?P<package_uuid>' + UUID + ')/reingest/$', views.aip_reingest,
         name='aip_reingest'),
 
+    # Fixity check results
+    url(r'^fixity/(?P<package_uuid>'+UUID+')/$', views.package_fixity,
+        name='package_fixity'),
+
     # Pipelines
     url(r'^pipelines/$', views.pipeline_list,
         name='pipeline_list'),

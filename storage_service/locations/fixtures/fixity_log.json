@@ -1,0 +1,12 @@
+[
+{
+    "pk": 1, 
+    "model": "locations.fixitylog", 
+    "fields": {
+        "package": "e0a41934-c1d7-45ba-9a95-a7531c063ed1",
+        "success": true,
+        "error_details": "Checksum failed.",
+        "datetime_reported": "2015-12-15 03:00:05.020871"
+    }
+}
+]
