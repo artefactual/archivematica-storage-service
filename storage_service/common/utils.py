@@ -13,7 +13,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django import http
 
 from administration import models
-from common import version
+from storage_service import __version__
 
 LOGGER = logging.getLogger(__name__)
 
@@ -124,7 +124,7 @@ def download_file_stream(filepath, temp_dir=None):
 ############ XML & POINTER FILE ############
 
 def _storage_service_agent():
-    return 'Archivematica Storage Service-%s' % version.get_version()
+    return 'Archivematica Storage Service-%s' % __version__
 
 
 def mets_add_event(amdsec, event_type, event_detail='', event_outcome_detail_note=''):

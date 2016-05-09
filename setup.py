@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
+
 # Copyright (c) 2013 Artefactual Systems Inc. http://www.artefactual.com
 #
 # This file is part of archivematica-storage-service.
@@ -18,14 +19,31 @@
 # along with archivematica-storage-service.  If not, 
 # see <http://www.gnu.org/licenses/>.
 
-# @package archivematica-storage-service
-# @author Justin Simpson <jsimpson@artefactual.com>
+import codecs
+import os
+import re
+import sys
 
-from setuptools import setup, find_packages
+from setuptools import setup
+
+
+def read(*parts):
+    path = os.path.join(os.path.dirname(__file__), *parts)
+    with codecs.open(path, encoding='utf-8') as fobj:
+        return fobj.read()
+
+
+def find_version(*file_paths):
+    version_file = read(*file_paths)
+    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", version_file, re.M)
+    if version_match:
+        return version_match.group(1)
+    raise RuntimeError("Unable to find version string.")
+
 
 setup(name='archivematica-storage-service',
-      packages=find_packages(),
-      version='0.6.1',
+      packages=['storage_service'],
+      version=find_version('storage_service', 'storage_service', '__init__.py'),
       author=u'Artefactual Systems Inc',
       author_email='info@artefactual.com',
       url='https://github.com/artefacutal/archivematica-storage-service',
