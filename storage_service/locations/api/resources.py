@@ -17,9 +17,8 @@ from django.forms.models import model_to_dict
 # Third party dependencies, alphabetical
 from annoying.functions import get_object_or_None
 import bagit
-from tastypie.authentication import (BasicAuthentication, ApiKeyAuthentication,
-    MultiAuthentication, Authentication)
-from tastypie.authorization import DjangoAuthorization, Authorization
+from tastypie.authentication import BasicAuthentication, ApiKeyAuthentication, MultiAuthentication
+from tastypie.authorization import DjangoAuthorization
 import tastypie.exceptions
 from tastypie import fields
 from tastypie import http
@@ -103,11 +102,8 @@ class PipelineResource(ModelResource):
 
     class Meta:
         queryset = Pipeline.active.all()
-        authentication = Authentication()
-        # authentication = MultiAuthentication(
-        #     BasicAuthentication, ApiKeyAuthentication())
-        authorization = Authorization()
-        # authorization = DjangoAuthorization()
+        authentication = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication())
+        authorization = DjangoAuthorization()
         # validation = CleanedDataFormValidation(form_class=PipelineForm)
         resource_name = 'pipeline'
 
@@ -143,11 +139,8 @@ class PipelineResource(ModelResource):
 class SpaceResource(ModelResource):
     class Meta:
         queryset = Space.objects.all()
-        authentication = Authentication()
-        # authentication = MultiAuthentication(
-        #     BasicAuthentication, ApiKeyAuthentication())
-        authorization = Authorization()
-        # authorization = DjangoAuthorization()
+        authentication = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication())
+        authorization = DjangoAuthorization()
         validation = CleanedDataFormValidation(form_class=SpaceForm)
         resource_name = 'space'
 
@@ -243,11 +236,8 @@ class LocationResource(ModelResource):
 
     class Meta:
         queryset = Location.active.all()
-        authentication = Authentication()
-        # authentication = MultiAuthentication(
-        #     BasicAuthentication, ApiKeyAuthentication())
-        authorization = Authorization()
-        # authorization = DjangoAuthorization()
+        authentication = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication())
+        authorization = DjangoAuthorization()
         # validation = CleanedDataFormValidation(form_class=LocationForm)
         resource_name = 'location'
 
@@ -420,11 +410,8 @@ class PackageResource(ModelResource):
 
     class Meta:
         queryset = Package.objects.all()
-        authentication = Authentication()
-        # authentication = MultiAuthentication(
-        #     BasicAuthentication, ApiKeyAuthentication())
-        authorization = Authorization()
-        # authorization = DjangoAuthorization()
+        authentication = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication())
+        authorization = DjangoAuthorization()
         # validation = CleanedDataFormValidation(form_class=PackageForm)
         #
         # Note that this resource is exposed as 'file' to the API for
@@ -1005,6 +992,12 @@ class PackageResource(ModelResource):
         If no results are found for the specified query, returns 404.
         If no acceptable query parameters are found, returns 400.
         """
+        # Tastypie API checks
+        self.method_check(request, allowed=['get', 'post'])
+        self.is_authenticated(request)
+        self.throttle_check(request)
+        self.log_throttled_access(request)
+
         property_map = {
             "relative_path": "name",
             "fileuuid": "source_id",

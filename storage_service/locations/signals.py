@@ -1,7 +1,10 @@
 import logging
+
 from django.dispatch import receiver, Signal
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.db.models import signals
+from tastypie.models import create_api_key
 
 LOGGER = logging.getLogger(__name__)
 
@@ -45,3 +48,6 @@ Full failure report (in JSON format):
 {}
 """.format(kwargs["uuid"], kwargs["location"], kwargs["report"])
     _notify_administrators(subject, message)
+
+# Create an API key for every user, for TastyPie
+signals.post_save.connect(create_api_key, sender=User)

@@ -23,5 +23,11 @@
     </form>
     {% endif %}
 
+    {% if edit_user and edit_user.api_key %}
+    <p>
+      <label>API key:</label>
+      <code>{{ edit_user.api_key.key }}</code>
+    </p>
+    {% endif %}
 </div>
 {% endblock %}
