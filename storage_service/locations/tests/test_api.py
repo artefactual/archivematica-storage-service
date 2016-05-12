@@ -1,9 +1,10 @@
-
+import base64
 import json
 import os
 import shutil
 
 from django.test import TestCase
+from django.contrib.auth.models import User
 
 from locations import models
 
@@ -12,6 +13,16 @@ THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 class TestLocationAPI(TestCase):
 
     fixtures = ['base.json', 'pipelines.json', 'package.json']
+
+    def setUp(self):
+        user = User.objects.get(username='test')
+        user.set_password('test')
+        self.client.defaults['HTTP_AUTHORIZATION'] = 'Basic ' +  base64.b64encode('test:test')
+
+    def test_requires_auth(self):
+        del self.client.defaults['HTTP_AUTHORIZATION']
+        response = self.client.post('/api/v2/location/213086c8-232e-4b9e-bb03-98fbc7a7966a/')
+        assert response.status_code == 401
 
     def test_cant_move_from_non_existant_locations(self):
         data = {
@@ -75,10 +86,27 @@ class TestPackageAPI(TestCase):
         ss_int.relative_path = self.fixtures_dir[1:]
         ss_int.save()
 
+        user = User.objects.get(username='test')
+        user.set_password('test')
+        self.client.defaults['HTTP_AUTHORIZATION'] = 'Basic ' +  base64.b64encode('test:test')
+
     def tearDown(self):
         for entry in os.listdir(self.fixtures_dir):
             if entry.startswith('tmp'):
                 shutil.rmtree(os.path.join(self.fixtures_dir, entry))
+
+    def test_requires_auth(self):
+        del self.client.defaults['HTTP_AUTHORIZATION']
+        urls = [
+            '/api/v2/file/metadata/',
+            '/api/v2/file/e0a41934-c1d7-45ba-9a95-a7531c063ed1/contents/',
+            '/api/v2/file/6aebdb24-1b6b-41ab-b4a3-df9a73726a34/download/',
+            '/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/extract_file/',
+        ]
+        # Get metadata
+        for url in urls:
+            response = self.client.get(url)
+            assert response.status_code == 401
 
     def test_file_data_returns_metadata_given_relative_path(self):
         path = 'test_sip/objects/file.txt'
