@@ -1,3 +1,3 @@
-/usr/lib/archivematica
+/usr/lib/archivematica/storage-service/
 /var/archivematica/storage-service/assets
 /var/log/archivematica/storage-service/

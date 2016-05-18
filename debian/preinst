@@ -3,7 +3,7 @@
 echo "preinst called with:" $1 $2
 
 # version 0.3.0.release postrm had a bug that prevents upgrades from working
-if [ $2 = "0.3.0.release" ]; then
+if [ x$2 == x"0.3.0.release" ]; then
   echo "saving original files"
   rm -f /var/lib/dpkg/info/archivematica-storage-service.postrm
   # backup important user files
