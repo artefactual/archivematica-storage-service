@@ -501,6 +501,8 @@ class Package(models.Model):
             LOGGER.info('Extracting file with: %s to %s', command, output_path)
             rc = subprocess.call(command)
             LOGGER.debug('Extract file RC: %s', rc)
+            if rc:
+                raise StorageException('Extraction error')
         else:
             LOGGER.info('Copying AIP from: %s to %s', full_path, output_path)
             shutil.copytree(full_path, output_path)
@@ -783,7 +785,10 @@ class Package(models.Model):
         if self.is_compressed:
             # bagit can't deal with compressed files, so extract before
             # starting the fixity check.
-            path, temp_dir = self.extract_file()
+            try:
+                 path, temp_dir = self.extract_file()
+            except StorageException:
+                 return (None, [], 'Error extracting file')
         else:
             path = self.fetch_local_path()
             temp_dir = None
