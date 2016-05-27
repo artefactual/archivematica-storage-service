@@ -17,7 +17,7 @@ from django.forms.models import model_to_dict
 # Third party dependencies, alphabetical
 from annoying.functions import get_object_or_None
 import bagit
-from tastypie.authentication import BasicAuthentication, ApiKeyAuthentication, MultiAuthentication
+from tastypie.authentication import BasicAuthentication, ApiKeyAuthentication, MultiAuthentication, SessionAuthentication
 from tastypie.authorization import DjangoAuthorization
 import tastypie.exceptions
 from tastypie import fields
@@ -102,7 +102,7 @@ class PipelineResource(ModelResource):
 
     class Meta:
         queryset = Pipeline.active.all()
-        authentication = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication())
+        authentication = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication(), SessionAuthentication())
         authorization = DjangoAuthorization()
         # validation = CleanedDataFormValidation(form_class=PipelineForm)
         resource_name = 'pipeline'
@@ -139,7 +139,7 @@ class PipelineResource(ModelResource):
 class SpaceResource(ModelResource):
     class Meta:
         queryset = Space.objects.all()
-        authentication = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication())
+        authentication = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication(), SessionAuthentication())
         authorization = DjangoAuthorization()
         validation = CleanedDataFormValidation(form_class=SpaceForm)
         resource_name = 'space'
@@ -236,7 +236,7 @@ class LocationResource(ModelResource):
 
     class Meta:
         queryset = Location.active.all()
-        authentication = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication())
+        authentication = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication(), SessionAuthentication())
         authorization = DjangoAuthorization()
         # validation = CleanedDataFormValidation(form_class=LocationForm)
         resource_name = 'location'
@@ -409,7 +409,7 @@ class PackageResource(ModelResource):
 
     class Meta:
         queryset = Package.objects.all()
-        authentication = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication())
+        authentication = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication(), SessionAuthentication())
         authorization = DjangoAuthorization()
         # validation = CleanedDataFormValidation(form_class=PackageForm)
         #
