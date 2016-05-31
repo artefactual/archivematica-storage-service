@@ -21,3 +21,4 @@ python-keystoneclient==1.8.1
 python-swiftclient==2.4.0
 requests>=2.3.0
 sword2
+msgpack-python>=0.4.0
