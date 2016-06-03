@@ -42,9 +42,10 @@ fi
 if [[ $2 == '0.7.'* ]]; then
     echo 'Faking 0.7 migration'
     /usr/share/python/archivematica-storage-service/bin/python manage.py migrate locations 0004_v0_7 --fake
+    /usr/share/python/archivematica-storage-service/bin/python manage.py migrate --fake-initial
 fi
 
-/usr/share/python/archivematica-storage-service/bin/python manage.py migrate --fake-initial
+/usr/share/python/archivematica-storage-service/bin/python manage.py migrate
 /usr/share/python/archivematica-storage-service/bin/python manage.py collectstatic --noinput
 
 
