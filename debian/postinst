@@ -21,6 +21,10 @@ sed -i "s/<replace-with-key>/\"$KEYCMD\"/g" /etc/uwsgi/apps-available/storage.in
 
 . /var/archivematica/.storage-service
 
+echo "creating symlink in /usr/lib/archivematica"
+rm -f /usr/lib/archivematica/storage-service
+ln -s -f /usr/share/python/archivematica-storage-service/lib/python2.7/site-packages/storage_service/ /usr/lib/archivematica/storage-service
+
 cd /usr/lib/archivematica/storage-service
 
 echo "configuring django database and static files"
@@ -39,7 +43,7 @@ if [[ $2 == '0.7.'* || $2 == '0.6.'* ]]; then
     echo 'No migrations in 0.6'
 fi
 
-if [[ $2 == '0.7.'* ]]; then
+if [[ $2 == '1:0.7.'* ]]; then
     echo 'Faking 0.7 migration'
     /usr/share/python/archivematica-storage-service/bin/python manage.py migrate locations 0004_v0_7 --fake
     /usr/share/python/archivematica-storage-service/bin/python manage.py migrate --fake-initial
@@ -51,7 +55,6 @@ fi
 
 echo "updating directory permissions"
 chown -R archivematica:archivematica /var/archivematica/storage-service
-chown -R archivematica:archivematica /var/archivematica/storage_service
 chown -R archivematica:archivematica /var/archivematica/.storage-service
 chown -R archivematica:archivematica /usr/share/python/archivematica-storage-service
 chown -R archivematica:archivematica /var/log/archivematica/storage-service

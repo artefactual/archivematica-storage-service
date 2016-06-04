@@ -1,11 +1,8 @@
 #archivematica-storage-service.install
 
-# TODO: Add upstart/systemd script with gunicorn
-#	and update nginx config
 install/storage.ini etc/uwsgi/apps-available/
 install/storage etc/nginx/sites-available/
 install/.storage-service var/archivematica/
 install/make_key.py var/archivematica/storage-service/
 
-lib/* var/archivematica/storage-service/lib/
-storage_service/* usr/lib/archivematica/storage-service/
+storage_service/* /usr/share/python/archivematica-storage-service/lib/python2.7/site-packages/storage_service/
