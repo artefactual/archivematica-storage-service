@@ -4,6 +4,7 @@
 # stdlib, alphabetical
 import json
 import logging
+from multiprocessing import Process
 import os
 import shutil
 import urllib
@@ -439,6 +440,7 @@ class PackageResource(ModelResource):
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/delete_aip%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('delete_aip_request'), name="delete_aip_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/recover_aip%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('recover_aip_request'), name="recover_aip_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/extract_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('extract_file_request'), name="extract_file_request"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/move%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('move_request'), name="move_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/download/(?P<chunk_number>\d+)%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('download_request'), name="download_lockss"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/download%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('download_request'), name="download_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/pointer_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('pointer_file_request'), name="pointer_file_request"),
@@ -596,6 +598,31 @@ class PackageResource(ModelResource):
         response_json = json.dumps(response)
         return http.HttpResponse(status=status_code, content=response_json,
             content_type='application/json')
+
+    @_custom_endpoint(expected_methods=['post'],
+        required_fields=('location_uuid', ))
+    def move_request(self, request, bundle, **kwargs):
+        """
+        Move package to another location
+        """
+        request_info = bundle.data
+        package = bundle.obj
+
+        if package.status == Package.MOVING:
+            message = "Move already in progress."
+            success = False
+        else:
+            p = Process(target=package.move_to_location, args=(request_info['location_uuid'], ))
+            p.start()
+            message = "Move initiated."
+            success = True
+
+        response_data = {'success': success, 'message': message}
+
+        return http.HttpResponse(
+            json.dumps(response_data),
+            mimetype="application/json"
+        )
 
     @_custom_endpoint(expected_methods=['get', 'head'])
     def extract_file_request(self, request, bundle, **kwargs):
