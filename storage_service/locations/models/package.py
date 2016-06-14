@@ -366,6 +366,22 @@ class Package(models.Model):
             self.save()
             self.current_location.space.update_package_status(self)
 
+            # Update pointer file's location information
+            if self.pointer_file_path and self.package_type in (Package.AIP, Package.AIC):
+                root = etree.parse(self.full_pointer_file_path)
+                element = root.find('.//mets:file', namespaces=utils.NSMAP)
+                flocat = element.find('mets:FLocat', namespaces=utils.NSMAP)
+                if self.uuid in element.get('ID', '') and flocat is not None:
+                    # TODO: use PREFIX_NS in later version
+                    flocat.set('{{{ns}}}href'.format(ns=utils.NSMAP['xlink']), self.full_path)
+                # Add USE="Archival Information Package" to fileGrp.  Required for
+                # LOCKSS, and not provided in Archivematica <=1.1
+                if root.find('.//mets:fileGrp[@USE="Archival Information Package"]', namespaces=utils.NSMAP) is None:
+                    root.find('.//mets:fileGrp', namespaces=utils.NSMAP).set('USE', 'Archival Information Package')
+
+                with open(self.full_pointer_file_path, 'w') as f:
+                    f.write(etree.tostring(root, pretty_print=True))
+
         except Exception, e:
             LOGGER.info('Attempt to move package %s to location %s failed: %s', self.uuid, destination_location_uuid, str(e))
             self.status = Package.MOVE_FAILED
