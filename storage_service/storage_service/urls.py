@@ -117,5 +117,9 @@ def startup():
             utils.set_setting(loc_info['default_setting'], [new_loc.uuid])
             LOGGER.info('Set %s as %s', new_loc, loc_info['default_setting'])
 
+    # Set any interrupted package moves to failed
+    locations_models.Package.objects.filter(
+        status=locations_models.Package.MOVING).update(status=locations_models.Package.MOVE_FAILED)
+
 
 startup()
