@@ -1111,6 +1111,18 @@ class Package(models.Model):
             out_path = self.fetch_local_path()
             out_dir = os.path.dirname(out_path)
 
+        # Recalculate size - may have changed because of preservation derivatives or metadata-only reingest
+        # If AIP is a directory, calculate size recursively
+        if os.path.isdir(out_path):
+            size = 0
+            for dirpath, _, filenames in os.walk(out_path):
+                for filename in filenames:
+                    file_path = os.path.join(dirpath, filename)
+                    size += os.path.getsize(file_path)
+        else:
+            size = os.path.getsize(out_path)
+        self.size = size
+
         # Move to final destination
         src_path = out_path.replace(ss_internal.space.path, '', 1).lstrip('/')
 
