@@ -47,3 +47,9 @@ form li {
 .btn {
   margin: .15em;
 }
+
+table.attr-val-table td {
+  padding: 0.5em 1em;
+  font-weight: bold;
+}
+

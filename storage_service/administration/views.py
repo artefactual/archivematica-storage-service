@@ -1,3 +1,4 @@
+import subprocess
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model
@@ -5,6 +6,7 @@ from django.contrib.auth.forms import SetPasswordForm
 from django.shortcuts import render, redirect, get_object_or_404
 
 from common import utils
+from storage_service import __version__ as ss_version
 from . import forms as settings_forms
 
 
@@ -23,6 +25,20 @@ def settings_edit(request):
         messages.success(request, "Setting saved.")
         return redirect('settings_edit')
     return render(request, 'administration/settings_form.html', locals())
+
+
+########################## VERSION ########################
+
+def get_git_commit():
+    try:
+        return subprocess.check_output(['git', 'rev-parse', 'HEAD'])
+    except subprocess.CalledProcessError:
+        return None
+
+def version_view(request):
+    return render(request, 'administration/version.html',
+        {'version': ss_version,
+         'git_commit': get_git_commit()})
 
 
 ########################## USERS ##########################
