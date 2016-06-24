@@ -69,6 +69,6 @@ class DSpace(models.Model):
         """ Moves src_path to dest_space.staging_path/dest_path. """
         pass
 
-    def move_from_storage_service(self, source_path, destination_path):
+    def move_from_storage_service(self, source_path, destination_path, package=None):
         """ Moves self.staging_path/src_path to dest_path. """
         pass

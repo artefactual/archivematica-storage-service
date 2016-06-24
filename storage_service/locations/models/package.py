@@ -245,6 +245,7 @@ class Package(models.Model):
         ss_internal.space.move_from_storage_service(
             source_path=self.current_path,
             destination_path=relative_path,
+            package=self,
         )
         self.local_path_location = ss_internal
         self.local_path = int_path
@@ -364,7 +365,8 @@ class Package(models.Model):
         # Copy corrupt files from staging to backup directory
         destination_space.move_from_storage_service(
             source_path=destination_path,
-            destination_path=destination_path)
+            destination_path=destination_path,
+            package=self)
         destination_space.post_move_from_storage_service(
             staging_path=None,
             destination_path=None)
@@ -385,7 +387,8 @@ class Package(models.Model):
         # Copy recovery files from staging to AIP store
         destination_space.move_from_storage_service(
             source_path=destination_path,
-            destination_path=destination_path)
+            destination_path=destination_path,
+            package=self)
         destination_space.post_move_from_storage_service(
             staging_path=None,
             destination_path=None)
@@ -436,7 +439,7 @@ class Package(models.Model):
         if self.package_type in (Package.AIP, Package.AIC):
             try:
                 src_space.move_to_storage_service(pointer_file_src, self.pointer_file_path, self.pointer_file_location.space)
-                self.pointer_file_location.space.move_from_storage_service(self.pointer_file_path, pointer_file_dst)
+                self.pointer_file_location.space.move_from_storage_service(self.pointer_file_path, pointer_file_dst, package=None)
             except:
                 LOGGER.warning("No pointer file found")
                 self.pointer_file_location = None
@@ -455,6 +458,7 @@ class Package(models.Model):
         dest_space.move_from_storage_service(
             source_path=self.current_path,  # This should include Location.path
             destination_path=os.path.join(self.current_location.relative_path, self.current_path),
+            package=self,
         )
         # Update package status once transferred to SS
         if dest_space.access_protocol not in (Space.LOM, Space.ARKIVUM):
@@ -774,6 +778,7 @@ class Package(models.Model):
         dest_space.move_from_storage_service(
             source_path=self.current_path,  # This should include Location.path
             destination_path=os.path.join(self.current_location.relative_path, self.current_path),
+            package=self,
         )
 
         # Save new space/location usage, package status
@@ -986,6 +991,7 @@ class Package(models.Model):
             currently_processing.space.move_from_storage_service(
                 source_path=path,
                 destination_path=os.path.join(dest_basepath, path),
+                package=self,
             )
 
         # Delete local copy of extraction
@@ -1062,6 +1068,7 @@ class Package(models.Model):
         internal_space.move_from_storage_service(
             source_path=reingest_path,  # This should include Location.path
             destination_path=os.path.join(ss_internal.relative_path, reingest_path),
+            package=self,
         )
         reingest_full_path = os.path.join(ss_internal.full_path, reingest_path)
 
@@ -1108,7 +1115,7 @@ class Package(models.Model):
                 self.pointer_file_path = os.path.join(utils.uuid_to_path(self.uuid), 'pointer.{}.xml'.format(self.uuid))
 
             src_space.move_to_storage_service(reingest_pointer_src, reingest_pointer_name, internal_space)
-            internal_space.move_from_storage_service(reingest_pointer_name, reingest_pointer_dst)
+            internal_space.move_from_storage_service(reingest_pointer_name, reingest_pointer_dst, package=None)
 
             if was_compressed:
                 reingest_pointer = os.path.join(ss_internal.full_path, reingest_pointer_name)
@@ -1237,6 +1244,7 @@ class Package(models.Model):
         dest_space.move_from_storage_service(
             source_path=dest_path,  # This should include Location.path
             destination_path=os.path.join(reingest_location.relative_path, dest_path),
+            package=self,
         )
 
         # Delete old copy of AIP if different

@@ -68,7 +68,7 @@ class Lockssomatic(models.Model):
         # Check if in SS internal, if not then fetch from LOM
         raise NotImplementedError('LOCKSS-o-matic has not implemented retrieval.')
 
-    def move_from_storage_service(self, source_path, destination_path):
+    def move_from_storage_service(self, source_path, destination_path, package=None):
         """ Moves self.staging_path/source_path to destination_path. """
         self.space.create_local_directory(destination_path)
         return self.space.move_rsync(source_path, destination_path)
