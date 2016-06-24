@@ -37,7 +37,7 @@ class LocalFilesystem(models.Model):
         self.space.create_local_directory(dest_path)
         return self.space.move_rsync(src_path, dest_path)
 
-    def move_from_storage_service(self, source_path, destination_path):
+    def move_from_storage_service(self, source_path, destination_path, package=None):
         """ Moves self.staging_path/src_path to dest_path. """
         self.space.create_local_directory(destination_path)
         return self.space.move_rsync(source_path, destination_path, try_mv_local=True)
