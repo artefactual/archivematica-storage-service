@@ -51,7 +51,7 @@ fi
 
 /usr/share/python/archivematica-storage-service/bin/python manage.py migrate
 /usr/share/python/archivematica-storage-service/bin/python manage.py collectstatic --noinput
-
+/usr/share/python/archivematica-storage-service/bin/python manage.py backfill_api_keys
 
 echo "updating directory permissions"
 chown -R archivematica:archivematica /var/archivematica/storage-service
