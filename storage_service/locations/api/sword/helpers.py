@@ -409,4 +409,4 @@ def store_mets_data(mets_path, deposit, object_id):
     if os.path.exists(target):
         os.unlink(target)
 
-    os.rename(mets_path, target)
+    shutil.move(mets_path, target)
