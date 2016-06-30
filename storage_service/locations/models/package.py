@@ -391,8 +391,8 @@ class Package(models.Model):
                 with open(self.full_pointer_file_path, 'w') as f:
                     f.write(etree.tostring(root, pretty_print=True))
 
-        except Exception, e:
-            LOGGER.info('Attempt to move package %s to location %s failed: %s', self.uuid, destination_location_uuid, str(e))
+        except Exception:
+            LOGGER.info('Attempt to move package %s to location %s failed', self.uuid, destination_location_uuid, exc_info=True)
             self.status = Package.MOVE_FAILED
             self.save()
 
