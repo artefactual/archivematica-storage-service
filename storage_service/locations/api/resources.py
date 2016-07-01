@@ -4,7 +4,6 @@
 # stdlib, alphabetical
 import json
 import logging
-from multiprocessing import Process
 import os
 import shutil
 import urllib
@@ -35,6 +34,7 @@ from ..models import (Callback, CallbackError, Event, File, Package, Location, S
 from ..forms import LocationForm, SpaceForm
 from ..constants import PROTOCOL
 from locations import signals
+from locations.tasks import move_package_to_location_task
 
 LOGGER = logging.getLogger(__name__)
 
@@ -613,8 +613,7 @@ class PackageResource(ModelResource):
             message = "Move already in progress."
             success = False
         else:
-            p = Process(target=package.move_to_location, args=(request_info['location_uuid'], ))
-            p.start()
+            move_package_to_location_task.delay(package.uuid, request_info['location_uuid'])
             message = "Move initiated."
             success = True
 
