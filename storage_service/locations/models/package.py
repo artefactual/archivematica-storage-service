@@ -68,6 +68,8 @@ class Package(models.Model):
     DEL_REQ = 'DEL_REQ'
     DELETED = 'DELETED'
     RECOVER_REQ = 'RECOVER_REQ'
+    MOVING = 'MOVING'
+    MOVE_FAILED = 'MOVE_FAILED'
     FAIL = 'FAIL'
     FINALIZED = 'FINALIZE'
     STATUS_CHOICES = (
@@ -288,6 +290,83 @@ class Package(models.Model):
         space.save()
         location.used += self.size
         location.save()
+
+    def move_to_location(self, destination_location_uuid):
+        """
+        Move a package to another location (that has the same purpose as package's current location).
+        """
+        destination_location = Location.active.get(uuid=destination_location_uuid)
+
+        if self.current_location == destination_location:
+            return
+
+        if self.current_location.purpose != destination_location.purpose:
+            raise ValueError('Location purpose mismatch for location %s' % destination_location_uuid)
+
+        if self.status == Package.MOVING:
+            raise StorageException("Can't move package {} as it's already being moved.".format(self.uuid))
+
+        self.status = Package.MOVING
+        self.save()
+
+        try:
+            # Move to internal storage
+            ss_internal = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
+
+            source_path = os.path.join(
+                self.current_location.relative_path,
+                self.current_path)
+
+            origin_space = self.current_location.space
+            origin_space.move_to_storage_service(
+                source_path=source_path,
+                destination_path='move',
+                destination_space=ss_internal.space)
+            origin_space.post_move_to_storage_service()
+
+            # Move to destination location
+            source_path = os.path.join(
+                'move',
+                os.path.basename(self.current_path))
+            destination_path = os.path.join(
+                destination_location.relative_path,
+                self.current_path)
+
+            destination_space = destination_location.space
+            destination_space.move_from_storage_service(
+                source_path=source_path,
+                destination_path=destination_path)
+            destination_space.post_move_from_storage_service(
+                staging_path=source_path,
+                destination_path=destination_path,
+                package=self)
+
+            # Update location
+            self.current_location = destination_location
+            self.status = Package.UPLOADED
+            self.save()
+            self.current_location.space.update_package_status(self)
+
+            # Update pointer file's location information
+            if self.pointer_file_path and self.package_type in (Package.AIP, Package.AIC):
+                root = etree.parse(self.full_pointer_file_path)
+                element = root.find('.//mets:file', namespaces=utils.NSMAP)
+                flocat = element.find('mets:FLocat', namespaces=utils.NSMAP)
+                if self.uuid in element.get('ID', '') and flocat is not None:
+                    # TODO: use PREFIX_NS in later version
+                    flocat.set('{{{ns}}}href'.format(ns=utils.NSMAP['xlink']), self.full_path)
+                # Add USE="Archival Information Package" to fileGrp.  Required for
+                # LOCKSS, and not provided in Archivematica <=1.1
+                if root.find('.//mets:fileGrp[@USE="Archival Information Package"]', namespaces=utils.NSMAP) is None:
+                    root.find('.//mets:fileGrp', namespaces=utils.NSMAP).set('USE', 'Archival Information Package')
+
+                with open(self.full_pointer_file_path, 'w') as f:
+                    f.write(etree.tostring(root, pretty_print=True))
+
+        except Exception:
+            LOGGER.info('Attempt to move package %s to location %s failed', self.uuid, destination_location_uuid, exc_info=True)
+            self.status = Package.MOVE_FAILED
+            self.save()
 
     def recover_aip(self, origin_location, origin_path):
         """ Recovers an AIP using files at a given location.

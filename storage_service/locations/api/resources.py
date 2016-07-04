@@ -35,6 +35,7 @@ from ..models import (Callback, CallbackError, Event, File, Package, Location, S
 from ..forms import LocationForm, SpaceForm
 from ..constants import PROTOCOL
 from locations import signals
+from locations.tasks import move_package_to_location_task
 
 LOGGER = logging.getLogger(__name__)
 
@@ -437,18 +438,20 @@ class PackageResource(ModelResource):
         detail_uri_name = 'uuid'
         always_return_data = True
         filtering = {
-            'location': ALL_WITH_RELATIONS,
+            'current_location': ALL_WITH_RELATIONS,
             'package_type': ALL,
             'path': ALL,
             'uuid': ALL,
             'status': ALL,
         }
+        ordering = ['uuid']
 
     def prepend_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/delete_aip%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('delete_aip_request'), name="delete_aip_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/recover_aip%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('recover_aip_request'), name="recover_aip_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/extract_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('extract_file_request'), name="extract_file_request"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/move%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('move_request'), name="move_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/download/(?P<chunk_number>\d+)%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('download_request'), name="download_lockss"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/download%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('download_request'), name="download_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/pointer_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('pointer_file_request'), name="pointer_file_request"),
@@ -528,6 +531,30 @@ class PackageResource(ModelResource):
         response_json = json.dumps(response)
         return http.HttpResponse(status=status_code, content=response_json,
             mimetype='application/json')
+
+    @_custom_endpoint(expected_methods=['post'],
+        required_fields=('location_uuid', ))
+    def move_request(self, request, bundle, **kwargs):
+        """
+        Move package to another location
+        """
+        request_info = bundle.data
+        package = bundle.obj
+
+        if package.status == Package.MOVING:
+            message = "Move already in progress."
+            success = False
+        else:
+            move_package_to_location_task.delay(package.uuid, request_info['location_uuid'])
+            message = "Move initiated."
+            success = True
+
+        response_data = {'success': success, 'message': message}
+
+        return http.HttpResponse(
+            json.dumps(response_data),
+            mimetype="application/json"
+        )
 
     @_custom_endpoint(expected_methods=['get'])
     def extract_file_request(self, request, bundle, **kwargs):
