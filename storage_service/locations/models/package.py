@@ -486,7 +486,10 @@ class Package(models.Model):
 
         # The basename is the base directory containing a package
         # like an AIP inside the compressed file.
-        basename = self.get_base_directory()
+        try:
+            basename = self.get_base_directory()
+        except subprocess.CalledProcessError:
+            raise StorageException('Error determining basename during extraction')
 
         if relative_path:
             output_path = os.path.join(extract_path, relative_path)
