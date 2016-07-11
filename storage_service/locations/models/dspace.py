@@ -1,3 +1,9 @@
+"""
+Integration with DSpace, using SWORD2 as the protocol.
+
+Space path can be left empty, and the Location path should be the collection's
+IRI.
+"""
 # stdlib, alphabetical
 import logging
 
@@ -5,6 +11,7 @@ import logging
 from django.db import models
 
 # Third party dependencies, alphabetical
+import sword2
 
 # This project, alphabetical
 
@@ -22,6 +29,8 @@ class DSpace(models.Model):
     user = models.CharField(max_length=64, help_text='DSpace username to authenticate as')
     password = models.CharField(max_length=64, help_text='DSpace password to authenticate with')
 
+    sword_connection = None
+
     class Meta:
         verbose_name = "DSpace via SWORD2 API"
         app_label = 'locations'
@@ -29,6 +38,25 @@ class DSpace(models.Model):
     ALLOWED_LOCATION_PURPOSE = [
         Location.AIP_STORAGE,
     ]
+
+    def __str__(self):
+        return 'space: {s.space_id}; sd_iri: {s.sd_iri}; user: {s.user}'.format(s=self)
+
+    def _get_sword_connection(self):
+        if self.sword_connection is None:
+            LOGGER.debug('Getting sword connection')
+            self.sword_connection = sword2.Connection(
+                service_document_iri=self.sd_iri,
+                download_service_document=True,
+                user_name=self.user,
+                user_pass=self.password,
+                keep_history=True,
+                # http_impl=sword2.http_layer.UrlLib2Layer(),  # This causes the deposit receipt to return the wrong URLs
+            )
+            LOGGER.debug('Getting service document')
+            self.sword_connection.get_service_document()
+
+        return self.sword_connection
 
     def browse(self, path):
         pass
