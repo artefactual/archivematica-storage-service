@@ -26,6 +26,14 @@ class TestDSpace(TestCase):
         assert self.dspace_object.password
         assert self.dspace_object.sword_connection is None
 
+    @dspace_vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'dspace_get_sword_connection.yaml'))
+    def test_get_sword_connection(self):
+        assert self.dspace_object.sword_connection is None
+        self.dspace_object._get_sword_connection()
+        assert self.dspace_object.sword_connection is not None
+        # Format is [ ( 'string', [collections] )]
+        assert self.dspace_object.sword_connection.workspaces[0][1][0].title == 'Test collection'
+
     @dspace_vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'dspace_browse.yaml'))
     def test_browse(self):
         pass
