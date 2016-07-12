@@ -32,9 +32,26 @@
         "space": "e764565a-5150-486a-93c6-ae78bec4b54b",
         "enabled": true,
         "quota": null,
-        "relative_path": "http://demo.dspace.org/swordv2/collection/10673/9",
+        "relative_path": "http://demo.dspace.org/swordv2/collection/123456789/2",
         "purpose": "AS",
         "uuid": "d9d7db26-f7a1-40aa-9db1-806b4d3a61cd"
+    }
+},
+{
+    "pk": 1,
+    "model": "locations.package",
+    "fields": {
+        "uuid": "1056123d-8a16-49c2-ac51-8e5fa367d8b5",
+        "description": null,
+        "origin_pipeline": null,
+        "current_location": "d9d7db26-f7a1-40aa-9db1-806b4d3a61cd",
+        "current_path": "path/to/test.txt",
+        "pointer_file_location": "",
+        "pointer_file_path": "",
+        "size": 0,
+        "package_type": "AIP",
+        "status": "Uploaded",
+        "misc_attributes": {}
     }
 }
 ]
