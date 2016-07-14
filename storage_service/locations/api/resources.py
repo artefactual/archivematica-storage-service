@@ -542,6 +542,7 @@ class PackageResource(ModelResource):
     @_custom_endpoint(expected_methods=['post'],
         required_fields=('event_reason', 'pipeline', 'user_id', 'user_email'))
     def delete_aip_request(self, request, bundle, **kwargs):
+        """Create a delete request for an AIP. Does not perform the deletion."""
         request_info = bundle.data
         package = bundle.obj
         if package.package_type not in Package.PACKAGE_TYPE_CAN_DELETE:
@@ -593,9 +594,7 @@ class PackageResource(ModelResource):
 
     @_custom_endpoint(expected_methods=['get'])
     def extract_file_request(self, request, bundle, **kwargs):
-        """
-        Returns a single file from the Package, extracting if necessary.
-        """
+        """Return a single file from the Package, extracting if necessary."""
         relative_path_to_file = request.GET.get('relative_path_to_file')
         if not relative_path_to_file:
             return http.HttpBadRequest('All of these fields must be provided: relative_path_to_file')
@@ -650,12 +649,9 @@ class PackageResource(ModelResource):
 
     @_custom_endpoint(expected_methods=['get'])
     def download_request(self, request, bundle, **kwargs):
-        """
-        Returns the entire Package to be downloaded.
-        """
+        """Return the entire Package to be downloaded."""
         # Get AIP details
         package = bundle.obj
-
 
         # Check if the package is in Arkivum and not actually there
         if package.current_location.space.access_protocol == Space.ARKIVUM:
@@ -683,6 +679,7 @@ class PackageResource(ModelResource):
 
     @_custom_endpoint(expected_methods=['get'])
     def pointer_file_request(self, request, bundle, **kwargs):
+        """Return AIP pointer file."""
         # Get AIP details
         pointer_path = bundle.obj.full_pointer_file_path
         if not pointer_path:
