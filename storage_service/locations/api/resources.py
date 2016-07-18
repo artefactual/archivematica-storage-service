@@ -162,7 +162,6 @@ class SpaceResource(ModelResource):
     def prepend_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/browse%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('browse'), name="browse"),
-            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/collection%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_collection'), name="sword_collection")
         ]
 
     # Is there a better place to add protocol-specific space info?
