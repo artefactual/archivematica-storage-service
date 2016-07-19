@@ -47,30 +47,15 @@ def deposit_list(location_uuid):
         status=models.Package.FINALIZED)
     return deposits
 
-def write_file_from_request_body(request, file_path):
-    """
-    Write HTTP request's body content to a file.
-
-    Return the number of bytes successfully written
-    """
-    bytes_written = 0
-    new_file = open(file_path, 'ab')
-    chunk = request.read()
-    if chunk is not None:
-        new_file.write(chunk)
-        bytes_written += len(chunk)
-        chunk = request.read()
-    new_file.close()
-    return bytes_written
-
 def write_request_body_to_temp_file(request):
     """
     Write HTTP request's body content to a temp file.
 
     Return the temp file's path
     """
-    filehandle, temp_filepath = tempfile.mkstemp()
-    write_file_from_request_body(request, temp_filepath)
+    _, temp_filepath = tempfile.mkstemp()
+    with open(temp_filepath, 'ab') as f:
+        f.write(request.body)
     return temp_filepath
 
 def parse_filename_from_content_disposition(header):
