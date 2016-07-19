@@ -47,28 +47,28 @@ def deposit_list(location_uuid):
         status=models.Package.FINALIZED)
     return deposits
 
-"""
-Write HTTP request's body content to a file
-
-Return the number of bytes successfully written
-"""
 def write_file_from_request_body(request, file_path):
+    """
+    Write HTTP request's body content to a file.
+
+    Return the number of bytes successfully written
+    """
     bytes_written = 0
     new_file = open(file_path, 'ab')
     chunk = request.read()
-    if chunk != None:
+    if chunk is not None:
         new_file.write(chunk)
         bytes_written += len(chunk)
         chunk = request.read()
     new_file.close()
     return bytes_written
 
-"""
-Write HTTP request's body content to a temp file
-
-Return the temp file's path
-"""
 def write_request_body_to_temp_file(request):
+    """
+    Write HTTP request's body content to a temp file.
+
+    Return the temp file's path
+    """
     filehandle, temp_filepath = tempfile.mkstemp()
     write_file_from_request_body(request, temp_filepath)
     return temp_filepath
@@ -83,38 +83,39 @@ def parse_filename_from_content_disposition(header):
     filename = params.get('filename', '')
     return filename
 
-"""
-Pad a filename numerically, preserving the file extension, if it's a duplicate
-of an existing file. This function is recursive.
-
-Returns padded (if necessary) file path
-"""
 def pad_destination_filepath_if_it_already_exists(filepath, original=None, attempt=0):
-    if original == None:
+    """
+    Generate unique file paths.
+
+    Pad a filename numerically, preserving the file extension, if it's a duplicate of an existing file. This function is recursive.
+
+    Returns padded (if necessary) file path
+    """
+    if original is None:
         original = filepath
     attempt = attempt + 1
     if os.path.exists(filepath):
         return pad_destination_filepath_if_it_already_exists(original + '_' + str(attempt), original, attempt)
     return filepath
 
-"""
-Download a URL resource to a destination directory, using the response's
-Content-Disposition header, if available, to determine the destination
-filename (using the filename at the end of the URL otherwise)
-
-Returns filename of downloaded resource
-"""
 def download_resource(url, destination_path, filename=None, username=None, password=None):
-    LOGGER.info('downloading url: ' + url)
+    """
+    Download a resource.
+
+    Download a URL resource to a destination directory, using the response's Content-Disposition header, if available, to determine the destination filename (using the filename at the end of the URL otherwise)
+
+    Returns filename of downloaded resource
+    """
+    LOGGER.info('downloading url: %s', url)
     request = urllib2.Request(url)
 
-    if username != None and password != None:
+    if username is not None and password is not None:
         base64string = base64.encodestring('%s:%s' % (username, password)).replace('\n', '')
-        request.add_header("Authorization", "Basic %s" % base64string)   
+        request.add_header("Authorization", "Basic %s" % base64string)
 
     response = urllib2.urlopen(request)
     info = response.info()
-    if filename == None:
+    if filename is None:
         if 'content-disposition' in info:
             filename = parse_filename_from_content_disposition(info['content-disposition'])
         else:
@@ -417,6 +418,8 @@ def store_mets_data(mets_path, deposit, object_id):
     # There may be a previous METS file if the same file is being
     # re-transferred, so remove and update the METS in this case.
     if os.path.exists(target):
+        LOGGER.debug('Removing existing %s', target)
         os.unlink(target)
 
+    LOGGER.debug('Move METS file from %s to %s', mets_path, target)
     shutil.move(mets_path, target)
