@@ -393,16 +393,26 @@ def sword_error_response(request, status, summary):
     return HttpResponse(error_xml, status=error_details['status'])
 
 def store_mets_data(mets_path, deposit, object_id):
-    submission_documentation_directory = os.path.join(deposit.full_path, 'submissionDocumentation')
-    if not os.path.exists(submission_documentation_directory):
-        os.mkdir(submission_documentation_directory)
+    """
+    Create transfer directory structure & store METS in it.
 
-    mods_directory = os.path.join(submission_documentation_directory, 'mods')
-    if not os.path.exists(mods_directory):
-        os.mkdir(mods_directory)
+    Creates submission documentation directory with MODS and objects subdirectories.
+    Also moves the METS into the submission documentation directory, overwriting anything already there.
+    """
+    create_dirs = [
+        os.path.join(deposit.full_path, 'submissionDocumentation', 'mods'),
+        os.path.join(deposit.full_path, object_id.replace(':', '-'))
+    ]
+    for d in create_dirs:
+        try:
+            LOGGER.debug('Creating %s', d)
+            os.makedirs(d)
+        except OSError:
+            if not os.path.isdir(d):
+                raise
 
     mets_name = object_id.replace(':', '-') + '-METS.xml'
-    target = os.path.join(submission_documentation_directory, mets_name)
+    target = os.path.join(deposit.full_path, 'submissionDocumentation', mets_name)
 
     # There may be a previous METS file if the same file is being
     # re-transferred, so remove and update the METS in this case.
