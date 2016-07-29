@@ -1,7 +1,5 @@
 # stdlib, alphabetical
-import base64
 import cgi
-import json
 import datetime
 import logging
 import os
@@ -9,8 +7,6 @@ from multiprocessing import Process
 import shutil
 import tempfile
 import time
-import urllib
-import urllib2
 
 # Core Django, alphabetical
 from django.http import HttpResponse
@@ -92,29 +88,23 @@ def download_resource(url, destination_path, filename=None, username=None, passw
     Returns filename of downloaded resource
     """
     LOGGER.info('downloading url: %s', url)
-    request = urllib2.Request(url)
 
+    auth = None
     if username is not None and password is not None:
-        base64string = base64.encodestring('%s:%s' % (username, password)).replace('\n', '')
-        request.add_header("Authorization", "Basic %s" % base64string)
+        auth = (username, password)
 
-    response = urllib2.urlopen(request)
-    info = response.info()
+    response = requests.get(url, auth=auth)
     if filename is None:
-        if 'content-disposition' in info:
-            filename = parse_filename_from_content_disposition(info['content-disposition'])
+        if 'content-disposition' in response.headers:
+            filename = parse_filename_from_content_disposition(response.headers['content-disposition'])
         else:
             filename = os.path.basename(url)
     LOGGER.info('Filename set to ' + filename)
 
     filepath = os.path.join(destination_path, filename)
-    buffer_size = 16 * 1024
     with open(filepath, 'wb') as fp:
-        while True:
-            chunk = response.read(buffer_size)
-            if not chunk:
-                break
-            fp.write(chunk)
+        fp.write(response.content)
+
     return filename
 
 def deposit_download_tasks(deposit):
@@ -221,7 +211,7 @@ def _fetch_content(deposit_uuid, objects, subdirs=None):
             )
             file_record.save()
         except Exception as e:
-            LOGGER.error('Package download task encountered an error:' + str(e))
+            LOGGER.exception('Package download task encountered an error:' + str(e))
             # an error occurred
             task_file.failed = True
             task_file.save()
@@ -346,17 +336,16 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
         time.sleep(5)
 
     # make request to pipeline's transfer approval API
-    data = urllib.urlencode({
+    data = {
         'username': pipeline.api_username,
         'api_key': pipeline.api_key,
         'directory': deposit.current_path,
         'type': 'standard'
-    })
+    }
 
-    pipeline_endpoint_url = 'http://' + pipeline.remote_name + '/api/transfer/approve/'
-    approve_request = urllib2.Request(pipeline_endpoint_url, data)
+    url = 'http://' + pipeline.remote_name + '/api/transfer/approve/'
     try:
-        approve_response = urllib2.urlopen(approve_request)
+        response = requests.post(url, data=data)
     except Exception:
         LOGGER.exception('Automatic approval of transfer for deposit %s failed', deposit.uuid)
         # move back to deposit directory
@@ -366,7 +355,7 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
             'error': True,
             'message': 'Request to pipeline ' + pipeline.uuid + ' transfer approval API failed: check credentials and REST API IP whitelist.'
         }
-    result = json.loads(approve_response.read())
+    result = response.json()
     return result
 
 def sword_error_response(request, status, summary):
