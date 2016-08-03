@@ -789,7 +789,7 @@ class PackageResource(ModelResource):
         safe_files = ('bag-info.txt', 'manifest-sha512.txt', 'bagit.txt')
 
         bag = bagit.Bag(package_dir)
-        for f, checksums in bag.entries.iteritems():
+        for f, checksums in bag.entries.items():
             try:
                 cksum = checksums['sha512']
             except KeyError:
@@ -963,7 +963,7 @@ class PackageResource(ModelResource):
             kwargs = {
                 "package": bundle.obj
             }
-            for source, dest in property_map.iteritems():
+            for source, dest in property_map.items():
                 try:
                     kwargs[dest] = f[source]
                 except KeyError:
@@ -1051,7 +1051,7 @@ class PackageResource(ModelResource):
             "sipuuid": "source_package"
         }
         query = {}
-        for source, dest in property_map.iteritems():
+        for source, dest in property_map.items():
             try:
                 query[dest] = request.GET[source]
             except KeyError:

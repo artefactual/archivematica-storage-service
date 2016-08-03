@@ -379,7 +379,7 @@ def space_list(request):
             PROTOCOL[space.access_protocol]['fields'] or [''])
         child_dict = {
             child._meta.get_field(field).verbose_name: value
-            for field, value in child_dict_raw.iteritems()
+            for field, value in child_dict_raw.items()
         }
         space.child = child_dict
     map(add_child, spaces)
@@ -397,7 +397,7 @@ def space_detail(request, uuid):
         PROTOCOL[space.access_protocol]['fields']or [''])
     child_dict = {
         child._meta.get_field(field).verbose_name: value
-        for field, value in child_dict_raw.iteritems()
+        for field, value in child_dict_raw.items()
     }
     space.child = child_dict
     locations = Location.objects.filter(space=space)
