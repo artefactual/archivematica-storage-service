@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # stdlib, alphabetical
 import datetime
 import distutils.dir_util
@@ -25,10 +26,10 @@ from common import utils
 
 # This module, alphabetical
 from . import StorageException
-from location import Location
-from space import Space
-from event import File
-from fixity_log import FixityLog
+from .location import Location
+from .space import Space
+from .event import File
+from .fixity_log import FixityLog
 
 __all__ = ('Package', )
 
@@ -946,7 +947,7 @@ class Package(models.Model):
         # Copy to pipeline
         try:
             currently_processing = Location.active.filter(pipeline=pipeline).get(purpose=Location.CURRENTLY_PROCESSING)
-        except Location.DoesNotExist, Location.MultipleObjectsReturned:
+        except (Location.DoesNotExist, Location.MultipleObjectsReturned):
             return {'error': True, 'status_code': 412,
                 'message': 'No currently processing Location is associated with pipeline {}'.format(pipeline.uuid)}
         LOGGER.debug('Reingest: Current location: %s', current_location)

@@ -1,6 +1,7 @@
+from __future__ import absolute_import
 
-import forms
-import models
+from . import forms
+from . import models
 
 ########################## SPACES ##########################
 

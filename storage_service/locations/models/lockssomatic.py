@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # stdlib, alphabetical
 import errno
 import logging
@@ -18,8 +19,8 @@ import sword2
 from common import utils
 
 # This module, alphabetical
-from location import Location
-from package import Package
+from .location import Location
+from .package import Package
 
 LOGGER = logging.getLogger(__name__)
 

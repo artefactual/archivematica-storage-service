@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 
 from django import forms
 import django.utils
@@ -172,7 +173,7 @@ class LocationForm(forms.ModelForm):
         # Disable purposes that aren't in the Space's whitelist
         all_ = set(x[0] for x in models.Location.PURPOSE_CHOICES)
         if space_protocol in [x[0] for x in models.Space.ACCESS_PROTOCOL_CHOICES]:
-            from constants import PROTOCOL
+            from .constants import PROTOCOL
             self.whitelist = PROTOCOL[space_protocol]['model'].ALLOWED_LOCATION_PURPOSE
         else:
             self.whitelist = all_

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # stdlib, alphabetical
 import json
 import logging
@@ -19,8 +20,8 @@ from common import utils
 
 # This module, alphabetical
 from . import StorageException
-from location import Location
-from package import Package
+from .location import Location
+from .package import Package
 
 LOGGER = logging.getLogger(__name__)
 

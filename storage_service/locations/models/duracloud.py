@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # stdlib, alphabetical
 import logging
 from lxml import etree
@@ -17,7 +18,7 @@ from common import utils
 
 # This module, alphabetical
 from . import StorageException
-from location import Location
+from .location import Location
 
 LOGGER = logging.getLogger(__name__)
 

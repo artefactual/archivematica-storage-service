@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # stdlib, alphabetical
 import datetime
 import os
@@ -10,7 +11,7 @@ from django.db import models
 # This project, alphabetical
 
 # This module, alphabetical
-from location import Location
+from .location import Location
 
 
 class LocalFilesystem(models.Model):

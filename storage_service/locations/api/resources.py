@@ -177,7 +177,7 @@ class SpaceResource(ModelResource):
         try:
             space = model.objects.get(space=bundle.obj.uuid)
         except model.DoesNotExist:
-            print "Item doesn't exist :("
+            LOGGER.error('Space matching UUID %s does not exist', bundle.obj.uuid)
             # TODO this should assert later once creation/deletion stuff works
         else:
             keep_fields = PROTOCOL[access_protocol]['fields']

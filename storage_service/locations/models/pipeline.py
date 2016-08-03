@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # stdlib, alphabetical
 import logging
 
@@ -12,10 +13,10 @@ from django_extensions.db.fields import UUIDField
 from common import utils
 
 # This module, alphabetical
-from local_filesystem import LocalFilesystem
-from location import Location, LocationPipeline
-from managers import Enabled
-from space import Space
+from .local_filesystem import LocalFilesystem
+from .location import Location, LocationPipeline
+from .managers import Enabled
+from .space import Space
 
 __all__ = ('Pipeline', )
 

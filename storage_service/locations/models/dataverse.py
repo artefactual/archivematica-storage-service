@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # stdlib, alphabetical
 import json
 import logging
@@ -14,7 +15,7 @@ LOGGER = logging.getLogger(__name__)
 
 # This module, alphabetical
 from . import StorageException
-from location import Location
+from .location import Location
 
 
 class Dataverse(models.Model):

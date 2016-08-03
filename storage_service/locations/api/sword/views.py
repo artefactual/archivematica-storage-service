@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # stdlib, alphabetical
 import logging
 from lxml import etree as etree
@@ -14,7 +15,7 @@ from django.utils import timezone
 # External dependencies, alphabetical
 
 # This project, alphabetical
-import helpers
+from . import helpers
 from common import utils
 from locations import models
 
@@ -283,7 +284,7 @@ def _create_deposit_directory_and_db_entry(location, deposit_name=None, source_p
         shutil.copytree(source_path, deposit_path)
     else:
         os.mkdir(deposit_path)
-        os.chmod(deposit_path, 02770) # drwxrws---
+        os.chmod(deposit_path, 0o2770) # drwxrws---
 
     # Create SWORD deposit location using deposit name and path
     if os.path.exists(deposit_path):

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # stdlib, alphabetical
 from datetime import datetime
 import logging
@@ -16,7 +17,7 @@ from django.db import models
 from common import utils
 
 # This module, alphabetical
-from location import Location
+from .location import Location
 
 LOGGER = logging.getLogger(__name__)
 
