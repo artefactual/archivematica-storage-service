@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from __future__ import division
 # stdlib, alphabetical
 import errno
 import logging
@@ -341,7 +342,7 @@ class Lockssomatic(models.Model):
             return output_files
 
         file_path = package.full_path
-        expected_num_files = math.ceil(os.path.getsize(file_path) / float(self.au_size))
+        expected_num_files = math.ceil(os.path.getsize(file_path) / self.au_size)
         LOGGER.debug('expected_num_files: %s', expected_num_files)
 
         # No split needed - just return the file path
@@ -504,7 +505,7 @@ class Lockssomatic(models.Model):
                 size = os.path.getsize(file_path)
 
             # Convert size to kB
-            size = str(math.ceil(size / 1000.0))
+            size = str(math.ceil(size / 1000))
 
             # Add new content entry and values
             entry.add_field('lom_content', external_url)
