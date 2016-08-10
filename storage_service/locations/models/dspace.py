@@ -10,6 +10,8 @@ import logging
 import mimetypes
 import os
 import re
+import shutil
+import subprocess
 import urlparse
 import urllib
 
@@ -82,14 +84,82 @@ class DSpace(models.Model):
         :param str input_path: Path to the input AIP
         :return: List of packages to be stored
         """
+        # TODO Should output dir be a temp dir?
+        output_dir = os.path.dirname(input_path) + '/'
+        dirname = os.path.splitext(os.path.basename(input_path))[0]
+        command = ['unar', '-force-overwrite', '-output-directory', output_dir, input_path]
+        try:
+            subprocess.check_call(command)
+        except subprocess.CalledProcessError:
+            LOGGER.error('Could not extract %s', input_path)
+            raise
 
-        return [input_path]
+        # Move objects into their own directory
+        objects_dir = os.path.join(output_dir, 'objects')
+        metadata_dir = os.path.join(output_dir, dirname)
+        os.mkdir(objects_dir)
+        for item in os.listdir(os.path.join(metadata_dir, 'data', 'objects')):
+            if item in ('metadata', 'submissionDocumentation'):
+                continue
+
+            src = os.path.join(metadata_dir, 'data', 'objects', item)
+            dst = os.path.join(objects_dir, item)
+            os.rename(src, dst)
+
+        # Does this have to be the same compression as before?
+        # Compress objects
+        objects_zip = os.path.join(output_dir, 'objects.7z')
+        command = [
+            '7z', 'a',  # Add
+            '-bd',  # Disable percentage indicator
+            '-t7z',  # Type of archive
+            '-y',  # Assume Yes on all queries
+            '-m0=bzip2',  # Compression method
+            '-mtc=on', '-mtm=on', '-mta=on',  # Keep timestamps (create, mod, access)
+            '-mmt=on',  # Multithreaded
+            objects_zip,  # Destination
+            objects_dir,  # Source
+        ]
+        try:
+            subprocess.check_call(command)
+        except subprocess.CalledProcessError:
+            LOGGER.error('Could not compress %s', objects_dir)
+            raise
+        shutil.rmtree(objects_dir)
+
+        # Compress everything else
+        metadata_zip = os.path.join(output_dir, 'metadata.7z')
+        command = [
+            '7z', 'a',  # Add
+            '-bd',  # Disable percentage indicator
+            '-t7z',  # Type of archive
+            '-y',  # Assume Yes on all queries
+            '-m0=bzip2',  # Compression method
+            '-mtc=on', '-mtm=on', '-mta=on',  # Keep timestamps (create, mod, access)
+            '-mmt=on',  # Multithreaded
+            metadata_zip,  # Destination
+            metadata_dir,  # Source
+        ]
+        try:
+            subprocess.check_call(command)
+        except subprocess.CalledProcessError:
+            LOGGER.error('Could not compress %s', metadata_dir)
+            raise
+        shutil.rmtree(metadata_dir)
+
+        # os.remove(input_path)
+
+        return [objects_zip, metadata_zip]
 
     def move_from_storage_service(self, source_path, destination_path, package=None):
         LOGGER.info('source_path: %s, destination_path: %s, package: %s', source_path, destination_path, package)
         if package is None:
             LOGGER.warning('DSpace requires package param')
             return
+
+        # This only handles compressed AIPs
+        if not os.path.isfile(source_path):
+            raise NotImplementedError('Storing in DSpace does not support uncompressed AIPs')
 
         self._get_sword_connection()
         # Create item by depositing AtoM doc
