@@ -45,7 +45,7 @@
         "description": null,
         "origin_pipeline": null,
         "current_location": "d9d7db26-f7a1-40aa-9db1-806b4d3a61cd",
-        "current_path": "path/to/test.txt",
+        "current_path": "locations/fixtures/small_compressed_bag.zip",
         "pointer_file_location": "",
         "pointer_file_path": "",
         "size": 0,
