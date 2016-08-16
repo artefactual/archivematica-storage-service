@@ -14,6 +14,11 @@ from django.db import models
 # Third party dependencies, alphabetical
 import sword2
 
+# sword2 breaks logging, we need to reload logging settings
+from django.conf import settings
+from django.utils.log import configure_logging
+configure_logging(settings.LOGGING_CONFIG, settings.LOGGING)
+
 # This project, alphabetical
 from common import utils
 
