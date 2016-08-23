@@ -20,5 +20,5 @@ python-dateutil==2.4.2
 python-keystoneclient==1.8.1
 python-swiftclient==2.4.0
 requests>=2.3.0
--e git://github.com/swordapp/python-client-sword2.git@0c241438f2ced13ec3364caa03edf28d5ed5c02c#egg=sword2
+git+https://github.com/swordapp/python-client-sword2.git@0c241438f2ced13ec3364caa03edf28d5ed5c02c#egg=sword2
 msgpack-python>=0.4.0
