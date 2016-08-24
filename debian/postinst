@@ -27,6 +27,10 @@ ln -s -f /usr/share/python/archivematica-storage-service/lib/python2.7/site-pack
 
 cd /usr/lib/archivematica/storage-service
 
+echo "installing swift dependencies"
+/usr/share/python/archivematica-storage-service/bin/pip install python-swiftclient
+/usr/share/python/archivematica-storage-service/bin/pip install python-keystoneclient
+
 echo "configuring django database and static files"
 find /usr/lib/archivematica/storage-service/ -name '*.pyc'  -delete
 # 0.3.0 will automatically fake the first migration

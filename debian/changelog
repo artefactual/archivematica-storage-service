@@ -1,3 +1,19 @@
+archivematica-storage-service (1:0.7.0+1SNAPSHOT20150616161942-1~14.04) trusty; urgency=high
+
+  * Archivematica Storage Service 0.7.1 release candidate 1
+  * commit: 458e991a4731afef15fb465dd4b24695dfd75560
+  * checkout: qa/0.7.0
+
+ -- Justin Simpson <jsimpson@artefactual.com>  Tue, 16 Jun 2015 16:19:42 -0800
+
+archivematica-storage-service (1:0.7.0-1~14.04) trusty; urgency=high
+
+  * Archivematica Storage Service 0.7.0 release
+  * commit: aae417347d1a6b66b85f44c3297775a3f7267e34
+  * checkout: stable/0.7.x
+
+ -- Justin Simpson <jsimpson@artefactual.com>  Mon, 25 May 2015 15:00:42 -0800
+
 archivematica-storage-service (0.5.0.rc.4-1~precise1) precise; urgency=high
 
   * Archivematica Storage Service 0.5.0 release adding DuraCloud integration
