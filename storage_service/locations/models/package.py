@@ -963,7 +963,6 @@ class Package(models.Model):
                     with open(config_path, 'w+') as f:
                         f.write(config)
                     LOGGER.debug('Reingest: processing configuration %s written, location: %s', processing_config, config_path)
-                    reingest_files.append(os.path.join(relative_path, 'processingMCP.xml'))
                 except IOError:
                     LOGGER.exception('Reingest: processing configuration %s could not be written', processing_config)
                     raise
@@ -991,7 +990,10 @@ class Package(models.Model):
 
         # Delete local copy of extraction
         if self.local_path != self.full_path:
-            shutil.rmtree(local_path)
+            try:
+                shutil.rmtree(local_path)
+            except OSError:  # May have been moved not copied
+                pass
         if temp_dir:
             shutil.rmtree(temp_dir)
 
