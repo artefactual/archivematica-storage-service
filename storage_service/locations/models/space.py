@@ -385,8 +385,11 @@ class Space(models.Model):
 
         if try_mv_local:
             # Try using mv, and if that fails, fallback to rsync
+            chmod_command = ['chmod', '--recursive', 'ug+rw,o+r', destination]
             try:
                 os.rename(source, destination)
+                # Set permissions (rsync does with --chmod=ugo+rw)
+                subprocess.call(chmod_command)
                 return
             except OSError:
                 LOGGER.debug('os.rename failed, trying with normalized paths', exc_info=True)
@@ -394,6 +397,8 @@ class Space(models.Model):
             dest_norm = os.path.normpath(destination)
             try:
                 os.rename(source_norm, dest_norm)
+                # Set permissions (rsync does with --chmod=ugo+rw)
+                subprocess.call(chmod_command)
                 return
             except OSError:
                 LOGGER.debug('os.rename failed, falling back to rsync. Source: %s; Destination: %s', source_norm, dest_norm, exc_info=True)
