@@ -112,7 +112,7 @@ class DuracloudForm(forms.ModelForm):
 class DSpaceForm(forms.ModelForm):
     class Meta:
         model = models.DSpace
-        fields = ('sd_iri', 'user', 'password')
+        fields = ('sd_iri', 'user', 'password', 'metadata_policy')
 
 class LocalFilesystemForm(forms.ModelForm):
     class Meta:

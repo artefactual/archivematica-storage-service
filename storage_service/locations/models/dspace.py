@@ -20,6 +20,7 @@ from django.db import models
 # Third party dependencies, alphabetical
 import requests
 import sword2
+import jsonfield
 
 # This project, alphabetical
 
@@ -36,6 +37,7 @@ class DSpace(models.Model):
         help_text='URL of the service document. E.g. http://demo.dspace.org/swordv2/servicedocument')
     user = models.CharField(max_length=64, help_text='DSpace username to authenticate as')
     password = models.CharField(max_length=64, help_text='DSpace password to authenticate with')
+    metadata_policy = jsonfield.JSONField(blank=True, null=True, default=[], verbose_name='Restricted metadata policy', help_text='Policy for restricted access metadata policy. Must be specified as a list of objects in JSON. This will override existing policies. Example: [{"action":"READ","groupId":"5","rpType":"TYPE_CUSTOM"}]')
 
     sword_connection = None
 
@@ -248,30 +250,70 @@ class DSpace(models.Model):
         package.misc_attributes.update({'handle': handle})
         package.save()
 
+        # Set permissions on metadata bitstreams
+        self._set_permissions(package)
+
+    def _set_permissions(self, package):
+        try:
+            handle = package.misc_attributes['handle']
+        except KeyError:
+            LOGGER.warning('Cannot update permissions - package handle unknown')
+            return
+
+        # Only set if policy exists
+        if not self.metadata_policy:
+            LOGGER.info('Restricted metadata policy is empty (%s), not setting', self.metadata_policy)
+            return
+
         # Set bitstream permissions for bitstreams attached to handle
         parsed_url = urlparse.urlparse(self.sd_iri)
         dspace_url = urlparse.urlunparse((parsed_url.scheme, parsed_url.netloc, '', '', '', ''))
-        url = dspace_url + '/rest/handle/' + handle
-        headers = {'Accept': 'application/json'}
-        params = {'expand': 'bitstreams'}
-        response = requests.get(url, headers=headers, params=params)
-        LOGGER.info('REST API handle mapping %s %s', response.status_code, response)
-        LOGGER.info('Body %s', response.json())
-        for bitstream in response.json()['bitstreams']:
-            url = dspace_url + bitstream['link'] + '/policy'
-            LOGGER.info('Bitstream policy URL %s', url)
-            # # TODO what should a ResourcePolicy look like?
-            # body = [{
-            #     "action": "READ",
-            #     "epersonId": -1,
-            #     "groupId": 0,
-            #     "resourceId": 47166,
-            #     "resourceType": "bitstream",
-            #     "rpDescription": None,
-            #     "rpName": None,
-            #     "rpType": "TYPE_INHERITED",
-            #     "startDate": None,
-            #     "endDate": None
-            # }]
+        # Log in to get DSpace REST API token
+        url = dspace_url + '/rest/login'
+        body = {'email': self.user, 'password': self.password}
+        try:
+            response = requests.post(url, json=body)
+        except Exception:
+            LOGGER.warning('Error logging in to DSpace REST API, aborting', exc_info=True)
+            return
+        rest_token = response.text
 
-            # requests.post(url, headers=headers, data=body)
+        # Fetch bitstream information for item
+        url = dspace_url + '/rest/handle/' + handle
+        headers = {
+            'Accept': 'application/json',
+            'rest-dspace-token': rest_token,
+        }
+        params = {'expand': 'bitstreams'}
+        try:
+            response = requests.get(url, headers=headers, params=params)
+        except Exception:
+            LOGGER.warning('Error fetching bitstream information for handle %s', handle, exc_info=True)
+        LOGGER.debug('REST API handle mapping %s %s', response.status_code, response)
+        LOGGER.debug('Body %s', response.json())
+
+        # Update bitstream policies
+        for bitstream in response.json()['bitstreams']:
+            if bitstream['name'] != 'metadata.7z':
+                LOGGER.debug('skipping non-metadata bitstream named %s', bitstream['name'])
+                continue
+            url = dspace_url + bitstream['link']
+            LOGGER.debug('Bitstream policy URL %s', url)
+            body = bitstream
+            # Overwrite existing policies, instead of adding
+            body['policies'] = self.metadata_policy
+            LOGGER.debug('Posting bitstream body %s', body)
+            try:
+                response = requests.put(url, headers=headers, json=body)
+            except Exception:
+                LOGGER.warning('Error posting bitstream body', exc_info=True)
+                continue
+            LOGGER.debug('Response: %s %s', response.status_code, response.text)
+
+        # Logout from DSpace API
+        url = dspace_url + '/rest/logout'
+        try:
+            requests.post(url, headers=headers)
+        except Exception:
+            LOGGER.info('Error logging out of DSpace REST API', exc_info=True)
+        return
