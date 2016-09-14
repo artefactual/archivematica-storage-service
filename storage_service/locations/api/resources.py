@@ -420,7 +420,7 @@ class PackageResource(ModelResource):
         # that name.
         resource_name = 'file'
 
-        fields = ['current_path', 'package_type', 'size', 'status', 'uuid', 'related_packages']
+        fields = ['current_path', 'package_type', 'size', 'status', 'uuid', 'related_packages', 'misc_attributes']
         list_allowed_methods = ['get', 'post']
         detail_allowed_methods = ['get', 'put', 'patch']
         allowed_patch_fields = ['reingest']  # for customized update_in_place
@@ -455,6 +455,11 @@ class PackageResource(ModelResource):
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/media%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit_media'), name="sword_deposit_media"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/state%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit_state'), name="sword_deposit_state"),
         ]
+
+    def dehydrate_misc_attributes(self, bundle):
+        """Customize serialization of misc_attributes."""
+        # Serialize JSONField as dict, not as repr of a dict
+        return bundle.obj.misc_attributes
 
     def obj_create(self, bundle, **kwargs):
         bundle = super(PackageResource, self).obj_create(bundle, **kwargs)
