@@ -55,6 +55,17 @@ class TestDSpace(TestCase):
     def test_delete(self):
         pass
 
+    def test_get_metadata(self):
+        """It should fetch DC metadata from AIP."""
+        ret = self.dspace_object._get_metadata(os.path.join(FIXTURES_DIR, 'small_compressed_bag.zip'), '1056123d-8a16-49c2-ac51-8e5fa367d8b5')
+        assert len(ret) == 6
+        assert ret['dcterms_title'] == 'Yamani Weapons'
+        assert ret['dcterms_description.abstract'] == 'Glaives are cool'
+        assert ret['dcterms_contributor.author'] == 'Keladry of Mindelan'
+        assert ret['dcterms_date.issued'] == '2016'
+        assert ret['dcterms_rights.copyright'] == 'Public Domain'
+        assert ret['dcterms_relation.ispartofseries'] == 'None'
+
     def test_split_package(self):
         """It should split a package into objects and metadata."""
         # Setup
