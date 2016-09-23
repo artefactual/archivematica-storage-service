@@ -18,6 +18,7 @@ import urllib
 from django.db import models
 
 # Third party dependencies, alphabetical
+from lxml import etree
 import requests
 import sword2
 import jsonfield
@@ -25,6 +26,8 @@ import jsonfield
 # This project, alphabetical
 
 # This module, alphabetical
+from . import StorageException
+from common import utils
 from location import Location
 
 LOGGER = logging.getLogger(__name__)
@@ -77,6 +80,44 @@ class DSpace(models.Model):
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """ Moves src_path to dest_space.staging_path/dest_path. """
         pass
+
+    def _get_metadata(self, input_path, aip_uuid):
+        """Get metadata for DSpace from METS file."""
+        # Warning: This is specific for Deep Blue, and may not work with generic DSpace
+
+        # Extract METS file
+        # TODO Should output dir be a temp dir?
+        output_dir = os.path.dirname(input_path) + '/'
+        dirname = os.path.splitext(os.path.basename(input_path))[0]
+        relative_mets_path = os.path.join(dirname, 'data', 'METS.' + aip_uuid + '.xml')
+        mets_path = os.path.join(output_dir, relative_mets_path)
+        command = ['unar', '-force-overwrite', '-o', output_dir, input_path, relative_mets_path]
+        try:
+            subprocess.check_call(command)
+        except subprocess.CalledProcessError:
+            LOGGER.error('Could not extract %s from %s', mets_path, input_path, exc_info=True)
+            return {}
+
+        # Fetch info
+        root = etree.parse(mets_path)
+        dmdid = root.find('mets:structMap/mets:div/mets:div[@LABEL="objects"]', namespaces=utils.NSMAP).attrib.get('DMDID', '')
+        dc = root.find('mets:dmdSec[@ID="' + dmdid + '"]/mets:mdWrap/mets:xmlData/dcterms:dublincore', namespaces=utils.NSMAP)
+        if dc is None:
+            LOGGER.warning('Could not find SIP level Dublin Core metadata in %s', input_path)
+            kwargs = {}
+        else:
+            # Create mapping
+            kwargs = {
+                'dcterms_title': dc.findtext('dc:title', namespaces=utils.NSMAP),
+                'dcterms_description.abstract': dc.findtext('dc:description', namespaces=utils.NSMAP),
+                'dcterms_contributor.author': dc.findtext('dc:creator', namespaces=utils.NSMAP),
+                'dcterms_date.issued': dc.findtext('dc:date', namespaces=utils.NSMAP),
+                'dcterms_rights.copyright': dc.findtext('dc:rights', namespaces=utils.NSMAP),
+                'dcterms_relation.ispartofseries': dc.findtext('dc:relation', namespaces=utils.NSMAP),
+            }
+            LOGGER.debug('Dublin Core metadata for DSpace: %s', kwargs)
+        os.remove(mets_path)
+        return kwargs
 
     def _split_package(self, input_path):
         """
@@ -164,12 +205,11 @@ class DSpace(models.Model):
 
         self._get_sword_connection()
         # Create item by depositing AtoM doc
-        # TODO get DC info from METS?
         LOGGER.debug('Create SWORD2 entry')
+        kwargs = self._get_metadata(source_path, package.uuid)
         entry = sword2.Entry(
-            title=os.path.basename(source_path),
-            id='archivematica:id:42',  # TODO replace this
-            author={'name': 'archivematica'},  # TODO replace this
+            title=kwargs.get('dcterms_title'),
+            **kwargs
         )
 
         destination_path = package.current_location.relative_path
