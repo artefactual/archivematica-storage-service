@@ -72,14 +72,14 @@ class DSpace(models.Model):
         return self.sword_connection
 
     def browse(self, path):
-        pass
+        raise NotImplementedError('Dspace does not implement browse')
 
     def delete_path(self, delete_path):
-        pass
+        raise NotImplementedError('DSpace does not implement deletion')
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """ Moves src_path to dest_space.staging_path/dest_path. """
-        pass
+        raise NotImplementedError('DSpace does not implement fetching packages')
 
     def _get_metadata(self, input_path, aip_uuid):
         """Get metadata for DSpace from METS file."""
