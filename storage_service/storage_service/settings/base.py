@@ -297,6 +297,9 @@ LOGGING = {
         'locations': {
             'level': 'DEBUG',
         },
+        'sword2': {
+            'level': 'INFO',
+        }
     },
     'root': {
         'handlers': ['logfile', 'verboselogfile'],
