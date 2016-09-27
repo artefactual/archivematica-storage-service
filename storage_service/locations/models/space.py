@@ -295,10 +295,11 @@ class Space(models.Model):
         LOGGER.debug('FROM: dst: %s', destination_path)
 
         source_path, destination_path = self._move_from_path_mangling(source_path, destination_path)
-        try:
-            self.get_child_space().move_from_storage_service(
+        child_space = self.get_child_space()
+        if hasattr(child_space, 'move_from_storage_service'):
+            child_space.move_from_storage_service(
                 source_path, destination_path, *args, **kwargs)
-        except AttributeError:
+        else:
             raise NotImplementedError('{} space has not implemented move_from_storage_service'.format(self.get_access_protocol_display()))
 
     def post_move_from_storage_service(self, staging_path, destination_path, package=None, *args, **kwargs):
