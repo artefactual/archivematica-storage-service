@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import json
 import logging
 
@@ -6,8 +8,6 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db.models import signals
 from tastypie.models import create_api_key
-
-import models
 
 LOGGER = logging.getLogger(__name__)
 
@@ -43,6 +43,9 @@ To approve this deletion request, visit: {}{}
 
 
 def _log_report(uuid, success, message=None):
+    # NOTE Importing this at the top of the module fails because this file is
+    # imported in models.__init__.py and seems to cause a circular import error
+    from . import models
     package = models.Package.objects.get(uuid=uuid)
     models.FixityLog.objects.create(package=package, success=success, error_details=message)
 
