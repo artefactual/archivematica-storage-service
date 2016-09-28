@@ -19,10 +19,10 @@ interactions:
         they can be mapped to standard schemas."},"dsDescriptionDate":{"typeName":"dsDescriptionDate","multiple":false,"typeClass":"primitive","value":"2015-08-24"}}]},{"typeName":"subject","multiple":true,"typeClass":"controlledVocabulary","value":["Computer
         and Information Science"]},{"typeName":"depositor","multiple":false,"typeClass":"primitive","value":"McLellan,
         Evelyn"},{"typeName":"dateOfDeposit","multiple":false,"typeClass":"primitive","value":"2015-08-24"}]}},"files":[{"description":"Lake
-        Chelan North side launch.","label":"chelan 052.jpg","version":1,"datasetVersionId":40,"datafile":{"id":92,"name":"chelan
-        052.jpg","contentType":"image/jpeg","filename":"14f608c3f9e-b80e0b388755","originalFormatLabel":"UNKNOWN","md5":"c77cea64f072d317bf7a9c8a9ed03b0f","description":"Lake
+        Chelan North side launch.","label":"chelan 052.jpg","version":1,"datasetVersionId":40,"dataFile":{"id":92,"filename":"chelan
+        052.jpg","contentType":"image/jpeg","storageIdentifier":"8793","originalFormatLabel":"UNKNOWN","md5":"c77cea64f072d317bf7a9c8a9ed03b0f","description":"Lake
         Chelan North side launch."}},{"description":"YVR weather data information
-        for Jan - June 2015","label":"Weather_data.tab","version":2,"datasetVersionId":40,"datafile":{"id":91,"name":"Weather_data.tab","contentType":"text/tab-separated-values","filename":"14f60894788-dc91b9fdb34b","originalFileFormat":"application/x-spss-sav","originalFormatLabel":"SPSS
+        for Jan - June 2015","label":"Weather_data.tab","version":2,"datasetVersionId":40,"dataFile":{"id":91,"filename":"Weather_data.tab","contentType":"text/tab-separated-values","storageIdentifier":"8794","originalFileFormat":"application/x-spss-sav","originalFormatLabel":"SPSS
         SAV","UNF":"UNF:6:r5Z8n0CKSeRcAvjcTINpmQ==","md5":"755a502c757e1e2aa4bcaebd687fa102","description":"YVR
         weather data information for Jan - June 2015"}}]}}}'}
     headers:
