@@ -153,6 +153,19 @@ class SwiftForm(forms.ModelForm):
         fields = ('auth_url', 'auth_version', 'username', 'password', 'container', 'tenant', 'region')
 
 
+class iRODSForm(forms.ModelForm):
+    class Meta:
+        model = models.iRODS
+        fields = (
+	    "host",
+	    "port",
+	    "user",
+	    "password",
+	    "zone",
+	    "resource",
+	    "callback",
+	)
+
 class LocationForm(forms.ModelForm):
     class Meta:
         model = models.Location

@@ -41,7 +41,7 @@ def validate_space_path(path):
 #   Add class to import list
 #  locations/forms.py
 #   Add ModelForm for new class
-#  common/constants.py
+#  locations/constants.py
 #   Add entry to protocol
 #    'model' is the model object
 #    'form' is the ModelForm for creating the space
@@ -97,6 +97,7 @@ class Space(models.Model):
     NFS = 'NFS'
     PIPELINE_LOCAL_FS = 'PIPE_FS'
     SWIFT = 'SWIFT'
+    IRODS = 'IRODS'
     OBJECT_STORAGE = {DATAVERSE, DURACLOUD, SWIFT}
     ACCESS_PROTOCOL_CHOICES = (
         (ARKIVUM, 'Arkivum'),
@@ -108,6 +109,7 @@ class Space(models.Model):
         (NFS, "NFS"),
         (PIPELINE_LOCAL_FS, "Pipeline Local Filesystem"),
         (SWIFT, "Swift"),
+        (IRODS, "iRODS"),
     )
     access_protocol = models.CharField(max_length=8,
         choices=ACCESS_PROTOCOL_CHOICES,
@@ -260,7 +262,7 @@ class Space(models.Model):
         Given a destination_path relative to this space, converts to an absolute path.
 
         :param str staging_path: Path to the staging copy relative to the SS internal location.
-        :param str destination_path: Path to the destination copy relative to this Space's path.
+        :param str destination_path: Path to the destination copy relative to this Space's path.destination_path
         :return: Tuple of absolute paths (staging_path, destination_path)
         """
         # Path pre-processing

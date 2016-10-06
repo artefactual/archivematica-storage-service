@@ -249,6 +249,18 @@ def uuid_to_path(uuid):
     LOGGER.debug("path %s", path)
     return path
 
+def dirsize(path):
+    """
+    Doe the same as unix command line "du": return the size of the
+    directory, as the sum of size of all included files, recursively.
+    """
+    total_size = 0
+    for dirpath, dirnames, filenames in os.walk(path):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            total_size += os.path.getsize(fp)
+    return total_size
+
 def removedirs(relative_path, base=None):
     """ Removes leaf directory of relative_path and all empty directories in
     relative_path, but nothing from base.
