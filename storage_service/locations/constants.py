@@ -73,4 +73,15 @@ PROTOCOL = {
             'tenant',
             'region']
     },
+    models.Space.IRODS: {
+        'model': models.iRODS,
+        'form': forms.iRODSForm,
+        'fields': [
+	    "host",
+	    "port",
+	    "user",
+	    "password",
+	    "zone",
+        ],
+    },
 }

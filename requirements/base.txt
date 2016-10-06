@@ -22,3 +22,5 @@ python-swiftclient==2.4.0
 requests>=2.3.0
 git+https://github.com/swordapp/python-client-sword2.git@0c241438f2ced13ec3364caa03edf28d5ed5c02c#egg=sword2
 msgpack-python>=0.4.0
+#python-irodsclient. 0.5 is out but is not available on pypy, this version is known to work:
+git+git://github.com/irods/python-irodsclient.git@a3a5586a482105677045ec4af204f89fa3a96329

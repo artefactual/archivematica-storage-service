@@ -97,6 +97,7 @@ class Space(models.Model):
     NFS = 'NFS'
     PIPELINE_LOCAL_FS = 'PIPE_FS'
     SWIFT = 'SWIFT'
+    IRODS = 'IRODS'
     OBJECT_STORAGE = {DATAVERSE, DURACLOUD, SWIFT}
     ACCESS_PROTOCOL_CHOICES = (
         (ARKIVUM, 'Arkivum'),
@@ -108,6 +109,7 @@ class Space(models.Model):
         (NFS, "NFS"),
         (PIPELINE_LOCAL_FS, "Pipeline Local Filesystem"),
         (SWIFT, "Swift"),
+        (IRODS, "iRODS"),
     )
     access_protocol = models.CharField(max_length=8,
         choices=ACCESS_PROTOCOL_CHOICES,
