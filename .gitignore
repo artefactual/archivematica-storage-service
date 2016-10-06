@@ -2,6 +2,7 @@
 *.swp
 *.orig
 *~
+sword2_logging.conf
 
 # Sqlite DBs
 *.db
