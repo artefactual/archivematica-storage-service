@@ -369,7 +369,7 @@ class Space(models.Model):
         By default, uses rsync to move files.
         All directories leading to destination must exist; Space.create_local_directory may be useful.
 
-        If try_mv_local is True, will attempt to use os.rename, which only works on the same device.
+        If try_mv_local is True, will attempt to use shutil.move.
         This will not leave a copy at the source.
 
         :param source: Path to source file or directory. May have user@host: at beginning.
@@ -386,17 +386,17 @@ class Space(models.Model):
         if try_mv_local:
             # Try using mv, and if that fails, fallback to rsync
             try:
-                os.rename(source, destination)
+                shutil.move(source, destination)
                 return
             except OSError:
-                LOGGER.debug('os.rename failed, trying with normalized paths', exc_info=True)
+                LOGGER.debug('shutil.move failed, trying with normalized paths', exc_info=True)
             source_norm = os.path.normpath(source)
             dest_norm = os.path.normpath(destination)
             try:
-                os.rename(source_norm, dest_norm)
+                shutil.move(source_norm, dest_norm)
                 return
             except OSError:
-                LOGGER.debug('os.rename failed, falling back to rsync. Source: %s; Destination: %s', source_norm, dest_norm, exc_info=True)
+                LOGGER.debug('shutil.move failed, falling back to rsync. Source: %s; Destination: %s', source_norm, dest_norm, exc_info=True)
 
         # Rsync file over
         # TODO Do this asyncronously, with restarting failed attempts
