@@ -612,6 +612,9 @@ class PackageResource(ModelResource):
         if package.status == Package.MOVING:
             message = "Move already in progress."
             success = False
+        if package.status != Package.UPLOADED:
+            message = "Package shall be in UPLOADED state in order to be moved"
+            success = False
         else:
             move_package_to_location_task.delay(package.uuid, request_info['location_uuid'])
             message = "Move initiated."
@@ -621,7 +624,7 @@ class PackageResource(ModelResource):
 
         return http.HttpResponse(
             json.dumps(response_data),
-            mimetype="application/json"
+            content_type="application/json"
         )
 
     @_custom_endpoint(expected_methods=['get', 'head'])
