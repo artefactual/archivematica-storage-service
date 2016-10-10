@@ -334,12 +334,18 @@ class Package(models.Model):
         if self.status == Package.MOVING:
             raise StorageException("Can't move package {} as it's already being moved.".format(self.uuid))
 
+        # take note of previous status (to restore in case of error) 
+        previous_status = self.status
+
         self.status = Package.MOVING
         self.save()
 
         try:
             # Move to internal storage
             ss_internal = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
+            # create temp directory
+            temp_dir = tempfile.mkdtemp(prefix='movetmp', dir=ss_internal.full_path)
+            temp_dir_basename = os.path.basename(os.path.normpath(temp_dir))
 
             source_path = os.path.join(
                 self.current_location.relative_path,
@@ -348,13 +354,13 @@ class Package(models.Model):
             origin_space = self.current_location.space
             origin_space.move_to_storage_service(
                 source_path=source_path,
-                destination_path='move',
+                destination_path=temp_dir_basename,
                 destination_space=ss_internal.space)
             origin_space.post_move_to_storage_service()
 
             # Move to destination location
             source_path = os.path.join(
-                'move',
+                temp_dir_basename,
                 os.path.basename(self.current_path))
             destination_path = os.path.join(
                 destination_location.relative_path,
@@ -368,6 +374,9 @@ class Package(models.Model):
                 staging_path=source_path,
                 destination_path=destination_path,
                 package=self)
+
+            # delete temp directory
+            shutil.rmtree(temp_dir)
 
             # Update location
             self.current_location = destination_location
@@ -393,7 +402,7 @@ class Package(models.Model):
 
         except Exception:
             LOGGER.info('Attempt to move package %s to location %s failed', self.uuid, destination_location_uuid, exc_info=True)
-            self.status = Package.MOVE_FAILED
+            self.status = previous_status
             self.save()
 
     def recover_aip(self, origin_location, origin_path):
