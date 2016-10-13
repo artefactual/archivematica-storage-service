@@ -528,6 +528,9 @@ class Space(models.Model):
         """
         Returns all the files in a directory, including children.
         """
+        # HACK: do not count objects to improve UI responsiveness 
+        return '0+'
+
         total_files = 0
         for _, _, files in os.walk(path):
             total_files += len(files)
