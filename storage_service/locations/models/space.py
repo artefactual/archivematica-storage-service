@@ -724,6 +724,9 @@ def count_objects_in_directory(path):
     """
     Returns all the files in a directory, including children.
     """
+    # HACK: do not count objects to improve UI responsiveness
+    return '0+'
+
     total_files = 0
     for root, dirs, files in os.walk(path):
         total_files += len(files)
