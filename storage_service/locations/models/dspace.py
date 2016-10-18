@@ -201,7 +201,7 @@ class DSpace(models.Model):
 
         # This only handles compressed AIPs
         if not os.path.isfile(source_path):
-            raise NotImplementedError('Storing in DSpace does not support uncompressed AIPs')
+            raise NotImplementedError('Storing in DSpace does not support unzipped AIPs')
 
         self._get_sword_connection()
         # Create item by depositing AtoM doc
