@@ -14,6 +14,7 @@ LOGGER = logging.getLogger(__name__)
 deletion_request = Signal(providing_args=["uuid", "location", "url"])
 failed_fixity_check = Signal(providing_args=["uuid", "location", "report"])
 successful_fixity_check = Signal(providing_args=["uuid", "location", "report"])
+fixity_check_not_run = Signal(providing_args=["uuid", "location", "report"])
 
 
 def _notify_administrators(subject, message):
@@ -69,6 +70,13 @@ Full failure report (in JSON format):
 @receiver(successful_fixity_check, dispatch_uid="fixity_check")
 def report_successful_fixity_check(sender, **kwargs):
     _log_report(kwargs['uuid'], True)
+
+
+@receiver(fixity_check_not_run, dispatch_uid="fixity_check")
+def report_not_run_fixity_check(sender, **kwargs):
+    """Handle a fixity not run signal."""
+    report_data = json.loads(kwargs['report'])
+    _log_report(uuid=kwargs['uuid'], success=None, message=report_data['message'])
 
 
 # Create an API key for every user, for TastyPie

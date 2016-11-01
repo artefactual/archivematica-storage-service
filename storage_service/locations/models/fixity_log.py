@@ -14,7 +14,7 @@ class FixityLog(models.Model):
     """ Stores fixity check success/failure and error details """
 
     package = models.ForeignKey('Package', to_field='uuid')
-    success = models.BooleanField(default=False)
+    success = models.NullBooleanField(default=False)
     error_details = models.TextField(null=True)
     datetime_reported = models.DateTimeField(auto_now=True)
 

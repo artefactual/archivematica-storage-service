@@ -748,11 +748,15 @@ class PackageResource(ModelResource):
                 response["failures"]["files"]["untracked"].append(info)
 
         report = json.dumps(response)
-        if not success:
+        if success is False:
             signals.failed_fixity_check.send(sender=self,
                 uuid=bundle.obj.uuid, location=bundle.obj.full_path,
                 report=report)
-        else:
+        elif success is None:
+            signals.fixity_check_not_run.send(sender=self,
+                uuid=bundle.obj.uuid, location=bundle.obj.full_path,
+                report=report)
+        elif success is True:
             signals.successful_fixity_check.send(sender=self,
                 uuid=bundle.obj.uuid, location=bundle.obj.full_path,
                 report=report)
