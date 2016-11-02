@@ -30,7 +30,7 @@ See the [LICENSE](LICENSE) file for details.
 ## Contributing
 
 Thank you for your interest!
-For more details, please see the [Archivematica contributing guidelines](https://github.com/artefactual/archivematica/blob/qa/1.x/CONTRIBUTING.md).
+For more details, please see the [contributing guidelines](CONTRIBUTING.md)
 
 
 ## Related projects
