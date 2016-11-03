@@ -436,6 +436,11 @@ class Space(models.Model):
             source_norm = os.path.normpath(source)
             dest_norm = os.path.normpath(destination)
             try:
+                if not os.path.exists(source_norm):
+                    LOGGER.info('os.rename source %s does not exist', source_norm, self)
+                if not os.path.exists(dest_norm):
+                    LOGGER.info('os.rename destination %s does not exist', dest_norm, self)
+
                 os.rename(source_norm, dest_norm)
                 # Set permissions (rsync does with --chmod=ugo+rw)
                 subprocess.call(chmod_command)
