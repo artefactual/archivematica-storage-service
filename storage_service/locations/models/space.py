@@ -394,9 +394,9 @@ class Space(models.Model):
             dest_norm = os.path.normpath(destination)
             try:
                 if not os.path.exists(source_norm):
-                    LOGGER.info('os.rename source %s does not exist', source_norm, self)
+                    LOGGER.info('os.rename source %s does not exist in %s', source_norm, self)
                 if not os.path.exists(dest_norm):
-                    LOGGER.info('os.rename destination %s does not exist', dest_norm, self)
+                    LOGGER.info('os.rename destination %s does not exist in %s', dest_norm, self)
 
                 os.rename(source_norm, dest_norm)
                 return
