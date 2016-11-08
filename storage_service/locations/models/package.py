@@ -344,7 +344,7 @@ class Package(models.Model):
             # Move to internal storage
             ss_internal = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
             # create temp directory
-            temp_dir = tempfile.mkdtemp(prefix='movetmp', dir=ss_internal.full_path)
+            temp_dir = tempfile.mkdtemp(prefix='movetmp', dir=destination_location.space.staging_path)
             temp_dir_basename = os.path.basename(os.path.normpath(temp_dir))
 
             source_path = os.path.join(
@@ -355,7 +355,7 @@ class Package(models.Model):
             origin_space.move_to_storage_service(
                 source_path=source_path,
                 destination_path=temp_dir_basename,
-                destination_space=ss_internal.space)
+                destination_space=destination_location.space)
             origin_space.post_move_to_storage_service()
 
             # Move to destination location
