@@ -2,6 +2,7 @@
 from django import forms
 from django.contrib import auth
 from django.utils.translation import ugettext as _, ugettext_lazy as _l
+from django.core.exceptions import ValidationError
 
 from common import utils
 
@@ -210,3 +211,9 @@ class UserChangeForm(auth.forms.UserChangeForm):
     class Meta:
         model = auth.get_user_model()
         fields = ('username', 'first_name', 'last_name', 'email', 'is_superuser')
+
+
+class SetPasswordForm(auth.forms.SetPasswordForm):
+    def is_empty(self):
+        """ Has the password form been filled in?"""
+        return not self.data['new_password1'] and not self.data['new_password2']
