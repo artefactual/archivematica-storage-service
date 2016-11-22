@@ -10,6 +10,7 @@ from django.http import HttpResponse
 from django.forms.models import model_to_dict
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template import RequestContext
+from django.utils.translation import ugettext as _
 from django.views.decorators.csrf import csrf_exempt
 
 from common import decorators
@@ -26,12 +27,12 @@ LOGGER = logging.getLogger(__name__)
 def get_delete_context_dict(request, model, object_uuid, default_cancel='/'):
     """ Returns a dict of the values needed by the confirm delete view. """
     obj = get_object_or_404(model, uuid=object_uuid)
-    header = "Confirm deleting {}".format(model._meta.verbose_name)
+    header = _("Confirm deleting {}").format(model._meta.verbose_name)
     dependent_objects = utils.dependent_objects(obj)
     if dependent_objects:
-        prompt = "{} cannot be deleted until the following items are also deleted or unassociated.".format(obj)
+        prompt = _("{} cannot be deleted until the following items are also deleted or unassociated.").format(obj)
     else:
-        prompt = "Are you sure you want to delete {}?".format(obj)
+        prompt = _("Are you sure you want to delete {}?").format(obj)
     cancel_url = request.GET.get('next', default_cancel)
     return {
         'header': header,
@@ -71,7 +72,7 @@ def aip_recover_request(request):
                 recover_location, os.path.basename(aip.current_path))
         except StorageException:
             recover_path = os.path.join(recover_location.full_path(), os.path.basename(aip.full_path()))
-            message = 'error accessing restore files at {}'.format(recover_path)
+            message = _('error accessing restore files at {}').format(recover_path)
             success = False
 
         return (success, message)
@@ -79,9 +80,9 @@ def aip_recover_request(request):
     config = PackageRequestHandlerConfig()
     config.event_type = Event.RECOVER
     config.approved_status = Package.UPLOADED
-    config.reject_message = 'AIP restore rejected.'
-    config.execution_success_message = 'AIP restored.'
-    config.execution_fail_message = 'AIP restore failed'
+    config.reject_message = _('AIP restore rejected.')
+    config.execution_success_message = _('AIP restored.')
+    config.execution_fail_message =_('AIP restore failed')
     config.execution_logic = execution_logic
 
     return _handle_package_request(request, config, 'aip_recover_request')
@@ -93,9 +94,9 @@ def package_delete_request(request):
     config = PackageRequestHandlerConfig()
     config.event_type = Event.DELETE
     config.approved_status = Package.DELETED
-    config.reject_message = 'Request rejected, package still stored.'
-    config.execution_success_message = 'Package deleted successfully.'
-    config.execution_fail_message = 'Package was not deleted from disk correctly'
+    config.reject_message = _('Request rejected, package still stored.')
+    config.execution_success_message = _('Package deleted successfully.')
+    config.execution_fail_message = _('Package was not deleted from disk correctly')
     config.execution_logic = execution_logic
 
     return _handle_package_request(request, config, 'package_delete_request')
@@ -128,14 +129,18 @@ def _handle_package_request(request, config, view_name):
                     event.package.status = config.approved_status
                     success, err_msg = config.execution_logic(event.package)
                     if not success:
-                        error_message = "{}: {}. Please contact an administrator or see logs for details.".format(
-                            config.execution_fail_message, err_msg)
+                        error_message = "{}: {}. {}".format(
+                            config.execution_fail_message, err_msg,
+                            _("Please contact an administrator or see logs for details."))
                         notification_message = _handle_package_request_remote_result_notification(config, event, False)
                         if notification_message:
                             error_message += ' ' + notification_message
                         messages.error(request, error_message)
                     else:
-                        approval_message = "Request approved. {}".format(config.execution_success_message)
+                        approval_message = "{} {}".format(
+                            _("Request approved."),
+                            config.execution_success_message
+                        )
                         notification_message = _handle_package_request_remote_result_notification(config, event, True)
                         if notification_message:
                             approval_message += ' ' + notification_message
@@ -206,15 +211,17 @@ def package_update_status(request, uuid):
     except Exception:
         LOGGER.exception('update status')
         new_status = None
-        error = 'Error getting status for package {}'.format(uuid)
+        error = _('Error getting status for package {}').format(uuid)
 
     if new_status is not None:
         if old_status != new_status:
             messages.info(request,
-                "Status for package {} is now '{}'.".format(uuid, package.get_status_display()))
+                _("Status for package {package} is now '{status}'.").format(
+                    package=uuid,
+                    status=package.get_status_display()))
         else:
             messages.info(request,
-                'Status for package {} has not changed.'.format(uuid))
+                _('Status for package {} has not changed.').format(uuid))
 
     if error:
         messages.warning(request, error)
@@ -227,7 +234,7 @@ def aip_reingest(request, package_uuid):
     try:
         package = Package.objects.get(uuid=package_uuid)
     except Package.DoesNotExist:
-        messages.warning(request, 'Package with UUID {} does not exist.'.format(package_uuid))
+        messages.warning(request, _('Package with UUID {} does not exist.').format(package_uuid))
         return redirect(next_url)
     form = forms.ReingestForm(request.POST or None)
     if form.is_valid():
@@ -236,7 +243,7 @@ def aip_reingest(request, package_uuid):
         processing_config = form.cleaned_data.get('processing_config', 'default')
         response = package.start_reingest(pipeline, reingest_type, processing_config)
         error = response.get('error', True)
-        message = response.get('message', 'An unknown error occurred')
+        message = response.get('message', _('An unknown error occurred'))
         if not error:
             if message:
                 messages.success(request, message)
@@ -251,10 +258,10 @@ def aip_reingest(request, package_uuid):
 def location_edit(request, space_uuid, location_uuid=None):
     space = get_object_or_404(Space, uuid=space_uuid)
     if location_uuid:
-        action = "Edit"
+        action = _("Edit")
         location = get_object_or_404(Location, uuid=location_uuid)
     else:
-        action = "Create"
+        action = _("Create")
         location = None
     form = forms.LocationForm(request.POST or None, space_protocol=space.access_protocol, instance=location)
     if form.is_valid():
@@ -273,7 +280,7 @@ def location_edit(request, space_uuid, location_uuid=None):
         # SQL generated by pipeline__in is garbage in Django 1.5.
         LOGGER.debug("LocationPipeline to delete: %s", to_delete)
         to_delete.delete()
-        messages.success(request, "Location saved.")
+        messages.success(request, _("Location saved."))
         # TODO make this return to the originating page
         # http://stackoverflow.com/questions/4203417/django-how-do-i-redirect-to-page-where-form-originated
         return redirect('location_detail', location.uuid)
@@ -287,7 +294,7 @@ def location_detail(request, location_uuid):
     try:
         location = Location.objects.get(uuid=location_uuid)
     except Location.DoesNotExist:
-        messages.warning(request, "Location {} does not exist.".format(location_uuid))
+        messages.warning(request, _("Location {} does not exist.").format(location_uuid))
         return redirect('location_list')
     pipelines = Pipeline.objects.filter(location=location)
     packages = Package.objects.filter(current_location=location)
@@ -317,11 +324,11 @@ def location_delete(request, location_uuid):
 
 def pipeline_edit(request, uuid=None):
     if uuid:
-        action = "Edit"
+        action = _("Edit")
         pipeline = get_object_or_404(Pipeline, uuid=uuid)
         initial = {}
     else:
-        action = "Create"
+        action = _("Create")
         pipeline = None
         initial = {'enabled': not utils.get_setting('pipelines_disabled')}
 
@@ -330,7 +337,7 @@ def pipeline_edit(request, uuid=None):
         if form.is_valid():
             pipeline = form.save()
             pipeline.save(form.cleaned_data['create_default_locations'])
-            messages.success(request, "Pipeline saved.")
+            messages.success(request, _("Pipeline saved."))
             return redirect('pipeline_list')
     else:
         form = forms.PipelineForm(instance=pipeline, initial=initial)
@@ -344,7 +351,7 @@ def pipeline_detail(request, uuid):
     try:
         pipeline = Pipeline.objects.get(uuid=uuid)
     except Pipeline.DoesNotExist:
-        messages.warning(request, "Pipeline {} does not exist.".format(uuid))
+        messages.warning(request, _("Pipeline {} does not exist.").format(uuid))
         return redirect('pipeline_list')
     locations = Location.objects.filter(pipeline=pipeline)
     return render(request, 'locations/pipeline_detail.html', locals())
@@ -390,7 +397,7 @@ def space_detail(request, uuid):
     try:
         space = Space.objects.get(uuid=uuid)
     except Space.DoesNotExist:
-        messages.warning(request, "Space {} does not exist.".format(uuid))
+        messages.warning(request, _("Space {} does not exist.").format(uuid))
         return redirect('space_list')
     child = space.get_child_space()
 
@@ -418,7 +425,7 @@ def space_create(request):
                 protocol_obj = protocol_form.save(commit=False)
                 protocol_obj.space = space
                 protocol_obj.save()
-                messages.success(request, "Space saved.")
+                messages.success(request, _("Space saved."))
                 return redirect('space_detail', space.uuid)
         else:
             # We need to return the protocol_form so that protocol_form errors
@@ -442,7 +449,7 @@ def space_edit(request, uuid):
     if space_form.is_valid() and protocol_form.is_valid():
         space_form.save()
         protocol_form.save()
-        messages.success(request, "Space saved.")
+        messages.success(request, _("Space saved."))
         return redirect('space_detail', space.uuid)
     return render(request, 'locations/space_edit.html', locals())
 
@@ -481,7 +488,7 @@ def callback_detail(request, uuid):
     try:
         callback = Callback.objects.get(uuid=uuid)
     except Callback.DoesNotExist:
-        messages.warning(request, "Callback {} does not exist.".format(uuid))
+        messages.warning(request, _("Callback {} does not exist.").format(uuid))
         return redirect('callback_list')
     return render(request, 'locations/callback_detail.html', locals())
 
@@ -498,16 +505,16 @@ def callback_list(request):
 
 def callback_edit(request, uuid=None):
     if uuid:
-        action = "Edit"
+        action = _("Edit")
         callback = get_object_or_404(Callback, uuid=uuid)
     else:
-        action = "Create"
+        action = _("Create")
         callback = None
 
     form = forms.CallbackForm(request.POST or None, instance=callback)
     if form.is_valid():
         callback = form.save()
-        messages.success(request, "Callback saved.")
+        messages.success(request, _("Callback saved."))
         return redirect('callback_detail', callback.uuid)
     return render(request, 'locations/callback_form.html', locals())
 
