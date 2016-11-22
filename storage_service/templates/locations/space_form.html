@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block page_title %}Create Spaces{% endblock %}
+{% block page_title %}{% trans "Create Space" %}{% endblock %}
 
 {% block content %}
 
@@ -8,7 +9,7 @@
     <form action="{% url 'space_create' %}" method="post">{% csrf_token %}
         {{ space_form.as_p }}
         <div id="protocol_form">{{ protocol_form.as_p|default:"" }}</div>
-        <input type="submit" value="Create Space" class='btn btn-primary' />
+        <input type="submit" value="{% trans "Create Space" %}" class='btn btn-primary' />
     </form>
 </div>
 {% endblock %}

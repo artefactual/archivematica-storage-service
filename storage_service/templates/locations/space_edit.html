@@ -1,15 +1,16 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block page_title %}Edit Space {{space}}{% endblock %}
+{% block page_title %}{% blocktrans %}Edit Space {{space}}{% endblocktrans %}{% endblock %}
 
 {% block content %}
 
 <div class='space'>
     <form action="{% url 'space_edit' space.uuid %}" method="post">{% csrf_token %}
-        <p><label>Access Protocol:</label> <select disabled="disabled"><option value="{{ space.access_protocol }}" selected="selected">{{ space.get_access_protocol_display }}</option></select></p>
+        <p><label>{% trans "Access Protocol" %}:</label> <select disabled="disabled"><option value="{{ space.access_protocol }}" selected="selected">{{ space.get_access_protocol_display }}</option></select></p>
         {{ space_form.as_p }}
         <div id="protocol_form">{{ protocol_form.as_p }}</div>
-        <input type="submit" value="Edit Space" class='btn btn-primary' />
+        <input type="submit" value="{% trans "Edit Space" %}" class='btn btn-primary' />
     </form>
 </div>
 {% endblock %}

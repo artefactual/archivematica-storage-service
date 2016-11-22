@@ -4,6 +4,7 @@ from django import forms
 import django.utils
 import django.core.exceptions
 from django.db.models import Count
+from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 from locations import models
 
@@ -57,8 +58,8 @@ class DisableableSelectWidget(forms.Select):
 class PipelineForm(forms.ModelForm):
     create_default_locations = forms.BooleanField(required=False,
         initial=True,
-        label="Default Locations:",
-        help_text="Enabled if default locations should be created for this pipeline")
+        label=_l("Default Locations:"),
+        help_text=_l("Enabled if default locations should be created for this pipeline"))
 
     class Meta:
         model = models.Pipeline
@@ -101,7 +102,8 @@ class DataverseForm(forms.ModelForm):
         # Add a warning to the Dataverse-specific section of the form
         # FIXME this may not be the best way to add Space-specific warnings
         content = super(DataverseForm, self).as_p()
-        content += '\n<div class="alert">Integration with Dataverse is currently a beta feature</div>'
+        content += '\n<div class="alert">{}</div>'.format(
+            _('Integration with Dataverse is currently a beta feature'))
         return content
 
 
@@ -204,14 +206,14 @@ class LocationForm(forms.ModelForm):
                 ).annotate(total=Count('location'))  # Count associated locations
             pipelines = [d['pipeline'] for d in existing_recovery_rel]
             if pipelines:
-                raise forms.ValidationError('Pipeline(s) {} already have an AIP recovery location.'.format(', '.join(pipelines)))
+                raise forms.ValidationError(_('Pipeline(s) %(pipelines)s already have an AIP recovery location.') % {'pipelines': ', '.join(pipelines)})
         return cleaned_data
 
     def clean_purpose(self):
         # Server-side enforcement of what Location purposes are allowed
         data = self.cleaned_data['purpose']
         if data not in self.whitelist:
-            raise django.core.exceptions.ValidationError('Invalid purpose')
+            raise django.core.exceptions.ValidationError(_('Invalid purpose'))
         return data
 
 
@@ -233,13 +235,14 @@ class CallbackForm(forms.ModelForm):
 
 class ReingestForm(forms.Form):
     REINGEST_CHOICES = (
-        (models.Package.METADATA_ONLY, 'Metadata re-ingest'),
-        (models.Package.OBJECTS, 'Partial re-ingest'),
-        (models.Package.FULL, 'Full re-ingest'),
+        (models.Package.METADATA_ONLY, _l('Metadata re-ingest')),
+        (models.Package.OBJECTS, _l('Partial re-ingest')),
+        (models.Package.FULL, _l('Full re-ingest')),
     )
 
-    pipeline = forms.ModelChoiceField(queryset=models.Pipeline.active.all())
-    reingest_type = forms.ChoiceField(choices=REINGEST_CHOICES, widget=forms.RadioSelect)
+    pipeline = forms.ModelChoiceField(label=_l("Pipeline"), queryset=models.Pipeline.active.all())
+    reingest_type = forms.ChoiceField(label=_l("Reingest type"), choices=REINGEST_CHOICES, widget=forms.RadioSelect)
     processing_config = forms.CharField(required=False, initial='default',
-        help_text='Optional: The processing config is only used with full re-ingest',
+        label=_l("Processing config"),
+        help_text=_l('Optional: The processing config is only used with full re-ingest'),
         widget=forms.TextInput(attrs={'placeholder': 'default'}))

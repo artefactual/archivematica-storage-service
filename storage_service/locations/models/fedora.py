@@ -5,6 +5,7 @@ import os
 
 # Core Django, alphabetical
 from django.db import models
+from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 from django_extensions.db.fields import UUIDField
@@ -19,14 +20,17 @@ class Fedora(models.Model):
 
     # Authentication related attributes
     fedora_user = models.CharField(max_length=64,
-        help_text="Fedora user name (for SWORD functionality)")
+        verbose_name=_l("Fedora user"),
+        help_text=_l("Fedora user name (for SWORD functionality)"))
     fedora_password = models.CharField(max_length=256,
-        help_text="Fedora password (for SWORD functionality)")
+        verbose_name=_l("Fedora password"),
+        help_text=_l("Fedora password (for SWORD functionality)"))
     fedora_name = models.CharField(max_length=256,
-        help_text="Name or IP of the remote Fedora machine.")
+        verbose_name=_l("Fedora name"),
+        help_text=_l("Name or IP of the remote Fedora machine."))
 
     class Meta:
-        verbose_name = "FEDORA"
+        verbose_name = _l("FEDORA")
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [
@@ -48,7 +52,7 @@ class Fedora(models.Model):
 # For SWORD asynchronous downloading support
 class PackageDownloadTask(models.Model):
     uuid = UUIDField(editable=False, unique=True, version=4,
-        help_text="Unique identifier")
+        help_text=_l("Unique identifier"))
     package = models.ForeignKey('Package', to_field='uuid')
 
     downloads_attempted = models.IntegerField(default=0)
@@ -56,12 +60,11 @@ class PackageDownloadTask(models.Model):
     download_completion_time = models.DateTimeField(default=None, null=True, blank=True)
 
     class Meta:
-        verbose_name = "Package Download Task"
+        verbose_name = _l("Package Download Task")
         app_label = 'locations'
 
     def __unicode__(self):
-        return u'PackageDownloadTask ID: {uuid} for {package}'.format(
-            uuid=self.uuid, package=self.package)
+        return _(u'PackageDownloadTask ID: %(uuid)s for %(package)s') % {'uuid': self.uuid, 'package': self.package}
 
     COMPLETE = 'complete'
     INCOMPLETE = 'incomplete'
@@ -97,26 +100,23 @@ class PackageDownloadTask(models.Model):
 
 class PackageDownloadTaskFile(models.Model):
     uuid = UUIDField(editable=False, unique=True, version=4,
-        help_text="Unique identifier")
+        help_text=_l("Unique identifier"))
     task = models.ForeignKey('PackageDownloadTask', to_field='uuid', related_name='download_file_set')
 
     filename = models.CharField(max_length=256)
     url = models.TextField()
 
     completed = models.BooleanField(default=False,
-        help_text="True if file downloaded successfully.")
+        help_text=_l("True if file downloaded successfully."))
     failed = models.BooleanField(default=False,
-        help_text="True if file failed to download.")
+        help_text=_l("True if file failed to download."))
 
     class Meta:
-        verbose_name = "Package Download Task File"
+        verbose_name = _l("Package Download Task File")
         app_label = 'locations'
 
     def __unicode__(self):
-        return u'Download {filename} from {url} ({status})'.format(
-            filename=self.filename,
-            url=self.url,
-            status=self.downloading_status())
+        return _(u'Download %(filename)s from %(url)s (%(status)s') % {'filename': self.filename, 'url': self.url, 'status': self.downloading_status()}
 
     def downloading_status(self):
         if self.completed:

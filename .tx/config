@@ -1,0 +1,13 @@
+[main]
+host = https://www.transifex.com
+type = PO
+
+[archivematica-storage-service.storage-service-misc]
+file_filter = storage_service/locale/<lang>/LC_MESSAGES/django.po
+source_file = storage_service/locale/en/LC_MESSAGES/django.po
+source_lang = en
+
+[archivematica-storage-service.storage-service-javascript]
+file_filter = storage_service/locale/<lang>/LC_MESSAGES/djangojs.po
+source_file = storage_service/locale/en/LC_MESSAGES/djangojs.po
+source_lang = en

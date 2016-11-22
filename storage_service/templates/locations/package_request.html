@@ -1,6 +1,9 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block page_title %}Package {{ config.event_type | title }} Requests{% endblock %}
+{% block page_title %}
+{% blocktrans with request_type=config.event_type|title %}Package {{ request_type }} Requests{% endblocktrans %}
+{% endblock %}
 
 {% block content %}
 
@@ -8,13 +11,13 @@
   <table class="datatable">
     <thead>
       <tr>
-        <th>File</th>
-        <th>Type</th>
-        <th>Reason</th>
-        <th>Pipeline</th>
-        <th>User</th>
-        <th>Submitted</th>
-        <th>Approve/Reject</th>
+        <th>{% trans "File" %}</th>
+        <th>{% trans "Type" %}</th>
+        <th>{% trans "Reason" %}</th>
+        <th>{% trans "Pipeline" %}</th>
+        <th>{% trans "User" %}</th>
+        <th>{% trans "Submitted" %}</th>
+        <th>{% trans "Approve/Reject" %}</th>
       </tr>
     </thead>
     <tbody>
@@ -24,14 +27,17 @@
         <td>{{ req.package.get_package_type_display }}</td>
         <td>{{ req.event_reason }}</td>
         <td>{{ req.pipeline }}</td>
-        <td>{{ req.user_email }} (ID: {{ req.user_id}})</td>
+        <td>
+          {% blocktrans with email=req.user_email user_id=req.user_id %}{{ email }} (ID: {{ user_id }}){% endblocktrans %}
+        </td>
         <td>{{ req.status_time }}</td>
         <td>
           <form action="{% url view_name %}" method="post">
             {% csrf_token %}
             {{ req.form.as_p }}
-            <input type="submit" name="approve" value="Approve ({{ config.event_type | title }} package)" class='btn' />
-            <input type="submit" name="reject" value="Reject (No change to package)" class='btn btn-primary' />
+            <input type="submit" name="approve" class='btn'
+              value="{% blocktrans with action=config.event_type|title %}Approve ({{ action }} package){% endblocktrans %}" />
+              <input type="submit" name="reject" value="{% trans "Reject (No change to package)" %}" class='btn btn-primary' />
           </form>
         </td>
       </tr>
@@ -39,23 +45,23 @@
     </tbody>
   </table>
 {% else %}
-  <p>No requests pending.</p>
+  <p>{% trans "No requests pending." %}</p>
 {% endif %}
 
 {% if closed_requests %}
-<h2>Closed Requests</h2>
+<h2>{% trans "Closed Requests" %}</h2>
   <table class="datatable">
     <thead>
       <tr>
-        <th>File</th>
-        <th>Type</th>
-        <th>Reason</th>
-        <th>Pipeline</th>
-        <th>User</th>
-        <th>Decision</th>
-        <th>Reason</th>
-        <th>Storage Admin</th>
-        <th>Updated</th>
+        <th>{% trans "File" %}</th>
+        <th>{% trans "Type" %}</th>
+        <th>{% trans "Reason" %}</th>
+        <th>{% trans "Pipeline" %}</th>
+        <th>{% trans "User" %}</th>
+        <th>{% trans "Decision" %}</th>
+        <th>{% trans "Reason" %}</th>
+        <th>{% trans "Storage Admin" %}</th>
+        <th>{% trans "Updated" %}</th>
       </tr>
     </thead>
     <tbody>
@@ -65,7 +71,9 @@
         <td>{{ req.package.get_package_type_display }}</td>
         <td>{{ req.event_reason }}</td>
         <td>{{ req.pipeline }}</td>
-        <td>{{ req.user_email }} (ID: {{ req.user_id}})</td>
+        <td>
+          {% blocktrans with email=req.user_email user_id=req.user_id %}{{ email }} (ID: {{ user_id }}){% endblocktrans %}
+        </td>
         <td>{{ req.get_status_display }}</td>
         <td>{{ req.status_reason }}</td>
         <td>{{ req.admin_id }}</td>

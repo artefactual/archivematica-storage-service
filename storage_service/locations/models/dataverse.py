@@ -6,6 +6,7 @@ import os
 
 # Core Django, alphabetical
 from django.db import models
+from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 import requests
@@ -21,19 +22,24 @@ from .location import Location
 class Dataverse(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
     host = models.CharField(max_length=256,
-        help_text='Hostname of the Dataverse instance. Eg. apitest.dataverse.org')
+        verbose_name=_l('Host'),
+        help_text=_l('Hostname of the Dataverse instance. Eg. apitest.dataverse.org'))
     api_key = models.CharField(max_length=50,
-        help_text='API key for Dataverse instance. Eg. b84d6b87-7b1e-4a30-a374-87191dbbbe2d')
+        verbose_name=_l('API key'),
+        help_text=_l('API key for Dataverse instance. Eg. b84d6b87-7b1e-4a30-a374-87191dbbbe2d'))
     agent_name = models.CharField(max_length=50,
-        help_text='Agent name for premis:agentName in Archivematica')
+        verbose_name=_l('Agent name'),
+        help_text=_l('Agent name for premis:agentName in Archivematica'))
     agent_type = models.CharField(max_length=50,
-        help_text='Agent type for premis:agentType in Archivematica')
+        verbose_name=_l('Agent type'),
+        help_text=_l('Agent type for premis:agentType in Archivematica'))
     agent_identifier = models.CharField(max_length=256,
-        help_text='URI agent identifier for premis:agentIdentifierValue in Archivematica')
+        verbose_name=_l('Agent identifier'),
+        help_text=_l('URI agent identifier for premis:agentIdentifierValue in Archivematica'))
     # FIXME disallow string in space.path
 
     class Meta:
-        verbose_name = "Dataverse"
+        verbose_name = _l("Dataverse")
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [
@@ -70,12 +76,16 @@ class Dataverse(models.Model):
             LOGGER.debug('Response: %s', response)
             if response.status_code != 200:
                 LOGGER.warning('%s: Response: %s', response, response.text)
-                raise StorageException('Unable to fetch datasets from %s with query %s' % (url, path))
+                raise StorageException(
+                    _('Unable to fetch datasets from %(url)s with query %(path)s') %
+                    {'url': url, 'path': path})
             try:
                 data = response.json()['data']
             except json.JSONDecodeError:
                 LOGGER.error('Could not parse JSON from response to %s', url)
-                raise StorageException('Unable parse JSON from response to %s with query %s' % (url, path))
+                raise StorageException(
+                    _('Unable parse JSON from response to %(url)s with query %(path)s') %
+                    {'url': url, 'path': path})
 
             entries += [str(x['entity_id']) for x in data['items']]
 
@@ -105,7 +115,7 @@ class Dataverse(models.Model):
         src_path = ''.join(c for c in src_path if c.isdigit())
         # Verify src_path has to be a number
         if not src_path.isdigit():
-            raise StorageException('Invalid value for src_path: %s. Must be a numberic entity_id' % src_path)
+            raise StorageException(_('Invalid value for src_path: %(value)s. Must be a numberic entity_id') % {'value': src_path})
         # Fetch dataset info
         url = 'https://' + self.host + '/api/datasets/' + src_path
         params = {
@@ -116,7 +126,9 @@ class Dataverse(models.Model):
         LOGGER.debug('Response: %s', response)
         if response.status_code != 200:
             LOGGER.warning('%s: Response: %s', response, response.text)
-            raise StorageException('Unable to fetch dataset %s from %s' % (src_path, url))
+            raise StorageException(
+                _('Unable to fetch dataset %(path)s from %(url)s') %
+                {'path': src_path, 'url': url})
         try:
             dataset = response.json()['data']
         except json.JSONDecodeError:

@@ -13,7 +13,7 @@ import tempfile
 
 # Core Django, alphabetical
 from django.db import models
-from django.utils import timezone
+from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 import bagit
@@ -39,15 +39,15 @@ LOGGER = logging.getLogger(__name__)
 class Package(models.Model):
     """ A package stored in a specific location. """
     uuid = UUIDField(editable=False, unique=True, version=4,
-        help_text="Unique identifier")
+        help_text=_l("Unique identifier"))
     description = models.CharField(max_length=256, default=None,
-        null=True, blank=True, help_text="Human-readable description.")
+        null=True, blank=True, help_text=_l("Human-readable description."))
     origin_pipeline = models.ForeignKey('Pipeline', to_field='uuid', null=True, blank=True)
     current_location = models.ForeignKey(Location, to_field='uuid')
     current_path = models.TextField()
     pointer_file_location = models.ForeignKey(Location, to_field='uuid', related_name='+', null=True, blank=True)
     pointer_file_path = models.TextField(null=True, blank=True)
-    size = models.IntegerField(default=0, help_text='Size in bytes of the package')
+    size = models.IntegerField(default=0, help_text=_l('Size in bytes of the package'))
 
     AIP = "AIP"
     AIC = "AIC"
@@ -61,9 +61,9 @@ class Package(models.Model):
         (AIC, 'AIC'),
         (SIP, 'SIP'),
         (DIP, 'DIP'),
-        (TRANSFER, 'Transfer'),
-        (FILE, 'Single File'),
-        (DEPOSIT, 'FEDORA Deposit')
+        (TRANSFER, _l('Transfer')),
+        (FILE, _l('Single File')),
+        (DEPOSIT, _l('FEDORA Deposit'))
     )
     package_type = models.CharField(max_length=8, choices=PACKAGE_TYPE_CHOICES)
     related_packages = models.ManyToManyField('self', related_name='related')
@@ -78,22 +78,22 @@ class Package(models.Model):
     FAIL = 'FAIL'
     FINALIZED = 'FINALIZE'
     STATUS_CHOICES = (
-        (PENDING, "Upload Pending"),  # Still on Archivematica
-        (STAGING, "Staged on Storage Service"),  # In Storage Service staging dir
-        (UPLOADED, "Uploaded"),  # In final storage location
-        (VERIFIED, "Verified"),  # Verified to be in final storage location
-        (FAIL, "Failed"),  # Error occured - may or may not be at final location
-        (DEL_REQ, "Delete requested"),
-        (DELETED, "Deleted"),
-        (FINALIZED, "Deposit Finalized")
+        (PENDING, _l("Upload Pending")),  # Still on Archivematica
+        (STAGING, _l("Staged on Storage Service")),  # In Storage Service staging dir
+        (UPLOADED, _l("Uploaded")),  # In final storage location
+        (VERIFIED, _l("Verified")),  # Verified to be in final storage location
+        (FAIL, _l("Failed")),  # Error occured - may or may not be at final location
+        (DEL_REQ, _l("Delete requested")),
+        (DELETED, _l("Deleted")),
+        (FINALIZED, _l("Deposit Finalized")),
     )
     status = models.CharField(max_length=8, choices=STATUS_CHOICES,
         default=FAIL,
-        help_text="Status of the package in the storage service.")
+        help_text=_l("Status of the package in the storage service."))
     # NOTE Do not put anything important here because you cannot easily query
     # JSONFields! Add a new column if you need to query it
     misc_attributes = jsonfield.JSONField(blank=True, null=True, default={},
-        help_text='For storing flexible, often Space-specific, attributes')
+        help_text=_l('For storing flexible, often Space-specific, attributes'))
 
     # Temporary attributes to track path on locally accessible filesystem
     local_path = None
@@ -111,7 +111,7 @@ class Package(models.Model):
     REINGEST_CHOICES = (METADATA_ONLY, OBJECTS, FULL)
 
     class Meta:
-        verbose_name = "Package"
+        verbose_name = _l("Package")
         app_label = 'locations'
 
     def __unicode__(self):
@@ -151,9 +151,10 @@ class Package(models.Model):
             return True
         else:
             if not os.path.exists(full_path):
-                message = "Package {} (located at {}) does not exist".format(self.uuid, full_path)
+                message = _('Package %(uuid)s (located at %(path)s) does not exist') % {'uuid': self.uuid, 'path': full_path}
+
             else:
-                message = "{} is neither a file nor a directory".format(full_path)
+                message = _('%(path)s is neither a file nor a directory') % {'path': full_path}
             raise StorageException(message)
 
     @property
@@ -176,7 +177,7 @@ class Package(models.Model):
         full_path = self.fetch_local_path()
         if lockss_au_number is None:
             if not self.is_compressed:
-                raise StorageException("Cannot return a download path for an uncompressed package")
+                raise StorageException(_("Cannot return a download path for an uncompressed package"))
             path = full_path
         elif self.current_location.space.access_protocol == Space.LOM:
             # Only LOCKSS breaks files into AUs
@@ -259,7 +260,7 @@ class Package(models.Model):
         """
         full_path = self.get_local_path()
         if full_path is None:
-            raise NotImplementedError("This method currently only retrieves base directories for locally-available AIPs.")
+            raise NotImplementedError(_("This method currently only retrieves base directories for locally-available AIPs."))
 
         if self.is_compressed:
             # Use lsar's JSON output to determine the directories in a
@@ -285,19 +286,10 @@ class Package(models.Model):
         # Check if enough space on the space and location
         # All sizes expected to be in bytes
         if dest_space.size is not None and dest_space.used + self.size > dest_space.size:
-            raise StorageException(
-                "Not enough space for AIP on storage device {space}; Used: {used}; Size: {size}; AIP size: {aip_size}".format(
-                    space=dest_space, used=dest_space.used, size=dest_space.size,
-                    aip_size=self.size))
+            raise StorageException(_('Not enough space for AIP on storage device %(space)s; Used: %(used)s; Size: %(size)s; AIP size: %(aip_size)s') % {'space': dest_space, 'used': dest_space.used, 'size': dest_space.size, 'aip_size': self.size})
         if (dest_location.quota is not None and
                 dest_location.used + self.size > dest_location.quota):
-            raise StorageException(
-                "AIP too big for quota on {location}; Used: {used}; Quota: {quota}; AIP size: {aip_size}".format(
-                    location=dest_location,
-                    used=dest_location.used,
-                    quota=dest_location.quota,
-                    aip_size=self.size)
-            )
+            raise StorageException(_('AIP too big for quota on %(location)s; Used: %(used)s; Quota: %(quota)s; AIP size: %(aip_size)s') % {'location': dest_location, 'used': dest_location.used, 'quota': dest_location.quota, 'aip_size': self.size})
 
     def _update_quotas(self, space, location):
         """
@@ -502,7 +494,7 @@ class Package(models.Model):
         try:
             basename = self.get_base_directory()
         except subprocess.CalledProcessError:
-            raise StorageException('Error determining basename during extraction')
+            raise StorageException(_('Error determining basename during extraction'))
 
         if relative_path:
             output_path = os.path.join(extract_path, relative_path)
@@ -538,7 +530,7 @@ class Package(models.Model):
             rc = subprocess.call(command)
             LOGGER.debug('Extract file RC: %s', rc)
             if rc:
-                raise StorageException('Extraction error')
+                raise StorageException(_('Extraction error'))
         else:
             LOGGER.info('Copying AIP from: %s to %s', full_path, output_path)
             shutil.copytree(full_path, output_path)
@@ -567,7 +559,7 @@ class Package(models.Model):
             ss_internal = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
             extract_path = tempfile.mkdtemp(dir=ss_internal.full_path)
         if algorithm not in utils.COMPRESSION_ALGORITHMS:
-            raise ValueError('Algorithm %s not in %s' % algorithm, utils.COMPRESSION_ALGORITHMS)
+            raise ValueError(_('Algorithm %(algorithm)s not in %(algorithms)s') % {'algorithm': algorithm, 'algorithms': utils.COMPRESSION_ALGORITHMS})
 
         full_path = self.fetch_local_path()
 
@@ -608,7 +600,7 @@ class Package(models.Model):
                 full_path,  # Source
             ]
         else:
-            raise NotImplementedError('Algorithm %s not implemented' % algorithm)
+            raise NotImplementedError(_('Algorithm %(algorithm)s not implemented') % {'algorithm': algorithm})
 
         LOGGER.info('Compressing package with: %s to %s', command, compressed_filename)
         rc = subprocess.call(command)
@@ -649,7 +641,7 @@ class Package(models.Model):
 
         mets_path = os.path.join(prefix, *relative_path)
         if not os.path.isfile(mets_path):
-            raise StorageException("No METS found at location: {}".format(mets_path))
+            raise StorageException(_('No METS found at location: %(path)s') % {'path': mets_path})
 
         doc = etree.parse(mets_path)
 
@@ -657,30 +649,30 @@ class Package(models.Model):
                       'p': utils.NSMAP['premis']}
         mets = doc.xpath('/m:mets', namespaces=namespaces)
         if not mets:
-            raise StorageException("<mets> element not found in METS file!")
+            raise StorageException(_("<mets> element not found in METS file!"))
         else:
             mets = mets[0]
 
         try:
             transfer_uuid = mets.attrib['OBJID']
         except KeyError:
-            raise StorageException("<mets> element did not have an OBJID attribute!")
+            raise StorageException(_("<mets> element did not have an OBJID attribute!"))
 
         header = doc.find('m:metsHdr', namespaces=namespaces)
         if header is None:
-            raise StorageException("<metsHdr> element not found in METS file!")
+            raise StorageException(_("<metsHdr> element not found in METS file!"))
 
         try:
             creation_date = header.attrib['CREATEDATE']
         except KeyError:
-            raise StorageException("<metsHdr> element did not have a CREATEDATE attribute!")
+            raise StorageException(_("<metsHdr> element did not have a CREATEDATE attribute!"))
 
         accession_id = header.findtext('./m:altRecordID[@TYPE="Accession number"]', namespaces=namespaces) or ''
 
         agent = header.xpath('./m:agent[@ROLE="CREATOR"][@TYPE="OTHER"][@OTHERTYPE="SOFTWARE"]/m:note[.="Archivematica dashboard UUID"]/../m:name',
                              namespaces=namespaces)
         if not agent:
-            raise StorageException("No <agent> element found!")
+            raise StorageException(_("No <agent> element found!"))
         dashboard_uuid = agent[0].text
 
         files = mets.xpath('.//m:FLocat', namespaces=namespaces)
@@ -826,7 +818,7 @@ class Package(models.Model):
         """
 
         if self.package_type not in (self.AIC, self.AIP):
-            return (None, [], "Unable to scan; package is not a bag (AIP or AIC)", None)
+            return (None, [], _("Unable to scan; package is not a bag (AIP or AIC)"), None)
 
         if not force_local:
             try:
@@ -840,9 +832,9 @@ class Package(models.Model):
             # bagit can't deal with compressed files, so extract before
             # starting the fixity check.
             try:
-                 path, temp_dir = self.extract_file()
+                path, temp_dir = self.extract_file()
             except StorageException:
-                 return (None, [], 'Error extracting file', None)
+                return (None, [], _('Error extracting file'), None)
         else:
             path = self.fetch_local_path()
             temp_dir = None
@@ -918,13 +910,15 @@ class Package(models.Model):
         :return: Dict with keys 'error', 'status_code' and 'message'
         """
         if self.package_type not in Package.PACKAGE_TYPE_CAN_REINGEST:
-            return {'error': True, 'status_code': 405,
-                'message': 'Package with type {} cannot be re-ingested.'.format(self.get_package_type_display())}
+            return {'error': True, 'status_code': 405, 'message': 'Package with type {} cannot be re-ingested.'.format(self.get_package_type_display())}
 
         # Check and set reingest pipeline
         if self.misc_attributes.get('reingest_pipeline', None):
-            return {'error': True, 'status_code': 409,
-                'message': 'This AIP is already being reingested on {}'.format(self.misc_attributes['reingest_pipeline'])}
+            return {
+                'error': True,
+                'status_code': 409,
+                'message': _('This AIP is already being reingested on {pipeline}') % {'pipeline': self.misc_attributes['reingest_pipeline']},
+            }
         self.misc_attributes.update({'reingest_pipeline': pipeline.uuid})
 
         # Fetch and extract if needed
@@ -994,8 +988,11 @@ class Package(models.Model):
         try:
             currently_processing = Location.active.filter(pipeline=pipeline).get(purpose=Location.CURRENTLY_PROCESSING)
         except (Location.DoesNotExist, Location.MultipleObjectsReturned):
-            return {'error': True, 'status_code': 412,
-                'message': 'No currently processing Location is associated with pipeline {}'.format(pipeline.uuid)}
+            return {
+                'error': True,
+                'status_code': 412,
+                'message': _('No currently processing Location is associated with pipeline %(uuid)s') % {'pipeline': pipeline.uuid},
+            }
         LOGGER.debug('Reingest: Current location: %s', current_location)
         dest_basepath = os.path.join(currently_processing.relative_path, 'tmp', '')
         for path in reingest_files:
@@ -1025,7 +1022,7 @@ class Package(models.Model):
         try:
             resp = pipeline.reingest(relative_path, self.uuid, reingest_target)
         except requests.exceptions.RequestException as e:
-            message = 'Error in approve reingest API. {}'.format(e)
+            message = _('Error in approve reingest API. %(error)s') % {'error': e}
             LOGGER.exception('Error approving reingest in pipeline for package %s', self.uuid)
             return {'error': True, 'status_code': 502, 'message': message}
         else:
@@ -1036,7 +1033,7 @@ class Package(models.Model):
         return {
             'error': False,
             'status_code': 202,
-            'message': 'Package {} sent to pipeline {} for re-ingest'.format(self.uuid, pipeline),
+            'message': _('Package %(uuid)s sent to pipeline %(pipeline)s for re-ingest') % {'uuid': self.uuid, 'pipeline': pipeline},
             'reingest_uuid': reingest_uuid,
         }
 
@@ -1075,7 +1072,7 @@ class Package(models.Model):
         # Check origin pipeline against stored pipeline
         if self.origin_pipeline.uuid != self.misc_attributes.get('reingest_pipeline'):
             LOGGER.info('Reingest: Received pipeline %s did not match expected pipeline %s', self.origin_pipeline.uuid, self.misc_attributes.get('reingest_pipeline'))
-            raise Exception('%s did not match the pipeline this AIP was reingested on.' % self.origin_pipeline.uuid)
+            raise Exception(_('%(uuid)s did not match the pipeline this AIP was reingested on.') % {'uuid': self.origin_pipeline.uuid})
         self.misc_attributes.update({'reingest_pipeline': None})
         self.save()
 
@@ -1226,7 +1223,7 @@ class Package(models.Model):
         # If AIP is a directory, calculate size recursively
         if os.path.isdir(out_path):
             size = 0
-            for dirpath, _, filenames in os.walk(out_path):
+            for dirpath, dirs, filenames in os.walk(out_path):
                 for filename in filenames:
                     file_path = os.path.join(dirpath, filename)
                     size += os.path.getsize(file_path)
@@ -1290,7 +1287,7 @@ class Package(models.Model):
                     event_detail = 'program="tar"'
             else:
                 LOGGER.warning('Unknown compression algorithm, cannot correctly update pointer file')
-                event_detail = 'Unknown compression'
+                event_detail = _('Unknown compression')
             utils.mets_add_event(
                 amdsec,
                 'compression',

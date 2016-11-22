@@ -11,6 +11,7 @@ from django.conf import settings
 import django.core.mail
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 import dateutil.parser
@@ -35,15 +36,18 @@ class Arkivum(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
 
     host = models.CharField(max_length=256,
-        help_text='Hostname of the Arkivum web instance. Eg. arkivum.example.com:8443')
+        verbose_name=_l('Host'),
+        help_text=_l('Hostname of the Arkivum web instance. Eg. arkivum.example.com:8443'))
     # Optionally be able to rsync
     remote_user = models.CharField(max_length=64, null=True, blank=True,
-        help_text="Optional: Username on the remote machine accessible via passwordless ssh.")
+        verbose_name=_l('Remote user'),
+        help_text=_l("Optional: Username on the remote machine accessible via passwordless ssh."))
     remote_name = models.CharField(max_length=256, null=True, blank=True,
-        help_text="Optional: Name or IP of the remote machine.")
+        verbose_name=_l('Remote name'),
+        help_text=_l("Optional: Name or IP of the remote machine."))
 
     class Meta:
-        verbose_name = "Arkivum"
+        verbose_name = _l("Arkivum")
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [
@@ -126,17 +130,19 @@ class Arkivum(models.Model):
             response = requests.post(url, headers=headers, data=payload, files=files, verify=VERIFY)
         except requests.exceptions.ConnectionError:
             LOGGER.exception('Error in connection for POST to %s', url)
-            raise StorageException('Error in connection for POST to %s', url)
+            raise StorageException(_('Error in connection for POST to %(url)s'), {'url': url})
 
         LOGGER.debug('Response: %s, Response text: %s', response.status_code, response.text)
         if response.status_code not in (requests.codes.ok, requests.codes.accepted):
             LOGGER.warning('Arkivum responded with %s: %s', response.status_code, response.text)
-            raise StorageException('Unable to notify Arkivum of %s', package)
+            raise StorageException(_('Unable to notify Arkivum of %(package)s'), {'package': package})
         # Response has request ID for polling status
         try:
             response_json = response.json()
         except json.JSONDecodeError:
-            raise StorageException("Could not get request ID from Arkivum's response %s", response.text)
+            raise StorageException(
+                _("Could not get request ID from Arkivum's response %(response)s"),
+                {'response': response.text})
 
         # Store request ID in misc_attributes
         request_id = response_json['id']
@@ -154,7 +160,7 @@ class Arkivum(models.Model):
             self.post_move_from_storage_service(local_path, package.full_path, package)
         # If still no request ID, cannot check status
         if 'arkivum_identifier' not in package.misc_attributes:
-            msg = 'Unable to contact Arkivum'
+            msg = _('Unable to contact Arkivum')
             LOGGER.warning(msg)
             return {'error': True, 'error_message': msg}
 
@@ -168,19 +174,19 @@ class Arkivum(models.Model):
         try:
             response = requests.get(url, verify=VERIFY)
         except Exception:
-            msg = 'Error fetching package status'
+            msg = _('Error fetching package status')
             LOGGER.warning(msg, exc_info=True)
             return {'error': True, 'error_message': msg}
         LOGGER.info('Response: %s, Response text: %s', response.status_code, response.text)
         if response.status_code != 200:
-            msg = 'Response from Arkivum server was {}'.format(response)
+            msg = _('Response from Arkivum server was %(response)s') % {'response': response}
             LOGGER.warning(msg)
             return {'error': True, 'error_message': msg}
 
         try:
             response_json = response.json()
         except ValueError:
-            msg = 'JSON could not be parsed from package info'
+            msg = _('JSON could not be parsed from package info')
             LOGGER.warning(msg)
             return {'error': True, 'error_message': msg}
         return response_json
@@ -201,7 +207,7 @@ class Arkivum(models.Model):
             package.status = Package.UPLOADED
             package.save()
         LOGGER.info('Package status: %s', package.status)
-        return (package.status, "Replication status: " + replication)
+        return (package.status, _("Replication status: ") + replication)
 
     def is_file_local(self, package, path=None, email_nonlocal=False):
         """
@@ -249,7 +255,7 @@ class Arkivum(models.Model):
                     LOGGER.warning("Cannot determine if uncompressed package is locally available! Checking single file.")
                     # Pick a random file and check the locality of it.
                     # WARNING assumes the package is local/not local as a unit.
-                    for dirpath, _, files in os.walk(package.full_path):
+                    for dirpath, dirs, files in os.walk(package.full_path):
                         if files:
                             file_path = os.path.join(dirpath, files[0])
                             break
@@ -261,15 +267,15 @@ class Arkivum(models.Model):
         else:
             if email_nonlocal:
                 if path:
-                    message = 'File {} in package {}'.format(path, package)
+                    item = _('File %(path)s in package %(package)s') % {'path': path, 'package': package}
                 else:
-                    message = 'Package {}'.format(package)
-                message += ' with Arkivum ID of {} has been requested but is not available in the Arkivum cache.'.format(package_info.get('id'))
+                    item = _('Package %(package)s') % {'package': package}
+                message = _('%(item)s with Arkivum ID of %(package_id)s has been requested but is not available in the Arkivum cache.') % {'item': item, 'package_id': package_info.get('id')}
 
                 django.core.mail.send_mail(
                     from_email='archivematica-storage-service@localhost',
                     recipient_list=get_user_model().objects.filter(is_superuser=True, is_active=True).distinct().values_list('email', flat=True),
-                    subject='Arkivum file not locally available',
+                    subject=_('Arkivum file not locally available'),
                     message=message,
                 )
             return False
@@ -301,10 +307,10 @@ class Arkivum(models.Model):
             message = ''
         elif package_info['status'] == 'Scheduled' or replication == 'amber':
             success = None
-            message = 'Arkivum fixity check in progress'
+            message = _('Arkivum fixity check in progress')
         elif len(errors) > 1:  # Failed, multiple errors
             success = False
-            message = 'invalid bag'
+            message = _('invalid bag')
         else:  # Failed, only one error
             success = False
             message = errors[0]['reason']

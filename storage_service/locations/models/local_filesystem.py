@@ -5,6 +5,7 @@ import os
 
 # Core Django, alphabetical
 from django.db import models
+from django.utils.translation import ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 
@@ -19,7 +20,7 @@ class LocalFilesystem(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
 
     class Meta:
-        verbose_name = "Local Filesystem"
+        verbose_name = _l("Local Filesystem")
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [
