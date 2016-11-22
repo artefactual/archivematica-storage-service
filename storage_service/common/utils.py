@@ -11,6 +11,7 @@ import uuid
 
 from django.core.exceptions import ObjectDoesNotExist
 from django import http
+from django.utils.translation import ugettext as _
 
 from administration import models
 from storage_service import __version__
@@ -107,7 +108,7 @@ def download_file_stream(filepath, temp_dir=None):
     """
     # If not found, return 404
     if not os.path.exists(filepath):
-        return http.HttpResponseNotFound("File not found")
+        return http.HttpResponseNotFound(_("File not found"))
 
     filename = os.path.basename(filepath)
 

@@ -7,6 +7,8 @@ import administration.urls
 import locations.urls
 import locations.api.urls
 
+from storage_service import views
+
 
 urlpatterns = [
     url(r'^$', TemplateView.as_view(template_name='index.html')),
@@ -22,6 +24,9 @@ urlpatterns = [
         name='logout'),
 
     url(r'^api/', include(locations.api.urls)),
+
+    url(r'^jsi18n/$', views.cached_javascript_catalog, {'domain': 'djangojs'}, name='javascript-catalog'),
+    url(r'^i18n/', include('django.conf.urls.i18n', namespace='i18n')),
 ]
 
 

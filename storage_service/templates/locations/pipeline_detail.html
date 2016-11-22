@@ -1,32 +1,36 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block page_title %}{{ pipeline.description }} Information{% endblock %}
+{% block page_title %}{% blocktrans %}{{ pipeline.description }} Information{% endblocktrans %}{% endblock %}
 
 {% block content %}
 
 <div class='pipeline'>
   <dl>
-    <dt>UUID</dt> <dd>{{ pipeline.uuid }}</dd>
-    <dt>Description</dt> <dd>{{ pipeline.description|default:"&lt;None&gt;" }}</dd>
-    <dt>Remote name</dt> <dd>{{ pipeline.remote_name|default:"&lt;None&gt;" }}</dd>
-    <dt>API Username / Key</dt> <dd> {{ pipeline.api_username|default:"&lt;None&gt;" }} / {{ pipeline.api_key|default:"&lt;None&gt;" }}</dd>
-    <dt>Enabled</dt> <dd>{{ pipeline.enabled|yesno:"Enabled,Disabled" }}</dd>
-    <dt>Actions</dt> <dd>
+    <dt>{% trans "UUID" %}</dt> <dd>{{ pipeline.uuid }}</dd>
+    <dt>{% trans "Description" %}</dt> <dd>{{ pipeline.description|default:_("&lt;None&gt;") }}</dd>
+    <dt>{% trans "Remote name" %}</dt> <dd>{{ pipeline.remote_name|default:_("&lt;None&gt;") }}</dd>
+    <dt>{% trans "API Username / Key" %}</dt> <dd> {{ pipeline.api_username|default:_("&lt;None&gt;") }} / {{ pipeline.api_key|default:_("&lt;None&gt;") }}</dd>
+    <dt>{% trans "Enabled" %}</dt> <dd>{{ pipeline.enabled|yesno:_("Enabled,Disabled") }}</dd>
+    <dt>{% trans "Actions" %}</dt> <dd>
       <ul>
-        <li><a href="{% url 'pipeline_edit' pipeline.uuid %}">Edit</a></li>
-        <li><a href="{% url 'pipeline_switch_enabled' pipeline.uuid %}?next={{ request.path }}">{{ pipeline.enabled|yesno:"Disable,Enable" }}</a></li>
-        <li><a href="{% url 'pipeline_delete' pipeline.uuid %}">Delete</a></li>
+        <li><a href="{% url 'pipeline_edit' pipeline.uuid %}">{% trans "Edit" %}</a></li>
+        <li><a href="{% url 'pipeline_switch_enabled' pipeline.uuid %}?next={{ request.path }}">{{ pipeline.enabled|yesno:_("Disable,Enable") }}</a></li>
+        <li><a href="{% url 'pipeline_delete' pipeline.uuid %}">{% trans "Delete" %}</a></li>
       </ul>
     </dd>
   </dl>
 </div>
 
-<h2>Locations</h2>
+<h2>{% trans "Locations" %}</h2>
 
 {% if locations %}
   {% include "snippets/locations_table.html" with no_pipeline=True %}
 {% else %}
-  <p>No locations currently exist.  Please create one from the <a href="{% url 'space_list' %}">spaces</a> page.</p>
+  <p>
+  {% url 'space_list' as space_list_url %}
+  {% blocktrans %}No locations currently exist. Please create one from the <a href="{{ space_list_url }}">spaces</a> page.{% endblocktrans %}
+  </p>
 {% endif %}
 
 {% endblock %}

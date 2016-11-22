@@ -1,43 +1,44 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block page_title %}{{ location }} Information{% endblock %}
+{% block page_title %}{% blocktrans %}{{ location }} Information{% endblocktrans %}{% endblock %}
 
 {% block content %}
 
 <div class='location'>
   <dl>
-    <dt>Space</dt> <dd><a href="{% url 'space_detail' location.space.uuid %}">{{ location.space }}</a></dd>
-    <dt>Purpose</dt> <dd>{{ location.get_purpose_display }}</dd>
-    <dt>Description</dt> <dd>{{ location.description }}</dd>
-    <dt>Full Path</dt> <dd>{{ location.full_path }}</dd>
-    <dt>Relative Path</dt> <dd>{{ location.relative_path }}</dd>
-    <dt>Usage</dt> <dd>{{ location.used|filesizeformat }} / {{ location.quota|filesizeformat }}</dd>
-    <dt>Enabled</dt> <dd>{{ location.enabled|yesno:"Enabled,Disabled" }}</dd>
-    <dt>Actions</dt>
+    <dt>{% trans "Space" %}</dt> <dd><a href="{% url 'space_detail' location.space.uuid %}">{{ location.space }}</a></dd>
+    <dt>{% trans "Purpose" %}</dt> <dd>{{ location.get_purpose_display }}</dd>
+    <dt>{% trans "Description" %}</dt> <dd>{{ location.description }}</dd>
+    <dt>{% trans "Full Path" %}</dt> <dd>{{ location.full_path }}</dd>
+    <dt>{% trans "Relative Path" %}</dt> <dd>{{ location.relative_path }}</dd>
+    <dt>{% trans "Usage" %}</dt> <dd>{{ location.used|filesizeformat }} / {{ location.quota|filesizeformat }}</dd>
+    <dt>{% trans "Enabled" %}</dt> <dd>{{ location.enabled|yesno:_("Enabled,Disabled") }}</dd>
+    <dt>{% trans "Actions" %}</dt>
       <dd>
         <ul>
-          <li><a href="{% url 'location_edit' location.space.uuid location.uuid %}">Edit Location</a></li>
-          <li><a href="{% url 'location_switch_enabled' location.uuid %}?next={{ request.path }}">{{ location.enabled|yesno:"Disable,Enable" }}</a></li>
-          <li><a href="{% url 'location_delete' location.uuid %}">Delete Location</a></li>
+          <li><a href="{% url 'location_edit' location.space.uuid location.uuid %}">{% trans "Edit Location" %}</a></li>
+          <li><a href="{% url 'location_switch_enabled' location.uuid %}?next={{ request.path }}">{{ location.enabled|yesno:_("Disable,Enable") }}</a></li>
+          <li><a href="{% url 'location_delete' location.uuid %}">{% trans "Delete Location" %}</a></li>
         </ul>
       </dd>
   </dl>
 </div>
 
-<h2>Pipelines</h2>
+<h2>{% trans "Pipelines" %}</h2>
 
 {% if pipelines %}
   {% include "snippets/pipelines_table.html" %}
 {% else %}
-  <p>No pipelines in this space.</p>
+  <p>{% trans "No pipelines in this space." %}</p>
 {% endif %}
 
-<h2>Packages</h2>
+<h2>{% trans "Packages" %}</h2>
 
 {% if packages %}
   {% include "snippets/packages_table.html" %}
 {% else %}
-  <p>No packages in this space.</p>
+  <p>{% trans "No packages in this space." %}</p>
 {% endif %}
 
 {% endblock %}

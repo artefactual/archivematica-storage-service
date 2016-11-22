@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block page_title %}{{action}} Pipeline{% endblock %}
+{% block page_title %}{{action}}{% endblock %}
 
 {% block content %}
 
@@ -12,7 +12,7 @@
     {% endif %}
     {% csrf_token %}
         {{ form.as_p }}
-        <input type="submit" value="{{action}} Pipeline" class='btn btn-primary' />
+        <input type="submit" value="{{action}}" class='btn btn-primary' />
     </form>
 </div>
 {% endblock %}

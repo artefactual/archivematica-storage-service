@@ -12,6 +12,7 @@ import time
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import timezone
+from django.utils.translation import ugettext as _
 
 # External dependencies, alphabetical
 from annoying.functions import get_object_or_None
@@ -183,7 +184,7 @@ def _fetch_content(deposit_uuid, objects, subdirs=None):
 
             if item['checksum'] is not None and item['checksum'] != generate_checksum(temp_filename, 'md5').hexdigest():
                 os.unlink(temp_filename)
-                raise Exception("Incorrect checksum")
+                raise Exception(_("Incorrect checksum"))
 
             # Some MODS records have no proper filenames
             if filename == 'MODS Record':
@@ -251,7 +252,7 @@ def _finalize_if_not_empty(deposit_uuid):
     completed = False
     result = {
         'error': True,
-        'message': 'Deposit empty, or not done downloading.',
+        'message': _('Deposit empty, or not done downloading.'),
     }
     # don't finalize if still downloading
     if deposit_downloading_status(deposit) == models.PackageDownloadTask.COMPLETE:
@@ -260,7 +261,7 @@ def _finalize_if_not_empty(deposit_uuid):
             if not deposit.current_location.pipeline.exists():
                 return {
                     'error': True,
-                    'message': 'No Pipeline associated with this collection'
+                    'message': _('No Pipeline associated with this collection')
                 }
             pipeline = deposit.current_location.pipeline.all()[0]
             result = activate_transfer_and_request_approval_from_pipeline(deposit, pipeline)
@@ -300,7 +301,7 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
         missing_attrs = [a for a in attrs if not getattr(pipeline, a, None)]
         return {
             'error': True,
-            'message': 'Pipeline properties {} not set.'.format(', '.join(missing_attrs))
+            'message': _('Pipeline properties %(properties)s not set.') % {'properties': ', '.join(missing_attrs)}
         }
 
     # TODO: add error if more than one location is returned
@@ -328,7 +329,7 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
         if response.status_code == 200:
             results = response.json()
         else:
-            raise Exception("Dashboard returned {}: {}".format(response.status_code, response.text))
+            raise Exception(_("Dashboard returned %(status_code)s: %(text)s") % {'status_code': response.status_code, 'text': response.text})
 
         directories = [result['directory'] for result in results['results'] if result['type'] == 'standard']
         if deposit.current_path in directories:
@@ -353,7 +354,7 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
         shutil.move(destination_path, deposit.full_path)
         return {
             'error': True,
-            'message': 'Request to pipeline ' + pipeline.uuid + ' transfer approval API failed: check credentials and REST API IP whitelist.'
+            'message': _('Request to pipeline %(uuid)s transfer approval API failed: check credentials and REST API IP whitelist.') % {'uuid': pipeline.uuid},
         }
     result = response.json()
     return result

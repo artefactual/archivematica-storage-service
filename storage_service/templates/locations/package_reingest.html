@@ -1,17 +1,18 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block page_title %}Reingest Package{% endblock %}
+{% block page_title %}{% trans "Reingest Package" %}{% endblock %}
 
 {% block content %}
 
   <div class="form-control">
     <form action="{% url 'aip_reingest' package.uuid %}" method="post">
       {% csrf_token %}
-      <p><label>Package: {{ package.uuid }}</label> </p>
+      <p><label>{% trans "Package" %}: {{ package.uuid }}</label> </p>
       {{ form }}
       <div class="form-actions">
-        <input class='btn btn-primary' type="submit" value="Re-ingest"/>
-        <a class="btn" href="{{ cancel_url }}">Cancel</a>
+        <input class='btn btn-primary' type="submit" value="{% trans "Re-ingest" %}"/>
+        <a class="btn" href="{{ cancel_url }}">{% trans "Cancel" %}</a>
       </div>
     </form>
   </div>

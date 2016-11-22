@@ -10,6 +10,7 @@ import tempfile
 
 # Core Django, alphabetical
 from django.db import models
+from django.utils.translation import ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 
@@ -29,13 +30,15 @@ class PipelineLocalFS(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
 
     remote_user = models.CharField(max_length=64,
-        help_text="Username on the remote machine accessible via ssh")
+        verbose_name=_l("Remote user"),
+        help_text=_l("Username on the remote machine accessible via ssh"))
     remote_name = models.CharField(max_length=256,
-        help_text="Name or IP of the remote machine.")
+        verbose_name=_l("Remote name"),
+        help_text=_l("Name or IP of the remote machine."))
     # Space.path is the path on the remote machine
 
     class Meta:
-        verbose_name = "Pipeline Local FS"
+        verbose_name = _l("Pipeline Local FS")
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [

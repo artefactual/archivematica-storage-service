@@ -1,13 +1,14 @@
+{% load i18n %}
   <table class="datatable">
     <thead>
       <tr>
-        <th>Event</th>
-        <th>URI</th>
-        <th>Method</th>
-        <th>Expected response</th>
-        <th>UUID</th>
-        <th>Enabled</th>
-        <th>Actions</th>
+        <th>{% trans "Event" %}</th>
+        <th>{% trans "URI" %}</th>
+        <th>{% trans "Method" %}</th>
+        <th>{% trans "Expected response" %}</th>
+        <th>{% trans "UUID" %}</th>
+        <th>{% trans "Enabled" %}</th>
+        <th>{% trans "Actions" %}</th>
       </tr>
     </thead>
     <tbody>
@@ -18,8 +19,8 @@
         <td>{{ callback.method }}</td>
         <td>{{ callback.expected_status }}</td>
         <td>{{ callback.uuid }}</td>
-        <td>{{ callback.enabled|yesno:"Enabled,Disabled" }}</td>
-        <td><a href="{% url 'callback_edit' callback.uuid %}">Edit</a> | <a href="{% url 'callback_switch_enabled' callback.uuid %}?next={{ request.path }}">{{ callback.enabled|yesno:"Disable,Enable" }}</a> | <a href="{% url 'callback_delete' callback.uuid %}?next={{ request.path }}">Delete</a></td>
+        <td>{{ callback.enabled|yesno:_("Enabled,Disabled") }}</td>
+        <td><a href="{% url 'callback_edit' callback.uuid %}">{% trans "Edit" %}</a> | <a href="{% url 'callback_switch_enabled' callback.uuid %}?next={{ request.path }}">{{ callback.enabled|yesno:_("Disable,Enable") }}</a> | <a href="{% url 'callback_delete' callback.uuid %}?next={{ request.path }}">{% trans "Delete" %}</a></td>
       </tr>
     {% endfor %}
     </tbody>

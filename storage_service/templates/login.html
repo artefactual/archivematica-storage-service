@@ -1,11 +1,12 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block page_title %}Login to Storage Service{% endblock page_title %}
+{% block page_title %}{% trans "Log in to Storage Service" %}{% endblock page_title %}
 
 {% block content %}
 
 {% if form.errors %}
-<p>Your username and password didn't match. Please try again.</p>
+<p>{% trans "Your username and password didn't match. Please try again." %}</p>
 {% endif %}
 
 <form method="post" action="{% url 'django.contrib.auth.views.login' %}">
@@ -21,7 +22,7 @@
 </tr>
 </table>
 
-<input type="submit" value="login" class='btn btn-primary' />
+<input type="submit" value="{% trans "Log in" %}" class='btn btn-primary' />
 <input type="hidden" name="next" value="{{ next }}" />
 </form>
 

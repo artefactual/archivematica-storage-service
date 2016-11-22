@@ -1,0 +1,54 @@
+{% extends "administration/base.html" %}
+{% load i18n %}
+
+{% block page_title %}{% trans "Set Language" %}{% endblock %}
+
+{% block content %}
+
+  <div class="container-fluid">
+
+    <div class="row">
+
+      <div class="col-md-10">
+
+        <h3>{% trans "Language" %}</h3>
+
+        {% get_current_language as LANGUAGE_CODE %}
+        {% get_available_languages as LANGUAGES %}
+        {% get_language_info_list for LANGUAGES as languages %}
+
+        <form action="{% url 'i18n:set_language' %}" method="post">
+
+          {% csrf_token %}
+          <p>{% trans "Select one of the following available languages:" %}</p>
+
+          <div class="form-group">
+
+            {% for language in languages %}
+              <div class="radio">
+                <label>
+                  <input class="form-control" type="radio" name="language" value="{{ language.code }}"{% if language.code == language_selection %} checked="checked"{% endif %}>
+                  {{ language.name_local|capfirst }} ({{ language.code }})
+                </label>
+              </div>
+            {% endfor %}
+
+            <span class="help-block">
+              {% trans "Your choice will be recorded in the internal session store which does not retain data forever." %}
+            </span>
+
+          </div>
+
+          <div class="form-group">
+            <button type="submit" class="btn btn-primary">{% trans 'Change' %}</button>
+          </div>
+
+        </form>
+
+      </div>
+
+    </div>
+
+  </div>
+
+{% endblock %}

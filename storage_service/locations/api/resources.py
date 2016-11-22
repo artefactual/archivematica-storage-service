@@ -13,6 +13,7 @@ from django.conf import settings
 from django.conf.urls import url
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.forms.models import model_to_dict
+from django.utils.translation import ugettext as _
 
 # Third party dependencies, alphabetical
 from annoying.functions import get_object_or_None
@@ -31,7 +32,7 @@ from common import utils
 from locations.api.sword import views as sword_views
 
 from ..models import (Callback, CallbackError, Event, File, Package, Location, Space, Pipeline, StorageException)
-from ..forms import LocationForm, SpaceForm
+from ..forms import SpaceForm
 from ..constants import PROTOCOL
 from locations import signals
 
@@ -66,9 +67,9 @@ def _custom_endpoint(expected_methods=['get'], required_fields=[]):
             try:
                 obj = resource._meta.queryset.get(uuid=kwargs['uuid'])
             except ObjectDoesNotExist:
-                return http.HttpNotFound("Resource with UUID {} does not exist".format(kwargs['uuid']))
+                return http.HttpNotFound(_('Resource with UUID %(uuid)s does not exist') % {'uuid': kwargs['uuid']})
             except MultipleObjectsReturned:
-                return http.HttpMultipleChoices("More than one resource is found at this URI.")
+                return http.HttpMultipleChoices(_("More than one resource is found at this URI."))
 
             # Get body content
             try:
@@ -81,7 +82,7 @@ def _custom_endpoint(expected_methods=['get'], required_fields=[]):
             # Check required fields, if any
             if not all(k in deserialized for k in required_fields):
                 # Don't have enough information to make the request - return error
-                return http.HttpBadRequest('All of these fields must be provided: {}'.format(', '.join(required_fields)))
+                return http.HttpBadRequest(_('All of these fields must be provided: %(fields)s') % {'fields': ', '.join(required_fields)})
 
             # Build bundle and return it
             bundle = resource.build_bundle(obj=obj, data=deserialized, request=request)
@@ -202,7 +203,7 @@ class SpaceResource(ModelResource):
         return bundle
 
     def get_objects(self, space, path):
-        message = 'This method should be accessed via a versioned subclass'
+        message = _('This method should be accessed via a versioned subclass')
         raise NotImplementedError(message)
 
     @_custom_endpoint(expected_methods=['get'])
@@ -267,7 +268,7 @@ class LocationResource(ModelResource):
         return path
 
     def get_objects(self, space, path):
-        message = 'This method should be accessed via a versioned subclass'
+        message = _('This method should be accessed via a versioned subclass')
         raise NotImplementedError(message)
 
     @_custom_endpoint(expected_methods=['get'])
@@ -332,7 +333,9 @@ class LocationResource(ModelResource):
             origin_uuid = origin_uri.split('/')[4]
             origin_location = Location.active.get(uuid=origin_uuid)
         except (IndexError, Location.DoesNotExist):
-            return http.HttpNotFound("The URL provided '%s' was not a link to a valid Location." % origin_uri)
+            return http.HttpNotFound(
+                _("The URL provided '%(url)s' was not a link to a valid Location.") %
+                {'url': origin_uri})
 
         # For each file in files, call move to/from
         origin_space = origin_location.space
@@ -367,13 +370,13 @@ class LocationResource(ModelResource):
                 return http.HttpBadRequest
 
         response = {'error': None,
-                    'message': 'Files moved successfully'}
+                    'message': _('Files moved successfully')}
         return self.create_response(request, response)
 
     def sword_collection(self, request, **kwargs):
         location = get_object_or_None(Location, uuid=kwargs['uuid'])
         if location and (location.purpose != Location.SWORD_DEPOSIT or location.space.access_protocol != Space.FEDORA):
-            return http.HttpBadRequest('This is not a SWORD server space.')
+            return http.HttpBadRequest(_('This is not a SWORD server space.'))
         self.log_throttled_access(request)
         return sword_views.collection(request, location or kwargs['uuid'])
 
@@ -493,7 +496,7 @@ class PackageResource(ModelResource):
             try:
                 bundle.obj = self.obj_get(bundle=bundle, **lookup_kwargs)
             except ObjectDoesNotExist:
-                raise tastypie.exceptions.NotFound("A model instance matching the provided arguments could not be found.")
+                raise tastypie.exceptions.NotFound(_("A model instance matching the provided arguments could not be found."))
         bundle = self.full_hydrate(bundle)
         bundle = self.obj_update_hook(bundle, **kwargs)
         return self.save(bundle, skip_errors=skip_errors)
@@ -541,7 +544,8 @@ class PackageResource(ModelResource):
         # From http://stackoverflow.com/questions/13704344/tastypie-where-to-restrict-fields-that-may-be-updated-by-patch
         if set(new_data.keys()) - set(self._meta.allowed_patch_fields):
             raise tastypie.exceptions.BadRequest(
-                'PATCH only allowed on %s' % ', '.join(self._meta.allowed_patch_fields)
+                _('PATCH only allowed on %(fields)s') %
+                {'fields': ', '.join(self._meta.allowed_patch_fields)}
             )
         return super(PackageResource, self).update_in_place(request, original_bundle, new_data)
 
@@ -554,7 +558,7 @@ class PackageResource(ModelResource):
         if package.package_type not in Package.PACKAGE_TYPE_CAN_DELETE:
             # Can only request deletion on AIPs
             response = {
-                "message": "Deletes not allowed on this package type."
+                "message": _("Deletes not allowed on this package type.")
             }
             response_json = json.dumps(response)
             return http.HttpMethodNotAllowed(response_json, content_type='application/json')
@@ -569,7 +573,7 @@ class PackageResource(ModelResource):
                 uuid=package.uuid, location=package.full_path)
         else:
             response = {
-                'message': 'A deletion request already exists for this AIP.'
+                'message': _('A deletion request already exists for this AIP.')
             }
 
         self.log_throttled_access(request)
@@ -585,7 +589,7 @@ class PackageResource(ModelResource):
         if package.package_type not in Package.PACKAGE_TYPE_CAN_RECOVER:
             # Can only request recovery of AIPs
             response = {
-                "message": "Recovery not allowed on this package type."
+                "message": _("Recovery not allowed on this package type.")
             }
             response_json = json.dumps(response)
             return http.HttpMethodNotAllowed(response_json, content_type='application/json')
@@ -606,7 +610,7 @@ class PackageResource(ModelResource):
 
         relative_path_to_file = request.GET.get('relative_path_to_file')
         if not relative_path_to_file:
-            return http.HttpBadRequest('All of these fields must be provided: relative_path_to_file')
+            return http.HttpBadRequest(_('All of these fields must be provided: relative_path_to_file'))
         relative_path_to_file = urllib.unquote(relative_path_to_file)
         temp_dir = extracted_file_path = ''
 
@@ -633,24 +637,22 @@ class PackageResource(ModelResource):
             )
             if is_local is False:
                 # Need to fetch from tape, return 202
-                return http.HttpAccepted(json.dumps({"error": False, 'message': "File is not locally available.  Contact your storage administrator to fetch it."}))
+                return http.HttpAccepted(json.dumps({"error": False, 'message': _("File is not locally available.  Contact your storage administrator to fetch it.")}))
             if is_local is None:
                 # Arkivum error, return 502
-                return http.HttpResponse(json.dumps({"error": True, "message": "Error checking if file in Arkivum in locally available."}), content_type='application/json', status=502)
+                return http.HttpResponse(json.dumps({"error": True, "message": _("Error checking if file in Arkivum in locally available.")}), content_type='application/json', status=502)
 
         # If local file exists - return that
         if not package.is_compressed:
             extracted_file_path = os.path.join(full_path, relative_path_to_file)
             if not os.path.exists(extracted_file_path):
-                return http.HttpResponse(status=404,
-                    content="Requested file, {}, not found in AIP".format(relative_path_to_file))
+                return http.HttpResponse(status=404, content=_('Requested file, %(filename)s, not found in AIP') % {'filename': relative_path_to_file})
         elif package.package_type in Package.PACKAGE_TYPE_CAN_EXTRACT:
             # If file doesn't exist, try to extract it
             (extracted_file_path, temp_dir) = package.extract_file(relative_path_to_file)
         else:
             # If the package is compressed and we can't extract it,
-            return http.HttpResponse(status=501,
-                content="Unable to extract package of type: {}".format(package.package_type))
+            return http.HttpResponse(status=501, content=_('Unable to extract package of type: %(typename)s') % {'typename': package.package_type})
 
         response = utils.download_file_stream(extracted_file_path, temp_dir)
 
@@ -673,10 +675,10 @@ class PackageResource(ModelResource):
             )
             if is_local is False:
                 # Need to fetch from tape, return 202
-                return http.HttpAccepted(json.dumps({"error": False, 'message': "File is not locally available.  Contact your storage administrator to fetch it."}))
+                return http.HttpAccepted(json.dumps({"error": False, 'message': _("File is not locally available.  Contact your storage administrator to fetch it.")}))
             if is_local is None:
                 # Arkivum error, return 502
-                return http.HttpResponse(json.dumps({"error": True, "message": "Error checking if file in Arkivum in locally available."}), content_type='application/json', status=502)
+                return http.HttpResponse(json.dumps({"error": True, "message": _("Error checking if file in Arkivum in locally available.")}), content_type='application/json', status=502)
 
         lockss_au_number = kwargs.get('chunk_number')
         try:
@@ -695,7 +697,7 @@ class PackageResource(ModelResource):
         # Get AIP details
         pointer_path = bundle.obj.full_pointer_file_path
         if not pointer_path:
-            response = http.HttpNotFound("Resource with UUID {} does not have a pointer file".format(bundle.obj.uuid))
+            response = http.HttpNotFound(_("Resource with UUID %(uuid)s does not have a pointer file") % {'uuid': bundle.obj.uuid})
         else:
             response = utils.download_file_stream(pointer_path)
         return response
@@ -829,7 +831,7 @@ class PackageResource(ModelResource):
 
         if fail > 0:
             response = {
-                "message": "Failed to POST {} responses to callback URI".format(fail),
+                "message": _("Failed to POST %(count)d responses to callback URI") % {'count': fail},
                 "failure_count": fail,
                 "callback_uris": [c.uri for c in callbacks]
             }
@@ -845,16 +847,16 @@ class PackageResource(ModelResource):
         """Index file data from the Package transfer METS file."""
         package = bundle.obj
         if package.package_type != Package.TRANSFER:
-            return http.HttpBadRequest(json.dumps({"error": True, "message": "This package is not a transfer."}), content_type='application/json')
+            return http.HttpBadRequest(json.dumps({"error": True, "message": _("This package is not a transfer.")}), content_type='application/json')
         if package.current_location.purpose != Location.BACKLOG:
-            return http.HttpBadRequest(json.dumps({"error": True, "message": "This package is not in transfer backlog."}), content_type='application/json')
+            return http.HttpBadRequest(json.dumps({"error": True, "message": _("This package is not in transfer backlog.")}), content_type='application/json')
         try:
             package.index_file_data_from_transfer_mets()  # Create File entries for every file in the transfer
         except Exception as e:
             LOGGER.warning("An error occurred while reindexing the Transfer: %s", str(e), exc_info=True)
-            return http.HttpApplicationError(json.dumps({"error": True, "message": "An error occurred while reindexing the Transfer."}), content_type='application/json')
+            return http.HttpApplicationError(json.dumps({"error": True, "message": _("An error occurred while reindexing the Transfer.")}), content_type='application/json')
         count = File.objects.filter(package=package).count()
-        response = {"error": False, "message": "Files indexed: {}".format(count)}
+        response = {"error": False, "message": _("Files indexed: %(count)d") % {'count': count}}
         return http.HttpResponse(content=json.dumps(response), content_type='application/json')
 
     @_custom_endpoint(expected_methods=['post'],
@@ -863,7 +865,10 @@ class PackageResource(ModelResource):
         try:
             pipeline = Pipeline.objects.get(uuid=bundle.data['pipeline'])
         except (Pipeline.DoesNotExist, Pipeline.MultipleObjectsReturned):
-            response = {'error': True, 'message': 'Pipeline UUID {} failed to return a pipeline'.format(bundle.data['pipeline'])}
+            response = {
+                'error': True,
+                'message': _('Pipeline UUID %(uuid)s failed to return a pipeline') % {'uuid': bundle.data['pipeline']},
+            }
             return self.create_response(request, response, response_class=http.HttpBadRequest)
         reingest_type = bundle.data['reingest_type']
         processing_config = bundle.data.get('processing_config', 'default')
@@ -876,21 +881,21 @@ class PackageResource(ModelResource):
     def sword_deposit(self, request, **kwargs):
         package = get_object_or_None(Package, uuid=kwargs['uuid'])
         if package and package.package_type != Package.DEPOSIT:
-            return http.HttpBadRequest('This is not a SWORD deposit location.')
+            return http.HttpBadRequest(_('This is not a SWORD deposit location.'))
         self.log_throttled_access(request)
         return sword_views.deposit_edit(request, package or kwargs['uuid'])
 
     def sword_deposit_media(self, request, **kwargs):
         package = get_object_or_None(Package, uuid=kwargs['uuid'])
         if package and package.package_type != Package.DEPOSIT:
-            return http.HttpBadRequest('This is not a SWORD deposit location.')
+            return http.HttpBadRequest(_('This is not a SWORD deposit location.'))
         self.log_throttled_access(request)
         return sword_views.deposit_media(request, package or kwargs['uuid'])
 
     def sword_deposit_state(self, request, **kwargs):
         package = get_object_or_None(Package, uuid=kwargs['uuid'])
         if package and package.package_type != Package.DEPOSIT:
-            return http.HttpBadRequest('This is not a SWORD deposit location.')
+            return http.HttpBadRequest(_('This is not a SWORD deposit location.'))
         self.log_throttled_access(request)
         return sword_views.deposit_state(request, package or kwargs['uuid'])
 
@@ -913,15 +918,15 @@ class PackageResource(ModelResource):
             package.save()
 
             response = {
-                'message': "{} request created successfully.".format(request_description.title()),
-                'id': request_event.id
+                'message': _("%(event_type)s request created successfully.") % {'event_type': request_description.title()},
+                'id': request_event.id,
             }
 
             response_json = json.dumps(response)
             status_code = 202
         else:
             response = {
-                'error_message': "A {} request already exists for this AIP.".format(request_description)
+                'error_message': _("A %(event_type)s request already exists for this AIP.") % {'event_type': request_description},
             }
             status_code = 200
 
@@ -963,7 +968,7 @@ class PackageResource(ModelResource):
         except ValueError:
             response = {
                 "success": False,
-                "error": "No JSON object could be decoded from POST body."
+                "error": _("No JSON object could be decoded from POST body.")
             }
             return http.HttpBadRequest(json.dumps(response),
                 content_type="application/json")
@@ -971,7 +976,7 @@ class PackageResource(ModelResource):
         if not isinstance(files_list, list):
             response = {
                 "success": False,
-                "error": "JSON request must contain a list of objects."
+                "error": _("JSON request must contain a list of objects.")
             }
             return http.HttpBadRequest(json.dumps(response),
                 content_type="application/json")
@@ -998,7 +1003,7 @@ class PackageResource(ModelResource):
                 except KeyError:
                     response = {
                         "success": False,
-                        "error": "File object was missing key: " + source
+                        "error": _('File object was missing key: %(key)s') % {'key': source},
                     }
                     return http.HttpBadRequest(json.dumps(response),
                         content_type="application_json")
@@ -1010,7 +1015,7 @@ class PackageResource(ModelResource):
 
         response = {
             "success": True,
-            "message": "{} files created in package {}".format(len(created_files), bundle.obj.uuid)
+            "message": _("%(count)d files created in package %(uuid)s") % {'count': len(created_files), 'uuid': bundle.obj.uuid},
         }
         return http.HttpCreated(json.dumps(response),
             content_type="application_json")
@@ -1089,7 +1094,7 @@ class PackageResource(ModelResource):
         if not query:
             response = {
                 "success": False,
-                "error": "No supported query properties found!"
+                "error": _("No supported query properties found!")
             }
             return http.HttpBadRequest(content=json.dumps(response),
                 content_type="application/json")

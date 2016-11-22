@@ -11,6 +11,7 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import timezone
+from django.utils.translation import ugettext as _
 
 # External dependencies, alphabetical
 
@@ -72,7 +73,7 @@ def collection(request, location):
         try:
             location = models.Location.active.get(uuid=location)
         except models.Location.DoesNotExist:
-            return helpers.sword_error_response(request, 404, 'Collection {uuid} does not exist.'.format(uuid=location))
+            return helpers.sword_error_response(request, 404, _('Collection %(uuid)s does not exist.') % {'uuid': location})
 
     if request.method == 'GET':
         # return list of deposits as ATOM feed
@@ -121,9 +122,9 @@ def collection(request, location):
 
                     if mets_data is not None:
                         if mets_data['deposit_name'] is None:
-                            return helpers.sword_error_response(request, 400, 'No deposit name found in XML.')
+                            return helpers.sword_error_response(request, 400, _('No deposit name found in XML.'))
                         if not os.path.isdir(location.full_path):
-                            return helpers.sword_error_response(request, 500, 'Collection path (%s) does not exist: contact an administrator.' % (location.full_path))
+                            return helpers.sword_error_response(request, 500, _('Collection path (%(path)s) does not exist: contact an administrator.') % {'path': location.full_path})
 
                         # TODO: should get this from author header or provided XML metadata
                         sourceofacquisition = request.META['HTTP_ON_BEHALF_OF'] if 'HTTP_ON_BEHALF_OF' in request.META else None
@@ -133,7 +134,7 @@ def collection(request, location):
                             sourceofacquisition=sourceofacquisition
                         )
                         if deposit is None:
-                            return helpers.sword_error_response(request, 500, 'Could not create deposit: contact an administrator.')
+                            return helpers.sword_error_response(request, 500, _('Could not create deposit: contact an administrator.'))
 
                         # move METS file to submission documentation directory
                         object_id = mets_data.get('object_id', 'fedora')
@@ -146,15 +147,15 @@ def collection(request, location):
                         else:
                             return _deposit_receipt_response(request, deposit, 200)
                     else:
-                        return helpers.sword_error_response(request, 412, 'Error parsing XML')
+                        return helpers.sword_error_response(request, 412, _('Error parsing XML.'))
                 except Exception as e:
                     return helpers.sword_error_response(request, 400, traceback.format_exc())
             elif source_location or relative_path_to_files:
                 if not source_location or not relative_path_to_files:
                     if not source_location:
-                        return helpers.sword_error_response(request, 400, 'relative_path_to_files is set, but source_location is not.')
+                        return helpers.sword_error_response(request, 400, _('relative_path_to_files is set, but source_location is not.'))
                     else:
-                        return helpers.sword_error_response(request, 400, 'source_location is set, but relative_path_to_files is not.')
+                        return helpers.sword_error_response(request, 400, _('source_location is set, but relative_path_to_files is not.'))
                 else:
                     result = deposit_from_location_relative_path(source_location, relative_path_to_files, location)
                     if result.get('error', False):
@@ -162,11 +163,11 @@ def collection(request, location):
                     else:
                         return _deposit_receipt_response(request, result['deposit_uuid'], 200)
             else:
-                return helpers.sword_error_response(request, 412, 'A request body must be sent when creating a deposit.')
+                return helpers.sword_error_response(request, 412, _('A request body must be sent when creating a deposit.'))
         else:
-            return helpers.sword_error_response(request, 412, 'The In-Progress header must be set to either true or false when creating a deposit.')
+            return helpers.sword_error_response(request, 412, _('The In-Progress header must be set to either true or false when creating a deposit.'))
     else:
-        return helpers.sword_error_response(request, 405, 'This endpoint only responds to the GET and POST HTTP methods.')
+        return helpers.sword_error_response(request, 405, _('This endpoint only responds to the GET and POST HTTP methods.'))
 
 def deposit_from_location_relative_path(source_location_uuid, relative_path_to_files, location):
     """
@@ -180,7 +181,7 @@ def deposit_from_location_relative_path(source_location_uuid, relative_path_to_f
     if not all([source_location_uuid, relative_path_to_files, location]):
         return {
             'error': True,
-            'message': 'source_location, relative_path_to_files or the location were empty',
+            'message': _('source_location, relative_path_to_files or the location were empty'),
         }
 
     # a deposit of files stored on the storage server is being done
@@ -250,7 +251,7 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
             checksum = element.get('CHECKSUM')
 
             if checksum is not None and checksumtype != 'MD5':
-                raise Exception('If using CHECKSUM attribute, CHECKSUMTYPE attribute value must be set to MD5 in XML')
+                raise Exception(_('If using CHECKSUM attribute, CHECKSUMTYPE attribute value must be set to MD5 in XML'))
 
             collection.append({
                 'object_id': object_id,
@@ -322,10 +323,10 @@ def deposit_edit(request, deposit):
         try:
             deposit = models.Package.objects.get(uuid=deposit)
         except models.Package.DoesNotExist:
-            return helpers.sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=deposit))
+            return helpers.sword_error_response(request, 404, _('Deposit location %(uuid)s does not exist.') % {'uuid': deposit})
 
     if deposit.has_been_submitted_for_processing():
-        return helpers.sword_error_response(request, 400, 'This deposit has already been submitted for processing.')
+        return helpers.sword_error_response(request, 400, _('This deposit has already been submitted for processing.'))
 
     if request.method == 'GET':
         edit_iri = request.build_absolute_uri(
@@ -356,7 +357,7 @@ def deposit_edit(request, deposit):
                 _spawn_batch_download_and_flag_finalization_if_requested(deposit, request, mets_data)
                 return _deposit_receipt_response(request, deposit, 200)
             else:
-                return helpers.sword_error_response(request, 412, 'Error parsing XML.')
+                return helpers.sword_error_response(request, 412, _('Error parsing XML.'))
         else:
             # Attempt to finalize (if requested), otherwise just return deposit receipt
             if 'HTTP_IN_PROGRESS' in request.META and request.META['HTTP_IN_PROGRESS'] == 'false':
@@ -377,7 +378,7 @@ def deposit_edit(request, deposit):
         deposit.save()
         return HttpResponse(status=204) # No content
     else:
-        return helpers.sword_error_response(request, 405, 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.')
+        return helpers.sword_error_response(request, 405, _('This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.'))
 
 def _finalize_or_mark_for_finalization(request, deposit):
     """
@@ -391,9 +392,9 @@ def _finalize_or_mark_for_finalization(request, deposit):
             helpers.spawn_finalization(deposit.uuid)
             return _deposit_receipt_response(request, deposit, 200)
         else:
-            return helpers.sword_error_response(request, 400, 'Downloading not yet complete or errors were encountered.')
+            return helpers.sword_error_response(request, 400, _('Downloading not yet complete or errors were encountered.'))
     else:
-        return helpers.sword_error_response(request, 400, 'The In-Progress header must be set to false when starting deposit processing.')
+        return helpers.sword_error_response(request, 400, _('The In-Progress header must be set to false when starting deposit processing.'))
 
 def deposit_media(request, deposit):
     """
@@ -422,10 +423,10 @@ def deposit_media(request, deposit):
         try:
             deposit = models.Package.objects.get(uuid=deposit)
         except models.Package.DoesNotExist:
-            return helpers.sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=deposit))
+            return helpers.sword_error_response(request, 404, _('Deposit location %(uuid)s does not exist.') % {'uuid': deposit})
 
     if deposit.has_been_submitted_for_processing():
-        return helpers.sword_error_response(request, 400, 'This deposit has already been submitted for processing.')
+        return helpers.sword_error_response(request, 400, _('This deposit has already been submitted for processing.'))
 
     if request.method == 'GET':
         # TODO should this be returned in SWORD XML?
@@ -453,9 +454,9 @@ def deposit_media(request, deposit):
                     _spawn_batch_download_and_flag_finalization_if_requested(deposit, request, mets_data)
                     return _deposit_receipt_response(request, deposit, 201)
                 else:
-                    return helpers.sword_error_response(request, 412, 'Error parsing XML.')
+                    return helpers.sword_error_response(request, 412, _('Error parsing XML.'))
             else:
-                return helpers.sword_error_response(request, 400, 'No METS body content sent.')
+                return helpers.sword_error_response(request, 400, _('No METS body content sent.'))
         else:
             # add a file to the deposit
             return _handle_adding_to_or_replacing_file_in_deposit(request, deposit)
@@ -472,7 +473,9 @@ def deposit_media(request, deposit):
                 os.remove(file_path)
                 return HttpResponse(status=204) # No content
             else:
-                return helpers.sword_error_response(request, 404, 'The path to this file (%s) does not exist.' % (file_path))
+                return helpers.sword_error_response(
+                    request, 404,
+                    _('The path to this file (%(path)s) does not exist.') % {'path': file_path})
         else:
             # Delete all PackageDownloadTaskFile and PackageDownloadTask for this deposit
             models.PackageDownloadTaskFile.objects.filter(task__package=deposit).delete()
@@ -485,9 +488,9 @@ def deposit_media(request, deposit):
                 elif os.path.isdir(filepath):
                     shutil.rmtree(filepath)
 
-            return HttpResponse(status=204) # No content
+            return HttpResponse(status=204)  # No content
     else:
-        return helpers.sword_error_response(request, 405, 'This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.')
+        return helpers.sword_error_response(request, 405, _('This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.'))
 
 def deposit_state(request, deposit):
     """
@@ -500,12 +503,12 @@ def deposit_state(request, deposit):
         try:
             deposit = models.Package.objects.get(uuid=deposit)
         except models.Package.DoesNotExist:
-            return helpers.sword_error_response(request, 404, 'Deposit location {uuid} does not exist.'.format(uuid=deposit))
+            return helpers.sword_error_response(request, 404, _('Deposit location %(uuid)s does not exist.') % {'uuid': deposit})
 
     if request.method == 'GET':
         status = helpers.deposit_downloading_status(deposit)
         state_term = status
-        state_description = 'Deposit initiation: ' + status
+        state_description = _('Deposit initiation: %(status)s') % {'status': status}
 
         # if deposit hasn't been finalized and last finalization attempt
         # failed, note failed finalization
@@ -532,7 +535,7 @@ def deposit_state(request, deposit):
         response['Content-Type'] = 'application/atom+xml;type=feed'
         return response
     else:
-        return helpers.sword_error_response(request, 405, 'This endpoint only responds to the GET HTTP method.')
+        return helpers.sword_error_response(request, 405, _('This endpoint only responds to the GET HTTP method.'))
 
 def _handle_adding_to_or_replacing_file_in_deposit(request, deposit, replace_file=False):
     """
@@ -557,11 +560,11 @@ def _handle_adding_to_or_replacing_file_in_deposit(request, deposit, replace_fil
                         204
                     )
                 else:
-                    return helpers.sword_error_response(request, 400, 'File does not exist.')
+                    return helpers.sword_error_response(request, 400, _('File does not exist.'))
             else:
                 # if adding a file, the file must not already exist
                 if os.path.exists(file_path):
-                    return helpers.sword_error_response(request, 400, 'File already exists.')
+                    return helpers.sword_error_response(request, 400, _('File already exists.'))
                 else:
                     return _handle_upload_request_with_potential_md5_checksum(
                         request,
@@ -569,9 +572,9 @@ def _handle_adding_to_or_replacing_file_in_deposit(request, deposit, replace_fil
                         201
                     )
         else:
-            return helpers.sword_error_response(request, 400, 'No filename found in Content-disposition header.')
+            return helpers.sword_error_response(request, 400, _('No filename found in Content-disposition header.'))
     else:
-        return helpers.sword_error_response(request, 400, 'Content-disposition must be set in request header.')
+        return helpers.sword_error_response(request, 400, _('Content-disposition must be set in request header.'))
 
 def _handle_upload_request_with_potential_md5_checksum(request, file_path, success_status_code):
     """
@@ -586,8 +589,7 @@ def _handle_upload_request_with_potential_md5_checksum(request, file_path, succe
         md5sum = helpers.get_file_md5_checksum(temp_filepath)
         if request.META['HTTP_CONTENT_MD5'] != md5sum:
             os.remove(temp_filepath)
-            return helpers.sword_error_response(request, 400, 'MD5 checksum of uploaded file ({uploaded_md5sum}) does not match checksum provided in header ({header_md5sum}).'.format(
-                uploaded_md5sum=md5sum, header_md5sum=request.META['HTTP_CONTENT_MD5']))
+            return helpers.sword_error_response(request, 400, _("MD5 checksum of uploaded file (%(uploaded_md5sum)s) does not match checksum provided in header (%(header_md5sum)s).") % {'uploaded_md5sum': md5sum, 'header_md5sum': request.META['HTTP_CONTENT_MD5']})
         else:
             shutil.copyfile(temp_filepath, file_path)
             os.remove(temp_filepath)

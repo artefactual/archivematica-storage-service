@@ -1,4 +1,5 @@
 from django.conf.urls import url
+
 from administration import views
 
 urlpatterns = [
@@ -16,4 +17,6 @@ urlpatterns = [
         name='user_create'),
     url(r'^users/(?P<id>[-\w]+)/edit/$', views.user_edit,
         name='user_edit'),
+
+    url(r'language/$', views.change_language, name='change_language'),
 ]

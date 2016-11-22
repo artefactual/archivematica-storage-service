@@ -12,6 +12,7 @@ import subprocess
 # Core Django, alphabetical
 from django.core.urlresolvers import reverse
 from django.db import models
+from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 import sword2
@@ -31,23 +32,23 @@ class Lockssomatic(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
 
     # staging location is Space.path
-    au_size = models.BigIntegerField(verbose_name="AU Size", null=True, blank=True,
-        help_text="Size in bytes of an Allocation Unit")
-    sd_iri = models.URLField(max_length=256, verbose_name="Service Document IRI",
-        help_text="URL of LOCKSS-o-matic service document IRI, eg. http://lockssomatic.example.org/api/sword/2.0/sd-iri")
-    collection_iri = models.CharField(max_length=256, null=True, blank=True, verbose_name="Collection IRI",
-        help_text="URL to post the packages to, eg. http://lockssomatic.example.org/api/sword/2.0/col-iri/12")
+    au_size = models.BigIntegerField(verbose_name=_l("AU Size"), null=True, blank=True,
+        help_text=_l("Size in bytes of an Allocation Unit"))
+    sd_iri = models.URLField(max_length=256, verbose_name=_l("Service Document IRI"),
+        help_text=_l("URL of LOCKSS-o-matic service document IRI, eg. http://lockssomatic.example.org/api/sword/2.0/sd-iri"))
+    collection_iri = models.CharField(max_length=256, null=True, blank=True, verbose_name=_l("Collection IRI"),
+        help_text=_l("URL to post the packages to, eg. http://lockssomatic.example.org/api/sword/2.0/col-iri/12"))
     content_provider_id = models.CharField(max_length=32,
-        verbose_name='Content Provider ID',
-        help_text='On-Behalf-Of value when communicating with LOCKSS-o-matic')
-    external_domain = models.URLField(verbose_name='Externally available domain',
-        help_text='Base URL for this server that LOCKSS will be able to access.  Probably the URL for the home page of the Storage Service.')
-    checksum_type = models.CharField(max_length=64, null=True, blank=True, verbose_name='Checksum type', help_text='Checksum type to send to LOCKSS-o-matic for verification.  Eg. md5, sha1, sha256')
-    keep_local = models.BooleanField(blank=True, default=True, verbose_name="Keep local copy?",
-        help_text="If checked, keep a local copy even after the AIP is stored in the LOCKSS network.")
+        verbose_name=_l('Content Provider ID'),
+        help_text=_l('On-Behalf-Of value when communicating with LOCKSS-o-matic'))
+    external_domain = models.URLField(verbose_name=_l('Externally available domain'),
+        help_text=_l('Base URL for this server that LOCKSS will be able to access.  Probably the URL for the home page of the Storage Service.'))
+    checksum_type = models.CharField(max_length=64, null=True, blank=True, verbose_name=_l('Checksum type'), help_text=_l('Checksum type to send to LOCKSS-o-matic for verification.  Eg. md5, sha1, sha256'))
+    keep_local = models.BooleanField(blank=True, default=True, verbose_name=_l("Keep local copy?"),
+        help_text=_l("If checked, keep a local copy even after the AIP is stored in the LOCKSS network."))
 
     class Meta:
-        verbose_name = 'LOCKSS-o-matic'
+        verbose_name = _l('LOCKSS-o-matic')
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [
@@ -129,17 +130,17 @@ class Lockssomatic(models.Model):
 
         # After retry - verify that state & edit IRI exist now
         if 'state_iri' not in package.misc_attributes or 'edit_iri' not in package.misc_attributes:
-            return (None, 'Unable to contact Lockss-o-matic')
+            return (None, _('Unable to contact Lockss-o-matic'))
 
         if not self.sword_connection and not self.update_service_document():
-            return (None, 'Error contacting LOCKSS-o-matic.')
+            return (None, _('Error contacting LOCKSS-o-matic.'))
 
         # SWORD2 client has only experimental support for getting SWORD2
         # statements, so implementing the fetch and parse here. (March 2014)
         response = self.sword_connection.get_resource(package.misc_attributes['state_iri'], headers={'Accept': 'application/atom+xml;type=feed'})
 
         if response.code != 200:
-            return (None, 'Error polling LOCKSS-o-matic for SWORD statement.')
+            return (None, _('Error polling LOCKSS-o-matic for SWORD statement.'))
 
         statement_root = etree.fromstring(response.content)
 
@@ -151,7 +152,7 @@ class Lockssomatic(models.Model):
         LOGGER.info('All states are agreement: %s', all(s.get('state') == 'agreement' for s in servers))
         if not all(s.get('state') == 'agreement' for s in servers):
             # TODO update pointer file for new failed status?
-            return (status, 'LOCKSS servers not in agreement')
+            return (status, _('LOCKSS servers not in agreement'))
 
         status = Package.UPLOADED
 
@@ -234,12 +235,12 @@ class Lockssomatic(models.Model):
         LOGGER.debug('response code: %s', response['status'])
         if response['status'] != 200:
             if response['status'] == 202:  # Accepted - pushing new config
-                return 'Lockss-o-matic is updating the config to stop harvesting.  Please try again to delete local files.'
+                return _('Lockss-o-matic is updating the config to stop harvesting.  Please try again to delete local files.')
             if response['status'] == 204:  # No Content - no matching AIP
-                return 'Package {} is not found in LOCKSS'.format(package.uuid)
+                return _('Package %(uuid)s is not found in LOCKSS') % {'uuid': package.uuid}
             if response['status'] == 409:  # Conflict - Files in AU with recrawl
-                return "There are files in the LOCKSS Archival Unit (AU) that do not have 'recrawl=false'."
-            return 'Error {} when requesting LOCKSS stop harvesting deleted files.'.format(response['status'])
+                return _("There are files in the LOCKSS Archival Unit (AU) that do not have 'recrawl=false'.")
+            return _('Error %(error)s when requesting LOCKSS stop harvesting deleted files.') % {'error': response['status']}
         return None
 
     def _delete_files(self):
@@ -277,7 +278,7 @@ class Lockssomatic(models.Model):
             utils.mets_add_event(
                 amdsec,
                 event_type='deletion',
-                event_outcome_detail_note='AIP deleted from local storage',
+                event_outcome_detail_note=_('AIP deleted from local storage'),
             )
 
             # If file was split
@@ -384,7 +385,7 @@ class Lockssomatic(models.Model):
         try:
             event_detail = subprocess.check_output(['tar', '--version'])
         except subprocess.CalledProcessError as e:
-            event_detail = e.output or 'Error: getting tool info; probably GNU tar'
+            event_detail = e.output or _('Error: getting tool info; probably GNU tar')
         utils.mets_add_event(
             amdsec,
             event_type='division',

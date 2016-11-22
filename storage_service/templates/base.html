@@ -1,9 +1,10 @@
 {% load staticfiles %}
+{% load i18n %}
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>{% block title %}Archivematica Storage Service{% endblock title %}</title>
+    <title>{% block title %}{% trans "Archivematica Storage Service" %}{% endblock title %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="">
     <meta name="author" content="">
@@ -41,17 +42,17 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </a>
-          <a class="brand" href="#">Archivematica Storage Service</a>
+          <a class="brand" href="#">{% trans "Archivematica Storage Service" %}</a>
           <div class="nav-collapse collapse">
             <ul class="nav">
-              <li class="active"><a href="/">Home</a></li>
-              <li><a href="{% url 'pipeline_list' %}">Pipelines</a></li>
-              <li><a href="{% url 'space_list' %}">Spaces</a></li>
-              <li><a href="{% url 'location_list' %}">Locations</a></li>
-              <li><a href="{% url 'package_list' %}">Packages</a></li>
-              <li><a href="{% url 'settings_edit' %}">Administration</a></li>
+              <li class="active"><a href="/">{% trans "Home" %}</a></li>
+              <li><a href="{% url 'pipeline_list' %}">{% trans "Pipelines" %}</a></li>
+              <li><a href="{% url 'space_list' %}">{% trans "Spaces" %}</a></li>
+              <li><a href="{% url 'location_list' %}">{% trans "Locations" %}</a></li>
+              <li><a href="{% url 'package_list' %}">{% trans "Packages" %}</a></li>
+              <li><a href="{% url 'settings_edit' %}">{% trans "Administration" %}</a></li>
               {% if user.is_authenticated %}
-              <li><a href="{% url 'logout' %}">Logout</a></li>
+              <li><a href="{% url 'logout' %}">{% trans "Log out" %}</a></li>
               {% endif %}
             </ul>
           </div><!--/.nav-collapse -->
@@ -63,7 +64,7 @@
       {% block sidebar %}{% endblock sidebar %}
 
       <div class="row">
-        <h1>{% block page_title %}Archivematica Storage Service{% endblock page_title %}</h1>
+        <h1>{% block page_title %}{% trans "Archivematica Storage Service" %}{% endblock page_title %}</h1>
 
         {% for message in messages %}
           <div class='alert {% for tag in message.tags %}alert-{{tag}} {% endfor %}'>{{ message }}</div>
@@ -79,6 +80,9 @@
     <script src="{{STATIC_URL}}js/jquery-1.10.2.js"></script>
     <script src="{{STATIC_URL}}js/jquery-dataTables.js"></script>
     <script src="{% static 'js/bootstrap.min.js' %}"></script>
+
+    <!-- i18js catalog -->
+    <script type="text/javascript" src="{% url 'javascript-catalog' %}"></script>
 
     <!-- place project specific Javascript in this file -->
     <script src="{% static 'js/project.js' %}"></script>

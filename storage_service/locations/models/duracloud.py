@@ -9,6 +9,7 @@ import urllib
 
 # Core Django, alphabetical
 from django.db import models
+from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 import requests
@@ -26,13 +27,14 @@ LOGGER = logging.getLogger(__name__)
 class Duracloud(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
     host = models.CharField(max_length=256,
-        help_text='Hostname of the DuraCloud instance. Eg. trial.duracloud.org')
-    user = models.CharField(max_length=64, help_text='Username to authenticate as')
-    password = models.CharField(max_length=64, help_text='Password to authenticate with')
-    duraspace = models.CharField(max_length=64, help_text='Name of the Space within DuraCloud')
+        verbose_name=_l('Host'),
+        help_text=_l('Hostname of the DuraCloud instance. Eg. trial.duracloud.org'))
+    user = models.CharField(max_length=64, verbose_name=_l('User'), help_text=_l('Username to authenticate as'))
+    password = models.CharField(max_length=64, verbose_name=_l('Password'), help_text=_l('Password to authenticate with'))
+    duraspace = models.CharField(max_length=64, verbose_name=_l('Duraspace'), help_text=_l('Name of the Space within DuraCloud'))
 
     class Meta:
-        verbose_name = "DuraCloud"
+        verbose_name = _l("DuraCloud")
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [
@@ -75,7 +77,7 @@ class Duracloud(models.Model):
         LOGGER.debug('Response: %s', response)
         if response.status_code != 200:
             LOGGER.warning('%s: Response: %s', response, response.text)
-            raise StorageException('Unable to get list of files in %s' % prefix)
+            raise StorageException(_('Unable to get list of files in %(prefix)s') % {'prefix': prefix})
         # Response is XML in the form:
         # <space id="self.durastore">
         #   <item>path</item>
@@ -105,7 +107,7 @@ class Duracloud(models.Model):
             LOGGER.debug('Response: %s', response)
             if response.status_code != 200:
                 LOGGER.warning('%s: Response: %s', response, response.text)
-                raise StorageException('Unable to get list of files in %s' % prefix)
+                raise StorageException(_('Unable to get list of files in %(prefix)s') % {'prefix': prefix})
             root = etree.fromstring(response.content)
             paths = [p.text for p in root]
             LOGGER.debug('Paths first 10: %s', paths[:10])
@@ -229,7 +231,11 @@ class Duracloud(models.Model):
 
         # Verify file, if size or checksum is known
         if expected_size and os.path.getsize(download_path) != expected_size:
-            raise StorageException('File %s does not match expected size of %s bytes, but was actually %s bytes', download_path, expected_size, os.path.getsize(download_path))
+            raise StorageException(
+                _('File %(path)s does not match expected size of %(expected_size)s bytes, but was actually %(actual_size)s bytes'),
+                {'path': download_path,
+                 'expected_size': expected_size,
+                 'actual_size': os.path.getsize(download_path)})
         calculated_checksum = utils.generate_checksum(download_path, 'md5')
         if checksum and checksum != calculated_checksum.hexdigest():
             raise StorageException('File %s does not match expected checksum of %s, but was actually %s', download_path, checksum, calculated_checksum.hexdigest())
@@ -273,7 +279,7 @@ class Duracloud(models.Model):
                 length = len(data)
 
                 if length < bytes_to_read:
-                    raise StopIteration("End of file reached")
+                    raise StopIteration(_("End of file reached"))
                 else:
                     bytes_read += length
 
@@ -395,7 +401,8 @@ class Duracloud(models.Model):
                     LOGGER.info('Retrying %s', upload_file)
                     self._upload_chunk(url, upload_file, retry_attempts - 1)
                 else:
-                    raise StorageException('Unable to store %s' % upload_file)
+                    raise StorageException(
+                        _('Unable to store %(filename)s') % {'filename': upload_file})
 
     def move_from_storage_service(self, source_path, destination_path, package=None, resume=False):
         """ Moves self.staging_path/src_path to dest_path. """
@@ -405,7 +412,7 @@ class Duracloud(models.Model):
             # Both source and destination paths should end with /
             destination_path = os.path.join(destination_path, '')
             # Duracloud does not accept folders, so upload each file individually
-            for path, _, files in os.walk(source_path):
+            for path, dirs, files in os.walk(source_path):
                 for basename in files:
                     entry = os.path.join(path, basename)
                     dest = entry.replace(source_path, destination_path, 1)
@@ -415,6 +422,6 @@ class Duracloud(models.Model):
             url = self.duraspace_url + urllib.quote(destination_path)
             self._upload_file(url, source_path, resume=resume)
         elif not os.path.exists(source_path):
-            raise StorageException('%s does not exist.' % source_path)
+            raise StorageException(_('%(path)s does not exist.') % {'path': source_path})
         else:
-            raise StorageException('%s is not a file or directory.' % source_path)
+            raise StorageException(_('%(path)s is not a file or directory.') % {'path': source_path})

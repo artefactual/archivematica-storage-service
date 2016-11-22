@@ -5,6 +5,7 @@ import os
 
 # Core Django, alphabetical
 from django.db import models
+from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 import swiftclient
@@ -22,22 +23,28 @@ LOGGER = logging.getLogger(__name__)
 class Swift(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
     auth_url = models.CharField(max_length=256,
-        help_text='URL to authenticate against')
+        verbose_name=_l('Auth URL'),
+        help_text=_l('URL to authenticate against'))
     auth_version = models.CharField(max_length=8, default='2',
-        help_text='OpenStack auth version')
+        verbose_name=_l('Auth version'),
+        help_text=_l('OpenStack auth version'))
     username = models.CharField(max_length=64,
-        help_text='Username to authenticate as. E.g. http://example.com:5000/v2.0/')
+        verbose_name=_l('Username'),
+        help_text=_l('Username to authenticate as. E.g. http://example.com:5000/v2.0/'))
     # HELP how do I store the password?  Has to be plaintext to send to Swift, but that seems like a bad idea
     password = models.CharField(max_length=256,
-        help_text='Password to authenticate with')
-    container = models.CharField(max_length=64)
+        verbose_name=_l('Password'),
+        help_text=_l('Password to authenticate with'))
+    container = models.CharField(max_length=64, verbose_name=_l("Container"))
     tenant = models.CharField(max_length=64, null=True, blank=True,
-        help_text='The tenant/account name, required when connecting to an auth 2.0 system.')
+        verbose_name=_l('Tenant'),
+        help_text=_l('The tenant/account name, required when connecting to an auth 2.0 system.'))
     region = models.CharField(max_length=64, null=True, blank=True,
-        help_text='Optional: Region in Swift')
+        verbose_name=_l('Region'),
+        help_text=_l('Optional: Region in Swift'))
 
     class Meta:
-        verbose_name = "Swift"
+        verbose_name = _l("Swift")
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [
@@ -138,7 +145,7 @@ class Swift(models.Model):
         if 'etag' in headers:
             checksum = utils.generate_checksum(download_path)
             if checksum.hexdigest() != headers['etag']:
-                message = 'ETag {} for {} does not match {}'.format(remote_path, headers['etag'], checksum.hexdigest())
+                message = _('ETag %(remote_path)s for %(etag)s does not match %(checksum)s') % {'remote_path': remote_path, 'etag': headers['etag'], 'checksum': checksum.hexdigest()}
                 logging.warning(message)
                 raise StorageException(message)
 
@@ -171,7 +178,7 @@ class Swift(models.Model):
             # Both source and destination paths should end with /
             destination_path = os.path.join(destination_path, '')
             # Swift does not accept folders, so upload each file individually
-            for path, _, files in os.walk(source_path):
+            for path, dirs, files in os.walk(source_path):
                 for basename in files:
                     entry = os.path.join(path, basename)
                     dest = entry.replace(source_path, destination_path, 1)
@@ -195,4 +202,6 @@ class Swift(models.Model):
                     content_length=os.path.getsize(source_path),
                 )
         else:
-            raise StorageException('%s is neither a file nor a directory, may not exist' % source_path)
+            raise StorageException(
+                _('%(path)s is neither a file nor a directory, may not exist') %
+                {'path': source_path})
