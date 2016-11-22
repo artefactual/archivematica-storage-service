@@ -1,35 +1,36 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block page_title %}All Spaces{% endblock %}
+{% block page_title %}{% trans "All Spaces" %}{% endblock %}
 
 {% block content %}
 
 {% include 'snippets/space_description.html' %}
 
-<p><a href="{% url 'space_create' %}">Create new space</a></p>
+<p><a href="{% url 'space_create' %}">{% trans "Create new space" %}</a></p>
 
 {% for s in spaces %}
     <div class='space'>
         <dl>
-            <dt>Access Protocol</dt> <dd>{{ s.get_access_protocol_display }}</dd>
-            <dt>Path</dt> <dd>{{ s.path|default:"&lt;None&gt;" }}</dd>
-            <dt>Last Verified</dt> <dd>{{ s.last_verified }}</dd>
+            <dt>{% trans "Access Protocol" %}</dt> <dd>{{ s.get_access_protocol_display }}</dd>
+            <dt>{% trans "Path" %}</dt> <dd>{{ s.path|default:_("&lt;None&gt;") }}</dd>
+            <dt>{% trans "Last Verified" %}</dt> <dd>{{ s.last_verified }}</dd>
             {% for k, v in s.child.items %}
                 <dt>{{ k|capfirst }}</dt> <dd>{{ v }}</dd>
             {% endfor %}
-            <dt>Actions</dt>
+            <dt>{% trans "Actions" %}</dt>
               <dd>
                 <ul>
-                  <li><a href="{% url 'space_detail' s.uuid %}">View Details and Locations</a></li>
-                  <li><a href="{% url 'space_edit' s.uuid %}">Edit Space</a></li>
-                  <li><a href="{% url 'location_create' s.uuid %}">Create Location here</a></li>
-                  <li><a href="{% url 'space_delete' s.uuid %}?next={{ request.path }}">Delete Space</a></li>
+                  <li><a href="{% url 'space_detail' s.uuid %}">{% trans "View Details and Locations" %}</a></li>
+                  <li><a href="{% url 'space_edit' s.uuid %}">{% trans "Edit Space" %}</a></li>
+                  <li><a href="{% url 'location_create' s.uuid %}">{% trans "Create Location here" %}</a></li>
+                  <li><a href="{% url 'space_delete' s.uuid %}?next={{ request.path }}">{% trans "Delete Space" %}</a></li>
                 </ul>
               </dd>
         </dl>
     </div>
 {% empty %}
-    <p>No spaces currently exist.</p>
+  <p>{% trans "No spaces currently exist." %}</p>
 {% endfor %}
 
 {% endblock %}

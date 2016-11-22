@@ -1,24 +1,25 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
-{% block page_title %}Archivematica Storage Service{% endblock page_title %}
+{% block page_title %}{% trans "Archivematica Storage Service" %}{% endblock page_title %}
 
 {% block content %}
 
-<p>Welcome to the Archivematica Storage Service!  Here you can configure the storage accessible to your Archivematica pipelines.</p>
+<p>{% trans "Welcome to the Archivematica Storage Service!  Here you can configure the storage accessible to your Archivematica pipelines." %}</p>
 
-<h3>Pipelines</h3>
+<h3>{% trans "Pipelines" %}</h3>
 {% include "snippets/pipeline_description.html" %}
 
-<h3>Spaces</h3>
+<h3>{% trans "Spaces" %}</h3>
 {% include "snippets/space_description.html" %}
 
-<h3>Locations</h3>
+<h3>{% trans "Locations" %}</h3>
 {% include "snippets/location_description.html" %}
 
-<h3>Packages</h3>
+<h3>{% trans "Packages" %}</h3>
 {% include "snippets/package_description.html" %}
 
-<h3>Administration</h3>
+<h3>{% trans "Administration" %}</h3>
 {% include "snippets/administration_description.html" %}
 
 {% endblock content %}

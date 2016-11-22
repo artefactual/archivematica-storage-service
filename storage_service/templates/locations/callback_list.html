@@ -1,17 +1,18 @@
 {% extends "administration/base.html" %}
+{% load i18n %}
 
-{% block page_title %}All Callbacks{% endblock %}
+{% block page_title %}{% trans "All Callbacks" %}{% endblock %}
 
 {% block content %}
 
 {% include 'snippets/callback_description.html' %}
 
-<p><a href="{% url 'callback_create' %}">Create new callback</a></p>
+<p><a href="{% url 'callback_create' %}">{% trans "Create new callback" %}</a></p>
 
 {% if callbacks %}
   {% include "snippets/callbacks_table.html" %}
 {% else %}
-  <p>No callbacks currently exist.</p>
+  <p>{% trans "No callbacks currently exist." %}</p>
 {% endif %}
 
 {% endblock %}

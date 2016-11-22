@@ -1,10 +1,11 @@
+{% load i18n %}
   <table class="datatable">
     <thead>
       <tr>
-        <th>UUID</th>
-        <th>Description</th>
-        <th>Enabled</th>
-        <th>Edit</th>
+        <th>{% trans "UUID" %}</th>
+        <th>{% trans "Description" %}</th>
+        <th>{% trans "Enabled" %}</th>
+        <th>{% trans "Edit" %}</th>
       </tr>
     </thead>
     <tbody>
@@ -12,8 +13,8 @@
       <tr>
         <td><a href="{% url 'pipeline_detail' pipeline.uuid %}">{{ pipeline.uuid }}</a></td>
         <td>{{ pipeline.description }}</td>
-        <td>{{ pipeline.enabled|yesno:"Enabled,Disabled" }}</td>
-        <td><a href="{% url 'pipeline_edit' pipeline.uuid %}">Edit</a> | <a href="{% url 'pipeline_switch_enabled' pipeline.uuid %}?next={{ request.path }}">{{ pipeline.enabled|yesno:"Disable,Enable" }}</a> | <a href="{% url 'pipeline_delete' pipeline.uuid %}?next={{ request.path }}">Delete</a></td>
+        <td>{{ pipeline.enabled|yesno:_("Enabled,Disabled") }}</td>
+        <td><a href="{% url 'pipeline_edit' pipeline.uuid %}">{% trans "Edit" %}</a> | <a href="{% url 'pipeline_switch_enabled' pipeline.uuid %}?next={{ request.path }}">{{ pipeline.enabled|yesno:_("Disable,Enable") }}</a> | <a href="{% url 'pipeline_delete' pipeline.uuid %}?next={{ request.path }}">{% trans "Delete" %}</a></td>
       </tr>
     {% endfor %}
     </tbody>

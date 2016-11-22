@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block page_title %}Fixity Checks{% endblock %}
+{% block page_title %}{% trans "Fixity Checks" %}{% endblock %}
 
 {% block content %}
 
@@ -8,8 +9,8 @@
   <table class="datatable">
     <thead>
       <tr>
-        <th>Date</th>
-        <th>Error</th>
+        <th>{% trans "Date" %}</th>
+        <th>{% trans "Error" %}</th>
       </tr>
     </thead>
     <tbody>
@@ -22,7 +23,7 @@
     </tbody>
   </table>
 {% else %}
-  <p>No fixity checks found.</p>
+  <p>{% trans "No fixity checks found." %}</p>
 {% endif %}
 
 {% endblock %}

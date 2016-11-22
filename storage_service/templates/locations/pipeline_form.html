@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block page_title %}{{action}} Pipeline{% endblock %}
+{% block page_title %}{% blocktrans %}{{action}} Pipeline{% endblocktrans %}{% endblock %}
 
 {% block content %}
 
@@ -12,7 +13,7 @@
     {% endif %}
     {% csrf_token %}
         {{ form.as_p }}
-        <input type="submit" value="{{action}} Pipeline" class='btn btn-primary' />
+        <input type="submit" value="{% blocktrans %}{{action}} Pipeline{% endblocktrans %}" class='btn btn-primary' />
     </form>
 </div>
 {% endblock %}

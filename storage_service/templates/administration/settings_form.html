@@ -1,6 +1,7 @@
 {% extends "administration/base.html" %}
+{% load i18n %}
 
-{% block page_title %}Settings{% endblock %}
+{% block page_title %}{% trans "Settings" %}{% endblock %}
 
 {% block content %}
 
@@ -9,11 +10,11 @@
       {% csrf_token %}
       {{ common_form.as_p }}
 
-      <h2>Default Locations</h2>
-      <p>Configure default locations here.  These will be added to each new pipeline that registers with the storage service.</p>
+      <h2>{% trans "Default Locations" %}</h2>
+      <p>{% trans "Configure default locations here.  These will be added to each new pipeline that registers with the storage service." %}</p>
       {{ default_location_form.as_p }}
 
-      <input type="submit" value="Save" class='btn btn-primary' />
+      <input type="submit" value="{% trans "Save" %}" class='btn btn-primary' />
     </form>
 </div>
 {% endblock %}

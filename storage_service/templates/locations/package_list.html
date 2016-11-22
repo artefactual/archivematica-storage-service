@@ -1,20 +1,21 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block page_title %}All Packages{% endblock %}
+{% block page_title %}{% trans "All Packages" %}{% endblock %}
 
 {% block content %}
 
 {% include 'snippets/package_description.html' %}
 
 <p>
-  <a href="{% url 'aip_recover_request' %}">View recovery requests</a>
-  | <a href="{% url 'package_delete_request' %}">View delete requests</a>
+  <a href="{% url 'aip_recover_request' %}">{% trans "View recovery requests" %}</a>
+  | <a href="{% url 'package_delete_request' %}">{% trans "View delete requests" %}</a>
 </p>
 
 {% if packages %}
   {% include "snippets/packages_table.html" %}
 {% else %}
-  <p>No packages currently exist.</p>
+  <p>{% trans "No packages currently exist." %}</p>
 {% endif %}
 
 {% endblock %}
