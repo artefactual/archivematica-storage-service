@@ -25,7 +25,7 @@ class TestLocationAPI(TestCase):
     def test_requires_auth(self):
         del self.client.defaults['HTTP_AUTHORIZATION']
         response = self.client.post('/api/v2/location/213086c8-232e-4b9e-bb03-98fbc7a7966a/')
-        assert response.status_code == 404
+        assert response.status_code == 401
 
     def test_cant_move_from_non_existant_locations(self):
         data = {
