@@ -30,14 +30,14 @@ NSMAP = {
     'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
 }
 
-PREFIX_NS = {k: '{' + v + '}' for k, v in NSMAP.iteritems()}
+PREFIX_NS = {k: '{' + v + '}' for k, v in NSMAP.items()}
 
 ############ SETTINGS ############
 
 def get_all_settings():
     """ Returns a dict of 'setting_name': value with all of the settings. """
     settings = dict(models.Settings.objects.all().values_list('name', 'value'))
-    for setting, value in settings.iteritems():
+    for setting, value in settings.items():
         settings[setting] = ast.literal_eval(value)
     return settings
 

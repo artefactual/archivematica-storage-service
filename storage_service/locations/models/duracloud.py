@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # stdlib, alphabetical
 import logging
 from lxml import etree
@@ -17,7 +18,7 @@ from common import utils
 
 # This module, alphabetical
 from . import StorageException
-from location import Location
+from .location import Location
 
 LOGGER = logging.getLogger(__name__)
 
@@ -396,7 +397,7 @@ class Duracloud(models.Model):
                 else:
                     raise StorageException('Unable to store %s' % upload_file)
 
-    def move_from_storage_service(self, source_path, destination_path, resume=False):
+    def move_from_storage_service(self, source_path, destination_path, package=None, resume=False):
         """ Moves self.staging_path/src_path to dest_path. """
         source_path = utils.coerce_str(source_path)
         destination_path = utils.coerce_str(destination_path)

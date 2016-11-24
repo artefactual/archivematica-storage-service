@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # stdlib, alphabetical
 import datetime
 import distutils.dir_util
@@ -6,7 +7,6 @@ import logging
 from lxml import etree
 import os
 import re
-import requests
 import shutil
 import subprocess
 import tempfile
@@ -19,16 +19,17 @@ from django.utils import timezone
 import bagit
 import jsonfield
 from django_extensions.db.fields import UUIDField
+import requests
 
 # This project, alphabetical
 from common import utils
 
 # This module, alphabetical
 from . import StorageException
-from location import Location
-from space import Space
-from event import File
-from fixity_log import FixityLog
+from .location import Location
+from .space import Space
+from .event import File
+from .fixity_log import FixityLog
 
 __all__ = ('Package', )
 
@@ -116,9 +117,10 @@ class Package(models.Model):
     )
 
     # Reingest type options
-    METADATA_ONLY = 'metadata'
-    OBJECTS = 'objects'
-    REINGEST_CHOICES = (METADATA_ONLY, OBJECTS)
+    METADATA_ONLY = 'metadata' # Re-ingest metadata only
+    OBJECTS = 'objects'        # Re-ingest metadata and objects for DIP generation
+    FULL = 'full'              # Full re-ingest
+    REINGEST_CHOICES = (METADATA_ONLY, OBJECTS, FULL)
 
     class Meta:
         verbose_name = "Package"
@@ -243,6 +245,7 @@ class Package(models.Model):
         ss_internal.space.move_from_storage_service(
             source_path=self.current_path,
             destination_path=relative_path,
+            package=self,
         )
         self.local_path_location = ss_internal
         self.local_path = int_path
@@ -362,7 +365,8 @@ class Package(models.Model):
         # Copy corrupt files from staging to backup directory
         destination_space.move_from_storage_service(
             source_path=destination_path,
-            destination_path=destination_path)
+            destination_path=destination_path,
+            package=self)
         destination_space.post_move_from_storage_service(
             staging_path=None,
             destination_path=None)
@@ -383,7 +387,8 @@ class Package(models.Model):
         # Copy recovery files from staging to AIP store
         destination_space.move_from_storage_service(
             source_path=destination_path,
-            destination_path=destination_path)
+            destination_path=destination_path,
+            package=self)
         destination_space.post_move_from_storage_service(
             staging_path=None,
             destination_path=None)
@@ -434,7 +439,7 @@ class Package(models.Model):
         if self.package_type in (Package.AIP, Package.AIC):
             try:
                 src_space.move_to_storage_service(pointer_file_src, self.pointer_file_path, self.pointer_file_location.space)
-                self.pointer_file_location.space.move_from_storage_service(self.pointer_file_path, pointer_file_dst)
+                self.pointer_file_location.space.move_from_storage_service(self.pointer_file_path, pointer_file_dst, package=None)
             except:
                 LOGGER.warning("No pointer file found")
                 self.pointer_file_location = None
@@ -453,6 +458,7 @@ class Package(models.Model):
         dest_space.move_from_storage_service(
             source_path=self.current_path,  # This should include Location.path
             destination_path=os.path.join(self.current_location.relative_path, self.current_path),
+            package=self,
         )
         # Update package status once transferred to SS
         if dest_space.access_protocol not in (Space.LOM, Space.ARKIVUM):
@@ -772,6 +778,7 @@ class Package(models.Model):
         dest_space.move_from_storage_service(
             source_path=self.current_path,  # This should include Location.path
             destination_path=os.path.join(self.current_location.relative_path, self.current_path),
+            package=self,
         )
 
         # Save new space/location usage, package status
@@ -882,13 +889,14 @@ class Package(models.Model):
 
     # REINGEST
 
-    def start_reingest(self, pipeline, reingest_type):
+    def start_reingest(self, pipeline, reingest_type, processing_config='default'):
         """
         Copies this package to `pipeline` for reingest.
 
         Fetches the AIP from storage, extracts and runs fixity on it to verify integrity.
         If reingest_type is METADATA_ONLY, sends the METS and all files in the metadata directory.
         If reingest_type is OBJECTS, sends METS, all files in metadata directory and all objects, preservation and original.
+        If reingest_type is FULL, we do like in OBJECTS but sending the package to the transfer source location.
         Calls Archivematica endpoint /api/ingest/reingest/ to start reingest.
 
         :param pipeline: Pipeline object to send reingested AIP to.
@@ -902,7 +910,7 @@ class Package(models.Model):
         # Check and set reingest pipeline
         if self.misc_attributes.get('reingest_pipeline', None):
             return {'error': True, 'status_code': 409,
-                'message': 'This AIP already being reingested on {}'.format(self.misc_attributes['reingest_pipeline'])}
+                'message': 'This AIP is already being reingested on {}'.format(self.misc_attributes['reingest_pipeline'])}
         self.misc_attributes.update({'reingest_pipeline': pipeline.uuid})
 
         # Fetch and extract if needed
@@ -927,7 +935,10 @@ class Package(models.Model):
         reingest_files = [
             os.path.join(relative_path, 'data', 'METS.' + self.uuid + '.xml')
         ]
-        if reingest_type == self.OBJECTS:
+        if reingest_type == self.FULL:
+            # All the things!
+            reingest_files = [relative_path]
+        elif reingest_type == self.OBJECTS:
             # All in objects except submissionDocumentation dir
             for f in os.listdir(os.path.join(local_path, 'data', 'objects')):
                 if f in ('submissionDocumentation'):
@@ -941,12 +952,32 @@ class Package(models.Model):
         elif reingest_type == self.METADATA_ONLY:
             reingest_files.append(os.path.join(relative_path, 'data', 'objects', 'metadata', ''))
 
+        # Fetch processing configuration, put it in the root of the package and
+        # include the file in reingest_files.
+        if reingest_type == self.FULL and processing_config != 'default':
+            try:
+                config = pipeline.get_processing_config(processing_config)
+            except requests.exceptions.RequestException:
+                LOGGER.error('Reingest: processing configuration %s could not be loaded', processing_config)
+            else:
+                config_path = os.path.join(local_path, 'processingMCP.xml')
+                try:
+                    # It's not expected to find an existing processingMCP.xml
+                    # file in the original AIP, but we are using the w+ mode
+                    # just in case.
+                    with open(config_path, 'w+') as f:
+                        f.write(config)
+                    LOGGER.debug('Reingest: processing configuration %s written, location: %s', processing_config, config_path)
+                except IOError:
+                    LOGGER.exception('Reingest: processing configuration %s could not be written', processing_config)
+                    raise
+
         LOGGER.info('Reingest: files: %s', reingest_files)
 
         # Copy to pipeline
         try:
             currently_processing = Location.active.filter(pipeline=pipeline).get(purpose=Location.CURRENTLY_PROCESSING)
-        except Location.DoesNotExist, Location.MultipleObjectsReturned:
+        except (Location.DoesNotExist, Location.MultipleObjectsReturned):
             return {'error': True, 'status_code': 412,
                 'message': 'No currently processing Location is associated with pipeline {}'.format(pipeline.uuid)}
         LOGGER.debug('Reingest: Current location: %s', current_location)
@@ -960,43 +991,38 @@ class Package(models.Model):
             currently_processing.space.move_from_storage_service(
                 source_path=path,
                 destination_path=os.path.join(dest_basepath, path),
+                package=self,
             )
 
         # Delete local copy of extraction
         if self.local_path != self.full_path:
-            shutil.rmtree(local_path)
+            try:
+                shutil.rmtree(local_path)
+            except OSError:  # May have been moved not copied
+                pass
         if temp_dir:
             shutil.rmtree(temp_dir)
 
-        # Call reingest AIP API
-        reingest_url = 'http://' + pipeline.remote_name + '/api/ingest/reingest'
-        params = {
-            'username': pipeline.api_username,
-            'api_key': pipeline.api_key,
-            'name': relative_path,
-            'uuid': self.uuid,
-        }
-        LOGGER.debug('Reingest: URL: %s; params: %s', reingest_url, params)
+        # Call reingest API
+        reingest_target = 'transfer' if reingest_type == self.FULL else 'ingest'
+        reingest_uuid = self.uuid
         try:
-            response = requests.post(reingest_url, data=params, allow_redirects=True)
-        except requests.exceptions.RequestException:
-            LOGGER.exception('Unable to connect to pipeline %s', pipeline)
-            return {'error': True, 'status_code': 502,
-                'message': 'Unable to connect to pipeline'}
-        LOGGER.debug('Response: %s %s', response.status_code, response.text)
-        if response.status_code != requests.codes.ok:
-            try:
-                json_error = response.json().get('message',
-                    'Error in approve reingest API.')
-            except ValueError:  # Failed to decode JSON
-                json_error = 'Error in approve reingest API.'
-            LOGGER.error(json_error)
-            return {'error': True, 'status_code': 502,
-                'message': 'Error from pipeline: %s' % json_error}
-
+            resp = pipeline.reingest(relative_path, self.uuid, reingest_target)
+        except requests.exceptions.RequestException as e:
+            message = 'Error in approve reingest API. {}'.format(e)
+            LOGGER.exception('Error approving reingest in pipeline for package %s', self.uuid)
+            return {'error': True, 'status_code': 502, 'message': message}
+        else:
+            reingest_uuid = resp.get('reingest_uuid')
+        LOGGER.debug('Reingest UUID: %s', reingest_uuid)
         self.save()
 
-        return {'error': False, 'status_code': 202, 'message': 'Package {} sent to pipeline {} for re-ingest'.format(self.uuid, pipeline)}
+        return {
+            'error': False,
+            'status_code': 202,
+            'message': 'Package {} sent to pipeline {} for re-ingest'.format(self.uuid, pipeline),
+            'reingest_uuid': reingest_uuid,
+        }
 
     def finish_reingest(self, origin_location, origin_path, reingest_location, reingest_path):
         """
@@ -1005,6 +1031,7 @@ class Package(models.Model):
         Fetches the AIP from the origin_location.
         Replaces the METS with the updated one.
         Copies the new metadata directory over the old one. New files will be added, updated files will be overwritten.
+        Copies preservation derivatives
         Recreate the bagit manifest.
         Compress the AIP according to what was selected during reingest in Archivematica.
         Store the AIP in the reingest_location.
@@ -1041,13 +1068,14 @@ class Package(models.Model):
         internal_space.move_from_storage_service(
             source_path=reingest_path,  # This should include Location.path
             destination_path=os.path.join(ss_internal.relative_path, reingest_path),
+            package=self,
         )
         reingest_full_path = os.path.join(ss_internal.full_path, reingest_path)
 
         # Take note of whether new version of AIP should be compressed
         to_be_compressed = os.path.isfile(reingest_full_path)
 
-        # Extract if needed
+        # Extract reingested AIP if needed
         if os.path.isfile(reingest_full_path):
             # TODO modify extract_file and get_base_directory to handle reingest paths?  Update self.local_path sooner?
             # Extract
@@ -1087,7 +1115,7 @@ class Package(models.Model):
                 self.pointer_file_path = os.path.join(utils.uuid_to_path(self.uuid), 'pointer.{}.xml'.format(self.uuid))
 
             src_space.move_to_storage_service(reingest_pointer_src, reingest_pointer_name, internal_space)
-            internal_space.move_from_storage_service(reingest_pointer_name, reingest_pointer_dst)
+            internal_space.move_from_storage_service(reingest_pointer_name, reingest_pointer_dst, package=None)
 
             if was_compressed:
                 reingest_pointer = os.path.join(ss_internal.full_path, reingest_pointer_name)
@@ -1097,11 +1125,20 @@ class Package(models.Model):
                 # Remove initial copy of pointer
                 os.remove(os.path.join(ss_internal.full_path, reingest_pointer_name))
 
-        # Replace METS
+        # If there's no reingest-saved METS, copy the original METS there
+        # WARNING If submission documentation is copied later, the original METS will be overwritten.
         original_mets_path = os.path.join(path, 'data', 'METS.' + self.uuid + '.xml')
+        backup_mets_path = os.path.join(path, 'data', 'objects', 'submissionDocumentation', 'METS.' + self.uuid + '.xml')
+        if not os.path.exists(backup_mets_path):
+            LOGGER.info('Moving original METS from %s to %s', original_mets_path, backup_mets_path)
+            os.rename(original_mets_path, backup_mets_path)
+        else:
+            LOGGER.info('Removing intermediate METS %s', original_mets_path)
+            os.remove(original_mets_path)
+
+        # Replace METS
         reingest_mets_path = os.path.join(reingest_full_path, 'data', 'METS.' + self.uuid + '.xml')
-        LOGGER.info('Replacing original METS %s with reingested METS %s', original_mets_path, reingest_mets_path)
-        os.remove(original_mets_path)
+        LOGGER.info('Replacing AIP METS %s with reingested METS %s', original_mets_path, reingest_mets_path)
         os.rename(reingest_mets_path, original_mets_path)
 
         # Replace new metadata files
@@ -1112,9 +1149,37 @@ class Package(models.Model):
             distutils.dir_util.copy_tree(reingest_metadata_dir,
                 original_metadata_dir)
 
+        # Replace preservation derivatives
+        reingest_objects_dir = os.path.join(reingest_full_path, 'data', 'objects')
+        original_objects_dir = os.path.join(path, 'data', 'objects')
+        preservation_regex = r'(.+)-\w{8}-\w{4}-\w{4}-\w{4}-\w{12}(.*)'
+        # Walk through all files
+        for dirpath, _, filepaths in os.walk(reingest_objects_dir):
+            for filepath in filepaths:
+                match = re.match(preservation_regex, filepath)
+                # If preservation file, copy and delete the old one
+                if match:
+                    reingest_preservation_path = os.path.join(dirpath, filepath)
+                    original_preservation_path = reingest_preservation_path.replace(reingest_objects_dir, original_objects_dir)
+                    # Check for another preservation derivative and delete
+                    dest_dir = os.path.dirname(original_preservation_path)
+                    dupe_preservation_regex = match.group(1) + r'-\w{8}-\w{4}-\w{4}-\w{4}-\w{12}' + match.group(2)
+                    for p in os.listdir(dest_dir):
+                        # Don't delete if the 'duplicate' is the original
+                        if filepath == p:
+                            continue
+                        if re.match(dupe_preservation_regex, p):
+                            del_path = os.path.join(dest_dir, p)
+                            LOGGER.info('Deleting %s', del_path)
+                            os.remove(del_path)
+                    # Copy new preservation derivative
+                    LOGGER.info('Moving %s to %s', reingest_preservation_path, original_preservation_path)
+                    shutil.copy2(reingest_preservation_path, original_preservation_path)
+
         # Update bag payload and verify
         bag = bagit.Bag(path)
         bag.save(manifests=True)
+        bag = bagit.Bag(path)  # Workaround for bug https://github.com/LibraryOfCongress/bagit-python/pull/63
         bag.validate()  # Raises exception in case of problem
 
         # Compress if necessary
@@ -1179,6 +1244,7 @@ class Package(models.Model):
         dest_space.move_from_storage_service(
             source_path=dest_path,  # This should include Location.path
             destination_path=os.path.join(reingest_location.relative_path, dest_path),
+            package=self,
         )
 
         # Delete old copy of AIP if different

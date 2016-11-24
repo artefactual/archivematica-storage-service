@@ -1,7 +1,5 @@
 # stdlib, alphabetical
-import base64
 import cgi
-import json
 import datetime
 import logging
 import os
@@ -9,8 +7,6 @@ from multiprocessing import Process
 import shutil
 import tempfile
 import time
-import urllib
-import urllib2
 
 # Core Django, alphabetical
 from django.http import HttpResponse
@@ -47,30 +43,15 @@ def deposit_list(location_uuid):
         status=models.Package.FINALIZED)
     return deposits
 
-"""
-Write HTTP request's body content to a file
-
-Return the number of bytes successfully written
-"""
-def write_file_from_request_body(request, file_path):
-    bytes_written = 0
-    new_file = open(file_path, 'ab')
-    chunk = request.read()
-    if chunk != None:
-        new_file.write(chunk)
-        bytes_written += len(chunk)
-        chunk = request.read()
-    new_file.close()
-    return bytes_written
-
-"""
-Write HTTP request's body content to a temp file
-
-Return the temp file's path
-"""
 def write_request_body_to_temp_file(request):
-    filehandle, temp_filepath = tempfile.mkstemp()
-    write_file_from_request_body(request, temp_filepath)
+    """
+    Write HTTP request's body content to a temp file.
+
+    Return the temp file's path
+    """
+    _, temp_filepath = tempfile.mkstemp()
+    with open(temp_filepath, 'ab') as f:
+        f.write(request.body)
     return temp_filepath
 
 def parse_filename_from_content_disposition(header):
@@ -83,52 +64,47 @@ def parse_filename_from_content_disposition(header):
     filename = params.get('filename', '')
     return filename
 
-"""
-Pad a filename numerically, preserving the file extension, if it's a duplicate
-of an existing file. This function is recursive.
-
-Returns padded (if necessary) file path
-"""
 def pad_destination_filepath_if_it_already_exists(filepath, original=None, attempt=0):
-    if original == None:
+    """
+    Generate unique file paths.
+
+    Pad a filename numerically, preserving the file extension, if it's a duplicate of an existing file. This function is recursive.
+
+    Returns padded (if necessary) file path
+    """
+    if original is None:
         original = filepath
     attempt = attempt + 1
     if os.path.exists(filepath):
         return pad_destination_filepath_if_it_already_exists(original + '_' + str(attempt), original, attempt)
     return filepath
 
-"""
-Download a URL resource to a destination directory, using the response's
-Content-Disposition header, if available, to determine the destination
-filename (using the filename at the end of the URL otherwise)
-
-Returns filename of downloaded resource
-"""
 def download_resource(url, destination_path, filename=None, username=None, password=None):
-    LOGGER.info('downloading url: ' + url)
-    request = urllib2.Request(url)
+    """
+    Download a resource.
 
-    if username != None and password != None:
-        base64string = base64.encodestring('%s:%s' % (username, password)).replace('\n', '')
-        request.add_header("Authorization", "Basic %s" % base64string)   
+    Download a URL resource to a destination directory, using the response's Content-Disposition header, if available, to determine the destination filename (using the filename at the end of the URL otherwise)
 
-    response = urllib2.urlopen(request)
-    info = response.info()
-    if filename == None:
-        if 'content-disposition' in info:
-            filename = parse_filename_from_content_disposition(info['content-disposition'])
+    Returns filename of downloaded resource
+    """
+    LOGGER.info('downloading url: %s', url)
+
+    auth = None
+    if username is not None and password is not None:
+        auth = (username, password)
+
+    response = requests.get(url, auth=auth)
+    if filename is None:
+        if 'content-disposition' in response.headers:
+            filename = parse_filename_from_content_disposition(response.headers['content-disposition'])
         else:
             filename = os.path.basename(url)
     LOGGER.info('Filename set to ' + filename)
 
     filepath = os.path.join(destination_path, filename)
-    buffer_size = 16 * 1024
     with open(filepath, 'wb') as fp:
-        while True:
-            chunk = response.read(buffer_size)
-            if not chunk:
-                break
-            fp.write(chunk)
+        fp.write(response.content)
+
     return filename
 
 def deposit_download_tasks(deposit):
@@ -235,7 +211,7 @@ def _fetch_content(deposit_uuid, objects, subdirs=None):
             )
             file_record.save()
         except Exception as e:
-            LOGGER.error('Package download task encountered an error:' + str(e))
+            LOGGER.exception('Package download task encountered an error:' + str(e))
             # an error occurred
             task_file.failed = True
             task_file.save()
@@ -360,17 +336,16 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
         time.sleep(5)
 
     # make request to pipeline's transfer approval API
-    data = urllib.urlencode({
+    data = {
         'username': pipeline.api_username,
         'api_key': pipeline.api_key,
         'directory': deposit.current_path,
         'type': 'standard'
-    })
+    }
 
-    pipeline_endpoint_url = 'http://' + pipeline.remote_name + '/api/transfer/approve/'
-    approve_request = urllib2.Request(pipeline_endpoint_url, data)
+    url = 'http://' + pipeline.remote_name + '/api/transfer/approve/'
     try:
-        approve_response = urllib2.urlopen(approve_request)
+        response = requests.post(url, data=data)
     except Exception:
         LOGGER.exception('Automatic approval of transfer for deposit %s failed', deposit.uuid)
         # move back to deposit directory
@@ -380,7 +355,7 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
             'error': True,
             'message': 'Request to pipeline ' + pipeline.uuid + ' transfer approval API failed: check credentials and REST API IP whitelist.'
         }
-    result = json.loads(approve_response.read())
+    result = response.json()
     return result
 
 def sword_error_response(request, status, summary):
@@ -393,20 +368,32 @@ def sword_error_response(request, status, summary):
     return HttpResponse(error_xml, status=error_details['status'])
 
 def store_mets_data(mets_path, deposit, object_id):
-    submission_documentation_directory = os.path.join(deposit.full_path, 'submissionDocumentation')
-    if not os.path.exists(submission_documentation_directory):
-        os.mkdir(submission_documentation_directory)
+    """
+    Create transfer directory structure & store METS in it.
 
-    mods_directory = os.path.join(submission_documentation_directory, 'mods')
-    if not os.path.exists(mods_directory):
-        os.mkdir(mods_directory)
+    Creates submission documentation directory with MODS and objects subdirectories.
+    Also moves the METS into the submission documentation directory, overwriting anything already there.
+    """
+    create_dirs = [
+        os.path.join(deposit.full_path, 'submissionDocumentation', 'mods'),
+        os.path.join(deposit.full_path, object_id.replace(':', '-'))
+    ]
+    for d in create_dirs:
+        try:
+            LOGGER.debug('Creating %s', d)
+            os.makedirs(d)
+        except OSError:
+            if not os.path.isdir(d):
+                raise
 
     mets_name = object_id.replace(':', '-') + '-METS.xml'
-    target = os.path.join(submission_documentation_directory, mets_name)
+    target = os.path.join(deposit.full_path, 'submissionDocumentation', mets_name)
 
     # There may be a previous METS file if the same file is being
     # re-transferred, so remove and update the METS in this case.
     if os.path.exists(target):
+        LOGGER.debug('Removing existing %s', target)
         os.unlink(target)
 
+    LOGGER.debug('Move METS file from %s to %s', mets_path, target)
     shutil.move(mets_path, target)

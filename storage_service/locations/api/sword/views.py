@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # stdlib, alphabetical
 import logging
 from lxml import etree as etree
@@ -14,7 +15,8 @@ from django.utils import timezone
 # External dependencies, alphabetical
 
 # This project, alphabetical
-import helpers
+from . import helpers
+from common import utils
 from locations import models
 
 LOGGER = logging.getLogger(__name__)
@@ -89,7 +91,7 @@ def collection(request, location):
                     'resource_name': 'file', 'uuid': deposit.uuid}))
 
             entries.append({
-                'title': deposit.description or 'Deposit '+deposit.uuid,
+                'title': deposit.description or 'Deposit ' + deposit.uuid,
                 'url': edit_iri,
             })
 
@@ -105,7 +107,7 @@ def collection(request, location):
             # process creation request, if criteria met
             source_location = request.GET.get('source_location', '')
             relative_path_to_files = request.GET.get('relative_path_to_files', '')
-            
+
             if request.body != '':
                 try:
                     temp_filepath = helpers.write_request_body_to_temp_file(request)
@@ -117,8 +119,8 @@ def collection(request, location):
                         os.unlink(temp_filepath)
                         mets_data = None
 
-                    if mets_data != None:
-                        if mets_data['deposit_name'] == None:
+                    if mets_data is not None:
+                        if mets_data['deposit_name'] is None:
                             return helpers.sword_error_response(request, 400, 'No deposit name found in XML.')
                         if not os.path.isdir(location.full_path):
                             return helpers.sword_error_response(request, 500, 'Collection path (%s) does not exist: contact an administrator.' % (location.full_path))
@@ -209,7 +211,8 @@ def _spawn_batch_download_and_flag_finalization_if_requested(deposit, request, m
         deposit.save()
 
     # create subprocess so content URLs can be downloaded asynchronously
-    helpers.spawn_download_task(deposit.uuid, mets_data['objects'])
+    object_subdir = mets_data['object_id'].replace(':', '-')
+    helpers.spawn_download_task(deposit.uuid, mets_data['objects'], [object_subdir])
     helpers.spawn_download_task(deposit.uuid, mets_data['mods'], ['submissionDocumentation', 'mods'])
 
 def _parse_name_and_content_urls_from_mets_file(filepath):
@@ -222,26 +225,20 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
     root = tree.getroot()
     deposit_name = root.get('LABEL')
     object_id = root.get('OBJID')
-    LOGGER.info('found deposit name in mets: ' + deposit_name)
+    LOGGER.info('found deposit name in mets: %s', deposit_name)
 
     # parse XML for content URLs
     objects = []
     mods = []
 
-    expression = "{http://www.loc.gov/METS/}fileSec/" + \
-        "{http://www.loc.gov/METS/}fileGrp[@ID='DATASTREAMS']/" + \
-        "{http://www.loc.gov/METS/}fileGrp[@ID='{type}']/" + \
-        "{http://www.loc.gov/METS/}file/" + \
-        "{http://www.loc.gov/METS/}FLocat"
-
     for type_ in ('OBJ', 'MODS'):
-        elements = root.iterfind(expression.replace('{type}', type_))
 
         if type_ == 'OBJ':
             collection = objects
         elif type_ == 'MODS':
             collection = mods
 
+        elements = root.iterfind("mets:fileSec/mets:fileGrp[@ID='DATASTREAMS']/mets:fileGrp[@ID='" + type_ + "']/mets:file/mets:FLocat", namespaces=utils.NSMAP)
         for element in elements:
             url = element.get('{http://www.w3.org/1999/xlink}href')
             filename = element.get('{http://www.w3.org/1999/xlink}title')
@@ -254,12 +251,12 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
                 raise Exception('If using CHECKSUM attribute, CHECKSUMTYPE attribute value must be set to MD5 in XML')
 
             collection.append({
-               'object_id': object_id,
-               'filename': filename,
-               'url': url,
-               'checksum': checksum
+                'object_id': object_id,
+                'filename': filename,
+                'url': url,
+                'checksum': checksum
             })
-            LOGGER.info('found url in mets: ' + url)
+            LOGGER.info('found url in mets: %s', url)
 
     return {
         'deposit_name': deposit_name,
@@ -287,7 +284,7 @@ def _create_deposit_directory_and_db_entry(location, deposit_name=None, source_p
         shutil.copytree(source_path, deposit_path)
     else:
         os.mkdir(deposit_path)
-        os.chmod(deposit_path, 02770) # drwxrws---
+        os.chmod(deposit_path, 0o2770) # drwxrws---
 
     # Create SWORD deposit location using deposit name and path
     if os.path.exists(deposit_path):
@@ -442,11 +439,11 @@ def deposit_media(request, deposit):
                 temp_filepath = helpers.write_request_body_to_temp_file(request)
                 try:
                     mets_data = _parse_name_and_content_urls_from_mets_file(temp_filepath)
-                except etree.XMLSyntaxError as e:
+                except etree.XMLSyntaxError:
                     os.unlink(temp_filepath)
                     mets_data = None
 
-                if mets_data != None:
+                if mets_data is not None:
                     # move METS file to submission documentation directory
                     object_id = mets_data.get('object_id', 'fedora')
                     helpers.store_mets_data(temp_filepath, deposit, object_id)
@@ -544,7 +541,7 @@ def _handle_adding_to_or_replacing_file_in_deposit(request, deposit, replace_fil
     or updating (204) has occurred or an error response
     """
     if 'HTTP_CONTENT_DISPOSITION' in request.META:
-        filename = helpers.parse_filename_from_content_disposition(request.META['HTTP_CONTENT_DISPOSITION']) 
+        filename = helpers.parse_filename_from_content_disposition(request.META['HTTP_CONTENT_DISPOSITION'])
 
         if filename != '':
             file_path = os.path.join(deposit.full_path, filename)

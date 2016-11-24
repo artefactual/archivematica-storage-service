@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import SetPasswordForm
 from django.shortcuts import render, redirect, get_object_or_404
+from tastypie.models import ApiKey
 
 from common import utils
 from storage_service import __version__ as ss_version
@@ -58,6 +59,9 @@ def user_edit(request, id):
         return redirect('user_list')
     elif 'password' in request.POST and password_form.is_valid():
         password_form.save()
+        api_key = ApiKey.objects.get(user=edit_user)
+        api_key.key = api_key.generate_key()
+        api_key.save()
         messages.success(request, "Password changed.")
         return redirect('user_list')
     return render(request, 'administration/user_form.html', locals())
