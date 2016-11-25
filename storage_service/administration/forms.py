@@ -97,40 +97,40 @@ class DefaultLocationsForm(SettingsForm):
     default_transfer_source = forms.MultipleChoiceField(
         choices=[],
         required=False,
-        label=_("Default transfer source locations for new pipelines:"))
+        label=_l("Default transfer source locations for new pipelines:"))
     new_transfer_source = DefaultLocationField(
         required=False,
-        label=_("New Transfer Source:"))
+        label=_l("New Transfer Source:"))
     default_aip_storage = forms.MultipleChoiceField(
         choices=[],
         required=False,
-        label=_("Default AIP storage locations for new pipelines"))
+        label=_l("Default AIP storage locations for new pipelines"))
     new_aip_storage = DefaultLocationField(
         required=False,
-        label=_("New AIP Storage:"))
+        label=_l("New AIP Storage:"))
     default_dip_storage = forms.MultipleChoiceField(
         choices=[],
         required=False,
-        label=_("Default DIP storage locations for new pipelines"))
+        label=_l("Default DIP storage locations for new pipelines"))
     new_dip_storage = DefaultLocationField(
         required=False,
-        label=_("New DIP Storage:"))
+        label=_l("New DIP Storage:"))
     default_backlog = forms.MultipleChoiceField(
         choices=[],
         required=False,
-        label=_("Default transfer backlog locations for new pipelines:")
+        label=_l("Default transfer backlog locations for new pipelines:")
         )
     new_backlog = DefaultLocationField(
         required=False,
-        label=_("New Transfer Backlog:"))
+        label=_l("New Transfer Backlog:"))
     default_recovery = forms.MultipleChoiceField(
         choices=[],
         required=False,
-        label=_("Default AIP recovery locations for new pipelines:")
+        label=_l("Default AIP recovery locations for new pipelines:")
         )
     new_recovery = DefaultLocationField(
         required=False,
-        label=_("New AIP Recovery:"))
+        label=_l("New AIP Recovery:"))
 
     def __init__(self, *args, **kwargs):
         super(DefaultLocationsForm, self).__init__(*args, **kwargs)
