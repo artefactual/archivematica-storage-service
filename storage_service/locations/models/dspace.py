@@ -17,6 +17,7 @@ import urllib
 
 # Core Django, alphabetical
 from django.db import models
+from django.utils.translation import ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 from lxml import etree
@@ -36,16 +37,23 @@ LOGGER = logging.getLogger(__name__)
 class DSpace(models.Model):
     """Integration with DSpace using the SWORD2 protocol."""
     space = models.OneToOneField('Space', to_field='uuid')
-    sd_iri = models.URLField(max_length=256, verbose_name="Service Document IRI",
-        help_text='URL of the service document. E.g. http://demo.dspace.org/swordv2/servicedocument')
-    user = models.CharField(max_length=64, help_text='DSpace username to authenticate as')
-    password = models.CharField(max_length=64, help_text='DSpace password to authenticate with')
-    metadata_policy = jsonfield.JSONField(blank=True, null=True, default=[], verbose_name='Restricted metadata policy', help_text='Policy for restricted access metadata policy. Must be specified as a list of objects in JSON. This will override existing policies. Example: [{"action":"READ","groupId":"5","rpType":"TYPE_CUSTOM"}]')
+    sd_iri = models.URLField(max_length=256, verbose_name=_l("Service Document IRI"),
+        help_text=_l('URL of the service document. E.g. http://demo.dspace.org/swordv2/servicedocument'))
+    user = models.CharField(max_length=64, help_text=_l('DSpace username to authenticate as'))
+    password = models.CharField(max_length=64, help_text=_l('DSpace password to authenticate with'))
+    metadata_policy = jsonfield.JSONField(
+        blank=True, null=True, default=[],
+        verbose_name=_l('Restricted metadata policy'),
+        help_text=_l(
+            'Policy for restricted access metadata policy. '
+            'Must be specified as a list of objects in JSON. '
+            'This will override existing policies. '
+            'Example: [{"action":"READ","groupId":"5","rpType":"TYPE_CUSTOM"}]'))
 
     sword_connection = None
 
     class Meta:
-        verbose_name = "DSpace via SWORD2 API"
+        verbose_name = _l("DSpace via SWORD2 API")
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [

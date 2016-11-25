@@ -6,6 +6,7 @@ import sys
 # Core Django, alphabetical
 from django.core import validators
 from django.db import models
+from django.utils.translation import ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 from django_extensions.db.fields import UUIDField
@@ -28,25 +29,25 @@ LOGGER = logging.getLogger(__name__)
 class Pipeline(models.Model):
     """ Information about Archivematica instances using the storage service. """
     uuid = UUIDField(unique=True, version=4, auto=False, verbose_name="UUID",
-        help_text="Identifier for the Archivematica pipeline",
+        help_text=_l("Identifier for the Archivematica pipeline"),
         validators=[validators.RegexValidator(
             r'\w{8}-\w{4}-\w{4}-\w{4}-\w{12}',
-            "Needs to be format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx where x is a hexadecimal digit.",
-            "Invalid UUID")])
+            _l("Needs to be format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx where x is a hexadecimal digit."),
+            _l("Invalid UUID"))])
     description = models.CharField(max_length=256, default=None,
         null=True, blank=True,
-        help_text="Human readable description of the Archivematica instance.")
+        help_text=_l("Human readable description of the Archivematica instance."))
     remote_name = models.CharField(max_length=256, default=None,
         null=True, blank=True,
-        help_text="Host or IP address of the pipeline server for making API calls.")
+        help_text=_l("Host or IP address of the pipeline server for making API calls."))
     api_username = models.CharField(max_length=256, default=None,
         null=True, blank=True,
-        help_text="Username to use when making API calls to the pipeline.")
+        help_text=_l("Username to use when making API calls to the pipeline."))
     api_key = models.CharField(max_length=256, default=None,
         null=True, blank=True,
-        help_text="API key to use when making API calls to the pipeline.")
+        help_text=_l("API key to use when making API calls to the pipeline."))
     enabled = models.BooleanField(default=True,
-        help_text="Enabled if this pipeline is able to access the storage service.")
+        help_text=_l("Enabled if this pipeline is able to access the storage service."))
 
     class Meta:
         verbose_name = "Pipeline"

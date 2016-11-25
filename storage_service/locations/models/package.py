@@ -14,6 +14,7 @@ import tempfile
 # Core Django, alphabetical
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 import bagit
@@ -39,15 +40,15 @@ LOGGER = logging.getLogger(__name__)
 class Package(models.Model):
     """ A package stored in a specific location. """
     uuid = UUIDField(editable=False, unique=True, version=4,
-        help_text="Unique identifier")
+        help_text=_l("Unique identifier"))
     description = models.CharField(max_length=256, default=None,
-        null=True, blank=True, help_text="Human-readable description.")
+        null=True, blank=True, help_text=_l("Human-readable description."))
     origin_pipeline = models.ForeignKey('Pipeline', to_field='uuid', null=True, blank=True)
     current_location = models.ForeignKey(Location, to_field='uuid')
     current_path = models.TextField()
     pointer_file_location = models.ForeignKey(Location, to_field='uuid', related_name='+', null=True, blank=True)
     pointer_file_path = models.TextField(null=True, blank=True)
-    size = models.IntegerField(default=0, help_text='Size in bytes of the package')
+    size = models.IntegerField(default=0, help_text=_l('Size in bytes of the package'))
 
     AIP = "AIP"
     AIC = "AIC"
@@ -61,9 +62,9 @@ class Package(models.Model):
         (AIC, 'AIC'),
         (SIP, 'SIP'),
         (DIP, 'DIP'),
-        (TRANSFER, 'Transfer'),
-        (FILE, 'Single File'),
-        (DEPOSIT, 'FEDORA Deposit')
+        (TRANSFER, _l('Transfer')),
+        (FILE, _l('Single File')),
+        (DEPOSIT, _l('FEDORA Deposit'))
     )
     package_type = models.CharField(max_length=8, choices=PACKAGE_TYPE_CHOICES)
     related_packages = models.ManyToManyField('self', related_name='related')
@@ -78,22 +79,22 @@ class Package(models.Model):
     FAIL = 'FAIL'
     FINALIZED = 'FINALIZE'
     STATUS_CHOICES = (
-        (PENDING, "Upload Pending"),  # Still on Archivematica
-        (STAGING, "Staged on Storage Service"),  # In Storage Service staging dir
-        (UPLOADED, "Uploaded"),  # In final storage location
-        (VERIFIED, "Verified"),  # Verified to be in final storage location
-        (FAIL, "Failed"),  # Error occured - may or may not be at final location
-        (DEL_REQ, "Delete requested"),
-        (DELETED, "Deleted"),
-        (FINALIZED, "Deposit Finalized")
+        (PENDING, _l("Upload Pending")),  # Still on Archivematica
+        (STAGING, _l("Staged on Storage Service")),  # In Storage Service staging dir
+        (UPLOADED, _l("Uploaded")),  # In final storage location
+        (VERIFIED, _l("Verified")),  # Verified to be in final storage location
+        (FAIL, _l("Failed")),  # Error occured - may or may not be at final location
+        (DEL_REQ, _l("Delete requested")),
+        (DELETED, _l("Deleted")),
+        (FINALIZED, _l("Deposit Finalized")),
     )
     status = models.CharField(max_length=8, choices=STATUS_CHOICES,
         default=FAIL,
-        help_text="Status of the package in the storage service.")
+        help_text=_l("Status of the package in the storage service."))
     # NOTE Do not put anything important here because you cannot easily query
     # JSONFields! Add a new column if you need to query it
     misc_attributes = jsonfield.JSONField(blank=True, null=True, default={},
-        help_text='For storing flexible, often Space-specific, attributes')
+        help_text=_l('For storing flexible, often Space-specific, attributes'))
 
     # Temporary attributes to track path on locally accessible filesystem
     local_path = None
@@ -123,7 +124,7 @@ class Package(models.Model):
     REINGEST_CHOICES = (METADATA_ONLY, OBJECTS, FULL)
 
     class Meta:
-        verbose_name = "Package"
+        verbose_name = _l("Package")
         app_label = 'locations'
 
     def __unicode__(self):

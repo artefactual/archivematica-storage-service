@@ -6,6 +6,7 @@ import os
 
 # Core Django, alphabetical
 from django.db import models
+from django.utils.translation import ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 import requests
@@ -21,19 +22,19 @@ from .location import Location
 class Dataverse(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
     host = models.CharField(max_length=256,
-        help_text='Hostname of the Dataverse instance. Eg. apitest.dataverse.org')
+        help_text=_l('Hostname of the Dataverse instance. Eg. apitest.dataverse.org'))
     api_key = models.CharField(max_length=50,
-        help_text='API key for Dataverse instance. Eg. b84d6b87-7b1e-4a30-a374-87191dbbbe2d')
+        help_text=_l('API key for Dataverse instance. Eg. b84d6b87-7b1e-4a30-a374-87191dbbbe2d'))
     agent_name = models.CharField(max_length=50,
-        help_text='Agent name for premis:agentName in Archivematica')
+        help_text=_l('Agent name for premis:agentName in Archivematica'))
     agent_type = models.CharField(max_length=50,
-        help_text='Agent type for premis:agentType in Archivematica')
+        help_text=_l('Agent type for premis:agentType in Archivematica'))
     agent_identifier = models.CharField(max_length=256,
-        help_text='URI agent identifier for premis:agentIdentifierValue in Archivematica')
+        help_text=_l('URI agent identifier for premis:agentIdentifierValue in Archivematica'))
     # FIXME disallow string in space.path
 
     class Meta:
-        verbose_name = "Dataverse"
+        verbose_name = _l("Dataverse")
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [

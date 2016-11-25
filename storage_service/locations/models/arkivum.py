@@ -11,6 +11,7 @@ from django.conf import settings
 import django.core.mail
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.utils.translation import ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 import dateutil.parser
@@ -35,15 +36,15 @@ class Arkivum(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
 
     host = models.CharField(max_length=256,
-        help_text='Hostname of the Arkivum web instance. Eg. arkivum.example.com:8443')
+        help_text=_l('Hostname of the Arkivum web instance. Eg. arkivum.example.com:8443'))
     # Optionally be able to rsync
     remote_user = models.CharField(max_length=64, null=True, blank=True,
-        help_text="Optional: Username on the remote machine accessible via passwordless ssh.")
+        help_text=_l("Optional: Username on the remote machine accessible via passwordless ssh."))
     remote_name = models.CharField(max_length=256, null=True, blank=True,
-        help_text="Optional: Name or IP of the remote machine.")
+        help_text=_l("Optional: Name or IP of the remote machine."))
 
     class Meta:
-        verbose_name = "Arkivum"
+        verbose_name = _l("Arkivum")
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [

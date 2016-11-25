@@ -3,6 +3,7 @@
 # Core Django, alphabetical
 from django.conf import settings
 from django.db import models
+from django.utils.translation import ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 from django_extensions.db.fields import UUIDField
@@ -52,7 +53,7 @@ class Event(models.Model):
     store_data = models.TextField(null=True, blank=True, editable=False)
 
     class Meta:
-        verbose_name = "Event"
+        verbose_name = _l("Event")
         app_label = 'locations'
 
     def __unicode__(self):
@@ -85,18 +86,18 @@ class Callback(models.Model):
 
     uuid = UUIDField()
     uri = models.CharField(max_length=1024,
-        help_text="URL to contact upon callback execution.")
+        help_text=_l("URL to contact upon callback execution."))
     event = models.CharField(max_length=15, choices=EVENTS,
-        help_text="Type of event when this callback should be executed.")
+        help_text=_l("Type of event when this callback should be executed."))
     method = models.CharField(max_length=10, choices=HTTP_METHODS,
-        help_text="HTTP request method to use in connecting to the URL.")
+        help_text=_l("HTTP request method to use in connecting to the URL."))
     expected_status = models.IntegerField(default=200,
-        help_text="Expected HTTP response from the server, used to validate the callback response.")
+        help_text=_l("Expected HTTP response from the server, used to validate the callback response."))
     enabled = models.BooleanField(default=True,
-        help_text="Enabled if this callback should be executed.")
+        help_text=_l("Enabled if this callback should be executed."))
 
     class Meta:
-        verbose_name = "Callback"
+        verbose_name = _l("Callback")
         app_label = 'locations'
 
     def execute(self, url=None):
@@ -129,21 +130,21 @@ class Callback(models.Model):
 
 class File(models.Model):
     uuid = UUIDField(editable=False, unique=True, version=4,
-        help_text="Unique identifier")
+        help_text=_l("Unique identifier"))
     package = models.ForeignKey('Package', null=True)
     name = models.TextField(max_length=1000)
     source_id = models.TextField(max_length=128)
     source_package = models.TextField(blank=True,
-        help_text="Unique identifier of originating unit")
+        help_text=_l("Unique identifier of originating unit"))
     # Sized to fit sha512
     checksum = models.TextField(max_length=128)
     stored = models.BooleanField(default=False)
     accessionid = models.TextField(blank=True,
-        help_text="Accession ID of originating transfer")
+        help_text=_l("Accession ID of originating transfer"))
     origin = UUIDField(editable=False, unique=False, version=4, blank=True,
-        help_text="Unique identifier of originating Archivematica dashboard")
+        help_text=_l("Unique identifier of originating Archivematica dashboard"))
 
 
     class Meta:
-        verbose_name = "File"
+        verbose_name = _l("File")
         app_label = 'locations'

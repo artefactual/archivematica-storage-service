@@ -9,6 +9,7 @@ import urllib
 
 # Core Django, alphabetical
 from django.db import models
+from django.utils.translation import ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 import requests
@@ -26,13 +27,13 @@ LOGGER = logging.getLogger(__name__)
 class Duracloud(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
     host = models.CharField(max_length=256,
-        help_text='Hostname of the DuraCloud instance. Eg. trial.duracloud.org')
-    user = models.CharField(max_length=64, help_text='Username to authenticate as')
-    password = models.CharField(max_length=64, help_text='Password to authenticate with')
-    duraspace = models.CharField(max_length=64, help_text='Name of the Space within DuraCloud')
+        help_text=_l('Hostname of the DuraCloud instance. Eg. trial.duracloud.org'))
+    user = models.CharField(max_length=64, help_text=_l('Username to authenticate as'))
+    password = models.CharField(max_length=64, help_text=_l('Password to authenticate with'))
+    duraspace = models.CharField(max_length=64, help_text=_l('Name of the Space within DuraCloud'))
 
     class Meta:
-        verbose_name = "DuraCloud"
+        verbose_name = _l("DuraCloud")
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [

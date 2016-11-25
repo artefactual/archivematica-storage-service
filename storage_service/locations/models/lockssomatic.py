@@ -12,6 +12,7 @@ import subprocess
 # Core Django, alphabetical
 from django.core.urlresolvers import reverse
 from django.db import models
+from django.utils.translation import ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 import sword2
@@ -31,23 +32,23 @@ class Lockssomatic(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
 
     # staging location is Space.path
-    au_size = models.BigIntegerField(verbose_name="AU Size", null=True, blank=True,
-        help_text="Size in bytes of an Allocation Unit")
-    sd_iri = models.URLField(max_length=256, verbose_name="Service Document IRI",
-        help_text="URL of LOCKSS-o-matic service document IRI, eg. http://lockssomatic.example.org/api/sword/2.0/sd-iri")
-    collection_iri = models.CharField(max_length=256, null=True, blank=True, verbose_name="Collection IRI",
-        help_text="URL to post the packages to, eg. http://lockssomatic.example.org/api/sword/2.0/col-iri/12")
+    au_size = models.BigIntegerField(verbose_name=_l("AU Size"), null=True, blank=True,
+        help_text=_l("Size in bytes of an Allocation Unit"))
+    sd_iri = models.URLField(max_length=256, verbose_name=_l("Service Document IRI"),
+        help_text=_l("URL of LOCKSS-o-matic service document IRI, eg. http://lockssomatic.example.org/api/sword/2.0/sd-iri"))
+    collection_iri = models.CharField(max_length=256, null=True, blank=True, verbose_name=_l("Collection IRI"),
+        help_text=_l("URL to post the packages to, eg. http://lockssomatic.example.org/api/sword/2.0/col-iri/12"))
     content_provider_id = models.CharField(max_length=32,
-        verbose_name='Content Provider ID',
-        help_text='On-Behalf-Of value when communicating with LOCKSS-o-matic')
-    external_domain = models.URLField(verbose_name='Externally available domain',
-        help_text='Base URL for this server that LOCKSS will be able to access.  Probably the URL for the home page of the Storage Service.')
-    checksum_type = models.CharField(max_length=64, null=True, blank=True, verbose_name='Checksum type', help_text='Checksum type to send to LOCKSS-o-matic for verification.  Eg. md5, sha1, sha256')
-    keep_local = models.BooleanField(blank=True, default=True, verbose_name="Keep local copy?",
-        help_text="If checked, keep a local copy even after the AIP is stored in the LOCKSS network.")
+        verbose_name=_l('Content Provider ID'),
+        help_text=_l('On-Behalf-Of value when communicating with LOCKSS-o-matic'))
+    external_domain = models.URLField(verbose_name=_l('Externally available domain'),
+        help_text=_l('Base URL for this server that LOCKSS will be able to access.  Probably the URL for the home page of the Storage Service.'))
+    checksum_type = models.CharField(max_length=64, null=True, blank=True, verbose_name=_l('Checksum type'), help_text=_l('Checksum type to send to LOCKSS-o-matic for verification.  Eg. md5, sha1, sha256'))
+    keep_local = models.BooleanField(blank=True, default=True, verbose_name=_l("Keep local copy?"),
+        help_text=_l("If checked, keep a local copy even after the AIP is stored in the LOCKSS network."))
 
     class Meta:
-        verbose_name = 'LOCKSS-o-matic'
+        verbose_name = _l('LOCKSS-o-matic')
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [

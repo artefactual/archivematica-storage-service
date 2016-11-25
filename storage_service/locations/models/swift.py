@@ -5,6 +5,7 @@ import os
 
 # Core Django, alphabetical
 from django.db import models
+from django.utils.translation import ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 import swiftclient
@@ -22,22 +23,22 @@ LOGGER = logging.getLogger(__name__)
 class Swift(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
     auth_url = models.CharField(max_length=256,
-        help_text='URL to authenticate against')
+        help_text=_l('URL to authenticate against'))
     auth_version = models.CharField(max_length=8, default='2',
-        help_text='OpenStack auth version')
+        help_text=_l('OpenStack auth version'))
     username = models.CharField(max_length=64,
-        help_text='Username to authenticate as. E.g. http://example.com:5000/v2.0/')
+        help_text=_l('Username to authenticate as. E.g. http://example.com:5000/v2.0/'))
     # HELP how do I store the password?  Has to be plaintext to send to Swift, but that seems like a bad idea
     password = models.CharField(max_length=256,
-        help_text='Password to authenticate with')
+        help_text=_l('Password to authenticate with'))
     container = models.CharField(max_length=64)
     tenant = models.CharField(max_length=64, null=True, blank=True,
-        help_text='The tenant/account name, required when connecting to an auth 2.0 system.')
+        help_text=_l('The tenant/account name, required when connecting to an auth 2.0 system.'))
     region = models.CharField(max_length=64, null=True, blank=True,
-        help_text='Optional: Region in Swift')
+        help_text=_l('Optional: Region in Swift'))
 
     class Meta:
-        verbose_name = "Swift"
+        verbose_name = _l("Swift")
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [

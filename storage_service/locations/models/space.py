@@ -12,6 +12,7 @@ import tempfile
 # Core Django, alphabetical
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils.translation import ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 from django_extensions.db.fields import UUIDField
@@ -122,7 +123,7 @@ class Space(models.Model):
     Knows what protocol to use to access a storage space, but all protocol
     specific information is in children classes with ForeignKeys to Space."""
     uuid = UUIDField(editable=False, unique=True, version=4,
-        help_text="Unique identifier")
+        help_text=_l("Unique identifier"))
 
     # Max length 8 (see access_protocol definition)
     ARKIVUM = 'ARKIVUM'
@@ -137,35 +138,35 @@ class Space(models.Model):
     SWIFT = 'SWIFT'
     OBJECT_STORAGE = {DATAVERSE, DSPACE, DURACLOUD, SWIFT}
     ACCESS_PROTOCOL_CHOICES = (
-        (ARKIVUM, 'Arkivum'),
-        (DATAVERSE, 'Dataverse'),
-        (DURACLOUD, 'DuraCloud'),
-        (DSPACE, 'DSpace via SWORD2 API'),
-        (FEDORA, "FEDORA via SWORD2"),
-        (LOCAL_FILESYSTEM, "Local Filesystem"),
-        (LOM, "LOCKSS-o-matic"),
-        (NFS, "NFS"),
-        (PIPELINE_LOCAL_FS, "Pipeline Local Filesystem"),
-        (SWIFT, "Swift"),
+        (ARKIVUM, _l('Arkivum')),
+        (DATAVERSE, _l('Dataverse')),
+        (DURACLOUD, _l('DuraCloud')),
+        (DSPACE, _l('DSpace via SWORD2 API')),
+        (FEDORA, _l("FEDORA via SWORD2")),
+        (LOCAL_FILESYSTEM, _l("Local Filesystem")),
+        (LOM, _l("LOCKSS-o-matic")),
+        (NFS, _l("NFS")),
+        (PIPELINE_LOCAL_FS, _l("Pipeline Local Filesystem")),
+        (SWIFT, _l("Swift")),
     )
     access_protocol = models.CharField(max_length=8,
         choices=ACCESS_PROTOCOL_CHOICES,
-        help_text="How the space can be accessed.")
+        help_text=_l("How the space can be accessed."))
     size = models.BigIntegerField(default=None, null=True, blank=True,
-        help_text="Size in bytes (optional)")
+        help_text=_l("Size in bytes (optional)"))
     used = models.BigIntegerField(default=0,
-        help_text="Amount used in bytes")
+        help_text=_l("Amount used in bytes"))
     path = models.TextField(default='', blank=True,
-        help_text="Absolute path to the space on the storage service machine.")
+        help_text=_l("Absolute path to the space on the storage service machine."))
     staging_path = models.TextField(validators=[validate_space_path],
-        help_text="Absolute path to a staging area.  Must be UNIX filesystem compatible, preferably on the same filesystem as the path.")
+        help_text=_l("Absolute path to a staging area.  Must be UNIX filesystem compatible, preferably on the same filesystem as the path."))
     verified = models.BooleanField(default=False,
-       help_text="Whether or not the space has been verified to be accessible.")
+        help_text=_l("Whether or not the space has been verified to be accessible."))
     last_verified = models.DateTimeField(default=None, null=True, blank=True,
-        help_text="Time this location was last verified to be accessible.")
+        help_text=_l("Time this location was last verified to be accessible."))
 
     class Meta:
-        verbose_name = 'Space'
+        verbose_name = _l('Space')
         app_label = 'locations'
 
     def __unicode__(self):
