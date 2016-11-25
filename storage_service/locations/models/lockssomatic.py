@@ -12,7 +12,7 @@ import subprocess
 # Core Django, alphabetical
 from django.core.urlresolvers import reverse
 from django.db import models
-from django.utils.translation import ugettext_lazy as _l
+from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 import sword2
@@ -130,17 +130,17 @@ class Lockssomatic(models.Model):
 
         # After retry - verify that state & edit IRI exist now
         if 'state_iri' not in package.misc_attributes or 'edit_iri' not in package.misc_attributes:
-            return (None, 'Unable to contact Lockss-o-matic')
+            return (None, _('Unable to contact Lockss-o-matic'))
 
         if not self.sword_connection and not self.update_service_document():
-            return (None, 'Error contacting LOCKSS-o-matic.')
+            return (None, _('Error contacting LOCKSS-o-matic.'))
 
         # SWORD2 client has only experimental support for getting SWORD2
         # statements, so implementing the fetch and parse here. (March 2014)
         response = self.sword_connection.get_resource(package.misc_attributes['state_iri'], headers={'Accept': 'application/atom+xml;type=feed'})
 
         if response.code != 200:
-            return (None, 'Error polling LOCKSS-o-matic for SWORD statement.')
+            return (None, _('Error polling LOCKSS-o-matic for SWORD statement.'))
 
         statement_root = etree.fromstring(response.content)
 
@@ -152,7 +152,7 @@ class Lockssomatic(models.Model):
         LOGGER.info('All states are agreement: %s', all(s.get('state') == 'agreement' for s in servers))
         if not all(s.get('state') == 'agreement' for s in servers):
             # TODO update pointer file for new failed status?
-            return (status, 'LOCKSS servers not in agreement')
+            return (status, _('LOCKSS servers not in agreement'))
 
         status = Package.UPLOADED
 
@@ -235,12 +235,12 @@ class Lockssomatic(models.Model):
         LOGGER.debug('response code: %s', response['status'])
         if response['status'] != 200:
             if response['status'] == 202:  # Accepted - pushing new config
-                return 'Lockss-o-matic is updating the config to stop harvesting.  Please try again to delete local files.'
+                return _('Lockss-o-matic is updating the config to stop harvesting.  Please try again to delete local files.')
             if response['status'] == 204:  # No Content - no matching AIP
-                return 'Package {} is not found in LOCKSS'.format(package.uuid)
+                return _('Package {} is not found in LOCKSS').format(package.uuid)
             if response['status'] == 409:  # Conflict - Files in AU with recrawl
-                return "There are files in the LOCKSS Archival Unit (AU) that do not have 'recrawl=false'."
-            return 'Error {} when requesting LOCKSS stop harvesting deleted files.'.format(response['status'])
+                return _("There are files in the LOCKSS Archival Unit (AU) that do not have 'recrawl=false'.")
+            return _('Error {} when requesting LOCKSS stop harvesting deleted files.').format(response['status'])
         return None
 
     def _delete_files(self):
@@ -278,7 +278,7 @@ class Lockssomatic(models.Model):
             utils.mets_add_event(
                 amdsec,
                 event_type='deletion',
-                event_outcome_detail_note='AIP deleted from local storage',
+                event_outcome_detail_note=_('AIP deleted from local storage'),
             )
 
             # If file was split
@@ -379,7 +379,7 @@ class Lockssomatic(models.Model):
         try:
             event_detail = subprocess.check_output(['tar', '--version'])
         except subprocess.CalledProcessError as e:
-            event_detail = e.output or 'Error: getting tool info; probably GNU tar'
+            event_detail = e.output or _('Error: getting tool info; probably GNU tar')
         utils.mets_add_event(
             amdsec,
             event_type='division',

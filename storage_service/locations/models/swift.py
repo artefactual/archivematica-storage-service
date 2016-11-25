@@ -5,7 +5,7 @@ import os
 
 # Core Django, alphabetical
 from django.db import models
-from django.utils.translation import ugettext_lazy as _l
+from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 import swiftclient
@@ -139,7 +139,8 @@ class Swift(models.Model):
         if 'etag' in headers:
             checksum = utils.generate_checksum(download_path)
             if checksum.hexdigest() != headers['etag']:
-                message = 'ETag {} for {} does not match {}'.format(remote_path, headers['etag'], checksum.hexdigest())
+                message = _('ETag {remote_path} for {etag} does not match {checksum}').format(
+                    remote_path=remote_path, etag=headers['etag'], checksum=checksum.hexdigest())
                 logging.warning(message)
                 raise StorageException(message)
 
@@ -172,7 +173,7 @@ class Swift(models.Model):
             # Both source and destination paths should end with /
             destination_path = os.path.join(destination_path, '')
             # Swift does not accept folders, so upload each file individually
-            for path, _, files in os.walk(source_path):
+            for path, dirs, files in os.walk(source_path):
                 for basename in files:
                     entry = os.path.join(path, basename)
                     dest = entry.replace(source_path, destination_path, 1)
@@ -196,4 +197,4 @@ class Swift(models.Model):
                     content_length=os.path.getsize(source_path),
                 )
         else:
-            raise StorageException('%s is neither a file nor a directory, may not exist' % source_path)
+            raise StorageException(_('%s is neither a file nor a directory, may not exist') % source_path)

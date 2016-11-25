@@ -5,7 +5,7 @@ import os
 
 # Core Django, alphabetical
 from django.db import models
-from django.utils.translation import ugettext_lazy as _l
+from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 from django_extensions.db.fields import UUIDField
@@ -102,4 +102,5 @@ class LocationPipeline(models.Model):
         app_label = 'locations'
 
     def __unicode__(self):
-        return u'{} is associated with {}'.format(self.location, self.pipeline)
+        return _(u'{location} is associated with {pipeline}').format(
+            location=self.location, pipeline=self.pipeline)

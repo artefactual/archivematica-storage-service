@@ -5,7 +5,7 @@ import os
 
 # Core Django, alphabetical
 from django.db import models
-from django.utils.translation import ugettext_lazy as _l
+from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 from django_extensions.db.fields import UUIDField
@@ -61,7 +61,7 @@ class PackageDownloadTask(models.Model):
         app_label = 'locations'
 
     def __unicode__(self):
-        return u'PackageDownloadTask ID: {uuid} for {package}'.format(
+        return _(u'PackageDownloadTask ID: {uuid} for {package}').format(
             uuid=self.uuid, package=self.package)
 
     COMPLETE = 'complete'
@@ -114,7 +114,7 @@ class PackageDownloadTaskFile(models.Model):
         app_label = 'locations'
 
     def __unicode__(self):
-        return u'Download {filename} from {url} ({status})'.format(
+        return _(u'Download {filename} from {url} ({status})').format(
             filename=self.filename,
             url=self.url,
             status=self.downloading_status())

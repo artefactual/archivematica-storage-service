@@ -6,7 +6,7 @@ import os
 
 # Core Django, alphabetical
 from django.db import models
-from django.utils.translation import ugettext_lazy as _l
+from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 import requests
@@ -71,12 +71,16 @@ class Dataverse(models.Model):
             LOGGER.debug('Response: %s', response)
             if response.status_code != 200:
                 LOGGER.warning('%s: Response: %s', response, response.text)
-                raise StorageException('Unable to fetch datasets from %s with query %s' % (url, path))
+                raise StorageException(
+                    _('Unable to fetch datasets from %(url)s with query %(path)s') %
+                    {'url': url, 'path': path})
             try:
                 data = response.json()['data']
             except json.JSONDecodeError:
                 LOGGER.error('Could not parse JSON from response to %s', url)
-                raise StorageException('Unable parse JSON from response to %s with query %s' % (url, path))
+                raise StorageException(
+                    _('Unable parse JSON from response to %(url)s with query %(path)s') %
+                    {'url': url, 'path': path})
 
             entries += [str(x['entity_id']) for x in data['items']]
 
@@ -106,7 +110,7 @@ class Dataverse(models.Model):
         src_path = ''.join(c for c in src_path if c.isdigit())
         # Verify src_path has to be a number
         if not src_path.isdigit():
-            raise StorageException('Invalid value for src_path: %s. Must be a numberic entity_id' % src_path)
+            raise StorageException(_('Invalid value for src_path: %s. Must be a numberic entity_id') % src_path)
         # Fetch dataset info
         url = 'https://' + self.host + '/api/datasets/' + src_path
         params = {
@@ -117,7 +121,9 @@ class Dataverse(models.Model):
         LOGGER.debug('Response: %s', response)
         if response.status_code != 200:
             LOGGER.warning('%s: Response: %s', response, response.text)
-            raise StorageException('Unable to fetch dataset %s from %s' % (src_path, url))
+            raise StorageException(
+                _('Unable to fetch dataset %(path)s from %(url)s') %
+                {'path': src_path, 'url': url})
         try:
             dataset = response.json()['data']
         except json.JSONDecodeError:

@@ -17,7 +17,7 @@ import urllib
 
 # Core Django, alphabetical
 from django.db import models
-from django.utils.translation import ugettext_lazy as _l
+from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 from lxml import etree
@@ -80,14 +80,14 @@ class DSpace(models.Model):
         return self.sword_connection
 
     def browse(self, path):
-        raise NotImplementedError('Dspace does not implement browse')
+        raise NotImplementedError(_('Dspace does not implement browse'))
 
     def delete_path(self, delete_path):
-        raise NotImplementedError('DSpace does not implement deletion')
+        raise NotImplementedError(_('DSpace does not implement deletion'))
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """ Moves src_path to dest_space.staging_path/dest_path. """
-        raise NotImplementedError('DSpace does not implement fetching packages')
+        raise NotImplementedError(_('DSpace does not implement fetching packages'))
 
     def _get_metadata(self, input_path, aip_uuid):
         """Get metadata for DSpace from METS file."""
@@ -209,7 +209,7 @@ class DSpace(models.Model):
 
         # This only handles compressed AIPs
         if not os.path.isfile(source_path):
-            raise NotImplementedError('Storing in DSpace does not support uncompressed AIPs')
+            raise NotImplementedError(_('Storing in DSpace does not support uncompressed AIPs'))
 
         self._get_sword_connection()
         # Create item by depositing AtoM doc

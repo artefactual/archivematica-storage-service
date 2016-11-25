@@ -14,7 +14,7 @@ import tempfile
 # Core Django, alphabetical
 from django.db import models
 from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _l
+from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 import bagit
@@ -164,9 +164,10 @@ class Package(models.Model):
             return True
         else:
             if not os.path.exists(full_path):
-                message = "Package {} (located at {}) does not exist".format(self.uuid, full_path)
+                message = _("Package {uuid} (located at {path}) does not exist").format(
+                    uuid=self.uuid, path=full_path)
             else:
-                message = "{} is neither a file nor a directory".format(full_path)
+                message = _("{} is neither a file nor a directory").format(full_path)
             raise StorageException(message)
 
     @property
@@ -189,7 +190,7 @@ class Package(models.Model):
         full_path = self.fetch_local_path()
         if lockss_au_number is None:
             if not self.is_compressed:
-                raise StorageException("Cannot return a download path for an uncompressed package")
+                raise StorageException(_("Cannot return a download path for an uncompressed package"))
             path = full_path
         elif self.current_location.space.access_protocol == Space.LOM:
             # Only LOCKSS breaks files into AUs
@@ -272,7 +273,7 @@ class Package(models.Model):
         """
         full_path = self.get_local_path()
         if full_path is None:
-            raise NotImplementedError("This method currently only retrieves base directories for locally-available AIPs.")
+            raise NotImplementedError(_("This method currently only retrieves base directories for locally-available AIPs."))
 
         if self.is_compressed:
             # Use lsar's JSON output to determine the directories in a
@@ -299,13 +300,13 @@ class Package(models.Model):
         # All sizes expected to be in bytes
         if dest_space.size is not None and dest_space.used + self.size > dest_space.size:
             raise StorageException(
-                "Not enough space for AIP on storage device {space}; Used: {used}; Size: {size}; AIP size: {aip_size}".format(
+                _("Not enough space for AIP on storage device {space}; Used: {used}; Size: {size}; AIP size: {aip_size}").format(
                     space=dest_space, used=dest_space.used, size=dest_space.size,
                     aip_size=self.size))
         if (dest_location.quota is not None and
                 dest_location.used + self.size > dest_location.quota):
             raise StorageException(
-                "AIP too big for quota on {location}; Used: {used}; Quota: {quota}; AIP size: {aip_size}".format(
+                _("AIP too big for quota on {location}; Used: {used}; Quota: {quota}; AIP size: {aip_size}").format(
                     location=dest_location,
                     used=dest_location.used,
                     quota=dest_location.quota,
@@ -515,7 +516,7 @@ class Package(models.Model):
         try:
             basename = self.get_base_directory()
         except subprocess.CalledProcessError:
-            raise StorageException('Error determining basename during extraction')
+            raise StorageException(_('Error determining basename during extraction'))
 
         if relative_path:
             output_path = os.path.join(extract_path, relative_path)
@@ -531,7 +532,7 @@ class Package(models.Model):
             rc = subprocess.call(command)
             LOGGER.debug('Extract file RC: %s', rc)
             if rc:
-                raise StorageException('Extraction error')
+                raise StorageException(_('Extraction error'))
         else:
             LOGGER.info('Copying AIP from: %s to %s', full_path, output_path)
             shutil.copytree(full_path, output_path)
@@ -560,7 +561,9 @@ class Package(models.Model):
             ss_internal = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
             extract_path = tempfile.mkdtemp(dir=ss_internal.full_path)
         if algorithm not in self.COMPRESSION_ALGORITHMS:
-            raise ValueError('Algorithm %s not in %s' % algorithm, self.COMPRESSION_ALGORITHMS)
+            raise ValueError(
+                _('Algorithm %(algorithm)s not in %(algorithms)s') %
+                  {'algorithm': algorithm, 'algorithms': self.COMPRESSION_ALGORITHMS})
 
         full_path = self.fetch_local_path()
 
@@ -601,7 +604,7 @@ class Package(models.Model):
                 full_path,  # Source
             ]
         else:
-            raise NotImplementedError('Algorithm %s not implemented' % algorithm)
+            raise NotImplementedError(_('Algorithm %s not implemented') % algorithm)
 
         LOGGER.info('Compressing package with: %s to %s', command, compressed_filename)
         rc = subprocess.call(command)
@@ -642,7 +645,7 @@ class Package(models.Model):
 
         mets_path = os.path.join(prefix, *relative_path)
         if not os.path.isfile(mets_path):
-            raise StorageException("No METS found at location: {}".format(mets_path))
+            raise StorageException(_("No METS found at location: {}").format(mets_path))
 
         doc = etree.parse(mets_path)
 
@@ -650,30 +653,30 @@ class Package(models.Model):
                       'p': utils.NSMAP['premis']}
         mets = doc.xpath('/m:mets', namespaces=namespaces)
         if not mets:
-            raise StorageException("<mets> element not found in METS file!")
+            raise StorageException(_("<mets> element not found in METS file!"))
         else:
             mets = mets[0]
 
         try:
             transfer_uuid = mets.attrib['OBJID']
         except KeyError:
-            raise StorageException("<mets> element did not have an OBJID attribute!")
+            raise StorageException(_("<mets> element did not have an OBJID attribute!"))
 
         header = doc.find('m:metsHdr', namespaces=namespaces)
         if header is None:
-            raise StorageException("<metsHdr> element not found in METS file!")
+            raise StorageException(_("<metsHdr> element not found in METS file!"))
 
         try:
             creation_date = header.attrib['CREATEDATE']
         except KeyError:
-            raise StorageException("<metsHdr> element did not have a CREATEDATE attribute!")
+            raise StorageException(_("<metsHdr> element did not have a CREATEDATE attribute!"))
 
         accession_id = header.findtext('./m:altRecordID[@TYPE="Accession number"]', namespaces=namespaces) or ''
 
         agent = header.xpath('./m:agent[@ROLE="CREATOR"][@TYPE="OTHER"][@OTHERTYPE="SOFTWARE"]/m:note[.="Archivematica dashboard UUID"]/../m:name',
                              namespaces=namespaces)
         if not agent:
-            raise StorageException("No <agent> element found!")
+            raise StorageException(_("No <agent> element found!"))
         dashboard_uuid = agent[0].text
 
         files = mets.xpath('.//m:FLocat', namespaces=namespaces)
@@ -819,7 +822,7 @@ class Package(models.Model):
         """
 
         if self.package_type not in (self.AIC, self.AIP):
-            return (None, [], "Unable to scan; package is not a bag (AIP or AIC)", None)
+            return (None, [], _("Unable to scan; package is not a bag (AIP or AIC)"), None)
 
         if not force_local:
             try:
@@ -835,7 +838,7 @@ class Package(models.Model):
             try:
                  path, temp_dir = self.extract_file()
             except StorageException:
-                 return (None, [], 'Error extracting file')
+                 return (None, [], _('Error extracting file'))
         else:
             path = self.fetch_local_path()
             temp_dir = None
@@ -911,7 +914,7 @@ class Package(models.Model):
         # Check and set reingest pipeline
         if self.misc_attributes.get('reingest_pipeline', None):
             return {'error': True, 'status_code': 409,
-                'message': 'This AIP is already being reingested on {}'.format(self.misc_attributes['reingest_pipeline'])}
+                'message': _('This AIP is already being reingested on {}').format(self.misc_attributes['reingest_pipeline'])}
         self.misc_attributes.update({'reingest_pipeline': pipeline.uuid})
 
         # Fetch and extract if needed
@@ -980,7 +983,7 @@ class Package(models.Model):
             currently_processing = Location.active.filter(pipeline=pipeline).get(purpose=Location.CURRENTLY_PROCESSING)
         except (Location.DoesNotExist, Location.MultipleObjectsReturned):
             return {'error': True, 'status_code': 412,
-                'message': 'No currently processing Location is associated with pipeline {}'.format(pipeline.uuid)}
+                'message': _('No currently processing Location is associated with pipeline {}').format(pipeline.uuid)}
         LOGGER.debug('Reingest: Current location: %s', current_location)
         dest_basepath = os.path.join(currently_processing.relative_path, 'tmp', '')
         for path in reingest_files:
@@ -1010,7 +1013,7 @@ class Package(models.Model):
         try:
             resp = pipeline.reingest(relative_path, self.uuid, reingest_target)
         except requests.exceptions.RequestException as e:
-            message = 'Error in approve reingest API. {}'.format(e)
+            message = _('Error in approve reingest API. {}').format(e)
             LOGGER.exception('Error approving reingest in pipeline for package %s', self.uuid)
             return {'error': True, 'status_code': 502, 'message': message}
         else:
@@ -1021,7 +1024,8 @@ class Package(models.Model):
         return {
             'error': False,
             'status_code': 202,
-            'message': 'Package {} sent to pipeline {} for re-ingest'.format(self.uuid, pipeline),
+            'message': _('Package {uuid} sent to pipeline {pipeline} for re-ingest').format(
+                uuid=self.uuid, pipeline=pipeline),
             'reingest_uuid': reingest_uuid,
         }
 
@@ -1046,7 +1050,7 @@ class Package(models.Model):
         # Check origin pipeline against stored pipeline
         if self.origin_pipeline.uuid != self.misc_attributes.get('reingest_pipeline'):
             LOGGER.info('Reingest: Received pipeline %s did not match expected pipeline %s', self.origin_pipeline.uuid, self.misc_attributes.get('reingest_pipeline'))
-            raise Exception('%s did not match the pipeline this AIP was reingested on.' % self.origin_pipeline.uuid)
+            raise Exception(_('%s did not match the pipeline this AIP was reingested on.') % self.origin_pipeline.uuid)
         self.misc_attributes.update({'reingest_pipeline': None})
         self.save()
 
@@ -1155,7 +1159,7 @@ class Package(models.Model):
         original_objects_dir = os.path.join(path, 'data', 'objects')
         preservation_regex = r'(.+)-\w{8}-\w{4}-\w{4}-\w{4}-\w{12}(.*)'
         # Walk through all files
-        for dirpath, _, filepaths in os.walk(reingest_objects_dir):
+        for dirpath, dirs, filepaths in os.walk(reingest_objects_dir):
             for filepath in filepaths:
                 match = re.match(preservation_regex, filepath)
                 # If preservation file, copy and delete the old one
@@ -1220,7 +1224,7 @@ class Package(models.Model):
         # If AIP is a directory, calculate size recursively
         if os.path.isdir(out_path):
             size = 0
-            for dirpath, _, filenames in os.walk(out_path):
+            for dirpath, dirs, filenames in os.walk(out_path):
                 for filename in filenames:
                     file_path = os.path.join(dirpath, filename)
                     size += os.path.getsize(file_path)
@@ -1276,7 +1280,7 @@ class Package(models.Model):
                     event_detail = 'program="tar"'
             else:
                 LOGGER.warning('Unknown compression algorithm, cannot correctly update pointer file')
-                event_detail = 'Unknown compression'
+                event_detail = _('Unknown compression')
             utils.mets_add_event(
                 amdsec,
                 'compression',

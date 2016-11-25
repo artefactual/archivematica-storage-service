@@ -3,7 +3,7 @@
 # Core Django, alphabetical
 from django.conf import settings
 from django.db import models
-from django.utils.translation import ugettext_lazy as _l
+from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 from django_extensions.db.fields import UUIDField
@@ -57,7 +57,7 @@ class Event(models.Model):
         app_label = 'locations'
 
     def __unicode__(self):
-        return u"{event_status} request to {event_type} {package}".format(
+        return _(u"{event_status} request to {event_type} {package}").format(
             event_status=self.get_status_display(),
             event_type=self.get_event_type_display(),
             package=self.package)

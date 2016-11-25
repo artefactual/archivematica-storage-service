@@ -6,7 +6,7 @@ import sys
 # Core Django, alphabetical
 from django.core import validators
 from django.db import models
-from django.utils.translation import ugettext_lazy as _l
+from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 from django_extensions.db.fields import UUIDField
@@ -164,9 +164,13 @@ class Pipeline(models.Model):
         url = 'processing-configuration/' + name
         resp = self._request_api('GET', url)
         if resp.status_code != requests.codes.ok:
-            raise requests.exceptions.RequestException('Pipeline {} returned an unexpected status code: {}'.format(self, resp.status_code))
+            raise requests.exceptions.RequestException(
+                _('Pipeline {pipeline} returned an unexpected status code: {status_code}'.format(
+                    pipeline=self, status_code=resp.status_code)))
         if not resp.text:
-            raise requests.exceptions.RequestException('Pipeline {}: empty processing configuration ({}).'.format(self, name))
+            raise requests.exceptions.RequestException(
+                _('Pipeline {pipeline}: empty processing configuration ({name}).'.format(
+                    pipeline=self, name=name)))
         return resp.text
 
     def reingest(self, name, uuid, target='transfer'):
@@ -179,7 +183,11 @@ class Pipeline(models.Model):
         if resp.status_code != requests.codes.ok:
             try:
                 json_error = resp.json().get('message')
-                raise requests.exceptions.RequestException('Pipeline {} returned an unexpected status code: {} ({})'.format(self, resp.status_code, json_error))
+                raise requests.exceptions.RequestException(
+                    _('Pipeline {pipeline} returned an unexpected status code: {status_code} ({error})'.format(
+                        pipeline=self, status_code=resp.status_code, error=json_error)))
             except ValueError:  # Failed to decode JSON
-                raise requests.exceptions.RequestException('Pipeline {} returned an unexpected status code: {}'.format(self, resp.status_code))
+                raise requests.exceptions.RequestException(
+                    _('Pipeline {pipeline} returned an unexpected status code: {status_code}'.format(
+                        pipeline=self, status_code=resp.status_code)))
         return resp.json()
