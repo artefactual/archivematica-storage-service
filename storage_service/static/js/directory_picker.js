@@ -41,9 +41,9 @@ var DirectoryPickerView = fileBrowser.FileExplorer.extend({
     var self = this;
     this.options.actionHandlers = this.options.actionHandlers || [ 
       { 
-        name: 'Select', 
-        description: 'Select directory', 
-        iconHtml: 'Add', 
+        name: gettext('Select'),
+        description: gettext('Select directory'),
+        iconHtml: gettext('Add'),
         logic: function(result) { 
           self.addDirectory(self, result.path); 
         } 
@@ -65,8 +65,8 @@ var DirectoryPickerView = fileBrowser.FileExplorer.extend({
   deleteSource: function(id) {
     var self = this;
     this.confirm(
-      'De-select directory',
-      'Are you sure you want to de-select this?',
+      gettext('De-select directory'),
+      gettext('Are you sure you want to de-select this?'),
       function() {
         $.post(
           self.ajaxDeleteDirectoryUrl + id + '/',
@@ -121,7 +121,7 @@ var DirectoryPickerView = fileBrowser.FileExplorer.extend({
         modal: true,
         buttons: [
           {
-            text: 'OK',
+            text: gettext('OK'),
             click: function() {
               $(this).dialog('close');
             }
@@ -139,14 +139,14 @@ var DirectoryPickerView = fileBrowser.FileExplorer.extend({
         modal: true,
         buttons: [
           {
-            text: 'Yes',
+            text: gettext('Yes'),
             click: function() {
               $(this).dialog('close');
               logic();
             }
           },
           {
-            text: 'Cancel',
+            text: gettext('Cancel'),
             click: function() {
               $(this).dialog('close');
             }
