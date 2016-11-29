@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-11-29 03:36-0800\n"
+"POT-Creation-Date: 2016-11-29 15:06-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -80,19 +80,19 @@ msgstr ""
 msgid "Administrator?"
 msgstr ""
 
-#: storage_service/administration/views.py:27
+#: storage_service/administration/views.py:28
 msgid "Setting saved."
 msgstr ""
 
-#: storage_service/administration/views.py:59
+#: storage_service/administration/views.py:60
 msgid "User information saved."
 msgstr ""
 
-#: storage_service/administration/views.py:66
+#: storage_service/administration/views.py:67
 msgid "Password changed."
 msgstr ""
 
-#: storage_service/administration/views.py:75
+#: storage_service/administration/views.py:76
 #, python-brace-format
 msgid "New user {username} created."
 msgstr ""
@@ -402,87 +402,87 @@ msgstr ""
 msgid "Invalid purpose"
 msgstr ""
 
-#: storage_service/locations/models/arkivum.py:130
+#: storage_service/locations/models/arkivum.py:133
 #, python-format
 msgid "Error in connection for POST to %(url)s"
 msgstr ""
 
-#: storage_service/locations/models/arkivum.py:135
+#: storage_service/locations/models/arkivum.py:138
 #, python-format
 msgid "Unable to notify Arkivum of %(package)s"
 msgstr ""
 
-#: storage_service/locations/models/arkivum.py:141
+#: storage_service/locations/models/arkivum.py:144
 #, python-format
 msgid "Could not get request ID from Arkivum's response %(response)s"
 msgstr ""
 
-#: storage_service/locations/models/arkivum.py:160
+#: storage_service/locations/models/arkivum.py:163
 msgid "Unable to contact Arkivum"
 msgstr ""
 
-#: storage_service/locations/models/arkivum.py:174
+#: storage_service/locations/models/arkivum.py:177
 msgid "Error fetching package status"
 msgstr ""
 
-#: storage_service/locations/models/arkivum.py:179
+#: storage_service/locations/models/arkivum.py:182
 #, python-brace-format
 msgid "Response from Arkivum server was {response}"
 msgstr ""
 
-#: storage_service/locations/models/arkivum.py:186
+#: storage_service/locations/models/arkivum.py:189
 msgid "JSON could not be parsed from package info"
 msgstr ""
 
-#: storage_service/locations/models/arkivum.py:207
+#: storage_service/locations/models/arkivum.py:210
 msgid "Replication status: "
 msgstr ""
 
-#: storage_service/locations/models/arkivum.py:267
+#: storage_service/locations/models/arkivum.py:270
 #, python-brace-format
 msgid "File {path} in package {package}"
 msgstr ""
 
-#: storage_service/locations/models/arkivum.py:269
+#: storage_service/locations/models/arkivum.py:272
 #, python-brace-format
 msgid "Package {package}"
 msgstr ""
 
-#: storage_service/locations/models/arkivum.py:270
+#: storage_service/locations/models/arkivum.py:273
 #, python-brace-format
 msgid ""
 "{item} with Arkivum ID of {package_id} has been requested but is not "
 "available in the Arkivum cache."
 msgstr ""
 
-#: storage_service/locations/models/arkivum.py:278
+#: storage_service/locations/models/arkivum.py:281
 msgid "Arkivum file not locally available"
 msgstr ""
 
-#: storage_service/locations/models/arkivum.py:310
+#: storage_service/locations/models/arkivum.py:313
 msgid "Arkivum fixity check in progress"
 msgstr ""
 
-#: storage_service/locations/models/arkivum.py:313
+#: storage_service/locations/models/arkivum.py:316
 msgid "invalid bag"
 msgstr ""
 
-#: storage_service/locations/models/dataverse.py:75
+#: storage_service/locations/models/dataverse.py:80
 #, python-format
 msgid "Unable to fetch datasets from %(url)s with query %(path)s"
 msgstr ""
 
-#: storage_service/locations/models/dataverse.py:82
+#: storage_service/locations/models/dataverse.py:87
 #, python-format
 msgid "Unable parse JSON from response to %(url)s with query %(path)s"
 msgstr ""
 
-#: storage_service/locations/models/dataverse.py:113
+#: storage_service/locations/models/dataverse.py:118
 #, python-format
 msgid "Invalid value for src_path: %(value)s. Must be a numberic entity_id"
 msgstr ""
 
-#: storage_service/locations/models/dataverse.py:125
+#: storage_service/locations/models/dataverse.py:130
 #, python-format
 msgid "Unable to fetch dataset %(path)s from %(url)s"
 msgstr ""
@@ -503,34 +503,34 @@ msgstr ""
 msgid "Storing in DSpace does not support uncompressed AIPs"
 msgstr ""
 
-#: storage_service/locations/models/duracloud.py:79
-#: storage_service/locations/models/duracloud.py:109
+#: storage_service/locations/models/duracloud.py:80
+#: storage_service/locations/models/duracloud.py:110
 #, python-format
 msgid "Unable to get list of files in %(prefix)s"
 msgstr ""
 
-#: storage_service/locations/models/duracloud.py:234
+#: storage_service/locations/models/duracloud.py:235
 #, python-format
 msgid ""
 "File %(path)s does not match expected size of %(expected_size)s bytes, but "
 "was actually %(actual_size)s bytes"
 msgstr ""
 
-#: storage_service/locations/models/duracloud.py:281
+#: storage_service/locations/models/duracloud.py:282
 msgid "End of file reached"
 msgstr ""
 
-#: storage_service/locations/models/duracloud.py:404
+#: storage_service/locations/models/duracloud.py:405
 #, python-format
 msgid "Unable to store %(filename)s"
 msgstr ""
 
-#: storage_service/locations/models/duracloud.py:424
+#: storage_service/locations/models/duracloud.py:425
 #, python-format
 msgid "%(path)s does not exist."
 msgstr ""
 
-#: storage_service/locations/models/duracloud.py:426
+#: storage_service/locations/models/duracloud.py:427
 #, python-format
 msgid "%(path)s is not a file or directory."
 msgstr ""
@@ -540,12 +540,12 @@ msgstr ""
 msgid "{event_status} request to {event_type} {package}"
 msgstr ""
 
-#: storage_service/locations/models/fedora.py:64
+#: storage_service/locations/models/fedora.py:67
 #, python-brace-format
 msgid "PackageDownloadTask ID: {uuid} for {package}"
 msgstr ""
 
-#: storage_service/locations/models/fedora.py:117
+#: storage_service/locations/models/fedora.py:120
 #, python-brace-format
 msgid "Download {filename} from {url} ({status})"
 msgstr ""
@@ -555,7 +555,7 @@ msgstr ""
 msgid "Fixity check of {package}"
 msgstr ""
 
-#: storage_service/locations/models/location.py:105
+#: storage_service/locations/models/location.py:112
 #, python-brace-format
 msgid "{location} is associated with {pipeline}"
 msgstr ""
@@ -720,18 +720,18 @@ msgstr ""
 msgid "Unknown compression"
 msgstr ""
 
-#: storage_service/locations/models/pipeline.py:168
-#: storage_service/locations/models/pipeline.py:191
+#: storage_service/locations/models/pipeline.py:173
+#: storage_service/locations/models/pipeline.py:196
 #, python-brace-format
 msgid "Pipeline {pipeline} returned an unexpected status code: {status_code}"
 msgstr ""
 
-#: storage_service/locations/models/pipeline.py:172
+#: storage_service/locations/models/pipeline.py:177
 #, python-brace-format
 msgid "Pipeline {pipeline}: empty processing configuration ({name})."
 msgstr ""
 
-#: storage_service/locations/models/pipeline.py:187
+#: storage_service/locations/models/pipeline.py:192
 #, python-brace-format
 msgid ""
 "Pipeline {pipeline} returned an unexpected status code: {status_code} "
@@ -742,33 +742,33 @@ msgstr ""
 msgid "Path must begin with a /"
 msgstr ""
 
-#: storage_service/locations/models/space.py:183
+#: storage_service/locations/models/space.py:190
 msgid "Path is required"
 msgstr ""
 
-#: storage_service/locations/models/space.py:248
+#: storage_service/locations/models/space.py:255
 #, python-format
 msgid "%(delete_path)s is not within %(path)s"
 msgstr ""
 
-#: storage_service/locations/models/space.py:286
-#: storage_service/locations/models/space.py:350
-#: storage_service/locations/models/space.py:400
+#: storage_service/locations/models/space.py:293
+#: storage_service/locations/models/space.py:357
+#: storage_service/locations/models/space.py:407
 #, python-brace-format
 msgid "{protocol} space has not implemented {method}"
 msgstr ""
 
-#: storage_service/locations/models/space.py:417
+#: storage_service/locations/models/space.py:424
 #, python-format
 msgid "Space %(protocol)s does not implement check_package_fixity"
 msgstr ""
 
-#: storage_service/locations/models/swift.py:142
+#: storage_service/locations/models/swift.py:148
 #, python-brace-format
 msgid "ETag {remote_path} for {etag} does not match {checksum}"
 msgstr ""
 
-#: storage_service/locations/models/swift.py:201
+#: storage_service/locations/models/swift.py:207
 #, python-format
 msgid "%(path)s is neither a file nor a directory, may not exist"
 msgstr ""
@@ -985,6 +985,29 @@ msgstr ""
 msgid "Service callbacks"
 msgstr ""
 
+#: storage_service/templates/administration/base.html:13
+#: storage_service/templates/administration/language_form.html:14
+msgid "Language"
+msgstr ""
+
+#: storage_service/templates/administration/language_form.html:4
+msgid "Set Language"
+msgstr ""
+
+#: storage_service/templates/administration/language_form.html:23
+msgid "Select one of the following available languages:"
+msgstr ""
+
+#: storage_service/templates/administration/language_form.html:37
+msgid ""
+"Your choice will be recorded in the internal session store which does not "
+"retain data forever."
+msgstr ""
+
+#: storage_service/templates/administration/language_form.html:43
+msgid "Change"
+msgstr ""
+
 #: storage_service/templates/administration/settings_form.html:4
 msgid "Settings"
 msgstr ""
@@ -1049,6 +1072,11 @@ msgstr ""
 
 #: storage_service/templates/administration/user_list.html:16
 msgid "Active"
+msgstr ""
+
+#: storage_service/templates/administration/user_list.html:25
+#: storage_service/templates/administration/user_list.html:26
+msgid "True,False"
 msgstr ""
 
 #: storage_service/templates/administration/version.html:4
@@ -1143,6 +1171,7 @@ msgstr ""
 #: storage_service/templates/locations/callback_detail.html:14
 #: storage_service/templates/locations/location_detail.html:16
 #: storage_service/templates/locations/pipeline_detail.html:14
+#: storage_service/templates/snippets/callbacks_table.html:22
 #: storage_service/templates/snippets/locations_table.html:40
 #: storage_service/templates/snippets/pipelines_table.html:16
 msgid "Enabled,Disabled"
@@ -1255,6 +1284,10 @@ msgstr ""
 #: storage_service/templates/locations/location_form.html:22
 #, python-format
 msgid "%(action)s Location"
+msgstr ""
+
+#: storage_service/templates/locations/location_form.html:39
+msgid "Browse"
 msgstr ""
 
 #: storage_service/templates/locations/location_form.html:58
@@ -1526,6 +1559,10 @@ msgstr ""
 msgid "No pipelines"
 msgstr ""
 
+#: storage_service/templates/snippets/locations_table.html:39
+msgid "unlimited"
+msgstr ""
+
 #: storage_service/templates/snippets/package_description.html:2
 msgid ""
 "Packages are Transfers, SIPs, DIPs and AIPs uploaded to a Location managed "
@@ -1561,6 +1598,7 @@ msgstr ""
 msgid "Fixity Status"
 msgstr ""
 
+#: storage_service/templates/snippets/packages_table.html:22
 #: storage_service/templates/snippets/packages_table.html:27
 #: storage_service/templates/snippets/packages_table.html:37
 msgid "None"
