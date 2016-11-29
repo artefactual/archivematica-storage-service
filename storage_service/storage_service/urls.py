@@ -26,6 +26,7 @@ urlpatterns = [
     url(r'^api/', include(locations.api.urls)),
 
     url(r'^jsi18n/$', views.cached_javascript_catalog, {'domain': 'djangojs'}, name='javascript-catalog'),
+    url(r'^i18n/', include('django.conf.urls.i18n', namespace='i18n')),
 ]
 
 
