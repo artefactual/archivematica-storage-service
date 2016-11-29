@@ -30,8 +30,8 @@ class Event(models.Model):
     DELETE = 'DELETE'
     RECOVER = 'RECOVER'
     EVENT_TYPE_CHOICES = (
-        (DELETE, 'delete'),
-        (RECOVER, 'recover'),
+        (DELETE, _l('delete')),
+        (RECOVER, _l('recover')),
     )
     event_type = models.CharField(max_length=8, choices=EVENT_TYPE_CHOICES)
     event_reason = models.TextField()
@@ -42,9 +42,9 @@ class Event(models.Model):
     APPROVED = 'APPROVE'
     REJECTED = 'REJECT'
     EVENT_STATUS_CHOICES = (
-        (SUBMITTED, 'Submitted'),
-        (APPROVED, 'Approved'),
-        (REJECTED, 'Rejected'),
+        (SUBMITTED, _l('Submitted')),
+        (APPROVED, _l('Approved')),
+        (REJECTED, _l('Rejected')),
     )
     status = models.CharField(max_length=8, choices=EVENT_STATUS_CHOICES)
     status_reason = models.TextField(null=True, blank=True)
@@ -86,14 +86,19 @@ class Callback(models.Model):
 
     uuid = UUIDField()
     uri = models.CharField(max_length=1024,
+        verbose_name=_l("URI"),
         help_text=_l("URL to contact upon callback execution."))
     event = models.CharField(max_length=15, choices=EVENTS,
+        verbose_name=_l("Event"),
         help_text=_l("Type of event when this callback should be executed."))
     method = models.CharField(max_length=10, choices=HTTP_METHODS,
+        verbose_name=_l("Method"),
         help_text=_l("HTTP request method to use in connecting to the URL."))
     expected_status = models.IntegerField(default=200,
+        verbose_name=_l("Expected Status"),
         help_text=_l("Expected HTTP response from the server, used to validate the callback response."))
     enabled = models.BooleanField(default=True,
+        verbose_name=_l("Enabled"),
         help_text=_l("Enabled if this callback should be executed."))
 
     class Meta:

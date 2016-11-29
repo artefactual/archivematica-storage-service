@@ -51,20 +51,27 @@ class Location(models.Model):
     )
     purpose = models.CharField(max_length=2,
         choices=PURPOSE_CHOICES,
+        verbose_name=_l('Purpose'),
         help_text=_l("Purpose of the space.  Eg. AIP storage, Transfer source"))
     pipeline = models.ManyToManyField('Pipeline', through='LocationPipeline',
         blank=True,
+        verbose_name=_l('Pipeline'),
         help_text=_l("UUID of the Archivematica instance using this location."))
 
     relative_path = models.TextField(
+        verbose_name=_l('Relative Path'),
         help_text=_l("Path to location, relative to the storage space's path."))
     description = models.CharField(max_length=256, default=None,
+        verbose_name=_l('Description'),
         null=True, blank=True, help_text=_l("Human-readable description."))
     quota = models.BigIntegerField(default=None, null=True, blank=True,
+        verbose_name=_l('Quota'),
         help_text=_l("Size, in bytes (optional)"))
     used = models.BigIntegerField(default=0,
+        verbose_name=_l('Used'),
         help_text=_l("Amount used, in bytes."))
     enabled = models.BooleanField(default=True,
+        verbose_name=_l('Enabled'),
         help_text=_l("True if space can be accessed."))
 
     class Meta:

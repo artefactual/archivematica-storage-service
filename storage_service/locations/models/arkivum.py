@@ -36,11 +36,14 @@ class Arkivum(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
 
     host = models.CharField(max_length=256,
+        verbose_name=_l('Host'),
         help_text=_l('Hostname of the Arkivum web instance. Eg. arkivum.example.com:8443'))
     # Optionally be able to rsync
     remote_user = models.CharField(max_length=64, null=True, blank=True,
+        verbose_name=_l('Remote user'),
         help_text=_l("Optional: Username on the remote machine accessible via passwordless ssh."))
     remote_name = models.CharField(max_length=256, null=True, blank=True,
+        verbose_name=_l('Remote name'),
         help_text=_l("Optional: Name or IP of the remote machine."))
 
     class Meta:

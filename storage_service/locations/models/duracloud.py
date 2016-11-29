@@ -27,10 +27,11 @@ LOGGER = logging.getLogger(__name__)
 class Duracloud(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
     host = models.CharField(max_length=256,
+        verbose_name=_l('Host'),
         help_text=_l('Hostname of the DuraCloud instance. Eg. trial.duracloud.org'))
-    user = models.CharField(max_length=64, help_text=_l('Username to authenticate as'))
-    password = models.CharField(max_length=64, help_text=_l('Password to authenticate with'))
-    duraspace = models.CharField(max_length=64, help_text=_l('Name of the Space within DuraCloud'))
+    user = models.CharField(max_length=64, verbose_name=_l('User'), help_text=_l('Username to authenticate as'))
+    password = models.CharField(max_length=64, verbose_name=_l('Password'), help_text=_l('Password to authenticate with'))
+    duraspace = models.CharField(max_length=64, verbose_name=_l('Duraspace'), help_text=_l('Name of the Space within DuraCloud'))
 
     class Meta:
         verbose_name = _l("DuraCloud")

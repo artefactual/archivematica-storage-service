@@ -39,8 +39,8 @@ class DSpace(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
     sd_iri = models.URLField(max_length=256, verbose_name=_l("Service Document IRI"),
         help_text=_l('URL of the service document. E.g. http://demo.dspace.org/swordv2/servicedocument'))
-    user = models.CharField(max_length=64, help_text=_l('DSpace username to authenticate as'))
-    password = models.CharField(max_length=64, help_text=_l('DSpace password to authenticate with'))
+    user = models.CharField(max_length=64, verbose_name=_l("User"), help_text=_l('DSpace username to authenticate as'))
+    password = models.CharField(max_length=64, verbose_name=_l("Password"), help_text=_l('DSpace password to authenticate with'))
     metadata_policy = jsonfield.JSONField(
         blank=True, null=True, default=[],
         verbose_name=_l('Restricted metadata policy'),

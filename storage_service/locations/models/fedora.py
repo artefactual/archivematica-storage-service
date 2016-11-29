@@ -20,10 +20,13 @@ class Fedora(models.Model):
 
     # Authentication related attributes
     fedora_user = models.CharField(max_length=64,
+        verbose_name=_l("Fedora user"),
         help_text=_l("Fedora user name (for SWORD functionality)"))
     fedora_password = models.CharField(max_length=256,
+        verbose_name=_l("Fedora password"),
         help_text=_l("Fedora password (for SWORD functionality)"))
     fedora_name = models.CharField(max_length=256,
+        verbose_name=_l("Fedora name"),
         help_text=_l("Name or IP of the remote Fedora machine."))
 
     class Meta:

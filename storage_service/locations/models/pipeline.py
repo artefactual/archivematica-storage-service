@@ -28,7 +28,7 @@ LOGGER = logging.getLogger(__name__)
 
 class Pipeline(models.Model):
     """ Information about Archivematica instances using the storage service. """
-    uuid = UUIDField(unique=True, version=4, auto=False, verbose_name="UUID",
+    uuid = UUIDField(unique=True, version=4, auto=False, verbose_name=_l("UUID"),
         help_text=_l("Identifier for the Archivematica pipeline"),
         validators=[validators.RegexValidator(
             r'\w{8}-\w{4}-\w{4}-\w{4}-\w{12}',
@@ -36,17 +36,22 @@ class Pipeline(models.Model):
             _l("Invalid UUID"))])
     description = models.CharField(max_length=256, default=None,
         null=True, blank=True,
+        verbose_name=_l('Description'),
         help_text=_l("Human readable description of the Archivematica instance."))
     remote_name = models.CharField(max_length=256, default=None,
         null=True, blank=True,
+        verbose_name=_l('Remote name'),
         help_text=_l("Host or IP address of the pipeline server for making API calls."))
     api_username = models.CharField(max_length=256, default=None,
         null=True, blank=True,
+        verbose_name=_l('API username'),
         help_text=_l("Username to use when making API calls to the pipeline."))
     api_key = models.CharField(max_length=256, default=None,
         null=True, blank=True,
+        verbose_name=_l('API key'),
         help_text=_l("API key to use when making API calls to the pipeline."))
     enabled = models.BooleanField(default=True,
+        verbose_name=_l('Enabled'),
         help_text=_l("Enabled if this pipeline is able to access the storage service."))
 
     class Meta:

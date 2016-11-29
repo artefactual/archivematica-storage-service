@@ -30,8 +30,10 @@ class PipelineLocalFS(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
 
     remote_user = models.CharField(max_length=64,
+        verbose_name=_l("Remote user"),
         help_text=_l("Username on the remote machine accessible via ssh"))
     remote_name = models.CharField(max_length=256,
+        verbose_name=_l("Remote name"),
         help_text=_l("Name or IP of the remote machine."))
     # Space.path is the path on the remote machine
 

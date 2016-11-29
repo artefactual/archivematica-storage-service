@@ -23,18 +23,24 @@ LOGGER = logging.getLogger(__name__)
 class Swift(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
     auth_url = models.CharField(max_length=256,
+        verbose_name=_l('Auth URL'),
         help_text=_l('URL to authenticate against'))
     auth_version = models.CharField(max_length=8, default='2',
+        verbose_name=_l('Auth version'),
         help_text=_l('OpenStack auth version'))
     username = models.CharField(max_length=64,
+        verbose_name=_l('Username'),
         help_text=_l('Username to authenticate as. E.g. http://example.com:5000/v2.0/'))
     # HELP how do I store the password?  Has to be plaintext to send to Swift, but that seems like a bad idea
     password = models.CharField(max_length=256,
+        verbose_name=_l('Password'),
         help_text=_l('Password to authenticate with'))
-    container = models.CharField(max_length=64)
+    container = models.CharField(max_length=64, verbose_name=_l("Container"))
     tenant = models.CharField(max_length=64, null=True, blank=True,
+        verbose_name=_l('Tenant'),
         help_text=_l('The tenant/account name, required when connecting to an auth 2.0 system.'))
     region = models.CharField(max_length=64, null=True, blank=True,
+        verbose_name=_l('Region'),
         help_text=_l('Optional: Region in Swift'))
 
     class Meta:

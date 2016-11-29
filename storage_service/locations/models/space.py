@@ -151,18 +151,25 @@ class Space(models.Model):
     )
     access_protocol = models.CharField(max_length=8,
         choices=ACCESS_PROTOCOL_CHOICES,
+        verbose_name=_l("Access protocol"),
         help_text=_l("How the space can be accessed."))
     size = models.BigIntegerField(default=None, null=True, blank=True,
+        verbose_name=_l("Size"),
         help_text=_l("Size in bytes (optional)"))
     used = models.BigIntegerField(default=0,
+        verbose_name=_l("Used"),
         help_text=_l("Amount used in bytes"))
     path = models.TextField(default='', blank=True,
+        verbose_name=_l("Path"),
         help_text=_l("Absolute path to the space on the storage service machine."))
     staging_path = models.TextField(validators=[validate_space_path],
+        verbose_name=_l("Staging path"),
         help_text=_l("Absolute path to a staging area.  Must be UNIX filesystem compatible, preferably on the same filesystem as the path."))
     verified = models.BooleanField(default=False,
+        verbose_name=_l("Verified"),
         help_text=_l("Whether or not the space has been verified to be accessible."))
     last_verified = models.DateTimeField(default=None, null=True, blank=True,
+        verbose_name=_l("Last verified"),
         help_text=_l("Time this location was last verified to be accessible."))
 
     class Meta:

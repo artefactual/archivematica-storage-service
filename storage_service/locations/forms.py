@@ -241,8 +241,9 @@ class ReingestForm(forms.Form):
         (models.Package.FULL, _l('Full re-ingest')),
     )
 
-    pipeline = forms.ModelChoiceField(queryset=models.Pipeline.active.all())
-    reingest_type = forms.ChoiceField(choices=REINGEST_CHOICES, widget=forms.RadioSelect)
+    pipeline = forms.ModelChoiceField(label=_l("Pipeline"), queryset=models.Pipeline.active.all())
+    reingest_type = forms.ChoiceField(label=_l("Reingest type"), choices=REINGEST_CHOICES, widget=forms.RadioSelect)
     processing_config = forms.CharField(required=False, initial='default',
+        label=_l("Processing config"),
         help_text=_l('Optional: The processing config is only used with full re-ingest'),
         widget=forms.TextInput(attrs={'placeholder': 'default'}))
