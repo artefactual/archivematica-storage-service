@@ -3,3 +3,6 @@
 
 ipython==1.1.0
 Sphinx==1.2b1
+
+# For managing translation strings on Transifex
+transifex-client==0.12.2
