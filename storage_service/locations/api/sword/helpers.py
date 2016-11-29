@@ -184,7 +184,7 @@ def _fetch_content(deposit_uuid, objects, subdirs=None):
 
             if item['checksum'] is not None and item['checksum'] != generate_checksum(temp_filename, 'md5').hexdigest():
                 os.unlink(temp_filename)
-                raise Exception(_("Incorrect checksum"_)
+                raise Exception(_("Incorrect checksum"))
 
             # Some MODS records have no proper filenames
             if filename == 'MODS Record':
