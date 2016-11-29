@@ -5,6 +5,7 @@ from os.path import abspath, basename, dirname, join, normpath
 from sys import path
 
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.translation import ugettext_lazy as _
 
 
 def get_env_variable(var_name):
@@ -77,6 +78,19 @@ USE_L10N = True
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#use-tz
 USE_TZ = True
 ########## END GENERAL CONFIGURATION
+
+
+########## LOCALE CONFIGURATION
+LOCALE_PATHS = [
+    normpath(join(SITE_ROOT, 'locale')),
+]
+
+LANGUAGES = [
+    ('fr', _('French')),
+    ('en', _('English')),
+    ('es', _('Spanish')),
+]
+########## END LOCALE CONFIGURATION
 
 
 ########## MEDIA CONFIGURATION
