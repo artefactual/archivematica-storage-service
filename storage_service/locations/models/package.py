@@ -167,7 +167,7 @@ class Package(models.Model):
                 message = _("Package {uuid} (located at {path}) does not exist").format(
                     uuid=self.uuid, path=full_path)
             else:
-                message = _("{} is neither a file nor a directory").format(full_path)
+                message = _("{path} is neither a file nor a directory").format(full_path)
             raise StorageException(message)
 
     @property
@@ -604,7 +604,7 @@ class Package(models.Model):
                 full_path,  # Source
             ]
         else:
-            raise NotImplementedError(_('Algorithm %s not implemented') % algorithm)
+            raise NotImplementedError(_('Algorithm %(algorithm)s not implemented') % {'algorithm': algorithm})
 
         LOGGER.info('Compressing package with: %s to %s', command, compressed_filename)
         rc = subprocess.call(command)
@@ -645,7 +645,7 @@ class Package(models.Model):
 
         mets_path = os.path.join(prefix, *relative_path)
         if not os.path.isfile(mets_path):
-            raise StorageException(_("No METS found at location: {}").format(mets_path))
+            raise StorageException(_("No METS found at location: {path}").format(path=mets_path))
 
         doc = etree.parse(mets_path)
 
@@ -913,8 +913,12 @@ class Package(models.Model):
 
         # Check and set reingest pipeline
         if self.misc_attributes.get('reingest_pipeline', None):
-            return {'error': True, 'status_code': 409,
-                'message': _('This AIP is already being reingested on {}').format(self.misc_attributes['reingest_pipeline'])}
+            return {
+                'error': True,
+                'status_code': 409,
+                'message': _('This AIP is already being reingested on {pipeline}').format(
+                    pipeline=self.misc_attributes['reingest_pipeline'])
+            }
         self.misc_attributes.update({'reingest_pipeline': pipeline.uuid})
 
         # Fetch and extract if needed
@@ -982,8 +986,11 @@ class Package(models.Model):
         try:
             currently_processing = Location.active.filter(pipeline=pipeline).get(purpose=Location.CURRENTLY_PROCESSING)
         except (Location.DoesNotExist, Location.MultipleObjectsReturned):
-            return {'error': True, 'status_code': 412,
-                'message': _('No currently processing Location is associated with pipeline {}').format(pipeline.uuid)}
+            return {
+                'error': True,
+                'status_code': 412,
+                'message': _('No currently processing Location is associated with pipeline {uuid}').format(pipeline=pipeline.uuid)
+            }
         LOGGER.debug('Reingest: Current location: %s', current_location)
         dest_basepath = os.path.join(currently_processing.relative_path, 'tmp', '')
         for path in reingest_files:
@@ -1013,7 +1020,7 @@ class Package(models.Model):
         try:
             resp = pipeline.reingest(relative_path, self.uuid, reingest_target)
         except requests.exceptions.RequestException as e:
-            message = _('Error in approve reingest API. {}').format(e)
+            message = _('Error in approve reingest API. {error}').format(error=e)
             LOGGER.exception('Error approving reingest in pipeline for package %s', self.uuid)
             return {'error': True, 'status_code': 502, 'message': message}
         else:
@@ -1050,7 +1057,7 @@ class Package(models.Model):
         # Check origin pipeline against stored pipeline
         if self.origin_pipeline.uuid != self.misc_attributes.get('reingest_pipeline'):
             LOGGER.info('Reingest: Received pipeline %s did not match expected pipeline %s', self.origin_pipeline.uuid, self.misc_attributes.get('reingest_pipeline'))
-            raise Exception(_('%s did not match the pipeline this AIP was reingested on.') % self.origin_pipeline.uuid)
+            raise Exception(_('%(uuid)s did not match the pipeline this AIP was reingested on.') % {'uuid': self.origin_pipeline.uuid})
         self.misc_attributes.update({'reingest_pipeline': None})
         self.save()
 

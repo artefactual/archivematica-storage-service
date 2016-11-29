@@ -207,7 +207,7 @@ class LocationForm(forms.ModelForm):
             pipelines = [d['pipeline'] for d in existing_recovery_rel]
             if pipelines:
                 raise forms.ValidationError(
-                    _('Pipeline(s) {} already have an AIP recovery location.').format(', '.join(pipelines)))
+                    _('Pipeline(s) {pipelines} already have an AIP recovery location.').format(pipelines=', '.join(pipelines)))
         return cleaned_data
 
     def clean_purpose(self):

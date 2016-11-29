@@ -283,7 +283,10 @@ class Space(models.Model):
                 source_path, destination_path, destination_space, *args, **kwargs)
         except AttributeError:
             raise NotImplementedError(
-                _('{} space has not implemented move_to_storage_service').format(self.get_access_protocol_display()))
+                _('{protocol} space has not implemented {method}').format(
+                    protocol=self.get_access_protocol_display(),
+                    method='move_to_storage_service',
+                ))
 
     def post_move_to_storage_service(self, *args, **kwargs):
         """ Hook for any actions that need to be taken after moving to the storage service. """
@@ -344,7 +347,10 @@ class Space(models.Model):
                 source_path, destination_path, *args, **kwargs)
         else:
             raise NotImplementedError(
-                _('{} space has not implemented move_from_storage_service').format(self.get_access_protocol_display()))
+                _('{protocol} space has not implemented {method}').format(
+                    protocol=self.get_access_protocol_display(),
+                    method='move_from_storage_service',
+                ))
 
     def post_move_from_storage_service(self, staging_path, destination_path, package=None, *args, **kwargs):
         """
@@ -391,7 +397,10 @@ class Space(models.Model):
         try:
             return self.get_child_space().update_package_status(package)
         except AttributeError:
-            message = _('{} space has not implemented update_package_status').format(self.get_access_protocol_display())
+            message = _('{protocol} space has not implemented {method}').format(
+                protocol=self.get_access_protocol_display(),
+                method='update_package_status',
+            )
             return (None, message)
 
     def check_package_fixity(self, package):
@@ -404,7 +413,10 @@ class Space(models.Model):
         if hasattr(child, 'check_package_fixity'):
             return child.check_package_fixity(package)
         else:
-            raise NotImplementedError(_('Space %s does not implement check_package_fixity') % self.get_access_protocol_display())
+            raise NotImplementedError(
+                _('Space %(protocol)s does not implement check_package_fixity') %
+                {'protocol': self.get_access_protocol_display()}
+            )
 
     # HELPER FUNCTIONS
 

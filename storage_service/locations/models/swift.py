@@ -197,4 +197,6 @@ class Swift(models.Model):
                     content_length=os.path.getsize(source_path),
                 )
         else:
-            raise StorageException(_('%s is neither a file nor a directory, may not exist') % source_path)
+            raise StorageException(
+                _('%(path)s is neither a file nor a directory, may not exist') %
+                {'path': source_path})

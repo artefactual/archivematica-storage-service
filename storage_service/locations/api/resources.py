@@ -67,7 +67,9 @@ def _custom_endpoint(expected_methods=['get'], required_fields=[]):
             try:
                 obj = resource._meta.queryset.get(uuid=kwargs['uuid'])
             except ObjectDoesNotExist:
-                return http.HttpNotFound(_("Resource with UUID {} does not exist").format(kwargs['uuid']))
+                return http.HttpNotFound(
+                    _("Resource with UUID {uuid} does not exist").format(
+                        uuid=kwargs['uuid']))
             except MultipleObjectsReturned:
                 return http.HttpMultipleChoices(_("More than one resource is found at this URI."))
 
@@ -82,7 +84,9 @@ def _custom_endpoint(expected_methods=['get'], required_fields=[]):
             # Check required fields, if any
             if not all(k in deserialized for k in required_fields):
                 # Don't have enough information to make the request - return error
-                return http.HttpBadRequest(_('All of these fields must be provided: {}').format(', '.join(required_fields)))
+                return http.HttpBadRequest(
+                    _('All of these fields must be provided: {fields}').format(
+                        fields=', '.join(required_fields)))
 
             # Build bundle and return it
             bundle = resource.build_bundle(obj=obj, data=deserialized, request=request)
@@ -333,7 +337,9 @@ class LocationResource(ModelResource):
             origin_uuid = origin_uri.split('/')[4]
             origin_location = Location.active.get(uuid=origin_uuid)
         except (IndexError, Location.DoesNotExist):
-            return http.HttpNotFound(_("The URL provided '%s' was not a link to a valid Location.") % origin_uri)
+            return http.HttpNotFound(
+                _("The URL provided '%(url)s' was not a link to a valid Location.") %
+                {'url': origin_uri})
 
         # For each file in files, call move to/from
         origin_space = origin_location.space
@@ -541,7 +547,8 @@ class PackageResource(ModelResource):
         # From http://stackoverflow.com/questions/13704344/tastypie-where-to-restrict-fields-that-may-be-updated-by-patch
         if set(new_data.keys()) - set(self._meta.allowed_patch_fields):
             raise tastypie.exceptions.BadRequest(
-                _('PATCH only allowed on %s') % ', '.join(self._meta.allowed_patch_fields)
+                _('PATCH only allowed on %(fields)s') %
+                {'fields': ', '.join(self._meta.allowed_patch_fields)}
             )
         return super(PackageResource, self).update_in_place(request, original_bundle, new_data)
 
@@ -643,14 +650,15 @@ class PackageResource(ModelResource):
             extracted_file_path = os.path.join(full_path, relative_path_to_file)
             if not os.path.exists(extracted_file_path):
                 return http.HttpResponse(status=404,
-                    content=_("Requested file, {}, not found in AIP").format(relative_path_to_file))
+                    content=_("Requested file, {filename}, not found in AIP").format(
+                        filename=relative_path_to_file))
         elif package.package_type in Package.PACKAGE_TYPE_CAN_EXTRACT:
             # If file doesn't exist, try to extract it
             (extracted_file_path, temp_dir) = package.extract_file(relative_path_to_file)
         else:
             # If the package is compressed and we can't extract it,
             return http.HttpResponse(status=501,
-                content=_("Unable to extract package of type: {}").format(package.package_type))
+                content=_("Unable to extract package of type: {typename}").format(typename=package.package_type))
 
         response = utils.download_file_stream(extracted_file_path, temp_dir)
 
@@ -695,7 +703,9 @@ class PackageResource(ModelResource):
         # Get AIP details
         pointer_path = bundle.obj.full_pointer_file_path
         if not pointer_path:
-            response = http.HttpNotFound(_("Resource with UUID {} does not have a pointer file").format(bundle.obj.uuid))
+            response = http.HttpNotFound(
+                _("Resource with UUID {uuid} does not have a pointer file").format(
+                    uuid=bundle.obj.uuid))
         else:
             response = utils.download_file_stream(pointer_path)
         return response
@@ -829,7 +839,7 @@ class PackageResource(ModelResource):
 
         if fail > 0:
             response = {
-                "message": _("Failed to POST {} responses to callback URI").format(fail),
+                "message": _("Failed to POST {count} responses to callback URI").format(count=fail),
                 "failure_count": fail,
                 "callback_uris": [c.uri for c in callbacks]
             }
@@ -846,7 +856,11 @@ class PackageResource(ModelResource):
         try:
             pipeline = Pipeline.objects.get(uuid=bundle.data['pipeline'])
         except (Pipeline.DoesNotExist, Pipeline.MultipleObjectsReturned):
-            response = {'error': True, 'message': _('Pipeline UUID {} failed to return a pipeline').format(bundle.data['pipeline'])}
+            response = {
+                'error': True,
+                'message': _('Pipeline UUID {uuid} failed to return a pipeline').format(
+                    uuid=bundle.data['pipeline'])
+            }
             return self.create_response(request, response, response_class=http.HttpBadRequest)
         reingest_type = bundle.data['reingest_type']
         processing_config = bundle.data.get('processing_config', 'default')
@@ -896,7 +910,9 @@ class PackageResource(ModelResource):
             package.save()
 
             response = {
-                'message': _("{} request created successfully.").format(request_description.title()),
+                'message': _("{event_type} request created successfully.").format(
+                    event_type=request_description.title()
+                ),
                 'id': request_event.id
             }
 
@@ -904,7 +920,7 @@ class PackageResource(ModelResource):
             status_code = 202
         else:
             response = {
-                'error_message': _("A {} request already exists for this AIP.").format(request_description)
+                'error_message': _("A {event_type} request already exists for this AIP.").format(event_type=request_description)
             }
             status_code = 200
 
@@ -981,7 +997,7 @@ class PackageResource(ModelResource):
                 except KeyError:
                     response = {
                         "success": False,
-                        "error": _("File object was missing key: {}").format(source)
+                        "error": _("File object was missing key: {key}").format(key=source)
                     }
                     return http.HttpBadRequest(json.dumps(response),
                         content_type="application_json")

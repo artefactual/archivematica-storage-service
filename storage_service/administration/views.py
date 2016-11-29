@@ -72,7 +72,7 @@ def user_create(request):
     user_form = settings_forms.UserCreationForm(request.POST or None)
     if user_form.is_valid():
         user_form.save()
-        messages.success(request, _("New user {} created.").format(
-            user_form.cleaned_data['username']))
+        messages.success(request, _("New user {username} created.").format(
+            username=user_form.cleaned_data['username']))
         return redirect('user_list')
     return render(request, 'administration/user_form.html', locals())

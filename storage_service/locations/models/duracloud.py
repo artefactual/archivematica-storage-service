@@ -76,7 +76,7 @@ class Duracloud(models.Model):
         LOGGER.debug('Response: %s', response)
         if response.status_code != 200:
             LOGGER.warning('%s: Response: %s', response, response.text)
-            raise StorageException(_('Unable to get list of files in %s') % prefix)
+            raise StorageException(_('Unable to get list of files in %(prefix)s') % {'prefix': prefix})
         # Response is XML in the form:
         # <space id="self.durastore">
         #   <item>path</item>
@@ -106,7 +106,7 @@ class Duracloud(models.Model):
             LOGGER.debug('Response: %s', response)
             if response.status_code != 200:
                 LOGGER.warning('%s: Response: %s', response, response.text)
-                raise StorageException(_('Unable to get list of files in %s') % prefix)
+                raise StorageException(_('Unable to get list of files in %(prefix)s') % {'prefix': prefix})
             root = etree.fromstring(response.content)
             paths = [p.text for p in root]
             LOGGER.debug('Paths first 10: %s', paths[:10])
@@ -400,7 +400,8 @@ class Duracloud(models.Model):
                     LOGGER.info('Retrying %s', upload_file)
                     self._upload_chunk(url, upload_file, retry_attempts - 1)
                 else:
-                    raise StorageException(_('Unable to store %s') % upload_file)
+                    raise StorageException(
+                        _('Unable to store %(filename)s') % {'filename': upload_file})
 
     def move_from_storage_service(self, source_path, destination_path, package=None, resume=False):
         """ Moves self.staging_path/src_path to dest_path. """
@@ -420,6 +421,6 @@ class Duracloud(models.Model):
             url = self.duraspace_url + urllib.quote(destination_path)
             self._upload_file(url, source_path, resume=resume)
         elif not os.path.exists(source_path):
-            raise StorageException(_('%s does not exist.') % source_path)
+            raise StorageException(_('%(path)s does not exist.') % {'path': source_path})
         else:
-            raise StorageException(_('%s is not a file or directory.') % source_path)
+            raise StorageException(_('%(path)s is not a file or directory.') % {'path': source_path})

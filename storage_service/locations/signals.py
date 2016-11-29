@@ -29,7 +29,7 @@ def _notify_administrators(subject, message):
 
 @receiver(deletion_request, dispatch_uid="deletion_request")
 def report_deletion_request(sender, **kwargs):
-    subject = _("Deletion request for package {}").format(kwargs["uuid"])
+    subject = _("Deletion request for package {uuid}").format(uuid=kwargs["uuid"])
     message = _("""
 A package deletion request was received for the package with UUID {uuid}. This package is currently stored at: {location}.
 """).format(**kwargs)
@@ -38,8 +38,8 @@ A package deletion request was received for the package with UUID {uuid}. This p
     # don't try to tell the user the URL to approve/deny the request.
     if kwargs["url"]:
         message = message + _("""
-To approve this deletion request, visit: {}
-""").format(kwargs["url"] + reverse('package_delete_request'))
+To approve this deletion request, visit: {url}
+""").format(url=kwargs["url"] + reverse('package_delete_request'))
 
     _notify_administrators(subject, message)
 
@@ -57,7 +57,7 @@ def report_failed_fixity_check(sender, **kwargs):
     report_data = json.loads(kwargs['report'])
     _log_report(kwargs['uuid'], False, report_data['message'])
 
-    subject = _("Fixity check failed for package {}").format(kwargs["uuid"])
+    subject = _("Fixity check failed for package {uuid}").format(uuid=kwargs["uuid"])
     message = _("""
 A fixity check failed for the package with UUID {uuid}. This package is currently stored at: {location}
 

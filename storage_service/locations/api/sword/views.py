@@ -124,7 +124,7 @@ def collection(request, location):
                         if mets_data['deposit_name'] is None:
                             return helpers.sword_error_response(request, 400, _('No deposit name found in XML.'))
                         if not os.path.isdir(location.full_path):
-                            return helpers.sword_error_response(request, 500, _('Collection path (%s) does not exist: contact an administrator.') % (location.full_path))
+                            return helpers.sword_error_response(request, 500, _('Collection path (%(path)s) does not exist: contact an administrator.') % {'path': location.full_path})
 
                         # TODO: should get this from author header or provided XML metadata
                         sourceofacquisition = request.META['HTTP_ON_BEHALF_OF'] if 'HTTP_ON_BEHALF_OF' in request.META else None
@@ -471,7 +471,9 @@ def deposit_media(request, deposit):
                 os.remove(file_path)
                 return HttpResponse(status=204) # No content
             else:
-                return helpers.sword_error_response(request, 404, _('The path to this file (%s) does not exist.') % (file_path))
+                return helpers.sword_error_response(
+                    request, 404,
+                    _('The path to this file (%(path)s) does not exist.') % {'path': file_path})
         else:
             # Delete all PackageDownloadTaskFile and PackageDownloadTask for this deposit
             models.PackageDownloadTaskFile.objects.filter(task__package=deposit).delete()

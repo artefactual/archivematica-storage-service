@@ -301,7 +301,7 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
         missing_attrs = [a for a in attrs if not getattr(pipeline, a, None)]
         return {
             'error': True,
-            'message': _('Pipeline properties {} not set.').format(', '.join(missing_attrs))
+            'message': _('Pipeline properties {properties} not set.').format(properties=', '.join(missing_attrs))
         }
 
     # TODO: add error if more than one location is returned
@@ -355,7 +355,7 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
         shutil.move(destination_path, deposit.full_path)
         return {
             'error': True,
-            'message': _('Request to pipeline {} transfer approval API failed: check credentials and REST API IP whitelist.').format(pipeline.uuid)
+            'message': _('Request to pipeline {uuid} transfer approval API failed: check credentials and REST API IP whitelist.').format(uuid=pipeline.uuid)
         }
     result = response.json()
     return result

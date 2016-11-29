@@ -27,12 +27,12 @@ LOGGER = logging.getLogger(__name__)
 def get_delete_context_dict(request, model, object_uuid, default_cancel='/'):
     """ Returns a dict of the values needed by the confirm delete view. """
     obj = get_object_or_404(model, uuid=object_uuid)
-    header = _("Confirm deleting {}").format(model._meta.verbose_name)
+    header = _("Confirm deleting {item}").format(item=model._meta.verbose_name)
     dependent_objects = utils.dependent_objects(obj)
     if dependent_objects:
-        prompt = _("{} cannot be deleted until the following items are also deleted or unassociated.").format(obj)
+        prompt = _("{item} cannot be deleted until the following items are also deleted or unassociated.").format(item=obj)
     else:
-        prompt = _("Are you sure you want to delete {}?").format(obj)
+        prompt = _("Are you sure you want to delete {item}?").format(item=obj)
     cancel_url = request.GET.get('next', default_cancel)
     return {
         'header': header,
@@ -72,7 +72,7 @@ def aip_recover_request(request):
                 recover_location, os.path.basename(aip.current_path))
         except StorageException:
             recover_path = os.path.join(recover_location.full_path(), os.path.basename(aip.full_path()))
-            message = _('error accessing restore files at {}').format(recover_path)
+            message = _('error accessing restore files at {path}').format(path=recover_path)
             success = False
 
         return (success, message)
@@ -211,7 +211,7 @@ def package_update_status(request, uuid):
     except Exception:
         LOGGER.exception('update status')
         new_status = None
-        error = _('Error getting status for package {}').format(uuid)
+        error = _('Error getting status for package {uuid}').format(uuid=uuid)
 
     if new_status is not None:
         if old_status != new_status:
@@ -221,7 +221,7 @@ def package_update_status(request, uuid):
                     status=package.get_status_display()))
         else:
             messages.info(request,
-                _('Status for package {} has not changed.').format(uuid))
+                _('Status for package {uuid} has not changed.').format(uuid=uuid))
 
     if error:
         messages.warning(request, error)
@@ -234,7 +234,7 @@ def aip_reingest(request, package_uuid):
     try:
         package = Package.objects.get(uuid=package_uuid)
     except Package.DoesNotExist:
-        messages.warning(request, _('Package with UUID {} does not exist.').format(package_uuid))
+        messages.warning(request, _('Package with UUID {uuid} does not exist.').format(uuid=package_uuid))
         return redirect(next_url)
     form = forms.ReingestForm(request.POST or None)
     if form.is_valid():
@@ -294,7 +294,7 @@ def location_detail(request, location_uuid):
     try:
         location = Location.objects.get(uuid=location_uuid)
     except Location.DoesNotExist:
-        messages.warning(request, _("Location {} does not exist.").format(location_uuid))
+        messages.warning(request, _("Location {uuid} does not exist.").format(uuid=location_uuid))
         return redirect('location_list')
     pipelines = Pipeline.objects.filter(location=location)
     packages = Package.objects.filter(current_location=location)
@@ -351,7 +351,7 @@ def pipeline_detail(request, uuid):
     try:
         pipeline = Pipeline.objects.get(uuid=uuid)
     except Pipeline.DoesNotExist:
-        messages.warning(request, _("Pipeline {} does not exist.").format(uuid))
+        messages.warning(request, _("Pipeline {uuid} does not exist.").format(uuid=uuid))
         return redirect('pipeline_list')
     locations = Location.objects.filter(pipeline=pipeline)
     return render(request, 'locations/pipeline_detail.html', locals())
@@ -397,7 +397,7 @@ def space_detail(request, uuid):
     try:
         space = Space.objects.get(uuid=uuid)
     except Space.DoesNotExist:
-        messages.warning(request, _("Space {} does not exist.").format(uuid))
+        messages.warning(request, _("Space {uuid} does not exist.").format(uuid=uuid))
         return redirect('space_list')
     child = space.get_child_space()
 
@@ -488,7 +488,7 @@ def callback_detail(request, uuid):
     try:
         callback = Callback.objects.get(uuid=uuid)
     except Callback.DoesNotExist:
-        messages.warning(request, _("Callback {} does not exist.").format(uuid))
+        messages.warning(request, _("Callback {uuid} does not exist.").format(uuid=uuid))
         return redirect('callback_list')
     return render(request, 'locations/callback_detail.html', locals())
 

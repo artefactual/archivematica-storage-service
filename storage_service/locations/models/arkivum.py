@@ -176,7 +176,7 @@ class Arkivum(models.Model):
             return {'error': True, 'error_message': msg}
         LOGGER.info('Response: %s, Response text: %s', response.status_code, response.text)
         if response.status_code != 200:
-            msg = _('Response from Arkivum server was {}').format(response)
+            msg = _('Response from Arkivum server was {response}').format(response=response)
             LOGGER.warning(msg)
             return {'error': True, 'error_message': msg}
 

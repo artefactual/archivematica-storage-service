@@ -110,7 +110,7 @@ class Dataverse(models.Model):
         src_path = ''.join(c for c in src_path if c.isdigit())
         # Verify src_path has to be a number
         if not src_path.isdigit():
-            raise StorageException(_('Invalid value for src_path: %s. Must be a numberic entity_id') % src_path)
+            raise StorageException(_('Invalid value for src_path: %(value)s. Must be a numberic entity_id') % {'value': src_path})
         # Fetch dataset info
         url = 'https://' + self.host + '/api/datasets/' + src_path
         params = {

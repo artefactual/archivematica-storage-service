@@ -237,10 +237,10 @@ class Lockssomatic(models.Model):
             if response['status'] == 202:  # Accepted - pushing new config
                 return _('Lockss-o-matic is updating the config to stop harvesting.  Please try again to delete local files.')
             if response['status'] == 204:  # No Content - no matching AIP
-                return _('Package {} is not found in LOCKSS').format(package.uuid)
+                return _('Package {uuid} is not found in LOCKSS').format(uuid=package.uuid)
             if response['status'] == 409:  # Conflict - Files in AU with recrawl
                 return _("There are files in the LOCKSS Archival Unit (AU) that do not have 'recrawl=false'.")
-            return _('Error {} when requesting LOCKSS stop harvesting deleted files.').format(response['status'])
+            return _('Error {error} when requesting LOCKSS stop harvesting deleted files.').format(error=response['status'])
         return None
 
     def _delete_files(self):
