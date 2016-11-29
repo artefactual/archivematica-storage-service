@@ -36,7 +36,7 @@
 
   <script>
     $(document).ready(function() {
-      $('<input id="id_relative_path_browse" type="button" value="Browse" class="btn" />')
+      $('<input id="id_relative_path_browse" type="button" value="{% trans 'Browse' %}" class="btn" />')
         .insertAfter('#id_relative_path');
 
       createSingleDirectoryPicker(

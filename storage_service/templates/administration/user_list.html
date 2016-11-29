@@ -22,8 +22,8 @@
         <td>{{ user_display.username }}</td>
         <td>{{ user_display.get_full_name }}</td>
         <td>{{ user_display.email }}</td>
-        <td>{{ user_display.is_superuser }}</td>
-        <td>{{ user_display.is_active }}</td>
+        <td>{{ user_display.is_superuser|yesno:_("True,False") }}</td>
+        <td>{{ user_display.is_active|yesno:_("True,False") }}</td>
         <td>
           {% if user.is_superuser or user.id == user_display.id %}
           <a class="btn btn-primary edit small" href="{% url 'user_edit' user_display.id %}">{% trans "Edit" %}</a>

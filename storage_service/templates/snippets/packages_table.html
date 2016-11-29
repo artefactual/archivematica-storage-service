@@ -19,7 +19,7 @@
     {% for package in packages %}
       <tr>
         <td>{{ package.uuid }}</td>
-        <td>{{ package.description }}</td>
+        <td>{{ package.description|default:_("None") }}</td>
         <td>
           {% if package.origin_pipeline %}
           <a href="{% url 'pipeline_detail' package.origin_pipeline.uuid %}">{{ package.origin_pipeline }}</a>
