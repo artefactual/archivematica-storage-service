@@ -10,12 +10,11 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2016-11-29 15:06-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"Language-Team: French (https://www.transifex.com/artefactual/teams/1506/fr/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: fr\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #: storage_service/administration/forms.py:38
@@ -312,8 +311,8 @@ msgstr ""
 
 #: storage_service/locations/api/sword/views.py:252
 msgid ""
-"If using CHECKSUM attribute, CHECKSUMTYPE attribute value must be set to MD5 "
-"in XML"
+"If using CHECKSUM attribute, CHECKSUMTYPE attribute value must be set to MD5"
+" in XML"
 msgstr ""
 
 #: storage_service/locations/api/sword/views.py:324
@@ -345,7 +344,8 @@ msgstr ""
 
 #: storage_service/locations/api/sword/views.py:395
 msgid ""
-"The In-Progress header must be set to false when starting deposit processing."
+"The In-Progress header must be set to false when starting deposit "
+"processing."
 msgstr ""
 
 #: storage_service/locations/api/sword/views.py:457
@@ -636,8 +636,8 @@ msgstr ""
 #: storage_service/locations/models/package.py:309
 #, python-brace-format
 msgid ""
-"AIP too big for quota on {location}; Used: {used}; Quota: {quota}; AIP size: "
-"{aip_size}"
+"AIP too big for quota on {location}; Used: {used}; Quota: {quota}; AIP size:"
+" {aip_size}"
 msgstr ""
 
 #: storage_service/locations/models/package.py:519
@@ -782,8 +782,7 @@ msgstr ""
 #, python-brace-format
 msgid ""
 "\n"
-"A package deletion request was received for the package with UUID {uuid}. "
-"This package is currently stored at: {location}.\n"
+"A package deletion request was received for the package with UUID {uuid}. This package is currently stored at: {location}.\n"
 msgstr ""
 
 #: storage_service/locations/signals.py:40
@@ -802,8 +801,7 @@ msgstr ""
 #, python-brace-format
 msgid ""
 "\n"
-"A fixity check failed for the package with UUID {uuid}. This package is "
-"currently stored at: {location}\n"
+"A fixity check failed for the package with UUID {uuid}. This package is currently stored at: {location}\n"
 "\n"
 "Full failure report (in JSON format):\n"
 "{report}\n"
@@ -1301,8 +1299,8 @@ msgstr ""
 #: storage_service/templates/locations/location_list.html:15
 #, python-format
 msgid ""
-"No locations currently exist.  Please create one from the <a href="
-"\"%(space_list_url)s\">spaces</a> page."
+"No locations currently exist.  Please create one from the <a "
+"href=\"%(space_list_url)s\">spaces</a> page."
 msgstr ""
 
 #: storage_service/templates/locations/package_list.html:4
@@ -1439,8 +1437,8 @@ msgstr ""
 #: storage_service/templates/locations/pipeline_detail.html:32
 #, python-format
 msgid ""
-"No locations currently exist. Please create one from the <a href="
-"\"%(space_list_url)s\">spaces</a> page."
+"No locations currently exist. Please create one from the <a "
+"href=\"%(space_list_url)s\">spaces</a> page."
 msgstr ""
 
 #: storage_service/templates/locations/pipeline_form.html:4
@@ -1536,8 +1534,8 @@ msgstr ""
 #: storage_service/templates/snippets/callback_description.html:2
 msgid ""
 "Callbacks allow REST calls to be made by the Archivematica Storage Service "
-"after performing certain types of actions.  This allows external services to "
-"be notified when internal actions have taken place."
+"after performing certain types of actions.  This allows external services to"
+" be notified when internal actions have taken place."
 msgstr ""
 
 #: storage_service/templates/snippets/callbacks_table.html:7
@@ -1619,8 +1617,8 @@ msgstr ""
 #: storage_service/templates/snippets/pipeline_description.html:2
 msgid ""
 "Each pipeline is an Archivematica installation, and has a unique ID that "
-"identifies the server and all associated clients.  Locations are assigned to "
-"pipelines and can only be accessed by that pipeline."
+"identifies the server and all associated clients.  Locations are assigned to"
+" pipelines and can only be accessed by that pipeline."
 msgstr ""
 
 #: storage_service/templates/snippets/space_description.html:2
