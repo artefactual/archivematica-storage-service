@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-11-29 15:06-0800\n"
+"POT-Creation-Date: 2016-12-02 00:19-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -280,7 +280,9 @@ msgid "Could not create deposit: contact an administrator."
 msgstr ""
 
 #: storage_service/locations/api/sword/views.py:150
-msgid "Error parsing XML"
+#: storage_service/locations/api/sword/views.py:358
+#: storage_service/locations/api/sword/views.py:455
+msgid "Error parsing XML."
 msgstr ""
 
 #: storage_service/locations/api/sword/views.py:156
@@ -325,11 +327,6 @@ msgstr ""
 #: storage_service/locations/api/sword/views.py:327
 #: storage_service/locations/api/sword/views.py:427
 msgid "This deposit has already been submitted for processing."
-msgstr ""
-
-#: storage_service/locations/api/sword/views.py:358
-#: storage_service/locations/api/sword/views.py:455
-msgid "Error parsing XML."
 msgstr ""
 
 #: storage_service/locations/api/sword/views.py:379

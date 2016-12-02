@@ -147,7 +147,7 @@ def collection(request, location):
                         else:
                             return _deposit_receipt_response(request, deposit, 200)
                     else:
-                        return helpers.sword_error_response(request, 412, _('Error parsing XML'))
+                        return helpers.sword_error_response(request, 412, _('Error parsing XML.'))
                 except Exception as e:
                     return helpers.sword_error_response(request, 400, traceback.format_exc())
             elif source_location or relative_path_to_files:
