@@ -52,7 +52,7 @@
               <li><a href="{% url 'package_list' %}">{% trans "Packages" %}</a></li>
               <li><a href="{% url 'settings_edit' %}">{% trans "Administration" %}</a></li>
               {% if user.is_authenticated %}
-              <li><a href="{% url 'logout' %}">{% trans "Logout" %}</a></li>
+              <li><a href="{% url 'logout' %}">{% trans "Log out" %}</a></li>
               {% endif %}
             </ul>
           </div><!--/.nav-collapse -->

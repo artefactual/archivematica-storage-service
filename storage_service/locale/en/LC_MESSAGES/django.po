@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-12-02 00:19-0800\n"
+"POT-Creation-Date: 2016-12-02 00:44-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1123,7 +1123,7 @@ msgid "Administration"
 msgstr ""
 
 #: storage_service/templates/base.html:55
-msgid "Logout"
+msgid "Log out"
 msgstr ""
 
 #: storage_service/templates/index.html:8
@@ -1516,7 +1516,7 @@ msgid "No spaces currently exist."
 msgstr ""
 
 #: storage_service/templates/login.html:4
-msgid "Login to Storage Service"
+msgid "Log in to Storage Service"
 msgstr ""
 
 #: storage_service/templates/login.html:9
@@ -1524,7 +1524,7 @@ msgid "Your username and password didn't match. Please try again."
 msgstr ""
 
 #: storage_service/templates/login.html:25
-msgid "login"
+msgid "Log in"
 msgstr ""
 
 #: storage_service/templates/snippets/administration_description.html:2
