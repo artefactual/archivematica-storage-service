@@ -5,6 +5,7 @@ import os
 
 # Core Django, alphabetical
 from django.db import models
+from django.utils.translation import ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 
@@ -20,17 +21,22 @@ class NFS(models.Model):
 
     # Space.path is the local path
     remote_name = models.CharField(max_length=256,
-        help_text="Name of the NFS server.")
+        verbose_name=_l('Remote name'),
+        help_text=_l("Name of the NFS server."))
     remote_path = models.TextField(
-        help_text="Path on the NFS server to the export.")
+        verbose_name=_l('Remote path'),
+        help_text=_l("Path on the NFS server to the export."))
     version = models.CharField(max_length=64, default='nfs4',
-        help_text="Type of the filesystem, i.e. nfs, or nfs4. \
-        Should match a command in `mount`.")
+        verbose_name=_l('Version'),
+        help_text=_l("Type of the filesystem, i.e. nfs, or nfs4. \
+        Should match a command in `mount`."))
     # https://help.ubuntu.com/community/NFSv4Howto
-    manually_mounted = models.BooleanField(default=False)
+    manually_mounted = models.BooleanField(
+        verbose_name=_l('Manually mounted'),
+        default=False)
 
     class Meta:
-        verbose_name = "Network File System (NFS)"
+        verbose_name = _l("Network File System (NFS)")
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [

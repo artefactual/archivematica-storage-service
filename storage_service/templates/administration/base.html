@@ -1,13 +1,16 @@
 {% extends "base.html" %}
+{% load i18n %}
+
 
 {% block sidebar %}
 <div class='span2 row sidebar'>
   {% include 'snippets/administration_description.html' %}
   <ul>
-    <li><a href="{% url 'settings_edit' %}">Configuration</a></li>
-    <li><a href="{% url 'user_list' %}">Users</a></li>
-    <li><a href="{% url 'version' %}">Version</a></li>
-    <li><a href="{% url 'callback_list' %}">Service callbacks</a></li>
+    <li><a href="{% url 'settings_edit' %}">{% trans "Configuration" %}</a></li>
+    <li><a href="{% url 'user_list' %}">{% trans "Users" %}</a></li>
+    <li><a href="{% url 'version' %}">{% trans "Version" %}</a></li>
+    <li><a href="{% url 'callback_list' %}">{% trans "Service callbacks" %}</a></li>
+    <li><a href="{% url 'change_language' %}">{% trans "Language" %}</a></li>
   </ul>
 </div>
 {% endblock sidebar %}

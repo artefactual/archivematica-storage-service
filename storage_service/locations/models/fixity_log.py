@@ -2,6 +2,7 @@
 
 # Core Django, alphabetical
 from django.db import models
+from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 
@@ -19,9 +20,9 @@ class FixityLog(models.Model):
     datetime_reported = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Fixity Log"
+        verbose_name = _l("Fixity Log")
         app_label = 'locations'
 
     def __unicode__(self):
-        return u"Fixity check of {package}".format(
+        return _(u"Fixity check of {package}").format(
             package=self.package)

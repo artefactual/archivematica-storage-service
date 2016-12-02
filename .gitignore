@@ -11,3 +11,6 @@
 # The absolute path to the directory where collectstatic will collect static
 # files for deployment (base.py:STATIC_ROOT).
 /storage_service/assets/
+
+# Compiled translation files
+*.mo

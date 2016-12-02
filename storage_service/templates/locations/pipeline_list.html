@@ -1,17 +1,18 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block page_title %}All Pipelines{% endblock %}
+{% block page_title %}{% trans "All Pipelines" %}{% endblock %}
 
 {% block content %}
 
 {% include 'snippets/pipeline_description.html' %}
 
-<p><a href="{% url 'pipeline_create' %}">Create new pipeline</a></p>
+<p><a href="{% url 'pipeline_create' %}">{% trans "Create new pipeline" %}</a></p>
 
 {% if pipelines %}
   {% include "snippets/pipelines_table.html" %}
 {% else %}
-  <p>No pipelines currently exist.</p>
+  <p>{% trans "No pipelines currently exist." %}</p>
 {% endif %}
 
 {% endblock %}

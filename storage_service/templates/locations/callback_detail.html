@@ -1,21 +1,22 @@
 {% extends "administration/base.html" %}
+{% load i18n %}
 
-{% block page_title %}{{ callback.uri }} Callback Information{% endblock %}
+{% block page_title %}{% blocktrans %}{{ callback.uri }} Callback Information{% endblocktrans %}{% endblock %}
 
 {% block content %}
 
 <div class="callback">
   <dl>
-    <dt>URI</dt> <dd>{{ callback.uri }}</dd>
-    <dt>Event</dt> <dd>{{ callback.event }}</dd>
-    <dt>HTTP Method</dt> <dd>{{ callback.method }}</dd>
-    <dt>Expected status</dt> <dd>{{ callback.expected_status }}</dd>
-    <dt>Enabled</dt> <dd>{{ callback.enabled|yesno:"Enabled,Disabled"}}</dd>
-    <dt>Actions</dt> <dd>
+    <dt>{% trans "URI" %}</dt> <dd>{{ callback.uri }}</dd>
+    <dt>{% trans "Event" %}</dt> <dd>{{ callback.event }}</dd>
+    <dt>{% trans "HTTP Method" %}</dt> <dd>{{ callback.method }}</dd>
+    <dt>{% trans "Expected status" %}</dt> <dd>{{ callback.expected_status }}</dd>
+    <dt>{% trans "Enabled" %}</dt> <dd>{{ callback.enabled|yesno:_("Enabled,Disabled")}}</dd>
+    <dt>{% trans "Actions" %}</dt> <dd>
       <ul>
-        <li><a href="{% url 'callback_edit' callback.uuid %}">Edit</a></li>
-        <li><a href="{% url 'callback_switch_enabled' callback.uuid %}?next={{ request.path }}">{{ callback.enabled|yesno:"Disable,Enable" }}</a></li>
-        <li><a href="{% url 'callback_delete' callback.uuid %}">Delete</a></li>
+        <li><a href="{% url 'callback_edit' callback.uuid %}">{% trans "Edit" %}</a></li>
+        <li><a href="{% url 'callback_switch_enabled' callback.uuid %}?next={{ request.path }}">{{ callback.enabled|yesno:_("Disable,Enable") }}</a></li>
+        <li><a href="{% url 'callback_delete' callback.uuid %}">{% trans "Delete" %}</a></li>
       </ul>
     </dd>
   </dl>

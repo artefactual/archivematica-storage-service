@@ -1,6 +1,6 @@
 {% extends "administration/base.html" %}
 
-{% block page_title %}{{action}} Callback{% endblock %}
+{% block page_title %}{{ action }}{% endblock %}
 
 {% block content %}
 
@@ -12,7 +12,7 @@
     {% endif %}
     {% csrf_token %}
         {{ form.as_p }}
-        <input type="submit" value="{{action}} Callback" class='btn btn-primary' />
+        <input type="submit" value="{{action}}" class='btn btn-primary' />
     </form>
 </div>
 {% endblock %}

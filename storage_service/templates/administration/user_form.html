@@ -1,6 +1,7 @@
 {% extends "administration/base.html" %}
+{% load i18n %}
 
-{% block page_title %}{{action}} User{% endblock %}
+{% block page_title %}{{ action }}{% endblock %}
 
 {% block content %}
 
@@ -12,21 +13,21 @@
     {% endif %}
       {% csrf_token %}
       {{ user_form.as_p }}
-      <input type="submit" name='user' value="{{action}} user" class='btn btn-primary' />
+      <input type="submit" name='user' value="{{ action }}" class='btn btn-primary' />
     </form>
 
     {% if edit_user %}
     <form action="{% url 'user_edit' edit_user.id %}" method="post">
       {% csrf_token %}
       {{ password_form.as_p }}
-      <p>Note: if you change your password, your API key will also be changed to a new, randomly generated one.</p>
-      <input type="submit" name='password' value="Change Password" class='btn btn-primary' />
+      <p>{% trans "Note: if you change your password, your API key will also be changed to a new, randomly generated one." %}</p>
+      <input type="submit" name='password' value="{% trans "Change Password" %}" class='btn btn-primary' />
     </form>
     {% endif %}
 
     {% if edit_user and edit_user.api_key %}
     <p>
-      <label>API key:</label>
+      <label>{% trans "API key" %}:</label>
       <code>{{ edit_user.api_key.key }}</code>
     </p>
     {% endif %}

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block page_title %}{{ action }} Location{% endblock %}
+{% block page_title %}{{ action }}{% endblock %}
 
 {% block extra_css %}
   <link type="text/css" rel="stylesheet" media="all" href="{{ STATIC_URL }}css/backbone-file-explorer.css" />
@@ -16,9 +17,9 @@
     <form action="{% url 'location_create' space.uuid %}" method="post">
     {% endif %}
       {% csrf_token %}
-        <p>Space: {{ space }}</p>
+        <p>{% trans "Space" %}: {{ space }}</p>
         {{ form.as_p }}
-        <input type="submit" value="{{ action }} Location" class='btn btn-primary' />
+        <input type="submit" value="{{ action }}" class='btn btn-primary' />
     </form>
 </div>
 
@@ -35,7 +36,7 @@
 
   <script>
     $(document).ready(function() {
-      $('<input id="id_relative_path_browse" type="button" value="Browse" class="btn" />')
+      $('<input id="id_relative_path_browse" type="button" value="{% trans 'Browse' %}" class="btn" />')
         .insertAfter('#id_relative_path');
 
       createSingleDirectoryPicker(
@@ -54,13 +55,13 @@
     <div class="modal hide" id="directory-select-modal">
       <div class="modal-header">
         <button type="button" class="close" id="directory-select-close" data-dismiss="modal">×</button>
-        <h3>Select a directory</h3>
+        <h3>{% trans "Select a directory" %}</h3>
       </div>
       <div class="modal-body" id="transfer-component-select-body">
         <div id="explorer" class="backbone-file-explorer"></div>
       </div>
       <div class="modal-footer">
-        <a href="#" class="btn" data-dismiss="modal" id="directory-select-cancel">Cancel</a>
+        <a href="#" class="btn" data-dismiss="modal" id="directory-select-cancel">{% trans "Cancel" %}</a>
       </div>
     </div>
   </script>

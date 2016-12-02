@@ -1,0 +1,111 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2016-11-29 15:06-0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: Helen Sherwood-Taylor <helen@rrdlabs.co.uk>, 2016\n"
+"Language-Team: French (https://www.transifex.com/artefactual/teams/1506/fr/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: fr\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: storage_service/static/js/directory_picker.js:44
+msgid "Select"
+msgstr ""
+
+#: storage_service/static/js/directory_picker.js:45
+msgid "Select directory"
+msgstr ""
+
+#: storage_service/static/js/directory_picker.js:46
+msgid "Add"
+msgstr ""
+
+#: storage_service/static/js/directory_picker.js:68
+msgid "De-select directory"
+msgstr ""
+
+#: storage_service/static/js/directory_picker.js:69
+msgid "Are you sure you want to de-select this?"
+msgstr ""
+
+#: storage_service/static/js/directory_picker.js:124
+msgid "OK"
+msgstr ""
+
+#: storage_service/static/js/directory_picker.js:142
+msgid "Yes"
+msgstr ""
+
+#: storage_service/static/js/directory_picker.js:149
+msgid "Cancel"
+msgstr ""
+
+#: storage_service/static/js/project.js:7
+msgid "No data available in table"
+msgstr "Aucune donnée disponible dans le tableau"
+
+#: storage_service/static/js/project.js:8
+msgid "Showing _START_ to _END_ of _TOTAL_ entries"
+msgstr "Affichage de l'élement _START_ à _END_ sur _TOTAL_ éléments"
+
+#: storage_service/static/js/project.js:9
+msgid "Showing 0 to 0 of 0 entries"
+msgstr "Affichage de l'élément 0 à 0 sur 0 éléments"
+
+#: storage_service/static/js/project.js:10
+msgid "(filtered from _MAX_ total entries)"
+msgstr "(filtré de _MAX_ éléments au total)"
+
+#: storage_service/static/js/project.js:13
+msgid "Show _MENU_ entries"
+msgstr "Afficher _MENU_ éléments"
+
+#: storage_service/static/js/project.js:14
+msgid "Loading..."
+msgstr "Chargement en cours..."
+
+#: storage_service/static/js/project.js:15
+msgid "Processing..."
+msgstr "Traitement en cours..."
+
+#: storage_service/static/js/project.js:16
+msgid "Search:"
+msgstr "Rechercher&nbsp:"
+
+#: storage_service/static/js/project.js:17
+msgid "No matching records found"
+msgstr "Aucun élément à afficher"
+
+#: storage_service/static/js/project.js:19
+msgid "First"
+msgstr "Premier"
+
+#: storage_service/static/js/project.js:20
+msgid "Last"
+msgstr "Dernier"
+
+#: storage_service/static/js/project.js:21
+msgid "Next"
+msgstr "Suivant"
+
+#: storage_service/static/js/project.js:22
+msgid "Previous"
+msgstr "Précédent"
+
+#: storage_service/static/js/project.js:25
+msgid ": activate to sort column ascending"
+msgstr ": activer pour trier la colonne par ordre croissant"
+
+#: storage_service/static/js/project.js:26
+msgid ": activate to sort column descending"
+msgstr ": activer pour trier la colonne par ordre décroissant"

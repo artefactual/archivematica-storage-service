@@ -1,29 +1,30 @@
+{% load i18n %}
   <table class="datatable">
     <thead>
       <tr>
-        <th>UUID</th>
-        <th>Description</th>
-        <th>Originating Pipeline</th>
-        <th>Current Location</th>
-        <th>Size</th>
-        <th>Type</th>
-        <th>Pointer File</th>
-        <th>Status</th>
-        <th>Fixity Date</th>
-        <th>Fixity Status</th>
-        <th>Actions</th>
+        <th>{% trans "UUID" %}</th>
+        <th>{% trans "Description" %}</th>
+        <th>{% trans "Originating Pipeline" %}</th>
+        <th>{% trans "Current Location" %}</th>
+        <th>{% trans "Size" %}</th>
+        <th>{% trans "Type" %}</th>
+        <th>{% trans "Pointer File" %}</th>
+        <th>{% trans "Status" %}</th>
+        <th>{% trans "Fixity Date" %}</th>
+        <th>{% trans "Fixity Status" %}</th>
+        <th>{% trans "Actions" %}</th>
       </tr>
     </thead>
     <tbody>
     {% for package in packages %}
       <tr>
         <td>{{ package.uuid }}</td>
-        <td>{{ package.description }}</td>
+        <td>{{ package.description|default:_("None") }}</td>
         <td>
           {% if package.origin_pipeline %}
           <a href="{% url 'pipeline_detail' package.origin_pipeline.uuid %}">{{ package.origin_pipeline }}</a>
           {% else %}
-          None
+          {% trans "None" %}
           {% endif %}
         </td>
         <td><a href="{% url 'location_detail' package.current_location.uuid %}">{{ package.full_path }}</a></td>
@@ -31,27 +32,27 @@
         <td>{{ package.get_package_type_display }}</td>
         <td>
           {% if package.pointer_file_location %}
-            <a href="{% url 'pointer_file_request' 'v2' 'file' package.uuid %}">Pointer File</a>
+          <a href="{% url 'pointer_file_request' 'v2' 'file' package.uuid %}">{% trans "Pointer File" %}</a>
           {% else %}
-            None
+          {% trans "None" %}
           {% endif %}
         </td>
         <td>
           {{ package.get_status_display }}
           {% if package.status != 'DELETED' and package.status != 'FAIL'%}
-          (<a href="{% url 'package_update_status' package.uuid %}?next={{ request.path }}">Update Status</a>)
+          (<a href="{% url 'package_update_status' package.uuid %}?next={{ request.path }}">{% trans "Update Status" %}</a>)
           {% endif %}
         </td>
         <td>
           {{ package.latest_fixity_check_datetime|default_if_none:"" }}
         </td>
         <td>
-          <a href="{% url 'package_fixity' package.uuid %}">{{ package.latest_fixity_check_result|yesno:"Success,Failed," }}</a>
+          <a href="{% url 'package_fixity' package.uuid %}">{{ package.latest_fixity_check_result|yesno:_("Success,Failed,") }}</a>
         </td>
         <td>
-          <a href="{% url 'download_request' 'v2' 'file' package.uuid %}">Download</a>
+          <a href="{% url 'download_request' 'v2' 'file' package.uuid %}">{% trans "Download" %}</a>
           {% if package.package_type in 'AIP AIC' %}
-            <a href="{% url 'aip_reingest' package.uuid %}?next={{ request.path }}">Re-ingest</a>
+            <a href="{% url 'aip_reingest' package.uuid %}?next={{ request.path }}">{% trans "Re-ingest" %}</a>
           {% endif %}
         </td>
       </tr>
