@@ -332,16 +332,22 @@ class DSpace(models.Model):
         LOGGER.debug('REST API handle mapping %s %s', response.status_code, response)
         LOGGER.debug('Body %s', response.json())
 
-        # Update bitstream policies
+        # Update bitstreams through REST API policies
         for bitstream in response.json()['bitstreams']:
-            if bitstream['name'] != 'metadata.7z':
-                LOGGER.debug('skipping non-metadata bitstream named %s', bitstream['name'])
-                continue
             url = dspace_url + bitstream['link']
             LOGGER.debug('Bitstream policy URL %s', url)
             body = bitstream
-            # Overwrite existing policies, instead of adding
-            body['policies'] = self.metadata_policy
+            if bitstream['name'] == 'metadata.7z':
+                # Overwrite existing policies, instead of adding
+                body['policies'] = self.metadata_policy
+                # Add bitstream description for metadata when depositing to DSpace
+                body['description'] = 'Administrative information.'
+            elif bitstream['name'] == 'objects.7z':
+                # Add bitstream description for objects when depositing to DSpace
+                body['description'] = 'Archival materials.'
+            else:
+                LOGGER.debug('skipping non-metadata bitstream named %s', bitstream['name'])
+                continue
             LOGGER.debug('Posting bitstream body %s', body)
             try:
                 response = requests.put(url, headers=headers, json=body)
