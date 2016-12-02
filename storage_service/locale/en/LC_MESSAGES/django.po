@@ -1336,30 +1336,30 @@ msgid "Package %(request_type)s Requests"
 msgstr ""
 
 #: storage_service/templates/locations/package_request.html:14
-#: storage_service/templates/locations/package_request.html:54
+#: storage_service/templates/locations/package_request.html:56
 msgid "File"
 msgstr ""
 
 #: storage_service/templates/locations/package_request.html:15
-#: storage_service/templates/locations/package_request.html:55
+#: storage_service/templates/locations/package_request.html:57
 #: storage_service/templates/snippets/packages_table.html:10
 msgid "Type"
 msgstr ""
 
 #: storage_service/templates/locations/package_request.html:16
-#: storage_service/templates/locations/package_request.html:56
-#: storage_service/templates/locations/package_request.html:60
+#: storage_service/templates/locations/package_request.html:58
+#: storage_service/templates/locations/package_request.html:62
 msgid "Reason"
 msgstr ""
 
 #: storage_service/templates/locations/package_request.html:17
-#: storage_service/templates/locations/package_request.html:57
+#: storage_service/templates/locations/package_request.html:59
 #: storage_service/templates/snippets/locations_table.html:7
 msgid "Pipeline"
 msgstr ""
 
 #: storage_service/templates/locations/package_request.html:18
-#: storage_service/templates/locations/package_request.html:58
+#: storage_service/templates/locations/package_request.html:60
 msgid "User"
 msgstr ""
 
@@ -1371,37 +1371,39 @@ msgstr ""
 msgid "Approve/Reject"
 msgstr ""
 
-#: storage_service/templates/locations/package_request.html:37
+#: storage_service/templates/locations/package_request.html:31
+#: storage_service/templates/locations/package_request.html:75
+#, python-format
+msgid "%(email)s (ID: %(user_id)s)"
+msgstr ""
+
+#: storage_service/templates/locations/package_request.html:39
 #, python-format
 msgid "Approve (%(action)s package)"
 msgstr ""
 
-#: storage_service/templates/locations/package_request.html:38
+#: storage_service/templates/locations/package_request.html:40
 msgid "Reject (No change to package)"
 msgstr ""
 
-#: storage_service/templates/locations/package_request.html:46
+#: storage_service/templates/locations/package_request.html:48
 msgid "No requests pending."
 msgstr ""
 
-#: storage_service/templates/locations/package_request.html:50
+#: storage_service/templates/locations/package_request.html:52
 msgid "Closed Requests"
 msgstr ""
 
-#: storage_service/templates/locations/package_request.html:59
+#: storage_service/templates/locations/package_request.html:61
 msgid "Decision"
 msgstr ""
 
-#: storage_service/templates/locations/package_request.html:61
+#: storage_service/templates/locations/package_request.html:63
 msgid "Storage Admin"
 msgstr ""
 
-#: storage_service/templates/locations/package_request.html:62
+#: storage_service/templates/locations/package_request.html:64
 msgid "Updated"
-msgstr ""
-
-#: storage_service/templates/locations/package_request.html:72
-msgid "ID"
 msgstr ""
 
 #: storage_service/templates/locations/pipeline_detail.html:4

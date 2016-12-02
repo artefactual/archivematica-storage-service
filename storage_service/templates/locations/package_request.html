@@ -27,7 +27,9 @@
         <td>{{ req.package.get_package_type_display }}</td>
         <td>{{ req.event_reason }}</td>
         <td>{{ req.pipeline }}</td>
-        <td>{{ req.user_email }} (ID: {{ req.user_id}})</td>
+        <td>
+          {% blocktrans with email=req.user_email user_id=req.user_id %}{{ email }} (ID: {{ user_id }}){% endblocktrans %}
+        </td>
         <td>{{ req.status_time }}</td>
         <td>
           <form action="{% url view_name %}" method="post">
@@ -69,7 +71,9 @@
         <td>{{ req.package.get_package_type_display }}</td>
         <td>{{ req.event_reason }}</td>
         <td>{{ req.pipeline }}</td>
-        <td>{{ req.user_email }} ({% trans "ID" %}: {{ req.user_id}})</td>
+        <td>
+          {% blocktrans with email=req.user_email user_id=req.user_id %}{{ email }} (ID: {{ user_id }}){% endblocktrans %}
+        </td>
         <td>{{ req.get_status_display }}</td>
         <td>{{ req.status_reason }}</td>
         <td>{{ req.admin_id }}</td>
