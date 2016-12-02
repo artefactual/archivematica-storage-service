@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-12-02 00:44-0800\n"
+"POT-Creation-Date: 2016-12-02 08:12-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -83,12 +83,20 @@ msgstr ""
 msgid "Setting saved."
 msgstr ""
 
+#: storage_service/administration/views.py:54
+msgid "Edit User"
+msgstr ""
+
 #: storage_service/administration/views.py:60
 msgid "User information saved."
 msgstr ""
 
 #: storage_service/administration/views.py:67
 msgid "Password changed."
+msgstr ""
+
+#: storage_service/administration/views.py:72
+msgid "Create User"
 msgstr ""
 
 #: storage_service/administration/views.py:76
@@ -884,22 +892,12 @@ msgid "An unknown error occurred"
 msgstr ""
 
 #: storage_service/locations/views.py:261
-#: storage_service/locations/views.py:327
-#: storage_service/locations/views.py:508
-#: storage_service/templates/administration/user_list.html:29
-#: storage_service/templates/locations/callback_detail.html:17
-#: storage_service/templates/locations/pipeline_detail.html:17
-#: storage_service/templates/snippets/callbacks_table.html:23
-#: storage_service/templates/snippets/locations_table.html:41
-#: storage_service/templates/snippets/pipelines_table.html:8
-#: storage_service/templates/snippets/pipelines_table.html:17
-msgid "Edit"
+#: storage_service/templates/locations/location_detail.html:20
+msgid "Edit Location"
 msgstr ""
 
 #: storage_service/locations/views.py:264
-#: storage_service/locations/views.py:331
-#: storage_service/locations/views.py:511
-msgid "Create"
+msgid "Create Location"
 msgstr ""
 
 #: storage_service/locations/views.py:283
@@ -909,6 +907,14 @@ msgstr ""
 #: storage_service/locations/views.py:297
 #, python-brace-format
 msgid "Location {uuid} does not exist."
+msgstr ""
+
+#: storage_service/locations/views.py:327
+msgid "Edit Pipeline"
+msgstr ""
+
+#: storage_service/locations/views.py:331
+msgid "Create Pipeline"
 msgstr ""
 
 #: storage_service/locations/views.py:340
@@ -933,6 +939,14 @@ msgstr ""
 #: storage_service/locations/views.py:491
 #, python-brace-format
 msgid "Callback {uuid} does not exist."
+msgstr ""
+
+#: storage_service/locations/views.py:508
+msgid "Edit Callback"
+msgstr ""
+
+#: storage_service/locations/views.py:511
+msgid "Create Callback"
 msgstr ""
 
 #: storage_service/locations/views.py:517
@@ -1022,16 +1036,6 @@ msgstr ""
 msgid "Save"
 msgstr ""
 
-#: storage_service/templates/administration/user_form.html:4
-#, python-format
-msgid "%(action)s User"
-msgstr ""
-
-#: storage_service/templates/administration/user_form.html:16
-#, python-format
-msgid "%(action)s user"
-msgstr ""
-
 #: storage_service/templates/administration/user_form.html:23
 msgid ""
 "Note: if you change your password, your API key will also be changed to a "
@@ -1073,6 +1077,16 @@ msgstr ""
 #: storage_service/templates/administration/user_list.html:25
 #: storage_service/templates/administration/user_list.html:26
 msgid "True,False"
+msgstr ""
+
+#: storage_service/templates/administration/user_list.html:29
+#: storage_service/templates/locations/callback_detail.html:17
+#: storage_service/templates/locations/pipeline_detail.html:17
+#: storage_service/templates/snippets/callbacks_table.html:23
+#: storage_service/templates/snippets/locations_table.html:41
+#: storage_service/templates/snippets/pipelines_table.html:8
+#: storage_service/templates/snippets/pipelines_table.html:17
+msgid "Edit"
 msgstr ""
 
 #: storage_service/templates/administration/version.html:4
@@ -1201,12 +1215,6 @@ msgstr ""
 msgid "Delete"
 msgstr ""
 
-#: storage_service/templates/locations/callback_form.html:4
-#: storage_service/templates/locations/callback_form.html:16
-#, python-format
-msgid "%(action)s Callback"
-msgstr ""
-
 #: storage_service/templates/locations/callback_list.html:4
 msgid "All Callbacks"
 msgstr ""
@@ -1260,10 +1268,6 @@ msgstr ""
 msgid "Usage"
 msgstr ""
 
-#: storage_service/templates/locations/location_detail.html:20
-msgid "Edit Location"
-msgstr ""
-
 #: storage_service/templates/locations/location_detail.html:22
 msgid "Delete Location"
 msgstr ""
@@ -1274,12 +1278,6 @@ msgstr ""
 
 #: storage_service/templates/locations/location_detail.html:41
 msgid "No packages in this space."
-msgstr ""
-
-#: storage_service/templates/locations/location_form.html:4
-#: storage_service/templates/locations/location_form.html:22
-#, python-format
-msgid "%(action)s Location"
 msgstr ""
 
 #: storage_service/templates/locations/location_form.html:39
@@ -1441,12 +1439,6 @@ msgid ""
 "\"%(space_list_url)s\">spaces</a> page."
 msgstr ""
 
-#: storage_service/templates/locations/pipeline_form.html:4
-#: storage_service/templates/locations/pipeline_form.html:16
-#, python-format
-msgid "%(action)s Pipeline"
-msgstr ""
-
 #: storage_service/templates/locations/pipeline_list.html:4
 msgid "All Pipelines"
 msgstr ""
@@ -1475,9 +1467,6 @@ msgid "Edit Space"
 msgstr ""
 
 #: storage_service/templates/locations/space_form.html:4
-msgid "Create Spaces"
-msgstr ""
-
 #: storage_service/templates/locations/space_form.html:12
 msgid "Create Space"
 msgstr ""

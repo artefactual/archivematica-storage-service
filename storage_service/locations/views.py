@@ -258,10 +258,10 @@ def aip_reingest(request, package_uuid):
 def location_edit(request, space_uuid, location_uuid=None):
     space = get_object_or_404(Space, uuid=space_uuid)
     if location_uuid:
-        action = _("Edit")
+        action = _("Edit Location")
         location = get_object_or_404(Location, uuid=location_uuid)
     else:
-        action = _("Create")
+        action = _("Create Location")
         location = None
     form = forms.LocationForm(request.POST or None, space_protocol=space.access_protocol, instance=location)
     if form.is_valid():
@@ -324,11 +324,11 @@ def location_delete(request, location_uuid):
 
 def pipeline_edit(request, uuid=None):
     if uuid:
-        action = _("Edit")
+        action = _("Edit Pipeline")
         pipeline = get_object_or_404(Pipeline, uuid=uuid)
         initial = {}
     else:
-        action = _("Create")
+        action = _("Create Pipeline")
         pipeline = None
         initial = {'enabled': not utils.get_setting('pipelines_disabled')}
 
@@ -505,10 +505,10 @@ def callback_list(request):
 
 def callback_edit(request, uuid=None):
     if uuid:
-        action = _("Edit")
+        action = _("Edit Callback")
         callback = get_object_or_404(Callback, uuid=uuid)
     else:
-        action = _("Create")
+        action = _("Create Callback")
         callback = None
 
     form = forms.CallbackForm(request.POST or None, instance=callback)

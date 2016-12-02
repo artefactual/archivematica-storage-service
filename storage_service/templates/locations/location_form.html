@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load i18n %}
 
-{% block page_title %}{% blocktrans %}{{ action }} Location{% endblocktrans %}{% endblock %}
+{% block page_title %}{{ action }}{% endblock %}
 
 {% block extra_css %}
   <link type="text/css" rel="stylesheet" media="all" href="{{ STATIC_URL }}css/backbone-file-explorer.css" />
@@ -19,7 +19,7 @@
       {% csrf_token %}
         <p>{% trans "Space" %}: {{ space }}</p>
         {{ form.as_p }}
-        <input type="submit" value="{% blocktrans %}{{ action }} Location{% endblocktrans %}" class='btn btn-primary' />
+        <input type="submit" value="{{ action }}" class='btn btn-primary' />
     </form>
 </div>
 

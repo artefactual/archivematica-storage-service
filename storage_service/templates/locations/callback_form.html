@@ -1,7 +1,6 @@
 {% extends "administration/base.html" %}
-{% load i18n %}
 
-{% block page_title %}{% blocktrans %}{{ action }} Callback{% endblocktrans %}{% endblock %}
+{% block page_title %}{{ action }}{% endblock %}
 
 {% block content %}
 
@@ -13,7 +12,7 @@
     {% endif %}
     {% csrf_token %}
         {{ form.as_p }}
-        <input type="submit" value="{% blocktrans %}{{action}} Callback{% endblocktrans %}" class='btn btn-primary' />
+        <input type="submit" value="{{action}}" class='btn btn-primary' />
     </form>
 </div>
 {% endblock %}

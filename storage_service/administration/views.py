@@ -51,7 +51,7 @@ def user_list(request):
     return render(request, 'administration/user_list.html', locals())
 
 def user_edit(request, id):
-    action = "Edit"
+    action = _("Edit User")
     edit_user = get_object_or_404(get_user_model(), id=id)
     user_form = settings_forms.UserChangeForm(request.POST or None, instance=edit_user)
     password_form = SetPasswordForm(data=request.POST or None, user=edit_user)
@@ -69,7 +69,7 @@ def user_edit(request, id):
     return render(request, 'administration/user_form.html', locals())
 
 def user_create(request):
-    action = "Create"
+    action = _("Create User")
     user_form = settings_forms.UserCreationForm(request.POST or None)
     if user_form.is_valid():
         user_form.save()

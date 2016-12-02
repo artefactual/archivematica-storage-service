@@ -1,7 +1,7 @@
 {% extends "administration/base.html" %}
 {% load i18n %}
 
-{% block page_title %}{% blocktrans %}{{action}} User{% endblocktrans %}{% endblock %}
+{% block page_title %}{{ action }}{% endblock %}
 
 {% block content %}
 
@@ -13,7 +13,7 @@
     {% endif %}
       {% csrf_token %}
       {{ user_form.as_p }}
-      <input type="submit" name='user' value="{% blocktrans %}{{action}} user{% endblocktrans %}" class='btn btn-primary' />
+      <input type="submit" name='user' value="{{ action }}" class='btn btn-primary' />
     </form>
 
     {% if edit_user %}
