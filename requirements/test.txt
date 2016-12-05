@@ -3,5 +3,6 @@
 
 pytest
 pytest-cov==2.4.0
+coverage==4.2
 pytest-django
 vcrpy>=1.0.0
