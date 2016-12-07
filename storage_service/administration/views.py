@@ -33,7 +33,7 @@ def settings_edit(request):
 def get_git_commit():
     try:
         return subprocess.check_output(['git', 'rev-parse', 'HEAD'])
-    except subprocess.CalledProcessError:
+    except (OSError, subprocess.CalledProcessError):
         return None
 
 def version_view(request):
