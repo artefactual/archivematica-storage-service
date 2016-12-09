@@ -476,7 +476,7 @@ class Package(models.Model):
                 root.find('.//mets:fileGrp', namespaces=utils.NSMAP).set('USE', 'Archival Information Package')
 
             with open(pointer_absolute_path, 'w') as f:
-                f.write(etree.tostring(root, pretty_print=True))
+                f.write(etree.tostring(root, pretty_print=True, xml_declaration=True, encoding='utf-8'))
 
     def extract_file(self, relative_path='', extract_path=None):
         """
@@ -1419,7 +1419,7 @@ class Package(models.Model):
 
         # Write out pointer file again
         with open(self.full_pointer_file_path, 'w') as f:
-            f.write(etree.tostring(root, pretty_print=True))
+            f.write(etree.tostring(root, pretty_print=True, xml_declaration=True, encoding='utf-8'))
 
     # SWORD-related methods
     def has_been_submitted_for_processing(self):

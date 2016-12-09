@@ -197,7 +197,7 @@ class Lockssomatic(models.Model):
 
         # Write out pointer file again
         with open(package.full_pointer_file_path, 'w') as f:
-            f.write(etree.tostring(self.pointer_root, pretty_print=True))
+            f.write(etree.tostring(self.pointer_root, pretty_print=True, xml_declaration=True, encoding='utf-8'))
 
         # Update value if different
         package.status = status
@@ -425,7 +425,7 @@ class Lockssomatic(models.Model):
 
         # Write out pointer file again
         with open(package.full_pointer_file_path, 'w') as f:
-            f.write(etree.tostring(self.pointer_root, pretty_print=True))
+            f.write(etree.tostring(self.pointer_root, pretty_print=True, xml_declaration=True, encoding='utf-8'))
 
         return output_files
 
