@@ -834,7 +834,7 @@ class Package(models.Model):
             try:
                  path, temp_dir = self.extract_file()
             except StorageException:
-                 return (None, [], 'Error extracting file')
+                 return (None, [], 'Error extracting file', None)
         else:
             path = self.fetch_local_path()
             temp_dir = None
