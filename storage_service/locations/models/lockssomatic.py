@@ -297,8 +297,14 @@ class Lockssomatic(models.Model):
 
         Returns True on success, False on error.  No updates performed on error."""
         try:
-            self.sword_connection = sword2.Connection(self.sd_iri, download_service_document=True,
-                on_behalf_of=self.content_provider_id)
+            self.sword_connection = sword2.Connection(
+                service_document_iri=self.sd_iri,
+                download_service_document=True,
+                on_behalf_of=self.content_provider_id,
+                keep_history=False,
+                cache_deposit_receipts=False,
+                http_impl=sword2.http_layer.HttpLib2Layer(cache_dir=None)
+            )
         except Exception:  # TODO make this more specific
             LOGGER.exception("Error getting service document from SWORD server.")
             return False

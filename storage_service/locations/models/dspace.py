@@ -63,7 +63,9 @@ class DSpace(models.Model):
                 download_service_document=True,
                 user_name=self.user,
                 user_pass=self.password,
-                keep_history=True,
+                keep_history=False,
+                cache_deposit_receipts=False,
+                http_impl=sword2.http_layer.HttpLib2Layer(cache_dir=None)
                 # http_impl=sword2.http_layer.UrlLib2Layer(),  # This causes the deposit receipt to return the wrong URLs
             )
             LOGGER.debug('Getting service document')
