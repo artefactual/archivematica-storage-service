@@ -932,7 +932,9 @@ class Package(models.Model):
             local_path, temp_dir = self.extract_file()
             LOGGER.debug('Reingest: extracted to %s', local_path)
         else:
-            local_path = self.fetch_local_path()
+            # Append / to uncompressed AIPS so we send the contents of the dir
+            # not the dir itself inside a dir of the same name
+            local_path = os.path.join(self.fetch_local_path(), '')
             temp_dir = ''
             LOGGER.debug('Reingest: uncompressed at %s', local_path)
 
