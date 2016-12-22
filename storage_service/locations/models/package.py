@@ -104,18 +104,6 @@ class Package(models.Model):
     PACKAGE_TYPE_CAN_RECOVER = (AIP, AIC)
     PACKAGE_TYPE_CAN_REINGEST = (AIP, AIC)
 
-    # Compression options
-    COMPRESSION_7Z_BZIP = '7z with bzip'
-    COMPRESSION_7Z_LZMA = '7z with lzma'
-    COMPRESSION_TAR = 'tar'
-    COMPRESSION_TAR_BZIP2 = 'tar bz2'
-    COMPRESSION_ALGORITHMS = (
-        COMPRESSION_7Z_BZIP,
-        COMPRESSION_7Z_LZMA,
-        COMPRESSION_TAR,
-        COMPRESSION_TAR_BZIP2,
-    )
-
     # Reingest type options
     METADATA_ONLY = 'metadata' # Re-ingest metadata only
     OBJECTS = 'objects'        # Re-ingest metadata and objects for DIP generation
@@ -522,10 +510,30 @@ class Package(models.Model):
             output_path = os.path.join(extract_path, basename)
 
         if self.is_compressed:
-            command = ['unar', '-force-overwrite', '-o', extract_path, full_path]
+            # The command used to extract the compressed file at
+            # full_path was, previously, universally::
+            #
+            #     $ unar -force-overwrite -o extract_path full_path
+            #
+            # The problem with this command is that unar treats __MACOSX .rsrc
+            # ("resource fork") files differently than 7z and tar do. 7z and
+            # tar convert these .rsrc files to ._-prefixed files. Similar
+            # behaviour with unar can be achieved by passing `-k hidden`.
+            # However, while a command like::
+            #
+            #     $ unar -force-overwrite -k hidden -o extract_path full_path
+            #
+            # preserves the .rsrc MACOSX files as ._-prefixed files, it does so
+            # differently than 7z/tar do: the resulting .-prefixed files have
+            # different sizes than those created via unar. This makes
+            # ``bag.validate`` choke.
+            if self.full_pointer_file_path:
+                compression = utils._get_compression(self.full_pointer_file_path)
+            else:
+                compression = None  # no pointer file :. command will be unar
+            command = self._get_decompr_cmd(compression, extract_path, full_path)
             if relative_path:
                 command.append(relative_path)
-
             LOGGER.info('Extracting file with: %s to %s', command, output_path)
             rc = subprocess.call(command)
             LOGGER.debug('Extract file RC: %s', rc)
@@ -546,7 +554,7 @@ class Package(models.Model):
         Produces a compressed copy of the package.
 
         :param algorithm: Compression algorithm to use. Should be one of
-            :const:`Package.COMPRESSION_ALGORITHMS`
+            :const:`utils.COMPRESSION_ALGORITHMS`
         :param str extract_path: Path to compress to. If not provided, will
             compress to a temp directory in the SS internal location.
         :return: Tuple with (path to the compressed file, parent directory of
@@ -558,8 +566,8 @@ class Package(models.Model):
         if extract_path is None:
             ss_internal = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
             extract_path = tempfile.mkdtemp(dir=ss_internal.full_path)
-        if algorithm not in self.COMPRESSION_ALGORITHMS:
-            raise ValueError('Algorithm %s not in %s' % algorithm, self.COMPRESSION_ALGORITHMS)
+        if algorithm not in utils.COMPRESSION_ALGORITHMS:
+            raise ValueError('Algorithm %s not in %s' % algorithm, utils.COMPRESSION_ALGORITHMS)
 
         full_path = self.fetch_local_path()
 
@@ -568,11 +576,11 @@ class Package(models.Model):
         else:
             basename = os.path.basename(full_path)
 
-        if algorithm in (self.COMPRESSION_TAR, self.COMPRESSION_TAR_BZIP2):
+        if algorithm in (utils.COMPRESSION_TAR, utils.COMPRESSION_TAR_BZIP2):
             compressed_filename = os.path.join(extract_path, basename + '.tar')
             relative_path = os.path.dirname(full_path)
             algo = ''
-            if algorithm == self.COMPRESSION_TAR_BZIP2:
+            if algorithm == utils.COMPRESSION_TAR_BZIP2:
                 algo = '-j'  # Compress with bzip2
                 compressed_filename += '.bz2'
             command = [
@@ -582,11 +590,11 @@ class Package(models.Model):
                 '-f', compressed_filename,  # Output file
                 os.path.basename(full_path),   # Relative path to source files
             ]
-        elif algorithm in (self.COMPRESSION_7Z_BZIP, self.COMPRESSION_7Z_LZMA):
+        elif algorithm in (utils.COMPRESSION_7Z_BZIP, utils.COMPRESSION_7Z_LZMA):
             compressed_filename = os.path.join(extract_path, basename + '.7z')
-            if algorithm == self.COMPRESSION_7Z_BZIP:
+            if algorithm == utils.COMPRESSION_7Z_BZIP:
                 algo = 'bzip2'
-            elif algorithm == self.COMPRESSION_7Z_LZMA:
+            elif algorithm == utils.COMPRESSION_7Z_LZMA:
                 algo = 'lzma'
             command = [
                 '7z', 'a',  # Add
@@ -845,6 +853,12 @@ class Package(models.Model):
             failures = []
             message = ""
         except bagit.BagValidationError as failure:
+            LOGGER.error('bagit.BagValidationError on %s:\n%s', path, failure.message)
+            try:
+                LOGGER.debug(subprocess.check_output(
+                    ['tree', '-a', '--du', path]))
+            except (OSError, ValueError, subprocess.CalledProcessError):
+                pass
             success = False
             failures = failure.details
             message = failure.message
@@ -1024,6 +1038,19 @@ class Package(models.Model):
             'reingest_uuid': reingest_uuid,
         }
 
+    def _get_decompr_cmd(self, compression, extract_path, full_path):
+        """Returns a decompression command (as a list), given ``compression``
+        (one of ``COMPRESSION_ALGORITHMS``), the destination path
+        ``extract_path`` and the path of the archive ``full_path``.
+        """
+        if compression in (utils.COMPRESSION_7Z_BZIP, utils.COMPRESSION_7Z_LZMA):
+            return ['7z', 'x', '-bd', '-y', '-o{0}'.format(extract_path),
+                    full_path]
+        elif compression == utils.COMPRESSION_TAR_BZIP2:
+            return ['/bin/tar', 'xvjf', full_path, '-C', extract_path]
+        else:
+            return ['unar', '-force-overwrite', '-o', extract_path, full_path]
+
     def finish_reingest(self, origin_location, origin_path, reingest_location, reingest_path):
         """
         Updates an existing AIP with the reingested version.
@@ -1042,6 +1069,7 @@ class Package(models.Model):
         :param Location reingest_location: Location to store the updated AIP in.
         :param str reingest_path: Path to store the updated AIP at.
         """
+
         # Check origin pipeline against stored pipeline
         if self.origin_pipeline.uuid != self.misc_attributes.get('reingest_pipeline'):
             LOGGER.info('Reingest: Received pipeline %s did not match expected pipeline %s', self.origin_pipeline.uuid, self.misc_attributes.get('reingest_pipeline'))
@@ -1113,7 +1141,6 @@ class Package(models.Model):
 
                 self.pointer_file_location = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
                 self.pointer_file_path = os.path.join(utils.uuid_to_path(self.uuid), 'pointer.{}.xml'.format(self.uuid))
-
             src_space.move_to_storage_service(reingest_pointer_src, reingest_pointer_name, internal_space)
             internal_space.move_from_storage_service(reingest_pointer_name, reingest_pointer_dst, package=None)
 
@@ -1184,25 +1211,10 @@ class Package(models.Model):
 
         # Compress if necessary
         if to_be_compressed:
-            reingest_root = etree.parse(reingest_pointer)
+            compression = utils._get_compression(reingest_pointer)
             # If updating, rather than creating a new pointer file, delete this pointer file
             if was_compressed:
                 os.remove(reingest_pointer)
-            puid = reingest_root.findtext('.//premis:formatRegistryKey', namespaces=utils.NSMAP)
-            if puid == 'fmt/484':  # 7 Zip
-                algo = reingest_root.find('.//mets:transformFile', namespaces=utils.NSMAP).get('TRANSFORMALGORITHM')
-                if algo == 'bzip2':
-                    compression = self.COMPRESSION_7Z_BZIP
-                elif algo == 'lzma':
-                    compression = self.COMPRESSION_7Z_LZMA
-                else:
-                    compression = self.COMPRESSION_7Z_BZIP
-                    LOGGER.warning('Reingest: Unable to determine reingested compression algorithm, defaulting to bzip2.')
-            elif puid == 'x-fmt/268':  # Bzipped (probably tar)
-                compression = self.COMPRESSION_TAR_BZIP2
-            else:
-                compression = self.COMPRESSION_7Z_BZIP
-                LOGGER.warning('Reingest: Unable to determine reingested file format, defaulting recompression algorithm to %s.', compression)
             LOGGER.info('Reingest: compressing with %s', compression)
             # FIXME Do we need compression output for event?
             out_path, out_dir = self.compress_package(compression)
@@ -1261,13 +1273,13 @@ class Package(models.Model):
 
             # Add compression event (if compressed)
             amdsec = root.find('mets:amdSec', namespaces=utils.NSMAP)
-            if compression in (self.COMPRESSION_7Z_BZIP, self.COMPRESSION_7Z_LZMA):
+            if compression in (utils.COMPRESSION_7Z_BZIP, utils.COMPRESSION_7Z_LZMA):
                 try:
                     version = [x for x in subprocess.check_output('7z').splitlines() if 'Version' in x][0]
                     event_detail = 'program="7z"; version="{}"'.format(version)
                 except (subprocess.CalledProcessError, Exception):
                     event_detail = 'program="7z"'
-            elif compression in (self.COMPRESSION_TAR_BZIP2, self.COMPRESSION_TAR):
+            elif compression in (utils.COMPRESSION_TAR_BZIP2, utils.COMPRESSION_TAR):
                 try:
                     version = subprocess.check_output(['tar', '--version']).splitlines()[0]
                     event_detail = 'program="tar"; version="{}"'.format(version)
@@ -1323,10 +1335,10 @@ class Package(models.Model):
         # Set compression related data
         comp_level = '1'
         transform_file = []
-        if compression in (self.COMPRESSION_7Z_BZIP, self.COMPRESSION_7Z_LZMA):
-            if compression == self.COMPRESSION_7Z_BZIP:
+        if compression in (utils.COMPRESSION_7Z_BZIP, utils.COMPRESSION_7Z_LZMA):
+            if compression == utils.COMPRESSION_7Z_BZIP:
                 algo = 'bzip2'
-            elif compression == self.COMPRESSION_7Z_LZMA:
+            elif compression == utils.COMPRESSION_7Z_LZMA:
                 algo = 'lzma'
             transform_file.append(
                 etree.Element(utils.PREFIX_NS['mets'] + "transformFile",
@@ -1344,9 +1356,9 @@ class Package(models.Model):
                 'program_version': version,
             }
 
-        elif compression in (self.COMPRESSION_TAR_BZIP2, self.COMPRESSION_TAR):
+        elif compression in (utils.COMPRESSION_TAR_BZIP2, utils.COMPRESSION_TAR):
             transform_order = '1'
-            if compression == self.COMPRESSION_TAR_BZIP2:
+            if compression == utils.COMPRESSION_TAR_BZIP2:
                 comp_level = '2'
                 transform_file.append(
                     etree.Element(utils.PREFIX_NS['mets'] + "transformFile",
