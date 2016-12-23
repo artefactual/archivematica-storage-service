@@ -1173,6 +1173,7 @@ class Package(models.Model):
         original_objects_dir = os.path.join(path, 'data', 'objects')
         preservation_regex = r'(.+)-\w{8}-\w{4}-\w{4}-\w{4}-\w{12}(.*)'
         # Walk through all files
+        removed_preservation_files = []
         for dirpath, _, filepaths in os.walk(reingest_objects_dir):
             for filepath in filepaths:
                 match = re.match(preservation_regex, filepath)
@@ -1191,6 +1192,8 @@ class Package(models.Model):
                             del_path = os.path.join(dest_dir, p)
                             LOGGER.info('Deleting %s', del_path)
                             os.remove(del_path)
+                            # Save these paths to delete from uncompressed AIP later
+                            removed_preservation_files.append(del_path)
                     # Copy new preservation derivative
                     LOGGER.info('Moving %s to %s', reingest_preservation_path, original_preservation_path)
                     shutil.copy2(reingest_preservation_path, original_preservation_path)
@@ -1233,14 +1236,22 @@ class Package(models.Model):
 
         # Move to final destination
         src_path = out_path.replace(ss_internal.space.path, '', 1).lstrip('/')
-
-        # This allows uncompressed AIP to be rsynced properly
-        if not to_be_compressed:
-            src_path = src_path + '/'
-
         uuid_path = utils.uuid_to_path(self.uuid)
         dest_path = out_path.replace(out_dir, '', 1).lstrip('/')
         dest_path = os.path.join(uuid_path, dest_path)
+
+        if not to_be_compressed:
+            # This allows uncompressed AIP to be rsynced properly
+            src_path = src_path + '/'
+            # Delete superseded preservation derivatives from final storage
+            # Otherwise, when the uncompressed AIP is stored, the old preservations derivatives still exist
+            # This doesn't happen with packaged AIPS because they're a single file
+            for del_path in removed_preservation_files:
+                # FIXME This may have problems in Spaces where location.full_path isn't what we want
+                del_path = del_path.replace(path, os.path.join(reingest_location.full_path, dest_path))
+                LOGGER.info('Deleting %s', del_path)
+                dest_space.delete_path(del_path)
+
         internal_space.move_to_storage_service(
             source_path=src_path,
             destination_path=dest_path,  # This should include Location.path
