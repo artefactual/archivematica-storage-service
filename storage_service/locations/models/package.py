@@ -841,7 +841,7 @@ class Package(models.Model):
 
         bag = bagit.Bag(path)
         try:
-            success = bag.validate()
+            success = bag.validate(processes=4)
             failures = []
             message = ""
         except bagit.BagValidationError as failure:
@@ -1199,7 +1199,7 @@ class Package(models.Model):
         bag = bagit.Bag(path)
         bag.save(manifests=True)
         bag = bagit.Bag(path)  # Workaround for bug https://github.com/LibraryOfCongress/bagit-python/pull/63
-        bag.validate()  # Raises exception in case of problem
+        bag.validate(processes=4)  # Raises exception in case of problem
 
         # Compress if necessary
         if to_be_compressed:
