@@ -225,6 +225,8 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
     root = tree.getroot()
     deposit_name = root.get('LABEL')
     object_id = root.get('OBJID')
+    LOGGER.debug('found deposit name in mets: %s', deposit_name)
+    deposit_name = deposit_name.replace('/', '\\')
     LOGGER.info('found deposit name in mets: %s', deposit_name)
 
     # parse XML for content URLs
