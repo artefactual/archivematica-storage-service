@@ -1,8 +1,9 @@
 #archivematica-storage-service.install
 
 install/storage.ini etc/uwsgi/apps-available/
+install/storage-service.gunicorn-config.py /etc/archivematica/
 install/storage etc/nginx/sites-available/
 install/.storage-service var/archivematica/
 install/make_key.py var/archivematica/storage-service/
-
+install/archivematica-storage-service.conf /etc/init/
 storage_service/* /usr/share/python/archivematica-storage-service/lib/python2.7/site-packages/storage_service/
