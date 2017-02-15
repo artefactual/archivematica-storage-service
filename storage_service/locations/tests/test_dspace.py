@@ -23,6 +23,8 @@ class TestDSpace(TestCase):
     def tearDown(self):
         delete_list = [
             os.path.join(FIXTURES_DIR, 'test.txt'),
+            os.path.join(FIXTURES_DIR, 'objects.zip'),
+            os.path.join(FIXTURES_DIR, 'metadata.zip'),
             os.path.join(FIXTURES_DIR, 'objects.7z'),
             os.path.join(FIXTURES_DIR, 'metadata.7z'),
 
@@ -66,10 +68,22 @@ class TestDSpace(TestCase):
         assert ret['dcterms_rights.copyright'] == 'Public Domain'
         assert ret['dcterms_relation.ispartofseries'] == 'None'
 
-    def test_split_package(self):
-        """It should split a package into objects and metadata."""
+    def test_split_package_zip(self):
+        """It should split a package into objects and metadata using ZIP."""
         # Setup
         path = os.path.join(FIXTURES_DIR, 'small_compressed_bag.zip')
+        # Test
+        split_paths = self.dspace_object._split_package(path)
+        # Verify
+        assert len(split_paths) == 2
+        assert os.path.join(FIXTURES_DIR, 'objects.zip') in split_paths
+        assert os.path.join(FIXTURES_DIR, 'metadata.zip') in split_paths
+        # TODO verify contents
+
+    def test_split_package_7z(self):
+        """It should split a package into objects and metadata using 7Z."""
+        path = os.path.join(FIXTURES_DIR, 'small_compressed_bag.zip')
+        self.dspace_object.archive_format = self.dspace_object.ARCHIVE_FORMAT_7Z
         # Test
         split_paths = self.dspace_object._split_package(path)
         # Verify

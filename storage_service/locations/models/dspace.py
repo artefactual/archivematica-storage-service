@@ -50,6 +50,14 @@ class DSpace(models.Model):
             'This will override existing policies. '
             'Example: [{"action":"READ","groupId":"5","rpType":"TYPE_CUSTOM"}]'))
 
+    ARCHIVE_FORMAT_ZIP = 'ZIP'
+    ARCHIVE_FORMAT_7Z = '7Z'
+    ARCHIVE_FORMAT_CHOICES = (
+        (ARCHIVE_FORMAT_ZIP, 'ZIP'),
+        (ARCHIVE_FORMAT_7Z, '7z'),
+    )
+    archive_format = models.CharField(max_length=3, choices=ARCHIVE_FORMAT_CHOICES, default=ARCHIVE_FORMAT_ZIP, verbose_name=_l('Archive format'))
+
     sword_connection = None
 
     class Meta:
@@ -129,6 +137,62 @@ class DSpace(models.Model):
         os.remove(mets_path)
         return kwargs
 
+    def _archive(self, src, dst):
+        """
+        Combine a number of files into one archive file.
+
+        `dst` is the path of the archive file. The file extension must not be
+        included, instead this function will return the final destination with
+        the extension on it according to the archive format preferred.
+        """
+        if self.archive_format == self.ARCHIVE_FORMAT_ZIP:
+            dst, command = self._archive_zip(src, dst)
+        elif self.archive_format == self.ARCHIVE_FORMAT_7Z:
+            dst, command = self._archive_7z(src, dst)
+        else:
+            raise ValueError('Archive format not supported')
+
+        try:
+            subprocess.check_call(command)
+        except subprocess.CalledProcessError:
+            LOGGER.error('Could not compress %s', src)
+            raise
+
+        return dst
+
+    def _archive_zip(self, src, dst):
+        """Return the command that creates the ZIP archive file."""
+        if not dst.endswith('.zip'):
+            dst += '.zip'
+
+        return (dst, [
+            '7z', 'a',  # Add
+            '-bd',  # Disable percentage indicator
+            '-tzip',  # Type of archive
+            '-y',  # Assume Yes on all queries
+            '-mtc=on',  # Keep timestamps (create, mod, access)
+            '-mmt=on',  # Multithreaded
+            dst,  # Destination
+            src,  # Source
+        ])
+
+    def _archive_7z(self, src, dst):
+        """Return the command that creates the 7z archive file."""
+        if not dst.endswith('.7z'):
+            dst += '.7z'
+
+        return (dst, [
+            '7z', 'a',  # Add
+            '-bd',  # Disable percentage indicator
+            '-t7z',  # Type of archive
+            '-y',  # Assume Yes on all queries
+            '-m0=bzip2',  # Compression method
+            '-mtc=on', '-mtm=on', '-mta=on',  # Keep timestamps (create, mod, access)
+            '-mmt=on',  # Multithreaded
+            dst,  # Destination
+            src,  # Source
+        ])
+
     def _split_package(self, input_path):
         """
         Splits the input package into objects and metadata & logs.
@@ -160,43 +224,11 @@ class DSpace(models.Model):
 
         # Does this have to be the same compression as before?
         # Compress objects
-        objects_zip = os.path.join(output_dir, 'objects.7z')
-        command = [
-            '7z', 'a',  # Add
-            '-bd',  # Disable percentage indicator
-            '-t7z',  # Type of archive
-            '-y',  # Assume Yes on all queries
-            '-m0=bzip2',  # Compression method
-            '-mtc=on', '-mtm=on', '-mta=on',  # Keep timestamps (create, mod, access)
-            '-mmt=on',  # Multithreaded
-            objects_zip,  # Destination
-            objects_dir,  # Source
-        ]
-        try:
-            subprocess.check_call(command)
-        except subprocess.CalledProcessError:
-            LOGGER.error('Could not compress %s', objects_dir)
-            raise
+        objects_zip = self._archive(objects_dir, os.path.join(output_dir, 'objects'))
         shutil.rmtree(objects_dir)
 
         # Compress everything else
-        metadata_zip = os.path.join(output_dir, 'metadata.7z')
-        command = [
-            '7z', 'a',  # Add
-            '-bd',  # Disable percentage indicator
-            '-t7z',  # Type of archive
-            '-y',  # Assume Yes on all queries
-            '-m0=bzip2',  # Compression method
-            '-mtc=on', '-mtm=on', '-mta=on',  # Keep timestamps (create, mod, access)
-            '-mmt=on',  # Multithreaded
-            metadata_zip,  # Destination
-            metadata_dir,  # Source
-        ]
-        try:
-            subprocess.check_call(command)
-        except subprocess.CalledProcessError:
-            LOGGER.error('Could not compress %s', metadata_dir)
-            raise
+        metadata_zip = self._archive(metadata_dir, os.path.join(output_dir, 'metadata'))
         shutil.rmtree(metadata_dir)
 
         # os.remove(input_path)
