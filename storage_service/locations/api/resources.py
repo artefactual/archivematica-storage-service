@@ -446,6 +446,7 @@ class PackageResource(ModelResource):
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/send_callback/post_store%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('aip_store_callback_request'), name="aip_store_callback_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/contents%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view("manage_contents"), name="manage_contents"),
             url(r"^(?P<resource_name>%s)/metadata%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view("file_data"), name="file_data"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/reindex%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('reindex_request'), name="reindex_request"),
             # Reingest
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/reingest%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('reingest_request'), name="reingest_request"),
 
@@ -838,6 +839,23 @@ class PackageResource(ModelResource):
             )
         else:
             return http.HttpNoContent()
+
+    @_custom_endpoint(expected_methods=['post'])
+    def reindex_request(self, request, bundle, **kwargs):
+        """Index file data from the Package transfer METS file."""
+        package = bundle.obj
+        if package.package_type != Package.TRANSFER:
+            return http.HttpBadRequest(json.dumps({"error": True, "message": "This package is not a transfer."}), content_type='application/json')
+        if package.current_location.purpose != Location.BACKLOG:
+            return http.HttpBadRequest(json.dumps({"error": True, "message": "This package is not in transfer backlog."}), content_type='application/json')
+        try:
+            package.index_file_data_from_transfer_mets()  # Create File entries for every file in the transfer
+        except Exception as e:
+            LOGGER.warning("An error occurred while reindexing the Transfer: %s", str(e), exc_info=True)
+            return http.HttpApplicationError(json.dumps({"error": True, "message": "An error occurred while reindexing the Transfer."}), content_type='application/json')
+        count = File.objects.filter(package=package).count()
+        response = {"error": False, "message": "Files indexed: {}".format(count)}
+        return http.HttpResponse(content=json.dumps(response), content_type='application/json')
 
     @_custom_endpoint(expected_methods=['post'],
         required_fields=('pipeline', 'reingest_type'))

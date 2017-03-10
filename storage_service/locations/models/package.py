@@ -739,12 +739,12 @@ class Package(models.Model):
         file_data = self._parse_mets(prefix=prefix)
 
         for f in file_data['files']:
-            File.objects.create(source_id=f['file_uuid'],
-                                source_package=file_data['transfer_uuid'],
-                                accessionid=file_data['accession_id'],
-                                package=self,
-                                name=f['path'],
-                                origin=file_data['dashboard_uuid'])
+            File.objects.update_or_create(source_id=f['file_uuid'],
+                                          source_package=file_data['transfer_uuid'],
+                                          accessionid=file_data['accession_id'],
+                                          package=self,
+                                          name=f['path'],
+                                          origin=file_data['dashboard_uuid'])
 
 
     def backlog_transfer(self, origin_location, origin_path):
