@@ -1,0 +1,63 @@
+interactions:
+- request:
+    body: null
+    headers:
+      accept-encoding: ['gzip, deflate']
+      user-agent: [Python-httplib2/0.9.2 (gzip)]
+    method: GET
+    uri: http://demo.dspace.org/swordv2/servicedocument
+  response:
+    body: {string: !!python/unicode ''}
+    headers:
+      content-length: ['0']
+      date: ['Mon, 11 Jul 2016 23:37:12 GMT']
+      server: [Apache-Coyote/1.1]
+      www-authenticate: [Basic realm="SWORD2"]
+    status: {code: 401, message: Unauthorized}
+- request:
+    body: null
+    headers:
+      accept-encoding: ['gzip, deflate']
+      user-agent: [Python-httplib2/0.9.2 (gzip)]
+    method: GET
+    uri: http://demo.dspace.org/swordv2/servicedocument
+  response:
+    body: {string: !!python/unicode '<service xmlns="http://www.w3.org/2007/app" xmlns:atom="http://www.w3.org/2005/Atom"><workspace><atom:title
+        type="text">DSpace at My University</atom:title><collection href="http://demo.dspace.org/swordv2/collection/123456789/2"><atom:title
+        type="text">Test collection</atom:title><accept alternate="multipart-related">*/*</accept><collectionPolicy
+        xmlns="http://purl.org/net/sword/terms/">Short license text</collectionPolicy><mediation
+        xmlns="http://purl.org/net/sword/terms/">true</mediation><acceptPackaging
+        xmlns="http://purl.org/net/sword/terms/">http://purl.org/net/sword/package/SimpleZip</acceptPackaging><acceptPackaging
+        xmlns="http://purl.org/net/sword/terms/">http://purl.org/net/sword/package/METSDSpaceSIP</acceptPackaging><acceptPackaging
+        xmlns="http://purl.org/net/sword/terms/">http://purl.org/net/sword/package/Binary</acceptPackaging></collection></workspace><generator
+        xmlns="http://www.w3.org/2005/Atom" uri="http://www.dspace.org/ns/sword/2.0/"
+        version="2.0">dspace-help@myu.edu</generator><version xmlns="http://purl.org/net/sword/terms/">2.0</version></service>'}
+    headers:
+      content-type: [application/atomserv+xml;charset=UTF-8]
+      date: ['Mon, 11 Jul 2016 23:37:12 GMT']
+      server: [Apache-Coyote/1.1]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      accept-encoding: ['gzip, deflate']
+      user-agent: [Python-httplib2/0.9.2 (gzip)]
+    method: GET
+    uri: http://demo.dspace.org/swordv2/servicedocument
+  response:
+    body: {string: !!python/unicode '<service xmlns="http://www.w3.org/2007/app" xmlns:atom="http://www.w3.org/2005/Atom"><workspace><atom:title
+        type="text">DSpace at My University</atom:title><collection href="http://demo.dspace.org/swordv2/collection/123456789/2"><atom:title
+        type="text">Test collection</atom:title><accept alternate="multipart-related">*/*</accept><collectionPolicy
+        xmlns="http://purl.org/net/sword/terms/">Short license text</collectionPolicy><mediation
+        xmlns="http://purl.org/net/sword/terms/">true</mediation><acceptPackaging
+        xmlns="http://purl.org/net/sword/terms/">http://purl.org/net/sword/package/SimpleZip</acceptPackaging><acceptPackaging
+        xmlns="http://purl.org/net/sword/terms/">http://purl.org/net/sword/package/METSDSpaceSIP</acceptPackaging><acceptPackaging
+        xmlns="http://purl.org/net/sword/terms/">http://purl.org/net/sword/package/Binary</acceptPackaging></collection></workspace><generator
+        xmlns="http://www.w3.org/2005/Atom" uri="http://www.dspace.org/ns/sword/2.0/"
+        version="2.0">dspace-help@myu.edu</generator><version xmlns="http://purl.org/net/sword/terms/">2.0</version></service>'}
+    headers:
+      content-type: [application/atomserv+xml;charset=UTF-8]
+      date: ['Mon, 11 Jul 2016 23:37:12 GMT']
+      server: [Apache-Coyote/1.1]
+    status: {code: 200, message: OK}
+version: 1

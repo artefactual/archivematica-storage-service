@@ -42,7 +42,7 @@ def confirm_required(template_name, context_creator, key='__confirm__'):
     """
     def decorator(func):
         def inner(request, *args, **kwargs):
-            if request.POST.has_key(key):
+            if key in request.POST:
                 return func(request, *args, **kwargs)
             else:
                 context = context_creator and context_creator(request, *args, **kwargs) \

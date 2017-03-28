@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # stdlib, alphabetical
 import datetime
 import distutils.dir_util
@@ -6,7 +7,6 @@ import logging
 from lxml import etree
 import os
 import re
-import requests
 import shutil
 import subprocess
 import tempfile
@@ -19,16 +19,17 @@ from django.utils import timezone
 import bagit
 import jsonfield
 from django_extensions.db.fields import UUIDField
+import requests
 
 # This project, alphabetical
 from common import utils
 
 # This module, alphabetical
 from . import StorageException
-from location import Location
-from space import Space
-from event import File
-from fixity_log import FixityLog
+from .location import Location
+from .space import Space
+from .event import File
+from .fixity_log import FixityLog
 
 __all__ = ('Package', )
 
@@ -103,22 +104,11 @@ class Package(models.Model):
     PACKAGE_TYPE_CAN_RECOVER = (AIP, AIC)
     PACKAGE_TYPE_CAN_REINGEST = (AIP, AIC)
 
-    # Compression options
-    COMPRESSION_7Z_BZIP = '7z with bzip'
-    COMPRESSION_7Z_LZMA = '7z with lzma'
-    COMPRESSION_TAR = 'tar'
-    COMPRESSION_TAR_BZIP2 = 'tar bz2'
-    COMPRESSION_ALGORITHMS = (
-        COMPRESSION_7Z_BZIP,
-        COMPRESSION_7Z_LZMA,
-        COMPRESSION_TAR,
-        COMPRESSION_TAR_BZIP2,
-    )
-
     # Reingest type options
-    METADATA_ONLY = 'metadata'
-    OBJECTS = 'objects'
-    REINGEST_CHOICES = (METADATA_ONLY, OBJECTS)
+    METADATA_ONLY = 'metadata' # Re-ingest metadata only
+    OBJECTS = 'objects'        # Re-ingest metadata and objects for DIP generation
+    FULL = 'full'              # Full re-ingest
+    REINGEST_CHOICES = (METADATA_ONLY, OBJECTS, FULL)
 
     class Meta:
         verbose_name = "Package"
@@ -243,6 +233,7 @@ class Package(models.Model):
         ss_internal.space.move_from_storage_service(
             source_path=self.current_path,
             destination_path=relative_path,
+            package=self,
         )
         self.local_path_location = ss_internal
         self.local_path = int_path
@@ -362,7 +353,8 @@ class Package(models.Model):
         # Copy corrupt files from staging to backup directory
         destination_space.move_from_storage_service(
             source_path=destination_path,
-            destination_path=destination_path)
+            destination_path=destination_path,
+            package=self)
         destination_space.post_move_from_storage_service(
             staging_path=None,
             destination_path=None)
@@ -383,7 +375,8 @@ class Package(models.Model):
         # Copy recovery files from staging to AIP store
         destination_space.move_from_storage_service(
             source_path=destination_path,
-            destination_path=destination_path)
+            destination_path=destination_path,
+            package=self)
         destination_space.post_move_from_storage_service(
             staging_path=None,
             destination_path=None)
@@ -434,7 +427,7 @@ class Package(models.Model):
         if self.package_type in (Package.AIP, Package.AIC):
             try:
                 src_space.move_to_storage_service(pointer_file_src, self.pointer_file_path, self.pointer_file_location.space)
-                self.pointer_file_location.space.move_from_storage_service(self.pointer_file_path, pointer_file_dst)
+                self.pointer_file_location.space.move_from_storage_service(self.pointer_file_path, pointer_file_dst, package=None)
             except:
                 LOGGER.warning("No pointer file found")
                 self.pointer_file_location = None
@@ -453,6 +446,7 @@ class Package(models.Model):
         dest_space.move_from_storage_service(
             source_path=self.current_path,  # This should include Location.path
             destination_path=os.path.join(self.current_location.relative_path, self.current_path),
+            package=self,
         )
         # Update package status once transferred to SS
         if dest_space.access_protocol not in (Space.LOM, Space.ARKIVUM):
@@ -482,7 +476,7 @@ class Package(models.Model):
                 root.find('.//mets:fileGrp', namespaces=utils.NSMAP).set('USE', 'Archival Information Package')
 
             with open(pointer_absolute_path, 'w') as f:
-                f.write(etree.tostring(root, pretty_print=True))
+                f.write(etree.tostring(root, pretty_print=True, xml_declaration=True, encoding='utf-8'))
 
     def extract_file(self, relative_path='', extract_path=None):
         """
@@ -516,10 +510,30 @@ class Package(models.Model):
             output_path = os.path.join(extract_path, basename)
 
         if self.is_compressed:
-            command = ['unar', '-force-overwrite', '-o', extract_path, full_path]
+            # The command used to extract the compressed file at
+            # full_path was, previously, universally::
+            #
+            #     $ unar -force-overwrite -o extract_path full_path
+            #
+            # The problem with this command is that unar treats __MACOSX .rsrc
+            # ("resource fork") files differently than 7z and tar do. 7z and
+            # tar convert these .rsrc files to ._-prefixed files. Similar
+            # behaviour with unar can be achieved by passing `-k hidden`.
+            # However, while a command like::
+            #
+            #     $ unar -force-overwrite -k hidden -o extract_path full_path
+            #
+            # preserves the .rsrc MACOSX files as ._-prefixed files, it does so
+            # differently than 7z/tar do: the resulting .-prefixed files have
+            # different sizes than those created via unar. This makes
+            # ``bag.validate`` choke.
+            if self.full_pointer_file_path:
+                compression = utils._get_compression(self.full_pointer_file_path)
+            else:
+                compression = None  # no pointer file :. command will be unar
+            command = self._get_decompr_cmd(compression, extract_path, full_path)
             if relative_path:
                 command.append(relative_path)
-
             LOGGER.info('Extracting file with: %s to %s', command, output_path)
             rc = subprocess.call(command)
             LOGGER.debug('Extract file RC: %s', rc)
@@ -540,7 +554,7 @@ class Package(models.Model):
         Produces a compressed copy of the package.
 
         :param algorithm: Compression algorithm to use. Should be one of
-            :const:`Package.COMPRESSION_ALGORITHMS`
+            :const:`utils.COMPRESSION_ALGORITHMS`
         :param str extract_path: Path to compress to. If not provided, will
             compress to a temp directory in the SS internal location.
         :return: Tuple with (path to the compressed file, parent directory of
@@ -552,8 +566,8 @@ class Package(models.Model):
         if extract_path is None:
             ss_internal = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
             extract_path = tempfile.mkdtemp(dir=ss_internal.full_path)
-        if algorithm not in self.COMPRESSION_ALGORITHMS:
-            raise ValueError('Algorithm %s not in %s' % algorithm, self.COMPRESSION_ALGORITHMS)
+        if algorithm not in utils.COMPRESSION_ALGORITHMS:
+            raise ValueError('Algorithm %s not in %s' % algorithm, utils.COMPRESSION_ALGORITHMS)
 
         full_path = self.fetch_local_path()
 
@@ -562,11 +576,11 @@ class Package(models.Model):
         else:
             basename = os.path.basename(full_path)
 
-        if algorithm in (self.COMPRESSION_TAR, self.COMPRESSION_TAR_BZIP2):
+        if algorithm in (utils.COMPRESSION_TAR, utils.COMPRESSION_TAR_BZIP2):
             compressed_filename = os.path.join(extract_path, basename + '.tar')
             relative_path = os.path.dirname(full_path)
             algo = ''
-            if algorithm == self.COMPRESSION_TAR_BZIP2:
+            if algorithm == utils.COMPRESSION_TAR_BZIP2:
                 algo = '-j'  # Compress with bzip2
                 compressed_filename += '.bz2'
             command = [
@@ -576,11 +590,11 @@ class Package(models.Model):
                 '-f', compressed_filename,  # Output file
                 os.path.basename(full_path),   # Relative path to source files
             ]
-        elif algorithm in (self.COMPRESSION_7Z_BZIP, self.COMPRESSION_7Z_LZMA):
+        elif algorithm in (utils.COMPRESSION_7Z_BZIP, utils.COMPRESSION_7Z_LZMA):
             compressed_filename = os.path.join(extract_path, basename + '.7z')
-            if algorithm == self.COMPRESSION_7Z_BZIP:
+            if algorithm == utils.COMPRESSION_7Z_BZIP:
                 algo = 'bzip2'
-            elif algorithm == self.COMPRESSION_7Z_LZMA:
+            elif algorithm == utils.COMPRESSION_7Z_LZMA:
                 algo = 'lzma'
             command = [
                 '7z', 'a',  # Add
@@ -725,12 +739,12 @@ class Package(models.Model):
         file_data = self._parse_mets(prefix=prefix)
 
         for f in file_data['files']:
-            File.objects.create(source_id=f['file_uuid'],
-                                source_package=file_data['transfer_uuid'],
-                                accessionid=file_data['accession_id'],
-                                package=self,
-                                name=f['path'],
-                                origin=file_data['dashboard_uuid'])
+            File.objects.update_or_create(source_id=f['file_uuid'],
+                                          source_package=file_data['transfer_uuid'],
+                                          accessionid=file_data['accession_id'],
+                                          package=self,
+                                          name=f['path'],
+                                          origin=file_data['dashboard_uuid'])
 
 
     def backlog_transfer(self, origin_location, origin_path):
@@ -772,6 +786,7 @@ class Package(models.Model):
         dest_space.move_from_storage_service(
             source_path=self.current_path,  # This should include Location.path
             destination_path=os.path.join(self.current_location.relative_path, self.current_path),
+            package=self,
         )
 
         # Save new space/location usage, package status
@@ -827,7 +842,7 @@ class Package(models.Model):
             try:
                  path, temp_dir = self.extract_file()
             except StorageException:
-                 return (None, [], 'Error extracting file')
+                 return (None, [], 'Error extracting file', None)
         else:
             path = self.fetch_local_path()
             temp_dir = None
@@ -838,6 +853,12 @@ class Package(models.Model):
             failures = []
             message = ""
         except bagit.BagValidationError as failure:
+            LOGGER.error('bagit.BagValidationError on %s:\n%s', path, failure.message)
+            try:
+                LOGGER.debug(subprocess.check_output(
+                    ['tree', '-a', '--du', path]))
+            except (OSError, ValueError, subprocess.CalledProcessError):
+                pass
             success = False
             failures = failure.details
             message = failure.message
@@ -882,13 +903,14 @@ class Package(models.Model):
 
     # REINGEST
 
-    def start_reingest(self, pipeline, reingest_type):
+    def start_reingest(self, pipeline, reingest_type, processing_config='default'):
         """
         Copies this package to `pipeline` for reingest.
 
         Fetches the AIP from storage, extracts and runs fixity on it to verify integrity.
         If reingest_type is METADATA_ONLY, sends the METS and all files in the metadata directory.
         If reingest_type is OBJECTS, sends METS, all files in metadata directory and all objects, preservation and original.
+        If reingest_type is FULL, we do like in OBJECTS but sending the package to the transfer source location.
         Calls Archivematica endpoint /api/ingest/reingest/ to start reingest.
 
         :param pipeline: Pipeline object to send reingested AIP to.
@@ -902,7 +924,7 @@ class Package(models.Model):
         # Check and set reingest pipeline
         if self.misc_attributes.get('reingest_pipeline', None):
             return {'error': True, 'status_code': 409,
-                'message': 'This AIP already being reingested on {}'.format(self.misc_attributes['reingest_pipeline'])}
+                'message': 'This AIP is already being reingested on {}'.format(self.misc_attributes['reingest_pipeline'])}
         self.misc_attributes.update({'reingest_pipeline': pipeline.uuid})
 
         # Fetch and extract if needed
@@ -910,7 +932,9 @@ class Package(models.Model):
             local_path, temp_dir = self.extract_file()
             LOGGER.debug('Reingest: extracted to %s', local_path)
         else:
-            local_path = self.fetch_local_path()
+            # Append / to uncompressed AIPS so we send the contents of the dir
+            # not the dir itself inside a dir of the same name
+            local_path = os.path.join(self.fetch_local_path(), '')
             temp_dir = ''
             LOGGER.debug('Reingest: uncompressed at %s', local_path)
 
@@ -927,7 +951,10 @@ class Package(models.Model):
         reingest_files = [
             os.path.join(relative_path, 'data', 'METS.' + self.uuid + '.xml')
         ]
-        if reingest_type == self.OBJECTS:
+        if reingest_type == self.FULL:
+            # All the things!
+            reingest_files = [relative_path]
+        elif reingest_type == self.OBJECTS:
             # All in objects except submissionDocumentation dir
             for f in os.listdir(os.path.join(local_path, 'data', 'objects')):
                 if f in ('submissionDocumentation'):
@@ -941,12 +968,32 @@ class Package(models.Model):
         elif reingest_type == self.METADATA_ONLY:
             reingest_files.append(os.path.join(relative_path, 'data', 'objects', 'metadata', ''))
 
+        # Fetch processing configuration, put it in the root of the package and
+        # include the file in reingest_files.
+        if reingest_type == self.FULL and processing_config != 'default':
+            try:
+                config = pipeline.get_processing_config(processing_config)
+            except requests.exceptions.RequestException:
+                LOGGER.error('Reingest: processing configuration %s could not be loaded', processing_config)
+            else:
+                config_path = os.path.join(local_path, 'processingMCP.xml')
+                try:
+                    # It's not expected to find an existing processingMCP.xml
+                    # file in the original AIP, but we are using the w+ mode
+                    # just in case.
+                    with open(config_path, 'w+') as f:
+                        f.write(config)
+                    LOGGER.debug('Reingest: processing configuration %s written, location: %s', processing_config, config_path)
+                except IOError:
+                    LOGGER.exception('Reingest: processing configuration %s could not be written', processing_config)
+                    raise
+
         LOGGER.info('Reingest: files: %s', reingest_files)
 
         # Copy to pipeline
         try:
             currently_processing = Location.active.filter(pipeline=pipeline).get(purpose=Location.CURRENTLY_PROCESSING)
-        except Location.DoesNotExist, Location.MultipleObjectsReturned:
+        except (Location.DoesNotExist, Location.MultipleObjectsReturned):
             return {'error': True, 'status_code': 412,
                 'message': 'No currently processing Location is associated with pipeline {}'.format(pipeline.uuid)}
         LOGGER.debug('Reingest: Current location: %s', current_location)
@@ -960,43 +1007,51 @@ class Package(models.Model):
             currently_processing.space.move_from_storage_service(
                 source_path=path,
                 destination_path=os.path.join(dest_basepath, path),
+                package=self,
             )
 
         # Delete local copy of extraction
         if self.local_path != self.full_path:
-            shutil.rmtree(local_path)
+            try:
+                shutil.rmtree(local_path)
+            except OSError:  # May have been moved not copied
+                pass
         if temp_dir:
             shutil.rmtree(temp_dir)
 
-        # Call reingest AIP API
-        reingest_url = 'http://' + pipeline.remote_name + '/api/ingest/reingest'
-        params = {
-            'username': pipeline.api_username,
-            'api_key': pipeline.api_key,
-            'name': relative_path,
-            'uuid': self.uuid,
-        }
-        LOGGER.debug('Reingest: URL: %s; params: %s', reingest_url, params)
+        # Call reingest API
+        reingest_target = 'transfer' if reingest_type == self.FULL else 'ingest'
+        reingest_uuid = self.uuid
         try:
-            response = requests.post(reingest_url, data=params, allow_redirects=True)
-        except requests.exceptions.RequestException:
-            LOGGER.exception('Unable to connect to pipeline %s', pipeline)
-            return {'error': True, 'status_code': 502,
-                'message': 'Unable to connect to pipeline'}
-        LOGGER.debug('Response: %s %s', response.status_code, response.text)
-        if response.status_code != requests.codes.ok:
-            try:
-                json_error = response.json().get('message',
-                    'Error in approve reingest API.')
-            except ValueError:  # Failed to decode JSON
-                json_error = 'Error in approve reingest API.'
-            LOGGER.error(json_error)
-            return {'error': True, 'status_code': 502,
-                'message': 'Error from pipeline: %s' % json_error}
-
+            resp = pipeline.reingest(relative_path, self.uuid, reingest_target)
+        except requests.exceptions.RequestException as e:
+            message = 'Error in approve reingest API. {}'.format(e)
+            LOGGER.exception('Error approving reingest in pipeline for package %s', self.uuid)
+            return {'error': True, 'status_code': 502, 'message': message}
+        else:
+            reingest_uuid = resp.get('reingest_uuid')
+        LOGGER.debug('Reingest UUID: %s', reingest_uuid)
         self.save()
 
-        return {'error': False, 'status_code': 202, 'message': 'Package {} sent to pipeline {} for re-ingest'.format(self.uuid, pipeline)}
+        return {
+            'error': False,
+            'status_code': 202,
+            'message': 'Package {} sent to pipeline {} for re-ingest'.format(self.uuid, pipeline),
+            'reingest_uuid': reingest_uuid,
+        }
+
+    def _get_decompr_cmd(self, compression, extract_path, full_path):
+        """Returns a decompression command (as a list), given ``compression``
+        (one of ``COMPRESSION_ALGORITHMS``), the destination path
+        ``extract_path`` and the path of the archive ``full_path``.
+        """
+        if compression in (utils.COMPRESSION_7Z_BZIP, utils.COMPRESSION_7Z_LZMA):
+            return ['7z', 'x', '-bd', '-y', '-o{0}'.format(extract_path),
+                    full_path]
+        elif compression == utils.COMPRESSION_TAR_BZIP2:
+            return ['/bin/tar', 'xvjf', full_path, '-C', extract_path]
+        else:
+            return ['unar', '-force-overwrite', '-o', extract_path, full_path]
 
     def finish_reingest(self, origin_location, origin_path, reingest_location, reingest_path):
         """
@@ -1005,6 +1060,7 @@ class Package(models.Model):
         Fetches the AIP from the origin_location.
         Replaces the METS with the updated one.
         Copies the new metadata directory over the old one. New files will be added, updated files will be overwritten.
+        Copies preservation derivatives
         Recreate the bagit manifest.
         Compress the AIP according to what was selected during reingest in Archivematica.
         Store the AIP in the reingest_location.
@@ -1015,6 +1071,7 @@ class Package(models.Model):
         :param Location reingest_location: Location to store the updated AIP in.
         :param str reingest_path: Path to store the updated AIP at.
         """
+
         # Check origin pipeline against stored pipeline
         if self.origin_pipeline.uuid != self.misc_attributes.get('reingest_pipeline'):
             LOGGER.info('Reingest: Received pipeline %s did not match expected pipeline %s', self.origin_pipeline.uuid, self.misc_attributes.get('reingest_pipeline'))
@@ -1041,13 +1098,14 @@ class Package(models.Model):
         internal_space.move_from_storage_service(
             source_path=reingest_path,  # This should include Location.path
             destination_path=os.path.join(ss_internal.relative_path, reingest_path),
+            package=self,
         )
         reingest_full_path = os.path.join(ss_internal.full_path, reingest_path)
 
         # Take note of whether new version of AIP should be compressed
         to_be_compressed = os.path.isfile(reingest_full_path)
 
-        # Extract if needed
+        # Extract reingested AIP if needed
         if os.path.isfile(reingest_full_path):
             # TODO modify extract_file and get_base_directory to handle reingest paths?  Update self.local_path sooner?
             # Extract
@@ -1085,9 +1143,8 @@ class Package(models.Model):
 
                 self.pointer_file_location = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
                 self.pointer_file_path = os.path.join(utils.uuid_to_path(self.uuid), 'pointer.{}.xml'.format(self.uuid))
-
             src_space.move_to_storage_service(reingest_pointer_src, reingest_pointer_name, internal_space)
-            internal_space.move_from_storage_service(reingest_pointer_name, reingest_pointer_dst)
+            internal_space.move_from_storage_service(reingest_pointer_name, reingest_pointer_dst, package=None)
 
             if was_compressed:
                 reingest_pointer = os.path.join(ss_internal.full_path, reingest_pointer_name)
@@ -1098,10 +1155,9 @@ class Package(models.Model):
                 os.remove(os.path.join(ss_internal.full_path, reingest_pointer_name))
 
         # Replace METS
-        original_mets_path = os.path.join(path, 'data', 'METS.' + self.uuid + '.xml')
         reingest_mets_path = os.path.join(reingest_full_path, 'data', 'METS.' + self.uuid + '.xml')
-        LOGGER.info('Replacing original METS %s with reingested METS %s', original_mets_path, reingest_mets_path)
-        os.remove(original_mets_path)
+        original_mets_path = os.path.join(path, 'data', 'METS.' + self.uuid + '.xml')
+        LOGGER.info('Replacing AIP METS %s with reingested METS %s', original_mets_path, reingest_mets_path)
         os.rename(reingest_mets_path, original_mets_path)
 
         # Replace new metadata files
@@ -1112,32 +1168,48 @@ class Package(models.Model):
             distutils.dir_util.copy_tree(reingest_metadata_dir,
                 original_metadata_dir)
 
+        # Replace preservation derivatives
+        reingest_objects_dir = os.path.join(reingest_full_path, 'data', 'objects')
+        original_objects_dir = os.path.join(path, 'data', 'objects')
+        preservation_regex = r'(.+)-\w{8}-\w{4}-\w{4}-\w{4}-\w{12}(.*)'
+        # Walk through all files
+        removed_preservation_files = []
+        for dirpath, _, filepaths in os.walk(reingest_objects_dir):
+            for filepath in filepaths:
+                match = re.match(preservation_regex, filepath)
+                # If preservation file, copy and delete the old one
+                if match:
+                    reingest_preservation_path = os.path.join(dirpath, filepath)
+                    original_preservation_path = reingest_preservation_path.replace(reingest_objects_dir, original_objects_dir)
+                    # Check for another preservation derivative and delete
+                    dest_dir = os.path.dirname(original_preservation_path)
+                    dupe_preservation_regex = match.group(1) + r'-\w{8}-\w{4}-\w{4}-\w{4}-\w{12}' + match.group(2)
+                    for p in os.listdir(dest_dir):
+                        # Don't delete if the 'duplicate' is the original
+                        if filepath == p:
+                            continue
+                        if re.match(dupe_preservation_regex, p):
+                            del_path = os.path.join(dest_dir, p)
+                            LOGGER.info('Deleting %s', del_path)
+                            os.remove(del_path)
+                            # Save these paths to delete from uncompressed AIP later
+                            removed_preservation_files.append(del_path)
+                    # Copy new preservation derivative
+                    LOGGER.info('Moving %s to %s', reingest_preservation_path, original_preservation_path)
+                    shutil.copy2(reingest_preservation_path, original_preservation_path)
+
         # Update bag payload and verify
         bag = bagit.Bag(path)
         bag.save(manifests=True)
+        bag = bagit.Bag(path) # Workaround for bug https://github.com/LibraryOfCongress/bagit-python/pull/63
         bag.validate(processes=4)  # Raises exception in case of problem
 
         # Compress if necessary
         if to_be_compressed:
-            reingest_root = etree.parse(reingest_pointer)
+            compression = utils._get_compression(reingest_pointer)
             # If updating, rather than creating a new pointer file, delete this pointer file
             if was_compressed:
                 os.remove(reingest_pointer)
-            puid = reingest_root.findtext('.//premis:formatRegistryKey', namespaces=utils.NSMAP)
-            if puid == 'fmt/484':  # 7 Zip
-                algo = reingest_root.find('.//mets:transformFile', namespaces=utils.NSMAP).get('TRANSFORMALGORITHM')
-                if algo == 'bzip2':
-                    compression = self.COMPRESSION_7Z_BZIP
-                elif algo == 'lzma':
-                    compression = self.COMPRESSION_7Z_LZMA
-                else:
-                    compression = self.COMPRESSION_7Z_BZIP
-                    LOGGER.warning('Reingest: Unable to determine reingested compression algorithm, defaulting to bzip2.')
-            elif puid == 'x-fmt/268':  # Bzipped (probably tar)
-                compression = self.COMPRESSION_TAR_BZIP2
-            else:
-                compression = self.COMPRESSION_7Z_BZIP
-                LOGGER.warning('Reingest: Unable to determine reingested file format, defaulting recompression algorithm to %s.', compression)
             LOGGER.info('Reingest: compressing with %s', compression)
             # FIXME Do we need compression output for event?
             out_path, out_dir = self.compress_package(compression)
@@ -1164,14 +1236,22 @@ class Package(models.Model):
 
         # Move to final destination
         src_path = out_path.replace(ss_internal.space.path, '', 1).lstrip('/')
-
-        # This allows uncompressed AIP to be rsynced properly
-        if not to_be_compressed:
-            src_path = src_path + '/'
-
         uuid_path = utils.uuid_to_path(self.uuid)
         dest_path = out_path.replace(out_dir, '', 1).lstrip('/')
         dest_path = os.path.join(uuid_path, dest_path)
+
+        if not to_be_compressed:
+            # This allows uncompressed AIP to be rsynced properly
+            src_path = src_path + '/'
+            # Delete superseded preservation derivatives from final storage
+            # Otherwise, when the uncompressed AIP is stored, the old preservations derivatives still exist
+            # This doesn't happen with packaged AIPS because they're a single file
+            for del_path in removed_preservation_files:
+                # FIXME This may have problems in Spaces where location.full_path isn't what we want
+                del_path = del_path.replace(path, os.path.join(reingest_location.full_path, dest_path))
+                LOGGER.info('Deleting %s', del_path)
+                dest_space.delete_path(del_path)
+
         internal_space.move_to_storage_service(
             source_path=src_path,
             destination_path=dest_path,  # This should include Location.path
@@ -1179,6 +1259,7 @@ class Package(models.Model):
         dest_space.move_from_storage_service(
             source_path=dest_path,  # This should include Location.path
             destination_path=os.path.join(reingest_location.relative_path, dest_path),
+            package=self,
         )
 
         # Delete old copy of AIP if different
@@ -1195,13 +1276,13 @@ class Package(models.Model):
 
             # Add compression event (if compressed)
             amdsec = root.find('mets:amdSec', namespaces=utils.NSMAP)
-            if compression in (self.COMPRESSION_7Z_BZIP, self.COMPRESSION_7Z_LZMA):
+            if compression in (utils.COMPRESSION_7Z_BZIP, utils.COMPRESSION_7Z_LZMA):
                 try:
                     version = [x for x in subprocess.check_output('7z').splitlines() if 'Version' in x][0]
                     event_detail = 'program="7z"; version="{}"'.format(version)
                 except (subprocess.CalledProcessError, Exception):
                     event_detail = 'program="7z"'
-            elif compression in (self.COMPRESSION_TAR_BZIP2, self.COMPRESSION_TAR):
+            elif compression in (utils.COMPRESSION_TAR_BZIP2, utils.COMPRESSION_TAR):
                 try:
                     version = subprocess.check_output(['tar', '--version']).splitlines()[0]
                     event_detail = 'program="tar"; version="{}"'.format(version)
@@ -1257,10 +1338,10 @@ class Package(models.Model):
         # Set compression related data
         comp_level = '1'
         transform_file = []
-        if compression in (self.COMPRESSION_7Z_BZIP, self.COMPRESSION_7Z_LZMA):
-            if compression == self.COMPRESSION_7Z_BZIP:
+        if compression in (utils.COMPRESSION_7Z_BZIP, utils.COMPRESSION_7Z_LZMA):
+            if compression == utils.COMPRESSION_7Z_BZIP:
                 algo = 'bzip2'
-            elif compression == self.COMPRESSION_7Z_LZMA:
+            elif compression == utils.COMPRESSION_7Z_LZMA:
                 algo = 'lzma'
             transform_file.append(
                 etree.Element(utils.PREFIX_NS['mets'] + "transformFile",
@@ -1278,9 +1359,9 @@ class Package(models.Model):
                 'program_version': version,
             }
 
-        elif compression in (self.COMPRESSION_TAR_BZIP2, self.COMPRESSION_TAR):
+        elif compression in (utils.COMPRESSION_TAR_BZIP2, utils.COMPRESSION_TAR):
             transform_order = '1'
-            if compression == self.COMPRESSION_TAR_BZIP2:
+            if compression == utils.COMPRESSION_TAR_BZIP2:
                 comp_level = '2'
                 transform_file.append(
                     etree.Element(utils.PREFIX_NS['mets'] + "transformFile",
@@ -1338,7 +1419,7 @@ class Package(models.Model):
 
         # Write out pointer file again
         with open(self.full_pointer_file_path, 'w') as f:
-            f.write(etree.tostring(root, pretty_print=True))
+            f.write(etree.tostring(root, pretty_print=True, xml_declaration=True, encoding='utf-8'))
 
     # SWORD-related methods
     def has_been_submitted_for_processing(self):

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # stdlib, alphabetical
 import datetime
 import os
@@ -9,7 +10,7 @@ from django.db import models
 from django_extensions.db.fields import UUIDField
 
 # This project, alphabetical
-from location import Location
+from .location import Location
 
 
 class Fedora(models.Model):

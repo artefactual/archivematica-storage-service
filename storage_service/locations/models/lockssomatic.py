@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import division
 # stdlib, alphabetical
 import errno
 import logging
@@ -18,8 +20,8 @@ import sword2
 from common import utils
 
 # This module, alphabetical
-from location import Location
-from package import Package
+from .location import Location
+from .package import Package
 
 LOGGER = logging.getLogger(__name__)
 
@@ -66,7 +68,7 @@ class Lockssomatic(models.Model):
         # Check if in SS internal, if not then fetch from LOM
         raise NotImplementedError('LOCKSS-o-matic has not implemented retrieval.')
 
-    def move_from_storage_service(self, source_path, destination_path):
+    def move_from_storage_service(self, source_path, destination_path, package=None):
         """ Moves self.staging_path/source_path to destination_path. """
         self.space.create_local_directory(destination_path)
         return self.space.move_rsync(source_path, destination_path)
@@ -195,7 +197,7 @@ class Lockssomatic(models.Model):
 
         # Write out pointer file again
         with open(package.full_pointer_file_path, 'w') as f:
-            f.write(etree.tostring(self.pointer_root, pretty_print=True))
+            f.write(etree.tostring(self.pointer_root, pretty_print=True, xml_declaration=True, encoding='utf-8'))
 
         # Update value if different
         package.status = status
@@ -295,8 +297,14 @@ class Lockssomatic(models.Model):
 
         Returns True on success, False on error.  No updates performed on error."""
         try:
-            self.sword_connection = sword2.Connection(self.sd_iri, download_service_document=True,
-                on_behalf_of=self.content_provider_id)
+            self.sword_connection = sword2.Connection(
+                service_document_iri=self.sd_iri,
+                download_service_document=True,
+                on_behalf_of=self.content_provider_id,
+                keep_history=False,
+                cache_deposit_receipts=False,
+                http_impl=sword2.http_layer.HttpLib2Layer(cache_dir=None)
+            )
         except Exception:  # TODO make this more specific
             LOGGER.exception("Error getting service document from SWORD server.")
             return False
@@ -340,7 +348,7 @@ class Lockssomatic(models.Model):
             return output_files
 
         file_path = package.full_path
-        expected_num_files = math.ceil(os.path.getsize(file_path) / float(self.au_size))
+        expected_num_files = math.ceil(os.path.getsize(file_path) / self.au_size)
         LOGGER.debug('expected_num_files: %s', expected_num_files)
 
         # No split needed - just return the file path
@@ -417,7 +425,7 @@ class Lockssomatic(models.Model):
 
         # Write out pointer file again
         with open(package.full_pointer_file_path, 'w') as f:
-            f.write(etree.tostring(self.pointer_root, pretty_print=True))
+            f.write(etree.tostring(self.pointer_root, pretty_print=True, xml_declaration=True, encoding='utf-8'))
 
         return output_files
 
@@ -503,7 +511,7 @@ class Lockssomatic(models.Model):
                 size = os.path.getsize(file_path)
 
             # Convert size to kB
-            size = str(math.ceil(size / 1000.0))
+            size = str(math.ceil(size / 1000))
 
             # Add new content entry and values
             entry.add_field('lom_content', external_url)

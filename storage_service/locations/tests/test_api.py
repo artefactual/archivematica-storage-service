@@ -8,6 +8,7 @@ from django.test import TestCase
 from django.contrib.auth.models import User
 
 from locations import models
+from locations.api.sword.views import _parse_name_and_content_urls_from_mets_file
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, '..', 'fixtures', ''))
@@ -302,3 +303,19 @@ class TestPackageAPI(TestCase):
         j = json.loads(response.content)
         assert j['error'] is True
         assert 'Error' in j['message'] and 'Arkivum' in j['message']
+
+
+class TestSwordAPI(TestCase):
+
+    def test_removes_forward_slash_parse_fedora_mets(self):
+        """ It should remove forward slashes in the deposit name and all
+        filenames extracted from a Fedora METS file.
+        """
+        fedora_mets_path = os.path.join(FIXTURES_DIR, 'fedora_mets_slash.xml')
+        mets_parse = _parse_name_and_content_urls_from_mets_file(
+            fedora_mets_path)
+        fileobjs = mets_parse['objects']
+        assert '/' not in mets_parse['deposit_name']
+        assert len(fileobjs) > 0
+        for fileobj in fileobjs:
+            assert '/' not in fileobj['filename']

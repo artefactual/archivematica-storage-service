@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # stdlib, alphabetical
 import logging
 import os
@@ -13,7 +14,7 @@ from common import utils
 
 # This module, alphabetical
 from . import StorageException
-from location import Location
+from .location import Location
 
 LOGGER = logging.getLogger(__name__)
 
@@ -164,7 +165,7 @@ class Swift(models.Model):
                 dest = entry.replace(src_path, dest_path, 1)
                 self._download_file(entry, dest)
 
-    def move_from_storage_service(self, source_path, destination_path):
+    def move_from_storage_service(self, source_path, destination_path, package=None):
         """ Moves self.staging_path/src_path to dest_path. """
         if os.path.isdir(source_path):
             # Both source and destination paths should end with /

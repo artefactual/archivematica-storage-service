@@ -19,6 +19,7 @@
     <form action="{% url 'user_edit' edit_user.id %}" method="post">
       {% csrf_token %}
       {{ password_form.as_p }}
+      <p>Note: if you change your password, your API key will also be changed to a new, randomly generated one.</p>
       <input type="submit" name='password' value="Change Password" class='btn btn-primary' />
     </form>
     {% endif %}

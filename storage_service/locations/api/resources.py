@@ -162,7 +162,6 @@ class SpaceResource(ModelResource):
     def prepend_urls(self):
         return [
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/browse%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('browse'), name="browse"),
-            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/collection%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_collection'), name="sword_collection")
         ]
 
     # Is there a better place to add protocol-specific space info?
@@ -178,7 +177,7 @@ class SpaceResource(ModelResource):
         try:
             space = model.objects.get(space=bundle.obj.uuid)
         except model.DoesNotExist:
-            print "Item doesn't exist :("
+            LOGGER.error('Space matching UUID %s does not exist', bundle.obj.uuid)
             # TODO this should assert later once creation/deletion stuff works
         else:
             keep_fields = PROTOCOL[access_protocol]['fields']
@@ -359,6 +358,7 @@ class LocationResource(ModelResource):
                 destination_space.move_from_storage_service(
                     source_path=destination_path,
                     destination_path=destination_path,
+                    package=None,
                 )
                 destination_space.post_move_from_storage_service(
                     destination_path, destination_path)
@@ -419,7 +419,7 @@ class PackageResource(ModelResource):
         # that name.
         resource_name = 'file'
 
-        fields = ['current_path', 'package_type', 'size', 'status', 'uuid', 'related_packages']
+        fields = ['current_path', 'package_type', 'size', 'status', 'uuid', 'related_packages', 'misc_attributes']
         list_allowed_methods = ['get', 'post']
         detail_allowed_methods = ['get', 'put', 'patch']
         allowed_patch_fields = ['reingest']  # for customized update_in_place
@@ -446,6 +446,7 @@ class PackageResource(ModelResource):
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/send_callback/post_store%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('aip_store_callback_request'), name="aip_store_callback_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/contents%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view("manage_contents"), name="manage_contents"),
             url(r"^(?P<resource_name>%s)/metadata%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view("file_data"), name="file_data"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/reindex%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('reindex_request'), name="reindex_request"),
             # Reingest
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/reingest%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('reingest_request'), name="reingest_request"),
 
@@ -454,6 +455,11 @@ class PackageResource(ModelResource):
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/media%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit_media'), name="sword_deposit_media"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/state%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit_state'), name="sword_deposit_state"),
         ]
+
+    def dehydrate_misc_attributes(self, bundle):
+        """Customize serialization of misc_attributes."""
+        # Serialize JSONField as dict, not as repr of a dict
+        return bundle.obj.misc_attributes
 
     def obj_create(self, bundle, **kwargs):
         bundle = super(PackageResource, self).obj_create(bundle, **kwargs)
@@ -677,7 +683,7 @@ class PackageResource(ModelResource):
             temp_dir = None
             full_path = package.get_download_path(lockss_au_number)
         except StorageException:
-            full_path, temp_dir = package.compress_package(Package.COMPRESSION_TAR)
+            full_path, temp_dir = package.compress_package(utils.COMPRESSION_TAR)
 
         response = utils.download_file_stream(full_path)
 
@@ -743,11 +749,15 @@ class PackageResource(ModelResource):
                 response["failures"]["files"]["untracked"].append(info)
 
         report = json.dumps(response)
-        if not success:
+        if success is False:
             signals.failed_fixity_check.send(sender=self,
                 uuid=bundle.obj.uuid, location=bundle.obj.full_path,
                 report=report)
-        else:
+        elif success is None:
+            signals.fixity_check_not_run.send(sender=self,
+                uuid=bundle.obj.uuid, location=bundle.obj.full_path,
+                report=report)
+        elif success is True:
             signals.successful_fixity_check.send(sender=self,
                 uuid=bundle.obj.uuid, location=bundle.obj.full_path,
                 report=report)
@@ -790,7 +800,7 @@ class PackageResource(ModelResource):
         safe_files = ('bag-info.txt', 'manifest-sha512.txt', 'bagit.txt')
 
         bag = bagit.Bag(package_dir)
-        for f, checksums in bag.entries.iteritems():
+        for f, checksums in bag.entries.items():
             try:
                 cksum = checksums['sha512']
             except KeyError:
@@ -830,6 +840,23 @@ class PackageResource(ModelResource):
         else:
             return http.HttpNoContent()
 
+    @_custom_endpoint(expected_methods=['post'])
+    def reindex_request(self, request, bundle, **kwargs):
+        """Index file data from the Package transfer METS file."""
+        package = bundle.obj
+        if package.package_type != Package.TRANSFER:
+            return http.HttpBadRequest(json.dumps({"error": True, "message": "This package is not a transfer."}), content_type='application/json')
+        if package.current_location.purpose != Location.BACKLOG:
+            return http.HttpBadRequest(json.dumps({"error": True, "message": "This package is not in transfer backlog."}), content_type='application/json')
+        try:
+            package.index_file_data_from_transfer_mets()  # Create File entries for every file in the transfer
+        except Exception as e:
+            LOGGER.warning("An error occurred while reindexing the Transfer: %s", str(e), exc_info=True)
+            return http.HttpApplicationError(json.dumps({"error": True, "message": "An error occurred while reindexing the Transfer."}), content_type='application/json')
+        count = File.objects.filter(package=package).count()
+        response = {"error": False, "message": "Files indexed: {}".format(count)}
+        return http.HttpResponse(content=json.dumps(response), content_type='application/json')
+
     @_custom_endpoint(expected_methods=['post'],
         required_fields=('pipeline', 'reingest_type'))
     def reingest_request(self, request, bundle, **kwargs):
@@ -839,8 +866,9 @@ class PackageResource(ModelResource):
             response = {'error': True, 'message': 'Pipeline UUID {} failed to return a pipeline'.format(bundle.data['pipeline'])}
             return self.create_response(request, response, response_class=http.HttpBadRequest)
         reingest_type = bundle.data['reingest_type']
+        processing_config = bundle.data.get('processing_config', 'default')
 
-        response = bundle.obj.start_reingest(pipeline, reingest_type)
+        response = bundle.obj.start_reingest(pipeline, reingest_type, processing_config)
         status_code = response.get('status_code', 500)
 
         return self.create_response(request, response, status=status_code)
@@ -964,7 +992,7 @@ class PackageResource(ModelResource):
             kwargs = {
                 "package": bundle.obj
             }
-            for source, dest in property_map.iteritems():
+            for source, dest in property_map.items():
                 try:
                     kwargs[dest] = f[source]
                 except KeyError:
@@ -1052,7 +1080,7 @@ class PackageResource(ModelResource):
             "sipuuid": "source_package"
         }
         query = {}
-        for source, dest in property_map.iteritems():
+        for source, dest in property_map.items():
             try:
                 query[dest] = request.GET[source]
             except KeyError:

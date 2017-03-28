@@ -233,7 +233,8 @@ def aip_reingest(request, package_uuid):
     if form.is_valid():
         pipeline = form.cleaned_data['pipeline']
         reingest_type = form.cleaned_data['reingest_type']
-        response = package.start_reingest(pipeline, reingest_type)
+        processing_config = form.cleaned_data.get('processing_config', 'default')
+        response = package.start_reingest(pipeline, reingest_type, processing_config)
         error = response.get('error', True)
         message = response.get('message', 'An unknown error occurred')
         if not error:
@@ -379,7 +380,7 @@ def space_list(request):
             PROTOCOL[space.access_protocol]['fields'] or [''])
         child_dict = {
             child._meta.get_field(field).verbose_name: value
-            for field, value in child_dict_raw.iteritems()
+            for field, value in child_dict_raw.items()
         }
         space.child = child_dict
     map(add_child, spaces)
@@ -397,7 +398,7 @@ def space_detail(request, uuid):
         PROTOCOL[space.access_protocol]['fields']or [''])
     child_dict = {
         child._meta.get_field(field).verbose_name: value
-        for field, value in child_dict_raw.iteritems()
+        for field, value in child_dict_raw.items()
     }
     space.child = child_dict
     locations = Location.objects.filter(space=space)
