@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # stdlib, alphabetical
 import json
 import logging
@@ -19,8 +20,8 @@ from common import utils
 
 # This module, alphabetical
 from . import StorageException
-from location import Location
-from package import Package
+from .location import Location
+from .package import Package
 
 LOGGER = logging.getLogger(__name__)
 
@@ -80,7 +81,7 @@ class Arkivum(models.Model):
         self.space.create_local_directory(dest_path)
         self.space.move_rsync(src_path, dest_path)
 
-    def move_from_storage_service(self, source_path, destination_path):
+    def move_from_storage_service(self, source_path, destination_path, package=None):
         """ Moves self.staging_path/src_path to dest_path. """
         try_mv_local = False
         # Rsync to Arkivum watched directory

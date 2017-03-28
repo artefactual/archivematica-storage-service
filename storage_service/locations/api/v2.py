@@ -32,7 +32,7 @@ class LocationResource(resources.LocationResource):
         objects = space.browse(path)
         objects['entries'] = map(base64.b64encode, objects['entries'])
         objects['directories'] = map(base64.b64encode, objects['directories'])
-        objects['properties'] = {base64.b64encode(k): v for k, v in objects.get('properties', {}).iteritems()}
+        objects['properties'] = {base64.b64encode(k): v for k, v in objects.get('properties', {}).items()}
         return objects
 
 

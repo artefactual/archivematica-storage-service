@@ -17,7 +17,7 @@ KEYCMD=$(python /var/archivematica/storage-service/make_key.py 2>&1)
 echo $KEYCMD
 
 sed -i "s/<replace-with-key>/\"$KEYCMD\"/g" /var/archivematica/.storage-service
-sed -i "s/<replace-with-key>/\"$KEYCMD\"/g" /etc/uwsgi/apps-available/storage.ini
+sed -i "s/<replace-with-key>/$KEYCMD/g" /etc/archivematica/storage-service.gunicorn-config.py
 
 . /var/archivematica/.storage-service
 

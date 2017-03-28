@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import json
 import logging
 
@@ -7,13 +9,12 @@ from django.core.urlresolvers import reverse
 from django.db.models import signals
 from tastypie.models import create_api_key
 
-import models
-
 LOGGER = logging.getLogger(__name__)
 
 deletion_request = Signal(providing_args=["uuid", "location", "url"])
 failed_fixity_check = Signal(providing_args=["uuid", "location", "report"])
 successful_fixity_check = Signal(providing_args=["uuid", "location", "report"])
+fixity_check_not_run = Signal(providing_args=["uuid", "location", "report"])
 
 
 def _notify_administrators(subject, message):
@@ -43,6 +44,9 @@ To approve this deletion request, visit: {}{}
 
 
 def _log_report(uuid, success, message=None):
+    # NOTE Importing this at the top of the module fails because this file is
+    # imported in models.__init__.py and seems to cause a circular import error
+    from . import models
     package = models.Package.objects.get(uuid=uuid)
     models.FixityLog.objects.create(package=package, success=success, error_details=message)
 
@@ -66,6 +70,13 @@ Full failure report (in JSON format):
 @receiver(successful_fixity_check, dispatch_uid="fixity_check")
 def report_successful_fixity_check(sender, **kwargs):
     _log_report(kwargs['uuid'], True)
+
+
+@receiver(fixity_check_not_run, dispatch_uid="fixity_check")
+def report_not_run_fixity_check(sender, **kwargs):
+    """Handle a fixity not run signal."""
+    report_data = json.loads(kwargs['report'])
+    _log_report(uuid=kwargs['uuid'], success=None, message=report_data['message'])
 
 
 # Create an API key for every user, for TastyPie

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # stdlib, alphabetical
 import logging
 import os
@@ -11,7 +12,7 @@ from django_extensions.db.fields import UUIDField
 # This project, alphabetical
 
 # This module, alphabetical
-from managers import Enabled
+from .managers import Enabled
 
 __all__ = ('Location', 'LocationPipeline')
 

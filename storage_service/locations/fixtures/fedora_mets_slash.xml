@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<METS:mets EXT_VERSION="1.1" OBJID="changeme:781"
+LABEL="RG2100/INS_P1-356"
+xmlns:METS="http://www.loc.gov/METS/"
+xmlns:xlink="http://www.w3.org/1999/xlink"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://www.loc.gov/METS/ http://www.fedora.info/definitions/1/0/mets-fedora-ext1-1.xsd">
+<METS:metsHdr CREATEDATE="2017-01-10T16:27:14.481Z" LASTMODDATE="2017-01-11T22:55:44.782Z" RECORDSTATUS="Active">
+<METS:agent ROLE="IPOWNER">
+<METS:name>fedoraAdmin</METS:name>
+</METS:agent>
+</METS:metsHdr>
+<METS:amdSec ID="AUDIT" STATUS="A" VERSIONABLE="false">
+<METS:digiprovMD ID="AUDIT.0" CREATED="2017-01-10T16:27:14.481Z">
+<METS:mdWrap MIMETYPE="text/xml" MDTYPE="OTHER" OTHERMDTYPE="FEDORA-AUDIT" LABEL="Audit Trail for this object" FORMAT_URI="info:fedora/fedora-system:format/xml.fedora.audit">
+<METS:xmlData>
+<audit:auditTrail xmlns:audit="info:fedora/fedora-system:def/audit#">
+<audit:record ID="AUDREC1">
+<audit:process type="Fedora API-M"/>
+<audit:action>addDatastream</audit:action>
+<audit:componentID>TN</audit:componentID>
+<audit:responsibility>fedoraAdmin</audit:responsibility>
+<audit:date>2017-01-10T16:27:26.028Z</audit:date>
+<audit:justification>Copied datastream from changeme:781.</audit:justification>
+</audit:record>
+<audit:record ID="AUDREC2">
+<audit:process type="Fedora API-M"/>
+<audit:action>addDatastream</audit:action>
+<audit:componentID>MEDIUM_SIZE</audit:componentID>
+<audit:responsibility>fedoraAdmin</audit:responsibility>
+<audit:date>2017-01-10T16:27:26.220Z</audit:date>
+<audit:justification>Copied datastream from changeme:781.</audit:justification>
+</audit:record>
+<audit:record ID="AUDREC3">
+<audit:process type="Fedora API-M"/>
+<audit:action>modifyDatastreamByValue</audit:action>
+<audit:componentID>RELS-EXT</audit:componentID>
+<audit:responsibility>fedoraAdmin</audit:responsibility>
+<audit:date>2017-01-10T16:30:09.344Z</audit:date>
+<audit:justification></audit:justification>
+</audit:record>
+<audit:record ID="AUDREC4">
+<audit:process type="Fedora API-M"/>
+<audit:action>modifyDatastreamByValue</audit:action>
+<audit:componentID>RELS-EXT</audit:componentID>
+<audit:responsibility>fedoraAdmin</audit:responsibility>
+<audit:date>2017-01-10T16:30:15.443Z</audit:date>
+<audit:justification></audit:justification>
+</audit:record>
+<audit:record ID="AUDREC5">
+<audit:process type="Fedora API-M"/>
+<audit:action>modifyDatastreamByValue</audit:action>
+<audit:componentID>RELS-EXT</audit:componentID>
+<audit:responsibility>fedoraAdmin</audit:responsibility>
+<audit:date>2017-01-10T16:49:45.171Z</audit:date>
+<audit:justification></audit:justification>
+</audit:record>
+<audit:record ID="AUDREC6">
+<audit:process type="Fedora API-M"/>
+<audit:action>modifyDatastreamByValue</audit:action>
+<audit:componentID>RELS-EXT</audit:componentID>
+<audit:responsibility>fedoraAdmin</audit:responsibility>
+<audit:date>2017-01-10T16:59:03.929Z</audit:date>
+<audit:justification></audit:justification>
+</audit:record>
+<audit:record ID="AUDREC7">
+<audit:process type="Fedora API-M"/>
+<audit:action>modifyDatastreamByValue</audit:action>
+<audit:componentID>RELS-EXT</audit:componentID>
+<audit:responsibility>fedoraAdmin</audit:responsibility>
+<audit:date>2017-01-10T17:21:16.416Z</audit:date>
+<audit:justification></audit:justification>
+</audit:record>
+<audit:record ID="AUDREC8">
+<audit:process type="Fedora API-M"/>
+<audit:action>addDatastream</audit:action>
+<audit:componentID>RELS-INT</audit:componentID>
+<audit:responsibility>fedoraAdmin</audit:responsibility>
+<audit:date>2017-01-10T17:54:31.506Z</audit:date>
+<audit:justification>Copied datastream from changeme:781.</audit:justification>
+</audit:record>
+<audit:record ID="AUDREC9">
+<audit:process type="Fedora API-M"/>
+<audit:action>modifyDatastreamByValue</audit:action>
+<audit:componentID>RELS-EXT</audit:componentID>
+<audit:responsibility>fedoraAdmin</audit:responsibility>
+<audit:date>2017-01-10T17:55:35.932Z</audit:date>
+<audit:justification></audit:justification>
+</audit:record>
+<audit:record ID="AUDREC10">
+<audit:process type="Fedora API-M"/>
+<audit:action>modifyDatastreamByValue</audit:action>
+<audit:componentID>RELS-EXT</audit:componentID>
+<audit:responsibility>fedoraAdmin</audit:responsibility>
+<audit:date>2017-01-10T17:56:00.714Z</audit:date>
+<audit:justification></audit:justification>
+</audit:record>
+<audit:record ID="AUDREC11">
+<audit:process type="Fedora API-M"/>
+<audit:action>modifyDatastreamByValue</audit:action>
+<audit:componentID>RELS-EXT</audit:componentID>
+<audit:responsibility>fedoraAdmin</audit:responsibility>
+<audit:date>2017-01-11T18:39:12.167Z</audit:date>
+<audit:justification></audit:justification>
+</audit:record>
+<audit:record ID="AUDREC12">
+<audit:process type="Fedora API-M"/>
+<audit:action>modifyDatastreamByValue</audit:action>
+<audit:componentID>RELS-EXT</audit:componentID>
+<audit:responsibility>fedoraAdmin</audit:responsibility>
+<audit:date>2017-01-11T22:30:06.287Z</audit:date>
+<audit:justification></audit:justification>
+</audit:record>
+<audit:record ID="AUDREC13">
+<audit:process type="Fedora API-M"/>
+<audit:action>modifyDatastreamByValue</audit:action>
+<audit:componentID>RELS-EXT</audit:componentID>
+<audit:responsibility>fedoraAdmin</audit:responsibility>
+<audit:date>2017-01-11T22:55:44.782Z</audit:date>
+<audit:justification></audit:justification>
+</audit:record>
+</audit:auditTrail>
+</METS:xmlData>
+</METS:mdWrap>
+</METS:digiprovMD>
+</METS:amdSec>
+<METS:amdSec ID="RELS-EXT" STATUS="A" VERSIONABLE="true">
+<METS:techMD ID="RELS-EXT.0" CREATED="2017-01-10T16:27:14.508Z">
+<METS:mdWrap MIMETYPE="application/rdf+xml" MDTYPE="OTHER" OTHERMDTYPE="UNSPECIFIED"  LABEL="Fedora Object to Object Relationship Metadata." FORMAT_URI="info:fedora/fedora-system:FedoraRELSExt-1.0">
+<METS:xmlData>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#">
+  <rdf:Description rdf:about="info:fedora/changeme:781">
+    <fedora-model:hasModel rdf:resource="info:fedora/islandora:sp_basic_image"></fedora-model:hasModel>
+    <fedora:isMemberOfCollection rdf:resource="info:fedora/islandora:500"></fedora:isMemberOfCollection>
+  </rdf:Description>
+</rdf:RDF>
+</METS:xmlData></METS:mdWrap>
+</METS:techMD>
+<METS:techMD ID="RELS-EXT.1" CREATED="2017-01-10T16:30:09.344Z">
+<METS:mdWrap MIMETYPE="application/rdf+xml" MDTYPE="OTHER" OTHERMDTYPE="UNSPECIFIED"  LABEL="Fedora Object to Object Relationship Metadata." FORMAT_URI="info:fedora/fedora-system:FedoraRELSExt-1.0">
+<METS:xmlData>
+<rdf:RDF xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="info:fedora/changeme:781">
+    <fedora-model:hasModel rdf:resource="info:fedora/islandora:sp_basic_image"></fedora-model:hasModel>
+    <fedora:isMemberOfCollection rdf:resource="info:fedora/islandora:500"></fedora:isMemberOfCollection>
+    <edit_media xmlns="http://islandora.ca/archivematica#" rdf:resource="http://142.103.97.140:8000/api/v1/file/b1e34e42-39f1-4ce0-88d6-64d72bbd363e/sword/media/"></edit_media>
+  </rdf:Description>
+</rdf:RDF>
+</METS:xmlData></METS:mdWrap>
+</METS:techMD>
+<METS:techMD ID="RELS-EXT.2" CREATED="2017-01-10T16:30:15.443Z">
+<METS:mdWrap MIMETYPE="application/rdf+xml" MDTYPE="OTHER" OTHERMDTYPE="UNSPECIFIED"  LABEL="Fedora Object to Object Relationship Metadata." FORMAT_URI="info:fedora/fedora-system:FedoraRELSExt-1.0">
+<METS:xmlData>
+<rdf:RDF xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="info:fedora/changeme:781">
+    <fedora-model:hasModel rdf:resource="info:fedora/islandora:sp_basic_image"></fedora-model:hasModel>
+    <fedora:isMemberOfCollection rdf:resource="info:fedora/islandora:500"></fedora:isMemberOfCollection>
+    <edit_media xmlns="http://islandora.ca/archivematica#" rdf:resource="http://142.103.97.140:8000/api/v1/file/b1e34e42-39f1-4ce0-88d6-64d72bbd363e/sword/media/"></edit_media>
+  </rdf:Description>
+</rdf:RDF>
+</METS:xmlData></METS:mdWrap>
+</METS:techMD>
+<METS:techMD ID="RELS-EXT.3" CREATED="2017-01-10T16:49:45.171Z">
+<METS:mdWrap MIMETYPE="application/rdf+xml" MDTYPE="OTHER" OTHERMDTYPE="UNSPECIFIED"  LABEL="Fedora Object to Object Relationship Metadata." FORMAT_URI="info:fedora/fedora-system:FedoraRELSExt-1.0">
+<METS:xmlData>
+<rdf:RDF xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="info:fedora/changeme:781">
+    <fedora-model:hasModel rdf:resource="info:fedora/islandora:sp_basic_image"></fedora-model:hasModel>
+    <fedora:isMemberOfCollection rdf:resource="info:fedora/islandora:500"></fedora:isMemberOfCollection>
+    <edit_media xmlns="http://islandora.ca/archivematica#" rdf:resource="http://142.103.97.140:8000/api/v1/file/c20c6860-435d-43b9-84b3-cd67fe43817e/sword/media/"></edit_media>
+  </rdf:Description>
+</rdf:RDF>
+</METS:xmlData></METS:mdWrap>
+</METS:techMD>
+<METS:techMD ID="RELS-EXT.4" CREATED="2017-01-10T16:59:03.929Z">
+<METS:mdWrap MIMETYPE="application/rdf+xml" MDTYPE="OTHER" OTHERMDTYPE="UNSPECIFIED"  LABEL="Fedora Object to Object Relationship Metadata." FORMAT_URI="info:fedora/fedora-system:FedoraRELSExt-1.0">
+<METS:xmlData>
+<rdf:RDF xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="info:fedora/changeme:781">
+    <fedora-model:hasModel rdf:resource="info:fedora/islandora:sp_basic_image"></fedora-model:hasModel>
+    <fedora:isMemberOfCollection rdf:resource="info:fedora/islandora:500"></fedora:isMemberOfCollection>
+    <edit_media xmlns="http://islandora.ca/archivematica#" rdf:resource="http://142.103.97.140:8000/api/v1/file/70c6579e-a624-4f7f-9c8f-2544cd451c46/sword/media/"></edit_media>
+  </rdf:Description>
+</rdf:RDF>
+</METS:xmlData></METS:mdWrap>
+</METS:techMD>
+<METS:techMD ID="RELS-EXT.5" CREATED="2017-01-10T17:21:16.416Z">
+<METS:mdWrap MIMETYPE="application/rdf+xml" MDTYPE="OTHER" OTHERMDTYPE="UNSPECIFIED"  LABEL="Fedora Object to Object Relationship Metadata." FORMAT_URI="info:fedora/fedora-system:FedoraRELSExt-1.0">
+<METS:xmlData>
+<rdf:RDF xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="info:fedora/changeme:781">
+    <fedora-model:hasModel rdf:resource="info:fedora/islandora:sp_basic_image"></fedora-model:hasModel>
+    <fedora:isMemberOfCollection rdf:resource="info:fedora/islandora:500"></fedora:isMemberOfCollection>
+    <edit_media xmlns="http://islandora.ca/archivematica#" rdf:resource="http://142.103.97.140:8000/api/v1/file/6911736e-c6fe-4b08-9727-81879f6f816c/sword/media/"></edit_media>
+  </rdf:Description>
+</rdf:RDF>
+</METS:xmlData></METS:mdWrap>
+</METS:techMD>
+<METS:techMD ID="RELS-EXT.6" CREATED="2017-01-10T17:55:35.932Z">
+<METS:mdWrap MIMETYPE="application/rdf+xml" MDTYPE="OTHER" OTHERMDTYPE="UNSPECIFIED"  LABEL="Fedora Object to Object Relationship Metadata." FORMAT_URI="info:fedora/fedora-system:FedoraRELSExt-1.0">
+<METS:xmlData>
+<rdf:RDF xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="info:fedora/changeme:781">
+    <fedora-model:hasModel rdf:resource="info:fedora/islandora:sp_basic_image"></fedora-model:hasModel>
+    <fedora:isMemberOfCollection rdf:resource="info:fedora/islandora:500"></fedora:isMemberOfCollection>
+    <edit_media xmlns="http://islandora.ca/archivematica#" rdf:resource="http://142.103.97.140:8000/api/v1/file/0f02f617-59ac-4c2f-a2b4-4419aaf6dedb/sword/media/"></edit_media>
+  </rdf:Description>
+</rdf:RDF>
+</METS:xmlData></METS:mdWrap>
+</METS:techMD>
+<METS:techMD ID="RELS-EXT.7" CREATED="2017-01-10T17:56:00.714Z">
+<METS:mdWrap MIMETYPE="application/rdf+xml" MDTYPE="OTHER" OTHERMDTYPE="UNSPECIFIED"  LABEL="Fedora Object to Object Relationship Metadata." FORMAT_URI="info:fedora/fedora-system:FedoraRELSExt-1.0">
+<METS:xmlData>
+<rdf:RDF xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="info:fedora/changeme:781">
+    <fedora-model:hasModel rdf:resource="info:fedora/islandora:sp_basic_image"></fedora-model:hasModel>
+    <fedora:isMemberOfCollection rdf:resource="info:fedora/islandora:500"></fedora:isMemberOfCollection>
+    <edit_media xmlns="http://islandora.ca/archivematica#" rdf:resource="http://142.103.97.140:8000/api/v1/file/0f02f617-59ac-4c2f-a2b4-4419aaf6dedb/sword/media/"></edit_media>
+  </rdf:Description>
+</rdf:RDF>
+</METS:xmlData></METS:mdWrap>
+</METS:techMD>
+<METS:techMD ID="RELS-EXT.8" CREATED="2017-01-11T18:39:12.167Z">
+<METS:mdWrap MIMETYPE="application/rdf+xml" MDTYPE="OTHER" OTHERMDTYPE="UNSPECIFIED"  LABEL="Fedora Object to Object Relationship Metadata." FORMAT_URI="info:fedora/fedora-system:FedoraRELSExt-1.0">
+<METS:xmlData>
+<rdf:RDF xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="info:fedora/changeme:781">
+    <fedora-model:hasModel rdf:resource="info:fedora/islandora:sp_basic_image"></fedora-model:hasModel>
+    <fedora:isMemberOfCollection rdf:resource="info:fedora/islandora:500"></fedora:isMemberOfCollection>
+    <edit_media xmlns="http://islandora.ca/archivematica#" rdf:resource="http://142.103.97.140:8000/api/v1/file/d9efc1d4-a7dc-4318-8c8e-65dc7f0dff9c/sword/media/"></edit_media>
+  </rdf:Description>
+</rdf:RDF>
+</METS:xmlData></METS:mdWrap>
+</METS:techMD>
+<METS:techMD ID="RELS-EXT.9" CREATED="2017-01-11T22:30:06.287Z">
+<METS:mdWrap MIMETYPE="application/rdf+xml" MDTYPE="OTHER" OTHERMDTYPE="UNSPECIFIED"  LABEL="Fedora Object to Object Relationship Metadata." FORMAT_URI="info:fedora/fedora-system:FedoraRELSExt-1.0">
+<METS:xmlData>
+<rdf:RDF xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="info:fedora/changeme:781">
+    <fedora-model:hasModel rdf:resource="info:fedora/islandora:sp_basic_image"></fedora-model:hasModel>
+    <fedora:isMemberOfCollection rdf:resource="info:fedora/islandora:500"></fedora:isMemberOfCollection>
+    <edit_media xmlns="http://islandora.ca/archivematica#" rdf:resource="http://142.103.97.140:8000/api/v1/file/e7cee203-ce8e-4ca4-adfc-7ad548ecb58f/sword/media/"></edit_media>
+  </rdf:Description>
+</rdf:RDF>
+</METS:xmlData></METS:mdWrap>
+</METS:techMD>
+<METS:techMD ID="RELS-EXT.10" CREATED="2017-01-11T22:55:44.782Z">
+<METS:mdWrap MIMETYPE="application/rdf+xml" MDTYPE="OTHER" OTHERMDTYPE="UNSPECIFIED"  LABEL="Fedora Object to Object Relationship Metadata." FORMAT_URI="info:fedora/fedora-system:FedoraRELSExt-1.0">
+<METS:xmlData>
+<rdf:RDF xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="info:fedora/changeme:781">
+    <fedora-model:hasModel rdf:resource="info:fedora/islandora:sp_basic_image"></fedora-model:hasModel>
+    <fedora:isMemberOfCollection rdf:resource="info:fedora/islandora:500"></fedora:isMemberOfCollection>
+    <edit_media xmlns="http://islandora.ca/archivematica#" rdf:resource="http://142.103.97.140:8000/api/v1/file/d1aff343-291f-445b-8fe4-ae29035b7b7f/sword/media/"></edit_media>
+  </rdf:Description>
+</rdf:RDF>
+</METS:xmlData></METS:mdWrap>
+</METS:techMD>
+</METS:amdSec>
+<METS:amdSec ID="DC" STATUS="A" VERSIONABLE="true">
+<METS:techMD ID="DC.0" CREATED="2017-01-10T16:27:14.508Z">
+<METS:mdWrap MIMETYPE="text/xml" MDTYPE="OTHER" OTHERMDTYPE="UNSPECIFIED"  LABEL="DC Record">
+<METS:xmlData>
+<oai_dc:dc xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">
+  <dc:identifier>changeme:781</dc:identifier>
+</oai_dc:dc>
+</METS:xmlData></METS:mdWrap>
+</METS:techMD>
+</METS:amdSec>
+<METS:amdSec ID="RELS-INT" STATUS="A" VERSIONABLE="true">
+<METS:techMD ID="RELS-INT.0" CREATED="2017-01-10T17:54:31.506Z">
+<METS:mdWrap MIMETYPE="application/rdf+xml" MDTYPE="OTHER" OTHERMDTYPE="UNSPECIFIED"  LABEL="Fedora Relationship Metadata." FORMAT_URI="info:fedora/fedora-system:FedoraRELSExt-1.0">
+<METS:xmlData>
+<rdf:RDF xmlns:islandora="http://islandora.ca/ontology/relsint#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="info:fedora/changeme:781/OBJ">
+    <isReadyForDeletion xmlns="http://islandora.ca/archivematica#">TRUE</isReadyForDeletion>
+  </rdf:Description>
+</rdf:RDF>
+</METS:xmlData></METS:mdWrap>
+</METS:techMD>
+</METS:amdSec>
+<METS:fileSec>
+<METS:fileGrp ID="DATASTREAMS">
+<METS:fileGrp ID="MODS" STATUS="A" VERSIONABLE="true">
+<METS:file ID="MODS.0" CREATED="2017-01-10T16:27:14.508Z" MIMETYPE="text/xml" SIZE="155" OWNERID="M">
+<METS:FLocat xlink:title="MODS Record" LOCTYPE="URL" xlink:href="http://archdora.usask.ca:8080/fedora/get/changeme:781/MODS/2017-01-10T16:27:14.508Z"/>
+</METS:file>
+</METS:fileGrp>
+<METS:fileGrp ID="OBJ" STATUS="A" VERSIONABLE="true">
+<METS:file ID="OBJ.0" CREATED="2017-01-10T16:27:14.508Z" MIMETYPE="image/jpeg" SIZE="427127" OWNERID="M">
+<METS:FLocat xlink:title="images2/RG2100_INS_P1-356.jpg" LOCTYPE="URL" xlink:href="http://archdora.usask.ca:8080/fedora/get/changeme:781/OBJ/2017-01-10T16:27:14.508Z"/>
+</METS:file>
+</METS:fileGrp>
+<METS:fileGrp ID="TN" STATUS="A" VERSIONABLE="true">
+<METS:file ID="TN.0" CREATED="2017-01-10T16:27:26.028Z" MIMETYPE="image/jpeg" SIZE="4579" OWNERID="M">
+<METS:FLocat xlink:title="TN" LOCTYPE="URL" xlink:href="http://archdora.usask.ca:8080/fedora/get/changeme:781/TN/2017-01-10T16:27:26.028Z"/>
+</METS:file>
+</METS:fileGrp>
+<METS:fileGrp ID="MEDIUM_SIZE" STATUS="A" VERSIONABLE="true">
+<METS:file ID="MEDIUM_SIZE.0" CREATED="2017-01-10T16:27:26.220Z" MIMETYPE="image/jpeg" SIZE="21214" OWNERID="M">
+<METS:FLocat xlink:title="MEDIUM_SIZE" LOCTYPE="URL" xlink:href="http://archdora.usask.ca:8080/fedora/get/changeme:781/MEDIUM_SIZE/2017-01-10T16:27:26.220Z"/>
+</METS:file>
+</METS:fileGrp>
+</METS:fileGrp>
+</METS:fileSec>
+</METS:mets>

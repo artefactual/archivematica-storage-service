@@ -70,7 +70,7 @@ class SettingsForm(forms.Form):
 
     def save(self, *args, **kwargs):
         """ Save each of the fields in the form to the Settings table. """
-        for setting, value in self.cleaned_data.iteritems():
+        for setting, value in self.cleaned_data.items():
             utils.set_setting(setting, value)
 
 

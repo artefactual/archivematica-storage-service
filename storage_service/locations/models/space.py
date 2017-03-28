@@ -46,6 +46,11 @@ def validate_space_path(path):
 #    'model' is the model object
 #    'form' is the ModelForm for creating the space
 #    'fields' is a whitelist of fields to display to the user
+#  locations/migrations/####_<spacename>.py
+#   Run `manage.py makemigrations locations` to create a migration.
+#   Rename the migration after the feature. Eg. 0005_auto_20160331_1337.py -> 0005_dspace.py
+#  locations/tests/test_<spacename>.py
+#   Add class for tests. Example template below
 
 # class Example(models.Model):
 #     space = models.OneToOneField('Space', to_field='uuid')
@@ -74,8 +79,40 @@ def validate_space_path(path):
 #         """ Moves src_path to dest_space.staging_path/dest_path. """
 #         pass
 #
-#     def move_from_storage_service(self, source_path, destination_path):
+#     def move_from_storage_service(self, source_path, destination_path, package=None):
 #         """ Moves self.staging_path/src_path to dest_path. """
+#         pass
+
+
+# from django.test import TestCase
+# import vcr
+#
+# from locations import models
+#
+# THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+# FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, '..', 'fixtures'))
+#
+# class TestExample(TestCase):
+#
+#     fixtures = ['base.json', 'example.json']
+#
+#     def setUp(self):
+#         self.example_object = models.Example.objects.all()[0]
+#
+#     @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'example_browse.yaml'))
+#     def test_browse(self):
+#         pass
+#
+#     @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'example_delete.yaml'))
+#     def test_delete(self):
+#         pass
+#
+#     @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'example_move_from_ss.yaml'))
+#     def test_move_from_ss(self):
+#         pass
+#
+#     @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'example_move_to_ss.yaml'))
+#     def test_move_to_ss(self):
 #         pass
 
 
@@ -91,17 +128,19 @@ class Space(models.Model):
     ARKIVUM = 'ARKIVUM'
     DATAVERSE = 'DV'
     DURACLOUD = 'DC'
+    DSPACE = 'DSPACE'
     FEDORA = 'FEDORA'
     LOCAL_FILESYSTEM = 'FS'
     LOM = 'LOM'
     NFS = 'NFS'
     PIPELINE_LOCAL_FS = 'PIPE_FS'
     SWIFT = 'SWIFT'
-    OBJECT_STORAGE = {DATAVERSE, DURACLOUD, SWIFT}
+    OBJECT_STORAGE = {DATAVERSE, DSPACE, DURACLOUD, SWIFT}
     ACCESS_PROTOCOL_CHOICES = (
         (ARKIVUM, 'Arkivum'),
         (DATAVERSE, 'Dataverse'),
         (DURACLOUD, 'DuraCloud'),
+        (DSPACE, 'DSpace via SWORD2 API'),
         (FEDORA, "FEDORA via SWORD2"),
         (LOCAL_FILESYSTEM, "Local Filesystem"),
         (LOM, "LOCKSS-o-matic"),
@@ -295,10 +334,11 @@ class Space(models.Model):
         LOGGER.debug('FROM: dst: %s', destination_path)
 
         source_path, destination_path = self._move_from_path_mangling(source_path, destination_path)
-        try:
-            self.get_child_space().move_from_storage_service(
+        child_space = self.get_child_space()
+        if hasattr(child_space, 'move_from_storage_service'):
+            child_space.move_from_storage_service(
                 source_path, destination_path, *args, **kwargs)
-        except AttributeError:
+        else:
             raise NotImplementedError('{} space has not implemented move_from_storage_service'.format(self.get_access_protocol_display()))
 
     def post_move_from_storage_service(self, staging_path, destination_path, package=None, *args, **kwargs):
@@ -385,8 +425,11 @@ class Space(models.Model):
 
         if try_mv_local:
             # Try using mv, and if that fails, fallback to rsync
+            chmod_command = ['chmod', '--recursive', 'ug+rw,o+r', destination]
             try:
                 os.rename(source, destination)
+                # Set permissions (rsync does with --chmod=ugo+rw)
+                subprocess.call(chmod_command)
                 return
             except OSError:
                 LOGGER.debug('os.rename failed, trying with normalized paths', exc_info=True)
@@ -394,6 +437,8 @@ class Space(models.Model):
             dest_norm = os.path.normpath(destination)
             try:
                 os.rename(source_norm, dest_norm)
+                # Set permissions (rsync does with --chmod=ugo+rw)
+                subprocess.call(chmod_command)
                 return
             except OSError:
                 LOGGER.debug('os.rename failed, falling back to rsync. Source: %s; Destination: %s', source_norm, dest_norm, exc_info=True)

@@ -1,6 +1,7 @@
+from __future__ import absolute_import
 
-import forms
-import models
+from . import forms
+from . import models
 
 ########################## SPACES ##########################
 
@@ -22,6 +23,11 @@ PROTOCOL = {
         'model': models.Duracloud,
         'form': forms.DuracloudForm,
         'fields': ['host', 'user', 'duraspace'],
+    },
+    models.Space.DSPACE: {
+        'model': models.DSpace,
+        'form': forms.DSpaceForm,
+        'fields': ['sd_iri', 'user']
     },
     models.Space.FEDORA: {
         'model': models.Fedora,

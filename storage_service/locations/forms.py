@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 
 from django import forms
 import django.utils
@@ -109,6 +110,10 @@ class DuracloudForm(forms.ModelForm):
         model = models.Duracloud
         fields = ('host', 'user', 'password', 'duraspace')
 
+class DSpaceForm(forms.ModelForm):
+    class Meta:
+        model = models.DSpace
+        fields = ('sd_iri', 'user', 'password', 'metadata_policy')
 
 class LocalFilesystemForm(forms.ModelForm):
     class Meta:
@@ -172,7 +177,7 @@ class LocationForm(forms.ModelForm):
         # Disable purposes that aren't in the Space's whitelist
         all_ = set(x[0] for x in models.Location.PURPOSE_CHOICES)
         if space_protocol in [x[0] for x in models.Space.ACCESS_PROTOCOL_CHOICES]:
-            from constants import PROTOCOL
+            from .constants import PROTOCOL
             self.whitelist = PROTOCOL[space_protocol]['model'].ALLOWED_LOCATION_PURPOSE
         else:
             self.whitelist = all_
@@ -219,6 +224,7 @@ class ConfirmEventForm(forms.ModelForm):
         super(ConfirmEventForm, self).__init__(*args, **kwargs)
         self.fields['status_reason'].required = True
 
+
 class CallbackForm(forms.ModelForm):
     class Meta:
         model = models.Callback
@@ -226,9 +232,14 @@ class CallbackForm(forms.ModelForm):
 
 
 class ReingestForm(forms.Form):
-    pipeline = forms.ModelChoiceField(queryset=models.Pipeline.active.all())
     REINGEST_CHOICES = (
-        (models.Package.METADATA_ONLY, 'Re-ingest metadata only'),
-        (models.Package.OBJECTS, 'Re-ingest metadata and objects')
+        (models.Package.METADATA_ONLY, 'Metadata re-ingest'),
+        (models.Package.OBJECTS, 'Partial re-ingest'),
+        (models.Package.FULL, 'Full re-ingest'),
     )
+
+    pipeline = forms.ModelChoiceField(queryset=models.Pipeline.active.all())
     reingest_type = forms.ChoiceField(choices=REINGEST_CHOICES, widget=forms.RadioSelect)
+    processing_config = forms.CharField(required=False, initial='default',
+        help_text='Optional: The processing config is only used with full re-ingest',
+        widget=forms.TextInput(attrs={'placeholder': 'default'}))

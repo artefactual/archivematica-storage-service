@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # stdlib, alphabetical
 from datetime import datetime
 import logging
@@ -16,7 +17,7 @@ from django.db import models
 from common import utils
 
 # This module, alphabetical
-from location import Location
+from .location import Location
 
 LOGGER = logging.getLogger(__name__)
 
@@ -108,7 +109,7 @@ class PipelineLocalFS(models.Model):
         # TODO delete original file?
         pass
 
-    def move_from_storage_service(self, source_path, destination_path):
+    def move_from_storage_service(self, source_path, destination_path, package=None):
         """ Moves self.staging_path/src_path to dest_path. """
 
         self.space.create_rsync_directory(destination_path, self.remote_user, self.remote_name)

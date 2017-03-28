@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # stdlib, alphabetical
 import json
 import logging
@@ -14,7 +15,7 @@ LOGGER = logging.getLogger(__name__)
 
 # This module, alphabetical
 from . import StorageException
-from location import Location
+from .location import Location
 
 
 class Dataverse(models.Model):
@@ -133,9 +134,9 @@ class Dataverse(models.Model):
 
         # Fetch all files in dataset.json
         for file_entry in dataset['latestVersion']['files']:
-            entry_id = str(file_entry['datafile']['id'])
+            entry_id = str(file_entry['dataFile']['id'])
             if not file_entry['label'].endswith('.tab'):
-                download_path = os.path.join(dest_path, file_entry['datafile']['name'])
+                download_path = os.path.join(dest_path, file_entry['dataFile']['filename'])
                 url = 'https://' + self.host + '/api/access/datafile/' + entry_id
             else:
                 # If the file is the tab file, download the bundle instead
