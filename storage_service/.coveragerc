@@ -1,0 +1,14 @@
+[run]
+
+omit =
+	**/migrations/*
+	**/south_migrations/*
+	**/settings/*
+	**/wsgi.py
+	**/tests/*
+	**/manage.py
+	setup.py
+
+source = .
+
+branch = True
