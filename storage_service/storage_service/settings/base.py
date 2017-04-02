@@ -268,28 +268,12 @@ LOGGING = {
         'console': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
-            'formatter': 'simple',
+            'formatter': 'detailed',
         },
         'mail_admins': {
             'level': 'ERROR',
             'filters': ['require_debug_false'],
             'class': 'django.utils.log.AdminEmailHandler'
-        },
-        'logfile': {
-            'level': 'INFO',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/var/log/archivematica/storage-service/storage_service.log',
-            'formatter': 'detailed',
-            'backupCount': 5,
-            'maxBytes': 20 * 1024 * 1024,  # 20 MiB
-        },
-        'verboselogfile': {
-            'level': 'DEBUG',
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/var/log/archivematica/storage-service/storage_service_debug.log',
-            'formatter': 'detailed',
-            'backupCount': 5,
-            'maxBytes': 100 * 1024 * 1024,  # 100 MiB
         },
     },
     'loggers': {
@@ -315,7 +299,7 @@ LOGGING = {
         }
     },
     'root': {
-        'handlers': ['logfile', 'verboselogfile'],
+        'handlers': ['console'],
         'level': 'WARNING',
     },
 }
