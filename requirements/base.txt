@@ -15,6 +15,8 @@ django-extensions==1.7.9
 django-model-utils==3.0.0
 #tastypie 0.13.3 has breaking changes
 django-tastypie==0.13.1
+futures==3.0.5  # used by gunicorn's async workers
+gevent==1.2.1  # used by gunicorn's async workers
 gunicorn==19.7.1
 jsonfield==2.0.1
 logutils==0.3.4.1
