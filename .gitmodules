@@ -1,3 +1,0 @@
-[submodule "storage_service/external/base64-helpers"]
-	path = storage_service/external/base64-helpers
-	url = https://github.com/artefactual-labs/base64-helpers.git
