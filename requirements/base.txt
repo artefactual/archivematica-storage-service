@@ -5,6 +5,7 @@
 pip==9.0.1
 setuptools
 bagit==1.5.4
+brotli==0.5.2  # Better compression library for WhiteNoise
 defusedxml==0.5.0
 Django>=1.8,<1.9
 django-annoying==0.10.3
@@ -23,3 +24,4 @@ python-keystoneclient==3.10.0
 python-swiftclient==3.3.0
 requests==2.14.2
 sword2==0.2.1
+whitenoise==3.3.0

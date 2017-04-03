@@ -119,7 +119,9 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 )
-# ######## END STATIC FILE CONFIGURATION
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+########## END STATIC FILE CONFIGURATION
 
 
 # ######## SECRET CONFIGURATION
@@ -172,8 +174,10 @@ TEMPLATES = [
 
 # ######## MIDDLEWARE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#middleware-classes
-MIDDLEWARE_CLASSES = (
-    # Default Django middleware.
+MIDDLEWARE_CLASSES = [
+    # 'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -182,7 +186,7 @@ MIDDLEWARE_CLASSES = (
     'common.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-)
+]
 # ######## END MIDDLEWARE CONFIGURATION
 
 
