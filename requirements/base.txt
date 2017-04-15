@@ -30,3 +30,4 @@ python-swiftclient==3.3.0
 requests==2.14.2
 sword2==0.2.1
 whitenoise==3.3.0
+git+git://github.com/Brown-University-Library/django-shibboleth-remoteuser.git@67d270c65c201606fb86d548493d4b3fd8cc7a76

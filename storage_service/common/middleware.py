@@ -2,6 +2,7 @@ from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.utils.http import urlquote
 from re import compile
+from shibboleth.middleware import ShibbolethRemoteUserMiddleware
 
 
 # Login required code from https://gist.github.com/ryanwitt/130583
@@ -35,3 +36,18 @@ class LoginRequiredMiddleware:
             if not any(m.match(path) for m in EXEMPT_URLS):
                 fullURL = "{}?next={}".format(settings.LOGIN_URL, urlquote(request.get_full_path()))
                 return HttpResponseRedirect(fullURL)
+
+
+SHIBBOLETH_REMOTE_USER_HEADER = getattr(
+    settings, 'SHIBBOLETH_REMOTE_USER_HEADER', 'REMOTE_USER'
+)
+
+
+class CustomShibbolethRemoteUserMiddleware(ShibbolethRemoteUserMiddleware):
+    """
+    Custom version of Shibboleth remote user middleware
+
+    THe aim of this is to provide a custom header name that is expected
+    to identify the remote Shibboleth user
+    """
+    header = SHIBBOLETH_REMOTE_USER_HEADER
