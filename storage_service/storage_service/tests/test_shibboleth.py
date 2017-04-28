@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
+from django.conf import settings
 
 
 class TestShibbolethLogin(TestCase):
@@ -9,7 +10,7 @@ class TestShibbolethLogin(TestCase):
         # If no shibboleth headers, no user is created - so installer middleware
         # kicks in and redirects to welcome page
         assert response.status_code == 302
-        assert '/login/' in response.url
+        assert settings.LOGIN_URL in response.url
 
     def test_auto_creates_user(self):
         shib_headers = {

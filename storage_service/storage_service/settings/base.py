@@ -162,6 +162,7 @@ TEMPLATES = [
                 'django.template.context_processors.tz',
                 'django.template.context_processors.request',
                 'django.contrib.messages.context_processors.messages',
+                'shibboleth.context_processors.logout_link',
             ],
             'debug': DEBUG,
         },
@@ -225,7 +226,7 @@ DJANGO_APPS = (
 
 THIRD_PARTY_APPS = (
     'tastypie',  # REST framework
-
+    'shibboleth', # Shibboleth authentication
     'longerusername', # Longer (> 30 characters) username
 )
 
@@ -242,11 +243,17 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 
 # ######## LOGIN REQUIRED MIDDLEWARE CONFIGURATION
-LOGIN_URL = '/login/'
+# LOGIN_URL = '/login/'
+LOGIN_URL = '/Shibboleth.sso/Login'
+SHIBBOLETH_LOGOUT_URL = '/Shibboleth.sso/Logout?target=%s'
+SHIBBOLETH_LOGOUT_REDIRECT_URL = '/logged-out'
 LOGIN_REDIRECT_URL = '/'
 LOGIN_EXEMPT_URLS = (
     r'^api/',
     r'^admin/',
+    r'^logged-out',
+    r'^Shibboleth.sso/',
+    r'^login/',
 )
 # ######## END LOGIN REQUIRED MIDDLEWARE CONFIGURATION
 
