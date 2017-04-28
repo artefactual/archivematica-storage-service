@@ -53,6 +53,9 @@ def user_list(request):
 
 
 def user_edit(request, id):
+    if not request.user.is_superuser:
+        return redirect('user_list')
+
     action = _("Edit User")
     edit_user = get_object_or_404(get_user_model(), id=id)
     user_form = settings_forms.UserChangeForm(request.POST or None, instance=edit_user)
@@ -72,6 +75,9 @@ def user_edit(request, id):
 
 
 def user_create(request):
+    if not request.user.is_superuser:
+        return redirect('user_list')
+
     action = _("Create User")
     user_form = settings_forms.UserCreationForm(request.POST or None)
     if user_form.is_valid():
@@ -79,6 +85,17 @@ def user_create(request):
         messages.success(request, _("New user %(username)s created.") % {'username': user_form.cleaned_data['username']})
         return redirect('user_list')
     return render(request, 'administration/user_form.html', locals())
+
+
+def user_detail(request, id):
+    if not (request.user.is_superuser or str(request.user.id) == id):
+        return redirect('user_list')
+
+    display_user = get_object_or_404(get_user_model(), id=id)
+
+    return render(request, 'administration/user_detail.html', {
+        'display_user': display_user,
+    })
 
 
 # ######################## LANGUAGE ##########################

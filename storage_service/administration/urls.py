@@ -17,6 +17,8 @@ urlpatterns = [
         name='user_create'),
     url(r'^users/(?P<id>[-\w]+)/edit/$', views.user_edit,
         name='user_edit'),
+    url(r'^users/(?P<id>[-\w]+)/$', views.user_detail,
+        name='user_detail'),
 
     url(r'language/$', views.change_language, name='change_language'),
 ]
