@@ -22,7 +22,7 @@ from common import utils
 LOGGER = logging.getLogger(__name__)
 
 # This module, alphabetical
-from . import StorageException
+from . import StorageException  # noqa: E402
 
 __all__ = ('Space', )
 
@@ -480,7 +480,7 @@ class Space(models.Model):
         if mode is None:
             mode = (stat.S_IRUSR + stat.S_IWUSR + stat.S_IXUSR +
                     stat.S_IRGRP + stat.S_IWGRP + stat.S_IXGRP +
-                    stat.S_IROTH +                stat.S_IXOTH)
+                    stat.S_IROTH + stat.S_IXOTH)
         dir_path = os.path.dirname(path)
         if not dir_path:
             return

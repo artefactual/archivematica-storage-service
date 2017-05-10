@@ -146,7 +146,6 @@ class File(models.Model):
     origin = UUIDField(editable=False, unique=False, version=4, blank=True,
         help_text=_l("Unique identifier of originating Archivematica dashboard"))
 
-
     class Meta:
         verbose_name = _l("File")
         app_label = 'locations'

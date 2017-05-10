@@ -105,9 +105,9 @@ class Package(models.Model):
     PACKAGE_TYPE_CAN_REINGEST = (AIP, AIC)
 
     # Reingest type options
-    METADATA_ONLY = 'metadata' # Re-ingest metadata only
-    OBJECTS = 'objects'        # Re-ingest metadata and objects for DIP generation
-    FULL = 'full'              # Full re-ingest
+    METADATA_ONLY = 'metadata'  # Re-ingest metadata only
+    OBJECTS = 'objects'         # Re-ingest metadata and objects for DIP generation
+    FULL = 'full'               # Full re-ingest
     REINGEST_CHOICES = (METADATA_ONLY, OBJECTS, FULL)
 
     class Meta:
@@ -738,7 +738,6 @@ class Package(models.Model):
                                           name=f['path'],
                                           origin=file_data['dashboard_uuid'])
 
-
     def backlog_transfer(self, origin_location, origin_path):
         """
         Stores a package in backlog.
@@ -934,7 +933,7 @@ class Package(models.Model):
 
         # Run fixity
         # Fixity will fetch & extract package if needed
-        success, _, error_msg, _ = self.check_fixity(delete_after=False)
+        success, ___, error_msg, ___ = self.check_fixity(delete_after=False)
         LOGGER.debug('Reingest: Fixity response: %s, %s', success, error_msg)
         if not success:
             return {'error': True, 'status_code': 500, 'message': error_msg}
@@ -1171,7 +1170,7 @@ class Package(models.Model):
         preservation_regex = r'(.+)-\w{8}-\w{4}-\w{4}-\w{4}-\w{12}(.*)'
         # Walk through all files
         removed_preservation_files = []
-        for dirpath, _, filepaths in os.walk(reingest_objects_dir):
+        for dirpath, ___, filepaths in os.walk(reingest_objects_dir):
             for filepath in filepaths:
                 match = re.match(preservation_regex, filepath)
                 # If preservation file, copy and delete the old one
@@ -1344,8 +1343,7 @@ class Package(models.Model):
                 etree.Element(utils.PREFIX_NS['mets'] + "transformFile",
                     TRANSFORMORDER='1',
                     TRANSFORMTYPE='decompression',
-                    TRANSFORMALGORITHM=algo,
-                )
+                    TRANSFORMALGORITHM=algo)
             )
             version = [x for x in subprocess.check_output('7z').splitlines() if 'Version' in x][0]
             format_info = {
@@ -1364,8 +1362,7 @@ class Package(models.Model):
                     etree.Element(utils.PREFIX_NS['mets'] + "transformFile",
                         TRANSFORMORDER='1',
                         TRANSFORMTYPE='decompression',
-                        TRANSFORMALGORITHM='bzip2',
-                    )
+                        TRANSFORMALGORITHM='bzip2')
                 )
                 transform_order = '2'
 
@@ -1373,8 +1370,7 @@ class Package(models.Model):
                 etree.Element(utils.PREFIX_NS['mets'] + "transformFile",
                     TRANSFORMORDER=transform_order,
                     TRANSFORMTYPE='decompression',
-                    TRANSFORMALGORITHM='tar',
-                )
+                    TRANSFORMALGORITHM='tar')
             )
             version = subprocess.check_output(['tar', '--version']).splitlines()[0]
             format_info = {

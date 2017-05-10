@@ -45,7 +45,8 @@ COMPRESSION_ALGORITHMS = (
 
 PREFIX_NS = {k: '{' + v + '}' for k, v in NSMAP.items()}
 
-############ SETTINGS ############
+
+# ########## SETTINGS ############
 
 def get_all_settings():
     """ Returns a dict of 'setting_name': value with all of the settings. """
@@ -53,6 +54,7 @@ def get_all_settings():
     for setting, value in settings.items():
         settings[setting] = ast.literal_eval(value)
     return settings
+
 
 def get_setting(setting, default=None):
     """ Returns the value of 'setting' from models.Settings, 'default' if not found."""
@@ -63,6 +65,7 @@ def get_setting(setting, default=None):
     else:
         return_value = ast.literal_eval(setting.value)
     return return_value
+
 
 def set_setting(setting, value=None):
     """ Sets 'setting' to 'value' in models.Settings.
@@ -77,7 +80,8 @@ def set_setting(setting, value=None):
     setting.value = value
     setting.save()
 
-############ DEPENDENCIES ############
+
+# ########## DEPENDENCIES ############
 
 def dependent_objects(object_):
     """ Returns all the objects that rely on 'object_'. """
@@ -98,7 +102,7 @@ def dependent_objects(object_):
     return dependent_objects
 
 
-############ DOWNLOADING ############
+# ########## DOWNLOADING ############
 
 def download_file_stream(filepath, temp_dir=None):
     """
@@ -127,7 +131,7 @@ def download_file_stream(filepath, temp_dir=None):
     return response
 
 
-############ XML & POINTER FILE ############
+# ########## XML & POINTER FILE ############
 
 def _storage_service_agent():
     return 'Archivematica Storage Service-%s' % __version__
@@ -190,7 +194,7 @@ def mets_event(digiprov_id, event_type, event_detail='', event_outcome_detail_no
         ),
         version='2.2'
     )
-    premis_event.set('{'+NSMAP['xsi']+'}schemaLocation', 'info:lc/xmlns/premis-v2 http://www.loc.gov/standards/premis/v2/premis-v2-2.xsd')
+    premis_event.set('{' + NSMAP['xsi'] + '}schemaLocation', 'info:lc/xmlns/premis-v2 http://www.loc.gov/standards/premis/v2/premis-v2-2.xsd')
 
     # digiprovMD to wrap PREMIS event
     digiprov_event = EM.digiprovMD(
@@ -263,7 +267,7 @@ def _get_compression(pointer_path):
         return COMPRESSION_7Z_BZIP
 
 
-############ OTHER ############
+# ########### OTHER ############
 
 def generate_checksum(file_path, checksum_type='md5'):
     """
@@ -273,7 +277,7 @@ def generate_checksum(file_path, checksum_type='md5'):
     """
     checksum = hashlib.new(checksum_type)
     with open(file_path, 'rb') as f:
-        for chunk in iter(lambda: f.read(128*checksum.block_size), b''):
+        for chunk in iter(lambda: f.read(128 * checksum.block_size), b''):
             checksum.update(chunk)
     return checksum
 
@@ -283,10 +287,11 @@ def uuid_to_path(uuid):
 
     Every 4 alphanumeric characters of the UUID become a folder name. """
     uuid = uuid.replace("-", "")
-    path = [uuid[i:i+4] for i in range(0, len(uuid), 4)]
+    path = [uuid[i:i + 4] for i in range(0, len(uuid), 4)]
     path = os.path.join(*path)
     LOGGER.debug("path %s", path)
     return path
+
 
 def removedirs(relative_path, base=None):
     """ Removes leaf directory of relative_path and all empty directories in
@@ -308,6 +313,7 @@ def removedirs(relative_path, base=None):
         except os.error:
             break
         head, tail = os.path.split(head)
+
 
 def coerce_str(string):
     """ Return string as a str, not a unicode, encoded in utf-8.

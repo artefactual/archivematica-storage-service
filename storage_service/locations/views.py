@@ -22,7 +22,7 @@ from .constants import PROTOCOL
 LOGGER = logging.getLogger(__name__)
 
 
-########################## HELPERS ##########################
+# ######################## HELPERS ##########################
 
 def get_delete_context_dict(request, model, object_uuid, default_cancel='/'):
     """ Returns a dict of the values needed by the confirm delete view. """
@@ -41,26 +41,30 @@ def get_delete_context_dict(request, model, object_uuid, default_cancel='/'):
         'cancel_url': cancel_url,
     }
 
-########################## FILES ##########################
+
+# ######################## FILES ##########################
 
 def package_list(request):
     context = {'packages': Package.objects.all()}
     return render(request, 'locations/package_list.html', context)
+
 
 def package_fixity(request, package_uuid):
     log_entries = FixityLog.objects.filter(package__uuid=package_uuid).order_by('-datetime_reported')
     context = {'log_entries': log_entries}
     return render(request, 'locations/fixity_results.html', context)
 
+
 class PackageRequestHandlerConfig:
-    event_type = ''                # Event type being handled
-    approved_status = ''           # Event status, if approved
-    reject_message = ''            # Message returned if not approved
-    execution_success_message = '' # Message returned if execution success
-    execution_fail_message = ''    # Message returned if execution failed
+    event_type = ''                 # Event type being handled
+    approved_status = ''            # Event status, if approved
+    reject_message = ''             # Message returned if not approved
+    execution_success_message = ''  # Message returned if execution success
+    execution_fail_message = ''     # Message returned if execution failed
 
     def execution_logic(package):  # Logic performed on package if approved
         pass
+
 
 def aip_recover_request(request):
     def execution_logic(aip):
@@ -87,6 +91,7 @@ def aip_recover_request(request):
 
     return _handle_package_request(request, config, 'aip_recover_request')
 
+
 def package_delete_request(request):
     def execution_logic(package):
         return package.delete_from_storage()
@@ -100,6 +105,7 @@ def package_delete_request(request):
     config.execution_logic = execution_logic
 
     return _handle_package_request(request, config, 'package_delete_request')
+
 
 def _handle_package_request(request, config, view_name):
     request_events = Event.objects.filter(status=Event.SUBMITTED).filter(
@@ -157,6 +163,7 @@ def _handle_package_request(request, config, view_name):
 
     return render(request, 'locations/package_request.html', locals())
 
+
 def _handle_package_request_remote_result_notification(config, event, success):
     response_message = None
 
@@ -165,7 +172,7 @@ def _handle_package_request_remote_result_notification(config, event, success):
     request_notification_url = utils.get_setting("{}_url".format(setting_prefix))
 
     # If notification is configured, attempt
-    if request_notification_url != None:
+    if request_notification_url is not None:
         headers = {"Content-type": "application/json"}
 
         # Status reported may be approved, yet failed during execution
@@ -184,7 +191,7 @@ def _handle_package_request_remote_result_notification(config, event, success):
         request_notification_auth_username = utils.get_setting("{}_auth_username".format(setting_prefix))
         request_notification_auth_password = utils.get_setting("{}_auth_password".format(setting_prefix))
 
-        if request_notification_auth_username != None:
+        if request_notification_auth_username is not None:
             auth = requests.auth.HTTPBasicAuth(request_notification_auth_username, request_notification_auth_password)
         else:
             auth = None
@@ -198,6 +205,7 @@ def _handle_package_request_remote_result_notification(config, event, success):
             pass
 
     return response_message
+
 
 def package_update_status(request, uuid):
     package = Package.objects.get(uuid=uuid)
@@ -221,6 +229,7 @@ def package_update_status(request, uuid):
 
     next_url = request.GET.get('next', reverse('package_list'))
     return redirect(next_url)
+
 
 def aip_reingest(request, package_uuid):
     next_url = request.GET.get('next', reverse('package_list'))
@@ -246,7 +255,7 @@ def aip_reingest(request, package_uuid):
     return render(request, 'locations/package_reingest.html', locals())
 
 
-########################## LOCATIONS ##########################
+# ####################### LOCATIONS ##########################
 
 def location_edit(request, space_uuid, location_uuid=None):
     space = get_object_or_404(Space, uuid=space_uuid)
@@ -279,9 +288,11 @@ def location_edit(request, space_uuid, location_uuid=None):
         return redirect('location_detail', location.uuid)
     return render(request, 'locations/location_form.html', locals())
 
+
 def location_list(request):
     locations = Location.objects.all()
     return render(request, 'locations/location_list.html', locals())
+
 
 def location_detail(request, location_uuid):
     try:
@@ -293,6 +304,7 @@ def location_detail(request, location_uuid):
     packages = Package.objects.filter(current_location=location)
     return render(request, 'locations/location_detail.html', locals())
 
+
 def location_switch_enabled(request, location_uuid):
     location = get_object_or_404(Location, uuid=location_uuid)
     location.enabled = not location.enabled
@@ -300,10 +312,12 @@ def location_switch_enabled(request, location_uuid):
     next_url = request.GET.get('next', reverse('location_detail', args=[location.uuid]))
     return redirect(next_url)
 
+
 def location_delete_context(request, location_uuid):
     context_dict = get_delete_context_dict(request, Location, location_uuid,
-        reverse('location_list'))
+                                           reverse('location_list'))
     return RequestContext(request, context_dict)
+
 
 @decorators.confirm_required('locations/delete.html', location_delete_context)
 def location_delete(request, location_uuid):
@@ -313,7 +327,7 @@ def location_delete(request, location_uuid):
     return redirect(next_url)
 
 
-########################## PIPELINES ##########################
+# ######################## PIPELINES ##########################
 
 def pipeline_edit(request, uuid=None):
     if uuid:
@@ -336,9 +350,11 @@ def pipeline_edit(request, uuid=None):
         form = forms.PipelineForm(instance=pipeline, initial=initial)
     return render(request, 'locations/pipeline_form.html', locals())
 
+
 def pipeline_list(request):
     pipelines = Pipeline.objects.all()
     return render(request, 'locations/pipeline_list.html', locals())
+
 
 def pipeline_detail(request, uuid):
     try:
@@ -349,6 +365,7 @@ def pipeline_detail(request, uuid):
     locations = Location.objects.filter(pipeline=pipeline)
     return render(request, 'locations/pipeline_detail.html', locals())
 
+
 def pipeline_switch_enabled(request, uuid):
     pipeline = get_object_or_404(Pipeline, uuid=uuid)
     pipeline.enabled = not pipeline.enabled
@@ -356,10 +373,12 @@ def pipeline_switch_enabled(request, uuid):
     next_url = request.GET.get('next', reverse('pipeline_detail', args=[pipeline.uuid]))
     return redirect(next_url)
 
+
 def pipeline_delete_context(request, uuid):
     context_dict = get_delete_context_dict(request, Pipeline, uuid,
-        reverse('pipeline_list'))
+                                           reverse('pipeline_list'))
     return RequestContext(request, context_dict)
+
 
 @decorators.confirm_required('locations/delete.html', pipeline_delete_context)
 def pipeline_delete(request, uuid):
@@ -368,7 +387,8 @@ def pipeline_delete(request, uuid):
     next_url = request.GET.get('next', reverse('pipeline_list'))
     return redirect(next_url)
 
-########################## SPACES ##########################
+
+# ######################## SPACES ##########################
 
 def space_list(request):
     spaces = Space.objects.all()
@@ -384,6 +404,7 @@ def space_list(request):
         space.child = child_dict
     map(add_child, spaces)
     return render(request, 'locations/space_list.html', locals())
+
 
 def space_detail(request, uuid):
     try:
@@ -401,6 +422,7 @@ def space_detail(request, uuid):
     space.child = child_dict
     locations = Location.objects.filter(space=space)
     return render(request, 'locations/space_detail.html', locals())
+
 
 def space_create(request):
     if request.method == 'POST':
@@ -430,6 +452,7 @@ def space_create(request):
 
     return render(request, 'locations/space_form.html', locals())
 
+
 def space_edit(request, uuid):
     space = get_object_or_404(Space, uuid=uuid)
     protocol_space = space.get_child_space()
@@ -441,6 +464,7 @@ def space_edit(request, uuid):
         messages.success(request, _("Space saved."))
         return redirect('space_detail', space.uuid)
     return render(request, 'locations/space_edit.html', locals())
+
 
 # FIXME this should probably submit a csrf token
 @csrf_exempt
@@ -459,9 +483,11 @@ def ajax_space_create_protocol_form(request):
             response_data = form.as_p()
     return HttpResponse(response_data, content_type="text/html")
 
+
 def space_delete_context(request, uuid):
     context_dict = get_delete_context_dict(request, Space, uuid, reverse('space_list'))
     return RequestContext(request, context_dict)
+
 
 @decorators.confirm_required('locations/delete.html', space_delete_context)
 def space_delete(request, uuid):
@@ -470,7 +496,8 @@ def space_delete(request, uuid):
     next_url = request.GET.get('next', reverse('space_list'))
     return redirect(next_url)
 
-########################## CALLBACKS ##########################
+
+# ######################## CALLBACKS ##########################
 
 def callback_detail(request, uuid):
     try:
@@ -480,6 +507,7 @@ def callback_detail(request, uuid):
         return redirect('callback_list')
     return render(request, 'locations/callback_detail.html', locals())
 
+
 def callback_switch_enabled(request, uuid):
     callback = get_object_or_404(Callback, uuid=uuid)
     callback.enabled = not callback.enabled
@@ -487,9 +515,11 @@ def callback_switch_enabled(request, uuid):
     next_url = request.GET.get('next', reverse('callback_detail', args=[callback.uuid]))
     return redirect(next_url)
 
+
 def callback_list(request):
     callbacks = Callback.objects.all()
     return render(request, 'locations/callback_list.html', locals())
+
 
 def callback_edit(request, uuid=None):
     if uuid:
@@ -505,6 +535,7 @@ def callback_edit(request, uuid=None):
         messages.success(request, _("Callback saved."))
         return redirect('callback_detail', callback.uuid)
     return render(request, 'locations/callback_form.html', locals())
+
 
 def callback_delete(request, uuid):
     callback = get_object_or_404(Callback, uuid=uuid)

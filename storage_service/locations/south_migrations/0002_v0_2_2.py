@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-import datetime
+
 from south.db import db
 from south.v2 import SchemaMigration
-from django.db import models
 
 
 class Migration(SchemaMigration):
@@ -111,7 +110,6 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal(u'locations', ['Space'])
 
-
     def backwards(self, orm):
         # Deleting model 'Pipeline'
         db.delete_table(u'locations_pipeline')
@@ -139,7 +137,6 @@ class Migration(SchemaMigration):
 
         # Deleting model 'Space'
         db.delete_table(u'locations_space')
-
 
     models = {
         u'auth.group': {

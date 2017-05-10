@@ -53,6 +53,7 @@ def service_document(request):
     response['Content-Type'] = 'application/atomserv+xml'
     return response
 
+
 def collection(request, location):
     """
     Collection endpoint: accepts deposits, and returns current deposits.
@@ -169,6 +170,7 @@ def collection(request, location):
     else:
         return helpers.sword_error_response(request, 405, _('This endpoint only responds to the GET and POST HTTP methods.'))
 
+
 def deposit_from_location_relative_path(source_location_uuid, relative_path_to_files, location):
     """
     Create and approve deposit using files in an existing location at a relative
@@ -190,7 +192,7 @@ def deposit_from_location_relative_path(source_location_uuid, relative_path_to_f
 
     deposit = _create_deposit_directory_and_db_entry(
         location,
-        deposit_name=os.path.basename(path_to_deposit_files), # replace this with optional name
+        deposit_name=os.path.basename(path_to_deposit_files),  # replace this with optional name
         source_path=path_to_deposit_files,
     )
     # FIXME move files from source location to deposit path using
@@ -198,6 +200,7 @@ def deposit_from_location_relative_path(source_location_uuid, relative_path_to_f
     result = helpers._finalize_if_not_empty(deposit.uuid)
     result['deposit_uuid'] = deposit.uuid
     return result
+
 
 def _spawn_batch_download_and_flag_finalization_if_requested(deposit, request, mets_data):
     """
@@ -215,6 +218,7 @@ def _spawn_batch_download_and_flag_finalization_if_requested(deposit, request, m
     object_subdir = mets_data['object_id'].replace(':', '-')
     helpers.spawn_download_task(deposit.uuid, mets_data['objects'], [object_subdir])
     helpers.spawn_download_task(deposit.uuid, mets_data['mods'], ['submissionDocumentation', 'mods'])
+
 
 def _parse_name_and_content_urls_from_mets_file(filepath):
     """
@@ -268,6 +272,7 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
         'object_id': object_id
     }
 
+
 def _create_deposit_directory_and_db_entry(location, deposit_name=None, source_path=None, sourceofacquisition=None):
     """
     Create a new deposit package, optionally copying files to it from a source path.
@@ -287,7 +292,7 @@ def _create_deposit_directory_and_db_entry(location, deposit_name=None, source_p
         shutil.copytree(source_path, deposit_path)
     else:
         os.mkdir(deposit_path)
-        os.chmod(deposit_path, 0o2770) # drwxrws---
+        os.chmod(deposit_path, 0o2770)  # drwxrws---
 
     # Create SWORD deposit location using deposit name and path
     if os.path.exists(deposit_path):
@@ -305,6 +310,7 @@ def _create_deposit_directory_and_db_entry(location, deposit_name=None, source_p
         deposit.save()
         return deposit
     return None
+
 
 def deposit_edit(request, deposit):
     """
@@ -366,7 +372,7 @@ def deposit_edit(request, deposit):
                 return _deposit_receipt_response(request, deposit, 200)
     elif request.method == 'PUT':
         # TODO: implement update deposit
-        return HttpResponse(status=204) # No content
+        return HttpResponse(status=204)  # No content
     elif request.method == 'DELETE':
         # Delete files
         shutil.rmtree(deposit.full_path)
@@ -376,9 +382,10 @@ def deposit_edit(request, deposit):
         # TODO should this actually delete the Package entry?
         deposit.status = models.Package.DELETED
         deposit.save()
-        return HttpResponse(status=204) # No content
+        return HttpResponse(status=204)  # No content
     else:
         return helpers.sword_error_response(request, 405, _('This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.'))
+
 
 def _finalize_or_mark_for_finalization(request, deposit):
     """
@@ -395,6 +402,7 @@ def _finalize_or_mark_for_finalization(request, deposit):
             return helpers.sword_error_response(request, 400, _('Downloading not yet complete or errors were encountered.'))
     else:
         return helpers.sword_error_response(request, 400, _('The In-Progress header must be set to false when starting deposit processing.'))
+
 
 def deposit_media(request, deposit):
     """
@@ -471,7 +479,7 @@ def deposit_media(request, deposit):
             file_path = os.path.join(deposit.full_path, filename)
             if os.path.exists(file_path):
                 os.remove(file_path)
-                return HttpResponse(status=204) # No content
+                return HttpResponse(status=204)  # No content
             else:
                 return helpers.sword_error_response(
                     request, 404,
@@ -491,6 +499,7 @@ def deposit_media(request, deposit):
             return HttpResponse(status=204)  # No content
     else:
         return helpers.sword_error_response(request, 405, _('This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods.'))
+
 
 def deposit_state(request, deposit):
     """
@@ -537,6 +546,7 @@ def deposit_state(request, deposit):
     else:
         return helpers.sword_error_response(request, 405, _('This endpoint only responds to the GET HTTP method.'))
 
+
 def _handle_adding_to_or_replacing_file_in_deposit(request, deposit, replace_file=False):
     """
     Parse a destination filename from an HTTP Content-Disposition header and
@@ -576,6 +586,7 @@ def _handle_adding_to_or_replacing_file_in_deposit(request, deposit, replace_fil
     else:
         return helpers.sword_error_response(request, 400, _('Content-disposition must be set in request header.'))
 
+
 def _handle_upload_request_with_potential_md5_checksum(request, file_path, success_status_code):
     """
     Write the HTTP request body to a file and, if the HTTP Content-MD5 header is
@@ -598,6 +609,7 @@ def _handle_upload_request_with_potential_md5_checksum(request, file_path, succe
         shutil.copyfile(temp_filepath, file_path)
         os.remove(temp_filepath)
         return HttpResponse(status=success_status_code)
+
 
 def _deposit_receipt_response(request, deposit, status_code):
     """

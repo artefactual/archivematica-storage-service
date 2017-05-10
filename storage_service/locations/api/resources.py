@@ -38,6 +38,7 @@ from locations import signals
 
 LOGGER = logging.getLogger(__name__)
 
+
 # FIXME ModelResources with ForeignKeys to another model don't work with
 # validation = CleanedDataFormValidation  On creation, it errors with:
 # "Select a valid choice. That choice is not one of the available choices."
@@ -193,7 +194,7 @@ class SpaceResource(ModelResource):
         # Make dict of fields in model and values from bundle.data
         access_protocol = bundle.data['access_protocol']
         keep_fields = PROTOCOL[access_protocol]['fields']
-        fields_dict = { key: bundle.data[key] for key in keep_fields }
+        fields_dict = {key: bundle.data[key] for key in keep_fields}
 
         bundle = super(SpaceResource, self).obj_create(bundle, **kwargs)
 
@@ -519,9 +520,9 @@ class PackageResource(ModelResource):
         if origin_location_uri and origin_path:
             # Sending origin information implies that the package should be copied from there
             origin_location = self.origin_location.build_related_resource(origin_location_uri, bundle.request).obj
-            if (bundle.obj.package_type in (Package.AIP, Package.AIC)
-                and bundle.obj.current_location.purpose in (Location.AIP_STORAGE)
-                and 'reingest' in bundle.data):
+            if (bundle.obj.package_type in (Package.AIP, Package.AIC) and
+                    bundle.obj.current_location.purpose in (Location.AIP_STORAGE) and
+                    'reingest' in bundle.data):
                 # AIP Reingest
                 # Reset the current Location & path to original values
                 # Package.finish_reingest will update them if successful
@@ -922,7 +923,7 @@ class PackageResource(ModelResource):
                 'id': request_event.id,
             }
 
-            response_json = json.dumps(response)
+            response = json.dumps(response)
             status_code = 202
         else:
             response = {

@@ -112,10 +112,12 @@ class DuracloudForm(forms.ModelForm):
         model = models.Duracloud
         fields = ('host', 'user', 'password', 'duraspace')
 
+
 class DSpaceForm(forms.ModelForm):
     class Meta:
         model = models.DSpace
         fields = ('sd_iri', 'user', 'password', 'metadata_policy', 'archive_format')
+
 
 class LocalFilesystemForm(forms.ModelForm):
     class Meta:
@@ -201,9 +203,14 @@ class LocationForm(forms.ModelForm):
             existing_recovery_rel = models.LocationPipeline.objects.filter(
                 location__purpose=models.Location.AIP_RECOVERY,
                 pipeline__in=list(cleaned_data.get('pipeline', []))
-                ).exclude(location_id=self.instance.uuid
-                ).values('pipeline'  # Group by pipeline
-                ).annotate(total=Count('location'))  # Count associated locations
+            ).exclude(
+                location_id=self.instance.uuid
+            ).values(
+                # Group by pipeline
+                'pipeline'
+            ).annotate(
+                # Count associated locations
+                total=Count('location'))
             pipelines = [d['pipeline'] for d in existing_recovery_rel]
             if pipelines:
                 raise forms.ValidationError(_('Pipeline(s) %(pipelines)s already have an AIP recovery location.') % {'pipelines': ', '.join(pipelines)})

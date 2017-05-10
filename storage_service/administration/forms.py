@@ -1,4 +1,3 @@
-
 from django import forms
 from django.contrib import auth
 from django.utils.translation import ugettext as _, ugettext_lazy as _l
@@ -8,7 +7,7 @@ from common import utils
 from locations.models import Location, Space
 
 
-########################## CUSTOM FIELDS/WIDGETS ##########################
+# ######################## CUSTOM FIELDS/WIDGETS ##########################
 
 class DefaultLocationWidget(forms.MultiWidget):
     """ Widget for entering required information to create a new location. """
@@ -62,14 +61,14 @@ class DefaultLocationField(forms.MultiValueField):
         if data_list and len(data_list) == 4:
             return {
                 'space_id': data_list[0],
-                'relative_path': data_list[1].rstrip('/')+'/',
+                'relative_path': data_list[1].rstrip('/') + '/',
                 'description': data_list[2],
                 'quota': data_list[3]
             }
         return {}
 
 
-########################## SETTINGS ##########################
+# ######################## SETTINGS ##########################
 
 class SettingsForm(forms.Form):
     """ For all forms that save data to Settings model. """
@@ -118,16 +117,14 @@ class DefaultLocationsForm(SettingsForm):
     default_backlog = forms.MultipleChoiceField(
         choices=[],
         required=False,
-        label=_l("Default transfer backlog locations for new pipelines:")
-        )
+        label=_l("Default transfer backlog locations for new pipelines:"))
     new_backlog = DefaultLocationField(
         required=False,
         label=_l("New Transfer Backlog:"))
     default_recovery = forms.MultipleChoiceField(
         choices=[],
         required=False,
-        label=_l("Default AIP recovery locations for new pipelines:")
-        )
+        label=_l("Default AIP recovery locations for new pipelines:"))
     new_recovery = DefaultLocationField(
         required=False,
         label=_l("New AIP Recovery:"))
@@ -157,7 +154,6 @@ class DefaultLocationsForm(SettingsForm):
             Location.active.filter(purpose=Location.AIP_RECOVERY)] + \
             [('new', _('Create new location for each pipeline'))]
 
-
     def clean(self):
         cleaned_data = super(DefaultLocationsForm, self).clean()
         # Check that if a field has 'new' it filled in the new location info
@@ -186,7 +182,7 @@ class DefaultLocationsForm(SettingsForm):
         # do something with create_new if it exists
 
 
-########################## USERS ##########################
+# ######################## USERS ##########################
 
 class UserCreationForm(auth.forms.UserCreationForm):
     """ Creates a new user.  Inherits from django's UserCreationForm. """

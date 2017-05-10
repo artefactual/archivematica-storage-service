@@ -1,9 +1,11 @@
+# flake8: noqa
 from __future__ import absolute_import
 # Note that while the signals are not actually used here,
 # they should be imported here to make sure that they
 # are imported very early on globally. This ensures that
 # the signals themselves are registered early.
 from .. import signals
+
 
 # Required by other files
 class StorageException(Exception):

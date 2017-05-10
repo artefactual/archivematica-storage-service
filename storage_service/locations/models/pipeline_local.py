@@ -1,10 +1,9 @@
 from __future__ import absolute_import
+
 # stdlib, alphabetical
-from datetime import datetime
 import logging
 import os
 import shutil
-import re
 import subprocess
 import tempfile
 

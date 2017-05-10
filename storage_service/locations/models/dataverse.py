@@ -15,8 +15,8 @@ import requests
 LOGGER = logging.getLogger(__name__)
 
 # This module, alphabetical
-from . import StorageException
-from .location import Location
+from . import StorageException  # noqa: E402
+from .location import Location  # noqa: E402
 
 
 class Dataverse(models.Model):

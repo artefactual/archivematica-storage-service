@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-from south.utils import datetime_utils as datetime
+
 from south.db import db
 from south.v2 import SchemaMigration
-from django.db import models
 
 
 class Migration(SchemaMigration):
@@ -32,7 +31,6 @@ class Migration(SchemaMigration):
                       self.gf('django.db.models.fields.TextField')(default='/var/archivematica/storage_service/'),
                       keep_default=False)
 
-
     def backwards(self, orm):
         # Deleting model 'Lockssomatic'
         db.delete_table(u'locations_lockssomatic')
@@ -42,7 +40,6 @@ class Migration(SchemaMigration):
 
         # Deleting field 'Space.staging_path'
         db.delete_column(u'locations_space', 'staging_path')
-
 
     models = {
         u'auth.group': {

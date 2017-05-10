@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-from south.utils import datetime_utils as datetime
+
 from south.db import db
 from south.v2 import SchemaMigration
-from django.db import models
 
 
 class Migration(SchemaMigration):
@@ -84,7 +83,6 @@ class Migration(SchemaMigration):
                       self.gf('django.db.models.fields.CharField')(default=None, max_length=256, null=True, blank=True),
                       keep_default=False)
 
-
         # Changing field 'Package.origin_pipeline'
         db.alter_column(u'locations_package', 'origin_pipeline_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['locations.Pipeline'], to_field='uuid', null=True))
 
@@ -116,10 +114,9 @@ class Migration(SchemaMigration):
         # Deleting field 'Package.description'
         db.delete_column(u'locations_package', 'description')
 
-
         # User chose to not deal with backwards NULL issues for 'Package.origin_pipeline'
         raise RuntimeError("Cannot reverse this migration. 'Package.origin_pipeline' and its values cannot be restored.")
-        
+
         # The following code is provided here to aid in writing a correct migration
         # Changing field 'Package.origin_pipeline'
         db.alter_column(u'locations_package', 'origin_pipeline_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['locations.Pipeline'], to_field='uuid'))

@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from . import forms
 from . import models
 
-########################## SPACES ##########################
+# ######################## SPACES ##########################
 
 # Mapping between access protocol and protocol specific fields
 PROTOCOL = {

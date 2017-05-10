@@ -9,6 +9,7 @@ from locations import models
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, '..', 'fixtures'))
 
+
 class TestDataverse(TestCase):
 
     fixtures = ['base.json', 'dataverse.json']

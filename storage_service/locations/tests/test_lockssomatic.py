@@ -20,7 +20,7 @@ class TestLockssomatic(TestCase):
     @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'test_lockssomatic_bad_url.yaml'))
     def test_service_doc_bad_url(self):
         self.lom_object.sd_iri = 'http://does-not-exist.com'
-        assert self.lom_object.update_service_document() == False
+        assert self.lom_object.update_service_document() is False
         assert self.lom_object.au_size == 0
-        assert self.lom_object.collection_iri == None
-        assert self.lom_object.checksum_type == None
+        assert self.lom_object.collection_iri is None
+        assert self.lom_object.checksum_type is None

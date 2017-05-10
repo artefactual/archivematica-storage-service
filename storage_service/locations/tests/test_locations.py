@@ -1,7 +1,7 @@
-
 from django.test import TestCase
 
 from locations import forms, models
+
 
 class TestLocations(TestCase):
 

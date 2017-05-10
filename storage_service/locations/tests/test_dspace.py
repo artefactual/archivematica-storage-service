@@ -1,4 +1,3 @@
-
 import os
 
 from django.test import TestCase
@@ -12,6 +11,7 @@ FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, '..', 'fixtures'))
 dspace_vcr = vcr.VCR(
     filter_headers=['authorization'],
 )
+
 
 class TestDSpace(TestCase):
 

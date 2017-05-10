@@ -24,11 +24,13 @@ from common.utils import generate_checksum
 
 LOGGER = logging.getLogger(__name__)
 
+
 def get_deposit(uuid):
     """
     Shortcut to retrieve deposit data. Returns deposit model object or None
     """
     return get_object_or_None(models.Package, uuid=uuid)
+
 
 def deposit_list(location_uuid):
     """
@@ -44,6 +46,7 @@ def deposit_list(location_uuid):
         status=models.Package.FINALIZED)
     return deposits
 
+
 def write_request_body_to_temp_file(request):
     """
     Write HTTP request's body content to a temp file.
@@ -55,6 +58,7 @@ def write_request_body_to_temp_file(request):
         f.write(request.body)
     return temp_filepath
 
+
 def parse_filename_from_content_disposition(header):
     """
     Parse a filename from HTTP Content-Disposition data
@@ -64,6 +68,7 @@ def parse_filename_from_content_disposition(header):
     _, params = cgi.parse_header(header)
     filename = params.get('filename', '')
     return filename
+
 
 def pad_destination_filepath_if_it_already_exists(filepath, original=None, attempt=0):
     """
@@ -79,6 +84,7 @@ def pad_destination_filepath_if_it_already_exists(filepath, original=None, attem
     if os.path.exists(filepath):
         return pad_destination_filepath_if_it_already_exists(original + '_' + str(attempt), original, attempt)
     return filepath
+
 
 def download_resource(url, destination_path, filename=None, username=None, password=None):
     """
@@ -108,11 +114,13 @@ def download_resource(url, destination_path, filename=None, username=None, passw
 
     return filename
 
+
 def deposit_download_tasks(deposit):
     """
     Return a deposit's download tasks.
     """
     return models.PackageDownloadTask.objects.filter(package=deposit)
+
 
 def deposit_downloading_status(deposit):
     """
@@ -130,12 +138,14 @@ def deposit_downloading_status(deposit):
             return status
     return models.PackageDownloadTask.COMPLETE
 
+
 def spawn_download_task(deposit_uuid, objects, subdir=None):
     """
     Spawn an asynchrnous batch download
     """
     p = Process(target=_fetch_content, args=(deposit_uuid, objects, subdir))
     p.start()
+
 
 def _fetch_content(deposit_uuid, objects, subdirs=None):
     """
@@ -231,12 +241,14 @@ def _fetch_content(deposit_uuid, objects, subdirs=None):
     if ready_for_finalization and deposit_downloading_status(deposit) == models.PackageDownloadTask.COMPLETE:
         _finalize_if_not_empty(deposit_uuid)
 
+
 def spawn_finalization(deposit_uuid):
     """
     Spawn an asynchronous finalization
     """
     p = Process(target=_finalize_if_not_empty, args=(deposit_uuid, ))
     p.start()
+
 
 def _finalize_if_not_empty(deposit_uuid):
     """
@@ -280,6 +292,7 @@ def _finalize_if_not_empty(deposit_uuid):
     deposit.save()
 
     return result
+
 
 def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
     """
@@ -359,6 +372,7 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
     result = response.json()
     return result
 
+
 def sword_error_response(request, status, summary):
     """ Generate SWORD 2.0 error response """
     error_details = {'summary': summary, 'status': status}
@@ -367,6 +381,7 @@ def sword_error_response(request, status, summary):
     error_details['user_agent'] = request.META['HTTP_USER_AGENT']
     error_xml = render_to_string('locations/api/sword/error.xml', error_details)
     return HttpResponse(error_xml, status=error_details['status'])
+
 
 def store_mets_data(mets_path, deposit, object_id):
     """

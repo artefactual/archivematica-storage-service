@@ -13,7 +13,7 @@ from storage_service import __version__ as ss_version
 from . import forms as settings_forms
 
 
-########################## ADMIN ##########################
+# ######################## ADMIN ##########################
 
 def settings_edit(request):
     initial_data = utils.get_all_settings()
@@ -30,7 +30,7 @@ def settings_edit(request):
     return render(request, 'administration/settings_form.html', locals())
 
 
-########################## VERSION ########################
+# ######################## VERSION ########################
 
 def get_git_commit():
     try:
@@ -38,17 +38,19 @@ def get_git_commit():
     except (OSError, subprocess.CalledProcessError):
         return None
 
+
 def version_view(request):
     return render(request, 'administration/version.html',
         {'version': ss_version,
          'git_commit': get_git_commit()})
 
 
-########################## USERS ##########################
+# ######################## USERS ##########################
 
 def user_list(request):
     users = get_user_model().objects.all()
     return render(request, 'administration/user_list.html', locals())
+
 
 def user_edit(request, id):
     action = _("Edit User")
@@ -68,6 +70,7 @@ def user_edit(request, id):
         return redirect('user_list')
     return render(request, 'administration/user_form.html', locals())
 
+
 def user_create(request):
     action = _("Create User")
     user_form = settings_forms.UserCreationForm(request.POST or None)
@@ -78,7 +81,7 @@ def user_create(request):
     return render(request, 'administration/user_form.html', locals())
 
 
-########################## LANGUAGE ##########################
+# ######################## LANGUAGE ##########################
 
 def change_language(request):
     current_language = get_language()

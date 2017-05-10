@@ -7,7 +7,9 @@ from django.db.models import signals
 
 logger = logging.getLogger(__name__)
 
+
 # Create our own test user automatically.
+
 
 def create_testuser(app, created_models, verbosity, **kwargs):
     try:
@@ -17,6 +19,7 @@ def create_testuser(app, created_models, verbosity, **kwargs):
         assert auth_models.User.objects.create_superuser('test', 'x@x.com', 'test')
     else:
         logger.info('Test user already exists.')
+
 
 signals.post_syncdb.connect(create_testuser,
     sender=auth_models, dispatch_uid='common.models.create_testuser')

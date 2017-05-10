@@ -21,7 +21,7 @@ class TestLocationAPI(TestCase):
     def setUp(self):
         user = User.objects.get(username='test')
         user.set_password('test')
-        self.client.defaults['HTTP_AUTHORIZATION'] = 'Basic ' +  base64.b64encode('test:test')
+        self.client.defaults['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode('test:test')
 
     def test_requires_auth(self):
         del self.client.defaults['HTTP_AUTHORIZATION']
@@ -76,6 +76,7 @@ class TestLocationAPI(TestCase):
         # Verify error
         assert response.status_code == 404
 
+
 class TestPackageAPI(TestCase):
 
     fixtures = ['base.json', 'package.json', 'arkivum.json']
@@ -94,7 +95,7 @@ class TestPackageAPI(TestCase):
 
         user = User.objects.get(username='test')
         user.set_password('test')
-        self.client.defaults['HTTP_AUTHORIZATION'] = 'Basic ' +  base64.b64encode('test:test')
+        self.client.defaults['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode('test:test')
 
     def tearDown(self):
         for entry in os.listdir(FIXTURES_DIR):
