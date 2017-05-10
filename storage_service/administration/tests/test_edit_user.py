@@ -4,11 +4,11 @@ from django.test import TestCase
 
 class TestEditUser(TestCase):
     @classmethod
-    def setUpClass(cls):
+    def setUpTestData(cls):
         User.objects.create_superuser(
             username='admin', password='admin', email='admin@example.com'
         )
-        super(TestEditUser, cls).setUpClass()
+        super(TestEditUser, cls).setUpTestData()
 
     def setUp(self):
         self.client.login(username='admin', password='admin')

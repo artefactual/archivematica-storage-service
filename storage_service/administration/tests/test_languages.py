@@ -4,11 +4,11 @@ from django.test import TestCase, override_settings
 
 class TestLanguageSwitching(TestCase):
     @classmethod
-    def setUpClass(cls):
+    def setUpTestData(cls):
         User.objects.create_user(
             username='admin', password='admin', email='admin@example.com'
         )
-        super(TestLanguageSwitching, cls).setUpClass()
+        super(TestLanguageSwitching, cls).setUpTestData()
 
     def setUp(self):
         self.client.login(username='admin', password='admin')
