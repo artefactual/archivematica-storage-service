@@ -1,6 +1,7 @@
 *.py[co]
 *.swp
 *~
+.cache
 
 # Sqlite DBs
 *.db
@@ -17,3 +18,6 @@
 
 # Coverage data
 .coverage
+
+# tox working directory
+.tox/
