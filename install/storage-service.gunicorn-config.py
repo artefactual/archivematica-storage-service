@@ -26,7 +26,6 @@ chdir = "/usr/lib/archivematica/storage-service"
 raw_env = [
     "EMAIL_HOST_PASSWORD=",
     "SS_DB_NAME=/var/archivematica/storage-service/storage.db",
-    "DJANGO_STATIC_ROOT=/usr/lib/archivematica/storage-service/assets",
     "SS_DB_PASSWORD=",
     "SS_DB_USER=",
     "SS_DB_HOST=",

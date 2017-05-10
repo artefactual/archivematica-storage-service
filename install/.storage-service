@@ -1,6 +1,5 @@
 alias sspy="/usr/share/python/archivematica-storage-service/bin/python"
 export DJANGO_SECRET_KEY=<replace-with-key>
-export DJANGO_STATIC_ROOT=/var/archivematica/storage-service/assets
 export DJANGO_SETTINGS_MODULE=storage_service.settings.production
 export EMAIL_HOST=localhost
 export EMAIL_HOST_PASSWORD=
