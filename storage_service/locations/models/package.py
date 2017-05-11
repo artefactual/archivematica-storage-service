@@ -917,7 +917,7 @@ class Package(models.Model):
             return {
                 'error': True,
                 'status_code': 409,
-                'message': _('This AIP is already being reingested on {pipeline}') % {'pipeline': self.misc_attributes['reingest_pipeline']},
+                'message': _('This AIP is already being reingested on %(pipeline)s') % {'pipeline': self.misc_attributes['reingest_pipeline']},
             }
         self.misc_attributes.update({'reingest_pipeline': pipeline.uuid})
 
@@ -934,7 +934,7 @@ class Package(models.Model):
 
         # Run fixity
         # Fixity will fetch & extract package if needed
-        success, _, error_msg, _ = self.check_fixity(delete_after=False)
+        success, errors, error_msg, timestamp = self.check_fixity(delete_after=False)
         LOGGER.debug('Reingest: Fixity response: %s, %s', success, error_msg)
         if not success:
             return {'error': True, 'status_code': 500, 'message': error_msg}
