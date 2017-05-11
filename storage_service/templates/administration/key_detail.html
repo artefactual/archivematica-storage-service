@@ -1,25 +1,26 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block page_title %}GPG Key {{ key.fingerprint }} Information{% endblock %}
+{% block page_title %}{% blocktrans %}GPG Key {{ key.fingerprint }} Information{% endblocktrans %}{% endblock %}
 
 {% block content %}
 
 <div class='key'>
   <dl>
-    <dt>UIDs</dt>
+    <dt>{% trans "UIDs" %}</dt>
     <dd>{{ key.uids|join:", " }}</dd>
-    <dt>Fingerprint</dt>
+    <dt>{% trans "Fingerprint" %}</dt>
     <dd>{{ key.fingerprint }}</dd>
-    <dt>Keyid</dt>
+    <dt>{% trans "Keyid" %}</dt>
     <dd>{{ key.keyid }}</dd>
-    <dt>Private Key ASCII Armor</dt>
+    <dt>{% trans "Private Key ASCII Armor" %}</dt>
     <dd><pre>{{ private_armor }}</pre></dd>
-    <dt>Public Key ASCII Armor</dt>
+    <dt>{% trans "Public Key ASCII Armor" %}</dt>
     <dd><pre>{{ public_armor }}</pre></dd>
-    <dt>Actions</dt>
+    <dt>{% trans "Actions" %}</dt>
       <dd>
         <ul>
-          <li><a href="{% url 'key_delete' key.fingerprint %}?next={{ request.path }}">Delete</a></li>
+          <li><a href="{% url 'key_delete' key.fingerprint %}?next={{ request.path }}">{% trans "Delete" %}</a></li>
         </ul>
       </dd>
   </dl>

@@ -128,8 +128,8 @@ def key_detail(request, key_fingerprint):
     key = gpgutils.get_gpg_key(key_fingerprint)
     if not key:
         raise Http404(
-            'GPG key with fingerprint {} does not exist.'.format(
-                key_fingerprint))
+            _('GPG key with fingerprint %(fingerprint)s does not exist.' %
+                {'fingerprint': key_fingerprint}))
     public_armor, private_armor = gpgutils.export_gpg_key(key['fingerprint'])
     return render(request, 'administration/key_detail.html', locals())
 
@@ -138,20 +138,25 @@ def key_create(request):
     """Create a new key using the POST params; currently these are just the
     real name and email of the key's user/owner.
     """
-    action = "Create"
+    action_ = 'Create Key'
+    action = _(action_)
     key_form = settings_forms.KeyCreateForm(request.POST or None)
     if key_form.is_valid():
         cd = key_form.cleaned_data
         key = gpgutils.generate_gpg_key(cd['name_real'], cd['name_email'])
         if key:
-            messages.success(request, "New key {} created.".format(
-                key.fingerprint))
+            messages.success(
+                request,
+                _("New key %(fingerprint)s created." %
+                    {'fingerprint': key.fingerprint}))
             return redirect('key_list')
         else:
             messages.warning(
                 request,
-                "Failed to create key with real name '{}' and email"
-                " '{}'.".format(cd['name_real'], cd['name_email']))
+                _("Failed to create key with real name '%(name_real)s' and"
+                  " email '%(name_email)s'." %
+                  {'name_real': cd['name_real'],
+                   'name_email': cd['name_email']}))
     return render(request, 'administration/key_form.html', locals())
 
 
@@ -171,19 +176,22 @@ def key_import(request):
     way of prompting for a GPG passphrase at present) would not be able to
     decrypt them. See http://blog.jasonantman.com/2013/08/testing-gpg-key-passphrases/
     """
-    action = "Import"
+    action_ = 'Import Key'
+    action = _(action_)
     key_form = settings_forms.KeyImportForm(request.POST or None)
     if key_form.is_valid():
         cd = key_form.cleaned_data
         fingerprint = gpgutils.import_gpg_key(cd['ascii_armor'])
         if fingerprint:
-            messages.success(request, "New key {} created.".format(
-                fingerprint))
+            messages.success(
+                request,
+                _("New key %(fingerprint)s created." %
+                    {'fingerprint': fingerprint}))
             return redirect('key_list')
         else:
             messages.warning(
                 request,
-                "Failed to create key with the supplied ASCII armor")
+                _("Failed to create key with the supplied ASCII armor"))
     return render(request, 'administration/key_form.html', locals())
 
 
@@ -191,17 +199,19 @@ def key_delete_context(request, key_fingerprint):
     key = gpgutils.get_gpg_key(key_fingerprint)
     if not key:
         raise Http404(
-            'GPG key with fingerprint {} does not exist.'.format(
-                key_fingerprint))
-    header = 'Confirm deleting GPG key {} ({})'.format(
-        ', '.join(key['uids']), key_fingerprint)
+            _('GPG key with fingerprint %(fingerprint)s does not exist.' %
+                {'fingerprint': key_fingerprint}))
+    header = _('Confirm deleting GPG key %(uids)s (%(fingerprint)s)' %
+               {'uids': ', '.join(key['uids']),
+                'fingerprint': key_fingerprint})
     dependent_gpg_spaces = GPG.objects.filter(key=key_fingerprint)
     if dependent_gpg_spaces:
-        prompt = ('GPG key {} cannot be deleted because at least one GPG Space'
-                  ' is using it for encryption.'.format(key_fingerprint))
+        prompt = _('GPG key %(fingerprint)s cannot be deleted because at least'
+                   ' one GPG Space is using it for encryption.' %
+                   {'fingerprint': key_fingerprint})
     else:
-        prompt = 'Are you sure you want to delete GPG key {}?'.format(
-            key_fingerprint)
+        prompt = _('Are you sure you want to delete GPG key %(fingerprint)s?' %
+                   {'fingerprint': key_fingerprint})
     default_cancel = reverse('key_list')
     cancel_url = request.GET.get('next', default_cancel)
     context_dict = {
@@ -219,16 +229,18 @@ def key_delete(request, key_fingerprint):
     key = gpgutils.get_gpg_key(key_fingerprint)
     if not key:
         raise Http404(
-            'GPG key with fingerprint {} does not exist.'.format(
-                key_fingerprint))
+            _('GPG key with fingerprint %(fingerprint)s does not exist.' %
+              {'fingerprint': key_fingerprint}))
     result = gpgutils.delete_gpg_key(key_fingerprint)
     if result is True:
         messages.success(
             request,
-            'GPG key {} successfully deleted.'.format(key_fingerprint))
+            _('GPG key %(fingerprint)s successfully deleted.' %
+              {'fingerprint': key_fingerprint}))
     else:
         messages.warning(
             request,
-            'Failed to delete GPG key {}.'.format(key_fingerprint))
+            _('Failed to delete GPG key %(fingerprint).' %
+              {'fingerprint': key_fingerprint}))
     next_url = request.GET.get('next', reverse('key_list'))
     return redirect(next_url)
