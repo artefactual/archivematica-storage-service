@@ -15,7 +15,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 from common import decorators
 from common import utils
-from .models import Callback, Space, Location, Package, Event, Pipeline, LocationPipeline, StorageException, FixityLog
+from common import gpgutils
+from .models import Callback, Space, Location, Package, Event, Pipeline, LocationPipeline, StorageException, FixityLog, GPG
 from . import forms
 from .constants import PROTOCOL
 
@@ -416,12 +417,24 @@ def space_detail(request, uuid):
 
     child_dict_raw = model_to_dict(child, PROTOCOL[space.access_protocol]['fields']or [''])
     child_dict = {
-        child._meta.get_field(field).verbose_name: value
+        child._meta.get_field(field).verbose_name:
+        get_child_space_value(value, field, child)
         for field, value in child_dict_raw.items()
     }
     space.child = child_dict
     locations = Location.objects.filter(space=space)
     return render(request, 'locations/space_detail.html', locals())
+
+
+def get_child_space_value(value, field, child):
+    """If the child space ``child`` is a GPG instance, and the field is key, we
+    return a human-readable representation of the GPG key instead of its
+    fingerprint: the name of the first user in its uids list.
+    """
+    if field == 'key' and isinstance(child, GPG):
+        key = gpgutils.get_gpg_key(value)
+        return ' '.join(key['uids'][0].split()[:-1])
+    return value
 
 
 def space_create(request):

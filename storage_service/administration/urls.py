@@ -21,4 +21,12 @@ urlpatterns = [
         name='user_detail'),
 
     url(r'language/$', views.change_language, name='change_language'),
+
+    url(r'^keys/$', views.key_list, name='key_list'),
+    url(r'^keys/(?P<key_fingerprint>[\w]+)/detail$', views.key_detail,
+        name='key_detail'),
+    url(r'^keys/create/$', views.key_create, name='key_create'),
+    url(r'^keys/import/$', views.key_import, name='key_import'),
+    url(r'^keys/(?P<key_fingerprint>[\w]+)/delete/$',
+        views.key_delete, name='key_delete'),
 ]

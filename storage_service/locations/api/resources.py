@@ -733,10 +733,8 @@ class PackageResource(ModelResource):
         """Return the entire Package to be downloaded."""
         # NOTE this responds to HEAD because AtoM uses HEAD to check for the existence of a package. The storage service has no way to check if the package still exists except by downloading it
         # TODO this needs to be fixed so that HEAD is not identical to GET
-
         # Get AIP details
         package = bundle.obj
-
         # Check if the package is in Arkivum and not actually there
         if package.current_location.space.access_protocol == Space.ARKIVUM:
             is_local = package.current_location.space.get_child_space().is_file_local(
@@ -749,16 +747,13 @@ class PackageResource(ModelResource):
             if is_local is None:
                 # Arkivum error, return 502
                 return http.HttpResponse(json.dumps({"error": True, "message": _("Error checking if file in Arkivum in locally available.")}), content_type='application/json', status=502)
-
         lockss_au_number = kwargs.get('chunk_number')
         try:
             temp_dir = None
             full_path = package.get_download_path(lockss_au_number)
         except StorageException:
             full_path, temp_dir = package.compress_package(utils.COMPRESSION_TAR)
-
         response = utils.download_file_stream(full_path)
-
         return response
 
     @_custom_endpoint(expected_methods=['get'])

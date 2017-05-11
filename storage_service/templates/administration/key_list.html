@@ -1,0 +1,27 @@
+{% extends "administration/base.html" %}
+
+{% block page_title %}Encryption Keys{% endblock %}
+
+{% block content %}
+
+  <p><a href="{% url 'key_create' %}">Create New Key</a>
+     &nbsp;|&nbsp;
+     <a href="{% url 'key_import' %}">Import Existing Key</a></p>
+  <table class="datatable">
+    <thead>
+      <tr>
+        <th>User ID(s)</th>
+        <th>Fingerprint</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    {% for key_display in keys %}
+      <tr>
+        <td><a href="{% url 'key_detail' key_display.fingerprint %}"
+               >{{ key_display.uids|join:", " }}</a></td>
+        <td>{{ key_display.fingerprint }}</td>
+        <td><a href="{% url 'key_delete' key_display.fingerprint %}?next={{ request.path }}">Delete</a></td>
+      </tr>
+    {% endfor %}
+  </table>
+{% endblock %}

@@ -36,6 +36,11 @@ PROTOCOL = {
                    'fedora_password',
                    'fedora_name']
     },
+    models.Space.GPG: {
+        'model': models.GPG,
+        'form': forms.GPGForm,
+        'fields': ['key']
+    },
     # BUG: fields: [] works for obj_create, but includes everything in model_to_dict
     models.Space.LOCAL_FILESYSTEM: {
         'model': models.LocalFilesystem,

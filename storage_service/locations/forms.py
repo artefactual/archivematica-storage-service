@@ -7,6 +7,7 @@ from django.db.models import Count
 from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 from locations import models
+from common import gpgutils
 
 
 # CUSTOM WIDGETS
@@ -117,6 +118,12 @@ class DSpaceForm(forms.ModelForm):
     class Meta:
         model = models.DSpace
         fields = ('sd_iri', 'user', 'password', 'metadata_policy', 'archive_format')
+
+
+class GPGForm(forms.ModelForm):
+    class Meta:
+        model = models.GPG
+        fields = ('key',)
 
 
 class LocalFilesystemForm(forms.ModelForm):
