@@ -1,0 +1,24 @@
+[
+{
+    "pk": 1, 
+    "model": "locations.gpg", 
+    "fields": {
+        "space": "50278c94-feec-41bd-9383-0154772b7c41"
+    }
+},
+{
+    "pk": 2, 
+    "model": "locations.space", 
+    "fields": {
+        "uuid": "50278c94-feec-41bd-9383-0154772b7c41",
+        "size": null,
+        "used": 73901,
+        "last_verified": null, 
+        "verified": false, 
+        "access_protocol": "GPG", 
+        "staging_path": "/var/archivematica/storage_service_encrypted", 
+        "path": "/",
+        "size": null
+    }
+}
+]

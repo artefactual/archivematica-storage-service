@@ -29,6 +29,7 @@ from .dataverse import Dataverse
 from .duracloud import Duracloud
 from .dspace import DSpace
 from .fedora import Fedora, PackageDownloadTask, PackageDownloadTaskFile
+from .gpg import GPG
 from .local_filesystem import LocalFilesystem
 from .lockssomatic import Lockssomatic
 from .nfs import NFS
