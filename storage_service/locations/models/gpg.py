@@ -12,6 +12,7 @@ from lxml import etree
 
 # Core Django, alphabetical
 from django.db import models
+from django.utils.translation import ugettext as _, ugettext_lazy as _l
 from django.utils import timezone
 
 # Third party dependencies, alphabetical
@@ -42,8 +43,8 @@ class GPG(models.Model):
     encrypted AIPs may be transfered to other storage locations that are not
     under the control of AM SS.
 
-    Note: this space has does not (currently) implement the ``browse`` or
-    ``delete_path`` methods.
+    Note: this space has does not (currently) implement the ``delete_path``
+    method.
     """
 
     # package.py looks up this class attribute to determine if a package is
@@ -68,13 +69,13 @@ class GPG(models.Model):
         max_length=256,
         choices=key_choices,
         default=system_key['fingerprint'],
-        verbose_name='GnuPG Private Key',
-        help_text='The GnuPG private key that will be able to'
-                  ' decrypt packages stored in this space.')
+        verbose_name=_l('GnuPG Private Key'),
+        help_text=_l('The GnuPG private key that will be able to'
+                     ' decrypt packages stored in this space.'))
 
     class Meta:
-        verbose_name = "GPG encryption on Local Filesystem"
-        app_label = 'locations'
+        verbose_name = _l("GPG encryption on Local Filesystem")
+        app_label = _l('locations')
 
     ALLOWED_LOCATION_PURPOSE = [
         Location.AIP_STORAGE,
@@ -104,17 +105,20 @@ class GPG(models.Model):
         else:
             encr_path = _get_encrypted_path(src_path)
             if not encr_path:
-                raise GPGException(
-                    'Unable to move %s; this file/dir does not exist; nor is'
-                    ' it in an encrypted directory.', src_path)
+                raise GPGException(_(
+                    'Unable to move %(src_path)s; this file/dir does not exist;'
+                    ' nor is it in an encrypted directory.' %
+                    {'src_path': src_path}))
             _gpg_decrypt(encr_path)
             try:
                 if os.path.exists(src_path):
                     self.space.move_rsync(src_path, dst_path)
                 else:
-                    raise GPGException(
-                        'Unable to move %s; this file/dir does not exist, not'
-                        ' even in encrypted directory %s.', src_path, encr_path)
+                    raise GPGException(_(
+                        'Unable to move %(src_path)s; this file/dir does not'
+                        ' exist, not even in encrypted directory'
+                        ' %(encr_path)s.' %
+                        {'src_path': src_path, 'encr_path': encr_path}))
             finally:
                 # Re-encrypt the decrypted package at source after copy, no
                 # matter what happens.
@@ -131,7 +135,7 @@ class GPG(models.Model):
         LOGGER.info('GPG move_from, src_path: %s', src_path)
         LOGGER.info('GPG move_from, dst_path: %s', dst_path)
         if not package:
-            raise GPGException('GPG spaces can only contain packages')
+            raise GPGException(_('GPG spaces can only contain packages'))
         self.space.create_local_directory(dst_path)
         self.space.move_rsync(src_path, dst_path, try_mv_local=True)
         try:
@@ -229,7 +233,7 @@ class GPG(models.Model):
                         premisBNS + 'inhibitors')
                     etree.SubElement(
                         inhibitor_el,
-                        premisBNS + 'inhibitorType').text = 'PGP'
+                        premisBNS + 'inhibitorType').text = 'GPG'
                     etree.SubElement(
                         inhibitor_el,
                         premisBNS + 'inhibitorTarget').text = 'All content'
@@ -303,8 +307,8 @@ class GPG(models.Model):
             os.rename(encr_path, path)
             return path, result
         else:
-            fail_msg = ('An error occured when attempting to encrypt'
-                        ' {}'.format(path))
+            fail_msg = _('An error occured when attempting to encrypt'
+                         ' %(path)s' % {'path': path})
             LOGGER.error(fail_msg)
             raise GPGException(fail_msg)
 
@@ -330,8 +334,9 @@ def _create_tar(path):
     LOGGER.info('creating archive of %s at %s, relative to %s',
                 source, tarpath, changedir)
     subprocess.check_output(cmd)
-    fail_msg = 'Failed to create a tarfile at {} for dir at {}'.format(
-        tarpath, path)
+    fail_msg = _(
+        'Failed to create a tarfile at %(tarpath)s for dir at %(path)s' %
+        {'tarpath': tarpath, 'path': path})
     if os.path.isfile(tarpath) and tarfile.is_tarfile(tarpath):
         shutil.rmtree(path)
         os.rename(tarpath, path)
@@ -356,8 +361,8 @@ def _extract_tar(tarpath):
     if os.path.isdir(tarpath):
         os.remove(newtarpath)
     else:
-        fail_msg = ('Failed to extract {} to a directory at the same'
-                    ' location.'.format(tarpath))
+        fail_msg = _('Failed to extract %(tarpath)s to a directory at the same'
+                     ' location.' % {'tarpath': tarpath})
         LOGGER.error(fail_msg)
         raise GPGException(fail_msg)
 
@@ -465,7 +470,8 @@ def _gpg_decrypt(path):
     encrypted file.
     """
     if not os.path.isfile(path):
-        fail_msg = 'Cannot decrypt file at {}; no such file.'.format(path)
+        fail_msg = _('Cannot decrypt file at %(path)s; no such file.' %
+                     {'path': path})
         LOGGER.error(fail_msg)
         raise GPGException(fail_msg)
     decr_path = path + '.decrypted'
@@ -475,8 +481,8 @@ def _gpg_decrypt(path):
         os.remove(path)
         os.rename(decr_path, path)
     else:
-        fail_msg = 'Failed to decrypt {}. Reason: {}'.format(
-            path, decr_result.status)
+        fail_msg = _('Failed to decrypt %(path)s. Reason: %(reason)s' %
+                     {'path': path, 'reason': decr_result.status})
         LOGGER.info(fail_msg)
         raise GPGException(fail_msg)
     # A tarfile without an extension is one that we created in this space

@@ -1,17 +1,17 @@
 {% extends "administration/base.html" %}
 
-{% block page_title %}{{action}} Key{% endblock %}
+{% block page_title %}{{action}}{% endblock %}
 
 {% block content %}
 <div class='key'>
-  {% if action == "Create" %}
+  {% if action_ == "Create" %}
     <form action="{% url 'key_create' %}" method="post" onsubmit="key.disabled = true; return true;">
   {% else %}
     <form action="{% url 'key_import' %}" method="post" onsubmit="key.disabled = true; return true;">
   {% endif %}
       {% csrf_token %}
       {{ key_form.as_p }}
-      <input type="submit" name='key' value="{{action}} key" class='btn btn-primary' />
+      <input type="submit" name='key' value="{{action}}" class='btn btn-primary' />
     </form>
 </div>
 {% endblock %}

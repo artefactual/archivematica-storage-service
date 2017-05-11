@@ -14,6 +14,7 @@ import logging
 
 # Third party dependencies, alphabetical
 import gnupg
+from django.utils.translation import ugettext as _
 
 
 LOGGER = logging.getLogger(__name__)
@@ -29,7 +30,7 @@ gpg = gnupg.GPG()
 # Defaults for the default AM SS GPG key
 DFLT_KEY_TYPE = 'RSA'
 DFLT_KEY_LENGTH = 4096
-DFLT_KEY_REAL_NAME = 'Archivematica Storage Service GPG Key'
+DFLT_KEY_REAL_NAME = _('Archivematica Storage Service GPG Key')
 DFLT_KEY_PASSPHRASE = ''
 
 
@@ -122,8 +123,6 @@ def export_gpg_key(fingerprint):
 def delete_gpg_key(fingerprint):
     """Delete the GPG key with fingerprint ``fingerprint``.  """
     result = gpg.delete_keys(fingerprint, True)
-    LOGGER.debug('result of calling gpg.delete_keys(%s)', fingerprint)
-    LOGGER.debug(str(result))
     try:
         assert str(result) == 'ok'
         return True

@@ -1,18 +1,19 @@
 {% extends "administration/base.html" %}
+{% load i18n %}
 
-{% block page_title %}Encryption Keys{% endblock %}
+{% block page_title %}{% trans "Encryption Keys" %}{% endblock %}
 
 {% block content %}
 
-  <p><a href="{% url 'key_create' %}">Create New Key</a>
+  <p><a href="{% url 'key_create' %}">{% trans "Create New Key" %}</a>
      &nbsp;|&nbsp;
-     <a href="{% url 'key_import' %}">Import Existing Key</a></p>
+     <a href="{% url 'key_import' %}">{% trans "Import Existing Key" %}</a></p>
   <table class="datatable">
     <thead>
       <tr>
-        <th>User ID(s)</th>
-        <th>Fingerprint</th>
-        <th>Actions</th>
+        <th>{% trans "User ID(s)" %}</th>
+        <th>{% trans "Fingerprint" %}</th>
+        <th>{% trans "Actions" %}</th>
       </tr>
     </thead>
     {% for key_display in keys %}
@@ -20,7 +21,7 @@
         <td><a href="{% url 'key_detail' key_display.fingerprint %}"
                >{{ key_display.uids|join:", " }}</a></td>
         <td>{{ key_display.fingerprint }}</td>
-        <td><a href="{% url 'key_delete' key_display.fingerprint %}?next={{ request.path }}">Delete</a></td>
+        <td><a href="{% url 'key_delete' key_display.fingerprint %}?next={{ request.path }}">{% trans "Delete" %}</a></td>
       </tr>
     {% endfor %}
   </table>
