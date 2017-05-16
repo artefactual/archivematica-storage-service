@@ -139,7 +139,7 @@ class GPG(models.Model):
         self.space.create_local_directory(dst_path)
         self.space.move_rsync(src_path, dst_path, try_mv_local=True)
         try:
-            _, encr_result = self._gpg_encrypt(dst_path)
+            __, encr_result = self._gpg_encrypt(dst_path)
         except GPGException:
             # If we fail to encrypt, then we send it back to where it came from.
             # TODO/QUESTION: Is this behaviour desirable?

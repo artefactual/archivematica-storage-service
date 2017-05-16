@@ -335,7 +335,7 @@ class Package(models.Model):
         temp_aip.save()
 
         # Check integrity of temporary AIP package
-        (success, failures, message, _) = temp_aip.check_fixity(force_local=True)
+        (success, failures, message, _throwaway) = temp_aip.check_fixity(force_local=True)
 
         # If the recovered AIP doesn't pass check, delete and return error info
         if not success:
@@ -393,7 +393,7 @@ class Package(models.Model):
         temp_aip.delete()
 
         # Do fixity check of AIP with recovered files
-        success, failures, message, _ = self.check_fixity(force_local=True)
+        success, failures, message, _throwaway = self.check_fixity(force_local=True)
         return success, failures, message
 
     def store_aip(self, origin_location, origin_path, related_package_uuid=None):
