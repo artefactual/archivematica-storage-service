@@ -92,12 +92,16 @@ class Pipeline(models.Model):
             local_fs = LocalFilesystem(space=space)
             local_fs.save()
             LOGGER.info("Protocol Space created: %s", local_fs)
-        currently_processing, _ = Location.active.get_or_create(
-            purpose=Location.CURRENTLY_PROCESSING,
-            defaults={
-                'space': space,
-                'relative_path': shared_path
-            })
+        try:
+            currently_processing, _ = Location.active.get_or_create(
+                purpose=Location.CURRENTLY_PROCESSING,
+                defaults={
+                    'space': space,
+                    'relative_path': shared_path
+                })
+        except Location.MultipleObjectsReturned:
+            currently_processing = Location.active.filter(
+                purpose=Location.CURRENTLY_PROCESSING).first()
         LocationPipeline.objects.get_or_create(
             pipeline=self, location=currently_processing)
         LOGGER.info("Currently processing: %s", currently_processing)
