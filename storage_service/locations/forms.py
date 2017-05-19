@@ -7,7 +7,6 @@ from django.db.models import Count
 from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 from locations import models
-from common import gpgutils
 
 
 # CUSTOM WIDGETS
