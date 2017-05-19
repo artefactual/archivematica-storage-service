@@ -208,11 +208,12 @@ class UserChangeForm(auth.forms.UserChangeForm):
         fields = ('username', 'first_name', 'last_name', 'email', 'is_superuser')
 
 
-########################## KEYS ##########################
+# ######################### KEYS ##########################
 
 class KeyCreateForm(forms.Form):
     name_real = forms.CharField()
     name_email = forms.EmailField(required=False)
+
 
 class KeyImportForm(forms.Form):
     ascii_armor = forms.CharField(widget=forms.Textarea)

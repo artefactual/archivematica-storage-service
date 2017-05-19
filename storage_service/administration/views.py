@@ -113,7 +113,7 @@ def change_language(request):
     })
 
 
-########################## KEYS ##########################
+# ######################### KEYS ##########################
 
 def key_list(request):
     """List all of the GPG keys that the SS knows about."""

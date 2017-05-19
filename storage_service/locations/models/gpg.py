@@ -206,7 +206,7 @@ class GPG(models.Model):
         encryption event it has undergone.
         """
         # Update the pointer file to contain a record of the encryption.
-        if (    package.pointer_file_path and
+        if (package.pointer_file_path and
                 package.package_type in (Package.AIP, Package.AIC)):
             pointer_absolute_path = package.full_pointer_file_path
             parser = etree.XMLParser(remove_blank_text=True)
@@ -417,7 +417,7 @@ def _create_encr_event(root, encr_result):
         premisBNS + 'eventOutcomeInformation')
     etree.SubElement(
         eventOutcomeInformation,
-        premisBNS + 'eventOutcome').text = '' # No eventOutcome text at present ...
+        premisBNS + 'eventOutcome').text = ''  # No eventOutcome text at present ...
     eventOutcomeDetail = etree.SubElement(
         eventOutcomeInformation,
         premisBNS + 'eventOutcomeDetail')

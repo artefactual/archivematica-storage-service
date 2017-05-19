@@ -52,7 +52,7 @@ class Migration(migrations.Migration):
             name='key',
             field=models.CharField(
                 help_text=b'The GnuPG private key that will be able to decrypt'
-                           ' packages stored in this space.',
+                ' packages stored in this space.',
                 max_length=256,
                 verbose_name=b'GnuPG Private Key'),
         )
