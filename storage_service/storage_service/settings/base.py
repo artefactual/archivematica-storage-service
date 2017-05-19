@@ -54,6 +54,8 @@ ADMINS = (
 MANAGERS = ADMINS
 # ######## END MANAGER CONFIGURATION
 
+# Lets us know whether we're behind an HTTPS connection
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # ######## GENERAL CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#time-zone
