@@ -2,6 +2,7 @@ from __future__ import absolute_import
 # stdlib, alphabetical
 import json
 import logging
+from lxml import etree
 import os
 import requests
 import urllib
@@ -108,12 +109,20 @@ class Arkivum(models.Model):
             url = 'https://' + self.host + '/api/2/files/release/' + relative_path
             headers = {'Content-Type': 'application/json'}
 
-            # Get size, checksum, checksum algorithm (md5sum), compression algorithm
-            checksum = utils.generate_checksum(staging_path, 'md5')
+            # Get size, checksum, and checksum algorithm from pointer file;
+            # infer compression algorithm from filename.
+            root = etree.parse(package.full_pointer_file_path)
+            fixity_elem = root.find('.//premis:fixity', namespaces=utils.NSMAP)
+            algorithm = fixity_elem.findtext(
+                'premis:messageDigestAlgorithm', namespaces=utils.NSMAP)
+            checksum = fixity_elem.findtext(
+                'premis:messageDigest', namespaces=utils.NSMAP)
+            size = fixity_elem.findtext(
+                'premis:size', namespaces=utils.NSMAP)
             payload = {
-                'size': str(os.path.getsize(staging_path)),
-                'checksum': checksum.hexdigest(),
-                'checksumAlgorithm': 'md5',
+                'size': size,
+                'checksum': checksum,
+                'checksumAlgorithm': algorithm,
                 'compressionAlgorithm': os.path.splitext(package.current_path)[1],
             }
             payload = json.dumps(payload)
