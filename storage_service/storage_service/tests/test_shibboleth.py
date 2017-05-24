@@ -14,10 +14,10 @@ class TestShibbolethLogin(TestCase):
 
     def test_auto_creates_user(self):
         shib_headers = {
-            'HTTP_X_SHIB_USER': 'testuser',
-            'HTTP_X_SHIB_GIVEN_NAME': 'Test',
-            'HTTP_X_SHIB_SN': 'User',
-            'HTTP_X_SHIB_MAIL': 'test@example.com'
+            'HTTP_EPPN': 'testuser',
+            'HTTP_GIVENNAME': 'Test',
+            'HTTP_SN': 'User',
+            'HTTP_MAIL': 'test@example.com'
         }
 
         response = self.client.get('/', **shib_headers)
@@ -32,10 +32,10 @@ class TestShibbolethLogin(TestCase):
     def test_uses_existing_user(self):
         user = User.objects.create(username='testuser')
         shib_headers = {
-            'HTTP_X_SHIB_USER': 'testuser',
-            'HTTP_X_SHIB_GIVEN_NAME': 'Test',
-            'HTTP_X_SHIB_SN': 'User',
-            'HTTP_X_SHIB_MAIL': 'test@example.com'
+            'HTTP_EPPN': 'testuser',
+            'HTTP_GIVENNAME': 'Test',
+            'HTTP_SN': 'User',
+            'HTTP_MAIL': 'test@example.com'
         }
 
         response = self.client.get('/', **shib_headers)
@@ -46,10 +46,10 @@ class TestShibbolethLogin(TestCase):
     def test_long_username(self):
         long_email = 'person-with-very-long-name@long-institution-name.ac.uk'
         shib_headers = {
-            'HTTP_X_SHIB_USER': long_email,
-            'HTTP_X_SHIB_GIVEN_NAME': 'Test',
-            'HTTP_X_SHIB_SN': 'User',
-            'HTTP_X_SHIB_MAIL': 'test@example.com'
+            'HTTP_EPPN': long_email,
+            'HTTP_GIVENNAME': 'Test',
+            'HTTP_SN': 'User',
+            'HTTP_MAIL': 'test@example.com'
         }
 
         response = self.client.get('/', **shib_headers)
