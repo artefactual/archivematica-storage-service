@@ -34,6 +34,12 @@ DFLT_KEY_REAL_NAME = _('Archivematica Storage Service GPG Key')
 DFLT_KEY_PASSPHRASE = ''
 
 
+PASSPHRASED = 'passphrased'
+IMPORT_ERROR = 'import error'
+ENCR_WORKS = 'yes'
+ENCR_FAILS = 'no'
+
+
 def get_gpg_key(fingerprint):
     """Return the GPG key with fingerprint ``fingerprint`` or None if there is
     no such key in the SS's GPG keyring.
@@ -105,12 +111,49 @@ def generate_gpg_key(name_real, name_email):
 
 def import_gpg_key(ascii_armor):
     """Import a GPG private key, given its ASCII armor string and return the
-    imported key's fingerprint, if successful.
+    imported key's fingerprint, if successful; if unsuccessful, return a string
+    indicating why and delete any key created in the process.
     """
     import_result = gpg.import_keys(ascii_armor)
     if import_result.count == 1:
-        return import_result.fingerprints[0]
-    return None
+        fingerprint = import_result.fingerprints[0]
+        it_works = encryption_works(fingerprint)
+        if it_works == ENCR_WORKS:
+            return fingerprint
+        else:
+            delete_gpg_key(fingerprint)
+            if it_works == PASSPHRASED:
+                return PASSPHRASED
+        return IMPORT_ERROR
+    return IMPORT_ERROR
+
+
+def encryption_works(fingerprint):
+    """Check whether we can encrypt and decrypt with the key with fingerprint
+    ``fingerprint``. Return 'yes' if it does, 'no' if it doesn't and
+    'passphrased' if it doesn't because a passphrase is required.
+    """
+    unencrypted_string = 'secrets'
+    encrypted_data = gpg.encrypt(
+        unencrypted_string, fingerprint, always_trust=True)
+    encrypted_string = str(encrypted_data)
+    LOGGER.info('Checking encryption with key %s', fingerprint)
+    LOGGER.info('encrypt ok: %s', encrypted_data.ok)
+    LOGGER.info('encrypt status: %s', encrypted_data.status)
+    LOGGER.info('encrypt stderr: %s', encrypted_data.stderr)
+    if not encrypted_data.ok:
+        return ENCR_FAILS  # unable to encrypt
+    decrypted_data = gpg.decrypt(encrypted_string)
+    LOGGER.info('Checking decryption with key %s', fingerprint)
+    LOGGER.info('decrypt ok: %s', decrypted_data.ok)
+    LOGGER.info('decrypt status: %s', decrypted_data.status)
+    LOGGER.info('decrypt stderr: %s', decrypted_data.stderr)
+    if decrypted_data.ok:
+        return ENCR_WORKS
+    else:
+        if decrypted_data.status == 'need passphrase':
+            return PASSPHRASED
+        return ENCR_FAILS
 
 
 def export_gpg_key(fingerprint):
@@ -150,5 +193,6 @@ def gpg_encrypt_file(path, recipient_fingerprint):
             stream,
             [recipient_fingerprint],
             armor=False,
+            always_trust=True,  # so we can use imported keys
             output=encr_path)
     return encr_path, result

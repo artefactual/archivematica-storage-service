@@ -69,7 +69,7 @@
         <h1>{% block page_title %}{% trans "Archivematica Storage Service" %}{% endblock page_title %}</h1>
 
         {% for message in messages %}
-          <div class='alert {% for tag in message.tags %}alert-{{tag}} {% endfor %}'>{{ message }}</div>
+          <div class='alert alert-{{message.tags}}'>{{ message }}</div>
         {% endfor %}
 
         {% block content %}{% endblock content %}

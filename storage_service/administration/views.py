@@ -196,10 +196,6 @@ def key_import(request):
 
         $ gpg --armor --export-secret-keys $FINGERPRINT
 
-    TODO: we should confirm that all keys that a user attempts to import have
-    empty passphrases. Otherwise, packages could get encrypted and SS (with no
-    way of prompting for a GPG passphrase at present) would not be able to
-    decrypt them. See http://blog.jasonantman.com/2013/08/testing-gpg-key-passphrases/
     """
     action_ = 'Import Key'
     action = _(action_)
@@ -207,16 +203,22 @@ def key_import(request):
     if key_form.is_valid():
         cd = key_form.cleaned_data
         fingerprint = gpgutils.import_gpg_key(cd['ascii_armor'])
-        if fingerprint:
+        if fingerprint == gpgutils.IMPORT_ERROR:
+            messages.error(
+                request,
+                _("Import failed. Sorry, we were unable to create a key with"
+                  " the supplied ASCII armor"))
+        elif fingerprint == gpgutils.PASSPHRASED:
+            messages.error(
+                request,
+                _("Import failed. The GPG key provided requires a passphrase."
+                  " GPG keys with passphrases cannot be imported"))
+        else:
             messages.success(
                 request,
                 _("New key %(fingerprint)s created." %
                     {'fingerprint': fingerprint}))
             return redirect('key_list')
-        else:
-            messages.warning(
-                request,
-                _("Failed to create key with the supplied ASCII armor"))
     return render(request, 'administration/key_form.html', locals())
 
 
