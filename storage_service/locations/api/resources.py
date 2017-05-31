@@ -923,7 +923,6 @@ class PackageResource(ModelResource):
                 'id': request_event.id,
             }
 
-            response = json.dumps(response)
             status_code = 202
         else:
             response = {
