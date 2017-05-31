@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block page_title %}{{ header }}{% endblock %}
+
+{% block content %}
+
+<p>{{ prompt }}</p>
+
+<form method="POST" action="">
+  {% csrf_token %}
+  <input type="hidden" name="__confirm__" value="1" />
+  {% if not dependent_objects %}
+    <input type="submit" value="{% trans "Delete" %}" class='btn primary' />
+  {% endif %}
+  <a href="{{ cancel_url }}" class='btn'>{% trans "Cancel" %}</a>
+</form>
+
+{% endblock %}
+

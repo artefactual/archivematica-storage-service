@@ -17,6 +17,8 @@
    { "name": "libz-dev", "state": "latest"},
    { "name": "libffi-dev", "state": "latest"},
    { "name": "libssl-dev", "state": "latest"},
-   { "name": "gcc", "state": "latest"}
+   { "name": "gcc", "state": "latest"},
+   { "name": "gnupg", "state": "latest"},
+   { "name": "rng-tools", "state": "latest"}
   ]
 }

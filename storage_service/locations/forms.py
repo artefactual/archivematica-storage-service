@@ -119,6 +119,12 @@ class DSpaceForm(forms.ModelForm):
         fields = ('sd_iri', 'user', 'password', 'metadata_policy', 'archive_format')
 
 
+class GPGForm(forms.ModelForm):
+    class Meta:
+        model = models.GPG
+        fields = ('key',)
+
+
 class LocalFilesystemForm(forms.ModelForm):
     class Meta:
         model = models.LocalFilesystem
