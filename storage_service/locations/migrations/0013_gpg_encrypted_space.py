@@ -55,5 +55,10 @@ class Migration(migrations.Migration):
                 ' packages stored in this space.',
                 max_length=256,
                 verbose_name=b'GnuPG Private Key'),
+        ),
+        migrations.AddField(
+            model_name='package',
+            name='encryption_key_fingerprint',
+            field=models.CharField(default=None, max_length=512, null=True, help_text='The fingerprint of the GPG key used to encrypt the package, if applicable', blank=True),
         )
     ]

@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class='key'>
-  {% if action_ == "Create" %}
+  {% if action_ == "Create Key" %}
     <form action="{% url 'key_create' %}" method="post" onsubmit="key.disabled = true; return true;">
   {% else %}
     <form action="{% url 'key_import' %}" method="post" onsubmit="key.disabled = true; return true;">

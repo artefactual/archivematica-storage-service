@@ -49,6 +49,10 @@ class Package(models.Model):
     pointer_file_location = models.ForeignKey(Location, to_field='uuid', related_name='+', null=True, blank=True)
     pointer_file_path = models.TextField(null=True, blank=True)
     size = models.IntegerField(default=0, help_text=_l('Size in bytes of the package'))
+    encryption_key_fingerprint = models.CharField(
+        max_length=512, blank=True, null=True, default=None,
+        help_text=_l('The fingerprint of the GPG key used to encrypt the'
+                    ' package, if applicable'))
 
     AIP = "AIP"
     AIC = "AIC"

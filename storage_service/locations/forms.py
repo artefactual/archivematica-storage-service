@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import logging
 
 from django import forms
 import django.utils
@@ -6,7 +7,11 @@ import django.core.exceptions
 from django.db.models import Count
 from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
+from common import gpgutils
 from locations import models
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 # CUSTOM WIDGETS
@@ -119,7 +124,20 @@ class DSpaceForm(forms.ModelForm):
         fields = ('sd_iri', 'user', 'password', 'metadata_policy', 'archive_format')
 
 
+def get_gpg_key_choices():
+    return [(key['fingerprint'], ', '.join(key['uids']))
+            for key in gpgutils.get_gpg_key_list()]
+
+
 class GPGForm(forms.ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        super(GPGForm, self).__init__(*args, **kwargs)
+        system_key = gpgutils.get_default_gpg_key(gpgutils.get_gpg_key_list())
+        self.fields['key'] = forms.ChoiceField(
+            choices=get_gpg_key_choices(),
+            initial=system_key['fingerprint'])
+
     class Meta:
         model = models.GPG
         fields = ('key',)

@@ -17,7 +17,7 @@ from common import gpgutils
 from common import decorators
 
 from storage_service import __version__ as ss_version
-from locations.models import GPG
+from locations.models import GPG, Package
 from . import forms as settings_forms
 
 
@@ -174,6 +174,7 @@ def key_create(request):
                 request,
                 _("New key %(fingerprint)s created." %
                     {'fingerprint': key.fingerprint}))
+            LOGGER.debug('created new GPG key for "%s"', cd['name_real'])
             return redirect('key_list')
         else:
             messages.warning(
@@ -231,19 +232,35 @@ def key_delete_context(request, key_fingerprint):
     header = _('Confirm deleting GPG key %(uids)s (%(fingerprint)s)' %
                {'uids': ', '.join(key['uids']),
                 'fingerprint': key_fingerprint})
-    dependent_gpg_spaces = GPG.objects.filter(key=key_fingerprint)
-    if dependent_gpg_spaces:
-        prompt = _('GPG key %(fingerprint)s cannot be deleted because at least'
-                   ' one GPG Space is using it for encryption.' %
-                   {'fingerprint': key_fingerprint})
+    prompt = ''
+    dependent_objects = GPG.objects.filter(key=key_fingerprint)
+    if dependent_objects:
+        messages.error(
+            request,
+            _('GPG key %(fingerprint)s cannot be deleted because at least'
+              ' one GPG Space is using it for encryption.' %
+              {'fingerprint': key_fingerprint}))
     else:
-        prompt = _('Are you sure you want to delete GPG key %(fingerprint)s?' %
-                   {'fingerprint': key_fingerprint})
+        LOGGER.debug('No dependent GPG spaces')
+        dependent_objects = Package.objects.filter(
+            encryption_key_fingerprint=key_fingerprint).exclude(
+            status=Package.DELETED)
+        if dependent_objects:
+            LOGGER.debug('HAVE dependent packages')
+            messages.error(
+                request,
+                _('GPG key %(fingerprint)s cannot be deleted because at least'
+                  ' one package (AIP, transfer) needs it in order to be'
+                  ' decrypted.' % {'fingerprint': key_fingerprint}))
+        else:
+            LOGGER.debug('No dependent packages')
+            prompt = _('Are you sure you want to delete GPG key'
+                       ' %(fingerprint)s?' % {'fingerprint': key_fingerprint})
     default_cancel = reverse('key_list')
     cancel_url = request.GET.get('next', default_cancel)
     context_dict = {
         'header': header,
-        'dependent_objects': dependent_gpg_spaces,
+        'dependent_objects': dependent_objects,
         'prompt': prompt,
         'cancel_url': cancel_url,
     }
