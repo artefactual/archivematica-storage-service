@@ -244,7 +244,7 @@ def mets_ss_agent(xml, digiprov_id, agent_value=None, agent_type='storage servic
     return digiprov_agent
 
 
-def _get_compression(pointer_path):
+def get_compression(pointer_path):
     """Return the compression algorithm used to compress the package, as
     documented in the pointer file at ``pointer_path``. Returns one of the
     constants in ``COMPRESSION_ALGORITHMS``.

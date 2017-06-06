@@ -38,7 +38,6 @@ class GPGException(Exception):
     pass
 
 
-
 class GPG(models.Model):
     """Space for storing packages as files encrypted via GnuPG.
     When an AIP is moved to a GPG space, it is encrypted with a
@@ -140,11 +139,19 @@ class GPG(models.Model):
         LOGGER.info('GPG move_from, dst_path: %s', dst_path)
         if not package:
             raise GPGException(_('GPG spaces can only contain packages'))
-        # Keep using the package's current GPG key, if it exists. Otherwise,
-        # use this GPG space's key.
-        key_fingerprint = package.encryption_key_fingerprint
-        if not key_fingerprint:
-            key_fingerprint = self.key
+
+        # NOTE: EXPERIMENTAL: every time this method is called, the package is
+        # encrypted with the current GPG key of this space. This means that
+        # many actions may cause the re-encryption of an AIP with a new key (if
+        # the AIP's previous key differs from the space's current key) because
+        # many method calls call this method.
+        # PREVIOUS BEHAVIOUR: Keep using the package's current GPG key, if it
+        # exists. Otherwise, use this GPG space's key.
+        # key_fingerprint = package.encryption_key_fingerprint
+        # if not key_fingerprint:
+        #     key_fingerprint = self.key
+        key_fingerprint = self.key
+
         self.space.create_local_directory(dst_path)
         self.space.move_rsync(src_path, dst_path, try_mv_local=True)
         try:
@@ -271,7 +278,7 @@ def _encr_path2key_fingerprint(encr_path):
     model must have a GPG fingerprint.
     """
     return Package.objects.get(
-        current_path__endswith(encr_path)).encryption_key_fingerprint
+        current_path__endswith=encr_path).encryption_key_fingerprint
 
 
 # This replaces non-unicode characters with a replacement character,
@@ -414,18 +421,19 @@ def _set_premis_compos_lvl_inhibitors(root, package):
     """Set PREMIS compositionLevel and inhibitors tags to reflect GPG
     encryption.
     """
-    # Set <premis:compositionLevel> to 2 and add <premis:inhibitors>
+    # Increment <premis:compositionLevel> and add <premis:inhibitors>
     for premis_object_el in root.findall('.//premis:object',
                                          namespaces=utils.NSMAP):
         if premis_object_el.find(
                 'premis:objectIdentifier/premis:objectIdentifierValue',
                 namespaces=utils.NSMAP).text.strip() == package.uuid:
-            # Set <premis:compositionLevel> to 2
+            # Increment <premis:compositionLevel>
             obj_char_el = premis_object_el.find(
                 'premis:objectCharacteristics', namespaces=utils.NSMAP)
             compos_level_el = obj_char_el.find(
                 'premis:compositionLevel', namespaces=utils.NSMAP)
-            compos_level_el.text = '2'
+            current_compos_level = compos_level_el.text
+            compos_level_el.text = str(int(current_compos_level) + 1)
             # When encryption is applied, the objectCharacteristics
             # block must include an inhibitors semantic unit.
             inhibitor_el = etree.SubElement(
@@ -446,26 +454,35 @@ def _set_mets_transform_file(root, package, key_fingerprint):
     if file_el.get('ID', '').endswith(package.uuid):
         # Add a new <mets:transformFile> under the <mets:file> for the
         # AIP, one which indicates that a decryption transform is
-        # needed.
-        algorithm = 'gpg'
-        etree.SubElement(
-            file_el,
-            METS_BNS + "transformFile",
-            TRANSFORMORDER='1',
-            TRANSFORMTYPE='decryption',
-            TRANSFORMALGORITHM=algorithm,
-            TRANSFORMKEY=key_fingerprint
-        )
-        # Decompression <transformFile> must have its TRANSFORMORDER
-        # attr changed to '2', because decryption is a precondition to
-        # decompression.
-        # TODO: does the logic here need to be more sophisticated? How
-        # many <mets:transformFile> elements can there be?
-        decompr_transform_el = file_el.find(
-            'mets:transformFile[@TRANSFORMTYPE="decompression"]',
+        # needed. Or, update an existing decryption mets:transformFile.
+        decrypt_transform_el = file_el.find(
+            'mets:transformFile[@TRANSFORMTYPE="decryption"]',
             namespaces=utils.NSMAP)
-        if decompr_transform_el is not None:
-            decompr_transform_el.set('TRANSFORMORDER', '2')
+        if decrypt_transform_el is None:
+            etree.SubElement(
+                file_el,
+                METS_BNS + "transformFile",
+                TRANSFORMORDER='1',
+                TRANSFORMTYPE='decryption',
+                TRANSFORMALGORITHM='gpg',
+                TRANSFORMKEY=key_fingerprint
+            )
+        else:
+            old_transform_key = decrypt_transform_el.get('TRANSFORMKEY')
+            decrypt_transform_el.set('TRANSFORMKEY', key_fingerprint)
+            LOGGER.info('There was a mets:transformFile for decryption. Its'
+                        ' TRANSFORMKEY was %s; it has been changed to %s',
+                        old_transform_key, key_fingerprint)
+        # All decompression <transformFile> elements must have their
+        # TRANSFORMORDER attributes incremented because decryption is a
+        # precondition to decompression.
+        for other_transform_el in file_el.findall(
+                'mets:transformFile[@TRANSFORMTYPE="decompression"]',
+                namespaces=utils.NSMAP):
+            current_transform_order = int(
+                other_transform_el.get('TRANSFORMORDER'))
+            other_transform_el.set('TRANSFORMORDER',
+                                   str(current_transform_order + 1))
     return root
 
 
