@@ -135,7 +135,7 @@ class PipelineLocalFSForm(forms.ModelForm):
     # TODO SpaceForm.path help text should say path to space on local machine
     class Meta:
         model = models.PipelineLocalFS
-        fields = ('remote_user', 'remote_name', )
+        fields = ('remote_user', 'remote_name', 'assume_rsync_daemon', 'rsync_password')
 
 
 class LockssomaticForm(forms.ModelForm):

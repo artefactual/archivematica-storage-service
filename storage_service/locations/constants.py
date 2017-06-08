@@ -65,7 +65,9 @@ PROTOCOL = {
         'model': models.PipelineLocalFS,
         'form': forms.PipelineLocalFSForm,
         'fields': ['remote_user',
-                   'remote_name']
+                   'remote_name',
+                   'assume_rsync_daemon',
+                   'rsync_password']
     },
     models.Space.SWIFT: {
         'model': models.Swift,

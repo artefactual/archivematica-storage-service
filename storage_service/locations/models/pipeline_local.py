@@ -36,6 +36,11 @@ class PipelineLocalFS(models.Model):
         help_text=_l("Name or IP of the remote machine."))
     # Space.path is the path on the remote machine
 
+    assume_rsync_daemon = models.BooleanField(default=False,
+        verbose_name=_l("Assume remote host serving files with rsync daemon"),
+        help_text=_l("If checked, will use rsync daemon-style commands instead of the default rsync with remote shell transport"))
+    rsync_password = models.CharField(max_length=64, blank=True, default="", help_text="RSYNC_PASSWORD value (rsync daemon)")
+
     class Meta:
         verbose_name = _l("Pipeline Local FS")
         app_label = 'locations'
@@ -55,13 +60,23 @@ class PipelineLocalFS(models.Model):
             user = self.remote_user
         if host is None:
             host = self.remote_name
+        if self.assume_rsync_daemon:
+            # when talking to a rsync daemon server:
+            # - a double colon is needed
+            # - location is not a path but a remote module (no slash)
+            # when creating a Storage Service Space, path can't be empty and must start with a slash
+            # to work around this restriction, the code here removes the slash
+            path = path.lstrip("/")
+            return_str = "{}@{}::{}"
+        else:
+            return_str = "{}@{}:{}"
 
-        return "{}@{}:{}".format(user, host, utils.coerce_str(path))
+        return return_str.format(user, host, utils.coerce_str(path))
 
     def browse(self, path):
         path = os.path.join(path, '')
         ssh_path = self._format_host_path(path)
-        return self.space.browse_rsync(ssh_path)
+        return self.space.browse_rsync(ssh_path, assume_rsync_daemon=self.assume_rsync_daemon, rsync_password=self.rsync_password)
 
     def delete_path(self, delete_path):
         # Sync from an empty directory to delete the contents of delete_path;
@@ -105,7 +120,7 @@ class PipelineLocalFS(models.Model):
         # else:
         src_path = self._format_host_path(src_path)
         self.space.create_local_directory(dest_path)
-        return self.space.move_rsync(src_path, dest_path)
+        return self.space.move_rsync(src_path, dest_path, assume_rsync_daemon=self.assume_rsync_daemon, rsync_password=self.rsync_password)
 
     def post_move_to_storage_service(self, *args, **kwargs):
         # TODO delete original file?
@@ -120,4 +135,4 @@ class PipelineLocalFS(models.Model):
         destination_path = self._format_host_path(destination_path)
 
         # Move file
-        return self.space.move_rsync(source_path, destination_path)
+        return self.space.move_rsync(source_path, destination_path, assume_rsync_daemon=self.assume_rsync_daemon, rsync_password=self.rsync_password)

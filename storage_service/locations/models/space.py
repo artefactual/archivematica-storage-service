@@ -416,7 +416,7 @@ class Space(models.Model):
 
     # HELPER FUNCTIONS
 
-    def move_rsync(self, source, destination, try_mv_local=False):
+    def move_rsync(self, source, destination, try_mv_local=False, assume_rsync_daemon=False, rsync_password=None):
         """ Moves a file from source to destination.
 
         By default, uses rsync to move files.
@@ -428,6 +428,8 @@ class Space(models.Model):
         :param source: Path to source file or directory. May have user@host: at beginning.
         :param destination: Path to destination file or directory. May have user@host: at the beginning.
         :param bool try_mv_local: If true, try moving/renaming instead of copying.  Should be False if source or destination specify a user@host.  Warning: this will not leave a copy at the source.
+        :param bool assume_rsync_daemon: If true, will use rsync daemon-style commands instead of the default rsync with remote shell transport
+        :param rsync_password: used if assume_rsync_daemon is true, to specify value of RSYNC_PASSWORD environment variable
         """
         source = utils.coerce_str(source)
         destination = utils.coerce_str(destination)
@@ -460,8 +462,10 @@ class Space(models.Model):
         # TODO Do this asyncronously, with restarting failed attempts
         command = ['rsync', '-t', '-O', '--protect-args', '-vv', '--chmod=ugo+rw', '-r', source, destination]
         LOGGER.info("rsync command: %s", command)
-
-        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        kwargs = {'stdout': subprocess.PIPE, 'stderr': subprocess.STDOUT}
+        if assume_rsync_daemon:
+            kwargs['env'] = {'RSYNC_PASSWORD': rsync_password}
+        p = subprocess.Popen(command, **kwargs)
         stdout, _ = p.communicate()
         if p.returncode != 0:
             s = "Rsync failed with status {}: {}".format(p.returncode, stdout)
@@ -575,7 +579,7 @@ class Space(models.Model):
                 properties[name]['object count'] = self._count_objects_in_directory(full_path)
         return {'directories': directories, 'entries': entries, 'properties': properties}
 
-    def browse_rsync(self, path, ssh_key=None):
+    def browse_rsync(self, path, ssh_key=None, assume_rsync_daemon=False, rsync_password=None):
         """
         Returns browse results for a ssh (rsync) accessible space.
 
@@ -587,23 +591,31 @@ class Space(models.Model):
 
         :param path: Path to query, including user & hostname. E.g. user@host:/path/to/browse/  Must end in with / to browse directories.
         :param ssh_key: Path to the SSH key on disk. If None, will use default.
+        :param bool assume_rsync_daemon: If true, will use rsync daemon-style commands instead of the default rsync with remote shell transport
+        :param rsync_password: used if assume_rsync_daemon is true, to specify value of RSYNC_PASSWORD environment variable
         :return: See docstring for Space.browse
         """
         if ssh_key is None:
             ssh_key = '/var/lib/archivematica/.ssh/id_rsa'
 
-        # Get entries
-        command = [
-            'rsync',
-            '--protect-args',
-            '--list-only',
-            '--exclude', '.*',  # Ignore hidden files
-            '--rsh', 'ssh -i ' + ssh_key,  # Specify identify file
-            path]
+        # Form command string used to get entries
+        command = ['rsync',
+                   '--protect-args',
+                   '--list-only',
+                   '--exclude', '.*',  # Ignore hidden files
+                   ]
+        if not assume_rsync_daemon:
+            # Specify identity file
+            command += ['--rsh', 'ssh -i ' + ssh_key]
+        command += [path]
+
         LOGGER.info('rsync list command: %s', command)
         LOGGER.debug('"%s"', '" "'.join(command))  # For copying to shell
         try:
-            output = subprocess.check_output(command)
+            env = os.environ.copy()
+            if assume_rsync_daemon:
+                env['RSYNC_PASSWORD'] = rsync_password
+            output = subprocess.check_output(command, env=env)
         except Exception as e:
             LOGGER.warning("rsync list failed: %s", e, exc_info=True)
             entries = []
