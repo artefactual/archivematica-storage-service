@@ -1,8 +1,11 @@
+import pytest
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from django.conf import settings
 
 
+@pytest.mark.skipif(not settings.SHIBBOLETH_AUTHENTICATION,
+                    reason='tests will only pass if Shibboleth is enabled')
 @override_settings(STATICFILES_STORAGE=None)
 class TestShibbolethLogin(TestCase):
     def test_with_no_shibboleth_headers(self):

@@ -164,7 +164,6 @@ TEMPLATES = [
                 'django.template.context_processors.tz',
                 'django.template.context_processors.request',
                 'django.contrib.messages.context_processors.messages',
-                'shibboleth.context_processors.logout_link',
             ],
             'debug': DEBUG,
         },
@@ -177,10 +176,9 @@ TEMPLATES = [
 # ######### AUTHENTICATION CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#authentication-backends
 
-AUTHENTICATION_BACKENDS = (
+AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
-    'shibboleth.backends.ShibbolethRemoteUserBackend',
-)
+]
 # ######### END AUTHENTICATION CONFIGURATION
 
 # ######### MIDDLEWARE CONFIGURATION
@@ -194,7 +192,6 @@ MIDDLEWARE_CLASSES = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'common.middleware.CustomShibbolethRemoteUserMiddleware',
     'common.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -209,7 +206,7 @@ ROOT_URLCONF = '%s.urls' % SITE_NAME
 
 
 # ######## APP CONFIGURATION
-DJANGO_APPS = (
+DJANGO_APPS = [
     # Default Django apps:
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -224,20 +221,19 @@ DJANGO_APPS = (
     # Admin panel and documentation:
     'django.contrib.admin',
     # 'django.contrib.admindocs',
-)
+]
 
-THIRD_PARTY_APPS = (
+THIRD_PARTY_APPS = [
     'tastypie',  # REST framework
-    'shibboleth', # Shibboleth authentication
     'longerusername', # Longer (> 30 characters) username
-)
+]
 
 # Apps specific for this project go here.
-LOCAL_APPS = (
+LOCAL_APPS = [
     'administration',
     'common',
     'locations',
-)
+]
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -245,10 +241,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 
 # ######## LOGIN REQUIRED MIDDLEWARE CONFIGURATION
-# LOGIN_URL = '/login/'
-LOGIN_URL = '/Shibboleth.sso/Login'
-SHIBBOLETH_LOGOUT_URL = '/Shibboleth.sso/Logout?target=%s'
-SHIBBOLETH_LOGOUT_REDIRECT_URL = '/logged-out'
+LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGIN_EXEMPT_URLS = (
     r'^api/',
@@ -341,17 +334,46 @@ SESSION_COOKIE_NAME = 'storageapi_sessionid'
 WSGI_APPLICATION = '%s.wsgi.application' % SITE_NAME
 # ######## END WSGI CONFIGURATION
 
-# ######### SHIBBOLETH CONFIGURATION
-SHIBBOLETH_REMOTE_USER_HEADER = 'HTTP_EPPN'
-SHIBBOLETH_ATTRIBUTE_MAP = {
-    # Automatic user fields
-    'HTTP_GIVENNAME': (False, 'first_name'),
-    'HTTP_SN': (False, 'last_name'),
-    'HTTP_MAIL': (False, 'email'),
-    # Entitlement field (which we handle manually)
-    'HTTP_ENTITLEMENT': (True, 'entitlement'),
-}
+ALLOW_USER_EDITS = True
 
-# If the user has this entitlement, they will be a superuser/admin
-SHIBBOLETH_ADMIN_ENTITLEMENT = 'preservation-admin'
-# ######### END SHIBBOLETH CONFIGURATION
+
+def is_true(env_str):
+    return env_str.lower() in ['true', 'yes', 'on', '1']
+
+SHIBBOLETH_AUTHENTICATION = is_true(environ.get('SS_SHIBBOLETH_AUTHENTICATION', ''))
+if SHIBBOLETH_AUTHENTICATION:
+    SHIBBOLETH_LOGOUT_URL = '/Shibboleth.sso/Logout?target=%s'
+    SHIBBOLETH_LOGOUT_REDIRECT_URL = '/logged-out'
+
+    SHIBBOLETH_REMOTE_USER_HEADER = 'HTTP_EPPN'
+    SHIBBOLETH_ATTRIBUTE_MAP = {
+        # Automatic user fields
+        'HTTP_GIVENNAME': (False, 'first_name'),
+        'HTTP_SN': (False, 'last_name'),
+        'HTTP_MAIL': (False, 'email'),
+        # Entitlement field (which we handle manually)
+        'HTTP_ENTITLEMENT': (True, 'entitlement'),
+    }
+
+    # If the user has this entitlement, they will be a superuser/admin
+    SHIBBOLETH_ADMIN_ENTITLEMENT = 'preservation-admin'
+
+    TEMPLATES[0]['OPTIONS']['context_processors'] += [
+        'shibboleth.context_processors.logout_link',
+    ]
+
+    AUTHENTICATION_BACKENDS += [
+        'shibboleth.backends.ShibbolethRemoteUserBackend',
+    ]
+
+    # Insert Shibboleth after the authentication middleware
+    MIDDLEWARE_CLASSES.insert(
+        MIDDLEWARE_CLASSES.index(
+            'django.contrib.auth.middleware.AuthenticationMiddleware',
+        ) + 1,
+        'common.middleware.CustomShibbolethRemoteUserMiddleware',
+    )
+
+    INSTALLED_APPS += ['shibboleth']
+
+    ALLOW_USER_EDITS = False
