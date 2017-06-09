@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.conf.urls import include, url
 from django.contrib import admin
 import django.contrib.auth.views
@@ -29,8 +30,13 @@ urlpatterns = [
     url(r'^i18n/', include('django.conf.urls.i18n', namespace='i18n')),
 
     url(r'^logged-out/', TemplateView.as_view(template_name='logged_out.html')),
-    url(r'^shib/', include('shibboleth.urls', namespace='shibboleth')),
 ]
+
+
+if 'shibboleth' in settings.INSTALLED_APPS:
+    urlpatterns += [
+        url(r'^shib/', include('shibboleth.urls', namespace='shibboleth')),
+    ]
 
 
 def startup():
