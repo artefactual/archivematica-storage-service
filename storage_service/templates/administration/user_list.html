@@ -5,7 +5,7 @@
 
 {% block content %}
 
-  {% if user.is_superuser %}
+  {% if user.is_superuser and allow_user_edits %}
     <p><a href="{% url 'user_create' %}">{% trans "Create New User" %}</a></p>
   {% endif %}
   <table class="datatable">
@@ -27,10 +27,12 @@
         <td>{{ user_display.is_superuser|yesno:_("True,False") }}</td>
         <td>{{ user_display.is_active|yesno:_("True,False") }}</td>
         <td>
-          {% if user.is_superuser %}
-            <a class="btn btn-primary edit small" href="{% url 'user_edit' user_display.id %}">{% trans "Edit" %}</a>
-          {% elif user.id == user_display.id %}
-            <a class="btn btn-primary edit small" href="{% url 'user_detail' user_display.id %}">{% trans "View" %}</a>
+          {% if user.is_superuser or user.id == user_display.id %}
+            {% if allow_user_edits %}
+              <a class="btn btn-primary edit small" href="{% url 'user_edit' user_display.id %}">{% trans "Edit" %}</a>
+            {% else %}
+              <a class="btn btn-primary edit small" href="{% url 'user_detail' user_display.id %}">{% trans "View" %}</a>
+            {% endif %}
           {% endif %}
         </td>
       </tr>

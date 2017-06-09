@@ -49,11 +49,16 @@ def version_view(request):
 
 def user_list(request):
     users = get_user_model().objects.all()
+    allow_user_edits = settings.ALLOW_USER_EDITS
     return render(request, 'administration/user_list.html', locals())
 
 
 def user_edit(request, id):
-    if not request.user.is_superuser:
+    edit_allowed = (
+        settings.ALLOW_USER_EDITS and
+        (request.user.is_superuser or str(request.user.id) == id)
+    )
+    if not edit_allowed:
         return redirect('user_list')
 
     action = _("Edit User")
@@ -75,7 +80,8 @@ def user_edit(request, id):
 
 
 def user_create(request):
-    if not request.user.is_superuser:
+    create_allowed = settings.ALLOW_USER_EDITS and request.user.is_superuser
+    if not create_allowed:
         return redirect('user_list')
 
     action = _("Create User")
@@ -88,7 +94,9 @@ def user_create(request):
 
 
 def user_detail(request, id):
-    if not (request.user.is_superuser or str(request.user.id) == id):
+    # Only a superuser or the user themselves can view their full details
+    view_allowed = request.user.is_superuser or str(request.user.id) == id
+    if not view_allowed:
         return redirect('user_list')
 
     display_user = get_object_or_404(get_user_model(), id=id)
