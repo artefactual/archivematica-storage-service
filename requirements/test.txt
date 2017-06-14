@@ -7,3 +7,4 @@ coverage==4.2
 pytest-django
 tox
 vcrpy>=1.0.0
+ipdb

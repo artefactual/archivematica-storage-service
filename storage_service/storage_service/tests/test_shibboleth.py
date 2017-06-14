@@ -1,8 +1,9 @@
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.conf import settings
 
 
+@override_settings(STATICFILES_STORAGE=None)
 class TestShibbolethLogin(TestCase):
     def test_with_no_shibboleth_headers(self):
         response = self.client.get('/')
@@ -17,7 +18,8 @@ class TestShibbolethLogin(TestCase):
             'HTTP_EPPN': 'testuser',
             'HTTP_GIVENNAME': 'Test',
             'HTTP_SN': 'User',
-            'HTTP_MAIL': 'test@example.com'
+            'HTTP_MAIL': 'test@example.com',
+            'HTTP_ENTITLEMENT': 'preservation-user',
         }
 
         response = self.client.get('/', **shib_headers)
@@ -36,7 +38,8 @@ class TestShibbolethLogin(TestCase):
             'HTTP_EPPN': 'testuser',
             'HTTP_GIVENNAME': 'Test',
             'HTTP_SN': 'User',
-            'HTTP_MAIL': 'test@example.com'
+            'HTTP_MAIL': 'test@example.com',
+            'HTTP_ENTITLEMENT': 'preservation-user',
         }
 
         response = self.client.get('/', **shib_headers)
@@ -50,7 +53,8 @@ class TestShibbolethLogin(TestCase):
             'HTTP_EPPN': long_email,
             'HTTP_GIVENNAME': 'Test',
             'HTTP_SN': 'User',
-            'HTTP_MAIL': 'test@example.com'
+            'HTTP_MAIL': 'test@example.com',
+            'HTTP_ENTITLEMENT': 'preservation-user',
         }
 
         response = self.client.get('/', **shib_headers)
