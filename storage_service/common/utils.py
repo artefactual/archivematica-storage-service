@@ -52,7 +52,10 @@ def get_all_settings():
     """ Returns a dict of 'setting_name': value with all of the settings. """
     settings = dict(models.Settings.objects.all().values_list('name', 'value'))
     for setting, value in settings.items():
-        settings[setting] = ast.literal_eval(value)
+        try:
+            settings[setting] = ast.literal_eval(value)
+        except SyntaxError:
+            pass  # Not all the settings are Python literals
     return settings
 
 

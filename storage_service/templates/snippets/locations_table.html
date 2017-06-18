@@ -14,6 +14,7 @@
         <th>{% trans "UUID" %}</th>
         <th>{% trans "Usage" %}</th>
         <th>{% trans "Enabled" %}</th>
+        <th>{% trans "Default" %}</th>
         <th>{% trans "Actions" %}</th>
       </tr>
     </thead>
@@ -38,6 +39,7 @@
         <td>{{ loc.uuid }}</td>
         <td>{{ loc.used }}B / {{ loc.quota|default:_("unlimited") }}</td>
         <td>{{ loc.enabled|yesno:_("Enabled,Disabled") }}</td>
+        <td>{{ loc.default|yesno:_("Yes,No") }}</td>
         <td><a href="{% url 'location_edit' loc.space.uuid loc.uuid %}">{% trans "Edit" %}</a> | <a href="{% url 'location_switch_enabled' loc.uuid %}?next={{ request.path }}">{{ loc.enabled|yesno:_("Disable,Enable") }}</a> | <a href="{% url 'location_delete' loc.uuid %}?next={{ request.path }}">{% trans "Delete" %}</a></td>
       </tr>
     {% endfor %}

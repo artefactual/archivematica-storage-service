@@ -4,6 +4,7 @@ import logging
 import os
 
 # Core Django, alphabetical
+from django.dispatch import receiver
 from django.db import models
 from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
@@ -11,6 +12,7 @@ from django.utils.translation import ugettext as _, ugettext_lazy as _l
 from django_extensions.db.fields import UUIDField
 
 # This project, alphabetical
+from administration.models import Settings
 
 # This module, alphabetical
 from .managers import Enabled
@@ -81,6 +83,12 @@ class Location(models.Model):
     objects = models.Manager()
     active = Enabled()
 
+    # Whether this location is the default location which is a global
+    # application setting stored in administration.models.Settings. See
+    # signal receivers unset_default_locaiton and set_default_location for
+    # more details.
+    _default = False
+
     def __unicode__(self):
         return _('%(uuid)s: %(path)s (%(purpose)s)') % {'uuid': self.uuid, 'purpose': self.get_purpose_display(), 'path': self.relative_path}
 
@@ -91,9 +99,55 @@ class Location(models.Model):
         return os.path.normpath(
             os.path.join(self.space.path, self.relative_path))
 
+    @property
+    def default(self):
+        """ Looks up whether this location is the default one application-wise. """
+        try:
+            name = 'default_{}_location'.format(self.purpose)
+            Settings.objects.get(name=name, value=self.uuid)
+            return True
+        except Settings.DoesNotExist:
+            return False
+
+    @default.setter
+    def default(self, value):
+        self._default = value
+
     def get_description(self):
         """ Returns a user-friendly description (or the path). """
         return self.description or self.full_path
+
+
+@receiver(models.signals.pre_delete, sender=Location)
+def unset_default_location(sender, instance, using, **kwargs):
+    name = 'default_{}_location'.format(instance.purpose)
+    Settings.objects.filter(name=name, value=instance.uuid).delete()
+
+
+@receiver(models.signals.pre_save, sender=Location)
+def set_default_location_pre_save(sender, instance, raw, using, update_fields, **kwargs):
+    # Is this an edit? Has the purpose changed? If both are true, it's possible
+    # that a default location setting with the previous purpose exists and it
+    # needs to be deleted.
+    if not instance.pk:
+        return
+    try:
+        old = Location.objects.get(pk=instance.pk)
+    except Location.DoesNotExist:
+        return
+    if old.purpose != instance.purpose:
+        Settings.objects.filter(
+            name='default_{}_location'.format(old.purpose),
+            value=old.uuid).delete()
+
+
+@receiver(models.signals.post_save, sender=Location)
+def set_default_location_post_save(sender, instance, created, raw, using, update_fields, **kwargs):
+    name = 'default_{}_location'.format(instance.purpose)
+    if instance._default:
+        Settings.objects.update_or_create(name=name, defaults={'value': instance.uuid})
+    else:
+        Settings.objects.filter(name=name, value=instance.uuid).delete()
 
 
 class LocationPipeline(models.Model):

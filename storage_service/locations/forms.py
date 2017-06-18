@@ -163,9 +163,11 @@ class SwiftForm(forms.ModelForm):
 
 
 class LocationForm(forms.ModelForm):
+    default = forms.BooleanField(required=False, label=_l("Set as global default location for its purpose"))
+
     class Meta:
         model = models.Location
-        fields = ('purpose', 'pipeline', 'relative_path', 'description', 'quota', 'enabled')
+        fields = ('purpose', 'pipeline', 'relative_path', 'description', 'quota', 'enabled', 'default')
         widgets = {
             'purpose': DisableableSelectWidget(),
         }
@@ -189,6 +191,7 @@ class LocationForm(forms.ModelForm):
         self.fields['purpose'].widget.disabled_choices = blacklist
         # Associated with all enabled pipelines by default
         self.fields['pipeline'].initial = models.Pipeline.active.values_list('pk', flat=True)
+        self.fields['default'].initial = self.instance.default
 
     def clean(self):
         cleaned_data = super(LocationForm, self).clean()
@@ -222,6 +225,10 @@ class LocationForm(forms.ModelForm):
         if data not in self.whitelist:
             raise django.core.exceptions.ValidationError(_('Invalid purpose'))
         return data
+
+    def save(self, commit=True):
+        self.instance.default = self.cleaned_data['default']
+        return super(LocationForm, self).save(commit=commit)
 
 
 class ConfirmEventForm(forms.ModelForm):

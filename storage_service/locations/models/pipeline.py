@@ -134,6 +134,8 @@ class Pipeline(models.Model):
                     # Fetch existing location
                     location = Location.objects.get(uuid=uuid)
                     assert location.purpose == p['purpose']
+                location.default = True
+                location.save()
                 LOGGER.info("Adding new %s %s to %s",
                     p['purpose'], location, self)
                 LocationPipeline.objects.get_or_create(
