@@ -1,7 +1,7 @@
 # Base requirements - for all installations
 pip==9.0.1
 setuptools
-bagit==1.5.0
+bagit==1.5.4
 defusedxml==0.4.1
 Django>=1.8,<1.9
 django-annoying==0.7.7
