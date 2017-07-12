@@ -22,10 +22,10 @@ class Command(BaseCommand):
         UserModel = get_user_model()
         user = None
         try:
-            user = UserModel._default_manager.using('default').get(**{UserModel.USERNAME_FIELD: options['username']})
+            user = UserModel._default_manager.get(**{UserModel.USERNAME_FIELD: options['username']})
             print('User found.')
         except UserModel.DoesNotExist:
-            user = UserModel._default_manager.using('default').create_superuser(options['username'], options['email'], options['password'])
+            user = UserModel._default_manager.create_superuser(options['username'], options['email'], options['password'])
             print('User could not be found, one was created.')
 
         if user is None:
