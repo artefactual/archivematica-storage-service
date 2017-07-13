@@ -1151,10 +1151,6 @@ class Package(models.Model):
             else:
                 reingest_pointer = os.path.join(ss_internal.full_path, utils.uuid_to_path(self.uuid), reingest_pointer_name)
 
-            # Remove initial copy of pointer
-            if was_compressed:
-                os.remove(os.path.join(ss_internal.full_path, reingest_pointer_name))
-
         # Replace METS
         reingest_mets_path = os.path.join(reingest_full_path, 'data', 'METS.' + self.uuid + '.xml')
         original_mets_path = os.path.join(path, 'data', 'METS.' + self.uuid + '.xml')
