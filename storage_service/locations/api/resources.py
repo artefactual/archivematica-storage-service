@@ -571,7 +571,7 @@ class PackageResource(ModelResource):
             # This isn't configured by default
             site_url = getattr(settings, "SITE_BASE_URL", None)
             signals.deletion_request.send(sender=self, url=site_url,
-                uuid=package.uuid, location=package.full_path)
+                uuid=package.uuid, location=package.full_path, pipeline=request_info['pipeline'])
         else:
             response = {
                 'message': _('A deletion request already exists for this AIP.')
