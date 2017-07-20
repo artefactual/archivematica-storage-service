@@ -12,6 +12,11 @@ FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, '..', 'fixtures'))
 ARKIVUM_DIR = os.path.abspath(os.path.join(FIXTURES_DIR, 'arkivum'))
 
 
+def get_pkg_uuid_path(package_uuid):
+    tmp = package_uuid.replace('-', '')
+    return os.path.join(*[tmp[i:i + 4] for i in range(0, len(tmp), 4)])
+
+
 class TestArkivum(TestCase):
 
     fixtures = ['base.json', 'arkivum.json']
@@ -20,11 +25,30 @@ class TestArkivum(TestCase):
         self.arkivum_object = models.Arkivum.objects.all()[0]
         self.arkivum_object.space.path = FIXTURES_DIR
         self.arkivum_object.space.staging_path = FIXTURES_DIR
+
         self.arkivum_object.space.save()
-        self.package = models.Package.objects.get(uuid='c0f8498f-b92e-4a8b-8941-1b34ba062ed8')
+        package_uuid = 'c0f8498f-b92e-4a8b-8941-1b34ba062ed8'
+        self.package = models.Package.objects.get(uuid=package_uuid)
+        # Here we make sure that the test pointer file is where the package
+        # expects it to be.
+        self.package.pointer_file_location.space = self.arkivum_object.space
+
+        self.package.pointer_file_location.relative_path = 'arkivum/storage_service'
+
+        pointer_fname = 'pointer.' + package_uuid + '.xml'
+        pointer_src_path = os.path.join(FIXTURES_DIR, pointer_fname)
+        pointer_dst_path = os.path.join(
+            self.package.pointer_file_location.space.path,
+            self.package.pointer_file_location.relative_path,
+            get_pkg_uuid_path(package_uuid),
+            pointer_fname)
+        try:
+            os.makedirs(os.path.dirname(pointer_dst_path))
+        except OSError:
+            pass
+        shutil.copyfile(pointer_src_path, pointer_dst_path)
         self.uncompressed_package = models.Package.objects.get(uuid='e52c518d-fcf4-46cc-8581-bbc01aff7af3')
         # Create filesystem to interact with
-        os.mkdir(ARKIVUM_DIR)
         os.mkdir(os.path.join(ARKIVUM_DIR, 'aips'))
         os.mkdir(os.path.join(ARKIVUM_DIR, 'ts'))
         with open(os.path.join(ARKIVUM_DIR, 'test.txt'), 'ab') as f:
@@ -41,8 +65,8 @@ class TestArkivum(TestCase):
     def test_browse(self):
         response = self.arkivum_object.browse(ARKIVUM_DIR)
         assert response
-        assert response['directories'] == ['aips', 'ts']
-        assert response['entries'] == ['aips', 'test.txt', 'ts']
+        assert set(response['directories']) == set(['aips', 'ts', 'storage_service'])
+        assert set(response['entries']) == set(['aips', 'test.txt', 'ts', 'storage_service'])
         assert response['properties']['test.txt']['size'] == 17
         assert response['properties']['aips']['object count'] == 0
         assert response['properties']['ts']['object count'] == 0
@@ -86,8 +110,12 @@ class TestArkivum(TestCase):
     @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'arkivum_post_move_from_ss.yaml'))
     def test_post_move_from_ss(self):
         # POST to Arkivum about file
-        self.arkivum_object.post_move_from_storage_service(os.path.join(FIXTURES_DIR, 'working_bag.zip'), self.package.full_path, self.package)
-        assert self.package.misc_attributes['arkivum_identifier'] == 'a09f9c18-df2b-474f-8c7f-50eb3dedba2d'
+        self.arkivum_object.post_move_from_storage_service(
+            os.path.join(FIXTURES_DIR, 'working_bag.zip'),
+            self.package.full_path,
+            self.package)
+        assert self.package.misc_attributes['arkivum_identifier'] == (
+            'a09f9c18-df2b-474f-8c7f-50eb3dedba2d')
 
     # def test_move_to_ss(self):
     #     # Test file
