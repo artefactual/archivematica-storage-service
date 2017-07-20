@@ -1,6 +1,10 @@
+# flake8: noqa
+
+"""Test settings and globals."""
+
 from __future__ import absolute_import
 
-from .base import *  # noqa: F401, F403
+from .base import *
 
 
 # ######## TEST SETTINGS

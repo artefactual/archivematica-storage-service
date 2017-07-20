@@ -27,7 +27,7 @@
         "size": 0,
         "package_type": "Transfer",
         "status": "Uploaded",
-        "misc_attributes": ""
+        "misc_attributes": "{}"
     }
 },
 {
@@ -44,7 +44,7 @@
         "size": 0,
         "package_type": "Transfer",
         "status": "Uploaded",
-        "misc_attributes": ""
+        "misc_attributes": "{}"
     }
 },
 {
@@ -61,7 +61,7 @@
         "size": 0,
         "package_type": "Transfer",
         "status": "Uploaded",
-        "misc_attributes": ""
+        "misc_attributes": "{}"
     }
 },
 {
@@ -78,7 +78,7 @@
         "size": 0,
         "package_type": "AIP",
         "status": "Uploaded",
-        "misc_attributes": ""
+        "misc_attributes": "{}"
     }
 },
 {
@@ -95,7 +95,7 @@
         "size": 0,
         "package_type": "AIP",
         "status": "Uploaded",
-        "misc_attributes": ""
+        "misc_attributes": "{}"
     }
 },
 {
@@ -112,7 +112,7 @@
         "size": 0,
         "package_type": "AIP",
         "status": "Uploaded",
-        "misc_attributes": ""
+        "misc_attributes": "{}"
     }
 },{
     "pk": 1,

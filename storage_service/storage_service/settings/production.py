@@ -1,29 +1,38 @@
+# flake8: noqa
+
 """Production settings and globals."""
+
 from __future__ import absolute_import
 
-from os import environ
+import dj_database_url
 
-from .base import *  # noqa: F401, F403
-from .base import get_env_variable  # To make he linter happy
-
-# Normally you should not import ANYTHING from Django directly
-# into your settings, but ImproperlyConfigured is an exception.
-from django.core.exceptions import ImproperlyConfigured
+from .base import *
 
 
-def get_env_setting(setting):
-    """ Get the environment setting or return exception """
-    try:
-        return environ[setting]
-    except KeyError:
-        error_msg = "Set the %s env variable" % setting
-        raise ImproperlyConfigured(error_msg)
+# ######## DATABASE CONFIGURATION
+# See: https://docs.djangoproject.com/en/dev/ref/settings/#databases
+DATABASES = {}
+if 'SS_DB_URL' in environ:
+    DATABASES['default'] = dj_database_url.config(
+        env='SS_DB_URL', conn_max_age=600)
+else:
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',  # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': get_env_variable('SS_DB_NAME'),
+        'USER': get_env_variable('SS_DB_USER'),  # Not used with sqlite3.
+        'PASSWORD': get_env_variable('SS_DB_PASSWORD'),  # Not used with sqlite3.
+        'HOST': get_env_variable('SS_DB_HOST'),  # Set to empty string forr localhost. Not used with sqlite3.
+        'PORT': '',  # Set to empty string for default. Not used with sqlite3.
+    }
+# ######## END DATABASE CONFIGURATION
 
 
 # ######## HOST CONFIGURATION
-# See: https://docs.djangoproject.com/en/1.5/releases/1.5/#allowed-hosts-required-in-production
+# See:
+# https://docs.djangoproject.com/en/1.5/releases/1.5/#allowed-hosts-required-in-production
 ALLOWED_HOSTS = ['*']
 # ######## END HOST CONFIGURATION
+
 
 # ######## EMAIL CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#email-backend
@@ -50,20 +59,6 @@ EMAIL_USE_TLS = True
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#server-email
 SERVER_EMAIL = EMAIL_HOST_USER
 # ######## END EMAIL CONFIGURATION
-
-# ######## DATABASE CONFIGURATION
-# See: https://docs.djangoproject.com/en/dev/ref/settings/#databases
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',  # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': get_env_variable('SS_DB_NAME'),
-        'USER': get_env_variable('SS_DB_USER'),  # Not used with sqlite3.
-        'PASSWORD': get_env_variable('SS_DB_PASSWORD'),  # Not used with sqlite3.
-        'HOST': get_env_variable('SS_DB_HOST'),  # Set to empty string forr localhost. Not used with sqlite3.
-        'PORT': '',  # Set to empty string for default. Not used with sqlite3.
-    },
-}
-# ######## END DATABASE CONFIGURATION
 
 
 # ######## CACHE CONFIGURATION
