@@ -1,3 +1,5 @@
+# flake8: noqa
+
 """Common settings and globals."""
 
 from os import environ
@@ -123,7 +125,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # ######## SECRET CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
 # Note: This key should only be used for development and testing.
-SECRET_KEY = get_env_variable('DJANGO_SECRET_KEY')
+SECRET_KEY = "SECRET_KEY"
 # ######## END SECRET CONFIGURATION
 
 

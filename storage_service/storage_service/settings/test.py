@@ -7,8 +7,6 @@ from __future__ import absolute_import
 from .base import *
 
 
-# ######## TEST SETTINGS
-
 # ######## IN-MEMORY TEST DATABASE
 DATABASES = {
     "default": {
