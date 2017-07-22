@@ -1,5 +1,32 @@
 [
 {
+    "fields": {
+        "username": "test",
+        "first_name": "",
+        "last_name": "",
+        "is_active": true,
+        "is_superuser": true,
+        "is_staff": true,
+        "last_login": null,
+        "groups": [],
+        "user_permissions": [],
+        "password": "pbkdf2_sha256$20000$KtBsDJ1Efvp0$Hyvx9WvqBq2rNZX8DW1dpo8WdsEats9qc0U/NlK/Gq8=",
+        "email": "test@test.com",
+        "date_joined": "2017-12-06T21:16:42.772Z"
+    },
+    "model": "auth.user",
+    "pk": 1
+},
+{
+    "fields": {
+        "user": 1,
+        "key": "test",
+        "created": "2017-12-06T21:16:42.838Z"
+    },
+    "model": "tastypie.apikey",
+    "pk": 1
+},
+{
     "pk": 1, 
     "model": "locations.space", 
     "fields": {
