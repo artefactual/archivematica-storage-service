@@ -5,7 +5,8 @@
     "(ref. http://stackoverflow.com/questions/2392766/multiline-strings-in-json)",
     "gcc: required to build some pip dependencies",
     "pip installed with get_pip, do not install package python-pip",
-    "virtualenv installed with pip, do not install package python-virtualenv"
+    "virtualenv installed with pip, do not install package python-virtualenv",
+    "build-essential is needed to compile brotli (cc1plus)"
   ],
   "osdeps_packages": [
    { "name": "nginx", "state": "latest"},
@@ -13,6 +14,8 @@
    { "name": "rsync", "state": "latest"},
    { "name": "p7zip-full", "state": "latest"},
    { "name": "python-dev", "state": "latest"},
+   { "name": "build-essential", "state": "latest"},
+   { "name": "libmysqlclient-dev", "state": "latest"},
    { "name": "libxml2-dev", "state": "latest"},
    { "name": "libxslt1-dev", "state": "latest"},
    { "name": "libz-dev", "state": "latest"},
