@@ -114,7 +114,25 @@
         "status": "Uploaded",
         "misc_attributes": "{}"
     }
-},{
+},
+{
+ "pk": 7,
+    "model": "locations.package",
+    "fields": {
+        "uuid": "88deec53-c7dc-4828-865c-7356386e9399",
+        "description": "Small bagged 7zipped package",
+        "origin_pipeline": null,
+        "current_location": "615103f0-0ee0-4a12-ba17-43192d1143ea",
+        "current_path": "working_bag.7z",
+        "pointer_file_location": "",
+        "pointer_file_path": "",
+        "size": 595,
+        "package_type": "AIP",
+        "status": "Uploaded",
+        "misc_attributes": "{}"
+    }
+},
+{
     "pk": 1,
     "model": "locations.file",
     "fields": {

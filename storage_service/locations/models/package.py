@@ -510,10 +510,11 @@ class Package(models.Model):
         Returns path to the extracted file and a temp dir that needs to be
         deleted.
         """
-        if extract_path is None:
-            ss_internal = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
-            extract_path = tempfile.mkdtemp(dir=ss_internal.full_path)
+        ss_internal = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
         full_path = self.fetch_local_path()
+
+        if extract_path is None:
+            extract_path = tempfile.mkdtemp(dir=ss_internal.full_path)
 
         # The basename is the base directory containing a package
         # like an AIP inside the compressed file.
@@ -553,17 +554,21 @@ class Package(models.Model):
             if relative_path:
                 command.append(relative_path)
             LOGGER.info('Extracting file with: %s to %s', command, output_path)
-            rc = subprocess.call(command)
-            LOGGER.debug('Extract file RC: %s', rc)
-            if rc:
+            rc = subprocess.check_output(command)
+            if 'No files extracted' in rc:
                 raise StorageException(_('Extraction error'))
         else:
-            LOGGER.info('Copying AIP from: %s to %s', full_path, output_path)
-            shutil.copytree(full_path, output_path)
+            if relative_path:
+                # copy only one file out of aip
+                head, tail = os.path.split(full_path)
+                src = os.path.join(head, relative_path)
+                os.mkdir(os.path.join(extract_path, basename))
+                shutil.copy(src, output_path)
+            else:
+                src = full_path
+                shutil.copytree(full_path, output_path)
 
-        if not relative_path:
-            self.local_path_location = ss_internal
-            self.local_path = output_path
+            LOGGER.info('Copying from: %s to %s', src, output_path)
 
         return (output_path, extract_path)
 

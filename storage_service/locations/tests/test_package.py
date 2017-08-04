@@ -1,4 +1,7 @@
 import os
+import pytest
+import shutil
+import tempfile
 import vcr
 
 from django.test import TestCase
@@ -24,6 +27,11 @@ class TestPackage(TestCase):
         models.Location.objects.filter(purpose='SS').update(relative_path=FIXTURES_DIR[1:])
         # Arkivum space points at fixtures directory
         models.Space.objects.filter(uuid='6fb34c82-4222-425e-b0ea-30acfd31f52e').update(path=FIXTURES_DIR)
+
+        self.tmp_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp_dir)
 
     def test_parsing_mets_data(self):
         mets_data = self.package._parse_mets(prefix=self.mets_path)
@@ -134,3 +142,43 @@ class TestPackage(TestCase):
         assert failures == []
         assert message == ''
         assert timestamp is None
+
+    def test_extract_file_aip_from_uncompressed_aip(self):
+        """ It should return an aip """
+        package = models.Package.objects.get(uuid='0d4e739b-bf60-4b87-bc20-67a379b28cea')
+        basedir = package.get_base_directory()
+        output_path, extract_path = package.extract_file(extract_path=self.tmp_dir)
+        assert output_path == os.path.join(self.tmp_dir, basedir)
+        assert os.path.join(output_path, 'manifest-md5.txt')
+
+    def test_extract_file_file_from_uncompressed_aip(self):
+        """ It should return a single file from an uncompressed aip """
+        package = models.Package.objects.get(uuid='0d4e739b-bf60-4b87-bc20-67a379b28cea')
+        basedir = package.get_base_directory()
+        output_path, extract_path = package.extract_file(relative_path='working_bag/manifest-md5.txt', extract_path=self.tmp_dir)
+        assert output_path == os.path.join(self.tmp_dir, basedir, 'manifest-md5.txt')
+        assert os.path.isfile(output_path)
+
+    def test_extract_file_file_from_compressed_aip(self):
+        """ It should return a single file from a 7zip compressed aip """
+        package = models.Package.objects.get(uuid='88deec53-c7dc-4828-865c-7356386e9399')
+        basedir = package.get_base_directory()
+        output_path, extract_path = package.extract_file(relative_path='working_bag/manifest-md5.txt', extract_path=self.tmp_dir)
+        assert output_path == os.path.join(extract_path, basedir, 'manifest-md5.txt')
+        assert os.path.isfile(output_path)
+
+    def test_extract_file_file_does_not_exist_compressed(self):
+        """ It should raise an error because the requested file does not exist"""
+        package = models.Package.objects.get(uuid='88deec53-c7dc-4828-865c-7356386e9399')
+        with pytest.raises(Exception) as e_info:
+            output_path, extract_path = package.extract_file(relative_path='working_bag/manifest-sha512.txt', extract_path=self.tmp_dir)
+
+        assert e_info.value.message == 'Extraction error'
+
+    def test_extract_file_aip_from_compressed_aip(self):
+        """ It should return an aip """
+        package = models.Package.objects.get(uuid='88deec53-c7dc-4828-865c-7356386e9399')
+        basedir = package.get_base_directory()
+        output_path, extract_path = package.extract_file(extract_path=self.tmp_dir)
+        assert output_path == os.path.join(self.tmp_dir, basedir)
+        assert os.path.join(output_path, 'manifest-md5.txt')
