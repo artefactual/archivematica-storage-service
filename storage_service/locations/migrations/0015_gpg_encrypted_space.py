@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('locations', '0012_dspace_archive_format'),
+        ('locations', '0014_verbose_field_names'),
     ]
 
     operations = [
