@@ -377,3 +377,14 @@ if SHIBBOLETH_AUTHENTICATION:
     INSTALLED_APPS += ['shibboleth']
 
     ALLOW_USER_EDITS = False
+
+# WARNING: if Gunicorn is being used to serve the Storage Service and its
+# worker class is set to `gevent`, then BagIt validation must use 1 process.
+# Otherwise, calls to `validate` will hang because of the incompatibility
+# between gevent and multiprocessing (BagIt) concurrency strategies. See
+# https://github.com/artefactual/archivematica/issues/708
+try:
+    BAG_VALIDATION_NO_PROCESSES = int(
+        environ.get('SS_BAG_VALIDATION_NO_PROCESSES', 1))
+except ValueError:
+    BAG_VALIDATION_NO_PROCESSES = 1

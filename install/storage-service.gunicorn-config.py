@@ -16,6 +16,10 @@ bind = os.environ.get('SS_GUNICORN_BIND', '127.0.0.1:8001')
 workers = os.environ.get('SS_GUNICORN_WORKERS', '4')
 
 # http://docs.gunicorn.org/en/stable/settings.html#worker-class
+# WARNING: if ``worker_class`` is set to ``'gevent'``, then
+# ``BAG_VALIDATION_NO_PROCESSES`` in settings/base.py *must* be set to 1.
+# Otherwise reingest will fail at bagit validate. See
+# https://github.com/artefactual/archivematica/issues/708
 worker_class = os.environ.get('SS_GUNICORN_WORKER_CLASS', 'gevent')
 
 # http://docs.gunicorn.org/en/stable/settings.html#timeout

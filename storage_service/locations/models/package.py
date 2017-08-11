@@ -12,6 +12,7 @@ import subprocess
 import tempfile
 
 # Core Django, alphabetical
+from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
@@ -840,7 +841,7 @@ class Package(models.Model):
 
         bag = bagit.Bag(path)
         try:
-            success = bag.validate(processes=4)
+            success = bag.validate(processes=settings.BAG_VALIDATION_NO_PROCESSES)
             failures = []
             message = ""
         except bagit.BagValidationError as failure:
@@ -1195,7 +1196,8 @@ class Package(models.Model):
         bag = bagit.Bag(path)
         bag.save(manifests=True)
         bag = bagit.Bag(path)  # Workaround for bug https://github.com/LibraryOfCongress/bagit-python/pull/63
-        bag.validate(processes=4)  # Raises exception in case of problem
+        # Raises exception in case of problem
+        bag.validate(processes=settings.BAG_VALIDATION_NO_PROCESSES)
 
         # Compress if necessary
         if to_be_compressed:
