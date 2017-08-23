@@ -445,7 +445,7 @@ class Space(models.Model):
 
         # Rsync file over
         # TODO Do this asyncronously, with restarting failed attempts
-        command = ['rsync', '-t', '-O', '--protect-args', '-vv', '--chmod=ugo+rw,Da+x', '--perms', '-r', source, destination]
+        command = ['rsync', '-t', '-O', '--protect-args', '-vv', '--chmod=F660,D770', '-r', source, destination]
         LOGGER.info("rsync command: %s", command)
 
         p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -513,7 +513,7 @@ class Space(models.Model):
         for directory in directories:
             path = os.path.join(os.path.dirname(directory), '')
             path = "{}@{}:{}".format(user, host, utils.coerce_str(path))
-            cmd = ['rsync', '-vv', '--protect-args', '--chmod=ugo+rwx', '--recursive', temp_dir, path]
+            cmd = ['rsync', '-vv', '--protect-args', '--chmod=ug=rwx,o=rx', '--recursive', temp_dir, path]
             LOGGER.info("rsync path creation command: %s", cmd)
             try:
                 subprocess.check_call(cmd)
