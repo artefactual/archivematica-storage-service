@@ -74,16 +74,11 @@ def get_default_gpg_key(keys):
 
 def generate_default_gpg_key():
     """Generate the default AM Storage Service key. Note that by supplying no
-    expiration date, the key never expires.
-    Warning: generating this key for the first time can take several minutes.
-    At present, this default key is generated the first time that
-    ``get_gpg_key_list`` is called, which is typically when the "Encryption
-    keys" link is clicked under the "Administration" tab. Waiting on a long
-    request like this is not a very good user experience. It may be desirable
-    to do this in a separate thread and poll for completion, or install
-    rng-tools, or else at least warn the user that this will take a long time,
-    or use a smaller key size. The same considerations apply for
-    ``generate_gpg_key``. TODO/QUESTION ^.
+    expiration date, the key never expires. At present, this default key is
+    generated the first time that ``get_gpg_key_list`` is called, which is
+    typically when the "Encryption keys" link is clicked under the
+    "Administration" tab. WARNING: if rng-tools is not installed or is not
+    correctly configured, then GPG may take a long time to generate keys.
     """
     input_data = gpg.gen_key_input(
         key_type=DFLT_KEY_TYPE,
