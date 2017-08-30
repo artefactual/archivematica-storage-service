@@ -495,6 +495,17 @@ class PackageResource(ModelResource):
         # Serialize JSONField as dict, not as repr of a dict
         return bundle.obj.misc_attributes
 
+    def dehydrate(self, bundle):
+        """Add an encrypted boolean key to the returned package indicating
+        whether it is encrypted.
+        """
+        encrypted = False
+        space = bundle.obj.current_location.space
+        if space.access_protocol == Space.GPG:
+            encrypted = True
+        bundle.data['encrypted'] = encrypted
+        return bundle
+
     def hydrate_current_location(self, bundle):
         """Customize unserialization of current_location.
 
