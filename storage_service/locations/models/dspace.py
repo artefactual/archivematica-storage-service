@@ -379,12 +379,12 @@ class DSpace(models.Model):
             url = dspace_url + bitstream['link']
             LOGGER.debug('Bitstream policy URL %s', url)
             body = bitstream
-            if bitstream['name'] == 'metadata.7z':
+            if bitstream['name'] in ['metadata.7z', 'metadata.zip']:
                 # Overwrite existing policies, instead of adding
                 body['policies'] = self.metadata_policy
                 # Add bitstream description for metadata when depositing to DSpace
                 body['description'] = 'Administrative information.'
-            elif bitstream['name'] == 'objects.7z':
+            elif bitstream['name'] in ['objects.7z', 'objects.zip']:
                 # Add bitstream description for objects when depositing to DSpace
                 body['description'] = 'Archival materials.'
             else:
