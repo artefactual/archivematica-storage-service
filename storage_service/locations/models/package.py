@@ -570,6 +570,9 @@ class Package(models.Model):
 
             LOGGER.info('Copying from: %s to %s', src, output_path)
 
+        if not relative_path:
+            self.local_path_location = ss_internal
+            self.local_path = output_path
         return (output_path, extract_path)
 
     def compress_package(self, algorithm, extract_path=None):
