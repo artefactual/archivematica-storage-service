@@ -46,6 +46,19 @@
         'directory_picker',
         '{% url "browse" "v2" "space" space.uuid %}'
       );
+
+      // Hide the "Replicators" field when the location being created is itself
+      // a replicator: replicators can't have replicators.
+      $('select#id_purpose').change(function(event) {replicatorsVisibility();});
+      function replicatorsVisibility() {
+        var purpose = $('select#id_purpose').val();
+        if (purpose === 'RP') {
+            $('select#id_replicators').closest('p').hide();
+        } else {
+            $('select#id_replicators').closest('p').show();
+        }
+      }
+      replicatorsVisibility();
     });
   </script>
 

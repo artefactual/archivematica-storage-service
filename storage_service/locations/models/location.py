@@ -39,6 +39,7 @@ class Location(models.Model):
     STORAGE_SERVICE_INTERNAL = 'SS'
     BACKLOG = 'BL'
     TRANSFER_SOURCE = 'TS'
+    REPLICATOR = 'RP'
 
     PURPOSE_CHOICES = (
         (AIP_RECOVERY, _l('AIP Recovery')),
@@ -50,6 +51,7 @@ class Location(models.Model):
         (STORAGE_SERVICE_INTERNAL, _l('Storage Service Internal Processing')),
         (BACKLOG, _l('Transfer Backlog')),
         (TRANSFER_SOURCE, _l('Transfer Source')),
+        (REPLICATOR, _l('Replicator')),
     )
     purpose = models.CharField(max_length=2,
         choices=PURPOSE_CHOICES,
@@ -75,6 +77,13 @@ class Location(models.Model):
     enabled = models.BooleanField(default=True,
         verbose_name=_l('Enabled'),
         help_text=_l("True if space can be accessed."))
+    replicators = models.ManyToManyField(
+        'Location',
+        blank=True,
+        related_name='masters',
+        verbose_name=_l('Replicators'),
+        help_text=_l('Other locations that will be used to create replicas of'
+                     ' the packages stored in this location'))
 
     class Meta:
         verbose_name = _l("Location")

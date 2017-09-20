@@ -15,6 +15,42 @@
     <dt>{% trans "Usage" %}</dt> <dd>{{ location.used|filesizeformat }} / {{ location.quota|filesizeformat }}</dd>
     <dt>{% trans "Enabled" %}</dt> <dd>{{ location.enabled|yesno:_("Enabled,Disabled") }}</dd>
     <dt>{% trans "Default" %}</dt> <dd>{{ location.default|yesno:_("Yes,No") }}</dd>
+
+    <!-- List replicators if location is non-replicator; otherwise list links to masters. -->
+    {% if location.purpose == 'RP' %}
+      {% with location.masters.all as master_locations %}
+        <dt>{% trans "Master locations" %}</dt>
+          <dd>
+          {% if master_locations %}
+            <ul>
+              {% for master in master_locations %}
+                <li><a href="{% url 'location_detail' master.uuid %}">{{ master }}</a></li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            There are none.
+          {% endif %}
+          </dd>
+        </dt>
+      {% endwith %}
+    {% else %}
+      {% with location.replicators.all as replicator_locations %}
+        <dt>{% trans "Replicator locations" %}</dt>
+          <dd>
+          {% if replicator_locations %}
+            <ul>
+              {% for replicator in replicator_locations %}
+                <li><a href="{% url 'location_detail' replicator.uuid %}">{{ replicator }}</a></li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            There are none.
+          {% endif %}
+          </dd>
+        </dt>
+      {% endwith %}
+    {% endif %}
+
     <dt>{% trans "Actions" %}</dt>
       <dd>
         <ul>

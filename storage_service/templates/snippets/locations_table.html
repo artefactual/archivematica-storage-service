@@ -21,7 +21,18 @@
     <tbody>
     {% for loc in locations %}
       <tr>
-        <td>{{ loc.get_purpose_display }}</td>
+        <td>{{ loc.get_purpose_display }}
+          {% if loc.purpose == 'RP' %}
+            {% with loc.masters.all as master_locations %}
+                {% if master_locations %}
+                  of
+                  {% for master in master_locations %}
+                    <a href="{% url 'location_detail' master.uuid %}">{{ master.uuid }}</a></li>
+                  {% endfor %}
+                {% endif %}
+            {% endwith %}
+          {% endif %}
+        </td>
         {% if not no_pipeline %}
           <td>
           {% for p in loc.pipeline.all %}

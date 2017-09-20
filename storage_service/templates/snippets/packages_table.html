@@ -8,6 +8,8 @@
         <th>{% trans "Current Location" %}</th>
         <th>{% trans "Size" %}</th>
         <th>{% trans "Type" %}</th>
+        <th>{% trans "Replicas" %}</th>
+        <th>{% trans "Is Replica Of" %}</th>
         <th>{% trans "Pointer File" %}</th>
         <th>{% trans "Status" %}</th>
         <th>{% trans "Fixity Date" %}</th>
@@ -30,6 +32,25 @@
         <td><a href="{% url 'location_detail' package.current_location.uuid %}">{{ package.full_path }}</a></td>
         <td>{{ package.size|filesizeformat }}</td>
         <td>{{ package.get_package_type_display }}</td>
+
+        <td>
+        {% with package.replicas.all as replicas %}
+          {% if replicas %}
+            <ul>
+            {% for replica in replicas %}
+              <li>{{ replica.uuid }}</li>
+            {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+        </td>
+
+        <td>
+        {% if package.replicated_package %}
+          {{ package.replicated_package.uuid }}
+        {% endif %}
+        </td>
+
         <td>
           {% if package.pointer_file_location %}
           <a href="{% url 'pointer_file_request' 'v2' 'file' package.uuid %}">{% trans "Pointer File" %}</a>
@@ -51,7 +72,8 @@
         </td>
         <td>
           <a href="{% url 'download_request' 'v2' 'file' package.uuid %}">{% trans "Download" %}</a>
-          {% if package.package_type in 'AIP AIC' %}
+          <!-- Replicas should not be re-ingestible -->
+          {% if package.package_type in 'AIP AIC' and not package.replicated_package %}
             <a href="{% url 'aip_reingest' package.uuid %}?next={{ request.path }}">{% trans "Re-ingest" %}</a>
           {% endif %}
         </td>

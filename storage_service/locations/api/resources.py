@@ -546,6 +546,9 @@ class PackageResource(ModelResource):
         return bundle
 
     def obj_create(self, bundle, **kwargs):
+        """Create a new Package model instance. Called when a POST request is
+        made to api/v2/file/.
+        """
         bundle = super(PackageResource, self).obj_create(bundle, **kwargs)
         related_package_uuid = bundle.data.get('related_package_uuid')
         # IDEA add custom endpoints, instead of storing all AIPS that come in?
@@ -554,7 +557,12 @@ class PackageResource(ModelResource):
         origin_path = bundle.data.get('origin_path')
         if bundle.obj.package_type in (Package.AIP, Package.AIC, Package.DIP) and bundle.obj.current_location.purpose in (Location.AIP_STORAGE, Location.DIP_STORAGE):
             # Store AIP/AIC
-            bundle.obj.store_aip(origin_location, origin_path, related_package_uuid)
+            events = bundle.data.get('events', [])
+            agents = bundle.data.get('agents', [])
+            aip_subtype = bundle.data.get('aip_subtype', None)
+            bundle.obj.store_aip(origin_location, origin_path,
+                                 related_package_uuid, premis_events=events,
+                                 premis_agents=agents, aip_subtype=aip_subtype)
         elif bundle.obj.package_type in (Package.TRANSFER,) and bundle.obj.current_location.purpose in (Location.BACKLOG,):
             # Move transfer to backlog
             bundle.obj.backlog_transfer(origin_location, origin_path)
@@ -788,60 +796,11 @@ class PackageResource(ModelResource):
         force_local = False
         if request.GET.get('force_local') in ('True', 'true', '1'):
             force_local = True
-        success, failures, message, timestamp = bundle.obj.check_fixity(force_local=force_local)
-
-        response = {
-            "success": success,
-            "message": message,
-            "failures": {
-                "files": {
-                    "missing": [],
-                    "changed": [],
-                    "untracked": [],
-                }
-            },
-            "timestamp": timestamp,
-        }
-
-        for failure in failures:
-            if isinstance(failure, bagit.FileMissing):
-                info = {
-                    "path": failure.path,
-                    "message": str(failure)
-                }
-                response["failures"]["files"]["missing"].append(info)
-            if isinstance(failure, bagit.ChecksumMismatch):
-                info = {
-                    "path": failure.path,
-                    "expected": failure.expected,
-                    "actual": failure.found,
-                    "hash_type": failure.algorithm,
-                    "message": str(failure),
-                }
-                response["failures"]["files"]["changed"].append(info)
-            if isinstance(failure, bagit.UnexpectedFile):
-                info = {
-                    "path": failure.path,
-                    "message": str(failure)
-                }
-                response["failures"]["files"]["untracked"].append(info)
-
-        report = json.dumps(response)
-        if success is False:
-            signals.failed_fixity_check.send(sender=self,
-                uuid=bundle.obj.uuid, location=bundle.obj.full_path,
-                report=report)
-        elif success is None:
-            signals.fixity_check_not_run.send(sender=self,
-                uuid=bundle.obj.uuid, location=bundle.obj.full_path,
-                report=report)
-        elif success is True:
-            signals.successful_fixity_check.send(sender=self,
-                uuid=bundle.obj.uuid, location=bundle.obj.full_path,
-                report=report)
-
+        report_json, report_dict = (
+            bundle.obj.get_fixity_check_report_send_signals(
+                force_local=force_local))
         return http.HttpResponse(
-            report,
+            report_json,
             content_type="application/json"
         )
 

@@ -239,6 +239,9 @@ def aip_reingest(request, package_uuid):
     except Package.DoesNotExist:
         messages.warning(request, _('Package with UUID %(uuid)s does not exist.') % {'uuid': package_uuid})
         return redirect(next_url)
+    if package.replicated_package:
+        messages.warning(request, _('Package %(uuid)s is a replica and replicas cannot be re-ingested.') % {'uuid': package_uuid})
+        return redirect(next_url)
     form = forms.ReingestForm(request.POST or None)
     if form.is_valid():
         pipeline = form.cleaned_data['pipeline']
@@ -266,7 +269,11 @@ def location_edit(request, space_uuid, location_uuid=None):
     else:
         action = _("Create Location")
         location = None
-    form = forms.LocationForm(request.POST or None, space_protocol=space.access_protocol, instance=location)
+    form = forms.LocationForm(
+        request.POST or None,
+        space_protocol=space.access_protocol,
+        instance=location)
+
     if form.is_valid():
         location = form.save(commit=False)
         location.space = space
@@ -275,7 +282,8 @@ def location_edit(request, space_uuid, location_uuid=None):
         for pipeline in form.cleaned_data['pipeline']:
             LocationPipeline.objects.get_or_create(
                 location=location, pipeline=pipeline)
-
+        for replicator_loc in form.cleaned_data['replicators']:
+            location.replicators.add(replicator_loc)
         # Delete relationships between the location and pipelines not in the form
         to_delete = LocationPipeline.objects.filter(location=location).exclude(
             pipeline__in=list(form.cleaned_data['pipeline']))

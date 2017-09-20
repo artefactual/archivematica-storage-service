@@ -31,6 +31,7 @@ class LocalFilesystem(models.Model):
         Location.STORAGE_SERVICE_INTERNAL,
         Location.TRANSFER_SOURCE,
         Location.BACKLOG,
+        Location.REPLICATOR,
     ]
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):

@@ -191,7 +191,15 @@ class LocationForm(forms.ModelForm):
 
     class Meta:
         model = models.Location
-        fields = ('purpose', 'pipeline', 'relative_path', 'description', 'quota', 'enabled', 'default')
+        fields = ('purpose',
+                  'pipeline',
+                  'relative_path',
+                  'description',
+                  'quota',
+                  'enabled',
+                  'default',
+                  'replicators')
+
         widgets = {
             'purpose': DisableableSelectWidget(),
         }
@@ -213,11 +221,20 @@ class LocationForm(forms.ModelForm):
             self.whitelist = all_
         blacklist = all_ - set(self.whitelist)
         self.fields['purpose'].widget.disabled_choices = blacklist
+        # A possible replicator for a Location is any RP-purposed location
+        # other than the current one.
+        replicator_choices = models.Location.objects.filter(
+            enabled=True, purpose=models.Location.REPLICATOR).all()
+        instance_uuid = getattr(kwargs.get('instance'), 'uuid', None)
+        self.fields['replicators'].widget.choices = [
+            (repl_loc.id, str(repl_loc)) for repl_loc in replicator_choices
+            if repl_loc.uuid != instance_uuid]
         # Associated with all enabled pipelines by default
         self.fields['pipeline'].initial = models.Pipeline.active.values_list('pk', flat=True)
         self.fields['default'].initial = self.instance.default
 
     def clean(self):
+        # TODO: replicators can NOT have replicators
         cleaned_data = super(LocationForm, self).clean()
         purpose = cleaned_data.get('purpose')
         if purpose == models.Location.AIP_RECOVERY:

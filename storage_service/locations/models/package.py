@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 # stdlib, alphabetical
+from collections import namedtuple
 import datetime
 import distutils.dir_util
 import json
@@ -10,20 +11,25 @@ import re
 import shutil
 import subprocess
 import tempfile
+from uuid import uuid4
 
 # Core Django, alphabetical
 from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext as _, ugettext_lazy as _l
+from django.utils import timezone
 
 # Third party dependencies, alphabetical
 import bagit
 import jsonfield
 from django_extensions.db.fields import UUIDField
+import metsrw
 import requests
 
 # This project, alphabetical
 from common import utils
+from locations import signals
+from storage_service import __version__ as ss_version
 
 # This module, alphabetical
 from . import StorageException
@@ -33,6 +39,7 @@ from .event import File
 from .fixity_log import FixityLog
 
 __all__ = ('Package', )
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -57,6 +64,9 @@ class Package(models.Model):
         max_length=512, blank=True, null=True, default=None,
         help_text=_l('The fingerprint of the GPG key used to encrypt the'
                      ' package, if applicable'))
+    replicated_package = models.ForeignKey('Package', to_field='uuid',
+                                           null=True, blank=True,
+                                           related_name='replicas')
 
     AIP = "AIP"
     AIC = "AIC"
@@ -76,6 +86,8 @@ class Package(models.Model):
     )
     package_type = models.CharField(max_length=8, choices=PACKAGE_TYPE_CHOICES)
     related_packages = models.ManyToManyField('self', related_name='related')
+
+    DEFAULT_CHECKSUM_ALGORITHM = 'sha256'
 
     PENDING = 'PENDING'
     STAGING = 'STAGING'
@@ -345,7 +357,7 @@ class Package(models.Model):
         temp_aip.save()
 
         # Check integrity of temporary AIP package
-        (success, failures, message, _throwaway) = temp_aip.check_fixity(force_local=True)
+        (success, failures, message, __) = temp_aip.check_fixity(force_local=True)
 
         # If the recovered AIP doesn't pass check, delete and return error info
         if not success:
@@ -403,99 +415,831 @@ class Package(models.Model):
         temp_aip.delete()
 
         # Do fixity check of AIP with recovered files
-        success, failures, message, _throwaway = self.check_fixity(force_local=True)
+        success, failures, message, __ = self.check_fixity(force_local=True)
         return success, failures, message
 
-    def store_aip(self, origin_location, origin_path, related_package_uuid=None):
-        """ Stores an AIP in the correct Location.
+    def replicate(self, replicator_location_uuid):
+        """Replicate this package in the database and on disk by
+        1. creating a new ``Package`` model instance that references this one in
+           its ``replicated_package`` attribute,
+        2. copying the AIP on disk to a new path in the replicator location
+           referenced by ``replicator_location_uuid``,
+        3. creating a new pointer file for the replica, which encodes the
+           replication event, and
+        4. updating the pointer file for the replicated AIP, which encodes the
+           replication event.
+        """
+        self_uuid = self.uuid
+        replicator_location = Location.objects.get(
+            uuid=replicator_location_uuid)
+        # Replicandum is the package to be replicated, i.e., ``self``
+        replicandum_location = self.current_location
+        replicandum_path = self.current_path
+        replicandum_uuid = self.uuid
+        LOGGER.info('Replicating package %s to replicator location %s',
+                    replicandum_uuid, replicator_location_uuid)
+        replica_package = _replicate_package_mdl_inst(self)
+
+        # It is necessary to re-retrieve ``self`` here because otherwise the
+        # package model instance replication will cause ``self`` to reference
+        # the replica.
+        self = Package.objects.get(uuid=self_uuid)
+
+        # Remove the /uuid/path from the replica's current_path and replace the
+        # old UUID in the basename with the new UUID.
+        replica_package.current_path = os.path.basename(
+            replicandum_path.rstrip('/')).replace(
+            replicandum_uuid, replica_package.uuid, 1)
+        replica_package.current_location = replicator_location
+
+        # Check if enough space on the space and location
+        src_space = replicandum_location.space
+        dest_space = replica_package.current_location.space
+        self._check_quotas(dest_space, replica_package.current_location)
+
+        # Replicate AIP at
+        # destination_location/uuid/split/into/chunks/destination_path
+        uuid_path = utils.uuid_to_path(replica_package.uuid)
+        replica_package.current_path = os.path.join(
+            uuid_path, replica_package.current_path)
+        replica_destination_path=os.path.join(
+            replica_package.current_location.relative_path,
+            replica_package.current_path)
+        replica_package.status = Package.PENDING
+        replica_package.save()
+
+        # Get the master AIP's pointer file and extract the checksum details
+        master_ptr = self.get_pointer_instance()
+        master_ptr_aip_fsentry = master_ptr.get_file(file_uuid=self.uuid)
+        master_premis_object = master_ptr_aip_fsentry.get_premis_objects()[0]
+        master_checksum_algorithm = master_premis_object.message_digest_algorithm
+        master_checksum = master_premis_object.message_digest
+
+        # Copy replicandum AIP from its source location to the SS
+        src_space.move_to_storage_service(
+            source_path=os.path.join(replicandum_location.relative_path,
+                                     replicandum_path),
+            destination_path=replica_package.current_path,
+            destination_space=dest_space)
+        replica_package.status = Package.STAGING
+        replica_package.save()
+
+        # Calculate the checksum of the replica while we have it locally,
+        # compare it to the master's checksum and create a PREMIS validation
+        # event out of the result.
+        replica_local_path = replica_package.fetch_local_path()
+        replica_checksum = utils.generate_checksum(
+            replica_local_path, master_checksum_algorithm).hexdigest()
+        checksum_report = _get_checksum_report(
+            master_checksum, self.uuid, replica_checksum, replica_package.uuid,
+            master_checksum_algorithm)
+        replication_validation_event = (
+            replica_package.get_replication_validation_event(
+                checksum_report=checksum_report,
+                master_aip_uuid=self.uuid))
+
+        # Copy replicandum AIP from the SS to replica package's replicator
+        # location.
+        src_space.post_move_to_storage_service()
+        dest_space.move_from_storage_service(
+            source_path=replica_package.current_path,
+            destination_path=replica_destination_path,
+            package=replica_package,
+        )
+        if dest_space.access_protocol not in (Space.LOM, Space.ARKIVUM):
+            replica_package.status = Package.UPLOADED
+        replica_package.save()
+        dest_space.post_move_from_storage_service(
+            staging_path=replica_package.current_path,
+            destination_path=replica_destination_path,
+            package=replica_package)
+        self._update_quotas(dest_space, replica_package.current_location)
+
+        # Create and write to disk the pointer file for the replica, which
+        # contains the PREMIS replication event.
+        replication_event_uuid = str(uuid4())
+        # replica_package_pointer_file_full_path = os.path.join(
+        #     replica_package.pointer_file_location.space.path,
+        #     replica_package.pointer_file_location.relative_path,
+        #     replica_package.pointer_file_path)
+        replica_pointer_file = self.create_replica_pointer_file(
+            replica_package, replication_event_uuid,
+            replication_validation_event, master_ptr=master_ptr)
+        write_pointer_file(replica_pointer_file,
+                           replica_package.full_pointer_file_path)
+        replica_package.save()
+
+        # Update the pointer file of the replicated AIP so that it contains a
+        # record of the AIP's replication.
+        new_master_pointer_file = self.update_pointer_file_with_replication(
+            master_ptr, replica_package, replication_event_uuid)
+        write_pointer_file(new_master_pointer_file, self.full_pointer_file_path)
+
+        LOGGER.info('Finished replicating package %s as replica package %s',
+                    replicandum_uuid, replica_package.uuid)
+
+    def should_have_pointer_file(self, package_full_path=None,
+                                 package_type=None):
+        """Returns ``True`` if the package is both an AIP/AIC and is a file.
+        Note: because storage in certain locations (e.g., GPG encrypted
+        locations) can result in packaging and hence transformation of an AIP
+        directory to an AIP file, this predicate may return ``True`` after
+        ``move_from_storage_service`` is called but ``False`` before.
+        """
+        if not package_full_path:
+            package_full_path = os.path.join(
+                self.current_location.space.path,
+                self.current_location.relative_path,
+                self.current_path)
+        if not package_type:
+            package_type = self.package_type
+        isfile = os.path.isfile(package_full_path)
+        isaip = package_type in (Package.AIP, Package.AIC)
+        ret = isfile or isaip
+        if not ret:
+            if not isfile:
+                LOGGER.info('Package should not have a pointer file because %s'
+                            ' is not a file', package_full_path)
+            if not isaip:
+                LOGGER.info('Package should not have a pointer file because it'
+                            ' is not an AIP or an AIC; it is a(n) %s', package_type)
+        return ret
+
+    # ==========================================================================
+    # Store AIP methods
+    # ==========================================================================
+
+    def store_aip(self, origin_location, origin_path, related_package_uuid=None,
+                  premis_events=None, premis_agents=None, aip_subtype=None):
+        """Stores an AIP in the correct Location.
 
         Invokes different transfer mechanisms depending on what the source and
-        destination Spaces are.  Checks if there is space in the Space and
-        Location for the AIP, and raises a StorageException if not.  All sizes
-        expected to be in bytes.
+        destination Spaces are. High-level steps (see auxiliary methods for
+        details):
+
+        1. Get AIP to the "pending" stage: check space quotas (raising
+           ``StorageException if insufficient) and get needed vars into ``v``.
+        2. Get AIP to the "uploaded" stage: move the AIP to its AIP Storage
+           location and update space quotas after move.
+        3. Ensure the AIP has a pointer file, if applicable.
+        4. Create replicas of the AIP, if applicable.
+
+        The AIP is initially located in location ``origin_location`` at
+        relative path ``origin_path``. Once stored, the AIP should be in
+        location ``self.current_location`` at relative path
+        ``<UUID_AS_PATH>/self.current_path``. In the course of this method,
+        values on the ``Package`` instance are updated (including status) and
+        periodically saved to the db.
         """
+        LOGGER.info('store_aip called in Package class of SS')
+        v = self._store_aip_to_pending(origin_location, origin_path)
+        self._store_aip_to_uploaded(v, related_package_uuid)
+        self._store_aip_ensure_pointer_file(
+            v, premis_events=premis_events, premis_agents=premis_agents,
+            aip_subtype=aip_subtype)
+        self.create_replicas()
+
+    def _store_aip_to_pending(self, origin_location, origin_path):
+        """Get this AIP to the "pending" stage of ``store_aip`` by
+        1. settting and persisting attributes on ``self`` (including
+           ``status=Package.PENDING``),
+        2. checking that the destination space has enough space for the AIP to
+           be stored (and raising an exception if not), and
+        3. returning a simple object with attributes needed in the rest of
+           ``store_aip``.
+        """
+        V = namedtuple('V', ['src_space', 'dest_space', 'should_have_pointer',
+                             'pointer_file_src', 'pointer_file_dst',
+                             'already_generated_ptr_exists'])
         self.origin_location = origin_location
         self.origin_path = origin_path
-        # TODO Move some of the procesing in archivematica
-        # clientScripts/storeAIP to here?
-
+        origin_full_path = os.path.join(
+            self.origin_location.space.path,
+            self.origin_location.relative_path,
+            self.origin_path)
         # Check if enough space on the space and location
         # All sizes expected to be in bytes
         src_space = self.origin_location.space
         dest_space = self.current_location.space
         self._check_quotas(dest_space, self.current_location)
-
         # Store AIP at
         # destination_location/uuid/split/into/chunks/destination_path
         uuid_path = utils.uuid_to_path(self.uuid)
         self.current_path = os.path.join(uuid_path, self.current_path)
-        self.save()
-
-        # Store AIP Pointer File at
-        # internal_usage_location/uuid/split/into/chunks/pointer.uuid.xml
-        if self.package_type in (Package.AIP, Package.AIC):
-            self.pointer_file_location = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
-            self.pointer_file_path = os.path.join(uuid_path, 'pointer.{}.xml'.format(self.uuid))
-            pointer_file_src = os.path.join(self.origin_location.relative_path, os.path.dirname(self.origin_path), 'pointer.xml')
-            pointer_file_dst = os.path.join(self.pointer_file_location.relative_path, self.pointer_file_path)
-
         self.status = Package.PENDING
         self.save()
+        # If applicable, we will store the AIP pointer file at
+        # internal_usage_location/uuid/split/into/chunks/pointer.uuid.xml
+        should_have_pointer = self.should_have_pointer_file(
+            package_full_path=origin_full_path)
+        pointer_file_src = pointer_file_dst = already_generated_ptr_exists = \
+            None
+        if should_have_pointer:
+            self.pointer_file_location = Location.active.get(
+                purpose=Location.STORAGE_SERVICE_INTERNAL)
+            self.pointer_file_path = os.path.join(
+                uuid_path, 'pointer.{}.xml'.format(self.uuid))
+            pointer_file_src = os.path.join(
+                self.origin_location.relative_path,
+                os.path.dirname(self.origin_path),
+                'pointer.xml')
+            pointer_file_dst = os.path.join(
+                self.pointer_file_location.relative_path,
+                self.pointer_file_path)
+            already_generated_ptr_full_path = os.path.join(
+                self.origin_location.space.path,
+                pointer_file_src)
+            already_generated_ptr_exists = os.path.isfile(
+                already_generated_ptr_full_path)
+        return V(
+            src_space=src_space,
+            dest_space=dest_space,
+            should_have_pointer=should_have_pointer,
+            pointer_file_src=pointer_file_src,
+            pointer_file_dst=pointer_file_dst,
+            already_generated_ptr_exists=already_generated_ptr_exists)
 
-        # Move pointer file
-        if self.package_type in (Package.AIP, Package.AIC):
-            try:
-                src_space.move_to_storage_service(pointer_file_src, self.pointer_file_path, self.pointer_file_location.space)
-                self.pointer_file_location.space.move_from_storage_service(self.pointer_file_path, pointer_file_dst, package=None)
-            except:
-                LOGGER.warning("No pointer file found")
-                self.pointer_file_location = None
-                self.pointer_file_path = None
-                self.save()
-
-        # Move AIP
-        src_space.move_to_storage_service(
-            source_path=os.path.join(self.origin_location.relative_path, self.origin_path),
+    def _store_aip_to_uploaded(self, v, related_package_uuid):
+        """Get this AIP to the "uploaded" stage of ``store_aip`` by
+        1. moving it to the SS internal location,
+        2. setting its status to "staging",
+        3. calling ``post_move_to_storage_service`` on the source space,
+        4. moving it to the destination space/location,
+        5. setting the status to "uploaded" (if applicable),
+        6. setting a related package (if applicable),
+        7. calling ``post_move_from_storage_service`` on the destination space,
+        8. updating quotas on the destination space, and
+        9. persisting the package to the database.
+        :param namedtuple v: object with attributes needed for processing.
+        :param str related_package_uuid: UUID of a related package.
+        :returns NoneType None:
+        """
+        v.src_space.move_to_storage_service(
+            source_path=os.path.join(self.origin_location.relative_path,
+                                     self.origin_path),
             destination_path=self.current_path,  # This should include Location.path
-            destination_space=dest_space)
+            destination_space=v.dest_space)
         self.status = Package.STAGING
         self.save()
-        src_space.post_move_to_storage_service()
-
-        dest_space.move_from_storage_service(
+        v.src_space.post_move_to_storage_service()
+        v.dest_space.move_from_storage_service(
             source_path=self.current_path,  # This should include Location.path
-            destination_path=os.path.join(self.current_location.relative_path, self.current_path),
+            destination_path=os.path.join(
+                self.current_location.relative_path,
+                self.current_path),
             package=self,
         )
         # Update package status once transferred to SS
-        if dest_space.access_protocol not in (Space.LOM, Space.ARKIVUM):
+        if v.dest_space.access_protocol not in (Space.LOM, Space.ARKIVUM):
             self.status = Package.UPLOADED
         if related_package_uuid is not None:
             related_package = Package.objects.get(uuid=related_package_uuid)
             self.related_packages.add(related_package)
         self.save()
-        dest_space.post_move_from_storage_service(
+        v.dest_space.post_move_from_storage_service(
             staging_path=self.current_path,
-            destination_path=os.path.join(self.current_location.relative_path, self.current_path),
+            destination_path=os.path.join(
+                self.current_location.relative_path, self.current_path),
             package=self)
+        self._update_quotas(v.dest_space, self.current_location)
 
-        self._update_quotas(dest_space, self.current_location)
+    def _store_aip_ensure_pointer_file(self, v, premis_events=None,
+                                       premis_agents=None, aip_subtype=None):
+        """Ensure that this newly stored AIP has a pointer file by moving an
+        AM-created pointer file to the appropriate SS location if such a
+        pointer file exists or by creating a pointer file (if necessary)
+        otherwise. Set pointer file-related attributes on the model instance
+        and save to the database. Optional args are only used if a pointer file
+        must be created; see ``create_pointer_file`` for details.
+        :param namedtuple v: object with attributes needed for processing.
+        :returns NoneType None:
+        """
+        if v.should_have_pointer:
+            if v.already_generated_ptr_exists:
+                # Move an already-generated pointer file if exists.
+                v.src_space.move_to_storage_service(
+                    v.pointer_file_src,
+                    self.pointer_file_path,
+                    self.pointer_file_location.space)
+                self.pointer_file_location.space.move_from_storage_service(
+                    self.pointer_file_path,
+                    v.pointer_file_dst,
+                    package=None)
+                self._update_existing_ptr_loc_info()  # Update its location info
+            else:  # Otherwise, create a pointer file here.
+                self._store_aip_create_pointer_file(
+                    v.pointer_file_dst, premis_events,
+                    premis_agents=premis_agents, aip_subtype=aip_subtype)
+        else:  # This package should not have a pointer file
+            self.pointer_file_location = None
+            self.pointer_file_path = None
+        self.save()
 
-        # Update pointer file's location information
-        if self.pointer_file_path and self.package_type in (Package.AIP, Package.AIC):
-            pointer_absolute_path = self.full_pointer_file_path
-            root = etree.parse(pointer_absolute_path)
-            element = root.find('.//mets:file', namespaces=utils.NSMAP)
-            flocat = element.find('mets:FLocat', namespaces=utils.NSMAP)
-            if self.uuid in element.get('ID', '') and flocat is not None:
-                flocat.set('{{{ns}}}href'.format(ns=utils.NSMAP['xlink']), self.full_path)
-            # Add USE="Archival Information Package" to fileGrp.  Required for
-            # LOCKSS, and not provided in Archivematica <=1.1
-            if root.find('.//mets:fileGrp[@USE="Archival Information Package"]', namespaces=utils.NSMAP) is not None:
-                root.find('.//mets:fileGrp', namespaces=utils.NSMAP).set('USE', 'Archival Information Package')
+    def _store_aip_create_pointer_file(self, pointer_file_dst, premis_events,
+                                       premis_agents=None, aip_subtype=None):
+        """Create a pointer file and write it to disk for the ``store_aip``
+        method.
+        :param str pointer_file_dst:
+        :param list premis_events:
+        :param list premis_agents:
+        :param str aip_subtype:
+        :returns NoneType None:
+        See ``create_pointer_file`` for details.
+        """
+        pointer_file_dst = os.path.join(
+            self.pointer_file_location.space.path, pointer_file_dst)
+        checksum_algorithm = Package.DEFAULT_CHECKSUM_ALGORITHM
+        checksum = utils.generate_checksum(
+            self.fetch_local_path(), checksum_algorithm).hexdigest()
+        premis_events = [
+            metsrw.PREMISEvent(data=event) for event in premis_events]
+        compression_event = _find_compression_event(premis_events)
+        if not compression_event:
+            raise StorageException(_(
+                'Failed to store AIP %(aip_uuid)s This AIP needs a'
+                ' pointer file, however the Archivematica pipeline did'
+                ' not create one and it also did not provide the'
+                ' compression event needed for the Storage Service to'
+                ' create one.' % {'aip_uuid': self.uuid}))
+        __, compression_program_version, archive_tool = (
+            compression_event.compression_details)
+        premis_object = self._get_aip_premis_object(
+            checksum_algorithm, checksum, archive_tool,
+            compression_program_version)
+        pointer_file = self.create_pointer_file(
+            premis_object, premis_events, premis_agents=premis_agents,
+            package_subtype=aip_subtype)
+        if pointer_file is None:
+            self.pointer_file_location = None
+            self.pointer_file_path = None
+        else:
+            write_pointer_file(pointer_file, pointer_file_dst)
 
-            with open(pointer_absolute_path, 'w') as f:
-                f.write(etree.tostring(root, pretty_print=True, xml_declaration=True, encoding='utf-8'))
+    def _update_existing_ptr_loc_info(self):
+        """Update an AM-created pointer file's location information."""
+        pointer_absolute_path = self.full_pointer_file_path
+        root = etree.parse(pointer_absolute_path)
+        element = root.find('.//mets:file', namespaces=utils.NSMAP)
+        flocat = element.find('mets:FLocat', namespaces=utils.NSMAP)
+        if self.uuid in element.get('ID', '') and flocat is not None:
+            flocat.set('{{{ns}}}href'.format(ns=utils.NSMAP['xlink']),
+                       self.full_path)
+        # Add USE="Archival Information Package" to fileGrp. Required for
+        # LOCKSS, and not provided in Archivematica <=1.1
+        if root.find('.//mets:fileGrp[@USE="Archival Information Package"]',
+                     namespaces=utils.NSMAP) is not None:
+            root.find('.//mets:fileGrp', namespaces=utils.NSMAP).set(
+                'USE', 'Archival Information Package')
+        with open(pointer_absolute_path, 'w') as f:
+            f.write(etree.tostring(root, pretty_print=True, xml_declaration=True, encoding='utf-8'))
+
+    # ==========================================================================
+    # END Store AIP methods
+    # ==========================================================================
+
+    def get_pointer_instance(self):
+        """Return this package's pointer file as a ``metsrw.METSDocument``
+        instance.
+        """
+        if not self.should_have_pointer_file():
+            return None
+        ptr_path = self.full_pointer_file_path
+        if not ptr_path:
+            return None
+        return metsrw.METSWithPREMISDocument.fromfile(ptr_path)
+
+    def create_replica_pointer_file(self, replica_package,
+                                    replication_event_uuid,
+                                    replication_validation_event,
+                                    master_ptr=None):
+        """Create and write to disk a new pointer file for the replica package
+        Model instance ``replica_package``. Assume that ``self`` is the
+        source/master of the replica.
+
+        NOTE: Fixity check results are not currently included in the
+        replication alidation event because of a circular dependency issue: the
+        pointer file must exist (so we can get the used compression command
+        from it) before we can extract the package in order to check its
+        fixity. Here's how it could be done::
+
+            >>> __, fixity_report = (
+                replica_package.get_fixity_check_report_send_signals())
+            >>> replication_validation_event = (
+                replica_package.get_replication_validation_event(
+                    checksum_report=checksum_report,
+                    master_aip_uuid=self.uuid,
+                    fixity_report=fixity_report,
+                    agents=replica_premis_agents))
+
+        Given that a checksum is calculated for the replica and that checksum
+        is compared for equality to the master's checksum, it seems overkill to
+        perform a BagIt fixity check as well. Is checksum comparison sufficient
+        for replication validation or does a fixity check need to be performed
+        also?
+        """
+
+        # 1. Set attrs and get full path to pointer file.
+        should_have_pointer = replica_package.should_have_pointer_file()
+        if not master_ptr:
+            master_ptr = self.get_pointer_instance()
+        if not should_have_pointer or not master_ptr:
+            return
+        uuid_path = utils.uuid_to_path(replica_package.uuid)
+        replica_package.pointer_file_location = Location.active.get(
+            purpose=Location.STORAGE_SERVICE_INTERNAL)
+        replica_package.pointer_file_path = os.path.join(
+            uuid_path, 'pointer.{}.xml'.format(replica_package.uuid))
+        master_aip_uuid = self.uuid
+
+        # 2. Get the master AIP's pointer file and extract what we need from it
+        # in order to create the replica's pointer file.
+        master_ptr_aip_fsentry = master_ptr.get_file(file_uuid=self.uuid)
+        master_package_subtype = master_ptr_aip_fsentry.mets_div_type
+        master_compression_event = [
+            pe for pe in master_ptr_aip_fsentry.get_premis_events()
+            if pe.event_type == 'compression'][0]
+        master_premis_object = master_ptr_aip_fsentry.get_premis_objects()[0]
+        master_checksum_algorithm = master_premis_object.message_digest_algorithm
+        master_checksum = master_premis_object.message_digest
+        master_premis_agents = master_ptr_aip_fsentry.get_premis_agents()
+
+        # 3. Construct the pointer file and return it
+        replica_premis_creation_agents = self.get_ss_premis_agents()
+        __, compression_program_version, archive_tool = (
+            master_compression_event.compression_details)
+        replica_premis_relationships = [
+            _get_replication_derivation_relationship(master_aip_uuid,
+                replication_event_uuid)]
+        replica_premis_object = replica_package._get_aip_premis_object(
+            master_checksum_algorithm, master_checksum, archive_tool,
+            compression_program_version,
+            premis_relationships=replica_premis_relationships)
+        replica_premis_creation_event = (
+            replica_package.get_premis_aip_creation_event(
+                master_aip_uuid=master_aip_uuid,
+                agents=replica_premis_creation_agents))
+        replica_premis_agents = list(
+            set(master_premis_agents + replica_premis_creation_agents))
+        replica_premis_events = [
+            master_compression_event,
+            replica_premis_creation_event,
+            replication_validation_event
+        ]
+        return replica_package.create_pointer_file(
+            replica_premis_object,
+            replica_premis_events,
+            premis_agents=replica_premis_agents,
+            package_subtype=master_package_subtype)
+
+    def update_pointer_file_with_replication(self, old_pointer_file,
+                                             replica_package,
+                                             replication_event_uuid):
+        """Update this package's pointer file to indicate its replication.
+        Steps:
+        1. Add a PREMIS event for the replication.
+        2. Add a PREMIS relationship relating the AIP qua PREMIS object to its
+           replica.
+        3. Add any PREMIS agents of the replication event, if not already
+           present in the mets:amdSec.
+        To do this, we parse the existing pointer file and return a new one
+        based on the old.
+        """
+        old_fsentry = old_pointer_file.get_file(file_uuid=self.uuid)
+        package_subtype = old_fsentry.mets_div_type
+        old_premis_object = old_fsentry.get_premis_objects()[0]
+        old_premis_events = old_fsentry.get_premis_events()
+        old_premis_agents = old_fsentry.get_premis_agents()
+        ss_agents = self.get_ss_premis_agents()
+        replication_event = self.create_replication_event(
+            replica_package, event_uuid=replication_event_uuid,
+            agents=ss_agents)
+        old_premis_events.append(replication_event)
+        replication_relationship = _get_replication_derivation_relationship(
+            replica_package.uuid, replication_event_uuid)
+        old_premis_object = list(old_premis_object.data)
+        old_premis_object.append(replication_relationship)
+        new_premis_object = metsrw.PREMISObject(data=old_premis_object)
+        for ss_agent in ss_agents:
+            if ss_agent not in old_premis_agents:
+                old_premis_agents.append(ss_agent)
+        return self.create_pointer_file(
+            new_premis_object, old_premis_events,
+            premis_agents=old_premis_agents, package_subtype=package_subtype)
+
+    def create_replication_event(self, replica_package, event_uuid=None,
+                                 agents=None, inst=True):
+        """Return a PREMIS:EVENT for replication of an AIP, as a
+        metsrw.premisrw.PREMISEvent or, if ``inst`` is ``False``, as a python
+        Python tuple.
+        """
+        outcome_detail_note = (
+            'Replicated Archival Information Package (AIP) {} by creating'
+            ' replica {}.'.format(self.uuid, replica_package.uuid))
+        if not agents:
+            agents = self.get_ss_premis_agents()
+        if not event_uuid:
+            event_uuid = str(uuid4())
+        event = [
+            'event',
+            metsrw.PREMIS_META,
+            (
+                'event_identifier',
+                ('event_identifier_type', 'UUID'),
+                ('event_identifier_value', event_uuid),
+            ),
+            ('event_type', 'replication'),
+            ('event_date_time', self.ptr_file_now()),
+            ('event_detail', 'Replication of an Archival Information Package'),
+            (
+                'event_outcome_information',
+                ('event_outcome', 'success'),
+                (
+                    'event_outcome_detail',
+                    ('event_outcome_detail_note', outcome_detail_note)
+                )
+            )
+        ]
+        event = tuple(self._add_agents_to_event_as_list(event, agents))
+        if inst:
+            return metsrw.PREMISEvent(data=event)
+        return event
+
+    def get_ss_premis_agents(self, inst=True):
+        """Return PREMIS agents for preservation events performed by the
+        Storage Service.
+        Note: Archivematica returns a 'repository code'-type agent while we
+        are currently just returning a 'preservation system' one. What is
+        the desired behaviour here? AM's agents used for compression from
+        db::
+
+            +----+-----------------------+----------------------+------------------------------------------------------+--------------------+
+            | pk | agentIdentifierType   | agentIdentifierValue | agentName                                            | agentType          |
+            +----+-----------------------+----------------------+------------------------------------------------------+--------------------+
+            |  1 | preservation system   | Archivematica-1.7    | Archivematica                                        | software           |
+            |  2 | repository code       | test                 | test                                                 | organization       |
+            +----+-----------------------+----------------------+------------------------------------------------------+--------------------+
+        """
+        agents = [(
+            'agent',
+            metsrw.PREMIS_META,
+            (
+                'agent_identifier',
+                ('agent_identifier_type', 'preservation system'),
+                ('agent_identifier_value',
+                    'Archivematica-Storage-Service-{}'.format(ss_version))
+            ),
+            ('agent_name', 'Archivematica Storage Service'),
+            ('agent_type', 'software')
+        )]
+        if inst:
+            return [metsrw.PREMISAgent(data=data) for data in agents]
+        return agents
+
+    def get_premis_aip_creation_event(self, master_aip_uuid=None, agents=None,
+                                      inst=True):
+        """Return a PREMIS:EVENT for creation of an AIP as a Python tuple."""
+        if master_aip_uuid:
+            outcome_detail_note = (
+                'Created Archival Information Package (AIP) {} by replicating'
+                ' previously created AIP {}'.format(self.uuid, master_aip_uuid))
+        else:
+            outcome_detail_note = (
+                'Created Archival Information Package (AIP) {}'.format(
+                    self.uuid))
+        if not agents:
+            agents = self.get_ss_premis_agents()
+        event = [
+            'event',
+            metsrw.PREMIS_META,
+            (
+                'event_identifier',
+                ('event_identifier_type', 'UUID'),
+                ('event_identifier_value', str(uuid4())),
+            ),
+            # Question: use the more specific 'information package creation'
+            # PREMIS event?
+            ('event_type', 'creation'),
+            ('event_date_time', self.ptr_file_now()),
+            ('event_detail', 'Creation of an Archival Information Package'),
+            (
+                'event_outcome_information',
+                ('event_outcome', 'success'),
+                (
+                    'event_outcome_detail',
+                    ('event_outcome_detail_note', outcome_detail_note)
+                )
+            )
+        ]
+        event = tuple(self._add_agents_to_event_as_list(event, agents))
+        if inst:
+            return metsrw.PREMISEvent(data=event)
+        return event
+
+    def get_replication_validation_event(
+            self, checksum_report, master_aip_uuid, fixity_report=None,
+            agents=None, inst=True):
+        """Return a PREMIS:EVENT (as a tuple) for validation of AIP
+        replication.
+        """
+        success = checksum_report['success']
+        if fixity_report:
+            success = fixity_report['success'] and success
+        outcome = success and 'success' or 'failure'
+        detail = (
+            'Validated the replication of Archival Information Package (AIP)'
+            ' {master_aip_uuid} to replica AIP {replica_aip_uuid}'.format(
+                master_aip_uuid=master_aip_uuid,
+                replica_aip_uuid=self.uuid))
+        if fixity_report:
+            detail += (' by performing a BagIt fixity check and by comparing'
+                       ' checksums')
+            outcome_detail_note = '{}\n{}'.format(
+                fixity_report['message'], checksum_report['message'])
+        else:
+            detail += ' by comparing checksums'
+            outcome_detail_note = checksum_report['message']
+        if not agents:
+            agents = self.get_ss_premis_agents()
+        event = [
+            'event',
+            metsrw.PREMIS_META,
+            (
+                'event_identifier',
+                ('event_identifier_type', 'UUID'),
+                ('event_identifier_value', str(uuid4())),
+            ),
+            ('event_type', 'validation'),
+            ('event_date_time', self.ptr_file_now()),
+            ('event_detail', detail),
+            (
+                'event_outcome_information',
+                ('event_outcome', outcome),
+                (
+                    'event_outcome_detail',
+                    ('event_outcome_detail_note', outcome_detail_note)
+                )
+            )
+        ]
+        event = tuple(self._add_agents_to_event_as_list(event, agents))
+        if inst:
+            return metsrw.PREMISEvent(data=event)
+        return event
+
+    def _add_agents_to_event_as_list(self, event, agents):
+        """
+        :param list event: a PREMIS:EVENT represented as a list
+        :param iterable agents: an iterable of metsrw.PREMISAgent instances.
+        """
+        for agent in agents:
+            event.append((
+                'linking_agent_identifier',
+                ('linking_agent_identifier_type', agent.identifier_type),
+                ('linking_agent_identifier_value', agent.identifier_value)
+            ))
+        return event
+
+    def create_pointer_file(self,
+                            premis_object,
+                            premis_events,
+                            premis_agents=None,
+                            package_subtype=None,
+                            validate=True):
+        """Create and return a pointer file for this package.
+        A pointer file is a METS XML file that describes an AIP as a black box.
+        It does not describe the contents of the AIP but rather the nature of
+        the AIP and the types of operations that must be performed on it in
+        order to arrive at a canonical representation, e.g., decompression,
+        decryption, and/or reassembly.
+        :param tuple/metsrw.premisrw.PREMISObject premis_object: the
+            PREMIS:OBJECT for the AIP itself.
+        :param list premis_events: a list of PREMIS:EVENTs (tuples or
+            metsrw.premisrw.PREMISEvent instances) representing events
+            involving the AIP. In order for a pointer file to be created, this
+            must contain a compression event performed by AM.
+        :param list premis_agents: a list of PREMIS:AGENTs (tuples of
+            metsrw.premisrw.PREMISAgent instances) representing premis_agents
+            of the events in ``premis_events``.
+        :param str package_subtype: representation of the AIP's package type.
+            Default 'Archival Information Package' may be overridden by, for
+            example, a Dublin Core type from user-specified metadata.
+        :returns: the pointer file as a class:`metsrw.MetsDocument` instance.
+
+        Events and agents must be expressed using tuples (or lists), using a
+        structure that closely resembles XML. The first item of the tuple is
+        the XML element's tag name, and subsequent elements can be
+        strings---which become XML text---, tuples---which become XML
+        sub-elements---, or dicts---which become XML attributes. See, for
+        example, Archivematica's clientScripts/storeAIP.py::get_events_from_db.
+
+        TODOs:
+        - Retrieve AIP checksum from the model itself if it has already been
+          generated (instead of generating it here.)
+        - modify eventDetail from ``finish_reingest`` to encode compression
+          algorithm.
+        - test with pbzip2 compression
+
+        Notes and Warnings:
+        - the CREATEDATE attr of <mets:metsHdr> will be auto-generated by metsrw
+          and will probably not be identical to
+          <premis:dateCreatedByApplication>. Is this ok?
+        """
+        # Convert any PREMIS-entities-as-tuples/lists to
+        # metsrw.premisrw.PREMISElement subclass instances. Note that
+        # instantiating a PREMISElement by passing in an existing instance via
+        # the ``data`` kwarg will construct an equivalent instance.
+        premis_object = metsrw.PREMISObject(data=premis_object)
+        premis_events = [metsrw.PREMISEvent(data=event) for event in premis_events]
+        premis_agents = premis_agents or []
+        premis_agents = [metsrw.PREMISAgent(data=agent) for agent in premis_agents]
+        compression_event = _find_compression_event(premis_events)
+        if not compression_event:  # no pointer files for uncompressed AIPs
+            return
+        transform_files = compression_event.decompression_transform_files
+        # Construct the METS pointer file
+        pointer_file = metsrw.METSDocument()
+        AIP_PACKAGE_TYPE = 'Archival Information Package'
+        package_subtype = package_subtype or AIP_PACKAGE_TYPE
+        mets_fs_entry = metsrw.FSEntry(
+            path=self.current_path, file_uuid=str(self.uuid), use=AIP_PACKAGE_TYPE,
+            type=AIP_PACKAGE_TYPE, transform_files=transform_files,
+            mets_div_type=package_subtype)
+        mets_fs_entry.add_premis_object(premis_object.serialize())
+        for event in premis_events:
+            mets_fs_entry.add_premis_event(event.serialize())
+        for agent in premis_agents:
+            mets_fs_entry.add_premis_agent(agent.serialize())
+        pointer_file.append_file(mets_fs_entry)
+        # 3. Validate the pointer file
+        if validate:
+            is_valid, report = metsrw.validate(
+                pointer_file.serialize(), schematron=metsrw.AM_PNTR_SCT_PATH)
+            if is_valid:
+                LOGGER.info('Pointer file constructed for %s is valid.', self.uuid)
+            else:
+                LOGGER.warning('Pointer file constructed for %s is not valid.\n%s',
+                            self.uuid, metsrw.report_string(report))
+        return pointer_file
+
+    def _get_aip_premis_object(self,
+                               message_digest_algorithm,
+                               message_digest,
+                               archive_tool,
+                               compression_program_version,
+                               premis_relationships=None):
+        """Return a <premis:object> element for this package's (AIP's) pointer
+        file.
+        :param str message_digest_algorithm: name of the algorithm used to generate
+            ``message_digest``.
+        :param str message_digest: hex string checksum for the
+            packaged/compressed AIP.
+        :param str archive_tool: name of the tool (program) used to compress
+            the AIP, e.g., '7-Zip'.
+        :param str compression_program_version: version of ``archive_tool``
+            used.
+        :returns: <premis:object> as a tuple.
+        """
+        # PRONOM ID and PRONOM name for each file extension
+        pronom_conversion = {
+            '.7z': {'puid': 'fmt/484', 'name': '7Zip format'},
+            '.bz2': {'puid': 'x-fmt/268', 'name': 'BZIP2 Compressed Archive'},
+        }
+        __, extension = os.path.splitext(self.current_path)
+        now = timezone.now().strftime("%Y-%m-%dT%H:%M:%S")  # YYYY-MM-DDTHH:MM:SS
+        premis_relationships = premis_relationships or []
+        return metsrw.PREMISObject(
+            xsi_type='premis:file',
+            identifier_value=self.uuid,
+            message_digest_algorithm=message_digest_algorithm,
+            message_digest=message_digest,
+            size=str(self.size),
+            format_name=pronom_conversion[extension]['name'],
+            format_registry_key=pronom_conversion[extension]['puid'],
+            creating_application_name=archive_tool,
+            creating_application_version=compression_program_version,
+            date_created_by_application=now,
+            relationships=premis_relationships)
+
+    def create_replicas(self):
+        """Create replicas of this AIP in any replicator locations.
+
+        Note: in a future iteration, this should be done asynchronously by put
+        requests to replicate this package on the "Package Replication Queue";
+        workers will read from this queue and replicate the package to
+        different locations asynchronously, e.g.,::
+
+            >>> job = {'package': self.uuid, 'location': replicator_loc.uuid}
+            >>> RMQ_CHANNEL.basic_publish(
+                exchange='',
+                routing_key=PACKAGE_REPLICATION_QUEUE,
+                body=json.dumps(job).encode('utf8'),
+                properties=pika.BasicProperties(
+                    delivery_mode = 2,  # make message persistent
+                )
+            )
+        """
+        replicator_locs = self.current_location.replicators.all()
+        for replicator_loc in replicator_locs:
+            self.replicate(replicator_loc.uuid)
 
     def extract_file(self, relative_path='', extract_path=None):
         """Attempts to extract this package.
@@ -893,6 +1637,70 @@ class Package(models.Model):
             shutil.rmtree(temp_dir)
 
         return (success, failures, message, None)
+
+    def get_fixity_check_report_send_signals(self, force_local=False,
+                                             delete_after=True):
+        """Perform a fixity check on this package by calling ``check_fixity``,
+        then also send Django signals so the check is recorded in the database,
+        and return a JSON report of the fixity check attempt.
+        """
+
+        # Do the fixity check
+        success, failures, message, timestamp = self.check_fixity(
+            force_local=force_local)
+
+        # Build the response (to be a JSON object)
+        response = {
+            "success": success,
+            "message": message,
+            "failures": {
+                "files": {
+                    "missing": [],
+                    "changed": [],
+                    "untracked": [],
+                }
+            },
+            "timestamp": timestamp,
+        }
+        for failure in failures:
+            if isinstance(failure, bagit.FileMissing):
+                info = {
+                    "path": failure.path,
+                    "message": str(failure)
+                }
+                response["failures"]["files"]["missing"].append(info)
+            if isinstance(failure, bagit.ChecksumMismatch):
+                info = {
+                    "path": failure.path,
+                    "expected": failure.expected,
+                    "actual": failure.found,
+                    "hash_type": failure.algorithm,
+                    "message": str(failure),
+                }
+                response["failures"]["files"]["changed"].append(info)
+            if isinstance(failure, bagit.UnexpectedFile):
+                info = {
+                    "path": failure.path,
+                    "message": str(failure)
+                }
+                response["failures"]["files"]["untracked"].append(info)
+        report = json.dumps(response)
+
+        # Trigger the signals (so ``FixityLog`` instances are created)
+        if success is False:
+            signals.failed_fixity_check.send(sender=self,
+                uuid=self.uuid, location=self.full_path,
+                report=report)
+        elif success is None:
+            signals.fixity_check_not_run.send(sender=self,
+                uuid=self.uuid, location=self.full_path,
+                report=report)
+        elif success is True:
+            signals.successful_fixity_check.send(sender=self,
+                uuid=self.uuid, location=self.full_path,
+                report=report)
+        return report, response
+
 
     def delete_from_storage(self):
         """ Deletes the package from filesystem and updates metadata.
@@ -1541,7 +2349,7 @@ class Package(models.Model):
                 format_info.get('registry_key'))
 
         # Creating application info
-        now = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        now = self.ptr_file_now()
         app = root.find('.//premis:creatingApplication', namespaces=utils.NSMAP)
         app.clear()
         etree.SubElement(
@@ -1577,6 +2385,9 @@ class Package(models.Model):
                                    pretty_print=True,
                                    xml_declaration=True,
                                    encoding='utf-8'))
+
+    def ptr_file_now(self):
+        return datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
     # SWORD-related methods
     def has_been_submitted_for_processing(self):
@@ -1733,3 +2544,83 @@ def _recalculate_size(rein_aip_internal_path):
     else:
         size = os.path.getsize(rein_aip_internal_path)
     return size
+
+
+def _find_compression_event(events):
+    try:
+        return [evt for evt in events if evt.event_type == 'compression'][0]
+    except IndexError:
+        return None
+
+
+def _replicate_package_mdl_inst(package_mdl):
+    """Create a new Django ``Package`` instance that is exactly like
+    ``package_mdl`` but which has a new primary key and UUID, and references
+    ``package_mdl`` as its ``replicated_package``.
+    """
+    package_uuid = package_mdl.uuid
+    replica_package = package_mdl
+    # After setting ``pk`` to ``None``, ``save()`` will create a new instance/db row
+    replica_package.pk = None
+    replica_package.uuid = None  # will trigger new UUID generation
+    replica_package.replicated_package_id = package_uuid
+    replica_package.save()
+    return replica_package
+
+
+def _get_checksum_report(master_checksum, master_uuid, replica_checksum,
+                         replica_uuid, algorithm):
+    success = replica_checksum == master_checksum
+    if success:
+        message = ('Master AIP {m_uuid} and replica AIP {r_uuid} both'
+                   ' have checksum {checksum} when using algorithm'
+                   ' {algorithm}.'.format(
+                       m_uuid=master_uuid, r_uuid=replica_uuid,
+                       checksum=master_checksum, algorithm=algorithm))
+    else:
+        message = ('Using algorithm {algorithm}, master AIP {m_uuid}'
+                   ' has checksum {m_checksum} while replica AIP'
+                   ' {r_uuid} has checksum {r_checksum}.'.format(
+                       m_uuid=master_uuid, r_uuid=replica_uuid,
+                       m_checksum=master_checksum,
+                       r_checksum=replica_checksum, algorithm=algorithm))
+    return {'success': success, 'message': message}
+
+
+def _get_replication_derivation_relationship(related_aip_uuid,
+                                             replication_event_uuid,
+                                             premis_version=None):
+    """Return a PREMIS relationship of type derivation relating an implicit
+    PREMIS object (an AIP) to some to related AIP (with UUID
+    ``related_aip_uuid``) via a replication event with UUID
+    ``replication_event_uuid``. Note the complication wherein PREMIS v. 2.2
+    uses 'Identification' where PREMIS v. 3.0 uses 'Identifier'.
+    """
+    if not premis_version:
+        premis_version = metsrw.PREMIS_META['version']
+    related_object_identifier = {'2.2': 'related_object_identification'}.get(
+        premis_version, 'related_object_identifier')
+    related_event_identifier = {'2.2': 'related_event_identification'}.get(
+        premis_version, 'related_event_identifier')
+    return (
+        'relationship',
+        ('relationship_type', 'derivation'),
+        ('relationship_sub_type', ''),
+        (related_object_identifier,
+            ('related_object_identifier_type', 'UUID'),
+            ('related_object_identifier_value', related_aip_uuid)),
+        (related_event_identifier,
+            ('related_event_identifier_type', 'UUID'),
+            ('related_event_identifier_value', replication_event_uuid)))
+
+
+def write_pointer_file(pointer_file, pointer_file_path):
+    """Write the pointer file to disk. creating intermediate directories as
+    necessary.
+    :param metsrw.METSDocument pointer_file:
+    :param str pointer_file_path:
+    """
+    pointer_dir_path = os.path.dirname(pointer_file_path)
+    if not os.path.isdir(pointer_dir_path):
+        os.makedirs(pointer_dir_path)
+    pointer_file.write(pointer_file_path, pretty_print=True)
