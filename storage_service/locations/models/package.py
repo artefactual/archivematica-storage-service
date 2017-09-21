@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 # stdlib, alphabetical
 from collections import namedtuple
-import datetime
 import distutils.dir_util
 import json
 import logging
@@ -29,7 +28,6 @@ import requests
 # This project, alphabetical
 from common import utils
 from locations import signals
-from storage_service import __version__ as ss_version
 
 # This module, alphabetical
 from . import StorageException
@@ -462,7 +460,7 @@ class Package(models.Model):
         uuid_path = utils.uuid_to_path(replica_package.uuid)
         replica_package.current_path = os.path.join(
             uuid_path, replica_package.current_path)
-        replica_destination_path=os.path.join(
+        replica_destination_path = os.path.join(
             replica_package.current_location.relative_path,
             replica_package.current_path)
         replica_package.status = Package.PENDING
@@ -483,11 +481,12 @@ class Package(models.Model):
             destination_space=dest_space)
         replica_package.status = Package.STAGING
         replica_package.save()
+        src_space.post_move_to_storage_service()
 
         # Calculate the checksum of the replica while we have it locally,
         # compare it to the master's checksum and create a PREMIS validation
         # event out of the result.
-        replica_local_path = replica_package.fetch_local_path()
+        replica_local_path = self.get_local_path()
         replica_checksum = utils.generate_checksum(
             replica_local_path, master_checksum_algorithm).hexdigest()
         checksum_report = _get_checksum_report(
@@ -497,23 +496,6 @@ class Package(models.Model):
             replica_package.get_replication_validation_event(
                 checksum_report=checksum_report,
                 master_aip_uuid=self.uuid))
-
-        # Copy replicandum AIP from the SS to replica package's replicator
-        # location.
-        src_space.post_move_to_storage_service()
-        dest_space.move_from_storage_service(
-            source_path=replica_package.current_path,
-            destination_path=replica_destination_path,
-            package=replica_package,
-        )
-        if dest_space.access_protocol not in (Space.LOM, Space.ARKIVUM):
-            replica_package.status = Package.UPLOADED
-        replica_package.save()
-        dest_space.post_move_from_storage_service(
-            staging_path=replica_package.current_path,
-            destination_path=replica_destination_path,
-            package=replica_package)
-        self._update_quotas(dest_space, replica_package.current_location)
 
         # Create and write to disk the pointer file for the replica, which
         # contains the PREMIS replication event.
@@ -528,6 +510,22 @@ class Package(models.Model):
         write_pointer_file(replica_pointer_file,
                            replica_package.full_pointer_file_path)
         replica_package.save()
+
+        # Copy replicandum AIP from the SS to replica package's replicator
+        # location. Note: if the destination space is encrypted, the encryption
+        # of the replica will be documented in the pointer file.
+        dest_space.move_from_storage_service(
+            source_path=replica_package.current_path,
+            destination_path=replica_destination_path,
+            package=replica_package)
+        if dest_space.access_protocol not in (Space.LOM, Space.ARKIVUM):
+            replica_package.status = Package.UPLOADED
+        replica_package.save()
+        dest_space.post_move_from_storage_service(
+            staging_path=replica_package.current_path,
+            destination_path=replica_destination_path,
+            package=replica_package)
+        self._update_quotas(dest_space, replica_package.current_location)
 
         # Update the pointer file of the replicated AIP so that it contains a
         # record of the AIP's replication.
@@ -864,7 +862,7 @@ class Package(models.Model):
         master_premis_agents = master_ptr_aip_fsentry.get_premis_agents()
 
         # 3. Construct the pointer file and return it
-        replica_premis_creation_agents = self.get_ss_premis_agents()
+        replica_premis_creation_agents = utils.get_ss_premis_agents()
         __, compression_program_version, archive_tool = (
             master_compression_event.compression_details)
         replica_premis_relationships = [
@@ -909,7 +907,7 @@ class Package(models.Model):
         old_premis_object = old_fsentry.get_premis_objects()[0]
         old_premis_events = old_fsentry.get_premis_events()
         old_premis_agents = old_fsentry.get_premis_agents()
-        ss_agents = self.get_ss_premis_agents()
+        ss_agents = utils.get_ss_premis_agents()
         replication_event = self.create_replication_event(
             replica_package, event_uuid=replication_event_uuid,
             agents=ss_agents)
@@ -936,7 +934,7 @@ class Package(models.Model):
             'Replicated Archival Information Package (AIP) {} by creating'
             ' replica {}.'.format(self.uuid, replica_package.uuid))
         if not agents:
-            agents = self.get_ss_premis_agents()
+            agents = utils.get_ss_premis_agents()
         if not event_uuid:
             event_uuid = str(uuid4())
         event = [
@@ -948,7 +946,7 @@ class Package(models.Model):
                 ('event_identifier_value', event_uuid),
             ),
             ('event_type', 'replication'),
-            ('event_date_time', self.ptr_file_now()),
+            ('event_date_time', utils.mets_file_now()),
             ('event_detail', 'Replication of an Archival Information Package'),
             (
                 'event_outcome_information',
@@ -959,41 +957,10 @@ class Package(models.Model):
                 )
             )
         ]
-        event = tuple(self._add_agents_to_event_as_list(event, agents))
+        event = tuple(utils.add_agents_to_event_as_list(event, agents))
         if inst:
             return metsrw.PREMISEvent(data=event)
         return event
-
-    def get_ss_premis_agents(self, inst=True):
-        """Return PREMIS agents for preservation events performed by the
-        Storage Service.
-        Note: Archivematica returns a 'repository code'-type agent while we
-        are currently just returning a 'preservation system' one. What is
-        the desired behaviour here? AM's agents used for compression from
-        db::
-
-            +----+-----------------------+----------------------+------------------------------------------------------+--------------------+
-            | pk | agentIdentifierType   | agentIdentifierValue | agentName                                            | agentType          |
-            +----+-----------------------+----------------------+------------------------------------------------------+--------------------+
-            |  1 | preservation system   | Archivematica-1.7    | Archivematica                                        | software           |
-            |  2 | repository code       | test                 | test                                                 | organization       |
-            +----+-----------------------+----------------------+------------------------------------------------------+--------------------+
-        """
-        agents = [(
-            'agent',
-            metsrw.PREMIS_META,
-            (
-                'agent_identifier',
-                ('agent_identifier_type', 'preservation system'),
-                ('agent_identifier_value',
-                    'Archivematica-Storage-Service-{}'.format(ss_version))
-            ),
-            ('agent_name', 'Archivematica Storage Service'),
-            ('agent_type', 'software')
-        )]
-        if inst:
-            return [metsrw.PREMISAgent(data=data) for data in agents]
-        return agents
 
     def get_premis_aip_creation_event(self, master_aip_uuid=None, agents=None,
                                       inst=True):
@@ -1007,7 +974,7 @@ class Package(models.Model):
                 'Created Archival Information Package (AIP) {}'.format(
                     self.uuid))
         if not agents:
-            agents = self.get_ss_premis_agents()
+            agents = utils.get_ss_premis_agents()
         event = [
             'event',
             metsrw.PREMIS_META,
@@ -1019,7 +986,7 @@ class Package(models.Model):
             # Question: use the more specific 'information package creation'
             # PREMIS event?
             ('event_type', 'creation'),
-            ('event_date_time', self.ptr_file_now()),
+            ('event_date_time', utils.mets_file_now()),
             ('event_detail', 'Creation of an Archival Information Package'),
             (
                 'event_outcome_information',
@@ -1030,7 +997,7 @@ class Package(models.Model):
                 )
             )
         ]
-        event = tuple(self._add_agents_to_event_as_list(event, agents))
+        event = tuple(utils.add_agents_to_event_as_list(event, agents))
         if inst:
             return metsrw.PREMISEvent(data=event)
         return event
@@ -1059,7 +1026,7 @@ class Package(models.Model):
             detail += ' by comparing checksums'
             outcome_detail_note = checksum_report['message']
         if not agents:
-            agents = self.get_ss_premis_agents()
+            agents = utils.get_ss_premis_agents()
         event = [
             'event',
             metsrw.PREMIS_META,
@@ -1069,7 +1036,7 @@ class Package(models.Model):
                 ('event_identifier_value', str(uuid4())),
             ),
             ('event_type', 'validation'),
-            ('event_date_time', self.ptr_file_now()),
+            ('event_date_time', utils.mets_file_now()),
             ('event_detail', detail),
             (
                 'event_outcome_information',
@@ -1080,22 +1047,9 @@ class Package(models.Model):
                 )
             )
         ]
-        event = tuple(self._add_agents_to_event_as_list(event, agents))
+        event = tuple(utils.add_agents_to_event_as_list(event, agents))
         if inst:
             return metsrw.PREMISEvent(data=event)
-        return event
-
-    def _add_agents_to_event_as_list(self, event, agents):
-        """
-        :param list event: a PREMIS:EVENT represented as a list
-        :param iterable agents: an iterable of metsrw.PREMISAgent instances.
-        """
-        for agent in agents:
-            event.append((
-                'linking_agent_identifier',
-                ('linking_agent_identifier_type', agent.identifier_type),
-                ('linking_agent_identifier_value', agent.identifier_value)
-            ))
         return event
 
     def create_pointer_file(self,
@@ -1160,7 +1114,7 @@ class Package(models.Model):
         AIP_PACKAGE_TYPE = 'Archival Information Package'
         package_subtype = package_subtype or AIP_PACKAGE_TYPE
         mets_fs_entry = metsrw.FSEntry(
-            path=self.current_path, file_uuid=str(self.uuid), use=AIP_PACKAGE_TYPE,
+            path=self.full_path, file_uuid=str(self.uuid), use=AIP_PACKAGE_TYPE,
             type=AIP_PACKAGE_TYPE, transform_files=transform_files,
             mets_div_type=package_subtype)
         mets_fs_entry.add_premis_object(premis_object.serialize())
@@ -1701,11 +1655,10 @@ class Package(models.Model):
                 report=report)
         return report, response
 
-
     def delete_from_storage(self):
         """ Deletes the package from filesystem and updates metadata.
-
-        Returns (True, None) on success, and (False, error_msg) on failure. """
+        Returns (True, None) on success, and (False, error_msg) on failure.
+        """
         error = None
         # LOCKSS must notify LOM before deleting
         if self.current_location.space.access_protocol == Space.LOM:
@@ -1715,7 +1668,6 @@ class Package(models.Model):
                 lom.update_service_document()
                 delete_lom_ids = [lom._download_url(self.uuid, idx + 1) for idx in range(self.misc_attributes['num_files'])]
                 error = lom._delete_update_lom(self, delete_lom_ids)
-
         try:
             self.current_location.space.delete_path(self.full_path)
         except Exception as e:
@@ -2349,7 +2301,7 @@ class Package(models.Model):
                 format_info.get('registry_key'))
 
         # Creating application info
-        now = self.ptr_file_now()
+        now = utils.mets_file_now()
         app = root.find('.//premis:creatingApplication', namespaces=utils.NSMAP)
         app.clear()
         etree.SubElement(
@@ -2385,9 +2337,6 @@ class Package(models.Model):
                                    pretty_print=True,
                                    xml_declaration=True,
                                    encoding='utf-8'))
-
-    def ptr_file_now(self):
-        return datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
     # SWORD-related methods
     def has_been_submitted_for_processing(self):

@@ -9,11 +9,11 @@ import tarfile
 from uuid import uuid4
 
 from lxml import etree
+import metsrw
 
 # Core Django, alphabetical
 from django.db import models
 from django.utils.translation import ugettext as _, ugettext_lazy as _l
-from django.utils import timezone
 
 # Third party dependencies, alphabetical
 import gnupg
@@ -82,7 +82,8 @@ class GPG(models.Model):
 
     ALLOWED_LOCATION_PURPOSE = [
         Location.AIP_STORAGE,
-        Location.BACKLOG
+        Location.BACKLOG,
+        Location.REPLICATOR
     ]
 
     def move_to_storage_service(self, src_path, dst_path, dst_space):
@@ -335,86 +336,41 @@ def _extract_tar(tarpath):
         raise GPGException(fail_msg)
 
 
-def _create_encr_event(root, encr_result):
+def _create_encr_event(encr_result):
     """Returns a PREMIS Event for the encryption."""
-    # The following vars would typically come from an AM Events model.
-    encr_event_type = 'encryption'
-    # Note the UUID is created here with no other record besides the
-    # pointer file.
-    encr_event_uuid = str(uuid4())
-    encr_event_datetime = timezone.now().isoformat()
     # First line of stdout from ``gpg --version`` is expected to be
     # something like 'gpg (GnuPG) 1.4.16'
     gpg_version = subprocess.check_output(
         ['gpg', '--version']).splitlines()[0].split()[-1]
-    encr_event_detail = escape(
+    detail = escape(
         'program=gpg (GnuPG); version={}; python-gnupg; version={}'.format(
             gpg_version, gnupg.__version__))
-    # Maybe these should be defined in utils like they are in the
-    # dashboard's namespaces.py...
-    premisNS = utils.NSMAP['premis']
-    xsiNS = utils.NSMAP['xsi']
-    xsiBNS = '{' + xsiNS + '}'
-    event = etree.Element(
-        PREMIS_BNS + 'event', nsmap={'premis': premisNS})
-    event.set(xsiBNS + 'schemaLocation',
-              premisNS + ' http://www.loc.gov/standards/premis/'
-                         'v2/premis-v2-2.xsd')
-    event.set('version', '2.2')
-    eventIdentifier = etree.SubElement(
-        event,
-        PREMIS_BNS + 'eventIdentifier')
-    etree.SubElement(
-        eventIdentifier,
-        PREMIS_BNS + 'eventIdentifierType').text = 'UUID'
-    etree.SubElement(
-        eventIdentifier,
-        PREMIS_BNS + 'eventIdentifierValue').text = encr_event_uuid
-    etree.SubElement(
-        event,
-        PREMIS_BNS + 'eventType').text = encr_event_type
-    etree.SubElement(
-        event,
-        PREMIS_BNS + 'eventDateTime').text = encr_event_datetime
-    etree.SubElement(
-        event,
-        PREMIS_BNS + 'eventDetail').text = encr_event_detail
-    eventOutcomeInformation = etree.SubElement(
-        event,
-        PREMIS_BNS + 'eventOutcomeInformation')
-    etree.SubElement(
-        eventOutcomeInformation,
-        PREMIS_BNS + 'eventOutcome').text = ''  # No eventOutcome text at present ...
-    eventOutcomeDetail = etree.SubElement(
-        eventOutcomeInformation,
-        PREMIS_BNS + 'eventOutcomeDetail')
-    # QUESTION: Python GnuPG gives GPG's stderr during encryption but not
-    # it's stdout. Is the following sufficient?
-    detail_note = 'Status="{}"; Standard Error="{}"'.format(
+    outcome_detail_note = 'Status="{}"; Standard Error="{}"'.format(
         encr_result.status.replace('"', r'\"'),
         encr_result.stderr.replace('"', r'\"').strip())
-    etree.SubElement(
-        eventOutcomeDetail,
-        PREMIS_BNS + 'eventOutcomeDetailNote').text = escape(detail_note)
-    # Copy the existing <premis:agentIdentifier> data to
-    # <premis:linkingAgentIdentifier> elements in our encryption
-    # <premis:event>
-    for agent_id_el in root.findall(
-            './/premis:agentIdentifier', namespaces=utils.NSMAP):
-        agent_id_type = agent_id_el.find('premis:agentIdentifierType',
-                                         namespaces=utils.NSMAP).text
-        agent_id_value = agent_id_el.find('premis:agentIdentifierValue',
-                                          namespaces=utils.NSMAP).text
-        linkingAgentIdentifier = etree.SubElement(
-            event,
-            PREMIS_BNS + 'linkingAgentIdentifier')
-        etree.SubElement(
-            linkingAgentIdentifier,
-            PREMIS_BNS + 'linkingAgentIdentifierType').text = agent_id_type
-        etree.SubElement(
-            linkingAgentIdentifier,
-            PREMIS_BNS + 'linkingAgentIdentifierValue').text = agent_id_value
-    return event
+    agents = utils.get_ss_premis_agents()
+    event = [
+        'event',
+        metsrw.PREMIS_META,
+        (
+            'event_identifier',
+            ('event_identifier_type', 'UUID'),
+            ('event_identifier_value', str(uuid4())),
+        ),
+        ('event_type', 'encryption'),
+        ('event_date_time', utils.mets_file_now()),
+        ('event_detail', detail),
+        (
+            'event_outcome_information',
+            ('event_outcome', 'success'),
+            (
+                'event_outcome_detail',
+                ('event_outcome_detail_note', outcome_detail_note)
+            )
+        )
+    ]
+    event = tuple(utils.add_agents_to_event_as_list(event, agents))
+    return metsrw.PREMISEvent(data=event).serialize()
 
 
 def _set_premis_compos_lvl_inhibitors(root, package):
@@ -507,7 +463,7 @@ def _set_premis_encryption_event(root, encr_result):
         METS_BNS + 'mdWrap',
         MDTYPE='PREMIS:EVENT')
     xmlData = etree.SubElement(mdWrap, METS_BNS + 'xmlData')
-    xmlData.append(_create_encr_event(root, encr_result))
+    xmlData.append(_create_encr_event(encr_result))
     amdsec.append(digiprovMD)
     return root
 
@@ -564,7 +520,7 @@ def _get_encrypted_path(encr_path):
     """
     while not os.path.isfile(encr_path):
         encr_path = os.path.dirname(encr_path)
-        if not encr_path:
+        if (not encr_path) or (encr_path == '/'):
             encr_path = None
             break
     return encr_path

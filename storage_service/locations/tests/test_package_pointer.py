@@ -113,7 +113,7 @@ TEST_PREMIS_EVENT_DATE_TIME = '2017-08-15T00:30:55'
 TEST_PREMIS_EVENT_DETAIL = (
     'program=7z; '
     'version=p7zip Version 9.20 '
-        '(locale=en_US.UTF-8,Utf16=on,HugeFiles=on,2 CPUs); '
+    '(locale=en_US.UTF-8,Utf16=on,HugeFiles=on,2 CPUs); '
     'algorithm=bzip2')
 TEST_PREMIS_EVENT_OUTCOME_DETAIL_NOTE = (
     'Standard Output="..."; Standard Error=""')
