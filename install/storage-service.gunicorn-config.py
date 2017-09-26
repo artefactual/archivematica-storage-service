@@ -13,7 +13,7 @@ group = os.environ.get('SS_GUNICORN_GROUP', 'archivematica')
 bind = os.environ.get('SS_GUNICORN_BIND', '127.0.0.1:8001')
 
 # http://docs.gunicorn.org/en/stable/settings.html#workers
-workers = os.environ.get('SS_GUNICORN_WORKERS', '4')
+workers = os.environ.get('SS_GUNICORN_WORKERS', '1')
 
 # http://docs.gunicorn.org/en/stable/settings.html#worker-class
 # WARNING: if ``worker_class`` is set to ``'gevent'``, then
