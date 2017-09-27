@@ -15,7 +15,6 @@ from django.db import models
 from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
-import gnupg
 
 # This project, alphabetical
 from common import utils
@@ -243,8 +242,6 @@ class GPG(models.Model):
         verified = os.path.isdir(self.space.path)
         self.space.verified = verified
         self.space.last_verified = datetime.datetime.now()
-
-
 
 
 def _gpg_encrypt(path, key_fingerprint):

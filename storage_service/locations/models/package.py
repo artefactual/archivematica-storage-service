@@ -2638,11 +2638,13 @@ def _get_replication_derivation_relationship(related_aip_uuid,
         'relationship',
         ('relationship_type', 'derivation'),
         ('relationship_sub_type', ''),
-        (related_object_identifier,
+        (
+            related_object_identifier,
             ('related_object_identifier_type', 'UUID'),
             ('related_object_identifier_value', related_aip_uuid)
         ),
-        (related_event_identifier,
+        (
+            related_event_identifier,
             ('related_event_identifier_type', 'UUID'),
             ('related_event_identifier_value', replication_event_uuid)
         ),
