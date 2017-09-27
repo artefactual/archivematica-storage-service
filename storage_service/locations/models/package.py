@@ -500,10 +500,6 @@ class Package(models.Model):
         # Create and write to disk the pointer file for the replica, which
         # contains the PREMIS replication event.
         replication_event_uuid = str(uuid4())
-        # replica_package_pointer_file_full_path = os.path.join(
-        #     replica_package.pointer_file_location.space.path,
-        #     replica_package.pointer_file_location.relative_path,
-        #     replica_package.pointer_file_path)
         replica_pointer_file = self.create_replica_pointer_file(
             replica_package, replication_event_uuid,
             replication_validation_event, master_ptr=master_ptr)
@@ -529,6 +525,11 @@ class Package(models.Model):
         # Any effects resulting from AIP storage (e.g., encryption) are
         # recorded in the replica's pointer file.
         if replica_storage_effects:
+            # Note: unclear why the existing ``replica_pointer_file`` is
+            # a ``lxml.etree._Element`` instance and not the expected
+            # ``metsrw.plugins.premisrw.premis.PREMISObject``. As a result, the
+            # following is required:
+            replica_pointer_file = replica_package.get_pointer_instance()
             revised_replica_pointer_file = (
                 replica_package.create_new_pointer_file_given_storage_effects(
                     replica_pointer_file, replica_storage_effects))
@@ -931,9 +932,13 @@ class Package(models.Model):
         old_premis_events.append(replication_event)
         replication_relationship = _get_replication_derivation_relationship(
             replica_package.uuid, replication_event_uuid)
-        old_premis_object = list(old_premis_object.data)
-        old_premis_object.append(replication_relationship)
-        new_premis_object = metsrw.PREMISObject(data=old_premis_object)
+        new_relationships = old_premis_object.findall('relationship')
+        new_relationships.append(replication_relationship)
+        new_premis_object = metsrw.PREMISObject(
+            xsi_type=old_premis_object.xsi_type,
+            object_identifier=old_premis_object.find('object_identifier'),
+            object_characteristics=old_premis_object.find('object_characteristics'),
+            relationship=new_relationships)
         for ss_agent in ss_agents:
             if ss_agent not in old_premis_agents:
                 old_premis_agents.append(ss_agent)
@@ -973,10 +978,10 @@ class Package(models.Model):
             creating_application_name=old_premis_object.creating_application_name,
             creating_application_version=old_premis_object.creating_application_version,
             date_created_by_application=old_premis_object.date_created_by_application,
-            relationships=old_premis_object.relationships,
+            relationship=old_premis_object.relationship,
             # New attributes:
             inhibitors=new_inhibitors,
-            composition_level=new_composition_level,
+            composition_level=new_composition_level
         )
         return self.create_pointer_file(
             new_premis_object,
@@ -1241,7 +1246,7 @@ class Package(models.Model):
             creating_application_name=archive_tool,
             creating_application_version=compression_program_version,
             date_created_by_application=now,
-            relationships=premis_relationships)
+            relationship=premis_relationships)
 
     def create_replicas(self):
         """Create replicas of this AIP in any replicator locations.
@@ -2635,10 +2640,13 @@ def _get_replication_derivation_relationship(related_aip_uuid,
         ('relationship_sub_type', ''),
         (related_object_identifier,
             ('related_object_identifier_type', 'UUID'),
-            ('related_object_identifier_value', related_aip_uuid)),
+            ('related_object_identifier_value', related_aip_uuid)
+        ),
         (related_event_identifier,
             ('related_event_identifier_type', 'UUID'),
-            ('related_event_identifier_value', replication_event_uuid)))
+            ('related_event_identifier_value', replication_event_uuid)
+        ),
+    )
 
 
 def write_pointer_file(pointer_file, pointer_file_path):
