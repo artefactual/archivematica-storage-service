@@ -529,7 +529,7 @@ class Package(models.Model):
 
         # Update the pointer file of the replicated AIP so that it contains a
         # record of the AIP's replication.
-        new_master_pointer_file = self.update_pointer_file_with_replication(
+        new_master_pointer_file = self.create_new_pointer_file_with_replication(
             master_ptr, replica_package, replication_event_uuid)
         write_pointer_file(new_master_pointer_file, self.full_pointer_file_path)
 
@@ -591,10 +591,17 @@ class Package(models.Model):
         """
         LOGGER.info('store_aip called in Package class of SS')
         v = self._store_aip_to_pending(origin_location, origin_path)
-        self._store_aip_to_uploaded(v, related_package_uuid)
+        storage_effects = self._store_aip_to_uploaded(v, related_package_uuid)
         self._store_aip_ensure_pointer_file(
             v, premis_events=premis_events, premis_agents=premis_agents,
             aip_subtype=aip_subtype)
+        if storage_effects:
+            pointer_file = self.get_pointer_instance()
+            revised_pointer_file = (
+                self.create_new_pointer_file_given_storage_effects(
+                    pointer_file, storage_effects))
+            write_pointer_file(revised_pointer_file,
+                               self.full_pointer_file_path)
         self.create_replicas()
 
     def _store_aip_to_pending(self, origin_location, origin_path):
@@ -680,7 +687,7 @@ class Package(models.Model):
         self.status = Package.STAGING
         self.save()
         v.src_space.post_move_to_storage_service()
-        v.dest_space.move_from_storage_service(
+        storage_effects = v.dest_space.move_from_storage_service(
             source_path=self.current_path,  # This should include Location.path
             destination_path=os.path.join(
                 self.current_location.relative_path,
@@ -700,6 +707,7 @@ class Package(models.Model):
                 self.current_location.relative_path, self.current_path),
             package=self)
         self._update_quotas(v.dest_space, self.current_location)
+        return storage_effects
 
     def _store_aip_ensure_pointer_file(self, v, premis_events=None,
                                        premis_agents=None, aip_subtype=None):
@@ -761,7 +769,7 @@ class Package(models.Model):
                 ' create one.' % {'aip_uuid': self.uuid}))
         __, compression_program_version, archive_tool = (
             compression_event.compression_details)
-        premis_object = self._get_aip_premis_object(
+        premis_object = self._create_aip_premis_object(
             checksum_algorithm, checksum, archive_tool,
             compression_program_version)
         pointer_file = self.create_pointer_file(
@@ -868,7 +876,7 @@ class Package(models.Model):
         replica_premis_relationships = [
             _get_replication_derivation_relationship(master_aip_uuid,
                 replication_event_uuid)]
-        replica_premis_object = replica_package._get_aip_premis_object(
+        replica_premis_object = replica_package._create_aip_premis_object(
             master_checksum_algorithm, master_checksum, archive_tool,
             compression_program_version,
             premis_relationships=replica_premis_relationships)
@@ -889,11 +897,12 @@ class Package(models.Model):
             premis_agents=replica_premis_agents,
             package_subtype=master_package_subtype)
 
-    def update_pointer_file_with_replication(self, old_pointer_file,
-                                             replica_package,
-                                             replication_event_uuid):
-        """Update this package's pointer file to indicate its replication.
-        Steps:
+    def create_new_pointer_file_with_replication(self, old_pointer_file,
+                                                 replica_package,
+                                                 replication_event_uuid):
+        """Create a new pointer file that is identical to ``old_pointer_file``,
+        but which documents the replication of the AIP referenced by the old
+        pointer file. Steps:
         1. Add a PREMIS event for the replication.
         2. Add a PREMIS relationship relating the AIP qua PREMIS object to its
            replica.
@@ -923,6 +932,49 @@ class Package(models.Model):
         return self.create_pointer_file(
             new_premis_object, old_premis_events,
             premis_agents=old_premis_agents, package_subtype=package_subtype)
+
+    def create_new_pointer_file_given_storage_effects(self, old_pointer_file,
+                                                      storage_effects):
+        """Create a new pointer file that is identical to ``old_pointer_file``,
+        but which is altered in accordance with the effects of storing the AIP.
+        This is useful when, for example, storage results in encryption.
+        """
+        old_fsentry = old_pointer_file.get_file(file_uuid=self.uuid)
+        package_subtype = old_fsentry.mets_div_type
+        old_premis_object = old_fsentry.get_premis_objects()[0]
+        old_composition_level = old_premis_object.composition_level
+        old_premis_events = old_fsentry.get_premis_events()
+        old_premis_agents = old_fsentry.get_premis_agents()
+        new_premis_events = list(
+            set(old_premis_events + storage_effects.events))
+        new_premis_agents = list(
+            set(old_premis_agents + utils.get_ss_premis_agents()))
+        new_composition_level = old_composition_level
+        if storage_effects.composition_level_updater:
+            new_composition_level = storage_effects.composition_level_updater(
+                old_composition_level)
+        new_inhibitors = storage_effects.inhibitors or []
+        new_premis_object = metsrw.PREMISObject(
+            xsi_type=old_premis_object.xsi_type,
+            identifier_value=old_premis_object.identifier_value,
+            message_digest_algorithm=old_premis_object.message_digest_algorithm,
+            message_digest=old_premis_object.message_digest,
+            size=old_premis_object.size,
+            format_name=old_premis_object.format_name,
+            format_registry_key=old_premis_object.format_registry_key,
+            creating_application_name=old_premis_object.creating_application_name,
+            creating_application_version=old_premis_object.creating_application_version,
+            date_created_by_application=old_premis_object.date_created_by_application,
+            relationships=old_premis_object.relationships,
+            # New attributes:
+            inhibitors=new_inhibitors,
+            composition_level=new_composition_level,
+        )
+        return self.create_pointer_file(
+            new_premis_object,
+            new_premis_events,
+            premis_agents=new_premis_agents,
+            package_subtype=package_subtype)
 
     def create_replication_event(self, replica_package, event_uuid=None,
                                  agents=None, inst=True):
@@ -1105,10 +1157,20 @@ class Package(models.Model):
         premis_events = [metsrw.PREMISEvent(data=event) for event in premis_events]
         premis_agents = premis_agents or []
         premis_agents = [metsrw.PREMISAgent(data=agent) for agent in premis_agents]
+
         compression_event = _find_compression_event(premis_events)
         if not compression_event:  # no pointer files for uncompressed AIPs
             return
-        transform_files = compression_event.decompression_transform_files
+        transform_files = []
+        encryption_event = _find_encryption_event(premis_events)
+        if encryption_event:
+            transform_files.append(
+                encryption_event.get_decryption_transform_file())
+        compression_transform_files = (
+            compression_event.get_decompression_transform_files(
+                offset=len(transform_files)))
+        for tf in compression_transform_files:
+            transform_files.append(tf)
         # Construct the METS pointer file
         pointer_file = metsrw.METSDocument()
         AIP_PACKAGE_TYPE = 'Archival Information Package'
@@ -1134,12 +1196,12 @@ class Package(models.Model):
                             self.uuid, metsrw.report_string(report))
         return pointer_file
 
-    def _get_aip_premis_object(self,
-                               message_digest_algorithm,
-                               message_digest,
-                               archive_tool,
-                               compression_program_version,
-                               premis_relationships=None):
+    def _create_aip_premis_object(self,
+                                  message_digest_algorithm,
+                                  message_digest,
+                                  archive_tool,
+                                  compression_program_version,
+                                  premis_relationships=None):
         """Return a <premis:object> element for this package's (AIP's) pointer
         file.
         :param str message_digest_algorithm: name of the algorithm used to generate
@@ -2496,8 +2558,16 @@ def _recalculate_size(rein_aip_internal_path):
 
 
 def _find_compression_event(events):
+    return _find_event(events, 'compression')
+
+
+def _find_encryption_event(events):
+    return _find_event(events, 'encryption')
+
+
+def _find_event(events, event_type):
     try:
-        return [evt for evt in events if evt.event_type == 'compression'][0]
+        return [evt for evt in events if evt.event_type == event_type][0]
     except IndexError:
         return None
 

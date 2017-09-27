@@ -348,7 +348,7 @@ class Space(models.Model):
         source_path, destination_path = self._move_from_path_mangling(source_path, destination_path)
         child_space = self.get_child_space()
         if hasattr(child_space, 'move_from_storage_service'):
-            child_space.move_from_storage_service(
+            return child_space.move_from_storage_service(
                 source_path, destination_path, *args, **kwargs)
         else:
             raise NotImplementedError(_('%(protocol)s space has not implemented %(method)s') % {'protocol': self.get_access_protocol_display(), 'method': 'move_from_storage_service'})

@@ -1,4 +1,5 @@
 import ast
+from collections import namedtuple
 import datetime
 import hashlib
 import logging
@@ -380,3 +381,8 @@ def get_ss_premis_agents(inst=True):
     if inst:
         return [metsrw.PREMISAgent(data=data) for data in agents]
     return agents
+
+
+StorageEffects = namedtuple(
+    'StorageEffects',
+    ['events', 'composition_level_updater', 'inhibitors'])

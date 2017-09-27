@@ -8,7 +8,6 @@ import subprocess
 import tarfile
 from uuid import uuid4
 
-from lxml import etree
 import metsrw
 
 # Core Django, alphabetical
@@ -162,10 +161,33 @@ class GPG(models.Model):
             # TODO/QUESTION: Is this behaviour desirable?
             self.space.move_rsync(dst_path, src_path, try_mv_local=True)
             raise
-        # Update metadata related to the encryption of the package, both in the
-        # package's pointer file and in the db (necessary for pointer-file-less
-        # packages).
-        _update_package_metadata(package, encr_result, key_fingerprint)
+        # Update the GPG key fingerprint in db, if necessary.
+        if package.encryption_key_fingerprint != key_fingerprint:
+            package.encryption_key_fingerprint = key_fingerprint
+            package.save()
+        # If the package should have a pointer file, return an object
+        # documenting the effects of storing the package, such that this
+        # ``StorageEffects`` object can be used to update the pointer file
+        # accordingly. Note: we cannot update the pointer file here because it
+        # may not yet exist.
+        # QUESTION: doesn't encryption change the size of the package? If so,
+        # shouldn't this have consequences for the pointer file?
+        # QUESTION: does encryption change the format?
+        if package.should_have_pointer_file():
+            def composition_level_updater(existing_composition_level):
+                if existing_composition_level:
+                    return str(int(existing_composition_level) + 1)
+                return '1'
+            inhibitors = (
+                'inhibitors',
+                ('inhibitor_type', 'GPG'),
+                ('inhibitor_target', 'All content'))
+            encryption_event = create_encryption_event(encr_result,
+                                                       key_fingerprint)
+            return utils.StorageEffects(
+                events=[encryption_event],
+                composition_level_updater=composition_level_updater,
+                inhibitors=[inhibitors])
 
     def browse(self, path):
         """Returns browse results for a locally accessible *encrypted*
@@ -223,32 +245,6 @@ class GPG(models.Model):
         self.space.last_verified = datetime.datetime.now()
 
 
-def _update_package_metadata(package, encr_result, key_fingerprint):
-    """Update the package's metadata (i.e., pointer file and db record) to
-    reflect the encryption event it has undergone.
-    """
-    # Update model in db, if necessary.
-    if package.encryption_key_fingerprint != key_fingerprint:
-        package.encryption_key_fingerprint = key_fingerprint
-        package.save()
-    # Update the pointer file to contain a record of the encryption.
-    if (package.pointer_file_path and
-            package.package_type in (Package.AIP, Package.AIC)):
-        _update_pointer_file(package, encr_result, key_fingerprint)
-
-
-def _update_pointer_file(package, encr_result, key_fingerprint):
-    """Update the package's (i.e., AIP or AIC's) pointer file in order to
-    reflect the encryption event it has undergone.
-    """
-    pointer_absolute_path = package.full_pointer_file_path
-    root = etree.parse(pointer_absolute_path,
-                       etree.XMLParser(remove_blank_text=True))
-    root = _set_premis_compos_lvl_inhibitors(root, package)
-    root = _set_mets_transform_file(root, package, key_fingerprint)
-    root = _set_premis_encryption_event(root, encr_result)
-    with open(pointer_absolute_path, 'w') as fileo:
-        fileo.write(etree.tostring(root, pretty_print=True))
 
 
 def _gpg_encrypt(path, key_fingerprint):
@@ -336,15 +332,18 @@ def _extract_tar(tarpath):
         raise GPGException(fail_msg)
 
 
-def _create_encr_event(encr_result):
-    """Returns a PREMIS Event for the encryption."""
+def create_encryption_event(encr_result, key_fingerprint):
+    """Return a PREMIS:EVENT for the encryption event."""
     # First line of stdout from ``gpg --version`` is expected to be
     # something like 'gpg (GnuPG) 1.4.16'
     gpg_version = subprocess.check_output(
         ['gpg', '--version']).splitlines()[0].split()[-1]
+    # detail = escape(
+    #     'program=gpg (GnuPG); version={}; python-gnupg; version={}'.format(
+    #         gpg_version, gnupg.__version__))
     detail = escape(
-        'program=gpg (GnuPG); version={}; python-gnupg; version={}'.format(
-            gpg_version, gnupg.__version__))
+        'program=GPG; version={}; key={}'.format(
+            gpg_version, key_fingerprint))
     outcome_detail_note = 'Status="{}"; Standard Error="{}"'.format(
         encr_result.status.replace('"', r'\"'),
         encr_result.stderr.replace('"', r'\"').strip())
@@ -370,117 +369,7 @@ def _create_encr_event(encr_result):
         )
     ]
     event = tuple(utils.add_agents_to_event_as_list(event, agents))
-    return metsrw.PREMISEvent(data=event).serialize()
-
-
-def _set_premis_compos_lvl_inhibitors(root, package):
-    """Set PREMIS compositionLevel and inhibitors tags to reflect GPG
-    encryption.
-    """
-    # Increment <premis:compositionLevel> and add <premis:inhibitors>
-    for premis_object_el in root.findall('.//premis:object',
-                                         namespaces=utils.NSMAP):
-        if premis_object_el.find(
-                'premis:objectIdentifier/premis:objectIdentifierValue',
-                namespaces=utils.NSMAP).text.strip() == package.uuid:
-            # Increment <premis:compositionLevel>
-            obj_char_el = premis_object_el.find(
-                'premis:objectCharacteristics', namespaces=utils.NSMAP)
-            compos_level_el = obj_char_el.find(
-                'premis:compositionLevel', namespaces=utils.NSMAP)
-            current_compos_level = compos_level_el.text
-            compos_level_el.text = str(int(current_compos_level) + 1)
-            # When encryption is applied, the objectCharacteristics
-            # block must include an inhibitors semantic unit.
-            inhibitor_el = etree.SubElement(
-                obj_char_el,
-                PREMIS_BNS + 'inhibitors')
-            etree.SubElement(
-                inhibitor_el,
-                PREMIS_BNS + 'inhibitorType').text = 'GPG'
-            etree.SubElement(
-                inhibitor_el,
-                PREMIS_BNS + 'inhibitorTarget').text = 'All content'
-    return root
-
-
-def _set_mets_transform_file(root, package, key_fingerprint):
-    """Set/update METS transformFile tags to reflect GPG encryption."""
-    file_el = root.find('.//mets:file', namespaces=utils.NSMAP)
-    if file_el.get('ID', '').endswith(package.uuid):
-        # Add a new <mets:transformFile> under the <mets:file> for the
-        # AIP, one which indicates that a decryption transform is
-        # needed. Or, update an existing decryption mets:transformFile.
-        decrypt_transform_el = file_el.find(
-            'mets:transformFile[@TRANSFORMTYPE="decryption"]',
-            namespaces=utils.NSMAP)
-        if decrypt_transform_el is None:
-            etree.SubElement(
-                file_el,
-                METS_BNS + "transformFile",
-                TRANSFORMORDER='1',
-                TRANSFORMTYPE='decryption',
-                TRANSFORMALGORITHM='gpg',
-                TRANSFORMKEY=key_fingerprint
-            )
-        else:
-            old_transform_key = decrypt_transform_el.get('TRANSFORMKEY')
-            decrypt_transform_el.set('TRANSFORMKEY', key_fingerprint)
-            LOGGER.info('There was a mets:transformFile for decryption. Its'
-                        ' TRANSFORMKEY was %s; it has been changed to %s',
-                        old_transform_key, key_fingerprint)
-        # All decompression <transformFile> elements must have their
-        # TRANSFORMORDER attributes incremented because decryption is a
-        # precondition to decompression.
-        for other_transform_el in file_el.findall(
-                'mets:transformFile[@TRANSFORMTYPE="decompression"]',
-                namespaces=utils.NSMAP):
-            current_transform_order = int(
-                other_transform_el.get('TRANSFORMORDER'))
-            other_transform_el.set('TRANSFORMORDER',
-                                   str(current_transform_order + 1))
-    return root
-
-
-def _set_premis_encryption_event(root, encr_result):
-    """Add a <PREMIS:EVENT> for the encryption event to the pointer file
-    ``root``.
-
-    TODO/QUESTION: in other contexts, the pipeline is responsible for
-    creating these things in the pointer file. The
-    createPointerFile.py client script, in particular, creates these
-    digiprovMD elements based on events and agents in the pipeline's
-    database. In this case, we are encrypting in the storage service
-    and creating PREMIS events in the pointer file that are *not*
-    also recorded in the database (SS's or AM's). Just pointing out
-    the discrepancy.
-    """
-    amdsec = root.find('.//mets:amdSec', namespaces=utils.NSMAP)
-    next_digiprov_md_id = _get_next_digiprov_md_id(root)
-    digiprovMD = etree.Element(METS_BNS + 'digiprovMD', ID=next_digiprov_md_id)
-    mdWrap = etree.SubElement(
-        digiprovMD,
-        METS_BNS + 'mdWrap',
-        MDTYPE='PREMIS:EVENT')
-    xmlData = etree.SubElement(mdWrap, METS_BNS + 'xmlData')
-    xmlData.append(_create_encr_event(encr_result))
-    amdsec.append(digiprovMD)
-    return root
-
-
-def _get_next_digiprov_md_id(root):
-    """Return the next digiprovMD ID attribute; something like
-    ``'digiprovMD_X'``, where X is an int.
-    """
-    ids = []
-    for digiprov_md_el in root.findall(
-            './/mets:digiprovMD', namespaces=utils.NSMAP):
-        digiprov_md_id = int(digiprov_md_el.get('ID').replace(
-            'digiprovMD_', ''))
-        ids.append(digiprov_md_id)
-    if ids:
-        return 'digiprovMD_{}'.format(max(ids) + 1)
-    return 'digiprovMD_1'
+    return metsrw.PREMISEvent(data=event)
 
 
 def _gpg_decrypt(path):
