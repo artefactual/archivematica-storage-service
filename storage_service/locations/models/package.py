@@ -512,9 +512,8 @@ class Package(models.Model):
         replica_package.save()
 
         # Copy replicandum AIP from the SS to replica package's replicator
-        # location. Note: if the destination space is encrypted, the encryption
-        # of the replica will be documented in the pointer file.
-        dest_space.move_from_storage_service(
+        # location.
+        replica_storage_effects = dest_space.move_from_storage_service(
             source_path=replica_package.current_path,
             destination_path=replica_destination_path,
             package=replica_package)
@@ -527,8 +526,17 @@ class Package(models.Model):
             package=replica_package)
         self._update_quotas(dest_space, replica_package.current_location)
 
-        # Update the pointer file of the replicated AIP so that it contains a
-        # record of the AIP's replication.
+        # Any effects resulting from AIP storage (e.g., encryption) are
+        # recorded in the replica's pointer file.
+        if replica_storage_effects:
+            revised_replica_pointer_file = (
+                replica_package.create_new_pointer_file_given_storage_effects(
+                    replica_pointer_file, replica_storage_effects))
+            write_pointer_file(revised_replica_pointer_file,
+                               replica_package.full_pointer_file_path)
+
+        # Update the pointer file of the replicated AIP (master) so that it
+        # contains a record of its replication.
         new_master_pointer_file = self.create_new_pointer_file_with_replication(
             master_ptr, replica_package, replication_event_uuid)
         write_pointer_file(new_master_pointer_file, self.full_pointer_file_path)
@@ -1172,7 +1180,7 @@ class Package(models.Model):
         for tf in compression_transform_files:
             transform_files.append(tf)
         # Construct the METS pointer file
-        pointer_file = metsrw.METSDocument()
+        pointer_file = metsrw.METSWithPREMISDocument()
         AIP_PACKAGE_TYPE = 'Archival Information Package'
         package_subtype = package_subtype or AIP_PACKAGE_TYPE
         mets_fs_entry = metsrw.FSEntry(
