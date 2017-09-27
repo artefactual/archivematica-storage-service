@@ -440,6 +440,11 @@ class PackageResource(ModelResource):
     current_full_path = fields.CharField(attribute='full_path', readonly=True)
     related_packages = fields.ManyToManyField('self', 'related_packages', null=True)
 
+    replicated_package = fields.ForeignKey(
+        'self', 'replicated_package', null=True, blank=True, readonly=True)
+    replicas = fields.ManyToManyField(
+        'self', 'replicas', null=True, blank=True, readonly=True)
+
     default_location_regex = re.compile(r'\/api\/v2\/location\/default\/(?P<purpose>[A-Z]{2})\/?')
 
     class Meta:
@@ -453,7 +458,9 @@ class PackageResource(ModelResource):
         # that name.
         resource_name = 'file'
 
-        fields = ['current_path', 'package_type', 'size', 'status', 'uuid', 'related_packages', 'misc_attributes']
+        fields = ['current_path', 'package_type', 'size', 'status', 'uuid',
+                  'related_packages', 'misc_attributes', 'replicated_package',
+                  'replicas']
         list_allowed_methods = ['get', 'post']
         detail_allowed_methods = ['get', 'put', 'patch']
         allowed_patch_fields = ['reingest']  # for customized update_in_place
