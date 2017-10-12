@@ -28,8 +28,6 @@ urlpatterns = [
 
     url(r'^jsi18n/$', views.cached_javascript_catalog, {'domain': 'djangojs'}, name='javascript-catalog'),
     url(r'^i18n/', include('django.conf.urls.i18n', namespace='i18n')),
-
-    url(r'^logged-out/', TemplateView.as_view(template_name='logged_out.html')),
 ]
 
 

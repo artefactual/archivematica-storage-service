@@ -251,7 +251,6 @@ LOGIN_REDIRECT_URL = '/'
 LOGIN_EXEMPT_URLS = (
     r'^api/',
     r'^admin/',
-    r'^logged-out',
     r'^Shibboleth.sso/',
     r'^login/',
 )
@@ -348,7 +347,6 @@ def is_true(env_str):
 SHIBBOLETH_AUTHENTICATION = is_true(environ.get('SS_SHIBBOLETH_AUTHENTICATION', ''))
 if SHIBBOLETH_AUTHENTICATION:
     SHIBBOLETH_LOGOUT_URL = '/Shibboleth.sso/Logout?target=%s'
-    SHIBBOLETH_LOGOUT_REDIRECT_URL = '/logged-out'
 
     SHIBBOLETH_REMOTE_USER_HEADER = 'HTTP_EPPN'
     SHIBBOLETH_ATTRIBUTE_MAP = {
