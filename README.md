@@ -1,3 +1,5 @@
+[![Travis CI](https://travis-ci.org/artefactual/archivematica-storage-service.svg?branch=qa/0.x)](https://travis-ci.org/artefactual/archivematica-storage-service)
+
 # [Archivematica Storage Service](https://www.archivematica.org/)
 
 By [Artefactual](https://www.artefactual.com/)
