@@ -1,15 +1,17 @@
 ---
 
 dist: trusty
-sudo: required
-
+sudo: false
 language: python
 
-before_install:
-  - sudo apt-get -qq update
-  - sudo apt-get install -y unar p7zip-full
+addons:
+  apt:
+    packages:
+      - python-pip
+      - p7zip-full
+      - unar
 
-before_script:
+before_install:
   - pip install tox
 
 script: tox
