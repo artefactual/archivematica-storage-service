@@ -12,8 +12,8 @@ ENV FORWARDED_ALLOW_IPS *
 
 # OS dependencies
 RUN set -ex \
-	&& apt-get update \
-	&& apt-get install -y --no-install-recommends \
+	&& apt-get update -qq \
+	&& apt-get install -qq -y --no-install-recommends \
 		gettext \
 		p7zip-full \
 		rsync \
@@ -21,7 +21,7 @@ RUN set -ex \
 	&& rm -rf /var/lib/apt/lists/*
 
 ADD requirements/ /src/requirements/
-RUN pip install -r /src/requirements/production.txt -r /src/requirements/test.txt
+RUN pip install -q -r /src/requirements/production.txt -r /src/requirements/test.txt
 ADD ./ /src/
 ADD ./install/storage-service.gunicorn-config.py /etc/archivematica/storage-service.gunicorn-config.py
 
