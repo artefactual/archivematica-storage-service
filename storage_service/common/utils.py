@@ -10,7 +10,7 @@ import os
 import shutil
 import uuid
 
-import metsrw
+from metsrw.plugins import premisrw
 
 from django.core.exceptions import ObjectDoesNotExist
 from django import http
@@ -336,7 +336,7 @@ def add_agents_to_event_as_list(event, agents):
     """Add agents in ``agents`` to the list ``event`` which represents a
     PREMIS:EVENT.
     :param list event: a PREMIS:EVENT represented as a list
-    :param iterable agents: an iterable of metsrw.PREMISAgent instances.
+    :param iterable agents: an iterable of premisrw.PREMISAgent instances.
     """
     for agent in agents:
         event.append((
@@ -368,7 +368,7 @@ def get_ss_premis_agents(inst=True):
     """
     agents = [(
         'agent',
-        metsrw.PREMIS_META,
+        premisrw.PREMIS_META,
         (
             'agent_identifier',
             ('agent_identifier_type', 'preservation system'),
@@ -379,7 +379,7 @@ def get_ss_premis_agents(inst=True):
         ('agent_type', 'software')
     )]
     if inst:
-        return [metsrw.PREMISAgent(data=data) for data in agents]
+        return [premisrw.PREMISAgent(data=data) for data in agents]
     return agents
 
 

@@ -2,6 +2,7 @@ import os
 from uuid import uuid4
 
 import metsrw
+from metsrw.plugins import premisrw
 from django.test import TestCase
 
 from locations import models
@@ -22,7 +23,7 @@ TEST_PREMIS_OBJECT_CREATING_APPLICATION_NAME = '7-Zip'
 TEST_PREMIS_OBJECT_CREATING_APPLICATION_VERSION = (
     'p7zip Version 9.20 (locale=en_US.UTF-8,Utf16=on,HugeFiles=on,2 CPUs)')
 TEST_PREMIS_OBJECT_AIP_SUBTYPE = 'Some strange subtype'
-TEST_PREMIS_OBJECT_ATTRS = metsrw.PREMIS_META.copy()
+TEST_PREMIS_OBJECT_ATTRS = premisrw.PREMIS_META.copy()
 TEST_PREMIS_OBJECT_ATTRS['xsi:type'] = 'premis:file'
 TEST_PREMIS_OBJECT = (
     'object',
@@ -74,7 +75,7 @@ TEST_PREMIS_AGENT_1_NAME = 'Archivematica'
 TEST_PREMIS_AGENT_1_TYPE = 'software'
 TEST_PREMIS_AGENT_1 = (
     'agent',
-    metsrw.PREMIS_META,
+    premisrw.PREMIS_META,
     (
         'agent_identifier',
         ('agent_identifier_type', TEST_PREMIS_AGENT_1_IDENTIFIER_TYPE),
@@ -90,7 +91,7 @@ TEST_PREMIS_AGENT_2_NAME = 'username'
 TEST_PREMIS_AGENT_2_TYPE = 'organization'
 TEST_PREMIS_AGENT_2 = (
     'agent',
-    metsrw.PREMIS_META,
+    premisrw.PREMIS_META,
     (
         'agent_identifier',
         ('agent_identifier_type', TEST_PREMIS_AGENT_2_IDENTIFIER_TYPE),
@@ -120,7 +121,7 @@ TEST_PREMIS_EVENT_OUTCOME_DETAIL_NOTE = (
 
 TEST_PREMIS_EVENT = (
     'event',
-    metsrw.PREMIS_META,
+    premisrw.PREMIS_META,
     (
         'event_identifier',
         ('event_identifier_type', 'UUID'),

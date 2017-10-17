@@ -23,6 +23,7 @@ import bagit
 import jsonfield
 from django_extensions.db.fields import UUIDField
 import metsrw
+from metsrw.plugins import premisrw
 import requests
 
 # This project, alphabetical
@@ -527,8 +528,7 @@ class Package(models.Model):
         if replica_storage_effects:
             # Note: unclear why the existing ``replica_pointer_file`` is
             # a ``lxml.etree._Element`` instance and not the expected
-            # ``metsrw.plugins.premisrw.premis.PREMISObject``. As a result, the
-            # following is required:
+            # ``premisrw.PREMISObject``. As a result, the following is required:
             replica_pointer_file = replica_package.get_pointer_instance()
             revised_replica_pointer_file = (
                 replica_package.create_new_pointer_file_given_storage_effects(
@@ -767,7 +767,7 @@ class Package(models.Model):
         checksum = utils.generate_checksum(
             self.fetch_local_path(), checksum_algorithm).hexdigest()
         premis_events = [
-            metsrw.PREMISEvent(data=event) for event in premis_events]
+            premisrw.PREMISEvent(data=event) for event in premis_events]
         compression_event = _find_compression_event(premis_events)
         if not compression_event:
             raise StorageException(_(
@@ -821,7 +821,7 @@ class Package(models.Model):
         ptr_path = self.full_pointer_file_path
         if not ptr_path:
             return None
-        return metsrw.METSWithPREMISDocument.fromfile(ptr_path)
+        return metsrw.METSDocument.fromfile(ptr_path)
 
     def create_replica_pointer_file(self, replica_package,
                                     replication_event_uuid,
@@ -934,7 +934,7 @@ class Package(models.Model):
             replica_package.uuid, replication_event_uuid)
         new_relationships = old_premis_object.findall('relationship')
         new_relationships.append(replication_relationship)
-        new_premis_object = metsrw.PREMISObject(
+        new_premis_object = premisrw.PREMISObject(
             xsi_type=old_premis_object.xsi_type,
             object_identifier=old_premis_object.find('object_identifier'),
             object_characteristics=old_premis_object.find('object_characteristics'),
@@ -967,7 +967,7 @@ class Package(models.Model):
             new_composition_level = storage_effects.composition_level_updater(
                 old_composition_level)
         new_inhibitors = storage_effects.inhibitors or []
-        new_premis_object = metsrw.PREMISObject(
+        new_premis_object = premisrw.PREMISObject(
             xsi_type=old_premis_object.xsi_type,
             identifier_value=old_premis_object.identifier_value,
             message_digest_algorithm=old_premis_object.message_digest_algorithm,
@@ -992,7 +992,7 @@ class Package(models.Model):
     def create_replication_event(self, replica_package, event_uuid=None,
                                  agents=None, inst=True):
         """Return a PREMIS:EVENT for replication of an AIP, as a
-        metsrw.premisrw.PREMISEvent or, if ``inst`` is ``False``, as a python
+        premisrw.PREMISEvent or, if ``inst`` is ``False``, as a python
         Python tuple.
         """
         outcome_detail_note = (
@@ -1004,7 +1004,7 @@ class Package(models.Model):
             event_uuid = str(uuid4())
         event = [
             'event',
-            metsrw.PREMIS_META,
+            premisrw.PREMIS_META,
             (
                 'event_identifier',
                 ('event_identifier_type', 'UUID'),
@@ -1024,7 +1024,7 @@ class Package(models.Model):
         ]
         event = tuple(utils.add_agents_to_event_as_list(event, agents))
         if inst:
-            return metsrw.PREMISEvent(data=event)
+            return premisrw.PREMISEvent(data=event)
         return event
 
     def get_premis_aip_creation_event(self, master_aip_uuid=None, agents=None,
@@ -1042,7 +1042,7 @@ class Package(models.Model):
             agents = utils.get_ss_premis_agents()
         event = [
             'event',
-            metsrw.PREMIS_META,
+            premisrw.PREMIS_META,
             (
                 'event_identifier',
                 ('event_identifier_type', 'UUID'),
@@ -1064,7 +1064,7 @@ class Package(models.Model):
         ]
         event = tuple(utils.add_agents_to_event_as_list(event, agents))
         if inst:
-            return metsrw.PREMISEvent(data=event)
+            return premisrw.PREMISEvent(data=event)
         return event
 
     def get_replication_validation_event(
@@ -1094,7 +1094,7 @@ class Package(models.Model):
             agents = utils.get_ss_premis_agents()
         event = [
             'event',
-            metsrw.PREMIS_META,
+            premisrw.PREMIS_META,
             (
                 'event_identifier',
                 ('event_identifier_type', 'UUID'),
@@ -1114,7 +1114,7 @@ class Package(models.Model):
         ]
         event = tuple(utils.add_agents_to_event_as_list(event, agents))
         if inst:
-            return metsrw.PREMISEvent(data=event)
+            return premisrw.PREMISEvent(data=event)
         return event
 
     def create_pointer_file(self,
@@ -1129,14 +1129,14 @@ class Package(models.Model):
         the AIP and the types of operations that must be performed on it in
         order to arrive at a canonical representation, e.g., decompression,
         decryption, and/or reassembly.
-        :param tuple/metsrw.premisrw.PREMISObject premis_object: the
+        :param tuple/premisrw.PREMISObject premis_object: the
             PREMIS:OBJECT for the AIP itself.
         :param list premis_events: a list of PREMIS:EVENTs (tuples or
-            metsrw.premisrw.PREMISEvent instances) representing events
+            premisrw.PREMISEvent instances) representing events
             involving the AIP. In order for a pointer file to be created, this
             must contain a compression event performed by AM.
         :param list premis_agents: a list of PREMIS:AGENTs (tuples of
-            metsrw.premisrw.PREMISAgent instances) representing premis_agents
+            premisrw.PREMISAgent instances) representing premis_agents
             of the events in ``premis_events``.
         :param str package_subtype: representation of the AIP's package type.
             Default 'Archival Information Package' may be overridden by, for
@@ -1163,13 +1163,13 @@ class Package(models.Model):
           <premis:dateCreatedByApplication>. Is this ok?
         """
         # Convert any PREMIS-entities-as-tuples/lists to
-        # metsrw.premisrw.PREMISElement subclass instances. Note that
+        # premisrw.PREMISElement subclass instances. Note that
         # instantiating a PREMISElement by passing in an existing instance via
         # the ``data`` kwarg will construct an equivalent instance.
-        premis_object = metsrw.PREMISObject(data=premis_object)
-        premis_events = [metsrw.PREMISEvent(data=event) for event in premis_events]
+        premis_object = premisrw.PREMISObject(data=premis_object)
+        premis_events = [premisrw.PREMISEvent(data=event) for event in premis_events]
         premis_agents = premis_agents or []
-        premis_agents = [metsrw.PREMISAgent(data=agent) for agent in premis_agents]
+        premis_agents = [premisrw.PREMISAgent(data=agent) for agent in premis_agents]
 
         compression_event = _find_compression_event(premis_events)
         if not compression_event:  # no pointer files for uncompressed AIPs
@@ -1185,7 +1185,7 @@ class Package(models.Model):
         for tf in compression_transform_files:
             transform_files.append(tf)
         # Construct the METS pointer file
-        pointer_file = metsrw.METSWithPREMISDocument()
+        pointer_file = metsrw.METSDocument()
         AIP_PACKAGE_TYPE = 'Archival Information Package'
         package_subtype = package_subtype or AIP_PACKAGE_TYPE
         mets_fs_entry = metsrw.FSEntry(
@@ -1235,7 +1235,7 @@ class Package(models.Model):
         __, extension = os.path.splitext(self.current_path)
         now = timezone.now().strftime("%Y-%m-%dT%H:%M:%S")  # YYYY-MM-DDTHH:MM:SS
         premis_relationships = premis_relationships or []
-        return metsrw.PREMISObject(
+        return premisrw.PREMISObject(
             xsi_type='premis:file',
             identifier_value=self.uuid,
             message_digest_algorithm=message_digest_algorithm,
@@ -2629,7 +2629,7 @@ def _get_replication_derivation_relationship(related_aip_uuid,
     uses 'Identification' where PREMIS v. 3.0 uses 'Identifier'.
     """
     if not premis_version:
-        premis_version = metsrw.PREMIS_META['version']
+        premis_version = premisrw.PREMIS_META['version']
     related_object_identifier = {'2.2': 'related_object_identification'}.get(
         premis_version, 'related_object_identifier')
     related_event_identifier = {'2.2': 'related_event_identification'}.get(

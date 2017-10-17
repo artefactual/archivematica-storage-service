@@ -8,7 +8,7 @@ import subprocess
 import tarfile
 from uuid import uuid4
 
-import metsrw
+from metsrw.plugins import premisrw
 
 # Core Django, alphabetical
 from django.db import models
@@ -347,7 +347,7 @@ def create_encryption_event(encr_result, key_fingerprint):
     agents = utils.get_ss_premis_agents()
     event = [
         'event',
-        metsrw.PREMIS_META,
+        premisrw.PREMIS_META,
         (
             'event_identifier',
             ('event_identifier_type', 'UUID'),
@@ -366,7 +366,7 @@ def create_encryption_event(encr_result, key_fingerprint):
         )
     ]
     event = tuple(utils.add_agents_to_event_as_list(event, agents))
-    return metsrw.PREMISEvent(data=event)
+    return premisrw.PREMISEvent(data=event)
 
 
 def _gpg_decrypt(path):
