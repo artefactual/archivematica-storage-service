@@ -11,8 +11,13 @@ addons:
       - p7zip-full
       - unar
 
+cache:
+  - pip
+
 before_install:
   - pip install tox
+
+install: true
 
 script: tox
 
