@@ -612,6 +612,9 @@ class PackageResource(ModelResource):
             return bundle
         origin_location_uri = bundle.data.get('origin_location')
         origin_path = bundle.data.get('origin_path')
+        events = bundle.data.get('events', [])
+        agents = bundle.data.get('agents', [])
+        aip_subtype = bundle.data.get('aip_subtype', None)
         if origin_location_uri and origin_path:
             # Sending origin information implies that the package should be copied from there
             origin_location = self.origin_location.build_related_resource(origin_location_uri, bundle.request).obj
@@ -626,8 +629,10 @@ class PackageResource(ModelResource):
                 bundle.obj.current_location = original_package.current_location
                 reingest_location = self.origin_location.build_related_resource(bundle.data['current_location'], bundle.request).obj
                 reingest_path = bundle.data['current_path']
-                bundle.obj.finish_reingest(origin_location, origin_path,
-                    reingest_location, reingest_path)
+                bundle.obj.finish_reingest(
+                    origin_location, origin_path, reingest_location, reingest_path,
+                    premis_events=events, premis_agents=agents,
+                    aip_subtype=aip_subtype)
         return bundle
 
     def update_in_place(self, request, original_bundle, new_data):

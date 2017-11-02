@@ -742,42 +742,37 @@ class Package(models.Model):
                     package=None)
                 self._update_existing_ptr_loc_info()  # Update its location info
             else:  # Otherwise, create a pointer file here.
-                self._store_aip_create_pointer_file(
-                    v.pointer_file_dst, premis_events,
+                pointer_file_dst = os.path.join(
+                    self.pointer_file_location.space.path, v.pointer_file_dst)
+                self._create_pointer_file_write_to_disk(
+                    pointer_file_dst, premis_events,
                     premis_agents=premis_agents, aip_subtype=aip_subtype)
         else:  # This package should not have a pointer file
             self.pointer_file_location = None
             self.pointer_file_path = None
         self.save()
 
-    def _store_aip_create_pointer_file(self, pointer_file_dst, premis_events,
-                                       premis_agents=None, aip_subtype=None):
+    def _create_pointer_file_write_to_disk(self, pointer_file_dst,
+                                           premis_events, premis_agents=None,
+                                           aip_subtype=None):
         """Create a pointer file and write it to disk for the ``store_aip``
         method.
-        :param str pointer_file_dst:
+        :param str pointer_file_dst: Full path to where the pointer file should
+            be written.
         :param list premis_events:
         :param list premis_agents:
         :param str aip_subtype:
         :returns NoneType None:
         See ``create_pointer_file`` for details.
         """
-        pointer_file_dst = os.path.join(
-            self.pointer_file_location.space.path, pointer_file_dst)
         checksum_algorithm = Package.DEFAULT_CHECKSUM_ALGORITHM
         checksum = utils.generate_checksum(
             self.fetch_local_path(), checksum_algorithm).hexdigest()
         premis_events = [
             premisrw.PREMISEvent(data=event) for event in premis_events]
-        compression_event = _find_compression_event(premis_events)
-        if not compression_event:
-            raise StorageException(_(
-                'Failed to store AIP %(aip_uuid)s This AIP needs a'
-                ' pointer file, however the Archivematica pipeline did'
-                ' not create one and it also did not provide the'
-                ' compression event needed for the Storage Service to'
-                ' create one.' % {'aip_uuid': self.uuid}))
         __, compression_program_version, archive_tool = (
-            compression_event.compression_details)
+            _get_compression_details_from_premis_events(
+                premis_events, self.uuid))
         premis_object = self._create_aip_premis_object(
             checksum_algorithm, checksum, archive_tool,
             compression_program_version)
@@ -1907,9 +1902,9 @@ class Package(models.Model):
             'reingest_uuid': reingest_uuid,
         }
 
-    def finish_reingest(self,
-                        origin_location, origin_path,
-                        reingest_location, reingest_path):
+    def finish_reingest(self, origin_location, origin_path, reingest_location,
+                        reingest_path, premis_events=None, premis_agents=None,
+                        aip_subtype=None):
         """Finish the re-ingest of this package by updating it in accordance
         with the reingested version at ``origin_location/path`` and place the
         final reingested package at ``reingest_location/path``. Steps:
@@ -1930,8 +1925,9 @@ class Package(models.Model):
         5. Recreate the bagit manifest.
         6. Compress the AIP according to what was selected during reingest in
            Archivematica.
-        7. Store the AIP in the reingest_location.
-        8. Update the pointer file.
+        7. Create a pointer file if AM has not done so.
+        8. Store the AIP in the reingest_location.
+        9. Update the pointer file.
 
         :param Location origin_location: Location the newly re-ingested AIP was
             procesed on.
@@ -1939,6 +1935,10 @@ class Package(models.Model):
             origin_location.
         :param Location reingest_location: Location to store the updated AIP in.
         :param str reingest_path: Path to store the updated AIP at.
+        :param list premis_events: List of PREMIS events represented as lists.
+        :param list premis_agents: List of PREMIS agents represented as lists.
+        :param str aip_subtype: type of the AIP, as specified by the AM user
+            via metadata.
 
         We are dealing with 3 Space/Location sets:
         1. origin_space/location:   where the reingested AIP is at the start
@@ -1946,6 +1946,7 @@ class Package(models.Model):
         3. internal_space/location: location for processing copies of this
                                     package and the reingested one
         """
+        premis_events = premis_events or []
         self._validate_pipelines_for_reingest()
         origin_space = origin_location.space
         reingest_space = reingest_location.space
@@ -1969,20 +1970,32 @@ class Package(models.Model):
             self._move_reingested_aip_from_origin_to_internal(
                 origin_space, origin_location, origin_path,
                 internal_space, internal_location, reingest_path))
+
         # Take note of whether the new version of the AIP should be compressed.
         to_be_compressed = rein_aip_is_compressed = os.path.isfile(
             rein_aip_internal_path)
+
         # Extract reingested AIP, if needed
         if rein_aip_is_compressed:
             rein_aip_internal_path = _extract_rein_aip(
                 internal_location, rein_aip_internal_path)
-        # Copy the pointer file of the newly re-ingested package (AIP) to the
-        # internal location. ``rein_pointer_path`` is the full path to the
-        # pointer file in the internal location.
-        rein_pointer_path = self._copy_rein_pointer_from_origin_to_internal(
-            to_be_compressed, was_compressed,
-            origin_space, origin_location, origin_path,
-            internal_space, internal_location)
+
+        # Copy the pointer file, if it exists, from the origin location (e.g.,
+        # currently processing) to the internal location.
+        # ``rein_pointer_dst_full_path`` is the full path to the pointer file
+        # in the internal location, or ``None`` if no pointer file is needed.
+        rein_pointer_dst_full_path = None
+        if self.package_type in (Package.AIP, Package.AIC) and to_be_compressed:
+            (reingest_pointer_name, reingest_pointer_src,
+             reingest_pointer_src_full_path, reingest_pointer_dst,
+             rein_pointer_dst_full_path) = self._get_rein_pointer_paths(
+                was_compressed, origin_space, origin_location, origin_path,
+                internal_space, internal_location)
+            if os.path.isfile(reingest_pointer_src_full_path):
+                origin_space.move_to_storage_service(
+                    reingest_pointer_src, reingest_pointer_name, internal_space)
+                internal_space.move_from_storage_service(
+                    reingest_pointer_name, reingest_pointer_dst, package=None)
 
         # 2. Replace the old AIP's METS file with the reingested AIP's mets
         #    file.
@@ -2007,25 +2020,71 @@ class Package(models.Model):
         #    validate it.
         _update_bag_payload_and_verify(old_aip_internal_path)
 
+        compression = None
+        if to_be_compressed:
+            if os.path.isfile(rein_pointer_dst_full_path):
+                compression = utils.get_compression(rein_pointer_dst_full_path)
+                # If updating, rather than creating a new pointer file, delete
+                # this pointer file. TODO: this is maybe not a good idea and
+                # might be what is messing with encrypted re-ingest...
+                LOGGER.info('Extracted compression "{}" from pointer file'.format(
+                    compression))
+                if was_compressed:
+                    os.remove(rein_pointer_dst_full_path)
+            else:
+                compression_algorithm, __, archive_tool = (
+                    _get_compression_details_from_premis_events(
+                        premis_events, self.uuid))
+                try:
+                    compression = {
+                        'bzip2': utils.COMPRESSION_7Z_BZIP,
+                        'lzma': utils.COMPRESSION_7Z_LZMA,
+                        'pbzip2': utils.COMPRESSION_TAR_BZIP2}[
+                            compression_algorithm]
+                    LOGGER.info('Exctracted compression "{}" from AM-passed'
+                                ' PREMIS events'.format(compression))
+                except KeyError:
+                    raise StorageException(
+                        'Failed to extract valid compression algorithm from'
+                        ' "{}"; does not match any of the following recognized'
+                        ' options: {}'.format(
+                            compression,
+                            ', '.join(utils.COMPRESSION_ALGORITHMS)))
+
         # 6. Compress the re-ingested AIP (if necessary) and get the local path
         #    to it and to its parent directory. At this point ``updated_aip``
         #    points to the same location as ``old_aip`` but the new var name
         #    indicates the update via reingest.
-        updated_aip_path, updated_aip_parent_path, compression = (
+        updated_aip_path, updated_aip_parent_path = (
             self._compress_and_clean_for_reingest(
                 to_be_compressed, was_compressed,
-                rein_pointer_path, rein_aip_internal_path,
+                compression, rein_aip_internal_path,
                 extract_path_to_delete))
         self.size = _recalculate_size(updated_aip_path)
 
-        # 7. Store the AIP in the reingest_location.
-        self._move_rein_updated_to_final_dest(
+        # 7. Create a pointer file if AM has not done so.
+        if (self.package_type in (Package.AIP, Package.AIC) and
+                to_be_compressed and
+                (not os.path.isfile(reingest_pointer_src_full_path))):
+            self._create_pointer_file_write_to_disk(
+                self.full_pointer_file_path, premis_events,
+                premis_agents=premis_agents, aip_subtype=aip_subtype)
+
+        # 8. Store the AIP in the reingest_location.
+        storage_effects = self._move_rein_updated_to_final_dest(
             to_be_compressed, removed_pres_der_paths,
             internal_space, internal_location,
             updated_aip_parent_path, updated_aip_path,
             reingest_space, reingest_location, old_aip_internal_path)
+        if storage_effects:
+            pointer_file = self.get_pointer_instance()
+            revised_pointer_file = (
+                self.create_new_pointer_file_given_storage_effects(
+                    pointer_file, storage_effects))
+            write_pointer_file(revised_pointer_file,
+                               self.full_pointer_file_path)
 
-        # 8. Update the pointer file.
+        # 9. Update the pointer file.
         self._process_pointer_file_for_reingest(
             to_be_compressed, was_compressed, compression, updated_aip_path)
         self.save()
@@ -2072,52 +2131,41 @@ class Package(models.Model):
         )
         return os.path.join(internal_location.full_path, reingest_path)
 
-    def _copy_rein_pointer_from_origin_to_internal(
-            self, to_be_compressed, was_compressed, origin_space,
-            origin_location, origin_path, internal_space, internal_location):
-        """Copy the pointer file (if it exists) from the origin location (e.g.,
-        currently processing) to the internal location and return the full path
-        within the internal location to that pointer file.
-        TODO: what do if LOCKSS?
+    def _get_rein_pointer_paths(self, was_compressed, origin_space,
+                                origin_location, origin_path, internal_space,
+                                internal_location):
+        """Build and return a tuple of paths needed for moving, or creating,
+        the pointer file during ``finish_reingest``.
         """
-        rein_pointer_path = None
-        if self.package_type in (Package.AIP, Package.AIC) and to_be_compressed:
-            reingest_pointer_src = os.path.join(
-                origin_location.relative_path,
-                os.path.dirname(origin_path),
-                'pointer.xml')
-            # If reingesting a previously compressed AIP, make a temporary
-            # "reingest" pointer (otherwise make a normal one)
-            if was_compressed:
-                reingest_pointer_name = 'pointer.{}.reingest.xml'.format(
-                    self.uuid)
-                reingest_pointer_dst = os.path.join(
-                    internal_location.relative_path,
-                    reingest_pointer_name)
-                rein_pointer_path = os.path.join(
-                    internal_location.full_path,
-                    reingest_pointer_name)
-            else:
-                reingest_pointer_name = 'pointer.{}.xml'.format(self.uuid)
-                uuid_path = utils.uuid_to_path(self.uuid)
-                reingest_pointer_dst = os.path.join(
-                    internal_location.relative_path,
-                    uuid_path,
-                    reingest_pointer_name)
-                self.pointer_file_location = Location.active.get(
-                    purpose=Location.STORAGE_SERVICE_INTERNAL)
-                self.pointer_file_path = os.path.join(
-                    uuid_path,
-                    reingest_pointer_name)
-                rein_pointer_path = os.path.join(
-                    internal_location.full_path,
-                    uuid_path,
-                    reingest_pointer_name)
-            origin_space.move_to_storage_service(
-                reingest_pointer_src, reingest_pointer_name, internal_space)
-            internal_space.move_from_storage_service(
-                reingest_pointer_name, reingest_pointer_dst, package=None)
-        return rein_pointer_path
+        relative_path = os.path.join(os.path.dirname(origin_path), 'pointer.xml')
+        reingest_pointer_src_full_path = os.path.join(
+            origin_location.full_path, relative_path)
+        reingest_pointer_src = os.path.join(
+            origin_location.relative_path, relative_path)
+        # If reingesting a previously compressed AIP, make a temporary
+        # "reingest" pointer (otherwise make a normal one)
+        if was_compressed:
+            reingest_pointer_name = 'pointer.{}.reingest.xml'.format(
+                self.uuid)
+            reingest_pointer_dst = os.path.join(
+                internal_location.relative_path, reingest_pointer_name)
+            rein_pointer_dst_full_path = os.path.join(
+                internal_location.full_path, reingest_pointer_name)
+        else:
+            reingest_pointer_name = 'pointer.{}.xml'.format(self.uuid)
+            uuid_path = utils.uuid_to_path(self.uuid)
+            reingest_pointer_dst = os.path.join(
+                internal_location.relative_path, uuid_path,
+                reingest_pointer_name)
+            self.pointer_file_location = Location.active.get(
+                purpose=Location.STORAGE_SERVICE_INTERNAL)
+            self.pointer_file_path = os.path.join(
+                uuid_path, reingest_pointer_name)
+            rein_pointer_dst_full_path = os.path.join(
+                internal_location.full_path, uuid_path, reingest_pointer_name)
+        return (reingest_pointer_name, reingest_pointer_src,
+                reingest_pointer_src_full_path, reingest_pointer_dst,
+                rein_pointer_dst_full_path)
 
     def _overwrite_old_mets_with_rein_mets(self,
                                            rein_aip_internal_path,
@@ -2135,22 +2183,14 @@ class Package(models.Model):
         os.rename(rein_aip_mets_path, old_aip_mets_path)
 
     def _compress_and_clean_for_reingest(
-            self, to_be_compressed, was_compressed, rein_pointer_path,
+            self, to_be_compressed, was_compressed, compression,
             rein_aip_internal_path, extract_path_to_delete):
         """If this package (AIP) needs to be compressed, compress it. In either
         case, return the local path to this package and the path to its parent
         directory. And clean up some unused directories.
         """
-        compression = None
         # Compress if necessary
         if to_be_compressed:
-            compression = utils.get_compression(rein_pointer_path)
-            # If updating, rather than creating a new pointer file, delete this
-            # pointer file.
-            # TODO: this is maybe not a good idea and might be what is messing
-            # with encrypted re-ingest
-            if was_compressed:
-                os.remove(rein_pointer_path)
             LOGGER.info('Reingest: compressing with %s', compression)
             # FIXME Do we need compression output for event?
             updated_aip_path, updated_aip_parent_path = (
@@ -2161,7 +2201,7 @@ class Package(models.Model):
         else:
             updated_aip_path = self.fetch_local_path()
             updated_aip_parent_path = os.path.dirname(updated_aip_path)
-        return updated_aip_path, updated_aip_parent_path, compression
+        return updated_aip_path, updated_aip_parent_path
 
     def _move_rein_updated_to_final_dest(
             self, to_be_compressed, removed_pres_der_paths,
@@ -2199,7 +2239,7 @@ class Package(models.Model):
             source_path=updated_aip_src_path,
             destination_path=dest_path,  # This should include Location.path
             destination_space=reingest_space)
-        reingest_space.move_from_storage_service(
+        storage_effects = reingest_space.move_from_storage_service(
             source_path=dest_path,  # This should include Location.path
             destination_path=os.path.join(reingest_location.relative_path,
                                           dest_path),
@@ -2212,6 +2252,7 @@ class Package(models.Model):
             self.current_location.space.delete_path(self.full_path)
         self.current_location = reingest_location
         self.current_path = dest_path
+        return storage_effects
 
     def _process_pointer_file_for_reingest(
             self, to_be_compressed, was_compressed, compression,
@@ -2583,6 +2624,23 @@ def _find_event(events, event_type):
         return [evt for evt in events if evt.event_type == event_type][0]
     except IndexError:
         return None
+
+
+def _get_compression_details_from_premis_events(premis_events, aip_uuid):
+    """Returns 3-tuple of strings: compression_algorithm,
+    compression_program_version, and archive_tool.
+    """
+    premis_events = [
+        premisrw.PREMISEvent(data=event) for event in premis_events]
+    compression_event = _find_compression_event(premis_events)
+    if not compression_event:
+        raise StorageException(_(
+            'Failed to extract compression details for AIP %(aip_uuid)s.'
+            ' This AIP needs a pointer file, however the Archivematica'
+            ' pipeline did not create one and it also did not provide the'
+            ' compression event needed for the Storage Service to create'
+            ' one.' % {'aip_uuid': aip_uuid}))
+    return compression_event.compression_details
 
 
 def _replicate_package_mdl_inst(package_mdl):
