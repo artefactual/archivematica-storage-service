@@ -87,6 +87,7 @@ LANGUAGES = [
     ('fr', _('French')),
     ('en', _('English')),
     ('es', _('Spanish')),
+    ('pt', _('Portuguese')),
 ]
 # ######## END LOCALE CONFIGURATION
 
