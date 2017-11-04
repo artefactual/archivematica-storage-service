@@ -2,8 +2,11 @@
 
 """Common settings and globals."""
 
+import json
+import logging
+import logging.config
 from os import environ
-from os.path import abspath, basename, dirname, join, normpath
+from os.path import abspath, basename, dirname, isfile, join, normpath
 from sys import path
 
 from django.core.exceptions import ImproperlyConfigured
@@ -259,12 +262,16 @@ LOGIN_EXEMPT_URLS = (
 
 
 # ######## LOGGING CONFIGURATION
-# See: https://docs.djangoproject.com/en/dev/ref/settings/#logging
-# A sample logging configuration. The only tangible logging
-# performed by this configuration is to send an email to
-# the site admins on every HTTP 500 error when DEBUG=False.
 # See http://docs.djangoproject.com/en/dev/topics/logging for
 # more details on how to customize your logging configuration.
+
+# Configure logging manually
+LOGGING_CONFIG = None
+
+# Location of the logging configuration file that we're going to pass to
+# `logging.config.fileConfig` unless it doesn't exist.
+LOGGING_CONFIG_FILE = '/etc/archivematica/storageService.logging.json'
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -325,6 +332,12 @@ LOGGING = {
         'level': 'WARNING',
     },
 }
+
+if isfile(LOGGING_CONFIG_FILE):
+    with open(LOGGING_CONFIG_FILE, 'rt') as f:
+        LOGGING = logging.config.dictConfig(json.load(f))
+else:
+    logging.config.dictConfig(LOGGING)
 # ######## END LOGGING CONFIGURATION
 
 
