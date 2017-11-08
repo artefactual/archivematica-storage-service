@@ -1602,8 +1602,7 @@ class Package(models.Model):
 
         path_to_mets, temp_dir = self.extract_file(relative_path)
 
-        mw = metsrw.mets.METSWriter()
-        mw.fromfile(path_to_mets)
+        mw = metsrw.METSDocument.fromfile(path_to_mets)
 
         for fsentry in mw.all_files():
             metadata = self._parse_file_metadata(fsentry)
