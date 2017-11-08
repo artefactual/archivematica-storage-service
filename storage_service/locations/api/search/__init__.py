@@ -1,3 +1,5 @@
 # Common
 # May have multiple models, so import * and use __all__ in file.
-from router import *
+from router import router
+
+__all__ = ['router']

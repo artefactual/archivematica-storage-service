@@ -1,8 +1,6 @@
 from django.conf.urls import include, url
-from rest_framework import routers, serializers, viewsets, filters, generics
 from tastypie.api import Api
 
-from locations import models
 from locations.api import v1, v2
 from locations.api.search import router
 from locations.api.sword import views
