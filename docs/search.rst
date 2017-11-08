@@ -2,7 +2,7 @@
     Mike Cantelon
 
 Search API
-==========
+================================================================================
 
 In addition to the search functionality present in the web interface, the
 storage service also includes a REST search API. Searches are performed by
@@ -13,13 +13,11 @@ include next and previous properties indicating links to more items in the
 result set.
 
 Location search
----------------
+--------------------------------------------------------------------------------
 
-The endpoint for searching locations is:
+The endpoint for searching locations is::
 
-::
-
-  http://<storage service URL>/api/v2/search/location/
+    http://<storage service URL>/api/v2/search/location/
 
 Locations can be searched using the following search parameters:
 
@@ -29,25 +27,21 @@ Locations can be searched using the following search parameters:
 * enabled (whether the location is enabled)
 
 For example, if you wanted to get details about the transfer source location
-contained in the space 6d0b6cce-4372-4ef8-bf48-ce642761fd41 you could HTTP get:
+contained in the space 6d0b6cce-4372-4ef8-bf48-ce642761fd41 you could HTTP get::
 
-::
+    http://<storage service URL>/api/v2/search/location/?space=7ec3d5d9-23ec-4fd5-b9fb-df82da8de630&purpose=TS
 
-   http://<storage service URL>/api/v2/search/location/?space=7ec3d5d9-23ec-4fd5-b9fb-df82da8de630&purpose=TS
+Here is an example JSON response::
 
-Here is an example JSON response:
-
-::
-
-    {  
+    {
       "count": 1,
       "next": null,
       "previous": null,
-      "results": [  
-        {  
+      "results": [
+        {
           "uuid": "f74c23e1-6737-4c24-a470-a003bc573051",
           "space": "7ec3d5d9-23ec-4fd5-b9fb-df82da8de630",
-          "pipelines": [  
+          "pipelines": [
             "2a351be8-99b4-4f53-8ea5-8d6ace6e0243",
             "b9d676ff-7c9d-4777-9a19-1b4b76a6542f"
            ],
@@ -61,13 +55,11 @@ Here is an example JSON response:
 
 
 Package search
---------------
+--------------------------------------------------------------------------------
 
-The endpoint for searching packages is:
+The endpoint for searching packages is::
 
-::
-
-  http://<storage service URL>/api/v2/search/package/
+    http://<storage service URL>/api/v2/search/package/
 
 Packages can be searched using the following search parameters:
 
@@ -81,15 +73,11 @@ Packages can be searched using the following search parameters:
 * max_size (maximum package filesize)
 
 For example, if you wanted to get details about packages contained in the location
-7c9ddb60-3d16-4fa3-a41e-4a1a876d2a89 you could HTTP GET:
+7c9ddb60-3d16-4fa3-a41e-4a1a876d2a89 you could HTTP GET::
 
-::
+    http://<storage service URL>/api/v2/search/package/?package_type=AIP
 
-   http://<storage service URL>/api/v2/search/package/?package_type=AIP
-
-Here is an example JSON response:
-
-::
+Here is an example JSON response::
 
     {
       count: 1,
@@ -112,13 +100,11 @@ Here is an example JSON response:
 
 
 File search
------------
+--------------------------------------------------------------------------------
 
-The endpoint for searching files is:
+The endpoint for searching files is::
 
-::
-
-  http://<storage service URL>/api/v2/search/file/
+    http://<storage service URL>/api/v2/search/file/
 
 Files can be searched using the following search criteria:
 
@@ -132,16 +118,12 @@ Files can be searched using the following search criteria:
 * normalized (boolean: whether or not file was normalized)
 * valid (boolean: whether or not file data is valid or malformed)
 
-For example, if you wanted to get details about files contained in the package
-ebd8cbb6-29ca-4fa3-b897-58bea057f35f you could HTTP GET:
+For example, if you wanted to get details about files that are 29965171 bytes
+or larger, you could HTTP GET::
 
-::
+    http://<storage service URL>/api/v2/search/file/?min_size=29965171
 
-   http://<storage service URL>/api/v2/search/file/?min_size=29965171
-
-Here is an example JSON response:
-
-::
+Here is an example JSON response::
 
     {
       count: 1,
