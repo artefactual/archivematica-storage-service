@@ -127,10 +127,15 @@ class FileFilter(django_filters.FilterSet):
     name = django_filters.CharFilter(name='name', lookup_type='icontains')
     normalized = CaseInsensitiveBooleanFilter(name='normalized')
     ingestion_time = django_filters.DateFilter(name='ingestion_time', lookup_type='contains')
+    #ingestion_time_before = django_filters.DateFilter(name='ingestion_time', lookup_type='lt')
+    #ingestion_time_after = django_filters.DateFilter(name='ingestion_time', lookup_type='gt')
 
     class Meta:
         model = models.File
-        fields = ['uuid', 'name', 'file_type', 'min_size', 'max_size', 'format_name', 'pronom_id', 'pipeline', 'source_package', 'normalized', 'validated', 'ingestion_time']
+        fields = ['uuid', 'name', 'file_type', 'min_size', 'max_size',
+                  'format_name', 'pronom_id', 'pipeline', 'source_package',
+                  'normalized', 'validated', 'ingestion_time']
+                  #'ingestion_time_before', 'ingestion_time_after']
 
 
 class FileViewSet(viewsets.ReadOnlyModelViewSet):
