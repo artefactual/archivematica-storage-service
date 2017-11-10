@@ -182,3 +182,7 @@ class TestPackage(TestCase):
         output_path, extract_path = package.extract_file(extract_path=self.tmp_dir)
         assert output_path == os.path.join(self.tmp_dir, basedir)
         assert os.path.join(output_path, 'manifest-md5.txt')
+
+
+def test_stuff():
+    assert True
