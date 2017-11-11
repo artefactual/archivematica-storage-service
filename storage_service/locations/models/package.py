@@ -23,7 +23,7 @@ import bagit
 from django_extensions.db.fields import UUIDField
 import jsonfield
 import metsrw
-from metsrw.plugins import premisrw, premisrw2
+from metsrw.plugins import premisrw, yapremisrw
 import requests
 
 # This project, alphabetical
@@ -1234,7 +1234,7 @@ class Package(models.Model):
                 LOGGER.info('Pointer file constructed for %s is valid.', self.uuid)
             else:
                 LOGGER.warning('Pointer file constructed for %s is not valid.\n%s',
-                            self.uuid, metsrw.report_string(report))
+                               self.uuid, metsrw.report_string(report))
         return pointer_file
 
     def _create_aip_premis_object(self,
@@ -1638,6 +1638,9 @@ class Package(models.Model):
         relative_path = os.path.join(aip_dir_name, "data", "METS." + self.uuid + ".xml")
         path_to_mets, temp_dir = self.extract_file(relative_path)
         mw = metsrw.METSDocument.fromfile(path_to_mets)
+        feature_broker = metsrw.feature_broker
+        feature_broker.provide('premis_object_class', yapremisrw.Object)
+        feature_broker.provide('premis_event_class', yapremisrw.Event)
         for fsentry in mw.all_files():
             metadata = _parse_file_metadata(fsentry)
             if metadata is not None:
@@ -1659,6 +1662,8 @@ class Package(models.Model):
                 if 'valid' in metadata:
                     aip_file.valid = metadata['valid']
                 aip_file.save()
+        feature_broker.provide('premis_object_class', premisrw.PREMISObject)
+        feature_broker.provide('premis_event_class', premisrw.PREMISEvent)
         shutil.rmtree(temp_dir)
 
     def check_fixity(self, force_local=False, delete_after=True):
@@ -2803,15 +2808,11 @@ def _parse_file_metadata(fsentry):
     """Cycle through an FSEntry object's AMDsec subsections and consolidate
     PREMIS object/event metadata.
     """
-    if fsentry.path == 'None' or not fsentry.techmds:
-        if not fsentry.techmds:
-            return
-
+    premis_objects = fsentry.get_premis_objects()
+    if not premis_objects:
+        return
     metadata = {}
-
-    # Get technical metadata
-    techmd = fsentry.techmds[0]
-    premis_object = premisrw2.Object.parse(techmd.contents.document, False)
+    premis_object = premis_objects[0]
 
     # Don't provide metadata for METS files
     if premis_object.characteristics[0]['is_mets']:
@@ -2852,14 +2853,12 @@ def _parse_file_metadata(fsentry):
         if premis_object.relationships[0]['subtype'] == 'is source of':
             metadata['normalized'] = True
 
-    # Cycle through event data to see if file has been validated and if it passed
-    for digiprovmd in fsentry.digiprovmds:
-        if digiprovmd.contents.mdtype == 'PREMIS:EVENT':
-            # Parse PREMIS event
-            premis_event = premisrw2.Event.parse(digiprovmd.contents.document)
-
-            # Indicate whether or not a file has been validated in metadata and if it passed
-            if premis_event.event_type == 'validation':
-                metadata['valid'] = premis_event.outcomes[0]['outcome'] == "pass"
+    # Cycle through event data to see if file has been validated and if it
+    # passed
+    for premis_event in fsentry.get_premis_events():
+        # Indicate whether or not a file has been validated in metadata and if
+        # it passed
+        if premis_event.event_type == 'validation':
+            metadata['valid'] = premis_event.outcomes[0]['outcome'] == "pass"
 
     return metadata
