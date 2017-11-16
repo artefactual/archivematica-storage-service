@@ -148,7 +148,8 @@ class File(models.Model):
     source_id = models.TextField(max_length=128)
     source_package = models.TextField(blank=True,
         help_text=_l("Unique identifier of originating unit"))
-    size = models.IntegerField(default=0, help_text='Size in bytes of the file')
+    size = models.IntegerField(
+        default=0, help_text=_l("Size in bytes of the file"))
     format_name = models.TextField(blank=True, max_length=128)
     pronom_id = models.TextField(blank=True, max_length=128)
     # Sized to fit sha512
