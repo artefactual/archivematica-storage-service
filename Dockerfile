@@ -15,6 +15,7 @@ RUN set -ex \
 	&& apt-get update -qq \
 	&& apt-get install -qq -y --no-install-recommends \
 		gettext \
+		gnupg \
 		p7zip-full \
 		rsync \
 		unar \
