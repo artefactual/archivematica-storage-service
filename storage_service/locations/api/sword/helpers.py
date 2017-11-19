@@ -336,7 +336,8 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
         'username': pipeline.api_username,
         'api_key': pipeline.api_key
     }
-    url = 'http://' + pipeline.remote_name + '/api/transfer/unapproved/'
+    url = pipeline.parse_url()
+    url = url._replace(path='api/transfer/unapproved/').geturl()
     while True:
         response = requests.get(url, params=params)
         if response.status_code == 200:
@@ -357,7 +358,8 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
         'type': 'standard'
     }
 
-    url = 'http://' + pipeline.remote_name + '/api/transfer/approve/'
+    url = pipeline.parse_url()
+    url = url._replace(path='api/transfer/approve/').geturl()
     try:
         response = requests.post(url, data=data)
     except Exception:

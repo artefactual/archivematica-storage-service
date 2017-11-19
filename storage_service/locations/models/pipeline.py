@@ -5,6 +5,7 @@ import logging
 # Core Django, alphabetical
 from django.core import validators
 from django.db import models
+from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
@@ -70,6 +71,21 @@ class Pipeline(models.Model):
         super(Pipeline, self).save(*args, **kwargs)
         if create_default_locations:
             self.create_default_locations(shared_path)
+
+    def parse_url(self):
+        """Returns a ParseResult object based on the remote_name field.
+
+        We've always made the assumption that the value of the remote_name field
+        contained just the network location part of the pipeline URL. The final
+        URL was manually using the http scheme. This was a problem when the
+        pipeline was behind a https front-end.
+        """
+        res = urlparse(self.remote_name)
+        if res.scheme == '' and res.netloc == '' and res.path != '':
+            res = res._replace(scheme='http')
+            res = res._replace(netloc=res.path)
+            res = res._replace(path='')
+        return res
 
     def create_default_locations(self, shared_path=None):
         """ Creates default locations for a pipeline based on config.
@@ -144,20 +160,18 @@ class Pipeline(models.Model):
     # HTTP API CALLS
 
     def _request_api(self, method, path, fields=None):
-        url = 'http://{}/api/{}'.format(
-            self.remote_name,
-            path.lstrip('/'),
-        )
+        url = self.parse_url()
+        url = url._replace(path='api/{}'.format(path)).geturl()
         data = {
             'username': self.api_username,
             'api_key': self.api_key
         }
         if fields:
             data.update(fields)
-
         LOGGER.debug('URL: %s; data: %s', url, data)
         try:
-            resp = requests.request(method, url, data=data, allow_redirects=True)
+            resp = requests.request(method, url,
+                                    data=data, allow_redirects=True)
         except requests.exceptions.RequestException:
             LOGGER.exception('Unable to connect to pipeline %s.', self)
             raise
