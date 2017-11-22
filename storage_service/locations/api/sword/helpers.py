@@ -9,6 +9,7 @@ import tempfile
 import time
 
 # Core Django, alphabetical
+from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import timezone
@@ -100,7 +101,8 @@ def download_resource(url, destination_path, filename=None, username=None, passw
     if username is not None and password is not None:
         auth = (username, password)
 
-    response = requests.get(url, auth=auth)
+    response = requests.get(url, auth=auth,
+                            verify=not settings.INSECURE_SKIP_VERIFY)
     if filename is None:
         if 'content-disposition' in response.headers:
             filename = parse_filename_from_content_disposition(response.headers['content-disposition'])
@@ -339,7 +341,8 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
     url = pipeline.parse_url()
     url = url._replace(path='api/transfer/unapproved/').geturl()
     while True:
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params,
+                                verify=not settings.INSECURE_SKIP_VERIFY)
         if response.status_code == 200:
             results = response.json()
         else:
@@ -361,7 +364,8 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
     url = pipeline.parse_url()
     url = url._replace(path='api/transfer/approve/').geturl()
     try:
-        response = requests.post(url, data=data)
+        response = requests.post(url, data=data,
+                                 verify=not settings.INSECURE_SKIP_VERIFY)
     except Exception:
         LOGGER.exception('Automatic approval of transfer for deposit %s failed', deposit.uuid)
         # move back to deposit directory

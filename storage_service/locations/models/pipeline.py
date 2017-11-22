@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import logging
 
 # Core Django, alphabetical
+from django.conf import settings
 from django.core import validators
 from django.db import models
 from django.utils.six.moves.urllib.parse import urlparse
@@ -171,7 +172,8 @@ class Pipeline(models.Model):
         LOGGER.debug('URL: %s; data: %s', url, data)
         try:
             resp = requests.request(method, url,
-                                    data=data, allow_redirects=True)
+                                    data=data, allow_redirects=True,
+                                    verify=not settings.INSECURE_SKIP_VERIFY)
         except requests.exceptions.RequestException:
             LOGGER.exception('Unable to connect to pipeline %s.', self)
             raise
