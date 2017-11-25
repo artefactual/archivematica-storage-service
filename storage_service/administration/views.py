@@ -183,7 +183,16 @@ def key_create(request):
                   " email '%(name_email)s'." %
                   {'name_real': cd['name_real'],
                    'name_email': cd['name_email']}))
-    return render(request, 'administration/key_form.html', locals())
+    explanation = _(
+        'Generate a new GPG key. The key will not have a passphrase. It will be'
+        ' a key of type %(key_type)s and length %(key_length)s.' % {
+            'key_type': gpgutils.DFLT_KEY_TYPE,
+            'key_length': gpgutils.DFLT_KEY_LENGTH})
+    return render(request, 'administration/key_form.html',
+                  {'action_': action_,
+                   'action': action,
+                   'explanation': explanation,
+                   'key_form': key_form})
 
 
 def key_import(request):
@@ -220,7 +229,18 @@ def key_import(request):
                 _("New key %(fingerprint)s created." %
                     {'fingerprint': fingerprint}))
             return redirect('key_list')
-    return render(request, 'administration/key_form.html', locals())
+    explanation = _(
+        'Import an existing GPG key. Paste here the ASCII armor of the GPG'
+        ' private key, which you can get by running <code>gpg --armor'
+        ' --export-secret-keys</code> followed by the fingerprint, email or name'
+        ' associated with the key. The key should begin with <code>-----BEGIN'
+        ' PGP PRIVATE KEY BLOCK-----</code> and end with <code>-----END PGP'
+        ' PRIVATE KEY BLOCK-----</code> and it must not have a passphrase.')
+    return render(request, 'administration/key_form.html',
+                  {'action_': action_,
+                   'action': action,
+                   'explanation': explanation,
+                   'key_form': key_form})
 
 
 def key_delete_context(request, key_fingerprint):
@@ -284,7 +304,7 @@ def key_delete(request, key_fingerprint):
     else:
         messages.warning(
             request,
-            _('Failed to delete GPG key %(fingerprint).' %
+            _('Failed to delete GPG key %(fingerprint)s.' %
               {'fingerprint': key_fingerprint}))
     next_url = request.GET.get('next', reverse('key_list'))
     return redirect(next_url)

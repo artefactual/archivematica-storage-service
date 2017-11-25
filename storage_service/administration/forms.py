@@ -211,8 +211,9 @@ class UserChangeForm(auth.forms.UserChangeForm):
 # ######################### KEYS ##########################
 
 class KeyCreateForm(forms.Form):
-    name_real = forms.CharField()
-    name_email = forms.EmailField(required=False)
+    required_css_class = 'required-field'
+    name_real = forms.CharField(label=_l('Name'))
+    name_email = forms.EmailField(label=_l('Email'), required=False)
 
 
 class KeyImportForm(forms.Form):

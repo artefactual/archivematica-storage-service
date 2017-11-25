@@ -4,6 +4,7 @@
 
 {% block content %}
 <div class='key'>
+  <p>{{ explanation | safe }}</p>
   {% if action_ == "Create Key" %}
     <form action="{% url 'key_create' %}" method="post" onsubmit="key.disabled = true; return true;">
   {% else %}
