@@ -47,12 +47,12 @@
           <a class="brand" href="#">{% trans "Archivematica Storage Service" %}</a>
           <div class="nav-collapse collapse">
             <ul class="nav">
-              <li class="active"><a href="/">{% trans "Home" %}</a></li>
-              <li><a href="{% url 'pipeline_list' %}">{% trans "Pipelines" %}</a></li>
-              <li><a href="{% url 'space_list' %}">{% trans "Spaces" %}</a></li>
-              <li><a href="{% url 'location_list' %}">{% trans "Locations" %}</a></li>
-              <li><a href="{% url 'package_list' %}">{% trans "Packages" %}</a></li>
-              <li><a href="{% url 'settings_edit' %}">{% trans "Administration" %}</a></li>
+              <li {% if request.path == '/' %}class="active"{% endif %}><a href="/">{% trans "Home" %}</a></li>
+              <li {% if '/pipeline/' in request.path %}class="active"{% endif %}><a href="{% url 'pipeline_list' %}">{% trans "Pipelines" %}</a></li>
+              <li {% if '/space/' in request.path %}class="active"{% endif %}><a href="{% url 'space_list' %}">{% trans "Spaces" %}</a></li>
+              <li {% if '/location/' in request.path %}class="active"{% endif %}><a href="{% url 'location_list' %}">{% trans "Locations" %}</a></li>
+              <li {% if '/package/' in request.path %}class="active"{% endif %}><a href="{% url 'package_list' %}">{% trans "Packages" %}</a></li>
+              <li {% if '/administration/' in request.path or '/callbacks/' in request.path %}class="active"{% endif %}><a href="{% url 'settings_edit' %}">{% trans "Administration" %}</a></li>
               {% if user.is_authenticated %}
               <li><a href="{% logout_link %}">{% trans "Log out" %}</a></li>
               {% endif %}
