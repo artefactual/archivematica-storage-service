@@ -33,6 +33,7 @@ RUN set -ex \
 	&& internalDirs=' \
 		/db \
 		/src/storage_service/assets \
+		/src/storage_service/locations/fixtures \
 		/var/archivematica/storage_service \
 	' \
 	&& mkdir -p $internalDirs \

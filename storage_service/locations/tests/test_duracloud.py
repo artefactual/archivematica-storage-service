@@ -20,6 +20,13 @@ class TestDuracloud(TestCase):
         self.ds_object = models.Duracloud.objects.all()[0]
         self.auth = requests.auth.HTTPBasicAuth(self.ds_object.user, self.ds_object.password)
 
+        # Move to a location that is writeable
+        self.old_dir = os.getcwd()
+        os.chdir('/var/archivematica/storage_service')
+
+    def tearDown(self):
+        os.chdir(self.old_dir)
+
     def test_has_required_attributes(self):
         assert self.ds_object.host
         assert self.ds_object.user

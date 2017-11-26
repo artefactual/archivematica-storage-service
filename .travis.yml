@@ -19,6 +19,11 @@ before_install:
 
 install: true
 
+before_script:
+  # Needed by test_duracloud.py
+  - sudo mkdir -p /var/archivematica/storage_service
+  - sudo chown -R $USER /var/archivematica/storage_service
+
 script: tox
 
 notifications:
