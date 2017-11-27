@@ -14,17 +14,12 @@ import logging
 
 # Third party dependencies, alphabetical
 import gnupg
+from django.apps import apps
+from django.conf import settings
 from django.utils.translation import ugettext as _
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-# WARNING: by not providing a gnupghome kw param to ``GPG`` here we are
-# deferring to gnupg to determine where the .gnupg/ dir will be. On a default
-# vagrant/ansible deploy, the .gnupg/ dir will be at
-# /var/lib/archivematica/.gnupg/
-gpg = gnupg.GPG()
 
 
 # Defaults for the default AM SS GPG key
@@ -40,11 +35,32 @@ ENCR_WORKS = 'yes'
 ENCR_FAILS = 'no'
 
 
+class GPG(object):
+
+    def __init__(self):
+        self._gpg = None
+
+    def __call__(self):
+        if not self._gpg:
+            gnupg_home_path = settings.GNUPG_HOME_PATH
+            if not gnupg_home_path:
+                Location = apps.get_model(app_label='locations',
+                                          model_name='Location')
+                ss_internal = Location.active.get(
+                    purpose=Location.STORAGE_SERVICE_INTERNAL)
+                gnupg_home_path = ss_internal.full_path
+            self._gpg = gnupg.GPG(gnupghome=gnupg_home_path)
+        return self._gpg
+
+
+gpg = GPG()
+
+
 def get_gpg_key(fingerprint):
     """Return the GPG key with fingerprint ``fingerprint`` or None if there is
     no such key in the SS's GPG keyring.
     """
-    key_map = gpg.list_keys(True).key_map  # ``True`` means return private keys
+    key_map = gpg().list_keys(True).key_map  # ``True`` means return private keys
     return key_map.get(fingerprint)
 
 
@@ -52,11 +68,11 @@ def get_gpg_key_list():
     """Return a list of all GPG keys as dicts. If the Storage Service default
     key does not exist, we create it here before returning the list.
     """
-    keys = gpg.list_keys(True)
+    keys = gpg().list_keys(True)
     default_key = get_default_gpg_key(keys)
     if not default_key:
         generate_default_gpg_key()
-        keys = gpg.list_keys(True)
+        keys = gpg().list_keys(True)
     return keys
 
 
@@ -80,28 +96,28 @@ def generate_default_gpg_key():
     "Administration" tab. WARNING: if rng-tools is not installed or is not
     correctly configured, then GPG may take a long time to generate keys.
     """
-    input_data = gpg.gen_key_input(
+    input_data = gpg().gen_key_input(
         key_type=DFLT_KEY_TYPE,
         key_length=DFLT_KEY_LENGTH,
         name_real=DFLT_KEY_REAL_NAME,
         passphrase=DFLT_KEY_PASSPHRASE
     )
     LOGGER.info('Creating default AM SS key with name %s', DFLT_KEY_REAL_NAME)
-    gpg.gen_key(input_data)
+    gpg().gen_key(input_data)
     LOGGER.info('Finished creating default AM SS key with name %s',
                 DFLT_KEY_REAL_NAME)
 
 
 def generate_gpg_key(name_real, name_email):
     """Generate a GPG key."""
-    input_data = gpg.gen_key_input(
+    input_data = gpg().gen_key_input(
         key_type=DFLT_KEY_TYPE,
         key_length=DFLT_KEY_LENGTH,
         name_real=name_real,
         name_email=name_email,
         passphrase=DFLT_KEY_PASSPHRASE
     )
-    return gpg.gen_key(input_data)
+    return gpg().gen_key(input_data)
 
 
 def import_gpg_key(ascii_armor):
@@ -109,7 +125,7 @@ def import_gpg_key(ascii_armor):
     imported key's fingerprint, if successful; if unsuccessful, return a string
     indicating why and delete any key created in the process.
     """
-    import_result = gpg.import_keys(ascii_armor)
+    import_result = gpg().import_keys(ascii_armor)
     if import_result.count == 1:
         fingerprint = import_result.fingerprints[0]
         it_works = encryption_works(fingerprint)
@@ -129,7 +145,7 @@ def encryption_works(fingerprint):
     'passphrased' if it doesn't because a passphrase is required.
     """
     unencrypted_string = 'secrets'
-    encrypted_data = gpg.encrypt(
+    encrypted_data = gpg().encrypt(
         unencrypted_string, fingerprint, always_trust=True)
     encrypted_string = str(encrypted_data)
     LOGGER.info('Checking encryption with key %s', fingerprint)
@@ -138,7 +154,7 @@ def encryption_works(fingerprint):
     LOGGER.info('encrypt stderr: %s', encrypted_data.stderr)
     if not encrypted_data.ok:
         return ENCR_FAILS  # unable to encrypt
-    decrypted_data = gpg.decrypt(encrypted_string)
+    decrypted_data = gpg().decrypt(encrypted_string)
     LOGGER.info('Checking decryption with key %s', fingerprint)
     LOGGER.info('decrypt ok: %s', decrypted_data.ok)
     LOGGER.info('decrypt status: %s', decrypted_data.status)
@@ -155,12 +171,12 @@ def export_gpg_key(fingerprint):
     """Return the ASCII armor (string) representation of the private and public
     keys with fingerprint ``fingerprint``.
     """
-    return gpg.export_keys(fingerprint), gpg.export_keys(fingerprint, True)
+    return gpg().export_keys(fingerprint), gpg().export_keys(fingerprint, True)
 
 
 def delete_gpg_key(fingerprint):
     """Delete the GPG key with fingerprint ``fingerprint``.  """
-    result = gpg.delete_keys(fingerprint, True)
+    result = gpg().delete_keys(fingerprint, True)
     try:
         assert str(result) == 'ok'
         return True
@@ -173,7 +189,7 @@ def gpg_decrypt_file(path, decr_path):
     ``decr_path``.
     """
     with open(path, 'rb') as stream:
-        return gpg.decrypt_file(stream, output=decr_path)
+        return gpg().decrypt_file(stream, output=decr_path)
 
 
 def gpg_encrypt_file(path, recipient_fingerprint):
@@ -184,7 +200,7 @@ def gpg_encrypt_file(path, recipient_fingerprint):
     """
     encr_path = path + '.gpg'
     with open(path, 'rb') as stream:
-        result = gpg.encrypt_file(
+        result = gpg().encrypt_file(
             stream,
             [recipient_fingerprint],
             armor=False,

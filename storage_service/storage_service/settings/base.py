@@ -405,3 +405,5 @@ try:
         environ.get('SS_BAG_VALIDATION_NO_PROCESSES', 1))
 except ValueError:
     BAG_VALIDATION_NO_PROCESSES = 1
+
+GNUPG_HOME_PATH = environ.get('SS_GNUPG_HOME_PATH', None)
