@@ -29,6 +29,39 @@ class TestLocationAPI(TestCase):
         response = self.client.post('/api/v2/location/213086c8-232e-4b9e-bb03-98fbc7a7966a/')
         assert response.status_code == 401
 
+    def test_create_location(self):
+        space = models.Space.objects.get(
+            uuid='7d20c992-bc92-4f92-a794-7161ff2cc08b')
+        data = {
+            'space': '/api/v2/space/7d20c992-bc92-4f92-a794-7161ff2cc08b/',
+            'description': 'automated workflow',
+            'relative_path': 'automated-workflow/foo/bar',
+            'purpose': 'TS',
+            'pipeline': [
+                '/api/v2/pipeline/b25f6b71-3ebf-4fcc-823c-1feb0a2553dd/'
+            ],
+        }
+
+        response = self.client.post(
+            '/api/v2/location/',
+            data=json.dumps(data),
+            content_type='application/json')
+        assert response.status_code == 201
+
+        # Verify content
+        body = json.loads(response.content)
+        assert body['description'] == data['description']
+        assert body['purpose'] == data['purpose']
+        assert body['path'] == '{}{}'.format(space.path, data['relative_path'])
+        assert body['enabled'] is True
+        assert data['pipeline'][0] in body['pipeline']
+
+        # Verify that the record was populated properly
+        location = models.Location.objects.get(uuid=body['uuid'])
+        assert location.purpose == data['purpose']
+        assert location.relative_path == data['relative_path']
+        assert location.description == data['description']
+
     def test_cant_move_from_non_existant_locations(self):
         data = {
             'origin_location': '/api/v2/location/dne1aacf-8492-4382-8ef3-262cc5420dne/',

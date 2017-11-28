@@ -35,7 +35,7 @@ from administration.models import Settings
 from common import utils
 from locations.api.sword import views as sword_views
 
-from ..models import (Callback, CallbackError, Event, File, Package, Location, Space, Pipeline, StorageException, Async, PosixMoveUnsupportedError)
+from ..models import (Callback, CallbackError, Event, File, Package, Location, LocationPipeline, Space, Pipeline, StorageException, Async, PosixMoveUnsupportedError)
 from ..forms import SpaceForm
 from ..constants import PROTOCOL
 from locations import signals
@@ -238,7 +238,6 @@ class SpaceResource(ModelResource):
 class LocationResource(ModelResource):
     space = fields.ForeignKey(SpaceResource, 'space')
     path = fields.CharField(attribute='full_path', readonly=True)
-    description = fields.CharField(attribute='get_description', readonly=True)
     pipeline = fields.ToManyField(PipelineResource, 'pipeline')
 
     class Meta:
@@ -248,8 +247,9 @@ class LocationResource(ModelResource):
         # validation = CleanedDataFormValidation(form_class=LocationForm)
         resource_name = 'location'
 
-        fields = ['enabled', 'relative_path', 'purpose', 'quota', 'used', 'uuid']
-        list_allowed_methods = ['get']
+        fields = ['enabled', 'relative_path', 'purpose', 'quota', 'used',
+                  'uuid', 'description']
+        list_allowed_methods = ['get', 'post']
         detail_allowed_methods = ['get', 'post']
         detail_uri_name = 'uuid'
         always_return_data = True
@@ -261,6 +261,7 @@ class LocationResource(ModelResource):
             'space': ALL_WITH_RELATIONS,
             'used': ALL,
             'uuid': ALL,
+            'description': ALL,
         }
 
     def prepend_urls(self):
@@ -302,6 +303,23 @@ class LocationResource(ModelResource):
             'resource_name': 'location',
             'uuid': uuid,
         }))
+
+    def save_m2m(self, bundle):
+        for field_name, field_object in self.fields.items():
+            if field_name != 'pipeline':
+                continue
+
+            if not getattr(field_object, 'is_m2m', False):
+                continue
+
+            if not field_object.attribute:
+                continue
+
+            pipelines = bundle.data['pipeline']
+            for item in pipelines:
+                LocationPipeline.objects.get_or_create(
+                    pipeline=item.obj,
+                    location=bundle.obj)
 
     @_custom_endpoint(expected_methods=['get'])
     def browse(self, request, bundle, **kwargs):
