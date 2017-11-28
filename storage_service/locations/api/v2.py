@@ -22,7 +22,6 @@ class SpaceResource(resources.SpaceResource):
 class LocationResource(resources.LocationResource):
     space = fields.ForeignKey(SpaceResource, 'space')
     path = fields.CharField(attribute='full_path', readonly=True)
-    description = fields.CharField(attribute='get_description', readonly=True)
     pipeline = fields.ToManyField(PipelineResource, 'pipeline')
 
     def decode_path(self, path):
