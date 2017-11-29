@@ -73,7 +73,7 @@ class Pipeline(models.Model):
         if create_default_locations:
             self.create_default_locations(shared_path)
 
-    def parse_url(self):
+    def parse_and_fix_url(self):
         """Returns a ParseResult object based on the remote_name field.
 
         We've always made the assumption that the value of the remote_name field
@@ -161,19 +161,18 @@ class Pipeline(models.Model):
     # HTTP API CALLS
 
     def _request_api(self, method, path, fields=None):
-        url = self.parse_url()
-        url = url._replace(path='api/{}'.format(path)).geturl()
-        data = {
-            'username': self.api_username,
-            'api_key': self.api_key
-        }
-        if fields:
-            data.update(fields)
-        LOGGER.debug('URL: %s; data: %s', url, data)
+        api_url = self.parse_and_fix_url()
+        api_url = api_url._replace(path='api/{}'.format(path)).geturl()
+        headers = {'Authorization': 'ApiKey {}:{}'.format(
+            self.api_username,
+            self.api_key,
+        )}
+        LOGGER.debug('URL: %s; headers %s; data: %s', api_url, headers, fields)
         try:
-            resp = requests.request(method, url,
-                                    data=data, allow_redirects=True,
-                                    verify=not settings.INSECURE_SKIP_VERIFY)
+            verify = not settings.INSECURE_SKIP_VERIFY
+            resp = requests.request(method, api_url, headers=headers,
+                                    data=fields, allow_redirects=True,
+                                    verify=verify)
         except requests.exceptions.RequestException:
             LOGGER.exception('Unable to connect to pipeline %s.', self)
             raise
@@ -209,3 +208,30 @@ class Pipeline(models.Model):
             except ValueError:  # Failed to decode JSON
                 raise requests.exceptions.RequestException(_('Pipeline %(pipeline)s returned an unexpected status code: %(status_code)s') % {'pipeline': self, 'status_code': resp.status_code})
         return resp.json()
+
+    def approve_transfer(self, directory, transfer_type):
+        """Approve a transfer in the pipeline."""
+        url = 'transfer/approve/'
+        fields = {'directory': directory, 'type': transfer_type}
+        resp = self._request_api('POST', url, fields=fields)
+        if resp.status_code == requests.codes.ok:
+            return resp.json()
+        raise requests.exceptions.RequestException(
+            _('Pipeline %(pipeline)s could not approve the transfer: '
+              '%(status_code)s (%(text)s)') % {
+                'pipeline': self,
+                'status_code': resp.status_code,
+                'text': resp.text})
+
+    def list_unapproved_transfers(self):
+        """List the existing unapproved transfers."""
+        url = 'transfer/unapproved/'
+        resp = self._request_api('GET', url)
+        if resp.status_code == requests.codes.ok:
+            return resp.json()
+        raise requests.exceptions.RequestException(
+            _('Pipeline %(pipeline)s could not list unapproved transfers: '
+              '%(status_code)s (%(text)s)') % {
+                'pipeline': self,
+                'status_code': resp.status_code,
+                'text': resp.text})

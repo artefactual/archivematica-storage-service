@@ -346,7 +346,7 @@ class TestPipelineAPI(TestCase):
         assert response.status_code == 201
 
         pipeline = models.Pipeline.objects.get(uuid=data['uuid'])
-        pipeline.parse_url() == urlparse(data['remote_name'])
+        pipeline.parse_and_fix_url() == urlparse(data['remote_name'])
 
         # When undefined the remote_name field should be populated after the
         # REMOTE_ADDR header.
@@ -358,4 +358,4 @@ class TestPipelineAPI(TestCase):
                                     REMOTE_ADDR='192.168.0.10')
         assert response.status_code == 201
         pipeline = models.Pipeline.objects.get(uuid=data['uuid'])
-        pipeline.parse_url() == urlparse('http://192.168.0.10')
+        pipeline.parse_and_fix_url() == urlparse('http://192.168.0.10')

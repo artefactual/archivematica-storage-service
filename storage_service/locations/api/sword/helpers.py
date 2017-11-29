@@ -101,8 +101,8 @@ def download_resource(url, destination_path, filename=None, username=None, passw
     if username is not None and password is not None:
         auth = (username, password)
 
-    response = requests.get(url, auth=auth,
-                            verify=not settings.INSECURE_SKIP_VERIFY)
+    verify = not settings.INSECURE_SKIP_VERIFY
+    response = requests.get(url, auth=auth, verify=verify)
     if filename is None:
         if 'content-disposition' in response.headers:
             filename = parse_filename_from_content_disposition(response.headers['content-disposition'])
@@ -334,49 +334,37 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
     destination_path = pad_destination_filepath_if_it_already_exists(destination_path)
     shutil.move(deposit.full_path, destination_path)
 
-    params = {
-        'username': pipeline.api_username,
-        'api_key': pipeline.api_key
-    }
-    url = pipeline.parse_url()
-    url = url._replace(path='api/transfer/unapproved/').geturl()
+    # Find the path of the transfer that we want to approve.
     while True:
-        response = requests.get(url, params=params,
-                                verify=not settings.INSECURE_SKIP_VERIFY)
-        if response.status_code == 200:
-            results = response.json()
+        try:
+            results = pipeline.list_unapproved_transfers()
+        except Exception:
+            LOGGER.exception('Retrieval of unapproved transfers failed')
         else:
-            raise Exception(_("Dashboard returned %(status_code)s: %(text)s") % {'status_code': response.status_code, 'text': response.text})
-
-        directories = [result['directory'] for result in results['results'] if result['type'] == 'standard']
-        if deposit.current_path in directories:
-            break
+            directories = [
+                result['directory'] for result in results['results']
+                if result['type'] == 'standard']
+            if deposit.current_path in directories:
+                break
         time.sleep(5)
 
-    # make request to pipeline's transfer approval API
-    data = {
-        'username': pipeline.api_username,
-        'api_key': pipeline.api_key,
-        'directory': deposit.current_path,
-        'type': 'standard'
-    }
-
-    url = pipeline.parse_url()
-    url = url._replace(path='api/transfer/approve/').geturl()
+    # Approve transfer.
     try:
-        response = requests.post(url, data=data,
-                                 verify=not settings.INSECURE_SKIP_VERIFY)
+        results = pipeline.approve_transfer(deposit.current_path, type='standard')
     except Exception:
-        LOGGER.exception('Automatic approval of transfer for deposit %s failed', deposit.uuid)
-        # move back to deposit directory
-        # FIXME moving the files out from under Archivematica leaves a transfer that will always error out - leave it?
+        LOGGER.exception(
+            'Automatic approval of transfer for deposit %s failed',
+            deposit.uuid)
+        # Move back to deposit directory. FIXME: moving the files out form under
+        # Archivematica leaves a transfer that will always error out - leave it?
         shutil.move(destination_path, deposit.full_path)
         return {
             'error': True,
-            'message': _('Request to pipeline %(uuid)s transfer approval API failed: check credentials and REST API IP whitelist.') % {'uuid': pipeline.uuid},
+            'message': _('Request to pipeline %(uuid)s transfer approval API '
+                         'failed: check credentials and REST API IP '
+                         'whitelist.') % {'uuid': pipeline.uuid},
         }
-    result = response.json()
-    return result
+    return results
 
 
 def sword_error_response(request, status, summary):

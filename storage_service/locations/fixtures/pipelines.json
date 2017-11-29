@@ -24,6 +24,18 @@
     }
 },
 {
+    "pk": 3,
+    "model": "locations.pipeline",
+    "fields": {
+        "api_key": "test",
+        "uuid": "1b6de7e3-0a72-4b23-8451-3ac858cc4ce4",
+        "enabled": true,
+        "api_username": "test",
+        "remote_name": "http://archivematica-dashboard:8000",
+        "description": "Test"
+    }
+},
+{
     "pk": 1, 
     "model": "locations.locationpipeline", 
     "fields": {
