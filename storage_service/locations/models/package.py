@@ -562,7 +562,7 @@ class Package(models.Model):
             package_type = self.package_type
         isfile = os.path.isfile(package_full_path)
         isaip = package_type in (Package.AIP, Package.AIC)
-        ret = isfile or isaip
+        ret = isfile and isaip
         if not ret:
             if not isfile:
                 LOGGER.info('Package should not have a pointer file because %s'
