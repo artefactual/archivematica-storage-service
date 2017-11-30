@@ -234,9 +234,15 @@ class LocationForm(forms.ModelForm):
         self.fields['default'].initial = self.instance.default
 
     def clean(self):
-        # TODO: replicators can NOT have replicators
         cleaned_data = super(LocationForm, self).clean()
         purpose = cleaned_data.get('purpose')
+
+        # Only AIP Storage AS-purposed locations can have replicators
+        replicators = cleaned_data.get('replicators')
+        if purpose != models.Location.AIP_STORAGE and replicators:
+            raise forms.ValidationError(
+                _('Only AIP storage locations can have replicators'))
+
         if purpose == models.Location.AIP_RECOVERY:
             # Don't allow more than one recovery location per pipeline
             # Fetch all LocationPipelines linked to an AIP Recovery location and

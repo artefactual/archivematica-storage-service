@@ -56,3 +56,7 @@ table.attr-val-table td {
 label.required-field:after {
     content: '*'
 }
+
+.errorlist {
+  color: red;
+}
