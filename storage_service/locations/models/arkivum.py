@@ -265,8 +265,10 @@ class Arkivum(models.Model):
                     message = 'Package {}'.format(package)
                 message += ' with Arkivum ID of {} has been requested but is not available in the Arkivum cache.'.format(package_info.get('id'))
 
+                # Changing from_email to use a registered MoMA e-mail address
+                # to prevent  e-mails being blocked (ref. 11747)
                 django.core.mail.send_mail(
-                    from_email='archivematica-storage-service@localhost',
+                    from_email='archivematica_storage@moma.org',
                     recipient_list=get_user_model().objects.filter(is_superuser=True, is_active=True).distinct().values_list('email', flat=True),
                     subject='Arkivum file not locally available',
                     message=message,
