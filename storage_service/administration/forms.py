@@ -83,6 +83,8 @@ class CommonSettingsForm(SettingsForm):
     """ Configures common or generic settings that don't belong elsewhere. """
     pipelines_disabled = forms.BooleanField(required=False,
         label=_l("Pipelines are disabled upon creation?"))
+    object_counting_disabled = forms.BooleanField(required=False,
+        label=_l("Object counting in spaces is disabled?"))
     recover_request_notification_url = forms.URLField(required=False,
         label=_('Recovery request: URL to notify'))
     recover_request_notification_auth_username = forms.CharField(required=False,
