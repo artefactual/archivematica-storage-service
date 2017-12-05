@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('locations', '0016_mirror_location_aip_replication'),
+        ('locations', '0017_gpg_space_minor_migration'),
     ]
 
     operations = [
