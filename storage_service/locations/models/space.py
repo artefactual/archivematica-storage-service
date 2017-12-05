@@ -576,7 +576,9 @@ class Space(models.Model):
         for name in entries:
             full_path = os.path.join(path, name)
             properties[name] = {'size': os.path.getsize(full_path)}
-            if os.path.isdir(full_path) and os.access(full_path, os.R_OK):
+            if utils.get_setting('object_counting_disabled', False):
+                properties[name]['object count'] = '0+'
+            elif os.path.isdir(full_path) and os.access(full_path, os.R_OK):
                 directories.append(name)
                 properties[name]['object count'] = self.count_objects_in_directory(full_path)
         return {'directories': directories, 'entries': entries, 'properties': properties}
