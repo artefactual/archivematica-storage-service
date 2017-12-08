@@ -132,7 +132,7 @@ def download_file_stream(filepath, temp_dir=None):
 
     # Delete temp dir if created
     if temp_dir and os.path.exists(temp_dir):
-        shutil.rmtree(temp_dir)
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
     return response
 
