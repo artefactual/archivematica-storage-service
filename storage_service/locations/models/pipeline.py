@@ -42,7 +42,10 @@ class Pipeline(models.Model):
     remote_name = models.CharField(max_length=256, default=None,
         null=True, blank=True,
         verbose_name=_l('Remote name'),
-        help_text=_l("Host or IP address of the pipeline server for making API calls."))
+        help_text=_l("URL, host name or IP address of the pipeline server for"
+            " making API calls. If a valid URL is not provided, the 'http'"
+            " scheme will be assumed. For example, 'archivematica-dashboard:8642'"
+            " will be treated as 'http://archivematica-dashboard:8642'."))
     api_username = models.CharField(max_length=256, default=None,
         null=True, blank=True,
         verbose_name=_l('API username'),
