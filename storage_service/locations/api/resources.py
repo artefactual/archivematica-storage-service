@@ -541,7 +541,7 @@ class PackageResource(ModelResource):
         detail_uri_name = 'uuid'
         always_return_data = True
         filtering = {
-            'location': ALL_WITH_RELATIONS,
+            'current_location': ALL_WITH_RELATIONS,
             'package_type': ALL,
             'path': ALL,
             'uuid': ALL,
