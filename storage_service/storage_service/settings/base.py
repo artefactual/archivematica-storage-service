@@ -234,6 +234,7 @@ DJANGO_APPS = [
 
 THIRD_PARTY_APPS = [
     'tastypie',  # REST framework
+    'tastypie_swagger',
     'longerusername', # Longer (> 30 characters) username
 ]
 
