@@ -271,8 +271,13 @@ def _encr_path2key_fingerprint(encr_path):
     used to encrypt the package. Since it was already encrypted, its
     model must have a GPG fingerprint.
     """
-    return Package.objects.get(
-        current_path__endswith=encr_path).encryption_key_fingerprint
+    for package in Package.objects.all():
+        if package.current_path in encr_path:
+            return package.encryption_key_fingerprint
+    fail_msg = 'Unable to find package matching encrypted path {}'.format(
+        encr_path)
+    LOGGER.error(fail_msg)
+    raise GPGException(fail_msg)
 
 
 # This replaces non-unicode characters with a replacement character,
