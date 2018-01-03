@@ -11,6 +11,7 @@ from uuid import uuid4
 from metsrw.plugins import premisrw
 
 # Core Django, alphabetical
+from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
@@ -271,13 +272,20 @@ def _encr_path2key_fingerprint(encr_path):
     used to encrypt the package. Since it was already encrypted, its
     model must have a GPG fingerprint.
     """
-    for package in Package.objects.all():
-        if package.current_path in encr_path:
-            return package.encryption_key_fingerprint
-    fail_msg = 'Unable to find package matching encrypted path {}'.format(
-        encr_path)
-    LOGGER.error(fail_msg)
-    raise GPGException(fail_msg)
+    if 'sqlite' in settings.DATABASES['default']['ENGINE']:
+        sql = ('SELECT * FROM locations_package WHERE %s LIKE "%" ||'
+               ' current_path || "%"')
+    else:
+        sql = ('SELECT * FROM locations_package WHERE %s LIKE CONCAT(\'%%\','
+               ' current_path, \'%%\')')
+    matches = list(Package.objects.raw(sql, [encr_path]))
+    try:
+        return matches[0].encryption_key_fingerprint
+    except IndexError:
+        fail_msg = 'Unable to find package matching encrypted path {}'.format(
+            encr_path)
+        LOGGER.error(fail_msg)
+        raise GPGException(fail_msg)
 
 
 # This replaces non-unicode characters with a replacement character,
