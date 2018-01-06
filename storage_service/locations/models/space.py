@@ -545,18 +545,6 @@ class Space(models.Model):
 
         shutil.rmtree(temp_dir)
 
-    def count_objects_in_directory(self, path):
-        """
-        Returns all the files in a directory, including children.
-        """
-        total_files = 0
-        for root, dirs, files in os.walk(path):
-            total_files += len(files)
-            # Limit the number of files counted to keep it from being too slow
-            if total_files > 5000:
-                return '5000+'
-        return total_files
-
     def browse_local(self, path):
         """
         Returns browse results for a locally accessible filesystem.
@@ -570,18 +558,7 @@ class Space(models.Model):
         if not os.path.exists(path):
             LOGGER.info('%s in %s does not exist', path, self)
             return {'directories': [], 'entries': [], 'properties': {}}
-        properties = {}
-        # Sorted list of all entries in directory, excluding hidden files
-        entries = [name for name in os.listdir(path) if name[0] != '.']
-        entries = sorted(entries, key=lambda s: s.lower())
-        directories = []
-        for name in entries:
-            full_path = os.path.join(path, name)
-            properties[name] = {'size': os.path.getsize(full_path)}
-            if os.path.isdir(full_path) and os.access(full_path, os.R_OK):
-                directories.append(name)
-                properties[name]['object count'] = self.count_objects_in_directory(full_path)
-        return {'directories': directories, 'entries': entries, 'properties': properties}
+        return path2browse_dict(path)
 
     def browse_rsync(self, path, ssh_key=None, assume_rsync_daemon=False, rsync_password=None):
         """
@@ -670,3 +647,39 @@ class Space(models.Model):
         except (os.error, shutil.Error):
             LOGGER.warning("Error deleting package %s", delete_path, exc_info=True)
             raise
+
+
+def path2browse_dict(path):
+    """Given a path on disk, return a dict with keys for directories, entries
+    and properties.
+    """
+    properties = {}
+    # Sorted list of all entries in directory, excluding hidden files
+    entries = [name for name in os.listdir(path) if name[0] != '.']
+    entries = sorted(entries, key=lambda s: s.lower())
+    directories = []
+    for name in entries:
+        full_path = os.path.join(path, name)
+        properties[name] = {'size': os.path.getsize(full_path)}
+        if utils.get_setting('object_counting_disabled', False):
+            properties[name]['object count'] = '0+'
+        elif os.path.isdir(full_path) and os.access(full_path, os.R_OK):
+            directories.append(name)
+            properties[name]['object count'] = count_objects_in_directory(
+                full_path)
+    return {'directories': directories,
+            'entries': entries,
+            'properties': properties}
+
+
+def count_objects_in_directory(path):
+    """
+    Returns all the files in a directory, including children.
+    """
+    total_files = 0
+    for root, dirs, files in os.walk(path):
+        total_files += len(files)
+        # Limit the number of files counted to keep it from being too slow
+        if total_files > 5000:
+            return '5000+'
+    return total_files

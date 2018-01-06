@@ -24,6 +24,7 @@ from common import gpgutils
 # This module, alphabetical
 from .location import Location
 from .package import Package
+from . import space
 
 
 LOGGER = logging.getLogger(__name__)
@@ -139,26 +140,16 @@ class GPG(models.Model):
         LOGGER.info('GPG move_from, dst_path: %s', dst_path)
         if not package:
             raise GPGException(_('GPG spaces can only contain packages'))
-
-        # NOTE: EXPERIMENTAL: every time this method is called, the package is
-        # encrypted with the current GPG key of this space. This means that
-        # many actions may cause the re-encryption of an AIP with a new key (if
-        # the AIP's previous key differs from the space's current key) because
-        # many method calls call this method.
-        # PREVIOUS BEHAVIOUR: Keep using the package's current GPG key, if it
-        # exists. Otherwise, use this GPG space's key.
-        # key_fingerprint = package.encryption_key_fingerprint
-        # if not key_fingerprint:
-        #     key_fingerprint = self.key
+        # Every time this method is called, the package is encrypted with the
+        # current GPG key of this space, which may differ from the key used to
+        # encrypt the package the last time around.
         key_fingerprint = self.key
-
         self.space.create_local_directory(dst_path)
         self.space.move_rsync(src_path, dst_path, try_mv_local=True)
         try:
             __, encr_result = _gpg_encrypt(dst_path, key_fingerprint)
         except GPGException:
             # If we fail to encrypt, then we send it back to where it came from.
-            # TODO/QUESTION: Is this behaviour desirable?
             self.space.move_rsync(dst_path, src_path, try_mv_local=True)
             raise
         # Update the GPG key fingerprint in db, if necessary.
@@ -195,7 +186,7 @@ class GPG(models.Model):
         within encrypted directories (which are tarfiles).
         """
         if isinstance(path, unicode):
-            path = str(path)
+            path = path.encode('utf8')
         # Encrypted space only stores files, so strip trailing /.
         path = path.rstrip('/')
         # Path may not exist if its a sub-path of an encrypted dir. Here we
@@ -215,25 +206,11 @@ class GPG(models.Model):
             _gpg_encrypt(encr_path, key_fingerprint)
             return {'directories': [], 'entries': [], 'properties': {}}
         try:
-            properties = {}
-            entries = [name for name in os.listdir(path) if name[0] != '.']
-            entries = sorted(entries, key=lambda s: s.lower())
-            directories = []
-            for name in entries:
-                full_path = os.path.join(path, name)
-                properties[name] = {'size': os.path.getsize(full_path)}
-                if os.path.isdir(full_path) and os.access(full_path, os.R_OK):
-                    directories.append(name)
-                    properties[name]['object count'] = (
-                        self.space.count_objects_in_directory(full_path))
+            ret = space.path2browse_dict(path)
         finally:
             # No matter what happens, re-encrypt the decrypted package.
             _gpg_encrypt(encr_path, key_fingerprint)
-        return {
-            'directories': directories,
-            'entries': entries,
-            'properties': properties
-        }
+        return ret
 
     def verify(self):
         """Verify that the space is accessible to the storage service."""
@@ -252,19 +229,31 @@ def _gpg_encrypt(path, key_fingerprint):
     ``ok`` and ``status`` attributes, see
     https://pythonhosted.org/python-gnupg/.
     """
+    tar_created = False
     if os.path.isdir(path):
         _create_tar(path)
+        tar_created = True
     encr_path, result = gpgutils.gpg_encrypt_file(path, key_fingerprint)
-    if os.path.isfile(encr_path):
+    if os.path.isfile(encr_path) and result.ok:
         LOGGER.info('Successfully encrypted %s at %s', path, encr_path)
         os.remove(path)
         os.rename(encr_path, path)
         return path, result
     else:
+        if tar_created:
+            _extract_tar(path)
         fail_msg = _('An error occured when attempting to encrypt'
                      ' %(path)s' % {'path': path})
         LOGGER.error(fail_msg)
         raise GPGException(fail_msg)
+
+
+def _db_engine():
+    if 'sqlite' in settings.DATABASES['default']['ENGINE']:
+        return 'sqlite'
+    if 'mysql' in settings.DATABASES['default']['ENGINE']:
+        return 'mysql'
+    return 'other'
 
 
 def _encr_path2key_fingerprint(encr_path):
@@ -272,12 +261,11 @@ def _encr_path2key_fingerprint(encr_path):
     used to encrypt the package. Since it was already encrypted, its
     model must have a GPG fingerprint.
     """
-    if 'sqlite' in settings.DATABASES['default']['ENGINE']:
+    sql = ('SELECT * FROM locations_package WHERE %s LIKE CONCAT(\'%%\','
+           ' current_path, \'%%\')')
+    if _db_engine() == 'sqlite':
         sql = ('SELECT * FROM locations_package WHERE %s LIKE "%" ||'
                ' current_path || "%"')
-    else:
-        sql = ('SELECT * FROM locations_package WHERE %s LIKE CONCAT(\'%%\','
-               ' current_path, \'%%\')')
     matches = list(Package.objects.raw(sql, [encr_path]))
     try:
         return matches[0].encryption_key_fingerprint
@@ -298,32 +286,47 @@ def escape(string):
     return string
 
 
+def _abort_create_tar(path, tarpath):
+    fail_msg = _(
+        'Failed to create a tarfile at %(tarpath)s for dir at %(path)s' %
+        {'tarpath': tarpath, 'path': path})
+    LOGGER.error(fail_msg)
+    raise GPGException(fail_msg)
+
+
 def _create_tar(path):
     """Create a tarfile from the directory at ``path`` and overwrite ``path``
     with that tarfile.
     """
+    path = path.rstrip('/')
     tarpath = '{}.tar'.format(path)
     changedir = os.path.dirname(tarpath)
     source = os.path.basename(path)
     cmd = ['tar', '-C', changedir, '-cf', tarpath, source]
     LOGGER.info('creating archive of %s at %s, relative to %s',
                 source, tarpath, changedir)
-    subprocess.check_output(cmd)
-    fail_msg = _(
-        'Failed to create a tarfile at %(tarpath)s for dir at %(path)s' %
-        {'tarpath': tarpath, 'path': path})
+    try:
+        subprocess.check_output(cmd)
+    except (OSError, subprocess.CalledProcessError):
+        _abort_create_tar(path, tarpath)
     if os.path.isfile(tarpath) and tarfile.is_tarfile(tarpath):
         shutil.rmtree(path)
         os.rename(tarpath, path)
     else:
-        LOGGER.error(fail_msg)
-        raise GPGException(fail_msg)
+        _abort_create_tar(path, tarpath)
     try:
         assert tarfile.is_tarfile(path)
         assert not os.path.exists(tarpath)
     except AssertionError:
-        LOGGER.error(fail_msg)
-        raise GPGException(fail_msg)
+        _abort_create_tar(path, tarpath)
+
+
+def _abort_extract_tar(tarpath, newtarpath):
+    fail_msg = _('Failed to extract %(tarpath)s to a directory at the same'
+                 ' location.' % {'tarpath': tarpath})
+    LOGGER.error(fail_msg)
+    os.rename(newtarpath, tarpath)
+    raise GPGException(fail_msg)
 
 
 def _extract_tar(tarpath):
@@ -332,25 +335,30 @@ def _extract_tar(tarpath):
     os.rename(tarpath, newtarpath)
     changedir = os.path.dirname(newtarpath)
     cmd = ['tar', '-xf', newtarpath, '-C', changedir]
-    subprocess.check_output(cmd)
+    try:
+        subprocess.check_output(cmd)
+    except (OSError, subprocess.CalledProcessError):
+        _abort_extract_tar(tarpath, newtarpath)
     if os.path.isdir(tarpath):
         os.remove(newtarpath)
     else:
-        fail_msg = _('Failed to extract %(tarpath)s to a directory at the same'
-                     ' location.' % {'tarpath': tarpath})
-        LOGGER.error(fail_msg)
-        raise GPGException(fail_msg)
+        _abort_extract_tar(tarpath, newtarpath)
+
+
+def _parse_gpg_version(raw_gpg_version):
+    return raw_gpg_version.splitlines()[0].split()[-1]
+
+
+def _get_gpg_version():
+    """Return the version of GPG installed. The first line of stdout from ``gpg
+    --version`` is expected to be something like 'gpg (GnuPG) 1.4.16'
+    """
+    return _parse_gpg_version(subprocess.check_output(['gpg', '--version']))
 
 
 def create_encryption_event(encr_result, key_fingerprint):
     """Return a PREMIS:EVENT for the encryption event."""
-    # First line of stdout from ``gpg --version`` is expected to be
-    # something like 'gpg (GnuPG) 1.4.16'
-    gpg_version = subprocess.check_output(
-        ['gpg', '--version']).splitlines()[0].split()[-1]
-    # detail = escape(
-    #     'program=gpg (GnuPG); version={}; python-gnupg; version={}'.format(
-    #         gpg_version, gnupg.__version__))
+    gpg_version = _get_gpg_version()
     detail = escape(
         'program=GPG; version={}; key={}'.format(
             gpg_version, key_fingerprint))

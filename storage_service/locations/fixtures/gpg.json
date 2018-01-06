@@ -1,0 +1,20 @@
+[
+    {
+        "pk": 8,
+        "model": "locations.package",
+        "fields": {
+            "uuid": "abcdabcd-c1d7-45ba-9a95-a7531c063ed1",
+            "description": null,
+            "origin_pipeline": null,
+            "current_location": "4056b25d-6a85-4557-b9a5-9c85565fd892",
+            "current_path": "some/relative/path/to/images-transfer-abcdabcd-97dd-48e0-8417-03be78359531",
+            "pointer_file_location": "",
+            "pointer_file_path": "",
+            "size": 0,
+            "package_type": "Transfer",
+            "status": "Uploaded",
+            "misc_attributes": "{}",
+            "encryption_key_fingerprint": "B9C518917A958DD0B1F5E1B80C3D34DDA5958532"
+        }
+    }
+]
