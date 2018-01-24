@@ -1635,8 +1635,14 @@ class Package(models.Model):
             may have multiple ``File`` instances for a single file.
         """
         aip_dir_name = os.path.basename(os.path.splitext(self.full_path)[0])
-        relative_path = os.path.join(aip_dir_name, "data", "METS." + self.uuid + ".xml")
-        path_to_mets, temp_dir = self.extract_file(relative_path)
+        mets_relative_path = os.path.join('data', 'METS.' + self.uuid + '.xml')
+        relative_path = os.path.join(aip_dir_name, mets_relative_path)
+        temp_dir = None
+        if self.is_compressed:
+            path_to_mets, temp_dir = self.extract_file(
+                relative_path=relative_path)
+        else:
+            path_to_mets = os.path.join(self.full_path, mets_relative_path)
         mw = metsrw.METSDocument.fromfile(path_to_mets)
         feature_broker = metsrw.feature_broker
         feature_broker.provide('premis_object_class', yapremisrw.Object)
@@ -1664,7 +1670,8 @@ class Package(models.Model):
                 aip_file.save()
         feature_broker.provide('premis_object_class', premisrw.PREMISObject)
         feature_broker.provide('premis_event_class', premisrw.PREMISEvent)
-        shutil.rmtree(temp_dir)
+        if temp_dir:
+            shutil.rmtree(temp_dir)
 
     def check_fixity(self, force_local=False, delete_after=True):
         """ Scans the package to verify its checksums.
