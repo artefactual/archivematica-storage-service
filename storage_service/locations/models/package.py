@@ -1378,13 +1378,13 @@ class Package(models.Model):
             if algorithm == utils.COMPRESSION_TAR_BZIP2:
                 algo = '-j'  # Compress with bzip2
                 compressed_filename += '.bz2'
-            command = [
+            command = list(filter(None, [
                 'tar', 'c',  # Create tar
                 algo,  # Optional compression flag
                 '-C', relative_path,  # Work in this directory
                 '-f', compressed_filename,  # Output file
                 os.path.basename(full_path),   # Relative path to source files
-            ]
+            ]))
         elif algorithm in (utils.COMPRESSION_7Z_BZIP, utils.COMPRESSION_7Z_LZMA):
             compressed_filename = os.path.join(extract_path, basename + '.7z')
             if algorithm == utils.COMPRESSION_7Z_BZIP:
