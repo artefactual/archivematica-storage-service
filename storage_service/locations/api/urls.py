@@ -9,12 +9,14 @@ v1_api.register(v1.SpaceResource())
 v1_api.register(v1.LocationResource())
 v1_api.register(v1.PackageResource())
 v1_api.register(v1.PipelineResource())
+v1_api.register(v1.AsyncResource())
 
 v2_api = Api(api_name='v2')
 v2_api.register(v2.SpaceResource())
 v2_api.register(v2.LocationResource())
 v2_api.register(v2.PackageResource())
 v2_api.register(v2.PipelineResource())
+v2_api.register(v2.AsyncResource())
 
 urlpatterns = [
     url(r'', include(v1_api.urls)),

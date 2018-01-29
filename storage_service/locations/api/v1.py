@@ -30,3 +30,6 @@ class PackageResource(resources.PackageResource):
     current_location = fields.ForeignKey(LocationResource, 'current_location')
 
     current_full_path = fields.CharField(attribute='full_path', readonly=True)
+
+class AsyncResource(resources.AsyncResource):
+    pass
