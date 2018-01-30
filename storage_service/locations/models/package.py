@@ -847,13 +847,14 @@ class Package(models.Model):
         for replication validation or does a fixity check need to be performed
         also?
         """
-
         # 1. Set attrs and get full path to pointer file.
-        should_have_pointer = replica_package.should_have_pointer_file()
         if not master_ptr:
             master_ptr = self.get_pointer_instance()
-        if not should_have_pointer or not master_ptr:
-            return
+        if not master_ptr:
+            LOGGER.warning('Not creating a pointer file for replica package %s'
+                           ' because its master package does not have one.',
+                           replica_package.uuid)
+            return None
         uuid_path = utils.uuid_to_path(replica_package.uuid)
         replica_package.pointer_file_location = Location.active.get(
             purpose=Location.STORAGE_SERVICE_INTERNAL)
