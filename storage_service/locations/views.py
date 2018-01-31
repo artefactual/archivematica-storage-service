@@ -282,6 +282,7 @@ def location_edit(request, space_uuid, location_uuid=None):
         for pipeline in form.cleaned_data['pipeline']:
             LocationPipeline.objects.get_or_create(
                 location=location, pipeline=pipeline)
+        location.replicators.clear()
         for replicator_loc in form.cleaned_data['replicators']:
             location.replicators.add(replicator_loc)
         # Delete relationships between the location and pipelines not in the form
