@@ -18,7 +18,14 @@ RUN set -ex \
 		p7zip-full \
 		rsync \
 		unar \
+		locales \
+		locales-all \
 	&& rm -rf /var/lib/apt/lists/*
+
+# Set the locale
+ENV LANG en_US.UTF-8  
+ENV LANGUAGE en_US:en  
+ENV LC_ALL en_US.UTF-8
 
 ADD requirements/ /src/requirements/
 RUN pip install -q -r /src/requirements/production.txt -r /src/requirements/test.txt
