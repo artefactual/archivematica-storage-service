@@ -674,49 +674,81 @@ class Package(models.Model):
             already_generated_ptr_exists=already_generated_ptr_exists)
 
     def _store_aip_to_uploaded(self, v, related_package_uuid):
-        """Get this AIP to the "uploaded" stage of ``store_aip`` by
-        1. moving it to the SS internal location,
-        2. setting its status to "staging",
-        3. calling ``post_move_to_storage_service`` on the source space,
-        4. moving it to the destination space/location,
-        5. setting the status to "uploaded" (if applicable),
-        6. setting a related package (if applicable),
-        7. calling ``post_move_from_storage_service`` on the destination space,
-        8. updating quotas on the destination space, and
-        9. persisting the package to the database.
+        """Get this AIP to the "uploaded" stage of ``store_aip``
         :param namedtuple v: object with attributes needed for processing.
         :param str related_package_uuid: UUID of a related package.
         :returns NoneType None:
         """
-        v.src_space.move_to_storage_service(
-            source_path=os.path.join(self.origin_location.relative_path,
-                                     self.origin_path),
-            destination_path=self.current_path,  # This should include Location.path
-            destination_space=v.dest_space)
-        self.status = Package.STAGING
-        self.save()
-        v.src_space.post_move_to_storage_service()
-        storage_effects = v.dest_space.move_from_storage_service(
-            source_path=self.current_path,  # This should include Location.path
-            destination_path=os.path.join(
+        if Space.posix_move_supported(v.src_space, v.dest_space):
+            # Both spaces are POSIX filesystems and support `posix_move`
+            #
+            # 1. move direct to the SS destination space/location,
+            # 2. setting the status to "uploaded" (if applicable),
+            # 3. setting a related package (if applicable),
+            # 4. updating quotas on the destination space, and
+            # 5. persisting the package to the database.
+            source_path = os.path.join(self.origin_location.relative_path,
+                                       self.origin_path)
+            destination_path = os.path.join(
                 self.current_location.relative_path,
-                self.current_path),
-            package=self,
-        )
-        # Update package status once transferred to SS
-        if v.dest_space.access_protocol not in (Space.LOM, Space.ARKIVUM):
+                self.current_path)
+
+            storage_effects = v.src_space.posix_move(
+                source_path=source_path,
+                destination_path=destination_path,
+                destination_space=v.dest_space,
+                package=self
+            )
+
+            if related_package_uuid is not None:
+                related_package = Package.objects.get(uuid=related_package_uuid)
+                self.related_packages.add(related_package)
+
             self.status = Package.UPLOADED
-        if related_package_uuid is not None:
-            related_package = Package.objects.get(uuid=related_package_uuid)
-            self.related_packages.add(related_package)
-        self.save()
-        v.dest_space.post_move_from_storage_service(
-            staging_path=self.current_path,
-            destination_path=os.path.join(
-                self.current_location.relative_path, self.current_path),
-            package=self)
-        self._update_quotas(v.dest_space, self.current_location)
-        return storage_effects
+            self.save()
+
+            self._update_quotas(v.dest_space, self.current_location)
+            return storage_effects
+        else:
+            # 1. moving it to the SS internal location,
+            # 2. setting its status to "staging",
+            # 3. calling ``post_move_to_storage_service`` on the source space,
+            # 4. moving it to the destination space/location,
+            # 5. setting the status to "uploaded" (if applicable),
+            # 6. setting a related package (if applicable),
+            # 7. calling ``post_move_from_storage_service`` on the destination space,
+            # 8. updating quotas on the destination space, and
+            # 9. persisting the package to the database.
+
+            v.src_space.move_to_storage_service(
+                source_path=os.path.join(self.origin_location.relative_path,
+                                         self.origin_path),
+                destination_path=self.current_path,  # This should include Location.path
+                destination_space=v.dest_space)
+            self.status = Package.STAGING
+            self.save()
+            v.src_space.post_move_to_storage_service()
+            storage_effects = v.dest_space.move_from_storage_service(
+                source_path=self.current_path,  # This should include Location.path
+                destination_path=os.path.join(
+                    self.current_location.relative_path,
+                    self.current_path),
+                package=self,
+            )
+            # Update package status once transferred to SS
+            if v.dest_space.access_protocol not in (Space.LOM, Space.ARKIVUM):
+                self.status = Package.UPLOADED
+            if related_package_uuid is not None:
+                related_package = Package.objects.get(uuid=related_package_uuid)
+                self.related_packages.add(related_package)
+            self.save()
+            v.dest_space.post_move_from_storage_service(
+                staging_path=self.current_path,
+                destination_path=os.path.join(
+                    self.current_location.relative_path, self.current_path),
+                package=self)
+            self._update_quotas(v.dest_space, self.current_location)
+            return storage_effects
 
     def _store_aip_ensure_pointer_file(self, v, premis_events=None,
                                        premis_agents=None, aip_subtype=None):

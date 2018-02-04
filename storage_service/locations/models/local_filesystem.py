@@ -34,6 +34,10 @@ class LocalFilesystem(models.Model):
         Location.REPLICATOR,
     ]
 
+    # Flag this space as a POSIX filesystem to allow direct moves between
+    # POSIX compatible spaces where possible.
+    POSIX_FILESYSTEM = True
+
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """ Moves src_path to dest_space.staging_path/dest_path. """
         # Archivematica expects the file to still be on disk even after stored
@@ -51,3 +55,8 @@ class LocalFilesystem(models.Model):
         verified = os.path.isdir(self.space.path)
         self.space.verified = verified
         self.space.last_verified = datetime.datetime.now()
+
+    def posix_move(self, source_path, destination_path, destination_space, package=None, *args, **kwargs):
+        """ Moves self.path/source_path to destination_space.path/destination_path bypassing staging. """
+        destination_space.create_local_directory(destination_path)
+        return self.space.move_rsync(source_path, destination_path, try_mv_local=True)

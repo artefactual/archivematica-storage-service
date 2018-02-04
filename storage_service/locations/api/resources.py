@@ -346,19 +346,27 @@ class LocationResource(ModelResource):
                 origin_location.relative_path, source_path)
             destination_path = os.path.join(
                 destination_location.relative_path, destination_path)
-            origin_space.move_to_storage_service(
-                source_path=source_path,
-                destination_path=destination_path,
-                destination_space=destination_space,
-            )
-            origin_space.post_move_to_storage_service()
-            destination_space.move_from_storage_service(
-                source_path=destination_path,
-                destination_path=destination_path,
-                package=None,
-            )
-            destination_space.post_move_from_storage_service(
-                destination_path, destination_path)
+
+            if Space.posix_move_supported(origin_space, destination_space):
+                origin_space.posix_move(
+                    source_path=source_path,
+                    destination_path=destination_path,
+                    destination_space=destination_space,
+                    package=None
+                )
+            else:
+                origin_space.move_to_storage_service(
+                    source_path=source_path,
+                    destination_path=destination_path,
+                    destination_space=destination_space,
+                )
+                origin_space.post_move_to_storage_service()
+                destination_space.move_from_storage_service(
+                    source_path=destination_path,
+                    package=None,
+                )
+                destination_space.post_move_from_storage_service(
+                    destination_path, destination_path)
 
     def _handle_location_file_move(self, move_files_fn, request, *args, **kwargs):
         """
