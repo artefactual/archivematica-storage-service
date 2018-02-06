@@ -94,9 +94,9 @@ class Location(models.Model):
 
     # Whether this location is the default location which is a global
     # application setting stored in administration.models.Settings. See
-    # signal receivers unset_default_locaiton and set_default_location for
+    # signal receivers unset_default_location and set_default_location for
     # more details.
-    _default = False
+    _default = None
 
     def __unicode__(self):
         return _('%(uuid)s: %(path)s (%(purpose)s)') % {'uuid': self.uuid, 'purpose': self.get_purpose_display(), 'path': self.relative_path}
@@ -111,12 +111,14 @@ class Location(models.Model):
     @property
     def default(self):
         """ Looks up whether this location is the default one application-wise. """
-        try:
-            name = 'default_{}_location'.format(self.purpose)
-            Settings.objects.get(name=name, value=self.uuid)
-            return True
-        except Settings.DoesNotExist:
-            return False
+        if self._default is None:
+            try:
+                name = 'default_{}_location'.format(self.purpose)
+                Settings.objects.get(name=name, value=self.uuid)
+                self._default = True
+            except Settings.DoesNotExist:
+                self._default = False
+        return self._default
 
     @default.setter
     def default(self, value):
@@ -153,7 +155,7 @@ def set_default_location_pre_save(sender, instance, raw, using, update_fields, *
 @receiver(models.signals.post_save, sender=Location)
 def set_default_location_post_save(sender, instance, created, raw, using, update_fields, **kwargs):
     name = 'default_{}_location'.format(instance.purpose)
-    if instance._default:
+    if instance.default:
         Settings.objects.update_or_create(name=name, defaults={'value': instance.uuid})
     else:
         Settings.objects.filter(name=name, value=instance.uuid).delete()
