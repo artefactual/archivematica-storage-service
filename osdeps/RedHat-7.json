@@ -21,6 +21,7 @@
    { "name": "zlib-devel", "state": "latest"},
    { "name": "libffi-devel", "state": "latest"},
    { "name": "openssl-devel", "state": "latest"},
+   { "name": "mariadb-devel", "state": "latest"},
    { "name": "gcc", "state": "latest"},
    { "name": "gcc-c++", "state": "latest"},
    { "name": "p7zip", "state": "latest"},
