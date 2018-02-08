@@ -6,9 +6,9 @@ import vcr
 
 from locations import models
 
-THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, '..', 'fixtures'))
-
+import test_locs 
+FIXTURES_READ_DIR = test_locs.FIXTURES_READ_DIR
+FIXTURES_WRITE_DIR = test_locs.FIXTURES_WRITE_DIR
 
 class TestDataverse(TestCase):
 
@@ -19,7 +19,7 @@ class TestDataverse(TestCase):
         self.dataverse_location = models.Location.objects.get(space=self.dataverse.space)
 
         self.space = models.Space.objects.get(access_protocol='FS')
-        self.space.staging_path = os.path.join(FIXTURES_DIR)  # Make staging path the fixtures dir
+        self.space.staging_path = os.path.join(FIXTURES_WRITE_DIR)  # Make staging path the fixtures dir
         self.dest_path = os.path.join(self.space.staging_path, 'dataverse/')
 
     def tearDown(self):
@@ -32,7 +32,7 @@ class TestDataverse(TestCase):
         assert self.dataverse.host
         assert self.dataverse.api_key
 
-    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'dataverse_browse_all.yaml'))
+    @vcr.use_cassette(os.path.join(FIXTURES_READ_DIR, 'vcr_cassettes', 'dataverse_browse_all.yaml'))
     def test_browse_all(self):
         """
         It should fetch a list of datasets.
@@ -50,7 +50,7 @@ class TestDataverse(TestCase):
         assert resp['properties']['25']['verbose name'] == 'Constitive leaf ORAC'
         assert resp['properties']['14']['verbose name'] == 'testjpg'
 
-    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'dataverse_browse_filter.yaml'))
+    @vcr.use_cassette(os.path.join(FIXTURES_READ_DIR, 'vcr_cassettes', 'dataverse_browse_filter.yaml'))
     def test_browse_filter(self):
         """
         It should fetch a list of datasets.
@@ -70,7 +70,7 @@ class TestDataverse(TestCase):
         assert resp['properties']['16']['verbose name'] == 'testdocx'
         assert resp['properties']['14']['verbose name'] == 'testjpg'
 
-    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'dataverse_move_to.yaml'))
+    @vcr.use_cassette(os.path.join(FIXTURES_READ_DIR, 'vcr_cassettes', 'dataverse_move_to.yaml'))
     def test_move_to(self):
         """
         It should fetch the files listed in the dataset.
