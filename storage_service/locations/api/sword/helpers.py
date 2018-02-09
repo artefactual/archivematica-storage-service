@@ -350,7 +350,8 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
 
     # Approve transfer.
     try:
-        results = pipeline.approve_transfer(deposit.current_path, type='standard')
+        results = pipeline.approve_transfer(deposit.current_path,
+                                            transfer_type='standard')
     except Exception:
         LOGGER.exception(
             'Automatic approval of transfer for deposit %s failed',
