@@ -837,7 +837,7 @@ class PackageResource(ModelResource):
             except NotImplementedError:
                 return http.HttpNoContent()
 
-            _, tmpdir = package.extract_file(os.path.join(basedir, 'bagit.txt'))
+            __, tmpdir = package.extract_file(os.path.join(basedir, 'bagit.txt'))
             package.extract_file(os.path.join(basedir, 'manifest-sha512.txt'),
                 extract_path=tmpdir)
 
