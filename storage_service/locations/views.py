@@ -12,6 +12,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.template import RequestContext
 from django.utils.translation import ugettext as _
 from django.views.decorators.csrf import csrf_exempt
+from tastypie.models import ApiKey
 
 from common import decorators
 from common import utils
@@ -46,7 +47,11 @@ def get_delete_context_dict(request, model, object_uuid, default_cancel='/'):
 # ######################## FILES ##########################
 
 def package_list(request):
-    context = {'packages': Package.objects.all()}
+    api_key = ApiKey.objects.get(user=request.user).key
+    context = {'packages': Package.objects.all(),
+               'user': request.user,
+               'api_key': api_key,
+               'uri': request.build_absolute_uri('/')}
     return render(request, 'locations/package_list.html', context)
 
 

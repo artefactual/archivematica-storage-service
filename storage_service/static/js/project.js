@@ -27,4 +27,42 @@ $(document).ready(function() {
           },
       }
     });
-} );
+
+    $("a.request-delete").click(function() {
+        var self = $(this);
+        var uuid = self.data('package-uuid');
+        var pipeline = self.data('package-pipeline');
+        var $userDataEl = $("#user-data-packages");
+        var userId = $userDataEl.data('user-id');
+        var userEmail = $userDataEl.data('user-email');
+        var userUsername = $userDataEl.data('user-username');
+        var userAPIKey = $userDataEl.data('user-api-key');
+        var uri = $userDataEl.data('uri');
+        var formData = {
+            "event_reason": "Storage Service user wants to delete AIP " + uuid + ".",
+            "pipeline": pipeline,
+            "user_id": userId,
+            "user_email": userEmail};
+        $.ajax({
+            type: "POST",
+            url: uri + "api/v2/file/" + uuid + '/delete_aip/',
+            data: JSON.stringify(formData),
+            dataType: "json",
+            contentType: "application/json; charset=utf-8",
+            headers: {"Authorization": "ApiKey " + userUsername + ":" + userAPIKey},
+            success: function(data) {
+                $("div#package-delete-alert").remove();
+                $("h1").first().after(
+                    "<div id='package-delete-alert' class='alert alert-success'>" +
+                    data.message + "</div>");
+            },
+            failure: function(errMsg) {
+                $("div#package-delete-alert").remove();
+                $("h1").first().after(
+                    "<div id='package-delete-alert' class='alert alert-warning'>" +
+                    data.message + "</div>");
+            }
+        });
+        return false;
+    });
+});
