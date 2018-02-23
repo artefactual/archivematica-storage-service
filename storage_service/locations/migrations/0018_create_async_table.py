@@ -15,12 +15,12 @@ class Migration(migrations.Migration):
             name='Async',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('completed', models.BooleanField(default=False, help_text=b'True if the task has finished')),
-                ('was_error', models.BooleanField(default=False, help_text=b'True if the task threw an exception')),
-                ('result', models.BinaryField(null=True)),
-                ('error', models.BinaryField(null=True)),
+                ('completed', models.BooleanField(default=False, help_text='True if this task has finished.', verbose_name='Completed')),
+                ('was_error', models.BooleanField(default=False, help_text='True if this task threw an exception.', verbose_name='Was there an exception?')),
+                ('_result', models.BinaryField(null=True, db_column=b'result')),
+                ('_error', models.BinaryField(null=True, db_column=b'error')),
                 ('created_time', models.DateTimeField(auto_now_add=True)),
-                ('updated_time', models.DateTimeField(auto_now_add=True, auto_now=True)),
+                ('updated_time', models.DateTimeField(auto_now=True)),
                 ('completed_time', models.DateTimeField(null=True)),
             ],
             options={
