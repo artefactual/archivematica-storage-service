@@ -44,5 +44,6 @@ class PackageResource(resources.PackageResource):
 
     current_full_path = fields.CharField(attribute='full_path', readonly=True)
 
+
 class AsyncResource(resources.AsyncResource):
     pass

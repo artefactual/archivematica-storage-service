@@ -29,7 +29,6 @@ from tastypie import http
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.validation import CleanedDataFormValidation
 from tastypie.utils import trailing_slash, dict_strip_unicode_keys
-from tastypie.bundle import Bundle
 
 # This project, alphabetical
 from administration.models import Settings
@@ -415,11 +414,7 @@ class LocationResource(ModelResource):
                 {'url': origin_uri})
 
         # For each file in files, call move to/from
-        origin_space = origin_location.space
-        destination_space = destination_location.space
-        files = data['files']
-
-        for sip_file in files:
+        for sip_file in data['files']:
             source_path = sip_file.get('source', None)
             destination_path = sip_file.get('destination', None)
             if not all([source_path, destination_path]):
@@ -694,7 +689,7 @@ class PackageResource(ModelResource):
         made to api/v2/file/.
         """
         bundle = super(PackageResource, self).obj_create(bundle, **kwargs)
-        _store_bundle(bundle)
+        self._store_bundle(bundle)
         return bundle
 
     def obj_update(self, bundle, skip_errors=False, **kwargs):

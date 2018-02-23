@@ -14,7 +14,6 @@ import datetime
 import logging
 import threading
 import time
-import uuid
 
 from django.utils import timezone
 
@@ -68,13 +67,13 @@ class AsyncManager():
             # Delete any tasks that have expired before finishing
             # (i.e. interrupted due to a server restart)
             Async.objects \
-                 .filter(completed = False,
+                 .filter(completed=False,
                          updated_time__lte=(timezone.now() - TASK_TIMEOUT_SECONDS)) \
                  .delete()
 
             # Delete any tasks whose results have expired
             Async.objects \
-                 .filter(completed = True,
+                 .filter(completed=True,
                          completed_time__lte=(timezone.now() - MAX_TASK_AGE_SECONDS)) \
                  .delete()
 

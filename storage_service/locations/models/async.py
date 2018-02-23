@@ -4,12 +4,8 @@ import cPickle
 import logging
 
 # Core Django, alphabetical
-from django.dispatch import receiver
 from django.db import models
-from django.utils.translation import ugettext as _, ugettext_lazy as _l
-
-# Third party dependencies, alphabetical
-from django_extensions.db.fields import UUIDField
+from django.utils.translation import ugettext_lazy as _l
 
 __all__ = ('Async',)
 
