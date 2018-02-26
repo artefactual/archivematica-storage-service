@@ -28,17 +28,19 @@ from tastypie import fields
 from tastypie import http
 from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
 from tastypie.validation import CleanedDataFormValidation
-from tastypie.utils import trailing_slash
+from tastypie.utils import trailing_slash, dict_strip_unicode_keys
 
 # This project, alphabetical
 from administration.models import Settings
 from common import utils
 from locations.api.sword import views as sword_views
 
-from ..models import (Callback, CallbackError, Event, File, Package, Location, Space, Pipeline, StorageException)
+from ..models import (Callback, CallbackError, Event, File, Package, Location, Space, Pipeline, StorageException, Async)
 from ..forms import SpaceForm
 from ..constants import PROTOCOL
 from locations import signals
+
+from ..models.async_manager import AsyncManager
 
 LOGGER = logging.getLogger(__name__)
 
@@ -265,6 +267,7 @@ class LocationResource(ModelResource):
         return [
             url(r"^(?P<resource_name>%s)/default/(?P<purpose>[A-Z]{2})%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('default'), name="default_location"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/browse%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('browse'), name="browse"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/async%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('post_detail_async'), name="post_detail_async"),
             # FEDORA/SWORD2 endpoints
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/collection%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_collection'), name="sword_collection"),
         ]
@@ -325,8 +328,41 @@ class LocationResource(ModelResource):
 
         return self.create_response(request, objects)
 
-    def post_detail(self, request, *args, **kwargs):
-        """ Moves files to this Location.
+    def _move_files_between_locations(self, files, origin_location, destination_location):
+        """
+        Synchronously move files from one location to another.  May be called from
+        the request thread, or as an async task.
+        """
+        # For each file in files, call move to/from
+        origin_space = origin_location.space
+        destination_space = destination_location.space
+
+        for sip_file in files:
+            source_path = sip_file.get('source', None)
+            destination_path = sip_file.get('destination', None)
+
+            # make path relative to the location
+            source_path = os.path.join(
+                origin_location.relative_path, source_path)
+            destination_path = os.path.join(
+                destination_location.relative_path, destination_path)
+            origin_space.move_to_storage_service(
+                source_path=source_path,
+                destination_path=destination_path,
+                destination_space=destination_space,
+            )
+            origin_space.post_move_to_storage_service()
+            destination_space.move_from_storage_service(
+                source_path=destination_path,
+                destination_path=destination_path,
+                package=None,
+            )
+            destination_space.post_move_from_storage_service(
+                destination_path, destination_path)
+
+    def _handle_location_file_move(self, move_files_fn, request, *args, **kwargs):
+        """
+        Handle a request to moves files to this Location.
 
         Intended for use with creating Transfers, SIPs, etc and other cases
         where files need to be moved but not tracked by the storage service.
@@ -336,8 +372,19 @@ class LocationResource(ModelResource):
         pipeline: URI of the Pipeline both Locations belong to
         files: List of dicts containing 'source' and 'destination', paths
             relative to their Location of the files to be moved.
+
+        The actual work of moving the files is delegated to move_files_fn, which
+        will be called with:
+
+          * The list of files to move
+          * The origin location
+          * The destination location
+
+        and should return a HttpResponse suitable for response to the
+        client. This is parameterised in this way to give the caller the choice
+        of copying synchronously (returning a HTTP 201 response) or
+        asynchronously (returning a HTTP 202 + redirect).
         """
-        # Not right HTTP verb?  PUT is taken
 
         data = self.deserialize(request, request.body)
         data = self.alter_deserialized_detail_data(request, data)
@@ -367,40 +414,58 @@ class LocationResource(ModelResource):
                 {'url': origin_uri})
 
         # For each file in files, call move to/from
-        origin_space = origin_location.space
-        destination_space = destination_location.space
-        files = data['files']
-        # TODO make these move async so the SS can continue to respond while
-        # moving large files
-        for sip_file in files:
+        for sip_file in data['files']:
             source_path = sip_file.get('source', None)
             destination_path = sip_file.get('destination', None)
-            if all([source_path, destination_path]):
-                # make path relative to the location
-                source_path = os.path.join(
-                    origin_location.relative_path, source_path)
-                destination_path = os.path.join(
-                    destination_location.relative_path, destination_path)
-                origin_space.move_to_storage_service(
-                    source_path=source_path,
-                    destination_path=destination_path,
-                    destination_space=destination_space,
-                )
-                origin_space.post_move_to_storage_service()
-                destination_space.move_from_storage_service(
-                    source_path=destination_path,
-                    destination_path=destination_path,
-                    package=None,
-                )
-                destination_space.post_move_from_storage_service(
-                    destination_path, destination_path)
-
-            else:
+            if not all([source_path, destination_path]):
                 return http.HttpBadRequest
 
-        response = {'error': None,
-                    'message': _('Files moved successfully')}
-        return self.create_response(request, response)
+        return move_files_fn(data['files'], origin_location, destination_location)
+
+    @_custom_endpoint(expected_methods=['post'])
+    def post_detail_async(self, request, *args, **kwargs):
+        """
+        Moves files to this Location.  Return an async response (202 code) on
+        success.
+
+        See _handle_location_file_move for a description of the expected request
+        format.
+        """
+        def move_files(files, origin_location, destination_location):
+            """Move our list of files in a background task, returning a HTTP Accepted response."""
+
+            def task():
+                self._move_files_between_locations(files, origin_location, destination_location)
+                return _('Files moved successfully')
+
+            async = AsyncManager.run_task(task)
+
+            response = http.HttpAccepted()
+            response['Location'] = reverse('api_dispatch_detail', kwargs={
+                'api_name': 'v2',
+                'resource_name': 'async',
+                'id': async.id,
+            })
+
+            return response
+
+        return self._handle_location_file_move(move_files, request, *args, **kwargs)
+
+    def post_detail(self, request, *args, **kwargs):
+        """ Moves files to this Location.
+
+        See _handle_location_file_move for a description of the expected request
+        format.
+        """
+        def move_files(files, origin_location, destination_location):
+            """Move our list of files synchronously, returning a HTTP Created response."""
+            self._move_files_between_locations(files, origin_location, destination_location)
+
+            response = {'error': None,
+                        'message': _('Files moved successfully')}
+            return self.create_response(request, response)
+
+        return self._handle_location_file_move(move_files, request, *args, **kwargs)
 
     def sword_collection(self, request, **kwargs):
         location = get_object_or_None(Location, uuid=kwargs['uuid'])
@@ -477,6 +542,8 @@ class PackageResource(ModelResource):
 
     def prepend_urls(self):
         return [
+            url(r"^(?P<resource_name>%s)/async%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('obj_create_async'), name='obj_create_async'),
+
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/delete_aip%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('delete_aip_request'), name="delete_aip_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/recover_aip%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('recover_aip_request'), name="recover_aip_request"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/extract_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('extract_file_request'), name="extract_file_request"),
@@ -552,11 +619,11 @@ class PackageResource(ModelResource):
         bundle.data['current_location'] = location_path
         return bundle
 
-    def obj_create(self, bundle, **kwargs):
-        """Create a new Package model instance. Called when a POST request is
-        made to api/v2/file/.
+    def _store_bundle(self, bundle):
         """
-        bundle = super(PackageResource, self).obj_create(bundle, **kwargs)
+        Synchronously store a bundle.  May be called from the request thread, or as
+        an async task.
+        """
         related_package_uuid = bundle.data.get('related_package_uuid')
         # IDEA add custom endpoints, instead of storing all AIPS that come in?
         origin_location_uri = bundle.data.get('origin_location')
@@ -573,6 +640,56 @@ class PackageResource(ModelResource):
         elif bundle.obj.package_type in (Package.TRANSFER,) and bundle.obj.current_location.purpose in (Location.BACKLOG,):
             # Move transfer to backlog
             bundle.obj.backlog_transfer(origin_location, origin_path)
+
+    def obj_create_async(self, request, **kwargs):
+        """
+        Create a new Package model instance. Called when a POST request is made
+        to api/v2/file/async/.
+
+        Returns a HTTP 202 response immediately, along with a redirect to a URL
+        for polling for job completion.
+        """
+        try:
+            self.method_check(request, allowed=['post'])
+            self.is_authenticated(request)
+            self.throttle_check(request)
+            self.log_throttled_access(request)
+
+            deserialized = self.deserialize(request, request.body, format=request.META.get('CONTENT_TYPE', 'application/json'))
+            deserialized = self.alter_deserialized_detail_data(request, deserialized)
+            bundle = self.build_bundle(data=dict_strip_unicode_keys(deserialized), request=request)
+
+            bundle = super(PackageResource, self).obj_create(bundle, **kwargs)
+
+            def task():
+                self._store_bundle(bundle)
+                new_bundle = self.full_dehydrate(bundle)
+                new_bundle = self.alter_detail_data_to_serialize(request, new_bundle)
+
+                return new_bundle.data
+
+            async = AsyncManager.run_task(task)
+
+            response = http.HttpAccepted()
+
+            response['Location'] = reverse('api_dispatch_detail', kwargs={
+                'api_name': 'v2',
+                'resource_name': 'async',
+                'id': async.id,
+            })
+
+            return response
+        except Exception as e:
+            LOGGER.warning("Failure in obj_create_async: %s" % e)
+            raise e
+
+    def obj_create(self, bundle, **kwargs):
+        """
+        Create a new Package model instance. Called when a POST request is
+        made to api/v2/file/.
+        """
+        bundle = super(PackageResource, self).obj_create(bundle, **kwargs)
+        self._store_bundle(bundle)
         return bundle
 
     def obj_update(self, bundle, skip_errors=False, **kwargs):
@@ -1162,3 +1279,29 @@ class PackageResource(ModelResource):
             })
 
         return http.HttpResponse(content=json.dumps(response), content_type="application/json")
+
+
+class AsyncResource(ModelResource):
+    """
+    Represents an async task that may or may not still be running.
+    """
+    class Meta:
+        queryset = Async.objects.all()
+        resource_name = 'async'
+        authentication = MultiAuthentication(BasicAuthentication(), ApiKeyAuthentication(), SessionAuthentication())
+        authorization = DjangoAuthorization()
+
+        fields = ['id', 'completed', 'was_error', 'created_time', 'updated_time', 'completed_time']
+        always_return_data = True
+        detail_allowed_methods = ['get']
+        detail_uri_name = 'id'
+
+    def dehydrate(self, bundle):
+        """Pull out errors and results using our accessors so they get unpickled."""
+        if bundle.obj.completed:
+            if bundle.obj.was_error:
+                bundle.data['error'] = bundle.obj.error
+            else:
+                bundle.data['result'] = bundle.obj.result
+
+        return bundle
