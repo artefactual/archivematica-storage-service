@@ -438,13 +438,13 @@ class LocationResource(ModelResource):
                 self._move_files_between_locations(files, origin_location, destination_location)
                 return _('Files moved successfully')
 
-            async = AsyncManager.run_task(task)
+            async_task = AsyncManager.run_task(task)
 
             response = http.HttpAccepted()
             response['Location'] = reverse('api_dispatch_detail', kwargs={
                 'api_name': 'v2',
                 'resource_name': 'async',
-                'id': async.id,
+                'id': async_task.id,
             })
 
             return response
@@ -668,14 +668,14 @@ class PackageResource(ModelResource):
 
                 return new_bundle.data
 
-            async = AsyncManager.run_task(task)
+            async_task = AsyncManager.run_task(task)
 
             response = http.HttpAccepted()
 
             response['Location'] = reverse('api_dispatch_detail', kwargs={
                 'api_name': 'v2',
                 'resource_name': 'async',
-                'id': async.id,
+                'id': async_task.id,
             })
 
             return response

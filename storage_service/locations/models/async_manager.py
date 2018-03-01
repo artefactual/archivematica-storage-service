@@ -90,17 +90,17 @@ class AsyncManager():
                 AsyncManager.running_tasks.remove(task)
 
                 try:
-                    async = Async.objects.get(id=task.async_id)
-                    async.completed = True
-                    async.completed_time = timezone.now()
-                    async.was_error = task.was_error
+                    async_task = Async.objects.get(id=task.async_id)
+                    async_task.completed = True
+                    async_task.completed_time = timezone.now()
+                    async_task.was_error = task.was_error
 
                     if task.was_error:
-                        async.error = task.error
+                        async_task.error = task.error
                     else:
-                        async.result = task.result
+                        async_task.result = task.result
 
-                    async.save()
+                    async_task.save()
                 except Async.DoesNotExist:
                     # This generally shouldn't happen, but if it does that
                     # would suggest that the watchdog had failed to update
@@ -134,11 +134,11 @@ class AsyncManager():
     def run_task(task_fn, *args, **kwargs):
         """Run `task_fn` in a separate thread.  Return an Async model that will
         hold its result upon completion."""
-        async = Async()
-        async.save()
+        async_task = Async()
+        async_task.save()
 
         task = RunningTask()
-        task.async_id = async.id
+        task.async_id = async_task.id
         task.thread = threading.Thread(target=AsyncManager._wrap_task(task, task_fn), args=args, kwargs=kwargs)
 
         # Note: Important to start the thread prior to adding it to our list of
@@ -149,7 +149,7 @@ class AsyncManager():
         with AsyncManager.lock:
             AsyncManager.running_tasks.append(task)
 
-        return async
+        return async_task
 
 
 # Start our watchdog thread.
