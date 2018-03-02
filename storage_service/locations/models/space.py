@@ -449,7 +449,7 @@ class Space(models.Model):
                 subprocess.call(chmod_command)
                 return
             except OSError:
-                LOGGER.debug('os.rename failed, trying with normalized paths', exc_info=True)
+                LOGGER.debug('os.rename failed, trying with normalized paths')
             source_norm = os.path.normpath(source)
             dest_norm = os.path.normpath(destination)
             try:
@@ -458,7 +458,7 @@ class Space(models.Model):
                 subprocess.call(chmod_command)
                 return
             except OSError:
-                LOGGER.debug('os.rename failed, falling back to rsync. Source: %s; Destination: %s', source_norm, dest_norm, exc_info=True)
+                LOGGER.debug('os.rename failed, falling back to rsync. Source: %s; Destination: %s', source_norm, dest_norm)
 
         # Rsync file over
         # TODO Do this asyncronously, with restarting failed attempts
