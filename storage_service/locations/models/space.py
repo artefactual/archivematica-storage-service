@@ -24,7 +24,7 @@ LOGGER = logging.getLogger(__name__)
 # This module, alphabetical
 from . import StorageException  # noqa: E402
 
-__all__ = ('Space', )
+__all__ = ('Space', 'PosixMoveUnsupportedError', )
 
 
 def validate_space_path(path):
@@ -260,6 +260,31 @@ class Space(models.Model):
             return self.get_child_space().delete_path(delete_path, *args, **kwargs)
         except AttributeError:
             return self._delete_path_local(delete_path)
+
+    def posix_move(self, source_path, destination_path, destination_space, package=None):
+        """
+        Move self.path/source_path direct to destination_space.path/destination_path bypassing staging.
+        """
+        if (not hasattr(self.get_child_space(), 'posix_move') or
+                not hasattr(destination_space.get_child_space(), 'posix_move')):
+            LOGGER.debug('posix_move: not supported as %s and %s are not both POSIX filesystems',
+                type(self.get_child_space()),
+                type(destination_space.get_child_space()))
+            raise PosixMoveUnsupportedError()
+
+        LOGGER.debug('posix_move: source_path: %s', source_path)
+        LOGGER.debug('posix_move: destination_path: %s', destination_path)
+        LOGGER.debug('posix_move: destination_space.path: %s', destination_space.path)
+
+        source_path = os.path.join(self.path, source_path)
+
+        if os.path.isabs(destination_path):
+            destination_path = destination_path.lstrip(os.sep)
+
+        abs_destination_path = os.path.join(destination_space.path, destination_path)
+
+        return self.get_child_space().posix_move(
+            source_path, abs_destination_path, destination_space, package)
 
     def move_to_storage_service(self, source_path, destination_path,
                                 destination_space, *args, **kwargs):
@@ -647,6 +672,11 @@ class Space(models.Model):
         except (os.error, shutil.Error):
             LOGGER.warning("Error deleting package %s", delete_path, exc_info=True)
             raise
+
+
+# Thrown when posix_move is handed a non POSIX space
+class PosixMoveUnsupportedError(Exception):
+    pass
 
 
 def path2browse_dict(path):

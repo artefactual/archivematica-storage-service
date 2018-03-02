@@ -51,3 +51,12 @@ class LocalFilesystem(models.Model):
         verified = os.path.isdir(self.space.path)
         self.space.verified = verified
         self.space.last_verified = datetime.datetime.now()
+
+    def posix_move(self, source_path, destination_path, destination_space, package=None):
+        """
+        Move from this POSIX filesystem to another POSIX filesytem; copying
+        from self.path/source_path to destination_space.path/destination_path
+        bypassing staging.
+        """
+        destination_space.create_local_directory(destination_path)
+        return self.space.move_rsync(source_path, destination_path, try_mv_local=True)
