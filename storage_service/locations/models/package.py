@@ -125,7 +125,9 @@ class Package(models.Model):
     PACKAGE_TYPE_CAN_RECOVER = (AIP, AIC)
     PACKAGE_TYPE_CAN_REINGEST = (AIP, AIC)
 
-    # Reingest type options
+    # Reingest type options described in lower case. The body of the request
+    # will have this value converted to lower case to check it against these
+    # values to make the API responses more robust to human error.
     METADATA_ONLY = 'metadata'  # Re-ingest metadata only
     OBJECTS = 'objects'         # Re-ingest metadata and objects for DIP generation
     FULL = 'full'               # Full re-ingest
@@ -1775,6 +1777,11 @@ class Package(models.Model):
         :param reingest_type: Type of reingest to start, one of REINGEST_CHOICES.
         :return: Dict with keys 'error', 'status_code' and 'message'
         """
+
+        # Reingest type is part of the payload so we can convert it to lower
+        # case here to make any calls to start_reingest more robust.
+        reingest_type = reingest_type.lower()
+
         if self.package_type not in Package.PACKAGE_TYPE_CAN_REINGEST:
             return {'error': True, 'status_code': 405, 'message': 'Package with type {} cannot be re-ingested.'.format(self.get_package_type_display())}
 
