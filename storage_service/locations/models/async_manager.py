@@ -36,7 +36,7 @@ MAX_TASK_AGE_SECONDS = datetime.timedelta(seconds=86400)
 WATCHDOG_POLL_SECONDS = 5
 
 
-class RunningTask():
+class RunningTask(object):
     def __init__(self):
         self.async_id = None
         self.thread = None
@@ -45,7 +45,7 @@ class RunningTask():
         self.error = None
 
 
-class AsyncManager():
+class AsyncManager(object):
     running_tasks = []
     lock = threading.Lock()
 

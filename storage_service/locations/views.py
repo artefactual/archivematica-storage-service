@@ -61,7 +61,7 @@ def package_fixity(request, package_uuid):
     return render(request, 'locations/fixity_results.html', context)
 
 
-class PackageRequestHandlerConfig:
+class PackageRequestHandlerConfig(object):
     event_type = ''                 # Event type being handled
     approved_status = ''            # Event status, if approved
     reject_message = ''             # Message returned if not approved
