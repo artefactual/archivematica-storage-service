@@ -35,7 +35,7 @@ from administration.models import Settings
 from common import utils
 from locations.api.sword import views as sword_views
 
-from ..models import (Callback, CallbackError, Event, File, Package, Location, Space, Pipeline, StorageException, Async)
+from ..models import (Callback, CallbackError, Event, File, Package, Location, Space, Pipeline, StorageException, Async, PosixMoveUnsupportedError)
 from ..forms import SpaceForm
 from ..constants import PROTOCOL
 from locations import signals
@@ -347,14 +347,14 @@ class LocationResource(ModelResource):
             destination_path = os.path.join(
                 destination_location.relative_path, destination_path)
 
-            if Space.posix_move_supported(origin_space, destination_space):
+            try:
                 origin_space.posix_move(
                     source_path=source_path,
                     destination_path=destination_path,
                     destination_space=destination_space,
                     package=None
                 )
-            else:
+            except PosixMoveUnsupportedError:
                 origin_space.move_to_storage_service(
                     source_path=source_path,
                     destination_path=destination_path,
@@ -363,6 +363,7 @@ class LocationResource(ModelResource):
                 origin_space.post_move_to_storage_service()
                 destination_space.move_from_storage_service(
                     source_path=destination_path,
+                    destination_path=destination_path,
                     package=None,
                 )
                 destination_space.post_move_from_storage_service(

@@ -33,7 +33,7 @@ from locations import signals
 # This module, alphabetical
 from . import StorageException
 from .location import Location
-from .space import Space
+from .space import Space, PosixMoveUnsupportedError
 from .event import File
 from .fixity_log import FixityLog
 
@@ -679,11 +679,11 @@ class Package(models.Model):
         :param str related_package_uuid: UUID of a related package.
         :returns NoneType None:
         """
-        if Space.posix_move_supported(v.src_space, v.dest_space):
+        try:
             # Both spaces are POSIX filesystems and support `posix_move`
             #
             # 1. move direct to the SS destination space/location,
-            # 2. setting the status to "uploaded" (if applicable),
+            # 2. setting the status to "uploaded",
             # 3. setting a related package (if applicable),
             # 4. updating quotas on the destination space, and
             # 5. persisting the package to the database.
@@ -709,7 +709,7 @@ class Package(models.Model):
 
             self._update_quotas(v.dest_space, self.current_location)
             return storage_effects
-        else:
+        except PosixMoveUnsupportedError:
             # 1. moving it to the SS internal location,
             # 2. setting its status to "staging",
             # 3. calling ``post_move_to_storage_service`` on the source space,
@@ -719,7 +719,6 @@ class Package(models.Model):
             # 7. calling ``post_move_from_storage_service`` on the destination space,
             # 8. updating quotas on the destination space, and
             # 9. persisting the package to the database.
-
             v.src_space.move_to_storage_service(
                 source_path=os.path.join(self.origin_location.relative_path,
                                          self.origin_path),
