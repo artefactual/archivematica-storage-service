@@ -83,3 +83,12 @@ class NFS(models.Model):
         # self.remote_name:self.remote_path   self.space.path   self.version    auto,user  0  0
         # may need to tweak options
         pass
+
+    def posix_move(self, source_path, destination_path, destination_space, package=None):
+        """
+        Move from this POSIX filesystem to another POSIX filesytem; copying
+        from self.path/source_path to destination_space.path/destination_path
+        bypassing staging.
+        """
+        destination_space.create_local_directory(destination_path)
+        return self.space.move_rsync(source_path, destination_path, try_mv_local=True)
