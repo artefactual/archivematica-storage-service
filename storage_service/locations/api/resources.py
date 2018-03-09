@@ -784,7 +784,7 @@ class PackageResource(ModelResource):
             full_path = package.get_download_path(lockss_au_number)
         except StorageException:
             full_path, temp_dir = package.compress_package(utils.COMPRESSION_TAR)
-        response = utils.download_file_stream(full_path)
+        response = utils.download_file_stream(full_path, temp_dir)
         return response
 
     @_custom_endpoint(expected_methods=['get'])
