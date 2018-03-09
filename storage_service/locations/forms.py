@@ -186,6 +186,12 @@ class SwiftForm(forms.ModelForm):
         fields = ('auth_url', 'auth_version', 'username', 'password', 'container', 'tenant', 'region')
 
 
+class S3Form(forms.ModelForm):
+    class Meta:
+        model = models.S3
+        fields = ('endpoint_url', 'access_key_id', 'secret_access_key', 'region')
+
+
 class LocationForm(forms.ModelForm):
     default = forms.BooleanField(required=False, label=_l("Set as global default location for its purpose"))
 
