@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('locations', '0017_gpg_space_minor_migration'),
+        ('locations', '0018_create_async_table'),
     ]
 
     operations = [
