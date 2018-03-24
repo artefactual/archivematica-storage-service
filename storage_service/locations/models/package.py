@@ -174,6 +174,12 @@ class Package(models.Model):
         is_file = os.path.isfile(local_path)
         return space_is_encr and is_file
 
+
+    # CVA TODO: we should probably actually check if the AIP has a pointer 
+    # file instead as that is the point of pointer files. Here, for the first
+    # part of a reingest without a pointer file, we make the code check the
+    # file extension instead.
+
     @property
     def is_compressed(self):
         """ Determines whether or not the package is a compressed file. """
@@ -1355,7 +1361,7 @@ class Package(models.Model):
             command = _get_decompr_cmd(compression, extract_path, full_path)
             if relative_path:
                 command.append(relative_path)
-            LOGGER.info('Extracting file with: %s to %s', command, output_path)
+            LOGGER.info('CVA Extracting file with: %s to %s', command, output_path)
             rc = subprocess.check_output(command)
             if 'No files extracted' in rc:
                 raise StorageException(_('Extraction error'))
@@ -1811,6 +1817,9 @@ class Package(models.Model):
 
         # Reingest type is part of the payload so we can convert it to lower
         # case here to make any calls to start_reingest more robust.
+
+        LOGGER.info("CVA start reingest")
+
         reingest_type = reingest_type.lower()
 
         if self.package_type not in Package.PACKAGE_TYPE_CAN_REINGEST:
@@ -1828,7 +1837,7 @@ class Package(models.Model):
         # Fetch and extract if needed
         if self.is_compressed:
             local_path, temp_dir = self.extract_file()
-            LOGGER.debug('Reingest: extracted to %s', local_path)
+            LOGGER.debug('CVA Reingest: extracted to %s', local_path)
         else:
             # Append / to uncompressed AIPS so we send the contents of the dir
             # not the dir itself inside a dir of the same name
@@ -2066,7 +2075,7 @@ class Package(models.Model):
                 # If updating, rather than creating a new pointer file, delete
                 # this pointer file. TODO: this is maybe not a good idea and
                 # might be what is messing with encrypted re-ingest...
-                LOGGER.info('Extracted compression "{}" from pointer file'.format(
+                LOGGER.info('CVA Extracted compression "{}" from pointer file'.format(
                     compression))
                 if was_compressed:
                     os.remove(rein_pointer_dst_full_path)
@@ -2503,7 +2512,9 @@ def _get_decompr_cmd(compression, extract_path, full_path):
     (one of ``COMPRESSION_ALGORITHMS``), the destination path
     ``extract_path`` and the path of the archive ``full_path``.
     """
-    if compression in (utils.COMPRESSION_7Z_BZIP, utils.COMPRESSION_7Z_LZMA):
+    if compression in (utils.COMPRESSION_7Z, 
+                       utils.COMPRESSION_7Z_BZIP, 
+                       utils.COMPRESSION_7Z_LZMA):
         return ['7z', 'x', '-bd', '-y', '-o{0}'.format(extract_path),
                 full_path]
     elif compression == utils.COMPRESSION_TAR_BZIP2:

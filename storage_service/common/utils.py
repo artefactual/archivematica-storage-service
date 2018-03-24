@@ -35,11 +35,13 @@ NSMAP = {
 }
 
 # Compression options for packages
+COMPRESSION_7Z = '7z'
 COMPRESSION_7Z_BZIP = '7z with bzip'
 COMPRESSION_7Z_LZMA = '7z with lzma'
 COMPRESSION_TAR = 'tar'
 COMPRESSION_TAR_BZIP2 = 'tar bz2'
 COMPRESSION_ALGORITHMS = (
+    COMPRESSION_7Z,
     COMPRESSION_7Z_BZIP,
     COMPRESSION_7Z_LZMA,
     COMPRESSION_TAR,
@@ -252,7 +254,18 @@ def get_compression(pointer_path):
     documented in the pointer file at ``pointer_path``. Returns one of the
     constants in ``COMPRESSION_ALGORITHMS``.
     """
-    doc = etree.parse(pointer_path)
+
+    # CVA TODO Here the first error appears. Because there is no actual
+    # pointer file, we just have ignore this, and reroute the AIP by
+    # using a different heuristic, or possibly a different id mechanism.
+
+    LOGGER.info("CVA entering determine compression")
+
+    try:
+        doc = etree.parse(pointer_path)
+    except IOError:
+        return COMPRESSION_7Z
+
     puid = doc.findtext('.//premis:formatRegistryKey', namespaces=NSMAP)
     if puid == 'fmt/484':  # 7 Zip
         algo = doc.find('.//mets:transformFile',
