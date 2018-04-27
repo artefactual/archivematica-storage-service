@@ -57,7 +57,7 @@ def get_all_settings():
     for setting, value in settings.items():
         try:
             settings[setting] = ast.literal_eval(value)
-        except SyntaxError:
+        except (SyntaxError, ValueError):
             pass  # Not all the settings are Python literals
     return settings
 
