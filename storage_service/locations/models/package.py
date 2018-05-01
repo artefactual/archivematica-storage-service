@@ -530,11 +530,12 @@ class Package(models.Model):
             # a ``lxml.etree._Element`` instance and not the expected
             # ``premisrw.PREMISObject``. As a result, the following is required:
             replica_pointer_file = replica_package.get_pointer_instance()
-            revised_replica_pointer_file = (
-                replica_package.create_new_pointer_file_given_storage_effects(
-                    replica_pointer_file, replica_storage_effects))
-            write_pointer_file(revised_replica_pointer_file,
-                               replica_package.full_pointer_file_path)
+            if replica_pointer_file:
+                revised_replica_pointer_file = (
+                    replica_package.create_new_pointer_file_given_storage_effects(
+                        replica_pointer_file, replica_storage_effects))
+                write_pointer_file(revised_replica_pointer_file,
+                                replica_package.full_pointer_file_path)
 
         # Update the pointer file of the replicated AIP (master) so that it
         # contains a record of its replication.
@@ -606,11 +607,12 @@ class Package(models.Model):
             aip_subtype=aip_subtype)
         if storage_effects:
             pointer_file = self.get_pointer_instance()
-            revised_pointer_file = (
-                self.create_new_pointer_file_given_storage_effects(
-                    pointer_file, storage_effects))
-            write_pointer_file(revised_pointer_file,
-                               self.full_pointer_file_path)
+            if pointer_file:
+                revised_pointer_file = (
+                    self.create_new_pointer_file_given_storage_effects(
+                        pointer_file, storage_effects))
+                write_pointer_file(revised_pointer_file,
+                                   self.full_pointer_file_path)
         self.create_replicas()
 
     def _store_aip_to_pending(self, origin_location, origin_path):
@@ -2079,11 +2081,12 @@ class Package(models.Model):
             reingest_space, reingest_location, old_aip_internal_path)
         if storage_effects:
             pointer_file = self.get_pointer_instance()
-            revised_pointer_file = (
-                self.create_new_pointer_file_given_storage_effects(
-                    pointer_file, storage_effects))
-            write_pointer_file(revised_pointer_file,
-                               self.full_pointer_file_path)
+            if pointer_file:
+                revised_pointer_file = (
+                    self.create_new_pointer_file_given_storage_effects(
+                        pointer_file, storage_effects))
+                write_pointer_file(revised_pointer_file,
+                                self.full_pointer_file_path)
 
         # 9. Update the pointer file.
         self._process_pointer_file_for_reingest(
