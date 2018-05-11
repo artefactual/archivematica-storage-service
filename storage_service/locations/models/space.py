@@ -141,7 +141,7 @@ class Space(models.Model):
     OBJECT_STORAGE = {DATAVERSE, DSPACE, DURACLOUD, SWIFT, S3}
     ACCESS_PROTOCOL_CHOICES = (
         (ARKIVUM, _l('Arkivum')),
-        (DATAVERSE, _l('Dataverse')),
+        (DATAVERSE, _l('Dataverse (Beta)')),
         (DURACLOUD, _l('DuraCloud')),
         (DSPACE, _l('DSpace via SWORD2 API')),
         (FEDORA, _l("FEDORA via SWORD2")),
