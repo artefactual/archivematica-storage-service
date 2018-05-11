@@ -61,7 +61,6 @@ class Location(models.Model):
         blank=True,
         verbose_name=_l('Pipeline'),
         help_text=_l("UUID of the Archivematica instance using this location."))
-
     relative_path = models.TextField(
         verbose_name=_l('Relative Path'),
         help_text=_l("Path to location, relative to the storage space's path."))
@@ -105,6 +104,12 @@ class Location(models.Model):
     @property
     def full_path(self):
         """ Returns full path of location: space + location paths. """
+
+        # Dataverses are browsed using the relative path. We only want to
+        # return that to display to the user here.
+        if self.space.access_protocol == self.space.DATAVERSE:
+            return self.relative_path
+        # Else act as normal.
         return os.path.normpath(
             os.path.join(self.space.path, self.relative_path))
 
