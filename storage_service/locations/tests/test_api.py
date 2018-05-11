@@ -440,7 +440,8 @@ class TestPipelineAPI(TestCase):
     def setUp(self):
         user = User.objects.get(username='test')
         user.set_password('test')
-        self.client.defaults['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode('test:test')
+        self.client.defaults['HTTP_AUTHORIZATION'] = 'Basic ' + \
+            base64.b64encode('test:test')
 
     def test_pipeline_create(self):
         data = {
@@ -456,7 +457,8 @@ class TestPipelineAPI(TestCase):
         assert response.status_code == 201
 
         pipeline = models.Pipeline.objects.get(uuid=data['uuid'])
-        pipeline.parse_and_fix_url() == urlparse(data['remote_name'])
+        pipeline.parse_and_fix_url(pipeline.remote_name) == \
+            urlparse(data['remote_name'])
 
         # When undefined the remote_name field should be populated after the
         # REMOTE_ADDR header.
@@ -468,4 +470,5 @@ class TestPipelineAPI(TestCase):
                                     REMOTE_ADDR='192.168.0.10')
         assert response.status_code == 201
         pipeline = models.Pipeline.objects.get(uuid=data['uuid'])
-        pipeline.parse_and_fix_url() == urlparse('http://192.168.0.10')
+        pipeline.parse_and_fix_url(pipeline.remote_name) == \
+            urlparse('http://192.168.0.10')

@@ -7,7 +7,7 @@ interactions:
       Connection: [keep-alive]
       User-Agent: [python-requests/2.7.0 CPython/2.7.6 Linux/3.13.0-43-generic]
     method: GET
-    uri: https://apitest.dataverse.org/api/search/?sort=name&show_entity_ids=True&q=%2A&start=0&key=testkeys-77a8-49a3-874e-be1148e7c970&per_page=10&type=dataset&order=asc
+    uri: https://apitest.dataverse.org/api/search/?sort=name&show_entity_ids=True&q=%2A&start=0&key=testkeys-77a8-49a3-874e-be1148e7c970&per_page=50&type=dataset&order=asc
   response:
     body: {string: !!python/unicode '{"status":"OK","data":{"q":"*","total_count":15,"start":0,"spelling_alternatives":{},"items":[{"name":"Ad
         hoc observational study of the trees outside my window","type":"dataset","url":"http://dx.doi.org/10.5072/FK2/D3B38B","image_url":"https://apitest.dataverse.org/api/access/dsCardImage/39","global_id":"doi:10.5072/FK2/D3B38B","description":"Very
@@ -80,7 +80,7 @@ interactions:
       Connection: [keep-alive]
       User-Agent: [python-requests/2.7.0 CPython/2.7.6 Linux/3.13.0-43-generic]
     method: GET
-    uri: https://apitest.dataverse.org/api/search/?sort=name&show_entity_ids=True&q=%2A&start=10&key=testkeys-77a8-49a3-874e-be1148e7c970&per_page=10&type=dataset&order=asc
+    uri: https://apitest.dataverse.org/api/search/?sort=name&show_entity_ids=True&q=%2A&start=10&key=testkeys-77a8-49a3-874e-be1148e7c970&per_page=50&type=dataset&order=asc
   response:
     body: {string: !!python/unicode '{"status":"OK","data":{"q":"*","total_count":15,"start":10,"spelling_alternatives":{},"items":[{"name":"Phenotyping
         for root water extraction potential, IRRI 2013","type":"dataset","url":"http://dx.doi.org/10.5072/FK2/GN7A6I","image_url":"https://apitest.dataverse.org/api/access/dsCardImage/26","global_id":"doi:10.5072/FK2/GN7A6I","description":"test","published_at":"2015-07-13T07:33:38Z","citation":"Dingkuhn,

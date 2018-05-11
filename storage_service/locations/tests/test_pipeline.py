@@ -19,22 +19,20 @@ class TestPipeline(TestCase):
 
     def test_parse_and_fix_url(self):
         pipeline = models.Pipeline.objects.get(pk=1)
-        res = pipeline.parse_and_fix_url()
+        res = pipeline.parse_and_fix_url(pipeline.remote_name)
         assert isinstance(res, ParseResult)
         assert res.geturl() == 'http://127.0.0.1'
 
         pipeline = models.Pipeline.objects.get(pk=2)
-        res = pipeline.parse_and_fix_url()
+        res = pipeline.parse_and_fix_url(pipeline.remote_name)
         assert res == urlparse('')
 
         url = 'https://archivematica-dashboard'
-        pipeline.remote_name = url
-        assert pipeline.parse_and_fix_url() == \
+        assert pipeline.parse_and_fix_url(url) == \
             urlparse(url)
 
         url = 'https://foo@bar:ss.qa.usip.tld:1234/dev/'
-        pipeline.remote_name = url
-        assert pipeline.parse_and_fix_url() == \
+        assert pipeline.parse_and_fix_url(url) == \
             urlparse(url)
 
     @mock.patch('requests.request')

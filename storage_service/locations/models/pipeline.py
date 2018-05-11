@@ -6,7 +6,6 @@ import logging
 from django.conf import settings
 from django.core import validators
 from django.db import models
-from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
@@ -21,13 +20,14 @@ from .local_filesystem import LocalFilesystem
 from .location import Location, LocationPipeline
 from .managers import Enabled
 from .space import Space
+from .urlmixin import URLMixin
 
 __all__ = ('Pipeline', )
 
 LOGGER = logging.getLogger(__name__)
 
 
-class Pipeline(models.Model):
+class Pipeline(URLMixin, models.Model):
     """ Information about Archivematica instances using the storage service. """
     uuid = UUIDField(unique=True, version=4, auto=False, verbose_name=_l("UUID"),
         help_text=_l("Identifier for the Archivematica pipeline"),
@@ -72,21 +72,6 @@ class Pipeline(models.Model):
         super(Pipeline, self).save(*args, **kwargs)
         if create_default_locations:
             self.create_default_locations(shared_path)
-
-    def parse_and_fix_url(self):
-        """Returns a ParseResult object based on the remote_name field.
-
-        We've always made the assumption that the value of the remote_name field
-        contained just the network location part of the pipeline URL. The final
-        URL was manually using the http scheme. This was a problem when the
-        pipeline was behind a https front-end.
-        """
-        res = urlparse(self.remote_name)
-        if res.scheme == '' and res.netloc == '' and res.path != '':
-            res = res._replace(scheme='http')
-            res = res._replace(netloc=res.path)
-            res = res._replace(path='')
-        return res
 
     def create_default_locations(self, shared_path=None):
         """ Creates default locations for a pipeline based on config.
@@ -161,7 +146,7 @@ class Pipeline(models.Model):
     # HTTP API CALLS
 
     def _request_api(self, method, path, fields=None):
-        api_url = self.parse_and_fix_url()
+        api_url = self.parse_and_fix_url(self.remote_name)
         api_url = api_url._replace(path='api/{}'.format(path)).geturl()
         headers = {'Authorization': 'ApiKey {}:{}'.format(
             self.api_username,

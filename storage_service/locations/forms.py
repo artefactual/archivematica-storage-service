@@ -5,6 +5,7 @@ from django import forms
 import django.utils
 import django.core.exceptions
 from django.db.models import Count
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 from common import gpgutils
@@ -39,14 +40,14 @@ class DisableableSelectWidget(forms.Select):
     def render_option(self, selected_choices, option_value, option_label):
         option_value = django.utils.encoding.force_text(option_value)
         if option_value in selected_choices:
-            selected_html = django.utils.safestring.mark_safe(' selected="selected"')
+            selected_html = mark_safe(' selected="selected"')
             if not self.allow_multiple_selected:
                 # Only allow for a single selection.
                 selected_choices.remove(option_value)
         else:
             selected_html = ''
         if option_value in self.disabled_choices:
-            disabled_html = django.utils.safestring.mark_safe(' disabled="disabled"')
+            disabled_html = mark_safe(' disabled="disabled"')
         else:
             disabled_html = ''
         return django.utils.html.format_html(
@@ -116,11 +117,10 @@ class DataverseForm(forms.ModelForm):
 
     def as_p(self):
         # Add a warning to the Dataverse-specific section of the form
-        # FIXME this may not be the best way to add Space-specific warnings
         content = super(DataverseForm, self).as_p()
         content += '\n<div class="alert">{}</div>'.format(
             _('Integration with Dataverse is currently a beta feature'))
-        return content
+        return mark_safe(content)
 
 
 class DuracloudForm(forms.ModelForm):
@@ -273,6 +273,20 @@ class LocationForm(forms.ModelForm):
         # Associated with all enabled pipelines by default
         self.fields['pipeline'].initial = models.Pipeline.active.values_list('pk', flat=True)
         self.fields['default'].initial = self.instance.default
+        # If we are accessing a Dataverse we want to be able to do nice things
+        # with the Transfer Browser. Create a namespace to work with the path
+        # here.
+        if space_protocol == models.Space.DATAVERSE:
+            dv_config = ("Query: \nSubtree: ")
+            self.fields['relative_path'].initial = dv_config
+            # Help text for the relative path field on the Dataverse form. The
+            # form itself is not very responsive, so the smallest amount of
+            # text has been used to try and convey something useful.
+            dv_help_text = _(
+                "Path to location, relative to the storage space's path. "
+                "Optional. Filter Dataverse by matches and/or Dataverse "
+                "subtree.")
+            self.fields['relative_path'].help_text = dv_help_text
 
     def clean(self):
         cleaned_data = super(LocationForm, self).clean()
