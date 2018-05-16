@@ -5,6 +5,7 @@ import logging
 
 # Core Django, alphabetical
 from django.db import models
+from django.utils import six
 from django.utils.translation import ugettext_lazy as _l
 
 __all__ = ('Async',)
@@ -33,7 +34,10 @@ class Async(models.Model):
 
     @property
     def result(self):
-        return cPickle.loads(self._result)
+        result = self._result
+        if isinstance(result, six.memoryview):
+            result = str(result)
+        return cPickle.loads(result)
 
     @result.setter
     def result(self, value):
