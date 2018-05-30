@@ -1,11 +1,11 @@
 from __future__ import absolute_import
 # stdlib, alphabetical
-import cPickle
 import logging
 
 # Core Django, alphabetical
 from django.db import models
 from django.utils import six
+from django.utils.six.moves import cPickle as pickle
 from django.utils.translation import ugettext_lazy as _l
 
 __all__ = ('Async',)
@@ -37,19 +37,19 @@ class Async(models.Model):
         result = self._result
         if isinstance(result, six.memoryview):
             result = str(result)
-        return cPickle.loads(result)
+        return pickle.loads(result)
 
     @result.setter
     def result(self, value):
-        self._result = cPickle.dumps(value)
+        self._result = pickle.dumps(value)
 
     @property
     def error(self):
-        return cPickle.loads(self._error)
+        return pickle.loads(self._error)
 
     @error.setter
     def error(self, value):
-        self._error = cPickle.dumps(str(type(value)) + ": " + str(value))
+        self._error = pickle.dumps(str(type(value)) + ": " + str(value))
 
     class Meta:
         verbose_name = _l("Async")
