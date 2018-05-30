@@ -602,10 +602,10 @@ class Package(models.Model):
         """
         LOGGER.info('store_aip called in Package class of SS')
         v = self._store_aip_to_pending(origin_location, origin_path)
-        storage_effects = self._store_aip_to_uploaded(v, related_package_uuid)
+        storage_effects, checksum = self._store_aip_to_uploaded(v, related_package_uuid)
         self._store_aip_ensure_pointer_file(
-            v, premis_events=premis_events, premis_agents=premis_agents,
-            aip_subtype=aip_subtype)
+            v, checksum, premis_events=premis_events,
+            premis_agents=premis_agents, aip_subtype=aip_subtype)
         if storage_effects:
             pointer_file = self.get_pointer_instance()
             revised_pointer_file = (
@@ -710,7 +710,7 @@ class Package(models.Model):
             self.save()
 
             self._update_quotas(v.dest_space, self.current_location)
-            return storage_effects
+            return storage_effects, None
         except PosixMoveUnsupportedError:
             # 1. moving it to the SS internal location,
             # 2. setting its status to "staging",
@@ -726,6 +726,9 @@ class Package(models.Model):
                                          self.origin_path),
                 destination_path=self.current_path,  # This should include Location.path
                 destination_space=v.dest_space)
+            checksum = utils.generate_checksum(
+                self.fetch_local_path(),
+                Package.DEFAULT_CHECKSUM_ALGORITHM).hexdigest()
             self.status = Package.STAGING
             self.save()
             v.src_space.post_move_to_storage_service()
@@ -749,9 +752,9 @@ class Package(models.Model):
                     self.current_location.relative_path, self.current_path),
                 package=self)
             self._update_quotas(v.dest_space, self.current_location)
-            return storage_effects
+            return storage_effects, checksum
 
-    def _store_aip_ensure_pointer_file(self, v, premis_events=None,
+    def _store_aip_ensure_pointer_file(self, v, checksum, premis_events=None,
                                        premis_agents=None, aip_subtype=None):
         """Ensure that this newly stored AIP has a pointer file by moving an
         AM-created pointer file to the appropriate SS location if such a
@@ -778,14 +781,14 @@ class Package(models.Model):
                 pointer_file_dst = os.path.join(
                     self.pointer_file_location.space.path, v.pointer_file_dst)
                 self._create_pointer_file_write_to_disk(
-                    pointer_file_dst, premis_events,
+                    pointer_file_dst, checksum, premis_events,
                     premis_agents=premis_agents, aip_subtype=aip_subtype)
         else:  # This package should not have a pointer file
             self.pointer_file_location = None
             self.pointer_file_path = None
         self.save()
 
-    def _create_pointer_file_write_to_disk(self, pointer_file_dst,
+    def _create_pointer_file_write_to_disk(self, pointer_file_dst, checksum,
                                            premis_events, premis_agents=None,
                                            aip_subtype=None):
         """Create a pointer file and write it to disk for the ``store_aip``
@@ -799,8 +802,9 @@ class Package(models.Model):
         See ``create_pointer_file`` for details.
         """
         checksum_algorithm = Package.DEFAULT_CHECKSUM_ALGORITHM
-        checksum = utils.generate_checksum(
-            self.fetch_local_path(), checksum_algorithm).hexdigest()
+        # FOX: this line can't happen ...
+        # checksum = utils.generate_checksum(
+        #     self.fetch_local_path(), checksum_algorithm).hexdigest()
         premis_events = [
             premisrw.PREMISEvent(data=event) for event in premis_events]
         __, compression_program_version, archive_tool = (
