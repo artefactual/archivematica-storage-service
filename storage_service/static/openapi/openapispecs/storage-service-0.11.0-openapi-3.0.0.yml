@@ -1,0 +1,3550 @@
+openapi: 3.0.0
+info:
+  version: 3.0.0
+  title: Archivematica Storage Service API
+  description: An API for the Archivematica Storage Service.
+servers:
+- url: /api/v3
+  description: The default server for the Archivematica Storage Service.
+security:
+- ApiKeyAuth: []
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+  parameters:
+    items_per_page:
+      in: query
+      name: items_per_page
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 10
+      description: The maximum number of items to return.
+    page:
+      in: query
+      name: page
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: The page number to return.
+    order_by_direction:
+      in: query
+      name: order_by_direction
+      schema:
+        type: string
+        enum:
+        - '-'
+        - ascending
+        - asc
+        - descending
+        - desc
+      required: false
+      description: The direction of the ordering; omitting this parameter means ascending
+        direction.
+    order_by_attribute:
+      in: query
+      name: order_by_attribute
+      schema:
+        type: string
+      description: Attribute of the resource that view results should be ordered by.
+      required: false
+    order_by_subattribute:
+      in: query
+      name: order_by_subattribute
+      schema:
+        type: string
+      required: false
+      description: Attribute of the related attribute order_by_attribute of the resource
+        that view results should be ordered by.
+  schemas:
+    ErrorSchema:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+      - error
+    PaginatorSchema:
+      type: object
+      properties:
+        count:
+          type: integer
+        page:
+          default: 1
+          minimum: 1
+          type: integer
+        items_per_page:
+          default: 10
+          minimum: 1
+          type: integer
+      required:
+      - page
+      - items_per_page
+    LocationView:
+      properties:
+        description:
+          type: string
+          nullable: true
+          default: null
+          description: Human-readable description.
+        enabled:
+          type: boolean
+          default: true
+          description: True if space can be accessed.
+        id:
+          type: integer
+        locationpipeline_set:
+          type: array
+          items:
+            type: string
+            format: uri
+        masters:
+          type: array
+          items:
+            type: string
+            format: uri
+        package_set:
+          type: array
+          items:
+            type: string
+            format: uri
+        pipeline:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: UUID of the Archivematica instance using this location.
+        purpose:
+          type: string
+          enum:
+          - AR
+          - AS
+          - CP
+          - DS
+          - SD
+          - SS
+          - BL
+          - TS
+          - RP
+          description: Purpose of the space.  Eg. AIP storage, Transfer source
+        quota:
+          type: integer
+          nullable: true
+          default: null
+          description: Size, in bytes (optional)
+        relative_path:
+          type: string
+          description: Path to location, relative to the storage space's path.
+        replicators:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: Other locations that will be used to create replicas of the
+            packages stored in this location
+        space:
+          type: string
+          format: uri
+        used:
+          type: integer
+          default: 0
+          description: Amount used, in bytes.
+        uuid:
+          type: string
+          format: uuid
+          description: Unique identifier
+      required:
+      - space
+      - purpose
+      - relative_path
+      type: object
+    PaginatedSubsetOfLocations:
+      type: object
+      properties:
+        paginator:
+          $ref: '#/components/schemas/PaginatorSchema'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocationView'
+      required:
+      - paginator
+      - items
+    LocationCreate:
+      properties:
+        description:
+          type: string
+          maxLength: 256
+          default: null
+          description: Human-readable description.
+        enabled:
+          type: boolean
+          default: true
+          description: True if space can be accessed.
+        pipeline:
+          type: array
+          items:
+            type: string
+            format: uuid of a pipeline resource
+          description: UUID of the Archivematica instance using this location.
+        purpose:
+          type: string
+          enum:
+          - AR
+          - AS
+          - CP
+          - DS
+          - SD
+          - SS
+          - BL
+          - TS
+          - RP
+          description: Purpose of the space.  Eg. AIP storage, Transfer source
+        quota:
+          type: integer
+          default: null
+          description: Size, in bytes (optional)
+        relative_path:
+          type: string
+          description: Path to location, relative to the storage space's path.
+        replicators:
+          type: array
+          items:
+            type: string
+            format: uuid of a location resource
+          description: Other locations that will be used to create replicas of the
+            packages stored in this location
+        space:
+          type: string
+          format: uuid of a space resource
+      required:
+      - space
+      - relative_path
+      - purpose
+      type: object
+    LocationUpdate:
+      properties:
+        description:
+          type: string
+          maxLength: 256
+          default: null
+          description: Human-readable description.
+        enabled:
+          type: boolean
+          default: true
+          description: True if space can be accessed.
+        pipeline:
+          type: array
+          items:
+            type: string
+            format: uuid of a pipeline resource
+          description: UUID of the Archivematica instance using this location.
+        purpose:
+          type: string
+          enum:
+          - AR
+          - AS
+          - CP
+          - DS
+          - SD
+          - SS
+          - BL
+          - TS
+          - RP
+          description: Purpose of the space.  Eg. AIP storage, Transfer source
+        quota:
+          type: integer
+          default: null
+          description: Size, in bytes (optional)
+        relative_path:
+          type: string
+          description: Path to location, relative to the storage space's path.
+        replicators:
+          type: array
+          items:
+            type: string
+            format: uuid of a location resource
+          description: Other locations that will be used to create replicas of the
+            packages stored in this location
+        space:
+          type: string
+          format: uuid of a space resource
+      required:
+      - space
+      - relative_path
+      - purpose
+      type: object
+    NewLocation:
+      type: object
+      properties:
+        spaces:
+          type: array
+          items:
+            type: string
+            format: uuid of an instance of the spaces resource
+        pipelines:
+          type: array
+          items:
+            type: string
+            format: uuid of an instance of the pipelines resource
+        locations:
+          type: array
+          items:
+            type: string
+            format: uuid of an instance of the locations resource
+      required:
+      - spaces
+      - pipelines
+      - locations
+    EditALocation:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/NewLocation'
+        resource:
+          $ref: '#/components/schemas/LocationView'
+      required:
+      - data
+      - resource
+    SimpleFilterOverLocations:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - used
+          - uuid
+          - enabled
+          - quota
+          - relative_path
+          - purpose
+          - id
+          - description
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverLocationsMasters:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - masters
+        subattribute:
+          type: string
+          enum:
+          - used
+          - uuid
+          - enabled
+          - quota
+          - relative_path
+          - purpose
+          - id
+          - description
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverLocationsSpace:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - space
+        subattribute:
+          type: string
+          enum:
+          - last_verified
+          - used
+          - verified
+          - uuid
+          - access_protocol
+          - staging_path
+          - size
+          - path
+          - id
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverLocationsLocationpipeline_set:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - locationpipeline_set
+        subattribute:
+          type: string
+          enum:
+          - id
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverLocationsPackage_set:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - package_set
+        subattribute:
+          type: string
+          enum:
+          - size
+          - status
+          - package_type
+          - uuid
+          - misc_attributes
+          - encryption_key_fingerprint
+          - pointer_file_path
+          - current_path
+          - id
+          - description
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverLocationsReplicators:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - replicators
+        subattribute:
+          type: string
+          enum:
+          - used
+          - uuid
+          - enabled
+          - quota
+          - relative_path
+          - purpose
+          - id
+          - description
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverLocationsPipeline:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - pipeline
+        subattribute:
+          type: string
+          enum:
+          - api_key
+          - uuid
+          - enabled
+          - api_username
+          - remote_name
+          - id
+          - description
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    CoordinativeFilterOverLocations:
+      type: object
+      properties:
+        conjunction:
+          type: string
+          enum:
+          - and
+          - or
+        complement:
+          type: array
+          items:
+            $ref: '#/components/schemas/FilterOverLocations'
+    NegativeFilterOverLocations:
+      type: object
+      properties:
+        negation:
+          type: string
+          enum:
+          - not
+        complement:
+          $ref: '#/components/schemas/FilterOverLocations'
+    ArrayFilterOverLocations:
+      type: array
+      items:
+        oneOf:
+        - type: string
+        - type: integer
+    ObjectFilterOverLocations:
+      oneOf:
+      - $ref: '#/components/schemas/CoordinativeFilterOverLocations'
+      - $ref: '#/components/schemas/NegativeFilterOverLocations'
+      - $ref: '#/components/schemas/SimpleFilterOverLocations'
+      - $ref: '#/components/schemas/FilterOverLocationsMasters'
+      - $ref: '#/components/schemas/FilterOverLocationsSpace'
+      - $ref: '#/components/schemas/FilterOverLocationsLocationpipeline_set'
+      - $ref: '#/components/schemas/FilterOverLocationsPackage_set'
+      - $ref: '#/components/schemas/FilterOverLocationsReplicators'
+      - $ref: '#/components/schemas/FilterOverLocationsPipeline'
+    FilterOverLocations:
+      oneOf:
+      - $ref: '#/components/schemas/ObjectFilterOverLocations'
+      - $ref: '#/components/schemas/ArrayFilterOverLocations'
+    SearchQueryOverLocations:
+      type: object
+      properties:
+        filter:
+          $ref: '#/components/schemas/FilterOverLocations'
+        order_by:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+      required:
+      - filter
+    SearchOverLocations:
+      type: object
+      properties:
+        query:
+          $ref: '#/components/schemas/SearchQueryOverLocations'
+        paginator:
+          $ref: '#/components/schemas/PaginatorSchema'
+      required:
+      - query
+    DataForNewSearchOverLocations:
+      type: object
+      properties:
+        search_parameters:
+          type: string
+      required:
+      - search_parameters
+    PackageView:
+      properties:
+        current_location:
+          type: string
+          format: uri
+        current_path:
+          type: string
+        description:
+          type: string
+          nullable: true
+          default: null
+          description: Human-readable description.
+        encryption_key_fingerprint:
+          type: string
+          nullable: true
+          default: null
+          description: The fingerprint of the GPG key used to encrypt the package,
+            if applicable
+        event_set:
+          type: array
+          items:
+            type: string
+            format: uri
+        file_set:
+          type: array
+          items:
+            type: string
+            format: uri
+        fixitylog_set:
+          type: array
+          items:
+            type: string
+            format: uri
+        id:
+          type: integer
+        misc_attributes:
+          type: object
+          nullable: true
+          default: {}
+          description: For storing flexible, often Space-specific, attributes
+        origin_pipeline:
+          type: string
+          format: uri
+          nullable: true
+        package_type:
+          type: string
+          enum:
+          - AIP
+          - AIC
+          - SIP
+          - DIP
+          - transfer
+          - file
+          - deposit
+        packagedownloadtask_set:
+          type: array
+          items:
+            type: string
+            format: uri
+        pointer_file_location:
+          type: string
+          format: uri
+          nullable: true
+        pointer_file_path:
+          type: string
+          nullable: true
+        related_packages:
+          type: array
+          items:
+            type: string
+            format: uri
+        replicas:
+          type: array
+          items:
+            type: string
+            format: uri
+        replicated_package:
+          type: string
+          format: uri
+          nullable: true
+        size:
+          type: integer
+          default: 0
+          description: Size in bytes of the package
+        status:
+          type: string
+          enum:
+          - PENDING
+          - STAGING
+          - UPLOADED
+          - VERIFIED
+          - FAIL
+          - DEL_REQ
+          - DELETED
+          - FINALIZE
+          default: FAIL
+          description: Status of the package in the storage service.
+        uuid:
+          type: string
+          format: uuid
+          description: Unique identifier
+      required:
+      - current_location
+      - current_path
+      - package_type
+      - related_packages
+      type: object
+    PaginatedSubsetOfPackages:
+      type: object
+      properties:
+        paginator:
+          $ref: '#/components/schemas/PaginatorSchema'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PackageView'
+      required:
+      - paginator
+      - items
+    SimpleFilterOverPackages:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - size
+          - status
+          - package_type
+          - uuid
+          - misc_attributes
+          - encryption_key_fingerprint
+          - pointer_file_path
+          - current_path
+          - id
+          - description
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverPackagesFixitylog_set:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - fixitylog_set
+        subattribute:
+          type: string
+          enum:
+          - datetime_reported
+          - error_details
+          - id
+          - success
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverPackagesOrigin_pipeline:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - origin_pipeline
+        subattribute:
+          type: string
+          enum:
+          - api_key
+          - uuid
+          - enabled
+          - api_username
+          - remote_name
+          - id
+          - description
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverPackagesReplicas:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - replicas
+        subattribute:
+          type: string
+          enum:
+          - size
+          - status
+          - package_type
+          - uuid
+          - misc_attributes
+          - encryption_key_fingerprint
+          - pointer_file_path
+          - current_path
+          - id
+          - description
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverPackagesEvent_set:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - event_set
+        subattribute:
+          type: string
+          enum:
+          - status
+          - user_id
+          - event_type
+          - store_data
+          - status_time
+          - status_reason
+          - id
+          - user_email
+          - event_reason
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverPackagesFile_set:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - file_set
+        subattribute:
+          type: string
+          enum:
+          - accessionid
+          - origin
+          - source_package
+          - name
+          - checksum
+          - stored
+          - source_id
+          - id
+          - uuid
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverPackagesReplicated_package:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - replicated_package
+        subattribute:
+          type: string
+          enum:
+          - size
+          - status
+          - package_type
+          - uuid
+          - misc_attributes
+          - encryption_key_fingerprint
+          - pointer_file_path
+          - current_path
+          - id
+          - description
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverPackagesPointer_file_location:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - pointer_file_location
+        subattribute:
+          type: string
+          enum:
+          - used
+          - uuid
+          - enabled
+          - quota
+          - relative_path
+          - purpose
+          - id
+          - description
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverPackagesPackagedownloadtask_set:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - packagedownloadtask_set
+        subattribute:
+          type: string
+          enum:
+          - uuid
+          - download_completion_time
+          - downloads_completed
+          - id
+          - downloads_attempted
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverPackagesCurrent_location:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - current_location
+        subattribute:
+          type: string
+          enum:
+          - used
+          - uuid
+          - enabled
+          - quota
+          - relative_path
+          - purpose
+          - id
+          - description
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverPackagesRelated_packages:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - related_packages
+        subattribute:
+          type: string
+          enum:
+          - size
+          - status
+          - package_type
+          - uuid
+          - misc_attributes
+          - encryption_key_fingerprint
+          - pointer_file_path
+          - current_path
+          - id
+          - description
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    CoordinativeFilterOverPackages:
+      type: object
+      properties:
+        conjunction:
+          type: string
+          enum:
+          - and
+          - or
+        complement:
+          type: array
+          items:
+            $ref: '#/components/schemas/FilterOverPackages'
+    NegativeFilterOverPackages:
+      type: object
+      properties:
+        negation:
+          type: string
+          enum:
+          - not
+        complement:
+          $ref: '#/components/schemas/FilterOverPackages'
+    ArrayFilterOverPackages:
+      type: array
+      items:
+        oneOf:
+        - type: string
+        - type: integer
+    ObjectFilterOverPackages:
+      oneOf:
+      - $ref: '#/components/schemas/CoordinativeFilterOverPackages'
+      - $ref: '#/components/schemas/NegativeFilterOverPackages'
+      - $ref: '#/components/schemas/SimpleFilterOverPackages'
+      - $ref: '#/components/schemas/FilterOverPackagesFixitylog_set'
+      - $ref: '#/components/schemas/FilterOverPackagesOrigin_pipeline'
+      - $ref: '#/components/schemas/FilterOverPackagesReplicas'
+      - $ref: '#/components/schemas/FilterOverPackagesEvent_set'
+      - $ref: '#/components/schemas/FilterOverPackagesFile_set'
+      - $ref: '#/components/schemas/FilterOverPackagesReplicated_package'
+      - $ref: '#/components/schemas/FilterOverPackagesPointer_file_location'
+      - $ref: '#/components/schemas/FilterOverPackagesPackagedownloadtask_set'
+      - $ref: '#/components/schemas/FilterOverPackagesCurrent_location'
+      - $ref: '#/components/schemas/FilterOverPackagesRelated_packages'
+    FilterOverPackages:
+      oneOf:
+      - $ref: '#/components/schemas/ObjectFilterOverPackages'
+      - $ref: '#/components/schemas/ArrayFilterOverPackages'
+    SearchQueryOverPackages:
+      type: object
+      properties:
+        filter:
+          $ref: '#/components/schemas/FilterOverPackages'
+        order_by:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+      required:
+      - filter
+    SearchOverPackages:
+      type: object
+      properties:
+        query:
+          $ref: '#/components/schemas/SearchQueryOverPackages'
+        paginator:
+          $ref: '#/components/schemas/PaginatorSchema'
+      required:
+      - query
+    DataForNewSearchOverPackages:
+      type: object
+      properties:
+        search_parameters:
+          type: string
+      required:
+      - search_parameters
+    PipelineView:
+      properties:
+        api_key:
+          type: string
+          nullable: true
+          default: null
+          description: API key to use when making API calls to the pipeline.
+        api_username:
+          type: string
+          nullable: true
+          default: null
+          description: Username to use when making API calls to the pipeline.
+        description:
+          type: string
+          nullable: true
+          default: null
+          description: Human readable description of the Archivematica instance.
+        enabled:
+          type: boolean
+          default: true
+          description: Enabled if this pipeline is able to access the storage service.
+        event_set:
+          type: array
+          items:
+            type: string
+            format: uri
+        id:
+          type: integer
+        location:
+          type: array
+          items:
+            type: string
+            format: uri
+        locationpipeline_set:
+          type: array
+          items:
+            type: string
+            format: uri
+        package_set:
+          type: array
+          items:
+            type: string
+            format: uri
+        remote_name:
+          type: string
+          nullable: true
+          default: null
+          description: Host or IP address of the pipeline server for making API calls.
+        uuid:
+          type: string
+          format: uuid
+          description: Identifier for the Archivematica pipeline
+      required:
+      - uuid
+      type: object
+    PaginatedSubsetOfPipelines:
+      type: object
+      properties:
+        paginator:
+          $ref: '#/components/schemas/PaginatorSchema'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PipelineView'
+      required:
+      - paginator
+      - items
+    PipelineCreate:
+      properties:
+        api_key:
+          type: string
+          maxLength: 256
+          default: null
+          description: API key to use when making API calls to the pipeline.
+        api_username:
+          type: string
+          maxLength: 256
+          default: null
+          description: Username to use when making API calls to the pipeline.
+        description:
+          type: string
+          maxLength: 256
+          default: null
+          description: Human readable description of the Archivematica instance.
+        enabled:
+          type: boolean
+          default: true
+          description: Enabled if this pipeline is able to access the storage service.
+        remote_name:
+          anyOf:
+          - type: string
+            format: ipv4
+          - type: string
+            format: uri
+          default: null
+          description: Host or IP address of the pipeline server for making API calls.
+      type: object
+    PipelineUpdate:
+      properties:
+        api_key:
+          type: string
+          maxLength: 256
+          default: null
+          description: API key to use when making API calls to the pipeline.
+        api_username:
+          type: string
+          maxLength: 256
+          default: null
+          description: Username to use when making API calls to the pipeline.
+        description:
+          type: string
+          maxLength: 256
+          default: null
+          description: Human readable description of the Archivematica instance.
+        enabled:
+          type: boolean
+          default: true
+          description: Enabled if this pipeline is able to access the storage service.
+        remote_name:
+          anyOf:
+          - type: string
+            format: ipv4
+          - type: string
+            format: uri
+          default: null
+          description: Host or IP address of the pipeline server for making API calls.
+      type: object
+    NewPipeline:
+      type: object
+      properties: {}
+      required: []
+    EditAPipeline:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/NewPipeline'
+        resource:
+          $ref: '#/components/schemas/PipelineView'
+      required:
+      - data
+      - resource
+    SimpleFilterOverPipelines:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - api_key
+          - uuid
+          - enabled
+          - api_username
+          - remote_name
+          - id
+          - description
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverPipelinesEvent_set:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - event_set
+        subattribute:
+          type: string
+          enum:
+          - status
+          - user_id
+          - event_type
+          - store_data
+          - status_time
+          - status_reason
+          - id
+          - user_email
+          - event_reason
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverPipelinesLocationpipeline_set:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - locationpipeline_set
+        subattribute:
+          type: string
+          enum:
+          - id
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverPipelinesPackage_set:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - package_set
+        subattribute:
+          type: string
+          enum:
+          - size
+          - status
+          - package_type
+          - uuid
+          - misc_attributes
+          - encryption_key_fingerprint
+          - pointer_file_path
+          - current_path
+          - id
+          - description
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverPipelinesLocation:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - location
+        subattribute:
+          type: string
+          enum:
+          - used
+          - uuid
+          - enabled
+          - quota
+          - relative_path
+          - purpose
+          - id
+          - description
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    CoordinativeFilterOverPipelines:
+      type: object
+      properties:
+        conjunction:
+          type: string
+          enum:
+          - and
+          - or
+        complement:
+          type: array
+          items:
+            $ref: '#/components/schemas/FilterOverPipelines'
+    NegativeFilterOverPipelines:
+      type: object
+      properties:
+        negation:
+          type: string
+          enum:
+          - not
+        complement:
+          $ref: '#/components/schemas/FilterOverPipelines'
+    ArrayFilterOverPipelines:
+      type: array
+      items:
+        oneOf:
+        - type: string
+        - type: integer
+    ObjectFilterOverPipelines:
+      oneOf:
+      - $ref: '#/components/schemas/CoordinativeFilterOverPipelines'
+      - $ref: '#/components/schemas/NegativeFilterOverPipelines'
+      - $ref: '#/components/schemas/SimpleFilterOverPipelines'
+      - $ref: '#/components/schemas/FilterOverPipelinesEvent_set'
+      - $ref: '#/components/schemas/FilterOverPipelinesLocationpipeline_set'
+      - $ref: '#/components/schemas/FilterOverPipelinesPackage_set'
+      - $ref: '#/components/schemas/FilterOverPipelinesLocation'
+    FilterOverPipelines:
+      oneOf:
+      - $ref: '#/components/schemas/ObjectFilterOverPipelines'
+      - $ref: '#/components/schemas/ArrayFilterOverPipelines'
+    SearchQueryOverPipelines:
+      type: object
+      properties:
+        filter:
+          $ref: '#/components/schemas/FilterOverPipelines'
+        order_by:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+      required:
+      - filter
+    SearchOverPipelines:
+      type: object
+      properties:
+        query:
+          $ref: '#/components/schemas/SearchQueryOverPipelines'
+        paginator:
+          $ref: '#/components/schemas/PaginatorSchema'
+      required:
+      - query
+    DataForNewSearchOverPipelines:
+      type: object
+      properties:
+        search_parameters:
+          type: string
+      required:
+      - search_parameters
+    SpaceView:
+      properties:
+        access_protocol:
+          type: string
+          enum:
+          - ARKIVUM
+          - DV
+          - DC
+          - DSPACE
+          - FEDORA
+          - GPG
+          - FS
+          - LOM
+          - NFS
+          - PIPE_FS
+          - SWIFT
+          description: How the space can be accessed.
+        arkivum:
+          type: string
+          format: uri
+        dataverse:
+          type: string
+          format: uri
+        dspace:
+          type: string
+          format: uri
+        duracloud:
+          type: string
+          format: uri
+        fedora:
+          type: string
+          format: uri
+        gpg:
+          type: string
+          format: uri
+        id:
+          type: integer
+        last_verified:
+          type: string
+          format: date-time
+          nullable: true
+          default: null
+          description: Time this location was last verified to be accessible.
+        localfilesystem:
+          type: string
+          format: uri
+        location_set:
+          type: array
+          items:
+            type: string
+            format: uri
+        lockssomatic:
+          type: string
+          format: uri
+        nfs:
+          type: string
+          format: uri
+        path:
+          type: string
+          default: ''
+          description: Absolute path to the space on the storage service machine.
+        pipelinelocalfs:
+          type: string
+          format: uri
+        size:
+          type: integer
+          nullable: true
+          default: null
+          description: Size in bytes (optional)
+        staging_path:
+          type: string
+          description: Absolute path to a staging area.  Must be UNIX filesystem compatible,
+            preferably on the same filesystem as the path.
+        swift:
+          type: string
+          format: uri
+        used:
+          type: integer
+          default: 0
+          description: Amount used in bytes
+        uuid:
+          type: string
+          format: uuid
+          description: Unique identifier
+        verified:
+          type: boolean
+          default: false
+          description: Whether or not the space has been verified to be accessible.
+      required:
+      - access_protocol
+      - staging_path
+      type: object
+    PaginatedSubsetOfSpaces:
+      type: object
+      properties:
+        paginator:
+          $ref: '#/components/schemas/PaginatorSchema'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpaceView'
+      required:
+      - paginator
+      - items
+    SpaceCreate:
+      properties:
+        access_protocol:
+          type: string
+          enum:
+          - ARKIVUM
+          - DV
+          - DC
+          - DSPACE
+          - FEDORA
+          - GPG
+          - FS
+          - LOM
+          - NFS
+          - PIPE_FS
+          - SWIFT
+          description: How the space can be accessed.
+        path:
+          type: string
+          maxLength: 256
+          default: ''
+          description: Absolute path to the space on the storage service machine.
+        size:
+          type: integer
+          default: null
+          description: Size in bytes (optional)
+        staging_path:
+          type: string
+          maxLength: 256
+          description: Absolute path to a staging area.  Must be UNIX filesystem compatible,
+            preferably on the same filesystem as the path.
+      required:
+      - staging_path
+      - access_protocol
+      type: object
+    SpaceUpdate:
+      properties:
+        path:
+          type: string
+          maxLength: 256
+          default: ''
+          description: Absolute path to the space on the storage service machine.
+        size:
+          type: integer
+          default: null
+          description: Size in bytes (optional)
+        staging_path:
+          type: string
+          maxLength: 256
+          description: Absolute path to a staging area.  Must be UNIX filesystem compatible,
+            preferably on the same filesystem as the path.
+      required:
+      - staging_path
+      type: object
+    NewSpace:
+      type: object
+      properties: {}
+      required: []
+    EditASpace:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/NewSpace'
+        resource:
+          $ref: '#/components/schemas/SpaceView'
+      required:
+      - data
+      - resource
+    SimpleFilterOverSpaces:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - last_verified
+          - used
+          - verified
+          - uuid
+          - access_protocol
+          - staging_path
+          - size
+          - path
+          - id
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverSpacesDuracloud:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - duracloud
+        subattribute:
+          type: string
+          enum:
+          - duraspace
+          - space
+          - host
+          - user
+          - password
+          - id
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverSpacesLockssomatic:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - lockssomatic
+        subattribute:
+          type: string
+          enum:
+          - collection_iri
+          - external_domain
+          - space
+          - content_provider_id
+          - sd_iri
+          - id
+          - checksum_type
+          - au_size
+          - keep_local
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverSpacesFedora:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - fedora
+        subattribute:
+          type: string
+          enum:
+          - fedora_name
+          - fedora_password
+          - fedora_user
+          - id
+          - space
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverSpacesGpg:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - gpg
+        subattribute:
+          type: string
+          enum:
+          - id
+          - key
+          - space
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverSpacesDspace:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - dspace
+        subattribute:
+          type: string
+          enum:
+          - space
+          - sd_iri
+          - metadata_policy
+          - user
+          - archive_format
+          - password
+          - id
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverSpacesNfs:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - nfs
+        subattribute:
+          type: string
+          enum:
+          - manually_mounted
+          - space
+          - remote_path
+          - version
+          - remote_name
+          - id
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverSpacesArkivum:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - arkivum
+        subattribute:
+          type: string
+          enum:
+          - host
+          - remote_user
+          - remote_name
+          - id
+          - space
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverSpacesDataverse:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - dataverse
+        subattribute:
+          type: string
+          enum:
+          - agent_name
+          - agent_identifier
+          - space
+          - host
+          - agent_type
+          - api_key
+          - id
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverSpacesLocation_set:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - location_set
+        subattribute:
+          type: string
+          enum:
+          - used
+          - uuid
+          - enabled
+          - quota
+          - relative_path
+          - purpose
+          - id
+          - description
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverSpacesLocalfilesystem:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - localfilesystem
+        subattribute:
+          type: string
+          enum:
+          - id
+          - space
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverSpacesSwift:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - swift
+        subattribute:
+          type: string
+          enum:
+          - username
+          - container
+          - space
+          - region
+          - auth_version
+          - auth_url
+          - password
+          - id
+          - tenant
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    FilterOverSpacesPipelinelocalfs:
+      type: object
+      properties:
+        attribute:
+          type: string
+          enum:
+          - pipelinelocalfs
+        subattribute:
+          type: string
+          enum:
+          - remote_user
+          - space
+          - assume_rsync_daemon
+          - remote_name
+          - id
+          - rsync_password
+        relation:
+          type: string
+          enum:
+          - regex
+          - gt
+          - like
+          - '!='
+          - '='
+          - contains
+          - ne
+          - <=
+          - lt
+          - '>='
+          - lte
+          - in
+          - regexp
+          - exact
+          - <
+          - gte
+          - '>'
+        value:
+          anyOf:
+          - type: string
+          - type: number
+          - type: boolean
+    CoordinativeFilterOverSpaces:
+      type: object
+      properties:
+        conjunction:
+          type: string
+          enum:
+          - and
+          - or
+        complement:
+          type: array
+          items:
+            $ref: '#/components/schemas/FilterOverSpaces'
+    NegativeFilterOverSpaces:
+      type: object
+      properties:
+        negation:
+          type: string
+          enum:
+          - not
+        complement:
+          $ref: '#/components/schemas/FilterOverSpaces'
+    ArrayFilterOverSpaces:
+      type: array
+      items:
+        oneOf:
+        - type: string
+        - type: integer
+    ObjectFilterOverSpaces:
+      oneOf:
+      - $ref: '#/components/schemas/CoordinativeFilterOverSpaces'
+      - $ref: '#/components/schemas/NegativeFilterOverSpaces'
+      - $ref: '#/components/schemas/SimpleFilterOverSpaces'
+      - $ref: '#/components/schemas/FilterOverSpacesDuracloud'
+      - $ref: '#/components/schemas/FilterOverSpacesLockssomatic'
+      - $ref: '#/components/schemas/FilterOverSpacesFedora'
+      - $ref: '#/components/schemas/FilterOverSpacesGpg'
+      - $ref: '#/components/schemas/FilterOverSpacesDspace'
+      - $ref: '#/components/schemas/FilterOverSpacesNfs'
+      - $ref: '#/components/schemas/FilterOverSpacesArkivum'
+      - $ref: '#/components/schemas/FilterOverSpacesDataverse'
+      - $ref: '#/components/schemas/FilterOverSpacesLocation_set'
+      - $ref: '#/components/schemas/FilterOverSpacesLocalfilesystem'
+      - $ref: '#/components/schemas/FilterOverSpacesSwift'
+      - $ref: '#/components/schemas/FilterOverSpacesPipelinelocalfs'
+    FilterOverSpaces:
+      oneOf:
+      - $ref: '#/components/schemas/ObjectFilterOverSpaces'
+      - $ref: '#/components/schemas/ArrayFilterOverSpaces'
+    SearchQueryOverSpaces:
+      type: object
+      properties:
+        filter:
+          $ref: '#/components/schemas/FilterOverSpaces'
+        order_by:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+      required:
+      - filter
+    SearchOverSpaces:
+      type: object
+      properties:
+        query:
+          $ref: '#/components/schemas/SearchQueryOverSpaces'
+        paginator:
+          $ref: '#/components/schemas/PaginatorSchema'
+      required:
+      - query
+    DataForNewSearchOverSpaces:
+      type: object
+      properties:
+        search_parameters:
+          type: string
+      required:
+      - search_parameters
+paths:
+  /locations/:
+    get:
+      summary: View all locations.
+      description: View all locations.
+      operationId: get_many.location
+      parameters:
+      - $ref: '#/components/parameters/items_per_page'
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/order_by_attribute'
+      - $ref: '#/components/parameters/order_by_subattribute'
+      - $ref: '#/components/parameters/order_by_direction'
+      responses:
+        '200':
+          description: Request for a collection of locations succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSubsetOfLocations'
+        '400':
+          description: Request for a collection of locations failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - locations
+    post:
+      summary: Create a new location.
+      description: Create a new location.
+      operationId: create.location
+      requestBody:
+        description: JSON object required to create a new location
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LocationCreate'
+      responses:
+        '200':
+          description: Creation of a new location succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationView'
+        '400':
+          description: Creation of a new location failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - locations
+    search:
+      summary: Search over all locations.
+      description: Search over all locations.
+      operationId: search.location
+      requestBody:
+        description: JSON object required to search over all locations
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchOverLocations'
+      responses:
+        '200':
+          description: Search across all locations succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSubsetOfLocations'
+        '400':
+          description: Search across all locations failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - locations
+  /locations/new/:
+    get:
+      summary: Get the data needed to create a new location.
+      description: Get the data needed to create a new location.
+      operationId: data_for_new.location
+      responses:
+        '200':
+          description: Request for the data needed to create a new location resource
+            succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewLocation'
+      tags:
+      - locations
+  /locations/new_search/:
+    get:
+      summary: Get the data needed to search over all locations.
+      description: Get the data needed to search over all locations.
+      operationId: new_search.location
+      responses:
+        '200':
+          description: Request to get the data needed to search across all locations
+            succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataForNewSearchOverLocations'
+      tags:
+      - locations
+  /locations/search/:
+    post:
+      summary: Search over all locations.
+      description: Search over all locations.
+      operationId: search.location
+      requestBody:
+        description: JSON object required to search over all locations
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchOverLocations'
+      responses:
+        '200':
+          description: Search across all locations succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSubsetOfLocations'
+        '400':
+          description: Search across all locations failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - locations
+  /locations/{pk}/:
+    delete:
+      summary: Delete an existing location.
+      description: Delete an existing location.
+      operationId: delete.location
+      responses:
+        '200':
+          description: Deletion of the location resource succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationView'
+        '404':
+          description: Deletion of the location resource failed because there is no
+            location with the specified pk.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+        '403':
+          description: Deletion of the location resource failed because user is forbidden
+            from performing this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - locations
+    get:
+      summary: View an existing location.
+      description: View an existing location.
+      operationId: get.location
+      responses:
+        '200':
+          description: Request for a single location succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationView'
+        '404':
+          description: Request for a single location failed because there is no location
+            resource with the specified pk.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+        '403':
+          description: Request for a single location failed because the user is forbidden
+            from viewing this location resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - locations
+    parameters:
+    - in: path
+      name: pk
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: The primary key of the location.
+    put:
+      summary: Update an existing location.
+      description: Update an existing location.
+      operationId: update.location
+      requestBody:
+        description: JSON object required to update an existing location
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LocationUpdate'
+      responses:
+        '200':
+          description: Updating of an existing location resource succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EditALocation'
+        '404':
+          description: Updating of an existing location resource failed because there
+            is no location with the specified pk.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+        '403':
+          description: Updating of an existing location resource failed because the
+            user is forbidden from updating this location resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+        '400':
+          description: Updating of an existing location resource failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - locations
+  /locations/{pk}/edit/:
+    get:
+      summary: Get the data needed to update an existing location.
+      description: Get the data needed to update an existing location.
+      operationId: data_for_edit.location
+      responses:
+        '200':
+          description: Request for the data needed to edit a(n) location resource
+            succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EditALocation'
+        '404':
+          description: Request for the data needed to edit a(n) location failed because
+            there is no location resource with the specified pk
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+        '403':
+          description: Request for the data needed to edit a(n) location failed because
+            the user is forbidden from editing this location resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - locations
+    parameters:
+    - in: path
+      name: pk
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: The primary key of the location.
+  /packages/:
+    get:
+      summary: View all packages.
+      description: View all packages.
+      operationId: get_many.package
+      parameters:
+      - $ref: '#/components/parameters/items_per_page'
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/order_by_attribute'
+      - $ref: '#/components/parameters/order_by_subattribute'
+      - $ref: '#/components/parameters/order_by_direction'
+      responses:
+        '200':
+          description: Request for a collection of packages succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSubsetOfPackages'
+        '400':
+          description: Request for a collection of packages failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - packages
+    search:
+      summary: Search over all packages.
+      description: Search over all packages.
+      operationId: search.package
+      requestBody:
+        description: JSON object required to search over all packages
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchOverPackages'
+            example:
+              ArraySearchOverPackagesExample:
+                paginator:
+                  items_per_page: 10
+                  page: 1
+                query:
+                  filter:
+                  - and
+                  - - - description
+                      - like
+                      - '%a%'
+                    - - not
+                      - - description
+                        - like
+                        - T%
+                    - - or
+                      - - - size
+                          - <
+                          - 1000
+                        - - size
+                          - '>'
+                          - 512
+              ObjectSearchOverPackagesExample:
+                paginator:
+                  items_per_page: 10
+                  page: 1
+                query:
+                  filter:
+                    complement:
+                    - attribute: description
+                      relation: like
+                      value: '%a%'
+                    - complement:
+                        attribute: description
+                        relation: like
+                        value: T%
+                      negation: not
+                    - complement:
+                      - attribute: size
+                        relation: <
+                        value: 1000
+                      - attribute: size
+                        relation: '>'
+                        value: 512
+                      conjunction: or
+                    conjunction: and
+      responses:
+        '200':
+          description: Search across all packages succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSubsetOfPackages'
+        '400':
+          description: Search across all packages failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - packages
+  /packages/new_search/:
+    get:
+      summary: Get the data needed to search over all packages.
+      description: Get the data needed to search over all packages.
+      operationId: new_search.package
+      responses:
+        '200':
+          description: Request to get the data needed to search across all packages
+            succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataForNewSearchOverPackages'
+      tags:
+      - packages
+  /packages/search/:
+    post:
+      summary: Search over all packages.
+      description: Search over all packages.
+      operationId: search.package
+      requestBody:
+        description: JSON object required to search over all packages
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchOverPackages'
+      responses:
+        '200':
+          description: Search across all packages succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSubsetOfPackages'
+        '400':
+          description: Search across all packages failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - packages
+  /packages/{pk}/:
+    get:
+      summary: View an existing package.
+      description: View an existing package.
+      operationId: get.package
+      responses:
+        '200':
+          description: Request for a single package succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PackageView'
+        '404':
+          description: Request for a single package failed because there is no package
+            resource with the specified pk.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+        '403':
+          description: Request for a single package failed because the user is forbidden
+            from viewing this package resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - packages
+    parameters:
+    - in: path
+      name: pk
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: The primary key of the package.
+  /pipelines/:
+    get:
+      summary: View all pipelines.
+      description: View all pipelines.
+      operationId: get_many.pipeline
+      parameters:
+      - $ref: '#/components/parameters/items_per_page'
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/order_by_attribute'
+      - $ref: '#/components/parameters/order_by_subattribute'
+      - $ref: '#/components/parameters/order_by_direction'
+      responses:
+        '200':
+          description: Request for a collection of pipelines succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSubsetOfPipelines'
+        '400':
+          description: Request for a collection of pipelines failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - pipelines
+    post:
+      summary: Create a new pipeline.
+      description: Create a new pipeline.
+      operationId: create.pipeline
+      requestBody:
+        description: JSON object required to create a new pipeline
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelineCreate'
+      responses:
+        '200':
+          description: Creation of a new pipeline succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineView'
+        '400':
+          description: Creation of a new pipeline failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - pipelines
+    search:
+      summary: Search over all pipelines.
+      description: Search over all pipelines.
+      operationId: search.pipeline
+      requestBody:
+        description: JSON object required to search over all pipelines
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchOverPipelines'
+      responses:
+        '200':
+          description: Search across all pipelines succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSubsetOfPipelines'
+        '400':
+          description: Search across all pipelines failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - pipelines
+  /pipelines/new/:
+    get:
+      summary: Get the data needed to create a new pipeline.
+      description: Get the data needed to create a new pipeline.
+      operationId: data_for_new.pipeline
+      responses:
+        '200':
+          description: Request for the data needed to create a new pipeline resource
+            succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewPipeline'
+      tags:
+      - pipelines
+  /pipelines/new_search/:
+    get:
+      summary: Get the data needed to search over all pipelines.
+      description: Get the data needed to search over all pipelines.
+      operationId: new_search.pipeline
+      responses:
+        '200':
+          description: Request to get the data needed to search across all pipelines
+            succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataForNewSearchOverPipelines'
+      tags:
+      - pipelines
+  /pipelines/search/:
+    post:
+      summary: Search over all pipelines.
+      description: Search over all pipelines.
+      operationId: search.pipeline
+      requestBody:
+        description: JSON object required to search over all pipelines
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchOverPipelines'
+      responses:
+        '200':
+          description: Search across all pipelines succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSubsetOfPipelines'
+        '400':
+          description: Search across all pipelines failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - pipelines
+  /pipelines/{pk}/:
+    delete:
+      summary: Delete an existing pipeline.
+      description: Delete an existing pipeline.
+      operationId: delete.pipeline
+      responses:
+        '200':
+          description: Deletion of the pipeline resource succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineView'
+        '404':
+          description: Deletion of the pipeline resource failed because there is no
+            pipeline with the specified pk.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+        '403':
+          description: Deletion of the pipeline resource failed because user is forbidden
+            from performing this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - pipelines
+    get:
+      summary: View an existing pipeline.
+      description: View an existing pipeline.
+      operationId: get.pipeline
+      responses:
+        '200':
+          description: Request for a single pipeline succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineView'
+        '404':
+          description: Request for a single pipeline failed because there is no pipeline
+            resource with the specified pk.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+        '403':
+          description: Request for a single pipeline failed because the user is forbidden
+            from viewing this pipeline resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - pipelines
+    parameters:
+    - in: path
+      name: pk
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: The primary key of the pipeline.
+    put:
+      summary: Update an existing pipeline.
+      description: Update an existing pipeline.
+      operationId: update.pipeline
+      requestBody:
+        description: JSON object required to update an existing pipeline
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelineUpdate'
+      responses:
+        '200':
+          description: Updating of an existing pipeline resource succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EditAPipeline'
+        '404':
+          description: Updating of an existing pipeline resource failed because there
+            is no pipeline with the specified pk.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+        '403':
+          description: Updating of an existing pipeline resource failed because the
+            user is forbidden from updating this pipeline resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+        '400':
+          description: Updating of an existing pipeline resource failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - pipelines
+  /pipelines/{pk}/edit/:
+    get:
+      summary: Get the data needed to update an existing pipeline.
+      description: Get the data needed to update an existing pipeline.
+      operationId: data_for_edit.pipeline
+      responses:
+        '200':
+          description: Request for the data needed to edit a(n) pipeline resource
+            succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EditAPipeline'
+        '404':
+          description: Request for the data needed to edit a(n) pipeline failed because
+            there is no pipeline resource with the specified pk
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+        '403':
+          description: Request for the data needed to edit a(n) pipeline failed because
+            the user is forbidden from editing this pipeline resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - pipelines
+    parameters:
+    - in: path
+      name: pk
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: The primary key of the pipeline.
+  /spaces/:
+    get:
+      summary: View all spaces.
+      description: View all spaces.
+      operationId: get_many.space
+      parameters:
+      - $ref: '#/components/parameters/items_per_page'
+      - $ref: '#/components/parameters/page'
+      - $ref: '#/components/parameters/order_by_attribute'
+      - $ref: '#/components/parameters/order_by_subattribute'
+      - $ref: '#/components/parameters/order_by_direction'
+      responses:
+        '200':
+          description: Request for a collection of spaces succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSubsetOfSpaces'
+        '400':
+          description: Request for a collection of spaces failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - spaces
+    post:
+      summary: Create a new space.
+      description: Create a new space.
+      operationId: create.space
+      requestBody:
+        description: JSON object required to create a new space
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpaceCreate'
+      responses:
+        '200':
+          description: Creation of a new space succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpaceView'
+        '400':
+          description: Creation of a new space failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - spaces
+    search:
+      summary: Search over all spaces.
+      description: Search over all spaces.
+      operationId: search.space
+      requestBody:
+        description: JSON object required to search over all spaces
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchOverSpaces'
+      responses:
+        '200':
+          description: Search across all spaces succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSubsetOfSpaces'
+        '400':
+          description: Search across all spaces failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - spaces
+  /spaces/new/:
+    get:
+      summary: Get the data needed to create a new space.
+      description: Get the data needed to create a new space.
+      operationId: data_for_new.space
+      responses:
+        '200':
+          description: Request for the data needed to create a new space resource
+            succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewSpace'
+      tags:
+      - spaces
+  /spaces/new_search/:
+    get:
+      summary: Get the data needed to search over all spaces.
+      description: Get the data needed to search over all spaces.
+      operationId: new_search.space
+      responses:
+        '200':
+          description: Request to get the data needed to search across all spaces
+            succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataForNewSearchOverSpaces'
+      tags:
+      - spaces
+  /spaces/search/:
+    post:
+      summary: Search over all spaces.
+      description: Search over all spaces.
+      operationId: search.space
+      requestBody:
+        description: JSON object required to search over all spaces
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchOverSpaces'
+      responses:
+        '200':
+          description: Search across all spaces succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSubsetOfSpaces'
+        '400':
+          description: Search across all spaces failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - spaces
+  /spaces/{pk}/:
+    delete:
+      summary: Delete an existing space.
+      description: Delete an existing space.
+      operationId: delete.space
+      responses:
+        '200':
+          description: Deletion of the space resource succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpaceView'
+        '404':
+          description: Deletion of the space resource failed because there is no space
+            with the specified pk.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+        '403':
+          description: Deletion of the space resource failed because user is forbidden
+            from performing this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - spaces
+    get:
+      summary: View an existing space.
+      description: View an existing space.
+      operationId: get.space
+      responses:
+        '200':
+          description: Request for a single space succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpaceView'
+        '404':
+          description: Request for a single space failed because there is no space
+            resource with the specified pk.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+        '403':
+          description: Request for a single space failed because the user is forbidden
+            from viewing this space resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - spaces
+    parameters:
+    - in: path
+      name: pk
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: The primary key of the space.
+    put:
+      summary: Update an existing space.
+      description: Update an existing space.
+      operationId: update.space
+      requestBody:
+        description: JSON object required to update an existing space
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpaceUpdate'
+      responses:
+        '200':
+          description: Updating of an existing space resource succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EditASpace'
+        '404':
+          description: Updating of an existing space resource failed because there
+            is no space with the specified pk.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+        '403':
+          description: Updating of an existing space resource failed because the user
+            is forbidden from updating this space resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+        '400':
+          description: Updating of an existing space resource failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - spaces
+  /spaces/{pk}/edit/:
+    get:
+      summary: Get the data needed to update an existing space.
+      description: Get the data needed to update an existing space.
+      operationId: data_for_edit.space
+      responses:
+        '200':
+          description: Request for the data needed to edit a(n) space resource succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EditASpace'
+        '404':
+          description: Request for the data needed to edit a(n) space failed because
+            there is no space resource with the specified pk
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+        '403':
+          description: Request for the data needed to edit a(n) space failed because
+            the user is forbidden from editing this space resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorSchema'
+      tags:
+      - spaces
+    parameters:
+    - in: path
+      name: pk
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: The primary key of the space.
+tags:
+- name: locations
+  description: Access to the Location resource
+- name: packages
+  description: Access to the Package resource
+- name: pipelines
+  description: Access to the Pipeline resource
+- name: spaces
+  description: Access to the Space resource

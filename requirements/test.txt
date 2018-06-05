@@ -1,6 +1,7 @@
 # Test dependencies go here.
 -r base.txt
 
+django_mock_queries==2.0.0
 pytest
 pytest-cov==2.4.0
 coverage==4.2
