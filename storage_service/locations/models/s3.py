@@ -77,6 +77,9 @@ class S3(models.Model):
         return self.space_id
 
     def browse(self, path):
+        # strip leading slash on path
+        path = path.lstrip('/')
+
         objects = self.resource.Bucket(self._bucket_name()).objects.filter(Prefix=path)
 
         directories = []
@@ -116,8 +119,7 @@ class S3(models.Model):
         bucket = self.resource.Bucket(self._bucket_name())
 
         # strip leading slash on src_path
-        if src_path.startswith('/'):
-            src_path = src_path[1:]
+        src_path = src_path.lstrip('/')
 
         objects = self.resource.Bucket(self._bucket_name()).objects.filter(Prefix=src_path)
 
@@ -137,8 +139,7 @@ class S3(models.Model):
             dest_path = os.path.join(dest_path, '')
 
             # strip leading slash on dest_path
-            if dest_path.startswith('/'):
-                dest_path = dest_path[1:]
+            dest_path = dest_path.lstrip('/')
 
             for path, dirs, files in os.walk(src_path):
                 for basename in files:
@@ -150,8 +151,7 @@ class S3(models.Model):
 
         elif os.path.isfile(src_path):
             # strip leading slash on dest_path
-            if dest_path.startswith('/'):
-                dest_path = dest_path[1:]
+            dest_path = dest_path.lstrip('/')
 
             with open(src_path, 'rb') as data:
                 bucket.upload_fileobj(data, dest_path)
