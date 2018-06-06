@@ -9,6 +9,7 @@ from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 # Third party dependencies, alphabetical
 import boto3
+import re
 
 # This project, alphabetical
 
@@ -78,20 +79,28 @@ class S3(models.Model):
     def browse(self, path):
         objects = self.resource.Bucket(self._bucket_name()).objects.filter(Prefix=path)
 
+        directories = []
         entries = []
         properties = {}
 
         for objectSummary in objects:
-            object_basename = os.path.basename(objectSummary.key)
-            entries.append(object_basename)
-            properties[object_basename] = {
-                'verbose name': objectSummary.key,
-                'size': objectSummary.size,
-                'timestamp': objectSummary.last_modified,
-                'e_tag': objectSummary.e_tag,
-            }
+            relative_key = objectSummary.key.replace(path, '', 1).lstrip('/')
+
+            if '/' in relative_key:
+                directory_name = re.sub('/.*', '', relative_key)
+                directories.append(directory_name)
+                entries.append(directory_name)
+            else:
+                entries.append(relative_key)
+                properties[relative_key] = {
+                    'verbose name': objectSummary.key,
+                    'size': objectSummary.size,
+                    'timestamp': objectSummary.last_modified,
+                    'e_tag': objectSummary.e_tag,
+                }
 
         return {
+            'directories': directories,
             'entries': entries,
             'properties': properties,
         }
