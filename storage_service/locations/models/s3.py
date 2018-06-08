@@ -80,6 +80,19 @@ class S3(models.Model):
         # strip leading slash on path
         path = path.lstrip('/')
 
+        # We need a trailing slash on non-empty prefixes because a path like:
+        #
+        #      /path/to/requirements
+        #
+        # will happily prefix match:
+        #
+        #      /path/to/requirements.txt
+        #
+        # which is not the intention!
+        #
+        if path != '':
+            path += '/'
+
         objects = self.resource.Bucket(self._bucket_name()).objects.filter(Prefix=path)
 
         directories = set()
