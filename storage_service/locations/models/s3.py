@@ -82,8 +82,8 @@ class S3(models.Model):
 
         objects = self.resource.Bucket(self._bucket_name()).objects.filter(Prefix=path)
 
-        directories = []
-        entries = []
+        directories = set()
+        entries = set()
         properties = {}
 
         for objectSummary in objects:
@@ -91,10 +91,11 @@ class S3(models.Model):
 
             if '/' in relative_key:
                 directory_name = re.sub('/.*', '', relative_key)
-                directories.append(directory_name)
-                entries.append(directory_name)
+                if directory_name:
+                    directories.add(directory_name)
+                    entries.add(directory_name)
             else:
-                entries.append(relative_key)
+                entries.add(relative_key)
                 properties[relative_key] = {
                     'verbose name': objectSummary.key,
                     'size': objectSummary.size,
@@ -103,8 +104,8 @@ class S3(models.Model):
                 }
 
         return {
-            'directories': directories,
-            'entries': entries,
+            'directories': list(directories),
+            'entries': list(entries),
             'properties': properties,
         }
 
