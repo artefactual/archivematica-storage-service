@@ -15,10 +15,10 @@ class Migration(migrations.Migration):
             name='S3',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('endpoint_url', models.CharField(help_text='Endpoint URL', max_length=2048, verbose_name='endpoint_url')),
-                ('access_key_id', models.CharField(help_text='Access Key ID to authenticate', max_length=64, verbose_name='access_key_id')),
-                ('secret_access_key', models.CharField(help_text='Secret Access Key to authenticate with', max_length=256, verbose_name='secret_access_key')),
-                ('region', models.CharField(help_text='Region', max_length=64, verbose_name='Region')),
+                ('endpoint_url', models.CharField(help_text='S3 Endpoint URL. Eg. https://s3.amazonaws.com', max_length=2048, verbose_name='S3 Endpoint URL')),
+                ('access_key_id', models.CharField(max_length=64, verbose_name='Access Key ID to authenticate')),
+                ('secret_access_key', models.CharField(max_length=256, verbose_name='Secret Access Key to authenticate with')),
+                ('region', models.CharField(help_text='Region in S3. Eg. us-east-2', max_length=64, verbose_name='Region')),
             ],
             options={
                 'verbose_name': 'S3',
