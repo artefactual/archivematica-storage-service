@@ -23,17 +23,15 @@ LOGGER = logging.getLogger(__name__)
 class S3(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
     endpoint_url = models.CharField(max_length=2048,
-        verbose_name=_l('endpoint_url'),
-        help_text=_l('Endpoint URL'))
+        verbose_name=_l('S3 Endpoint URL'),
+        help_text=_l('S3 Endpoint URL. Eg. https://s3.amazonaws.com'))
     access_key_id = models.CharField(max_length=64,
-        verbose_name=_l('access_key_id'),
-        help_text=_l('Access Key ID to authenticate'))
+        verbose_name=_l('Access Key ID to authenticate'))
     secret_access_key = models.CharField(max_length=256,
-        verbose_name=_l('secret_access_key'),
-        help_text=_l('Secret Access Key to authenticate with'))
+        verbose_name=_l('Secret Access Key to authenticate with'))
     region = models.CharField(max_length=64,
         verbose_name=_l('Region'),
-        help_text=_l('Region'))
+        help_text=_l('Region in S3. Eg. us-east-2'))
 
     class Meta:
         verbose_name = _l("S3")
