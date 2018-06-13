@@ -91,7 +91,7 @@ class S3(models.Model):
         # which is not the intention!
         #
         if path != '':
-            path += '/'
+            path = path.rstrip('/') + '/'
 
         objects = self.resource.Bucket(self._bucket_name()).objects.filter(Prefix=path)
 
