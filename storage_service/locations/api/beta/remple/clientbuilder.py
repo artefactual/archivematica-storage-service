@@ -59,7 +59,6 @@ import logging
 import json
 import sys
 import textwrap
-import urllib3
 
 import requests
 
@@ -134,9 +133,12 @@ def _call_url_json(self, url, params=None, method=METHOD_GET, headers=None,
         logger.debug('type(response.text): %s ', type(response.text))
         logger.debug('Response content-type: %s',
                      response.headers['content-type'])
-    except (urllib3.exceptions.NewConnectionError,
-            requests.exceptions.ConnectionError) as err:
+    except requests.exceptions.ConnectionError as err:
         msg = 'Connection error {}'.format(err)
+        logger.error(msg)
+        raise HTTPError(msg[:30])
+    except Exception as err:
+        msg = 'Unknown error making HTTP request {}'.format(err)
         logger.error(msg)
         raise HTTPError(msg[:30])
     responses_cfg = responses_cfg or {}

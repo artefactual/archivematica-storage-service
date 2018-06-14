@@ -1,4 +1,3 @@
-'''
 import imp
 import json
 import os
@@ -20,6 +19,7 @@ API_PATH_PREFIX = '/api/beta/'
 
 
 class TestBetaAPIClient(StaticLiveServerTestCase):
+    pass
 
     fixtures = ['base.json', 'pipelines.json', 'package.json', 'files.json']
 
@@ -40,10 +40,14 @@ class TestBetaAPIClient(StaticLiveServerTestCase):
         exec client_python in client_module.__dict__
         self.client_module = client_module
 
+    # def tearDown(self):
+    #     SomeModel.objects.filter(id=id).delete()
+
     @property
     def url(self):
         return self.live_server_url.rstrip('/') + '/'
 
+    '''
     def test_space_client(self):
         client = self.client_module.ArchivematicaStorageServiceApiClient(
             self.username, self.api_key, self.url)
@@ -79,6 +83,7 @@ class TestBetaAPIClient(StaticLiveServerTestCase):
         # Avoiding flake8 warnings:
         pprint.pprint('stuff')
         my_models = models
+    '''
 
     def test_client_docs(self):
         client_cls = self.client_module.ArchivematicaStorageServiceApiClient
@@ -115,4 +120,3 @@ class TestBetaAPIClient(StaticLiveServerTestCase):
 
 def get_docs(thing):
     return pydoc.plain(pydoc.render_doc(thing))
-'''
