@@ -1,14 +1,12 @@
 import imp
 import json
 import os
-import pprint
 import pydoc
 
 from django.contrib.auth.models import User
 from django.contrib.staticfiles.testing import LiveServerTestCase
 from tastypie.models import ApiKey
 
-from locations import models
 from locations.api.beta import api
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -74,10 +72,6 @@ class TestBetaAPIClient(LiveServerTestCase):
         # ret = client.space.create(
         #     'FS', '/var/archivematica/storage_service', path='/')
         # pprint.pprint(ret)
-
-        # Avoiding flake8 warnings:
-        pprint.pprint('stuff')
-        my_models = models
 
     def _test_client_docs(self):
         client_cls = self.client_module.ArchivematicaStorageServiceApiClient
