@@ -135,9 +135,15 @@ class File(models.Model):
         help_text=_l("Unique identifier"))
     package = models.ForeignKey('Package', null=True)
     name = models.TextField(max_length=1000)
+    ingestion_time = models.DateTimeField(null=True)
+
     source_id = models.TextField(max_length=128)
     source_package = models.TextField(blank=True,
         help_text=_l("Unique identifier of originating unit"))
+    size = models.IntegerField(
+        default=0, help_text=_l("Size in bytes of the file"))
+    format_name = models.TextField(blank=True, max_length=128)
+    pronom_id = models.TextField(blank=True, max_length=128)
     # Sized to fit sha512
     checksum = models.TextField(max_length=128)
     stored = models.BooleanField(default=False)
@@ -145,6 +151,11 @@ class File(models.Model):
         help_text=_l("Accession ID of originating transfer"))
     origin = UUIDField(editable=False, unique=False, version=4, blank=True,
         help_text=_l("Unique identifier of originating Archivematica dashboard"))
+    normalized = models.BooleanField(blank=False, default=False,
+        help_text="Whether or not file has been normalized")
+    valid = models.NullBooleanField(default=None, null=True,
+        help_text="Indicates whether validation has occurred and, if so,"
+        " whether or not the file was assessed as valid")
 
     class Meta:
         verbose_name = _l("File")

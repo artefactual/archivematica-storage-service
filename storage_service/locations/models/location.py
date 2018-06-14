@@ -60,7 +60,7 @@ class Location(models.Model):
     pipeline = models.ManyToManyField('Pipeline', through='LocationPipeline',
         blank=True,
         verbose_name=_l('Pipeline'),
-        help_text=_l("UUID of the Archivematica instance using this location."))
+        help_text=_l("The Archivematica instance using this location."))
 
     relative_path = models.TextField(
         verbose_name=_l('Relative Path'),
