@@ -1,6 +1,7 @@
 from django.conf.urls import include, url
 from tastypie.api import Api
 from locations.api import v1, v2
+import locations.api.beta as beta_api
 
 from locations.api.sword import views
 
@@ -23,4 +24,5 @@ urlpatterns = [
     url(r'v1/sword/$', views.service_document, name='sword_service_document'),
     url(r'', include(v2_api.urls)),
     url(r'v2/sword/$', views.service_document, name='sword_service_document'),
+    url(r'beta/', include(beta_api.urls)),
 ]

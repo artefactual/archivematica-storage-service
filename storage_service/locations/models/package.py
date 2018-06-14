@@ -20,9 +20,10 @@ from django.utils import timezone
 
 # Third party dependencies, alphabetical
 import bagit
-import jsonfield
 from django_extensions.db.fields import UUIDField
+import jsonfield
 import metsrw
+# from metsrw.plugins import premisrw, yapremisrw
 from metsrw.plugins import premisrw
 import requests
 
@@ -1246,7 +1247,7 @@ class Package(models.Model):
                 LOGGER.info('Pointer file constructed for %s is valid.', self.uuid)
             else:
                 LOGGER.warning('Pointer file constructed for %s is not valid.\n%s',
-                            self.uuid, metsrw.report_string(report))
+                               self.uuid, metsrw.report_string(report))
         return pointer_file
 
     def _create_aip_premis_object(self,
@@ -1632,6 +1633,60 @@ class Package(models.Model):
         self._update_quotas(dest_space, self.current_location)
         self.status = Package.UPLOADED
         self.save()
+
+    def index_file_data_from_aip_mets(self):
+        """Index file metadata from this package's AIP METS file.
+
+        Attempts to read an Archivematica AIP METS file inside this package,
+        then uses the retrieved metadata to generate one entry in the File
+        table in the database for each file inside the package.
+
+        :raises StorageException: if the transfer METS cannot be found,
+            or if required elements are missing.
+        TODO/QUESTION: what happens if the file has been placed in backlog and
+            indexed via ``index_file_data_from_transfer_mets``? Should we
+            update an existing ``File`` instance if there is one? Otherwise we
+            may have multiple ``File`` instances for a single file.
+        TODO/QUESTION: should this be called from within ``store_aip``? If
+            calling it afterwards as is done now is causing the AIP to be moved
+            back *to* the SS, then the answer is "yes".
+        """
+        aip_dir_name = os.path.basename(os.path.splitext(self.full_path)[0])
+        mets_relative_path = os.path.join('data', 'METS.' + self.uuid + '.xml')
+        relative_path = os.path.join(aip_dir_name, mets_relative_path)
+        temp_dir = None
+        if self.is_compressed:
+            path_to_mets, temp_dir = self.extract_file(
+                relative_path=relative_path)
+        else:
+            path_to_mets = os.path.join(self.full_path, mets_relative_path)
+        mw = metsrw.METSDocument.fromfile(path_to_mets)
+        feature_broker = metsrw.feature_broker
+        # TODO
+        # feature_broker.provide('premis_object_class', yapremisrw.Object)
+        # feature_broker.provide('premis_event_class', yapremisrw.Event)
+        for fsentry in mw.all_files():
+            metadata = _parse_file_metadata(fsentry)
+            if metadata is not None:
+                aip_file = File()
+                aip_file.package = self
+                aip_file.source_id = metadata['uuid']
+                # TODO: seems odd to duplicate this information when it could
+                # always be retrieved via relations:
+                # ``file.package.origin_pipeline.uuid``
+                aip_file.origin = self.origin_pipeline.uuid
+                aip_file.name = os.path.join(aip_dir_name, fsentry.path)
+                aip_file.ingestion_time = mw.createdate
+                aip_file.format_name = metadata.get('format_name', '')
+                aip_file.size = int(metadata.get('size', 0))
+                aip_file.pronom_id = metadata.get('pronom_id', '')
+                aip_file.normalized = metadata.get('normalized', False)
+                aip_file.valid = metadata.get('valid')
+                aip_file.save()
+        feature_broker.provide('premis_object_class', premisrw.PREMISObject)
+        feature_broker.provide('premis_event_class', premisrw.PREMISEvent)
+        if temp_dir:
+            shutil.rmtree(temp_dir)
 
     def check_fixity(self, force_local=False, delete_after=True):
         """ Scans the package to verify its checksums.
@@ -2772,3 +2827,63 @@ def write_pointer_file(pointer_file, pointer_file_path):
     if not os.path.isdir(pointer_dir_path):
         os.makedirs(pointer_dir_path)
     pointer_file.write(pointer_file_path, pretty_print=True)
+
+
+def _parse_file_metadata(fsentry):
+    """Cycle through an FSEntry object's AMDsec subsections and consolidate
+    PREMIS object/event metadata.
+    """
+    premis_objects = fsentry.get_premis_objects()
+    if not premis_objects:
+        return None
+    metadata = {}
+    premis_object = premis_objects[0]
+
+    # Don't provide metadata for METS files
+    if premis_object.characteristics[0]['is_mets']:
+        return None
+
+    metadata['filename'] = premis_object.original_name
+
+    file_uuid = None
+    for po_id in premis_object.object_identifiers:
+        if po_id['type'] == 'UUID':
+            file_uuid = po_id['value']
+            break
+    if file_uuid:
+        metadata['uuid'] = file_uuid
+    else:
+        LOGGER.warning('Unable to find a UUID for a file (fsentry)'
+                       ' documented in a METS file!')
+        return None
+
+    if premis_object.characteristics[0]['size'] is not None:
+        metadata['size'] = premis_object.characteristics[0]['size']
+
+    # Add file format to metadata
+    if len(premis_object.characteristics[0]['formats']):
+        first_format = premis_object.characteristics[0]['formats'][0]
+        if first_format['name'] is not None:
+            metadata['format_name'] = first_format['name']
+        if first_format['version'] is not None:
+            metadata['format_version'] = first_format['version']
+        if first_format['registry_name'] == 'PRONOM':
+            metadata['pronom_id'] = first_format['registry_key']
+
+    # Add normalization status to metadata
+    if (len(premis_object.relationships) and
+            premis_object.relationships[0]['type'] == 'derivation'):
+        if premis_object.relationships[0]['subtype'] == 'has source':
+            metadata['derivative'] = True
+        if premis_object.relationships[0]['subtype'] == 'is source of':
+            metadata['normalized'] = True
+
+    # Cycle through event data to see if file has been validated and if it
+    # passed
+    for premis_event in fsentry.get_premis_events():
+        # Indicate whether or not a file has been validated in metadata and if
+        # it passed
+        if premis_event.event_type == 'validation':
+            metadata['valid'] = premis_event.outcomes[0]['outcome'] == "pass"
+
+    return metadata
