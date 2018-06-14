@@ -137,7 +137,8 @@ class Space(models.Model):
     PIPELINE_LOCAL_FS = 'PIPE_FS'
     SWIFT = 'SWIFT'
     GPG = 'GPG'
-    OBJECT_STORAGE = {DATAVERSE, DSPACE, DURACLOUD, SWIFT}
+    S3 = 'S3'
+    OBJECT_STORAGE = {DATAVERSE, DSPACE, DURACLOUD, SWIFT, S3}
     ACCESS_PROTOCOL_CHOICES = (
         (ARKIVUM, _l('Arkivum')),
         (DATAVERSE, _l('Dataverse')),
@@ -150,6 +151,7 @@ class Space(models.Model):
         (NFS, _l("NFS")),
         (PIPELINE_LOCAL_FS, _l("Pipeline Local Filesystem")),
         (SWIFT, _l("Swift")),
+        (S3, _l("S3")),
     )
     access_protocol = models.CharField(max_length=8,
         choices=ACCESS_PROTOCOL_CHOICES,
