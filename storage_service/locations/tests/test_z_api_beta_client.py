@@ -5,7 +5,7 @@ import pprint
 import pydoc
 
 from django.contrib.auth.models import User
-from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from django.contrib.staticfiles.testing import LiveServerTestCase
 from tastypie.models import ApiKey
 
 from locations import models
@@ -18,8 +18,7 @@ SERVER_PATH = api.get_dflt_server_path()
 API_PATH_PREFIX = '/api/beta/'
 
 
-class TestBetaAPIClient(StaticLiveServerTestCase):
-    pass
+class TestBetaAPIClient(LiveServerTestCase):
 
     fixtures = ['base.json', 'pipelines.json', 'package.json', 'files.json']
 
@@ -40,15 +39,11 @@ class TestBetaAPIClient(StaticLiveServerTestCase):
         exec client_python in client_module.__dict__
         self.client_module = client_module
 
-    # def tearDown(self):
-    #     SomeModel.objects.filter(id=id).delete()
-
     @property
     def url(self):
         return self.live_server_url.rstrip('/') + '/'
 
-    '''
-    def test_space_client(self):
+    def _test_space_client(self):
         client = self.client_module.ArchivematicaStorageServiceApiClient(
             self.username, self.api_key, self.url)
 
@@ -83,9 +78,8 @@ class TestBetaAPIClient(StaticLiveServerTestCase):
         # Avoiding flake8 warnings:
         pprint.pprint('stuff')
         my_models = models
-    '''
 
-    def test_client_docs(self):
+    def _test_client_docs(self):
         client_cls = self.client_module.ArchivematicaStorageServiceApiClient
         client = client_cls(self.username, self.api_key, self.url)
         client_docs = get_docs(client_cls)
@@ -116,6 +110,10 @@ class TestBetaAPIClient(StaticLiveServerTestCase):
         assert 'update(self, ' not in package_docs
         assert 'create(self, ' not in package_docs
         assert 'delete(self, ' not in package_docs
+
+    def test_client(self):
+        self._test_client_docs()
+        self._test_space_client()
 
 
 def get_docs(thing):
