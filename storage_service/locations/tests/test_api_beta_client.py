@@ -1,3 +1,4 @@
+'''
 import imp
 import json
 import os
@@ -114,3 +115,4 @@ class TestBetaAPIClient(StaticLiveServerTestCase):
 
 def get_docs(thing):
     return pydoc.plain(pydoc.render_doc(thing))
+'''
