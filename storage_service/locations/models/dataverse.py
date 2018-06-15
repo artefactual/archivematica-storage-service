@@ -22,6 +22,7 @@ from .location import Location  # noqa: E402
 
 class Dataverse(models.Model):
     space = models.OneToOneField("Space", to_field="uuid")
+
     host = models.CharField(
         max_length=256,
         verbose_name=_l("Host"),
@@ -63,13 +64,25 @@ class Dataverse(models.Model):
 
     def browse(self, path):
         """
-        Fetch a list of datasets from Dataverse based on the query in the location path.
+        Fetch a list of datasets from Dataverse based on the query in the
+        location path.
 
         Datasets are considered directories when browsing.
         """
         # Remove things earlier layers added
         path = path.rstrip("/")
-        # Use http://guides.dataverse.org/en/latest/api/search.html to search and return datasets
+
+        # Because we are using a field that is described as being 'relative to
+        # the storage space' as a query string filter for Dataverse; but the
+        # string created is unrelated to 'storage' itself we also need to strip
+        # this from the location. The string will look something like the
+        # following:
+        #
+        # /var/archivematica/storage_service/dataverse/space/
+        path = path.replace(self.space.path, "")
+
+        # Use http://guides.dataverse.org/en/latest/api/search.html to search
+        # and return datasets
         # Location path is query string
         # FIXME only browse one layer deep
         url = "https://{}/api/search/".format(self.host)
