@@ -143,7 +143,7 @@ def deposit_downloading_status(deposit):
 
 def spawn_download_task(deposit_uuid, objects, subdir=None):
     """
-    Spawn an asynchrnous batch download
+    Spawn an asynchronous batch download
     """
     p = Process(target=_fetch_content, args=(deposit_uuid, objects, subdir))
     p.start()

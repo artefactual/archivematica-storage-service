@@ -664,6 +664,7 @@ class PackageResource(ModelResource):
             bundle.obj.store_aip(origin_location, origin_path,
                                  related_package_uuid, premis_events=events,
                                  premis_agents=agents, aip_subtype=aip_subtype)
+            bundle.obj.index_file_data_from_aip_mets()
         elif bundle.obj.package_type in (Package.TRANSFER,) and bundle.obj.current_location.purpose in (Location.BACKLOG,):
             # Move transfer to backlog
             bundle.obj.backlog_transfer(origin_location, origin_path)

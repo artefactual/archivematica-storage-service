@@ -144,7 +144,13 @@
         "checksum": "",
         "stored": false,
         "accessionid": "",
-        "origin": "bd17e3cf-afb6-4067-b7d0-472482767ee2"
+        "origin": "bd17e3cf-afb6-4067-b7d0-472482767ee2",
+        "ingestion_time": "2016-12-15T03:00:05.020871Z",
+        "size": 256,
+        "format_name": "Plain Text File",
+        "pronom_id": "x-fmt/111",
+        "normalized": true,
+        "valid": true
     }
 },
 {
@@ -159,7 +165,13 @@
         "checksum": "",
         "stored": false,
         "accessionid": "",
-        "origin": "91d13621-d2c1-4c70-a67e-77e96dced036"
+        "origin": "91d13621-d2c1-4c70-a67e-77e96dced036",
+        "ingestion_time": "2015-12-15T03:00:05.020871Z",
+        "size": 512,
+        "format_name": "AutoCAD External Database Configuration File",
+        "pronom_id": "x-fmt/112",
+        "normalized": false,
+        "valid": false
     }
 }
 ]

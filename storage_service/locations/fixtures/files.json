@@ -1,0 +1,65 @@
+[
+{
+    "pk": 3,
+    "model": "locations.file",
+    "fields": {
+        "uuid": "aad59769-0c6b-48cd-b54a-63092b9718fc",
+        "package": 3,
+        "name": "test_sip/objects/file3.pdf",
+        "source_id": "aa24a977-ad7a-4886-b17c-8b32ab4a7955",
+        "source_package": "a59033c2-7fa7-41e2-9209-136f07174692",
+        "checksum": "",
+        "stored": false,
+        "accessionid": "",
+        "origin": "91d13621-d2c1-4c70-a67e-77e96dced036",
+        "ingestion_time": "2015-12-15T03:00:05.020871+00:00",
+        "size": 512,
+        "format_name": "Acrobat PDF 1.5 - Portable Document Format",
+        "pronom_id": "fmt/19",
+        "normalized": true,
+        "valid": true
+    }
+},
+{
+    "pk": 4,
+    "model": "locations.file",
+    "fields": {
+        "uuid": "bbd59769-0c6b-48cd-b54a-63092b9718fc",
+        "package": 7,
+        "name": "test_sip/objects/file3.pdf",
+        "source_id": "bb24a977-ad7a-4886-b17c-8b32ab4a7955",
+        "source_package": "a59033c2-7fa7-41e2-9209-136f07174692",
+        "checksum": "",
+        "stored": false,
+        "accessionid": "",
+        "origin": "91d13621-d2c1-4c70-a67e-77e96dced036",
+        "ingestion_time": "2015-12-16T03:00:05.020871+00:00",
+        "size": 512,
+        "format_name": "Acrobat PDF 1.5 - Portable Document Format",
+        "pronom_id": "fmt/19",
+        "normalized": true,
+        "valid": true
+    }
+},
+{
+    "pk": 5,
+    "model": "locations.file",
+    "fields": {
+        "uuid": "ccd59769-0c6b-48cd-b54a-63092b9718fc",
+        "package": 7,
+        "name": "test_sip/objects/file3.pdf",
+        "source_id": "cc24a977-ad7a-4886-b17c-8b32ab4a7955",
+        "source_package": "a59033c2-7fa7-41e2-9209-136f07174692",
+        "checksum": "",
+        "stored": false,
+        "accessionid": "",
+        "origin": "91d13621-d2c1-4c70-a67e-77e96dced036",
+        "ingestion_time": "2015-12-17T03:00:05.020871+00:00",
+        "size": 512,
+        "format_name": "Acrobat PDF 1.5 - Portable Document Format",
+        "pronom_id": "fmt/19",
+        "normalized": true,
+        "valid": true
+    }
+}
+]
