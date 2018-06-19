@@ -271,12 +271,17 @@ class DSpaceREST(models.Model):
         # Item to be created in DSpace
 
         dspace_collection = '09c098c1-99b1-4130-8337-7733409d39b8'
+        archivesspace_collection = '135569'
         package_title = ''
 
         metadata, repository_collections, package_title = self._get_metadata(source_path, package.uuid, package.package_type)
 
         if 'dspace_' + package.package_type.lower() + '_collection' in repository_collections:
             dspace_collection = repository_collections['dspace_' + package.package_type.lower() + '_collection']
+
+        if 'archivesspace_' + package.package_type.lower() + '_collection' in repository_collections:
+            archivesspace_collection = repository_collections['archivesspace_' + package.package_type.lower() + '_collection']
+
 
         LOGGER.info("Repo coll: %s", repository_collections)
         item = {
@@ -349,7 +354,7 @@ class DSpaceREST(models.Model):
             client = archivesspace.ArchivesSpaceClient('http://lac-archives-test.is.ed.ac.uk', 'archivematica',
                                                        'arch1vemat1ca', 8089, 14)
 
-            client.add_digital_object('/repositories/14/archival_objects/135569', package.uuid, title=package_title,
+            client.add_digital_object('/repositories/14/archival_objects/' + archivesspace_collection, package.uuid, title=package_title,
                                       uri='https://test.digitalpreservation.is.ed.ac.uk/handle/' + dspace_item['handle'])
             LOGGER.info('ArchivesSpace Client: %s', client)
 
