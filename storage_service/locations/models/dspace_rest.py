@@ -1,8 +1,5 @@
 """
-Integration with DSpace, using the REST API.
-
-Space path can be left empty, and the Location path should be the collection's
-IRI.
+Integration with DSpace, using REST API as the protocol.
 
 NOTE THAT IN ALL REQUESTS TO THE REST API THE SSL VERIFICATION HAS BEEN DISABLED
 
@@ -24,9 +21,9 @@ from django.utils.translation import ugettext as _, ugettext_lazy as _l
 # Third party dependencies, alphabetical
 from lxml import etree
 import requests
-import jsonfield
 
 # This project, alphabetical
+from agentarchives import archivesspace
 
 # This module, alphabetical
 from common import utils
@@ -35,22 +32,13 @@ from .location import Location
 LOGGER = logging.getLogger(__name__)
 
 
-class DSpace(models.Model):
+class DSpaceREST(models.Model):
     """Integration with DSpace using the REST API."""
     space = models.OneToOneField('Space', to_field='uuid')
-    sd_iri = models.URLField(max_length=256, verbose_name=_l("Service Document IRI"), # This is redundant for the REST
-        help_text=_l('URL of the service document. E.g. http://demo.dspace.org/swordv2/servicedocument'))
+    rest_url = models.URLField(max_length=256, verbose_name=_l("REST URL "),
+        help_text=_l('URL of the REST API. E.g. http://demo.dspace.org/rest'))
     user = models.CharField(max_length=64, verbose_name=_l("User"), help_text=_l('DSpace username to authenticate as'))
-    password = models.CharField(max_length=64, verbose_name=_l("Password"),
-                                help_text=_l('DSpace password to authenticate with'))
-    metadata_policy = jsonfield.JSONField(
-        blank=True, null=True, default=[],
-        verbose_name=_l('Restricted metadata policy'),
-        help_text=_l(
-            'Policy for restricted access metadata policy. '
-            'Must be specified as a list of objects in JSON. '
-            'This will override existing policies. '
-            'Example: [{"action":"READ","groupId":"5","rpType":"TYPE_CUSTOM"}]'))
+    password = models.CharField(max_length=64, verbose_name=_l("Password"), help_text=_l('DSpace password to authenticate with'))
 
     ARCHIVE_FORMAT_ZIP = 'ZIP'
     ARCHIVE_FORMAT_7Z = '7Z'
@@ -58,10 +46,7 @@ class DSpace(models.Model):
         (ARCHIVE_FORMAT_ZIP, 'ZIP'),
         (ARCHIVE_FORMAT_7Z, '7z'),
     )
-    archive_format = models.CharField(max_length=3, choices=ARCHIVE_FORMAT_CHOICES,
-                                      default=ARCHIVE_FORMAT_ZIP, verbose_name=_l('Archive format'))
-
-    sword_connection = None
+    archive_format = models.CharField(max_length=3, choices=ARCHIVE_FORMAT_CHOICES, default=ARCHIVE_FORMAT_ZIP, verbose_name=_l('Archive format'))
 
     class Meta:
         verbose_name = _l("DSpace via REST API")
@@ -69,10 +54,11 @@ class DSpace(models.Model):
 
     ALLOWED_LOCATION_PURPOSE = [
         Location.AIP_STORAGE,
+        Location.DIP_STORAGE,
     ]
 
     def __str__(self):
-        return 'space: {s.space_id}; sd_iri: {s.sd_iri}; user: {s.user}'.format(s=self)
+        return 'space: {s.space_id}; rest_url: {s.rest_url}; user: {s.user}'.format(s=self)
 
     def browse(self, path):
         raise NotImplementedError(_('Dspace does not implement browse'))
@@ -85,45 +71,82 @@ class DSpace(models.Model):
         LOGGER.warning('move_to_storage_service called but not implemented.')
         raise NotImplementedError(_('DSpace does not implement fetching packages'))
 
-    def _get_metadata(self, input_path, aip_uuid):
-        """Get metadata for DSpace from METS file."""
+    def _getDMDIDs(self, parentObj, dmdids=None):
+        if parentObj is not None:
+            if dmdids is None:
+                dmdids = {}
+            for obj in parentObj:
+                if obj.get('DMDID'):
+                    dmdids[obj.get('DMDID')] = obj.get('LABEL')
+                self._getDMDIDs(obj, dmdids)
+            return dmdids
 
-        # Extract METS file
-        # TODO Should output dir be a temp dir?
+
+    def _get_metadata(self, input_path, aip_uuid, package_type):
+        """Get metadata for DSpace from METS file."""
         output_dir = os.path.dirname(input_path) + '/'
         dirname = os.path.splitext(os.path.basename(input_path))[0]
-        relative_mets_path = os.path.join(dirname, 'data', 'METS.' + aip_uuid + '.xml')
-        mets_path = os.path.join(output_dir, relative_mets_path)
-        command = ['unar', '-force-overwrite', '-o', output_dir, input_path, relative_mets_path]
-        try:
-            subprocess.check_call(command)
-        except subprocess.CalledProcessError:
-            LOGGER.error('Could not extract %s from %s', mets_path, input_path, exc_info=True)
-            return {}
+        mets_path = ''
+
+        if package_type == 'AIP':
+            # Extract METS file
+            # TODO Should output dir be a temp dir?
+            relative_mets_path = os.path.join(dirname, 'data', 'METS.' + aip_uuid + '.xml')
+            mets_path = os.path.join(output_dir, relative_mets_path)
+            command = ['unar', '-force-overwrite', '-o', output_dir, input_path, relative_mets_path]
+            try:
+                p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                output, err = p.communicate()
+                LOGGER.info('Output: %s', output)
+            except subprocess.CalledProcessError:
+                LOGGER.error('Could not extract %s from %s', mets_path, input_path, exc_info=True)
+                return {}
+        elif package_type == 'DIP':
+            for dip_file in os.listdir(input_path):
+                if dip_file.startswith('METS') and dip_file.endswith(".xml"):
+                    LOGGER.info("Dip file: %s", dip_file)
+                    mets_path = os.path.join(input_path, dip_file)
 
         # Fetch info
         root = etree.parse(mets_path)
-        find_mets = 'mets:structMap/mets:div/mets:div[@LABEL="objects"]'
-        dmdid = root.find(find_mets, namespaces=utils.NSMAP).attrib.get('DMDID', '')
-        find_mets = 'mets:dmdSec[@ID="' + dmdid + '"]/mets:mdWrap/mets:xmlData/dcterms:dublincore'
-        dc = root.find(find_mets, namespaces=utils.NSMAP)
 
-        if dc is None:
+        dmdids = self._getDMDIDs(root.find("//mets:structMap[@ID='structMap_1']/", namespaces=utils.NSMAP))
+        inv_dmdids = {v: k for k, v in dmdids.iteritems()}
+        LOGGER.info('Dmdids: %s', dmdids)
+        metadata = []
+        repository_collections = {}
+        package_title = ''
+
+        if 'objects' in inv_dmdids:
+            for anId in str(inv_dmdids['objects']).split(' '):
+                dc_metadata = root.find('mets:dmdSec[@ID="' + anId + '"]/mets:mdWrap/mets:xmlData/dcterms:dublincore', namespaces=utils.NSMAP)#recurIter(dmdSec, None, 'MDTYPE
+                other_metadata = root.find('mets:dmdSec[@ID="' + anId + '"]/mets:mdWrap[@MDTYPE="OTHER"]/mets:xmlData', namespaces=utils.NSMAP)#recurIter(dmdSec, None, 'MDTYPE', 'OTHER')
+
+                if other_metadata is not None:
+                    repository_collections['dspace_dip_collection'] = other_metadata.findtext('dspace_dip_collection')
+                    repository_collections['dspace_aip_collection'] = other_metadata.findtext('dspace_aip_collection')
+                    repository_collections['archivesspace_dip_collection'] = other_metadata.findtext('archivesspace_dip_collection')
+                    repository_collections['archivesspace_aip_collection'] = other_metadata.findtext('archivesspace_aip_collection')
+                elif dc_metadata is not None:
+                    for md in dc_metadata:
+                        dc_term = str(md.tag)[str(md.tag).find('}') + 1:]
+
+                        if dc_term == 'title':
+                            dc_term = 'dc.' + dc_term
+                            package_title = dc_metadata.findtext(md.tag, namespaces=utils.NSMAP)
+                        else:
+                            dc_term = 'dcterms.' + dc_term
+
+                        metadata.append(self._format_metadata(dc_term, dc_metadata.findtext(md.tag, namespaces=utils.NSMAP)))
+
+        if len(metadata) == 0: # We have nothing and therefore filename becomes title
             LOGGER.warning('Could not find SIP level Dublin Core metadata in %s', input_path)
-            metadata = [self._format_metadata('dc.title', 'No metadata found')]
-        else:
-            # Create mapping
-            metadata = [
-                self._format_metadata('dcterms.description', dc.findtext('dc:description', namespaces=utils.NSMAP)),
-                self._format_metadata('dcterms.creator', dc.findtext('dc:creator', namespaces=utils.NSMAP)),
-                self._format_metadata('dcterms.issued', dc.findtext('dc:date', namespaces=utils.NSMAP)),
-                self._format_metadata('dcterms.rights', dc.findtext('dc:rights', namespaces=utils.NSMAP)),
-                self._format_metadata('dcterms.relation', dc.findtext('dc:relation', namespaces=utils.NSMAP)),
-                self._format_metadata('dc.title', dc.findtext('dc:title', namespaces=utils.NSMAP)),
-            ]
-            LOGGER.debug('Dublin Core insert metadata for DSpace: %s', metadata)
+            metadata = [self._format_metadata('dc.title', dirname[:dirname.find(aip_uuid)-1].replace('_', ' ').title())]
+            #metadata = [self._format_metadata('dc.title', 'No metadata found')]
+            LOGGER.info('Metadata: %s', metadata)
+
         os.remove(mets_path)
-        return metadata
+        return metadata, repository_collections, package_title
 
     def _archive(self, src, dst):
         """
@@ -201,9 +224,6 @@ class DSpace(models.Model):
         except subprocess.CalledProcessError:
             LOGGER.error('Could not extract %s', input_path)
             raise
-        except OSError as e:
-            LOGGER.error('Is %s installed? %s', command[0], e)
-            raise
 
         # Move objects into their own directory
         objects_dir = os.path.join(output_dir, 'objects')
@@ -231,14 +251,51 @@ class DSpace(models.Model):
         return [objects_dir, metadata_zip]
 
     # Reformats the metadata for the REST API
+
     def _format_metadata(self, dc, value):
         return {'key': dc, 'value': value, 'language': ''}
 
-    # Logs in to DSpace 6 REST API
-    # REST API Authentication changed in DSpace 6.x.  It now uses a JSESSIONID cookie.
-    # The previous (5.x) authentication scheme using a rest-dspace-token is no longer supported.
-    # https://wiki.duraspace.org/display/DSDOC6x/REST+API#RESTAPI-Index/Authentication
-    def _login_to_rest(self, dspace_url):
+    def move_from_storage_service(self, source_path, destination_path, package=None):
+        LOGGER.info('source_path: %s, destination_path: %s, package: %s', source_path, destination_path, package)
+        LOGGER.info('Package UUID: %s', package.uuid)
+        LOGGER.info('Package type: %s', package.package_type)
+
+        if package is None:
+            LOGGER.warning('DSpace requires package param')
+            return
+
+        # This only handles compressed AIPs
+        #if not os.path.isfile(source_path):
+        #    raise NotImplementedError(_('Storing in DSpace does not support uncompressed AIPs'))
+
+        # Item to be created in DSpace
+
+        dspace_collection = '09c098c1-99b1-4130-8337-7733409d39b8'
+        package_title = ''
+
+        metadata, repository_collections, package_title = self._get_metadata(source_path, package.uuid, package.package_type)
+
+        if 'dspace_' + package.package_type.lower() + '_collection' in repository_collections:
+            dspace_collection = repository_collections['dspace_' + package.package_type.lower() + '_collection']
+
+        LOGGER.info("Repo coll: %s", repository_collections)
+        item = {
+            "type": "item",
+            "metadata": metadata
+        }
+
+        LOGGER.info("Item: %s", item)
+
+        # Headers for connecting to DSpace REST API
+        headers = {
+            'Accept': 'application/json',
+            "Content-Type": 'application/json',
+        }
+
+        parsed_url = urlparse.urlparse(self.rest_url)
+        dspace_url = urlparse.urlunparse((parsed_url.scheme, parsed_url.netloc, '', '', '', '')).replace('http:', 'https:') # Make sure https is used
+        collection_url = dspace_url + '/rest/collections/' + dspace_collection + '/items' # Hard-coded collection for nows
+
         # Log in to get DSpace REST API token
         url = dspace_url + '/rest/login'
         body = {'email': self.user, 'password': self.password}
@@ -251,77 +308,62 @@ class DSpace(models.Model):
 
         set_cookie = response.headers['Set-Cookie'].split(';')[0]
 
-        return set_cookie[set_cookie.find('=') + 1:]
-
-    def move_from_storage_service(self, source_path, destination_path, package=None):
-        LOGGER.info('source_path: %s, destination_path: %s, package: %s', source_path, destination_path, package)
-        if package is None:
-            LOGGER.warning('DSpace requires package param')
-            return
-
-        # This only handles compressed AIPs
-        if not os.path.isfile(source_path):
-            raise NotImplementedError(_('Storing in DSpace does not support uncompressed AIPs'))
-
-        # Item to be created in DSpace
-        item = {
-            "type": "item",
-            "metadata": self._get_metadata(source_path, package.uuid)
-        }
-
-        # Headers for connecting to DSpace REST API
-        headers = {
-            'Accept': 'application/json',
-            "Content-Type": 'application/json',
-        }
-
-        parsed_url = urlparse.urlparse(self.sd_iri)
-        dspace_url = urlparse.urlunparse((parsed_url.scheme, parsed_url.netloc, '', '', '', ''))\
-            .replace('http:', 'https:') # Make sure https is used
-
-        # Hard-coded collection for now
-        collection_url = dspace_url + '/rest/collections/541fd622-8a8a-42db-80fd-81437c69945d/items'
-
-        sessionid = _login_to_rest(self, dspace_url)
+        sessionid = set_cookie[set_cookie.find('=') + 1:]
 
         # Create item in DSpace
-        response = requests.post(collection_url, headers=headers, cookies={'JSESSIONID': sessionid},
-                                 data=json.dumps(item), verify=False)
+        response = requests.post(collection_url, headers=headers, cookies={'JSESSIONID': sessionid}, data=json.dumps(item), verify=False)
 
-        # We need the response item to be able to get UUID for new DSpace item
+        LOGGER.info("Response: %s", response)
+        LOGGER.info("Response text: %s", response.text)
+
         dspace_item = json.loads(response.text)
 
-        LOGGER.info('Response: %s', response.text)
+        #package.misc_attributes.update({'handle': dspace_item['handle']})
+        #package.save()
 
         LOGGER.info('DSpace UUID: %s', dspace_item['uuid'])
 
-        # Split package
-        upload_paths = self._split_package(source_path)
+        if package.package_type == 'DIP':
+            LOGGER.info('Package is DIP. Splitting package.')
+            # Split package
+            #upload_paths = self._split_package(source_path)
 
-        for root, dirs, files in os.walk(upload_paths[0]):
-            for name in files:
-                with open(os.path.join(root, name), 'r') as f:
-                    content = f.read()
+            for root, dirs, files in os.walk(source_path):
+                for name in files:
+                    with open(os.path.join(root, name), 'r') as f:
+                        content = f.read()
 
-                bitstream_url = dspace_url + '/rest/items/' + dspace_item['uuid'] +\
-                                '/bitstreams?name=' + urllib.quote(name)
+                    newname = name
 
-                response = requests.post(bitstream_url, headers=headers, cookies={'JSESSIONID': sessionid},
-                                         data=content, verify=False)
-                LOGGER.info('Path: %s', root)
-                LOGGER.debug('%s being sent to %s', name, bitstream_url)
-        # Deleting path where objects were unpacked using _split_package() method
-        shutil.rmtree(upload_paths[0])
+                    if package.uuid in name:
+                        newname = name[len(package.uuid):]
 
-        with open(upload_paths[1], 'r') as f:
-            content = f.read()
+                    bitstream_url = dspace_url + '/rest/items/' + dspace_item['uuid'] + '/bitstreams?name=' + urllib.quote(newname)
 
-        bitstream_url = dspace_url + '/rest/items/' + dspace_item['uuid'] +\
-                        '/bitstreams?name=' + urllib.quote(os.path.basename(upload_paths[1]))
+                    response = requests.post(bitstream_url, headers=headers, cookies={'JSESSIONID': sessionid}, data=content,
+                                 verify=False)
+                    LOGGER.info('Path: %s', root)
+                    LOGGER.debug('%s being sent to %s', name, bitstream_url)
+            shutil.rmtree(source_path)
 
-        response = requests.post(bitstream_url, headers=headers, cookies={'JSESSIONID': sessionid},
-                                 data=content, verify=False)
-        LOGGER.debug('Dest: %s', bitstream_url)
+            client = archivesspace.ArchivesSpaceClient('http://lac-archives-test.is.ed.ac.uk', 'archivematica',
+                                                       'arch1vemat1ca', 8089, 14)
+
+            client.add_digital_object('/repositories/14/archival_objects/135569', package.uuid, title=package_title,
+                                      uri='https://test.digitalpreservation.is.ed.ac.uk/handle/' + dspace_item['handle'])
+            LOGGER.info('ArchivesSpace Client: %s', client)
+
+        else:
+            LOGGER.info('Package is AIP. Sending file.')
+            with open(source_path, 'r') as f:
+                content = f.read()
+
+            bitstream_url = dspace_url + '/rest/items/' + dspace_item['uuid'] + '/bitstreams?name=' + urllib.quote(
+                os.path.basename(source_path))
+
+            response = requests.post(bitstream_url, headers=headers, cookies={'JSESSIONID': sessionid}, data=content,
+                                     verify=False)
+            LOGGER.debug('Dest: %s', bitstream_url)
 
         # Logout from DSpace API
         url = dspace_url + '/rest/logout'

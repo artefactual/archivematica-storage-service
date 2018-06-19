@@ -124,6 +124,12 @@ class DSpaceForm(forms.ModelForm):
         fields = ('sd_iri', 'user', 'password', 'metadata_policy', 'archive_format')
 
 
+class DSpaceRESTForm(forms.ModelForm):
+    class Meta:
+        model = models.DSpaceREST
+        fields = ('rest_url', 'user', 'password', 'archive_format')
+
+
 def get_gpg_key_choices():
     return [(key['fingerprint'], ', '.join(key['uids']))
             for key in gpgutils.get_gpg_key_list()]

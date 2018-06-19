@@ -29,6 +29,11 @@ PROTOCOL = {
         'form': forms.DSpaceForm,
         'fields': ['sd_iri', 'user', 'archive_format']
     },
+    models.Space.DSPACE_REST: {
+        'model': models.DSpaceREST,
+        'form': forms.DSpaceRESTForm,
+        'fields': ['rest_url', 'user', 'archive_format']
+    },
     models.Space.FEDORA: {
         'model': models.Fedora,
         'form': forms.FedoraForm,
