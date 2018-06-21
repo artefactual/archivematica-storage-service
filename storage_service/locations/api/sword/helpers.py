@@ -3,7 +3,6 @@ import cgi
 import datetime
 import logging
 import os
-from multiprocessing import Process
 import shutil
 import tempfile
 import time
@@ -21,6 +20,7 @@ import requests
 
 # This project, alphabetical
 from locations import models
+from locations.models.async_manager import AsyncManager
 from common.utils import generate_checksum
 
 LOGGER = logging.getLogger(__name__)
@@ -145,8 +145,7 @@ def spawn_download_task(deposit_uuid, objects, subdir=None):
     """
     Spawn an asynchrnous batch download
     """
-    p = Process(target=_fetch_content, args=(deposit_uuid, objects, subdir))
-    p.start()
+    AsyncManager.run_task(_fetch_content, deposit_uuid, objects, subdir)
 
 
 def _fetch_content(deposit_uuid, objects, subdirs=None):
@@ -248,8 +247,7 @@ def spawn_finalization(deposit_uuid):
     """
     Spawn an asynchronous finalization
     """
-    p = Process(target=_finalize_if_not_empty, args=(deposit_uuid, ))
-    p.start()
+    AsyncManager.run_task(_finalize_if_not_empty, deposit_uuid)
 
 
 def _finalize_if_not_empty(deposit_uuid):
