@@ -2,6 +2,7 @@
 *.swp
 *~
 .cache
+.pytest_cache
 
 # Sqlite DBs
 *.db
