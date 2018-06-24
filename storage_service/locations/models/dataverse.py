@@ -34,7 +34,8 @@ class Dataverse(models.Model):
         max_length=50,
         verbose_name=_l("API key"),
         help_text=_l(
-            "API key for Dataverse instance. Eg. b84d6b87-7b1e-4a30-a374-87191dbbbe2d"
+            "API key for Dataverse instance. Eg. "
+            "b84d6b87-7b1e-4a30-a374-87191dbbbe2d"
         ),
     )
     agent_name = models.CharField(
@@ -51,7 +52,8 @@ class Dataverse(models.Model):
         max_length=256,
         verbose_name=_l("Agent identifier"),
         help_text=_l(
-            "URI agent identifier for premis:agentIdentifierValue in Archivematica"
+            "URI agent identifier for premis:agentIdentifierValue "
+            "in Archivematica"
         ),
     )
     # FIXME disallow string in space.path
@@ -106,7 +108,8 @@ class Dataverse(models.Model):
                 LOGGER.warning("%s: Response: %s", response, response.text)
                 raise StorageException(
                     _(
-                        "Unable to fetch datasets from %(url)s with query %(path)s"
+                        "Unable to fetch datasets from %(url)s with "
+                        "query %(path)s"
                     )
                     % {"url": url, "path": path}
                 )
@@ -116,7 +119,8 @@ class Dataverse(models.Model):
                 LOGGER.error("Could not parse JSON from response to %s", url)
                 raise StorageException(
                     _(
-                        "Unable parse JSON from response to %(url)s with query %(path)s"
+                        "Unable parse JSON from response to %(url)s with "
+                        "query %(path)s"
                     )
                     % {"url": url, "path": path}
                 )
@@ -131,7 +135,8 @@ class Dataverse(models.Model):
             )
 
             if (
-                params["start"] + data["count_in_response"] < data["total_count"]
+                params["start"] + data["count_in_response"] <
+                data["total_count"]
             ):
                 params["start"] += data["count_in_response"]
             else:
@@ -155,7 +160,8 @@ class Dataverse(models.Model):
         if not src_path.isdigit():
             raise StorageException(
                 _(
-                    "Invalid value for src_path: %(value)s. Must be a numberic entity_id"
+                    "Invalid value for src_path: %(value)s. Must be a "
+                    "numberic entity_id"
                 )
                 % {"value": src_path}
             )
