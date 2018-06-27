@@ -65,88 +65,106 @@ class Dataverse(models.Model):
     ALLOWED_LOCATION_PURPOSE = [Location.TRANSFER_SOURCE]
 
     def browse(self, path):
+        """Fetch the datasets in this dataverse or the files in the dataset
+        referenced in ``path``.
         """
-        Fetch a list of datasets from Dataverse based on the query in the
-        location path.
+        path = path.rstrip('/').replace(self.space.path, '')
+        try:
+            # If the location has a relative path (say ``'test'``), it will be
+            # in ``path`` separated by the dataset's ``entity_id`` (say
+            # ``'315'``), e.g., ``'test/315'``. If we can extract a dataset
+            # identifier (e.g., ``'315'``), we use it to browse/return the files
+            # in that dataset.
+            dataset_identifier = path.split('/', 1)[1]
+            return self._browse_dataset(dataset_identifier)
+        except IndexError:
+            return self._browse_dataverse()
 
-        Datasets are considered directories when browsing.
+    def _browse_dataverse(self):
+        """Return all datasets in all dataverses (conforming to ``browse``
+        protocol).
+
+        Note: we could add a subtree key to the ``params`` dict below to
+        restrict this to returning the datasets within a specified dataverse.
+        For now, we are not doing that.
         """
-        # Remove things earlier layers added
-        path = path.rstrip("/")
-
-        # Because we are using a field that is described as being 'relative to
-        # the storage space' as a query string filter for Dataverse; but the
-        # string created is unrelated to 'storage' itself we also need to strip
-        # this from the location. The string will look something like the
-        # following:
-        #
-        # /var/archivematica/storage_service/dataverse/space/
-        path = path.replace(self.space.path, "")
-
-        # Use http://guides.dataverse.org/en/latest/api/search.html to search
-        # and return datasets
-        # Location path is query string
-        # FIXME only browse one layer deep
-        url = "https://{}/api/search/".format(self.host)
+        url = 'https://{}/api/search/'.format(self.host)
         params = {
-            "key": self.api_key,
-            "q": path,
-            "type": "dataset",
-            "sort": "name",
-            "order": "asc",
-            "start": 0,
-            "per_page": 10,
-            "show_entity_ids": True,
+            'key': self.api_key,
+            'q': '*',
+            'type': 'dataset',
+            'sort': 'name',
+            'order': 'asc',
+            'start': 0,
+            'per_page': 10,
+            'show_entity_ids': True,
         }
         entries = []
         properties = {}
         while True:
-            LOGGER.debug("URL: %s, params: %s", url, params)
+            LOGGER.debug('URL: %s, params: %s', url, params)
             response = requests.get(url, params=params)
-            LOGGER.debug("Response: %s", response)
+            LOGGER.debug('Response: %s', response)
             if response.status_code != 200:
-                LOGGER.warning("%s: Response: %s", response, response.text)
+                LOGGER.warning('%s: Response: %s', response, response.text)
                 raise StorageException(
-                    _(
-                        "Unable to fetch datasets from %(url)s with "
-                        "query %(path)s"
-                    )
-                    % {"url": url, "path": path}
-                )
+                    _('Unable to fetch datasets from %(url)s')
+                    % {'url': url})
             try:
-                data = response.json()["data"]
+                data = response.json()['data']
+                items = data['items']
             except json.JSONDecodeError:
-                LOGGER.error("Could not parse JSON from response to %s", url)
+                LOGGER.error('Could not parse JSON from response to %s', url)
                 raise StorageException(
-                    _(
-                        "Unable parse JSON from response to %(url)s with "
-                        "query %(path)s"
-                    )
-                    % {"url": url, "path": path}
-                )
-
-            entries += [str(x["entity_id"]) for x in data["items"]]
-
+                    _('Unable to parse JSON from response to %(url)s')
+                    % {'url': url})
+            entries += [str(ds['entity_id']) for ds in items]
             properties.update(
-                {
-                    str(x["entity_id"]): {"verbose name": x["name"]}
-                    for x in data["items"]
-                }
-            )
-
-            if (
-                params["start"] + data["count_in_response"] <
-                data["total_count"]
-            ):
-                params["start"] += data["count_in_response"]
+                {str(ds['entity_id']): {'verbose name': ds['name']}
+                 for ds in items})
+            if params['start'] + data['count_in_response'] < data['total_count']:
+                params['start'] += data['count_in_response']
             else:
                 break
-
-        directories = entries
         return {
-            "directories": directories,
-            "entries": entries,
-            "properties": properties,
+            'directories': entries,
+            'entries': entries,
+            'properties': properties,
+        }
+
+    def _browse_dataset(self, dataset_identifier):
+        """Return all files in the dataset with ``entity_id``
+        ``dataset_identifier`` (conforming to ``browse`` protocol).
+        """
+        files_in_dataset_path = (
+            '/api/v1/datasets/{dataset_identifier}/versions/:latest'.format(
+                dataset_identifier=dataset_identifier))
+        url = 'https://{}{}'.format(self.host, files_in_dataset_path)
+        params = {'key': self.api_key}
+        LOGGER.debug('URL: %s, params: %s', url, params)
+        response = requests.get(url, params=params)
+        LOGGER.debug('Response: %s', response)
+        if response.status_code != 200:
+            LOGGER.warning('%s: Response: %s', response, response.text)
+            raise StorageException(
+                _('Unable to fetch datasets from %(url)s')
+                % {'url': url})
+        try:
+            data = response.json()['data']
+            files = data['files']
+        except json.JSONDecodeError:
+            LOGGER.error('Could not parse JSON from response to %s', url)
+            raise StorageException(
+                _('Unable to parse JSON from response to %(url)s')
+                % {'url': url})
+        entries = [f['dataFile']['filename'] for f in files]
+        properties = {
+            f['dataFile']['filename']: {'size': f['dataFile']['filesize']}
+            for f in files}
+        return {
+            'directories': [],
+            'entries': entries,
+            'properties': properties,
         }
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
