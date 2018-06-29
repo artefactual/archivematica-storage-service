@@ -11,7 +11,6 @@ import logging
 import os
 import shutil
 import subprocess
-import urlparse
 import urllib
 
 # Core Django, alphabetical
@@ -25,7 +24,6 @@ import requests
 # This project, alphabetical
 from agentarchives import archivesspace
 
-
 # This module, alphabetical
 from common import utils
 from .location import Location
@@ -36,7 +34,7 @@ LOGGER = logging.getLogger(__name__)
 class DSpaceREST(models.Model):
     """Integration with DSpace using the REST API."""
     space = models.OneToOneField('Space', to_field='uuid')
-    rest_url = models.URLField(max_length=256, # ATTENTION could be with or without slash at end
+    rest_url = models.URLField(max_length=256,  # ATTENTION could be with or without slash at end
                                verbose_name=_l("REST URL "),
                                help_text=_l('URL of the REST API. E.g. http://demo.dspace.org/rest'))
     user = models.CharField(max_length=64,
@@ -150,7 +148,6 @@ class DSpaceREST(models.Model):
 
         dmdids = self._getdmdids(root.find("//mets:structMap[@ID='structMap_1']/", namespaces=utils.NSMAP))
         inv_dmdids = {v: k for k, v in dmdids.iteritems()}
-        #LOGGER.info('Dmdids: %s', dmdids)
         metadata = []
         repos = {}
         package_title = ''
@@ -180,9 +177,10 @@ class DSpaceREST(models.Model):
                         metadata.append(self._format_metadata(dc_term, dc_metadata.findtext(md.tag,
                                                                                             namespaces=utils.NSMAP)))
 
-        if len(metadata) == 0: # We have nothing and therefore filename becomes title
+        if len(metadata) == 0:  # We have nothing and therefore filename becomes title
             LOGGER.warning('Could not find SIP level Dublin Core metadata in %s', input_path)
-            metadata = [self._format_metadata('dc.title', dirname[:dirname.find(aip_uuid)-1].replace('_', ' ').title())]
+            metadata = [
+                self._format_metadata('dc.title', dirname[:dirname.find(aip_uuid) - 1].replace('_', ' ').title())]
             LOGGER.info('Metadata: %s', metadata)
 
         os.remove(mets_path)
@@ -255,7 +253,7 @@ class DSpaceREST(models.Model):
             archivesspace_collection = self.archivesspace_archival_object
 
         LOGGER.info("Repo coll: %s", repository_collections)
-        item = { # Structure necessary to create DSpace record
+        item = {  # Structure necessary to create DSpace record
             "type": "item",
             "metadata": metadata
         }
@@ -338,9 +336,6 @@ class DSpaceREST(models.Model):
                                      14, archivesspace_collection)
 
                 raise ValueError('ArchivesSpace Server error: %s', e.response.text)
-
-                #LOGGER.error('Response: %s', e.response)
-                #raise ValueError()
 
             LOGGER.info('ArchivesSpace Client: %s', client)
             LOGGER.info('URL: %s', self.rest_url[:-4] + '/handle/' + dspace_item['handle'])
