@@ -32,7 +32,10 @@ PROTOCOL = {
     models.Space.DSPACE_REST: {
         'model': models.DSpaceREST,
         'form': forms.DSpaceRESTForm,
-        'fields': ['rest_url', 'user', 'archive_format']
+        'fields': ['rest_url', 'user', 'archive_format', 'dspace_dip_collection',
+                   'dspace_aip_collection', 'archivesspace_url',
+                   'archivesspace_user', 'archivesspace_password', 'archivesspace_repository',
+                   'archivesspace_archival_object']
     },
     models.Space.FEDORA: {
         'model': models.Fedora,

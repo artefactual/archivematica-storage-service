@@ -25,6 +25,7 @@ import requests
 # This project, alphabetical
 from agentarchives import archivesspace
 
+
 # This module, alphabetical
 from common import utils
 from .location import Location
@@ -35,9 +36,9 @@ LOGGER = logging.getLogger(__name__)
 class DSpaceREST(models.Model):
     """Integration with DSpace using the REST API."""
     space = models.OneToOneField('Space', to_field='uuid')
-    rest_url = models.URLField(max_length=256,
+    rest_url = models.URLField(max_length=256, # ATTENTION could be with or without slash at end
                                verbose_name=_l("REST URL "),
-                               help_text=_l('URL of the REST API. E.g. http://demo.dspace.org/rest')) # ATTENTION could be with or without slash at end
+                               help_text=_l('URL of the REST API. E.g. http://demo.dspace.org/rest'))
     user = models.CharField(max_length=64,
                             verbose_name=_l("User"),
                             help_text=_l('DSpace username to authenticate as'))
@@ -51,10 +52,41 @@ class DSpaceREST(models.Model):
         (ARCHIVE_FORMAT_ZIP, 'ZIP'),
         (ARCHIVE_FORMAT_7Z, '7z'),
     )
+
     archive_format = models.CharField(max_length=3,
                                       choices=ARCHIVE_FORMAT_CHOICES,
                                       default=ARCHIVE_FORMAT_ZIP,
                                       verbose_name=_l('Archive format'))
+
+    dspace_dip_collection = models.CharField(max_length=64,
+                                verbose_name=_l("Default DSpace DIP collection id"),
+                                help_text=_l('UUID of default DSpace collection for the DIP to be deposited to'))
+
+    dspace_aip_collection = models.CharField(max_length=64,
+                                verbose_name=_l("Default DSpace AIP collection id"),
+                                help_text=_l('UUID of default DSpace collection for the AIP to be deposited to'))
+
+    archivesspace_url = models.URLField(max_length=256,
+                                verbose_name=_l("ArchivesSpace URL"),
+                                help_text=_l('URL of ArchivesSpace server. E.g. http://sandbox.archivesspace.org/ (default port is 8089)'))
+
+    archivesspace_port = 8089
+
+    archivesspace_user = models.CharField(max_length=64,
+                                            verbose_name=_l("ArchivesSpace user"),
+                                            help_text=_l('ArchivesSpace username to authenticate as'))
+
+    archivesspace_password = models.CharField(max_length=64,
+                                            verbose_name=_l("ArchivesSpace password"),
+                                            help_text=_l('ArchivesSpace password to authenticate with'))
+
+    archivesspace_repository = models.CharField(max_length=12,
+                                              verbose_name=_l("Default ArchivesSpace repository"),
+                                              help_text=_l('Number of the default ArchivesSpace repository'))
+
+    archivesspace_archival_object = models.CharField(max_length=64,
+                                              verbose_name=_l("Default ArchivesSpace archival object"),
+                                              help_text=_l('Number of the default ArchivesSpace archival object'))
 
     class Meta:
         verbose_name = _l("DSpace via REST API")
@@ -179,10 +211,17 @@ class DSpaceREST(models.Model):
         LOGGER.info('source_path: %s, destination_path: %s, package: %s', source_path, destination_path, package)
         LOGGER.info('Package UUID: %s', package.uuid)
         LOGGER.info('Package type: %s', package.package_type)
+        LOGGER.info('Port: %s', self.archivesspace_port)
         self.rest_url = self.rest_url.replace('http:', 'https:')# DSPACE REST API really dislikes http
 
         if self.rest_url[-1:] == '/':# Get rid of trailing slash
             self.rest_url = self.rest_url[:-1]
+
+        if self.archivesspace_url[-1:] == '/':  # Get rid of trailing slash
+            self.archivesspace_url = self.archivesspace_url[:-1]
+
+        if len(self.archivesspace_url.split(':')) == 3: # If ArchivesSpace url contains port assign it
+            self.archivesspace_port = self.archivesspace_url.split(':')[2]
 
         if package is None:
             LOGGER.warning('DSpace requires package param')
@@ -194,20 +233,26 @@ class DSpaceREST(models.Model):
 
         # Item to be created in DSpace
 
-        dspace_collection = '09c098c1-99b1-4130-8337-7733409d39b8'
-        archivesspace_collection = '135569'
-        package_title = ''
-
         metadata, repository_collections, package_title = self._get_metadata(source_path,
                                                                              package.uuid,
                                                                              package.package_type)
 
-        if 'dspace_' + package.package_type.lower() + '_collection' in repository_collections:
-            dspace_collection = repository_collections['dspace_' + package.package_type.lower() + '_collection']
+        if package.package_type == 'DIP':
+            if 'dspace_dip_collection' in repository_collections:
+                dspace_collection = repository_collections['dspace_dip_collection']
+            else:
+                dspace_collection = self.dspace_dip_collection
+        elif package.package_type == 'AIP':
+            if 'dspace_aip_collection' in repository_collections:
+                dspace_collection = repository_collections['dspace_aip_collection']
+            else:
+                dspace_collection = self.dspace_aip_collection
 
         if 'archivesspace_' + package.package_type.lower() + '_collection' in repository_collections:
             archivesspace_collection = repository_collections['archivesspace_' + package.package_type.lower()
                                                               + '_collection']
+        elif package.package_type == 'DIP':
+            archivesspace_collection = self.archivesspace_archival_object
 
         LOGGER.info("Repo coll: %s", repository_collections)
         item = { # Structure necessary to create DSpace record
@@ -223,6 +268,7 @@ class DSpaceREST(models.Model):
             "Content-Type": 'application/json',
         }
 
+
         collection_url = self.rest_url + '/collections/' + dspace_collection + '/items'
 
         dspace_sessionid = self._login_to_dspace_rest() # Logging in to REST api gives us a session id
@@ -235,7 +281,7 @@ class DSpaceREST(models.Model):
                                      data=json.dumps(item),
                                      verify=False)
         except Exception:
-            LOGGER.error('Could not create record: %s', collection_url)
+            LOGGER.error('Could not create DSpace record: %s', collection_url)
 
         dspace_item = response.json()
 
@@ -269,18 +315,32 @@ class DSpaceREST(models.Model):
 
             try:
                 # Create digital object in ArchivesSpace linking to DIP
-                client = archivesspace.ArchivesSpaceClient('http://lac-archives-test.is.ed.ac.uk', 'archivematica',
-                                                           'arch1vemat1ca', 8089, 14)
+                client = archivesspace.ArchivesSpaceClient(self.archivesspace_url, self.archivesspace_user,
+                                                           self.archivesspace_password, self.archivesspace_port,
+                                                           self.archivesspace_repository)
             except Exception:
-                LOGGER.error('Could not login to ArchivesSpace server')
+                LOGGER.error('Could not login to ArchivesSpace server: %s, port: %s, user: %s, repository: %s',
+                             self.archivesspace_url,
+                             self.archivesspace_port,
+                             self.archivesspace_user,
+                             self.archivesspace_repository)
 
             try:
-                client.add_digital_object('/repositories/14/archival_objects/' + archivesspace_collection,
+                client.add_digital_object('/repositories/' + self.archivesspace_repository + '/archival_objects/' +
+                                          archivesspace_collection,
                                           package.uuid,
                                           title=package_title,
                                           uri=self.rest_url[:-4] + '/handle/' + dspace_item['handle'])
-            except Exception:
+            except Exception as e:
                 LOGGER.error('Could not add digital object to ArchivesSpace')
+                if e.response.status_code == 404:
+                    raise ValueError('Either repository %s or archival object %s does not exist',
+                                     14, archivesspace_collection)
+
+                raise ValueError('ArchivesSpace Server error: %s', e.response.text)
+
+                #LOGGER.error('Response: %s', e.response)
+                #raise ValueError()
 
             LOGGER.info('ArchivesSpace Client: %s', client)
             LOGGER.info('URL: %s', self.rest_url[:-4] + '/handle/' + dspace_item['handle'])
