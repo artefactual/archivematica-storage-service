@@ -78,7 +78,7 @@ class DSpaceREST(models.Model):
                                             verbose_name=_l("ArchivesSpace password"),
                                             help_text=_l('ArchivesSpace password to authenticate with'))
 
-    archivesspace_repository = models.CharField(max_length=12,
+    archivesspace_repository = models.CharField(max_length=64,
                                               verbose_name=_l("Default ArchivesSpace repository"),
                                               help_text=_l('Number of the default ArchivesSpace repository'))
 
@@ -247,8 +247,8 @@ class DSpaceREST(models.Model):
                 dspace_collection = self.dspace_aip_collection
 
         if 'archivesspace_' + package.package_type.lower() + '_collection' in repository_collections:
-            archivesspace_collection = repository_collections['archivesspace_' + package.package_type.lower()
-                                                              + '_collection']
+            archivesspace_collection = repository_collections['archivesspace_' + package.package_type.lower() +
+                                                              '_collection']
         elif package.package_type == 'DIP':
             archivesspace_collection = self.archivesspace_archival_object
 
