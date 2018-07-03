@@ -71,8 +71,8 @@ class DSpaceREST(models.Model):
     archivesspace_port = 8089
 
     archivesspace_user = models.CharField(max_length=64,
-                                            verbose_name=_l("ArchivesSpace user"),
-                                            help_text=_l('ArchivesSpace username to authenticate as'))
+                                          verbose_name=_l("ArchivesSpace user"),
+                                          help_text=_l('ArchivesSpace username to authenticate as'))
 
     archivesspace_password = models.CharField(max_length=64,
                                             verbose_name=_l("ArchivesSpace password"),
@@ -210,15 +210,15 @@ class DSpaceREST(models.Model):
         LOGGER.info('Package UUID: %s', package.uuid)
         LOGGER.info('Package type: %s', package.package_type)
         LOGGER.info('Port: %s', self.archivesspace_port)
-        self.rest_url = self.rest_url.replace('http:', 'https:')# DSPACE REST API really dislikes http
+        self.rest_url = self.rest_url.replace('http:', 'https:')  # DSPACE REST API really dislikes http
 
-        if self.rest_url[-1:] == '/':# Get rid of trailing slash
+        if self.rest_url[-1:] == '/':  # Get rid of trailing slash
             self.rest_url = self.rest_url[:-1]
 
         if self.archivesspace_url[-1:] == '/':  # Get rid of trailing slash
             self.archivesspace_url = self.archivesspace_url[:-1]
 
-        if len(self.archivesspace_url.split(':')) == 3: # If ArchivesSpace url contains port assign it
+        if len(self.archivesspace_url.split(':')) == 3:  # If ArchivesSpace url contains port assign it
             self.archivesspace_port = self.archivesspace_url.split(':')[2]
 
         if package is None:
@@ -226,7 +226,7 @@ class DSpaceREST(models.Model):
             return
 
         # This only handles compressed AIPs
-        #if not os.path.isfile(source_path):
+        # if not os.path.isfile(source_path):
         #    raise NotImplementedError(_('Storing in DSpace does not support uncompressed AIPs'))
 
         # Item to be created in DSpace
@@ -266,10 +266,9 @@ class DSpaceREST(models.Model):
             "Content-Type": 'application/json',
         }
 
-
         collection_url = self.rest_url + '/collections/' + dspace_collection + '/items'
 
-        dspace_sessionid = self._login_to_dspace_rest() # Logging in to REST api gives us a session id
+        dspace_sessionid = self._login_to_dspace_rest()  # Logging in to REST api gives us a session id
 
         # Create item in DSpace
         try:
@@ -293,10 +292,8 @@ class DSpaceREST(models.Model):
                     with open(os.path.join(root, name), 'r') as f:
                         content = f.read()
 
-                    newname = name#name[len(package.uuid):]
-
-                    bitstream_url = self.rest_url + '/items/' + dspace_item['uuid']\
-                                    + '/bitstreams?name=' + urllib.quote(newname)
+                    bitstream_url = self.rest_url + '/items/' + dspace_item['uuid']
+                    bitstream_url += '/bitstreams?name=' + urllib.quote(newname)
 
                     try:
                         requests.post(bitstream_url,
@@ -308,7 +305,7 @@ class DSpaceREST(models.Model):
                     except Exception:
                         LOGGER.info('Error sending %s, to %s', name, bitstream_url)
 
-                    #LOGGER.info('Path: %s', root)
+                    # LOGGER.info('Path: %s', root)
             shutil.rmtree(source_path)
 
             try:
@@ -358,7 +355,7 @@ class DSpaceREST(models.Model):
             except Exception:
                 LOGGER.info('Error sending %s, to %s', source_path, bitstream_url)
 
-            #LOGGER.debug('Dest: %s', bitstream_url)
+            # LOGGER.debug('Dest: %s', bitstream_url)
 
             # Send AIP to Tivoli Storage Manager using command-line client
             command = ['dsmc', 'archive', source_path]
@@ -380,4 +377,3 @@ class DSpaceREST(models.Model):
             LOGGER.info('Logged out of REST API.')
         except Exception:
             LOGGER.info('Error logging out of DSpace REST API', exc_info=True)
-
