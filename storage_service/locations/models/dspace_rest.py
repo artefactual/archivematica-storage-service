@@ -293,7 +293,7 @@ class DSpaceREST(models.Model):
                         content = f.read()
 
                     bitstream_url = self.rest_url + '/items/' + dspace_item['uuid']
-                    bitstream_url += '/bitstreams?name=' + urllib.quote(newname)
+                    bitstream_url += '/bitstreams?name=' + urllib.quote(name)
 
                     try:
                         requests.post(bitstream_url,
