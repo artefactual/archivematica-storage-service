@@ -5,29 +5,662 @@ interactions:
       Accept: ['*/*']
       Accept-Encoding: ['gzip, deflate']
       Connection: [keep-alive]
-      User-Agent: [python-requests/2.7.0 CPython/2.7.6 Linux/3.13.0-43-generic]
+      User-Agent: [python-requests/2.14.2]
     method: GET
-    uri: https://apitest.dataverse.org/api/search/?sort=name&show_entity_ids=True&q=title%3Atest%2A&start=0&key=testkeys-77a8-49a3-874e-be1148e7c970&per_page=10&type=dataset&order=asc
+    uri: https://demodv.scholarsportal.info/api/search/?q=%2A&sort=name&key=51c64df4-abd7-4613-af21-6a68715dca92&start=0&per_page=10&show_entity_ids=True&type=dataset&order=asc
   response:
-    body: {string: !!python/unicode '{"status":"OK","data":{"q":"title:test*","total_count":4,"start":0,"spelling_alternatives":{},"items":[{"name":"Metadata
-        mapping test study","type":"dataset","url":"http://dx.doi.org/10.5072/FK2/0MOPJM","image_url":"https://apitest.dataverse.org/api/access/dsCardImage/40","global_id":"doi:10.5072/FK2/0MOPJM","description":"This
-        study tests the types of metadata that are exported from Dataverse and how
-        they can be mapped to standard schemas.","published_at":"2015-08-24T16:32:00Z","citation":"McLellan,
-        Evelyn, 2015, \"Metadata mapping test study\", <a href=\"http://dx.doi.org/10.5072/FK2/0MOPJM\">http://dx.doi.org/10.5072/FK2/0MOPJM</a>,  API
-        Test Dataverse,  V1 [UNF:6:r5Z8n0CKSeRcAvjcTINpmQ==]","entity_id":90,"authors":["McLellan,
-        Evelyn"]},{"name":"Restricted Studies Test","type":"dataset","url":"http://dx.doi.org/10.5072/FK2/IRSXYF","image_url":"https://apitest.dataverse.org/api/access/dsCardImage/41","global_id":"doi:10.5072/FK2/IRSXYF","description":"test","published_at":"2015-08-25T01:30:18Z","citation":"barboza,
-        dags, 2015, \"Restricted Studies Test\", <a href=\"http://dx.doi.org/10.5072/FK2/IRSXYF\">http://dx.doi.org/10.5072/FK2/IRSXYF</a>,  API
-        Test Dataverse,  V1","entity_id":93,"authors":["barboza, dags"]},{"name":"testdocx","type":"dataset","url":"http://dx.doi.org/10.5072/FK2/ECUYCX","image_url":"https://apitest.dataverse.org/api/access/dsCardImage/35","global_id":"doi:10.5072/FK2/ECUYCX","description":"test
-        docx","published_at":"2015-08-06T16:46:05Z","citation":"Liu, Susan, 2015,
-        \"testdocx\", <a href=\"http://dx.doi.org/10.5072/FK2/ECUYCX\">http://dx.doi.org/10.5072/FK2/ECUYCX</a>,  API
-        Test Dataverse,  V5","entity_id":16,"authors":["Liu, Susan"]},{"name":"testjpg","type":"dataset","url":"http://dx.doi.org/10.5072/FK2/TPNDZ2","image_url":"https://apitest.dataverse.org/api/access/dsCardImage/3","global_id":"doi:10.5072/FK2/TPNDZ2","description":"test
-        jpg","published_at":"2015-06-29T08:27:24Z","citation":"Liu, Susan, 2015, \"testjpg\",
-        <a href=\"http://dx.doi.org/10.5072/FK2/TPNDZ2\">http://dx.doi.org/10.5072/FK2/TPNDZ2</a>,  API
-        Test Dataverse,  V1","entity_id":14,"authors":["Liu, Susan"]}],"count_in_response":4}}'}
+    body: {string: "{\"status\":\"OK\",\"data\":{\"q\":\"*\",\"total_count\":59,\"start\":0,\"spelling_alternatives\":{},\"items\":[{\"name\":\"3D
+        Laser Images of a road cut at Ivy Lea, Ontario (2007), underground in Sudbury,
+        Ontario (2007), underground in Thompson, Manitoba (2009) [test]\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/HAQQUC\",\"global_id\":\"doi:10.5072/FK2/HAQQUC\",\"description\":\"Three-dimensional
+        (3D) laser imaging has recently emerged as a tool for rock mass characterization.
+        Each image is a digital representation of the rock face and is composed of
+        millions of 3D points. An individual data point is composed of a measurement
+        along the X-, Y-, and Z-axes. This data set was acquired as part of a PhD
+        thesis entitled, Three-Dimensional Laser Imaging for Rock Mass Characterization.
+        The image data was acquired in 3 field trials over the course of the thesis.
+        Specif ically, the image data is from (1) a road cut at Ivy Lea, Ontario,
+        (2) an underground mine in Sudbury, Ontario, and (3) an underground mine in
+        Thompson, Manitoba. Each image contains information that can be used for rock
+        mass characterization. In the PhD thesis, the images were analyzed to (1)
+        measure joint orientation and (2) surface roughness from 3D data. A third
+        objective was to (3) remove the obstructive wire mesh from 3D data.\",\"published_at\":\"2018-05-22T19:45:15Z\",\"citationHtml\":\"Jason
+        Mah; Claire Samson; Steve McKinnon, 2018, \\\"3D Laser Images of a road cut
+        at Ivy Lea, Ontario (2007), underground in Sudbury, Ontario (2007), underground
+        in Thompson, Manitoba (2009) [test]\\\", <a href=\\\"https://doi.org/10.5072/FK2/HAQQUC\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/HAQQUC</a>, Root Dataverse,
+        V2\",\"citation\":\"Jason Mah; Claire Samson; Steve McKinnon, 2018, \\\"3D
+        Laser Images of a road cut at Ivy Lea, Ontario (2007), underground in Sudbury,
+        Ontario (2007), underground in Thompson, Manitoba (2009) [test]\\\", https://doi.org/10.5072/FK2/HAQQUC,
+        Root Dataverse, V2\",\"entity_id\":1016,\"authors\":[\"Jason Mah\",\"Claire
+        Samson\",\"Steve McKinnon\"]},{\"name\":\"A study of my afternoon drinks \",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/6PPJ6Y\",\"global_id\":\"doi:10.5072/FK2/6PPJ6Y\",\"description\":\"Photos
+        with my drinks, and a tabular file with some data on drinks.\",\"published_at\":\"2018-05-09T20:45:27Z\",\"citationHtml\":\"Tester,
+        Archivematica, 2018, \\\"A study of my afternoon drinks\\\", <a href=\\\"https://doi.org/10.5072/FK2/6PPJ6Y\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/6PPJ6Y</a>, Root Dataverse,
+        V1, UNF:6:IgxkjKXUlveGP0Darp1fYg==\",\"citation\":\"Tester, Archivematica,
+        2018, \\\"A study of my afternoon drinks\\\", https://doi.org/10.5072/FK2/6PPJ6Y,
+        Root Dataverse, V1, UNF:6:IgxkjKXUlveGP0Darp1fYg==\",\"entity_id\":574,\"authors\":[\"Tester,
+        Archivematica\"]},{\"name\":\"A study with restricted data\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/WZTJWN\",\"global_id\":\"doi:10.5072/FK2/WZTJWN\",\"description\":\"A
+        test with restricted data\",\"published_at\":\"2018-05-09T21:27:17Z\",\"citationHtml\":\"Tester,
+        Archivematica, 2018, \\\"A study with restricted data\\\", <a href=\\\"https://doi.org/10.5072/FK2/WZTJWN\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/WZTJWN</a>, Root Dataverse,
+        V1\",\"citation\":\"Tester, Archivematica, 2018, \\\"A study with restricted
+        data\\\", https://doi.org/10.5072/FK2/WZTJWN, Root Dataverse, V1\",\"entity_id\":577,\"authors\":[\"Tester,
+        Archivematica\"]},{\"name\":\"A sub-dataverse dataset\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/M3E7TW\",\"global_id\":\"doi:10.5072/FK2/M3E7TW\",\"description\":\"Testing
+        a dataset within a dataverse.\",\"published_at\":\"2018-05-09T21:32:24Z\",\"citationHtml\":\"Tester,
+        Archivematica, 2018, \\\"A sub-dataverse dataset\\\", <a href=\\\"https://doi.org/10.5072/FK2/M3E7TW\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/M3E7TW</a>, Root Dataverse,
+        V1, UNF:6:IgxkjKXUlveGP0Darp1fYg==\",\"citation\":\"Tester, Archivematica,
+        2018, \\\"A sub-dataverse dataset\\\", https://doi.org/10.5072/FK2/M3E7TW,
+        Root Dataverse, V1, UNF:6:IgxkjKXUlveGP0Darp1fYg==\",\"entity_id\":581,\"authors\":[\"Tester,
+        Archivematica\"]},{\"name\":\"A/V and large size files [test]\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/6PVAY7\",\"global_id\":\"doi:10.5072/FK2/6PVAY7\",\"description\":\"Dataset
+        to test A/V files and large files. All open source or freely available. .mov
+        from https://www.nasa.gov/multimedia/hd/index.html .mp4 from https://pixabay.com/videos/
+        .mkv from https://www.sample-videos.com/ .wav created in audacity .mp3 from
+        https://www.sample-videos.com/download-sample-audio.php\",\"published_at\":\"2018-05-25T13:22:18Z\",\"citationHtml\":\"Goodchild,
+        Meghan, 2018, \\\"A/V and large size files [test]\\\", <a href=\\\"https://doi.org/10.5072/FK2/6PVAY7\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/6PVAY7</a>, Root Dataverse,
+        V5\",\"citation\":\"Goodchild, Meghan, 2018, \\\"A/V and large size files
+        [test]\\\", https://doi.org/10.5072/FK2/6PVAY7, Root Dataverse, V5\",\"entity_id\":1059,\"authors\":[\"Goodchild,
+        Meghan\"]},{\"name\":\"Bala Parental Alienation Study: Canada, United Kingdom,
+        and Australia 1984-2012 [test]\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/UNMEZF\",\"global_id\":\"doi:10.5072/FK2/UNMEZF\",\"description\":\"Using
+        databases of judicial decisions from Canada, Australia, and the United Kingdom,
+        from 1984-2012, searching terms \\\"parental alienation\\\", \\\"alienated
+        child\\\", \\\"alienated\\\", etc., cases were combed through to determine
+        whether they represented cases where the court dealt with an issue of alienation.
+        Those cases that were found to have dealt with parental alienation were studied
+        and analyzed.\",\"published_at\":\"2018-05-16T15:22:50Z\",\"citationHtml\":\"Nicolas
+        Bala; Suzanne Hunt; Carrie McCarney; Erin Gwynne; Christine Ashborne, 2018,
+        \\\"Bala Parental Alienation Study: Canada, United Kingdom, and Australia
+        1984-2012 [test]\\\", <a href=\\\"https://doi.org/10.5072/FK2/UNMEZF\\\" target=\\\"_blank\\\">https://doi.org/10.5072/FK2/UNMEZF</a>,
+        Root Dataverse, V1, UNF:6:e0YCXa2mdX74Kw7YA+71XA==\",\"citation\":\"Nicolas
+        Bala; Suzanne Hunt; Carrie McCarney; Erin Gwynne; Christine Ashborne, 2018,
+        \\\"Bala Parental Alienation Study: Canada, United Kingdom, and Australia
+        1984-2012 [test]\\\", https://doi.org/10.5072/FK2/UNMEZF, Root Dataverse,
+        V1, UNF:6:e0YCXa2mdX74Kw7YA+71XA==\",\"entity_id\":784,\"authors\":[\"Nicolas
+        Bala\",\"Suzanne Hunt\",\"Carrie McCarney\",\"Erin Gwynne\",\"Christine Ashborne\"]},{\"name\":\"Botanical
+        Test\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/8KDUHM\",\"global_id\":\"doi:10.5072/FK2/8KDUHM\",\"description\":\"test
+        batch upload of ZIP\",\"published_at\":\"2017-01-04T21:29:50Z\",\"citationHtml\":\"Admin,
+        Dataverse, 2017, \\\"Botanical Test\\\", <a href=\\\"https://doi.org/10.5072/FK2/8KDUHM\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/8KDUHM</a>, Root Dataverse,
+        V1\",\"citation\":\"Admin, Dataverse, 2017, \\\"Botanical Test\\\", https://doi.org/10.5072/FK2/8KDUHM,
+        Root Dataverse, V1\",\"entity_id\":34,\"authors\":[\"Admin, Dataverse\"]},{\"name\":\"Canadian
+        Relocation Cases: Heading Towards Guidelines, 2011 [test]\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/QYH45Z\",\"global_id\":\"doi:10.5072/FK2/QYH45Z\",\"description\":\"Regardless
+        of outcome, cases where a parent wants to relocate with a child following
+        separation have a profound impact on all concerned, and are among the most
+        difficult cases in the family justice system. While the new British Columbia
+        Family Law Act (not yet in force) has provisions that address relocation,
+        no other Canadian statutes address these problems, and the only relevant Supreme
+        Court case, Gordon v Goertz, [1996] SCJ 52, offers only the most general guidance:
+        relocation deci sions are to be based on the \u201Cbest interests of the child\u201D.
+        Having clearer guidance for relocation cases would be of great assistance
+        to the courts, lawyers and families, facilitating judicial resolution, promoting
+        settlement a nd reducing costs, but over the past 15 years the Supreme Court
+        has repeatedly refused leave in relocation cases, and outside of B.C. no government
+        has announced plans to address the issue. Using Westlaw and Quicklaw, Canadian
+        relocation cases reported in English from 2001 to the beginning of 2011 (738
+        in total) were identified and analyzed.\",\"published_at\":\"2018-05-16T17:53:38Z\",\"citationHtml\":\"Nicholas
+        Bala; Andrea Wheeler; Joanne Paetsch; Lorne Bertrand, 2018, \\\"Canadian Relocation
+        Cases: Heading Towards Guidelines, 2011 [test]\\\", <a href=\\\"https://doi.org/10.5072/FK2/QYH45Z\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/QYH45Z</a>, Root Dataverse,
+        V1, UNF:6:dLu0AaOeqoOlDbGTwUrWjA==\",\"citation\":\"Nicholas Bala; Andrea
+        Wheeler; Joanne Paetsch; Lorne Bertrand, 2018, \\\"Canadian Relocation Cases:
+        Heading Towards Guidelines, 2011 [test]\\\", https://doi.org/10.5072/FK2/QYH45Z,
+        Root Dataverse, V1, UNF:6:dLu0AaOeqoOlDbGTwUrWjA==\",\"entity_id\":880,\"authors\":[\"Nicholas
+        Bala\",\"Andrea Wheeler\",\"Joanne Paetsch\",\"Lorne Bertrand\"]},{\"name\":\"Concert
+        Take 007\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/FQPXOT\",\"global_id\":\"doi:10.5072/FK2/FQPXOT\",\"description\":\"Concert
+        Take 007 Ambisonic\",\"published_at\":\"2018-05-10T19:26:16Z\",\"citationHtml\":\"Center,
+        Calum, 2018, \\\"Concert Take 007\\\", <a href=\\\"https://doi.org/10.5072/FK2/FQPXOT\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/FQPXOT</a>, Root Dataverse,
+        V1\",\"citation\":\"Center, Calum, 2018, \\\"Concert Take 007\\\", https://doi.org/10.5072/FK2/FQPXOT,
+        Root Dataverse, V1\",\"entity_id\":595,\"authors\":[\"Center, Calum\"]},{\"name\":\"dataset1\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/ZKDDXA\",\"global_id\":\"doi:10.5072/FK2/ZKDDXA\",\"description\":\"dataset1\",\"published_at\":\"2018-05-15T20:56:30Z\",\"citationHtml\":\"Costamagna,
+        Erik, 2018, \\\"dataset1\\\", <a href=\\\"https://doi.org/10.5072/FK2/ZKDDXA\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/ZKDDXA</a>, Root Dataverse,
+        V1\",\"citation\":\"Costamagna, Erik, 2018, \\\"dataset1\\\", https://doi.org/10.5072/FK2/ZKDDXA,
+        Root Dataverse, V1\",\"entity_id\":783,\"authors\":[\"Costamagna, Erik\"]}],\"count_in_response\":10}}"}
     headers:
-      connection: [close]
-      content-length: ['2163']
+      access-control-allow-origin: ['*']
       content-type: [application/json]
-      date: ['Tue, 15 Sep 2015 22:34:52 GMT']
+      date: ['Thu, 05 Jul 2018 18:59:01 GMT']
+      server: [Apache/2.4.6 (CentOS) mod_R/1.2.7 R/3.3.0 mod_apreq2-20090110/2.8.0]
+      strict-transport-security: [max-age=15768000]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.14.2]
+    method: GET
+    uri: https://demodv.scholarsportal.info/api/search/?q=%2A&sort=name&key=51c64df4-abd7-4613-af21-6a68715dca92&start=10&per_page=10&show_entity_ids=True&type=dataset&order=asc
+  response:
+    body: {string: !!python/unicode '{"status":"OK","data":{"q":"*","total_count":59,"start":10,"spelling_alternatives":{},"items":[{"name":"Depress","type":"dataset","url":"https://doi.org/10.5072/FK2/NNTESQ","global_id":"doi:10.5072/FK2/NNTESQ","description":"Depressing
+        data","published_at":"2017-08-09T17:59:02Z","citationHtml":"Manuel, Kevin,
+        2017, \"Depress\", <a href=\"https://doi.org/10.5072/FK2/NNTESQ\" target=\"_blank\">https://doi.org/10.5072/FK2/NNTESQ</a>,
+        Root Dataverse, V1, UNF:6:08UsvQXuLqTKseBaQf77Xw==","citation":"Manuel, Kevin,
+        2017, \"Depress\", https://doi.org/10.5072/FK2/NNTESQ, Root Dataverse, V1,
+        UNF:6:08UsvQXuLqTKseBaQf77Xw==","entity_id":115,"authors":["Manuel, Kevin"]},{"name":"ECM
+        Dataset","type":"dataset","url":"https://doi.org/10.5072/FK2/PBKZTJ","global_id":"doi:10.5072/FK2/PBKZTJ","description":"This
+        dataset represents the user information from ECM.","published_at":"2018-05-30T18:51:23Z","citationHtml":"Tsai,
+        Ming, 2018, \"ECM Dataset\", <a href=\"https://doi.org/10.5072/FK2/PBKZTJ\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/PBKZTJ</a>, Root Dataverse,
+        V1, UNF:6:vbaeRHXPbstnCHjK+jgkTg==","citation":"Tsai, Ming, 2018, \"ECM Dataset\",
+        https://doi.org/10.5072/FK2/PBKZTJ, Root Dataverse, V1, UNF:6:vbaeRHXPbstnCHjK+jgkTg==","entity_id":1128,"authors":["Tsai,
+        Ming"]},{"name":"Field data ","type":"dataset","url":"https://doi.org/10.5072/FK2/ZIJ7P8","global_id":"doi:10.5072/FK2/ZIJ7P8","description":"This
+        is my data from field work.","published_at":"2017-11-29T21:06:09Z","citationHtml":"Brodeur,
+        Jason, 2017, \"Field data\", <a href=\"https://doi.org/10.5072/FK2/ZIJ7P8\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/ZIJ7P8</a>, Root Dataverse,
+        V1","citation":"Brodeur, Jason, 2017, \"Field data\", https://doi.org/10.5072/FK2/ZIJ7P8,
+        Root Dataverse, V1","entity_id":313,"authors":["Brodeur, Jason"]},{"name":"Food
+        Company Research","type":"dataset","url":"https://doi.org/10.5072/FK2/KQN9SY","global_id":"doi:10.5072/FK2/KQN9SY","description":"Some
+        research on a food company","published_at":"2017-08-09T17:59:06Z","citationHtml":"Gertler,
+        Matthew, 2017, \"Food Company Research\", <a href=\"https://doi.org/10.5072/FK2/KQN9SY\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/KQN9SY</a>, Root Dataverse,
+        V1, UNF:6:8LbdsSOCNlzV16vgVAG3Bg==","citation":"Gertler, Matthew, 2017, \"Food
+        Company Research\", https://doi.org/10.5072/FK2/KQN9SY, Root Dataverse, V1,
+        UNF:6:8LbdsSOCNlzV16vgVAG3Bg==","entity_id":126,"authors":["Gertler, Matthew"]},{"name":"Forward
+        Sortation Area","type":"dataset","url":"https://doi.org/10.5072/FK2/PLD5VK","global_id":"doi:10.5072/FK2/PLD5VK","description":"These
+        are files for testing the Arctic Corridors Project","published_at":"2017-11-02T17:47:12Z","citationHtml":"Rivard,
+        joel, 2017, \"Forward Sortation Area\", <a href=\"https://doi.org/10.5072/FK2/PLD5VK\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/PLD5VK</a>, Root Dataverse,
+        V1, UNF:6:Uskilwb7smiKVXGn/uiipg==","citation":"Rivard, joel, 2017, \"Forward
+        Sortation Area\", https://doi.org/10.5072/FK2/PLD5VK, Root Dataverse, V1,
+        UNF:6:Uskilwb7smiKVXGn/uiipg==","entity_id":152,"authors":["Rivard, joel"]},{"name":"french
+        testing","type":"dataset","url":"https://doi.org/10.5072/FK2/URLGQU","global_id":"doi:10.5072/FK2/URLGQU","description":"test","published_at":"2017-11-29T19:50:18Z","citationHtml":"Newson,
+        Kaitlin, 2017, \"french testing\", <a href=\"https://doi.org/10.5072/FK2/URLGQU\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/URLGQU</a>, Root Dataverse,
+        V5, UNF:6:cOR6jlWNkikgT7R1KxLNAw==","citation":"Newson, Kaitlin, 2017, \"french
+        testing\", https://doi.org/10.5072/FK2/URLGQU, Root Dataverse, V5, UNF:6:cOR6jlWNkikgT7R1KxLNAw==","entity_id":65,"authors":["Newson,
+        Kaitlin"]},{"name":"GIS Data","type":"dataset","url":"https://doi.org/10.5072/FK2/BUEQTM","global_id":"doi:10.5072/FK2/BUEQTM","description":"GIS
+        Data Example","published_at":"2017-08-09T17:58:53Z","citationHtml":"Jakubek,
+        Dan, 2017, \"GIS Data\", <a href=\"https://doi.org/10.5072/FK2/BUEQTM\" target=\"_blank\">https://doi.org/10.5072/FK2/BUEQTM</a>,
+        Root Dataverse, V1, UNF:6:8LbdsSOCNlzV16vgVAG3Bg==","citation":"Jakubek, Dan,
+        2017, \"GIS Data\", https://doi.org/10.5072/FK2/BUEQTM, Root Dataverse, V1,
+        UNF:6:8LbdsSOCNlzV16vgVAG3Bg==","entity_id":124,"authors":["Jakubek, Dan"]},{"name":"ICS
+        Dataset","type":"dataset","url":"https://doi.org/10.5072/FK2/SEQA4H","global_id":"doi:10.5072/FK2/SEQA4H","description":"ICS
+        Dataset Sample","published_at":"2018-05-30T18:16:47Z","citationHtml":"Tsai,
+        Ming; Skinny Pete, 2018, \"ICS Dataset\", <a href=\"https://doi.org/10.5072/FK2/SEQA4H\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/SEQA4H</a>, Root Dataverse,
+        V1, UNF:6:vbaeRHXPbstnCHjK+jgkTg==","citation":"Tsai, Ming; Skinny Pete, 2018,
+        \"ICS Dataset\", https://doi.org/10.5072/FK2/SEQA4H, Root Dataverse, V1, UNF:6:vbaeRHXPbstnCHjK+jgkTg==","entity_id":1123,"authors":["Tsai,
+        Ming","Skinny Pete"]},{"name":"Images [test]","type":"dataset","url":"https://doi.org/10.5072/FK2/EOGUHP","global_id":"doi:10.5072/FK2/EOGUHP","description":"Image
+        test data. .png created from screen shot .jpg from https://www.flickr.com/photos/wyncliffe/13184596964/
+        .fits from https://www.spacetelescope.org/projects/fits_liberator/eagledata/
+        .tiff (geotiff) from Scholars GeoPortal","published_at":"2018-05-24T14:38:00Z","citationHtml":"Goodchild,
+        Meghan, 2018, \"Images [test]\", <a href=\"https://doi.org/10.5072/FK2/EOGUHP\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/EOGUHP</a>, Root Dataverse,
+        V4","citation":"Goodchild, Meghan, 2018, \"Images [test]\", https://doi.org/10.5072/FK2/EOGUHP,
+        Root Dataverse, V4","entity_id":1056,"authors":["Goodchild, Meghan"]},{"name":"IT
+        WAS ONLY A FISH","type":"dataset","url":"https://doi.org/10.5072/FK2/YNI4AC","global_id":"doi:10.5072/FK2/YNI4AC","description":"how
+        did it end up like this?","published_at":"2017-11-29T21:06:15Z","citationHtml":"Garnett,
+        Jacqueline, 2017, \"IT WAS ONLY A FISH\", <a href=\"https://doi.org/10.5072/FK2/YNI4AC\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/YNI4AC</a>, Root Dataverse,
+        V1","citation":"Garnett, Jacqueline, 2017, \"IT WAS ONLY A FISH\", https://doi.org/10.5072/FK2/YNI4AC,
+        Root Dataverse, V1","entity_id":296,"authors":["Garnett, Jacqueline"]}],"count_in_response":10}}'}
+    headers:
+      access-control-allow-origin: ['*']
+      content-length: ['6230']
+      content-type: [application/json]
+      date: ['Thu, 05 Jul 2018 18:59:01 GMT']
+      server: [Apache/2.4.6 (CentOS) mod_R/1.2.7 R/3.3.0 mod_apreq2-20090110/2.8.0]
+      strict-transport-security: [max-age=15768000]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.14.2]
+    method: GET
+    uri: https://demodv.scholarsportal.info/api/search/?q=%2A&sort=name&key=51c64df4-abd7-4613-af21-6a68715dca92&start=20&per_page=10&show_entity_ids=True&type=dataset&order=asc
+  response:
+    body: {string: "{\"status\":\"OK\",\"data\":{\"q\":\"*\",\"total_count\":59,\"start\":20,\"spelling_alternatives\":{},\"items\":[{\"name\":\"Lidar\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/EJX5C8\",\"global_id\":\"doi:10.5072/FK2/EJX5C8\",\"description\":\"The
+        Bimaristan Nur al-Din, constructed in 1154 (549 AH) is the earliest surviving
+        example of an Islamic hospital. It was built by Nur al-Din Mahmud ibn Zengi,
+        ruler of Syria from 1146\u20131174 (540\u2013569 AH) with funds from his waqf,
+        a charitable endowment meant to finance public and religious institutions.
+        The bimaristan was a medical school as well as a hospital, and was known for
+        using innovative healing techniques such as music therapy. The word bimaristan
+        is of Persian origin, meaning \u201Cplace of the sick.\u201D\",\"published_at\":\"2018-06-25T21:29:52Z\",\"citationHtml\":\"cimslab,
+        2018, \\\"Lidar\\\", <a href=\\\"https://doi.org/10.5072/FK2/EJX5C8\\\" target=\\\"_blank\\\">https://doi.org/10.5072/FK2/EJX5C8</a>,
+        Root Dataverse, V1\",\"citation\":\"cimslab, 2018, \\\"Lidar\\\", https://doi.org/10.5072/FK2/EJX5C8,
+        Root Dataverse, V1\",\"entity_id\":1187,\"authors\":[\"cimslab\"]},{\"name\":\"L\xE9vesque
+        and Trudeau in the US -- translation corpus\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/DEF06J\",\"global_id\":\"doi:10.5072/FK2/DEF06J\",\"description\":\"This
+        corpus was used when writing the chapter \\\"January/February 1977: Independence,
+        secession, political duels or L\xE9vesque and Trudeau in the United States\\\",
+        in the book Translation Effects. It comprises speeches delivered by a Canadian
+        Prime Minister in English and in French, as well as a Quebec Premier in English
+        and in French. The speeches were delivered in 1977 and relate to the first
+        election of the Parti Quebecois, a nationalist party in Quebec. The speeches
+        are in Text format and can be used in bilingual concordancers such as Paraconc
+        or monolingual concordancers such as WordSmith.\",\"published_at\":\"2016-11-09T20:27:41Z\",\"citationHtml\":\"Admin,
+        Dataverse, 2016, \\\"L&eacute;vesque and Trudeau in the US -- translation
+        corpus\\\", <a href=\\\"https://doi.org/10.5072/FK2/DEF06J\\\" target=\\\"_blank\\\">https://doi.org/10.5072/FK2/DEF06J</a>,
+        Root Dataverse, V1\",\"citation\":\"Admin, Dataverse, 2016, \\\"L\xE9vesque
+        and Trudeau in the US -- translation corpus\\\", https://doi.org/10.5072/FK2/DEF06J,
+        Root Dataverse, V1\",\"entity_id\":25,\"authors\":[\"Admin, Dataverse\"]},{\"name\":\"L\xE9vesque
+        and Trudeau in the US -- translation corpus\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/3U07X9\",\"global_id\":\"doi:10.5072/FK2/3U07X9\",\"description\":\"L\xE9vesque
+        and Trudeau in the US -- translation corpus\",\"published_at\":\"2016-11-09T19:48:31Z\",\"citationHtml\":\"Admin,
+        Dataverse, 2016, \\\"L&eacute;vesque and Trudeau in the US -- translation
+        corpus\\\", <a href=\\\"https://doi.org/10.5072/FK2/3U07X9\\\" target=\\\"_blank\\\">https://doi.org/10.5072/FK2/3U07X9</a>,
+        Root Dataverse, V1\",\"citation\":\"Admin, Dataverse, 2016, \\\"L\xE9vesque
+        and Trudeau in the US -- translation corpus\\\", https://doi.org/10.5072/FK2/3U07X9,
+        Root Dataverse, V1\",\"entity_id\":24,\"authors\":[\"Admin, Dataverse\"]},{\"name\":\"Metadata
+        only [test]\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/MDQHYY\",\"global_id\":\"doi:10.5072/FK2/MDQHYY\",\"description\":\"Test
+        dataset with only metadata\",\"published_at\":\"2018-05-23T17:26:15Z\",\"citationHtml\":\"Goodchild,
+        Meghan, 2018, \\\"Metadata only [test]\\\", <a href=\\\"https://doi.org/10.5072/FK2/MDQHYY\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/MDQHYY</a>, Root Dataverse,
+        V1\",\"citation\":\"Goodchild, Meghan, 2018, \\\"Metadata only [test]\\\",
+        https://doi.org/10.5072/FK2/MDQHYY, Root Dataverse, V1\",\"entity_id\":1110,\"authors\":[\"Goodchild,
+        Meghan\"]},{\"name\":\"My test data\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/XB4I3G\",\"global_id\":\"doi:10.5072/FK2/XB4I3G\",\"description\":\"This
+        is data for testing\",\"published_at\":\"2017-08-09T17:58:53Z\",\"citationHtml\":\"worthington,
+        kevin, 2017, \\\"My test data\\\", <a href=\\\"https://doi.org/10.5072/FK2/XB4I3G\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/XB4I3G</a>, Root Dataverse,
+        V1, UNF:6:Kv0p2lN0m6ZKl0Zn8uiQpw==\",\"citation\":\"worthington, kevin, 2017,
+        \\\"My test data\\\", https://doi.org/10.5072/FK2/XB4I3G, Root Dataverse,
+        V1, UNF:6:Kv0p2lN0m6ZKl0Zn8uiQpw==\",\"entity_id\":122,\"authors\":[\"worthington,
+        kevin\"]},{\"name\":\"Number of oysters in my backyard\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/0WWCXU\",\"global_id\":\"doi:10.5072/FK2/0WWCXU\",\"description\":\"It
+        is a known thing that oysters are in my backyard.\",\"published_at\":\"2017-11-29T21:07:57Z\",\"citationHtml\":\"Lefebvre,
+        Michele, 2017, \\\"Number of oysters in my backyard\\\", <a href=\\\"https://doi.org/10.5072/FK2/0WWCXU\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/0WWCXU</a>, Root Dataverse,
+        V1\",\"citation\":\"Lefebvre, Michele, 2017, \\\"Number of oysters in my backyard\\\",
+        https://doi.org/10.5072/FK2/0WWCXU, Root Dataverse, V1\",\"entity_id\":331,\"authors\":[\"Lefebvre,
+        Michele\"]},{\"name\":\"Other Microsoft Office Documents [test]\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/94QZ3S\",\"global_id\":\"doi:10.5072/FK2/94QZ3S\",\"description\":\"Test
+        for access database and word document\",\"published_at\":\"2018-05-17T19:05:33Z\",\"citationHtml\":\"Goodchild,
+        Meghan, 2018, \\\"Other Microsoft Office Documents [test]\\\", <a href=\\\"https://doi.org/10.5072/FK2/94QZ3S\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/94QZ3S</a>, Root Dataverse,
+        V1\",\"citation\":\"Goodchild, Meghan, 2018, \\\"Other Microsoft Office Documents
+        [test]\\\", https://doi.org/10.5072/FK2/94QZ3S, Root Dataverse, V1\",\"entity_id\":1038,\"authors\":[\"Goodchild,
+        Meghan\"]},{\"name\":\"Panoramas\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/EBUDXQ\",\"global_id\":\"doi:10.5072/FK2/EBUDXQ\",\"description\":\"The
+        Bimaristan Nur al-Din, constructed in 1154 (549 AH) is the earliest surviving
+        example of an Islamic hospital. It was built by Nur al-Din Mahmud ibn Zengi,
+        ruler of Syria from 1146\u20131174 (540\u2013569 AH) with funds from his waqf,
+        a charitable endowment meant to finance public and religious institutions.
+        The bimaristan was a medical school as well as a hospital, and was known for
+        using innovative healing techniques such as music therapy. The word bimaristan
+        is of Persian origin, meaning \u201Cplace of the sick.\u201D\",\"published_at\":\"2018-06-25T21:30:04Z\",\"citationHtml\":\"cimslab,
+        2018, \\\"Panoramas\\\", <a href=\\\"https://doi.org/10.5072/FK2/EBUDXQ\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/EBUDXQ</a>, Root Dataverse,
+        V1\",\"citation\":\"cimslab, 2018, \\\"Panoramas\\\", https://doi.org/10.5072/FK2/EBUDXQ,
+        Root Dataverse, V1\",\"entity_id\":1185,\"authors\":[\"cimslab\"]},{\"name\":\"Photogrammetry\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/LINBHR\",\"global_id\":\"doi:10.5072/FK2/LINBHR\",\"description\":\"The
+        Bimaristan Nur al-Din, constructed in 1154 (549 AH) is the earliest surviving
+        example of an Islamic hospital. It was built by Nur al-Din Mahmud ibn Zengi,
+        ruler of Syria from 1146\u20131174 (540\u2013569 AH) with funds from his waqf,
+        a charitable endowment meant to finance public and religious institutions.
+        The bimaristan was a medical school as well as a hospital, and was known for
+        using innovative healing techniques such as music therapy. The word bimaristan
+        is of Persian origin, meaning \u201Cplace of the sick.\u201D\",\"published_at\":\"2018-06-25T21:30:17Z\",\"citationHtml\":\"cimslab,
+        2018, \\\"Photogrammetry\\\", <a href=\\\"https://doi.org/10.5072/FK2/LINBHR\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/LINBHR</a>, Root Dataverse,
+        V1\",\"citation\":\"cimslab, 2018, \\\"Photogrammetry\\\", https://doi.org/10.5072/FK2/LINBHR,
+        Root Dataverse, V1\",\"entity_id\":1183,\"authors\":[\"cimslab\"]},{\"name\":\"Sample
+        Dataset\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/4BITMF\",\"global_id\":\"doi:10.5072/FK2/4BITMF\",\"description\":\"This
+        is a sample dataset\",\"published_at\":\"2018-05-14T17:00:06Z\",\"citationHtml\":\"Goodchild,
+        Meghan, 2018, \\\"Sample Dataset\\\", <a href=\\\"https://doi.org/10.5072/FK2/4BITMF\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/4BITMF</a>, Root Dataverse,
+        V2, UNF:6:NqUA+rlTbQGEtG5GnW9AVw==\",\"citation\":\"Goodchild, Meghan, 2018,
+        \\\"Sample Dataset\\\", https://doi.org/10.5072/FK2/4BITMF, Root Dataverse,
+        V2, UNF:6:NqUA+rlTbQGEtG5GnW9AVw==\",\"entity_id\":605,\"authors\":[\"Goodchild,
+        Meghan\"]}],\"count_in_response\":10}}"}
+    headers:
+      access-control-allow-origin: ['*']
+      content-length: ['8128']
+      content-type: [application/json]
+      date: ['Thu, 05 Jul 2018 18:59:02 GMT']
+      server: [Apache/2.4.6 (CentOS) mod_R/1.2.7 R/3.3.0 mod_apreq2-20090110/2.8.0]
+      strict-transport-security: [max-age=15768000]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.14.2]
+    method: GET
+    uri: https://demodv.scholarsportal.info/api/search/?q=%2A&sort=name&key=51c64df4-abd7-4613-af21-6a68715dca92&start=30&per_page=10&show_entity_ids=True&type=dataset&order=asc
+  response:
+    body: {string: "{\"status\":\"OK\",\"data\":{\"q\":\"*\",\"total_count\":59,\"start\":30,\"spelling_alternatives\":{},\"items\":[{\"name\":\"Shabooyah
+        1\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/ENFWE8\",\"global_id\":\"doi:10.5072/FK2/ENFWE8\",\"description\":\"this
+        is the best dataset you'll ever find\",\"published_at\":\"2017-11-29T21:06:07Z\",\"citationHtml\":\"Ahluwalia,
+        Monish, 2017, \\\"Shabooyah 1\\\", <a href=\\\"https://doi.org/10.5072/FK2/ENFWE8\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/ENFWE8</a>, Root Dataverse,
+        V1\",\"citation\":\"Ahluwalia, Monish, 2017, \\\"Shabooyah 1\\\", https://doi.org/10.5072/FK2/ENFWE8,
+        Root Dataverse, V1\",\"entity_id\":290,\"authors\":[\"Ahluwalia, Monish\"]},{\"name\":\"Social
+        Media Use Among Teens [Canada]\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/TOXB6Q\",\"global_id\":\"doi:10.5072/FK2/TOXB6Q\",\"description\":\"The
+        Social Media Use among Teens survey was conducted by the Youth Communication
+        Development Project to understand social media communication behaviours among
+        youth in Canada. The survey collected responses from Canadian youth using
+        an online questionnaire that asks about social media use including, platform
+        type, frequency of use, activity type, and location of use. This information
+        is supplemented with the respondent\u2019s demographic and household characteristics.\",\"published_at\":\"2018-02-14T14:40:26Z\",\"citationHtml\":\"Doe,
+        Jane, 2018, \\\"Social Media Use Among Teens [Canada]\\\", <a href=\\\"https://doi.org/10.5072/FK2/TOXB6Q\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/TOXB6Q</a>, Root Dataverse,
+        V1\",\"citation\":\"Doe, Jane, 2018, \\\"Social Media Use Among Teens [Canada]\\\",
+        https://doi.org/10.5072/FK2/TOXB6Q, Root Dataverse, V1\",\"entity_id\":383,\"authors\":[\"Doe,
+        Jane\"]},{\"name\":\"some testing\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/XBJZKT\",\"global_id\":\"doi:10.5072/FK2/XBJZKT\",\"description\":\"test\",\"published_at\":\"2018-01-30T18:47:28Z\",\"citationHtml\":\"Newson,
+        Kaitlin, 2018, \\\"some testing\\\", <a href=\\\"https://doi.org/10.5072/FK2/XBJZKT\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/XBJZKT</a>, Root Dataverse,
+        V1\",\"citation\":\"Newson, Kaitlin, 2018, \\\"some testing\\\", https://doi.org/10.5072/FK2/XBJZKT,
+        Root Dataverse, V1\",\"entity_id\":374,\"authors\":[\"Newson, Kaitlin\"]},{\"name\":\"Spatial
+        Temporal Distortion [test]\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/EL8JSI\",\"global_id\":\"doi:10.5072/FK2/EL8JSI\",\"description\":\"Test
+        from original project\",\"published_at\":\"2018-05-17T13:30:13Z\",\"citationHtml\":\"Amber
+        Leahey, 2018, \\\"Spatial Temporal Distortion [test]\\\", <a href=\\\"https://doi.org/10.5072/FK2/EL8JSI\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/EL8JSI</a>, Root Dataverse,
+        V1\",\"citation\":\"Amber Leahey, 2018, \\\"Spatial Temporal Distortion [test]\\\",
+        https://doi.org/10.5072/FK2/EL8JSI, Root Dataverse, V1\",\"entity_id\":1030,\"authors\":[\"Amber
+        Leahey\"]},{\"name\":\"Statistical software [test]\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/TG4WDC\",\"global_id\":\"doi:10.5072/FK2/TG4WDC\",\"description\":\"Test
+        data for statistical software and code. Sample data and data from Sand7 space:
+        \\\"Interesting data\\\" and \\\"Unlikely suspects\\\"\",\"published_at\":\"2018-05-17T19:39:06Z\",\"citationHtml\":\"Goodchild,
+        Meghan, 2018, \\\"Statistical software [test]\\\", <a href=\\\"https://doi.org/10.5072/FK2/TG4WDC\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/TG4WDC</a>, Root Dataverse,
+        V1, UNF:6:R5L/Qp6E9aczSxuZ4JtWYQ==\",\"citation\":\"Goodchild, Meghan, 2018,
+        \\\"Statistical software [test]\\\", https://doi.org/10.5072/FK2/TG4WDC, Root
+        Dataverse, V1, UNF:6:R5L/Qp6E9aczSxuZ4JtWYQ==\",\"entity_id\":1041,\"authors\":[\"Goodchild,
+        Meghan\"]},{\"name\":\"tab test\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/N9DJFQ\",\"global_id\":\"doi:10.5072/FK2/N9DJFQ\",\"description\":\"asdf\",\"published_at\":\"2018-04-30T21:06:21Z\",\"citationHtml\":\"worthington,
+        Kevin, 2017, \\\"tab test\\\", <a href=\\\"https://doi.org/10.5072/FK2/N9DJFQ\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/N9DJFQ</a>, Root Dataverse,
+        V2, UNF:6:sOckRTvVvBenZry65ccChQ==\",\"citation\":\"worthington, Kevin, 2017,
+        \\\"tab test\\\", https://doi.org/10.5072/FK2/N9DJFQ, Root Dataverse, V2,
+        UNF:6:sOckRTvVvBenZry65ccChQ==\",\"entity_id\":108,\"authors\":[\"worthington,
+        Kevin\"]},{\"name\":\"Tabular data test\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/AVEXL3\",\"global_id\":\"doi:10.5072/FK2/AVEXL3\",\"description\":\"this
+        is social science survey data\",\"published_at\":\"2017-08-15T15:43:37Z\",\"citationHtml\":\"Leahey,
+        Amber, 2017, \\\"Tabular data test\\\", <a href=\\\"https://doi.org/10.5072/FK2/AVEXL3\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/AVEXL3</a>, Root Dataverse,
+        V1, UNF:6:bFXFR7rVxEhdhPFGeXgzlA==\",\"citation\":\"Leahey, Amber, 2017, \\\"Tabular
+        data test\\\", https://doi.org/10.5072/FK2/AVEXL3, Root Dataverse, V1, UNF:6:bFXFR7rVxEhdhPFGeXgzlA==\",\"entity_id\":133,\"authors\":[\"Leahey,
+        Amber\"]},{\"name\":\"test\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/NUG7RW\",\"global_id\":\"doi:10.5072/FK2/NUG7RW\",\"description\":\"test\",\"published_at\":\"2018-04-24T15:10:38Z\",\"citationHtml\":\"Leahey,
+        Amber, 2018, \\\"test\\\", <a href=\\\"https://doi.org/10.5072/FK2/NUG7RW\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/NUG7RW</a>, Root Dataverse,
+        V1\",\"citation\":\"Leahey, Amber, 2018, \\\"test\\\", https://doi.org/10.5072/FK2/NUG7RW,
+        Root Dataverse, V1\",\"entity_id\":485,\"authors\":[\"Leahey, Amber\"]},{\"name\":\"test\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/WPYA2J\",\"global_id\":\"doi:10.5072/FK2/WPYA2J\",\"description\":\"test\",\"published_at\":\"2018-06-14T21:24:32Z\",\"citationHtml\":\"Center,
+        Calum, 2018, \\\"test\\\", <a href=\\\"https://doi.org/10.5072/FK2/WPYA2J\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/WPYA2J</a>, Root Dataverse,
+        V1\",\"citation\":\"Center, Calum, 2018, \\\"test\\\", https://doi.org/10.5072/FK2/WPYA2J,
+        Root Dataverse, V1\",\"entity_id\":1139,\"authors\":[\"Center, Calum\"]},{\"name\":\"test
+        24\",\"type\":\"dataset\",\"url\":\"https://doi.org/10.5072/FK2/FZAH68\",\"global_id\":\"doi:10.5072/FK2/FZAH68\",\"description\":\"test\",\"published_at\":\"2017-03-20T16:07:30Z\",\"citationHtml\":\"Admin,
+        Dataverse, 2017, \\\"test 24\\\", <a href=\\\"https://doi.org/10.5072/FK2/FZAH68\\\"
+        target=\\\"_blank\\\">https://doi.org/10.5072/FK2/FZAH68</a>, Root Dataverse,
+        V1\",\"citation\":\"Admin, Dataverse, 2017, \\\"test 24\\\", https://doi.org/10.5072/FK2/FZAH68,
+        Root Dataverse, V1\",\"entity_id\":54,\"authors\":[\"Admin, Dataverse\"]}],\"count_in_response\":10}}"}
+    headers:
+      access-control-allow-origin: ['*']
+      content-length: ['6266']
+      content-type: [application/json]
+      date: ['Thu, 05 Jul 2018 18:59:02 GMT']
+      server: [Apache/2.4.6 (CentOS) mod_R/1.2.7 R/3.3.0 mod_apreq2-20090110/2.8.0]
+      strict-transport-security: [max-age=15768000]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.14.2]
+    method: GET
+    uri: https://demodv.scholarsportal.info/api/search/?q=%2A&sort=name&key=51c64df4-abd7-4613-af21-6a68715dca92&start=40&per_page=10&show_entity_ids=True&type=dataset&order=asc
+  response:
+    body: {string: !!python/unicode '{"status":"OK","data":{"q":"*","total_count":59,"start":40,"spelling_alternatives":{},"items":[{"name":"Test
+        Data at X Site","type":"dataset","url":"https://doi.org/10.5072/FK2/FLCPJU","global_id":"doi:10.5072/FK2/FLCPJU","description":"Enter
+        Text Here.","published_at":"2017-12-18T20:17:07Z","citationHtml":"steeleworthy,
+        mike, 2017, \"Test Data at X Site\", <a href=\"https://doi.org/10.5072/FK2/FLCPJU\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/FLCPJU</a>, Root Dataverse,
+        V1","citation":"steeleworthy, mike, 2017, \"Test Data at X Site\", https://doi.org/10.5072/FK2/FLCPJU,
+        Root Dataverse, V1","entity_id":244,"authors":["steeleworthy, mike"]},{"name":"test
+        dataset","type":"dataset","url":"https://doi.org/10.5072/FK2/72C3LQ","global_id":"doi:10.5072/FK2/72C3LQ","description":"this
+        is a test dataset","published_at":"2017-03-29T14:21:32Z","citationHtml":"Admin,
+        Dataverse, 2016, \"test dataset\", <a href=\"https://doi.org/10.5072/FK2/72C3LQ\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/72C3LQ</a>, Root Dataverse,
+        V2","citation":"Admin, Dataverse, 2016, \"test dataset\", https://doi.org/10.5072/FK2/72C3LQ,
+        Root Dataverse, V2","entity_id":23,"authors":["Admin, Dataverse"]},{"name":"test
+        dataset","type":"dataset","url":"https://doi.org/10.5072/FK2/CN2S0I","global_id":"doi:10.5072/FK2/CN2S0I","description":"text!","published_at":"2017-12-07T19:40:51Z","citationHtml":"Brodeur,
+        Jason, 2017, \"test dataset\", <a href=\"https://doi.org/10.5072/FK2/CN2S0I\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/CN2S0I</a>, Root Dataverse,
+        V1","citation":"Brodeur, Jason, 2017, \"test dataset\", https://doi.org/10.5072/FK2/CN2S0I,
+        Root Dataverse, V1","entity_id":142,"authors":["Brodeur, Jason"]},{"name":"Test
+        Dataset - v2","type":"dataset","url":"https://doi.org/10.5072/FK2/AIXA18","global_id":"doi:10.5072/FK2/AIXA18","description":"this
+        is a test data set","published_at":"2017-06-30T00:49:06Z","citationHtml":"Testo,
+        Frank, 2017, \"Test Dataset - v2\", <a href=\"https://doi.org/10.5072/FK2/AIXA18\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/AIXA18</a>, Root Dataverse,
+        V3, UNF:6:IWd8j5t8Vy49ppCRuJW02g==","citation":"Testo, Frank, 2017, \"Test
+        Dataset - v2\", https://doi.org/10.5072/FK2/AIXA18, Root Dataverse, V3, UNF:6:IWd8j5t8Vy49ppCRuJW02g==","entity_id":80,"authors":["Testo,
+        Frank"]},{"name":"Test Dataset danielt","type":"dataset","url":"https://doi.org/10.5072/FK2/KFLXSP","global_id":"doi:10.5072/FK2/KFLXSP","description":"Random
+        Excel file for test dataset.","published_at":"2017-11-29T21:06:49Z","citationHtml":"Daniel,
+        Tanya, 2017, \"Test Dataset danielt\", <a href=\"https://doi.org/10.5072/FK2/KFLXSP\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/KFLXSP</a>, Root Dataverse,
+        V1, UNF:6:sYwRfRVHU05hFclKIGixrg==","citation":"Daniel, Tanya, 2017, \"Test
+        Dataset danielt\", https://doi.org/10.5072/FK2/KFLXSP, Root Dataverse, V1,
+        UNF:6:sYwRfRVHU05hFclKIGixrg==","entity_id":300,"authors":["Daniel, Tanya"]},{"name":"Test
+        dataset for DOI","type":"dataset","url":"https://doi.org/10.5072/FK2/YTFPGF","global_id":"doi:10.5072/FK2/YTFPGF","description":"testing
+        doi creation","published_at":"2016-11-21T16:15:54Z","citationHtml":"Leahey,
+        Amber, 2016, \"Test dataset for DOI\", <a href=\"https://doi.org/10.5072/FK2/YTFPGF\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/YTFPGF</a>, Root Dataverse,
+        V1","citation":"Leahey, Amber, 2016, \"Test dataset for DOI\", https://doi.org/10.5072/FK2/YTFPGF,
+        Root Dataverse, V1","entity_id":26,"authors":["Leahey, Amber"]},{"name":"test
+        file","type":"dataset","url":"https://doi.org/10.5072/FK2/ZKFRRF","global_id":"doi:10.5072/FK2/ZKFRRF","description":"test","published_at":"2018-06-07T13:20:38Z","citationHtml":"Goodchild,
+        Meghan, 2017, \"test file\", <a href=\"https://doi.org/10.5072/FK2/ZKFRRF\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/ZKFRRF</a>, Root Dataverse,
+        V2","citation":"Goodchild, Meghan, 2017, \"test file\", https://doi.org/10.5072/FK2/ZKFRRF,
+        Root Dataverse, V2","entity_id":340,"authors":["Goodchild, Meghan"]},{"name":"Test
+        IP Group Permissions","type":"dataset","url":"https://doi.org/10.5072/FK2/O1LPVM","global_id":"doi:10.5072/FK2/O1LPVM","description":"Test
+        IP Group Permissions","published_at":"2018-04-27T20:29:35Z","citationHtml":"Admin,
+        Dataverse, 2018, \"Test IP Group Permissions\", <a href=\"https://doi.org/10.5072/FK2/O1LPVM\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/O1LPVM</a>, Root Dataverse,
+        V1","citation":"Admin, Dataverse, 2018, \"Test IP Group Permissions\", https://doi.org/10.5072/FK2/O1LPVM,
+        Root Dataverse, V1","entity_id":546,"authors":["Admin, Dataverse"]},{"name":"test
+        permissions","type":"dataset","url":"https://doi.org/10.5072/FK2/ZHIWXJ","global_id":"doi:10.5072/FK2/ZHIWXJ","description":"testing
+        permissions","published_at":"2018-01-29T21:57:08Z","citationHtml":"Leahey,
+        Amber, 2018, \"test permissions\", <a href=\"https://doi.org/10.5072/FK2/ZHIWXJ\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/ZHIWXJ</a>, Root Dataverse,
+        V1","citation":"Leahey, Amber, 2018, \"test permissions\", https://doi.org/10.5072/FK2/ZHIWXJ,
+        Root Dataverse, V1","entity_id":377,"authors":["Leahey, Amber"]},{"name":"Test
+        problem","type":"dataset","url":"https://doi.org/10.5072/FK2/BDYCX0","global_id":"doi:10.5072/FK2/BDYCX0","description":"blah
+        blah","published_at":"2017-11-02T18:23:08Z","citationHtml":"Sahadath, Catie,
+        2017, \"Test problem\", <a href=\"https://doi.org/10.5072/FK2/BDYCX0\" target=\"_blank\">https://doi.org/10.5072/FK2/BDYCX0</a>,
+        Root Dataverse, V1","citation":"Sahadath, Catie, 2017, \"Test problem\", https://doi.org/10.5072/FK2/BDYCX0,
+        Root Dataverse, V1","entity_id":238,"authors":["Sahadath, Catie"]}],"count_in_response":10}}'}
+    headers:
+      access-control-allow-origin: ['*']
+      content-length: ['5670']
+      content-type: [application/json]
+      date: ['Thu, 05 Jul 2018 18:59:02 GMT']
+      server: [Apache/2.4.6 (CentOS) mod_R/1.2.7 R/3.3.0 mod_apreq2-20090110/2.8.0]
+      strict-transport-security: [max-age=15768000]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.14.2]
+    method: GET
+    uri: https://demodv.scholarsportal.info/api/search/?q=%2A&sort=name&key=51c64df4-abd7-4613-af21-6a68715dca92&start=50&per_page=10&show_entity_ids=True&type=dataset&order=asc
+  response:
+    body: {string: !!python/unicode '{"status":"OK","data":{"q":"*","total_count":59,"start":50,"spelling_alternatives":{},"items":[{"name":"test02","type":"dataset","url":"https://doi.org/10.5072/FK2/EPXSCQ","global_id":"doi:10.5072/FK2/EPXSCQ","description":"Sdsad","published_at":"2018-01-21T18:57:31Z","citationHtml":"steeleworthy,
+        mike, 2018, \"test02\", <a href=\"https://doi.org/10.5072/FK2/EPXSCQ\" target=\"_blank\">https://doi.org/10.5072/FK2/EPXSCQ</a>,
+        Root Dataverse, V6, UNF:6:ipNWOY+7MudzCQXN8Bg6VA==","citation":"steeleworthy,
+        mike, 2018, \"test02\", https://doi.org/10.5072/FK2/EPXSCQ, Root Dataverse,
+        V6, UNF:6:ipNWOY+7MudzCQXN8Bg6VA==","entity_id":346,"authors":["steeleworthy,
+        mike"]},{"name":"test2","type":"dataset","url":"https://doi.org/10.5072/FK2/CBBFHD","global_id":"doi:10.5072/FK2/CBBFHD","description":"test2","published_at":"2017-11-29T20:09:54Z","citationHtml":"Sahadath,
+        Catie, 2017, \"test2\", <a href=\"https://doi.org/10.5072/FK2/CBBFHD\" target=\"_blank\">https://doi.org/10.5072/FK2/CBBFHD</a>,
+        Root Dataverse, V1","citation":"Sahadath, Catie, 2017, \"test2\", https://doi.org/10.5072/FK2/CBBFHD,
+        Root Dataverse, V1","entity_id":259,"authors":["Sahadath, Catie"]},{"name":"testing
+        for ingest ","type":"dataset","url":"https://doi.org/10.5072/FK2/KISEIS","global_id":"doi:10.5072/FK2/KISEIS","description":"test","published_at":"2017-06-22T18:31:06Z","citationHtml":"Leahey,
+        Amber, 2017, \"testing for ingest\", <a href=\"https://doi.org/10.5072/FK2/KISEIS\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/KISEIS</a>, Root Dataverse,
+        V1, UNF:6:T6++AGdw16oSq10PhezCqQ==","citation":"Leahey, Amber, 2017, \"testing
+        for ingest\", https://doi.org/10.5072/FK2/KISEIS, Root Dataverse, V1, UNF:6:T6++AGdw16oSq10PhezCqQ==","entity_id":73,"authors":["Leahey,
+        Amber"]},{"name":"testing for IP group permissions","type":"dataset","url":"https://doi.org/10.5072/FK2/3LEFRC","global_id":"doi:10.5072/FK2/3LEFRC","description":"testing
+        for IP groups issues","published_at":"2017-06-14T15:36:17Z","citationHtml":"Leahey,
+        Amber, 2017, \"testing for IP group permissions\", <a href=\"https://doi.org/10.5072/FK2/3LEFRC\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/3LEFRC</a>, Root Dataverse,
+        V1","citation":"Leahey, Amber, 2017, \"testing for IP group permissions\",
+        https://doi.org/10.5072/FK2/3LEFRC, Root Dataverse, V1","entity_id":67,"authors":["Leahey,
+        Amber"]},{"name":"TESTING for IP Groups - again","type":"dataset","url":"https://doi.org/10.5072/FK2/F5OUWQ","global_id":"doi:10.5072/FK2/F5OUWQ","description":"test","published_at":"2017-06-29T14:34:31Z","citationHtml":"Leahey,
+        Amber, 2017, \"TESTING for IP Groups - again\", <a href=\"https://doi.org/10.5072/FK2/F5OUWQ\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/F5OUWQ</a>, Root Dataverse,
+        V1","citation":"Leahey, Amber, 2017, \"TESTING for IP Groups - again\", https://doi.org/10.5072/FK2/F5OUWQ,
+        Root Dataverse, V1","entity_id":77,"authors":["Leahey, Amber"]},{"name":"testing
+        for IP Groups 2","type":"dataset","url":"https://doi.org/10.5072/FK2/XHF8LC","global_id":"doi:10.5072/FK2/XHF8LC","description":"testing
+        for IP ground second time","published_at":"2017-06-22T18:03:37Z","citationHtml":"Leahey,
+        Amber, 2017, \"testing for IP Groups 2\", <a href=\"https://doi.org/10.5072/FK2/XHF8LC\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/XHF8LC</a>, Root Dataverse,
+        V3, UNF:6:IvgwdgoPCRebyGgTE3b9bA==","citation":"Leahey, Amber, 2017, \"testing
+        for IP Groups 2\", https://doi.org/10.5072/FK2/XHF8LC, Root Dataverse, V3,
+        UNF:6:IvgwdgoPCRebyGgTE3b9bA==","entity_id":69,"authors":["Leahey, Amber"]},{"name":"The
+        Best Dataset","type":"dataset","url":"https://doi.org/10.5072/FK2/R7R7EN","global_id":"doi:10.5072/FK2/R7R7EN","description":"test","published_at":"2017-08-09T17:58:59Z","citationHtml":"cameron,
+        brian, 2017, \"The Best Dataset\", <a href=\"https://doi.org/10.5072/FK2/R7R7EN\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/R7R7EN</a>, Root Dataverse,
+        V1, UNF:6:ZQutrYKPpzobm/30etH5gg==","citation":"cameron, brian, 2017, \"The
+        Best Dataset\", https://doi.org/10.5072/FK2/R7R7EN, Root Dataverse, V1, UNF:6:ZQutrYKPpzobm/30etH5gg==","entity_id":130,"authors":["cameron,
+        brian"]},{"name":"The Truth about Magnets","type":"dataset","url":"https://doi.org/10.5072/FK2/ZMEG8F","global_id":"doi:10.5072/FK2/ZMEG8F","description":"The
+        truth is out there","published_at":"2017-11-29T21:06:18Z","citationHtml":"Johnstone,
+        Graham, 2017, \"The Truth about Magnets\", <a href=\"https://doi.org/10.5072/FK2/ZMEG8F\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/ZMEG8F</a>, Root Dataverse,
+        V1","citation":"Johnstone, Graham, 2017, \"The Truth about Magnets\", https://doi.org/10.5072/FK2/ZMEG8F,
+        Root Dataverse, V1","entity_id":315,"authors":["Johnstone, Graham"]},{"name":"WNV
+        prevalence in Ontario regions","type":"dataset","url":"https://doi.org/10.5072/FK2/KIK0XV","global_id":"doi:10.5072/FK2/KIK0XV","description":"West
+        nile virus prevalence in Ontario provided by Public Health Ontario.","published_at":"2017-11-29T21:08:01Z","citationHtml":"Balint,
+        Liz, 2017, \"WNV prevalence in Ontario regions\", <a href=\"https://doi.org/10.5072/FK2/KIK0XV\"
+        target=\"_blank\">https://doi.org/10.5072/FK2/KIK0XV</a>, Root Dataverse,
+        V1","citation":"Balint, Liz, 2017, \"WNV prevalence in Ontario regions\",
+        https://doi.org/10.5072/FK2/KIK0XV, Root Dataverse, V1","entity_id":317,"authors":["Balint,
+        Liz"]}],"count_in_response":9}}'}
+    headers:
+      access-control-allow-origin: ['*']
+      content-length: ['5373']
+      content-type: [application/json]
+      date: ['Thu, 05 Jul 2018 18:59:03 GMT']
+      server: [Apache/2.4.6 (CentOS) mod_R/1.2.7 R/3.3.0 mod_apreq2-20090110/2.8.0]
+      strict-transport-security: [max-age=15768000]
+    status: {code: 200, message: OK}
+- request:
+    body: null
+    headers:
+      Accept: ['*/*']
+      Accept-Encoding: ['gzip, deflate']
+      Connection: [keep-alive]
+      User-Agent: [python-requests/2.14.2]
+    method: GET
+    uri: https://demodv.scholarsportal.info/api/v1/datasets/1016/versions/:latest?key=51c64df4-abd7-4613-af21-6a68715dca92
+  response:
+    body: {string: !!python/unicode '{"status":"OK","data":{"id":288,"versionNumber":2,"versionMinorNumber":0,"versionState":"RELEASED","productionDate":"Production
+        Date","lastUpdateTime":"2018-05-22T19:45:15Z","releaseTime":"2018-05-22T19:45:15Z","createTime":"2018-05-22T19:16:50Z","license":"NONE","termsOfUse":"This
+        dataset is licenced under a Creative Commons Attribution-Noncommercial licence
+        https://creativecommons.org/licenses/by-nc/4.0/","restrictions":"The following
+        data set is provided for academic purposes only. Any publications using this
+        data set must reference (1) this data archive and/or (2) any of the publications
+        listed. This data set is not to be used for commercial purposes.","citationRequirements":"The
+        publishing of analysis and results from research using this data is permitted
+        in research communications such as scholarly papers, journals and the like.
+        The author(s) of these communications are required to cite the author as the
+        source of the data and to indicate that the results or views expressed are
+        those of the author/authorized user.","disclaimer":"The original collector
+        of the data bears no responsibility for use of this collection or for interpretation
+        or inference upon such use.","metadataBlocks":{"citation":{"displayName":"Citation
+        Metadata","fields":[{"typeName":"title","multiple":false,"typeClass":"primitive","value":"3D
+        Laser Images of a road cut at Ivy Lea, Ontario (2007), underground in Sudbury,
+        Ontario (2007), underground in Thompson, Manitoba (2009) [test]"},{"typeName":"subtitle","multiple":false,"typeClass":"primitive","value":"Test
+        subtitle"},{"typeName":"alternativeTitle","multiple":false,"typeClass":"primitive","value":"Test
+        alternative title"},{"typeName":"author","multiple":true,"typeClass":"compound","value":[{"authorName":{"typeName":"authorName","multiple":false,"typeClass":"primitive","value":"Jason
+        Mah"},"authorAffiliation":{"typeName":"authorAffiliation","multiple":false,"typeClass":"primitive","value":"Carlton
+        University"}},{"authorName":{"typeName":"authorName","multiple":false,"typeClass":"primitive","value":"Claire
+        Samson"},"authorAffiliation":{"typeName":"authorAffiliation","multiple":false,"typeClass":"primitive","value":"Carlton
+        University"}},{"authorName":{"typeName":"authorName","multiple":false,"typeClass":"primitive","value":"Steve
+        McKinnon"},"authorAffiliation":{"typeName":"authorAffiliation","multiple":false,"typeClass":"primitive","value":"Queen''s
+        University"}}]},{"typeName":"datasetContact","multiple":true,"typeClass":"compound","value":[{"datasetContactName":{"typeName":"datasetContactName","multiple":false,"typeClass":"primitive","value":"Data
+        Services"},"datasetContactAffiliation":{"typeName":"datasetContactAffiliation","multiple":false,"typeClass":"primitive","value":"Queen''s
+        University"},"datasetContactEmail":{"typeName":"datasetContactEmail","multiple":false,"typeClass":"primitive","value":"meghan.goodchild@queensu.ca"}}]},{"typeName":"dsDescription","multiple":true,"typeClass":"compound","value":[{"dsDescriptionValue":{"typeName":"dsDescriptionValue","multiple":false,"typeClass":"primitive","value":"Three-dimensional
+        (3D) laser imaging has recently emerged as a tool for rock mass characterization.
+        Each image is a digital representation of the rock face and is composed of
+        millions of 3D points. An individual data point is composed of a measurement
+        along the X-, Y-, and Z-axes.\r\n\r\nThis data set was acquired as part of
+        a PhD thesis entitled, Three-Dimensional Laser Imaging for Rock Mass Characterization.
+        The image data was acquired in 3 field trials over the course of the thesis.
+        Specif ically, the image data is from (1) a road cut at Ivy Lea, Ontario,
+        (2) an underground mine in Sudbury, Ontario, and (3) an underground mine in
+        Thompson, Manitoba.\r\n\r\nEach image contains information that can be used
+        for rock mass characterization. In the PhD thesis, the images were analyzed
+        to (1) measure joint orientation and (2) surface roughness from 3D data. A
+        third objective was to (3) remove the obstructive wire mesh from 3D data."},"dsDescriptionDate":{"typeName":"dsDescriptionDate","multiple":false,"typeClass":"primitive","value":"2015-01-22"}}]},{"typeName":"subject","multiple":true,"typeClass":"controlledVocabulary","value":["Social
+        Sciences"]},{"typeName":"keyword","multiple":true,"typeClass":"compound","value":[{"keywordValue":{"typeName":"keywordValue","multiple":false,"typeClass":"primitive","value":"Three-dimensional
+        laser imaging "}},{"keywordValue":{"typeName":"keywordValue","multiple":false,"typeClass":"primitive","value":"3D
+        laser imaging "}},{"keywordValue":{"typeName":"keywordValue","multiple":false,"typeClass":"primitive","value":"Rock
+        mass characterization"}},{"keywordValue":{"typeName":"keywordValue","multiple":false,"typeClass":"primitive","value":"Surface
+        roughness"}},{"keywordValue":{"typeName":"keywordValue","multiple":false,"typeClass":"primitive","value":"Joint
+        orientation"}}]},{"typeName":"publication","multiple":true,"typeClass":"compound","value":[{"publicationCitation":{"typeName":"publicationCitation","multiple":false,"typeClass":"primitive","value":"Mah,
+        J. 2012. PhD Thesis: Three-Dimensional Laser Imaging for Rock Mass Characterization.
+        Carleton University."}},{"publicationCitation":{"typeName":"publicationCitation","multiple":false,"typeClass":"primitive","value":"Mah,
+        J., Samson, C., McKinnon, S., and Thibodeau, D. 2013. 3D laser imaging for
+        surface roughness analysis. International Journal of Rock Mechanics and Mining
+        Sciences, 58: 111-117; doi: 10.1016/j.ijrmms. 2012.08.001"}},{"publicationCitation":{"typeName":"publicationCitation","multiple":false,"typeClass":"primitive","value":"Mah,
+        J., Samson, C., and McKinnon, S. 2011. 3D laser imaging for joint orientation
+        an alysis. International Journal of Rock Mechanics and Mining Sciences 48(6):
+        932-941; doi: 10.1016/j.ijrmms.2011.04.010."}}]},{"typeName":"notesText","multiple":false,"typeClass":"primitive","value":"Please
+        review the following information should you choose to use this dataset:\r\n\r\nEach
+        image consists of a text file which can be opened using Matlab or an open
+        source 3D point cloud such as Meshlab.\r\nEach text file contains a measurement
+        along the X-axis (column 1), Y-axis (column 2), and Z-axis (column 3). These
+        measurements are in mm. A light intensity measurement is also included (column
+        4). The light intensity measurement is 8bit, with 256 values.\r\nEach image
+        is geo-referenced (strike, dip). This information is included in a text file.\r\nPhotographs
+        of the test site are provided for reference.\r\nThe above information can
+        also be found in a text file within the data set."},{"typeName":"language","multiple":true,"typeClass":"controlledVocabulary","value":["English"]},{"typeName":"producer","multiple":true,"typeClass":"compound","value":[{"producerName":{"typeName":"producerName","multiple":false,"typeClass":"primitive","value":"Jason
+        Mah"},"producerAffiliation":{"typeName":"producerAffiliation","multiple":false,"typeClass":"primitive","value":"Carlton
+        University"}}]},{"typeName":"productionDate","multiple":false,"typeClass":"primitive","value":"2015-01-23"},{"typeName":"grantNumber","multiple":true,"typeClass":"compound","value":[{"grantNumberAgency":{"typeName":"grantNumberAgency","multiple":false,"typeClass":"primitive","value":"Ontario
+        Graduate Scholarship (OGS) "}}]},{"typeName":"distributor","multiple":true,"typeClass":"compound","value":[{"distributorName":{"typeName":"distributorName","multiple":false,"typeClass":"primitive","value":"Data
+        Services"},"distributorAffiliation":{"typeName":"distributorAffiliation","multiple":false,"typeClass":"primitive","value":"Queen''s
+        University"},"distributorURL":{"typeName":"distributorURL","multiple":false,"typeClass":"primitive","value":"http://library.queensu.ca/data
+        "}}]},{"typeName":"depositor","multiple":false,"typeClass":"primitive","value":"Goodchild,
+        Meghan"},{"typeName":"dateOfDeposit","multiple":false,"typeClass":"primitive","value":"2018-05-16"},{"typeName":"dateOfCollection","multiple":true,"typeClass":"compound","value":[{"dateOfCollectionStart":{"typeName":"dateOfCollectionStart","multiple":false,"typeClass":"primitive","value":"2006"},"dateOfCollectionEnd":{"typeName":"dateOfCollectionEnd","multiple":false,"typeClass":"primitive","value":"2007"}}]},{"typeName":"relatedMaterial","multiple":true,"typeClass":"primitive","value":["http://www.meshlab.net/"]}]},"geospatial":{"displayName":"Geospatial
+        Metadata","fields":[{"typeName":"geographicCoverage","multiple":true,"typeClass":"compound","value":[{"country":{"typeName":"country","multiple":false,"typeClass":"controlledVocabulary","value":"Canada"}},{"country":{"typeName":"country","multiple":false,"typeClass":"controlledVocabulary","value":"Canada"},"state":{"typeName":"state","multiple":false,"typeClass":"primitive","value":"Ontario"},"city":{"typeName":"city","multiple":false,"typeClass":"primitive","value":"Ivy
+        Lea"},"otherGeographicCoverage":{"typeName":"otherGeographicCoverage","multiple":false,"typeClass":"primitive","value":"(data
+        set 1)"}},{"country":{"typeName":"country","multiple":false,"typeClass":"controlledVocabulary","value":"Canada"},"state":{"typeName":"state","multiple":false,"typeClass":"primitive","value":"Ontario"},"city":{"typeName":"city","multiple":false,"typeClass":"primitive","value":"Sudbury"},"otherGeographicCoverage":{"typeName":"otherGeographicCoverage","multiple":false,"typeClass":"primitive","value":"(data
+        set 2)"}},{"country":{"typeName":"country","multiple":false,"typeClass":"controlledVocabulary","value":"Canada"},"state":{"typeName":"state","multiple":false,"typeClass":"primitive","value":"Manitoba"},"city":{"typeName":"city","multiple":false,"typeClass":"primitive","value":"Thompson"},"otherGeographicCoverage":{"typeName":"otherGeographicCoverage","multiple":false,"typeClass":"primitive","value":"(data
+        set 3)"}}]}]},"socialscience":{"displayName":"Social Science and Humanities
+        Metadata","fields":[{"typeName":"unitOfAnalysis","multiple":true,"typeClass":"primitive","value":["Measurements
+        in mm","Light intensity measurement in 8bit"]},{"typeName":"dataCollector","multiple":false,"typeClass":"primitive","value":"Jason
+        Mah, Carleton University. Faculty of Science, Department of Earth SciencesClaire
+        Samson, Carleton University. Faculty of Science, Department of Earth SciencesSteve
+        MacKinnon, Queen''s University. Faculty of Engineering, The Robert M. Buchan
+        Department of Mining"},{"typeName":"samplingProcedure","multiple":false,"typeClass":"primitive","value":"Each
+        text file contains a measurement along the X, Y, and Z-axis."},{"typeName":"collectionMode","multiple":false,"typeClass":"primitive","value":"The
+        data was collected using a terrestrial laser scanner."},{"typeName":"researchInstrument","multiple":false,"typeClass":"primitive","value":"Terrestrial
+        laser scanner"},{"typeName":"dataCollectionSituation","multiple":false,"typeClass":"primitive","value":"For
+        each image, the laser scanner was geo-referenced (strike, dip). This will
+        allow the user to geo-reference the data."}]},"astrophysics":{"displayName":"Astronomy
+        and Astrophysics Metadata","fields":[{"typeName":"astroType","multiple":true,"typeClass":"controlledVocabulary","value":["Image","Other"]},{"typeName":"astroFacility","multiple":true,"typeClass":"primitive","value":["Vale
+        Mine"]},{"typeName":"astroInstrument","multiple":true,"typeClass":"primitive","value":["Terrestrial
+        laser scanner"]},{"typeName":"astroObject","multiple":true,"typeClass":"primitive","value":["Rock
+        face"]},{"typeName":"coverage.Depth","multiple":false,"typeClass":"primitive","value":"1.1"},{"typeName":"coverage.ObjectDensity","multiple":false,"typeClass":"primitive","value":"3.5"}]},"biomedical":{"displayName":"Life
+        Sciences Metadata","fields":[{"typeName":"studyDesignType","multiple":true,"typeClass":"controlledVocabulary","value":["Cross
+        Sectional"]},{"typeName":"studyFactorType","multiple":true,"typeClass":"controlledVocabulary","value":["Other"]},{"typeName":"studyAssayOrganism","multiple":true,"typeClass":"controlledVocabulary","value":["Other"]},{"typeName":"studyAssayOtherOrganism","multiple":true,"typeClass":"primitive","value":["Rockface"]},{"typeName":"studyAssayMeasurementType","multiple":true,"typeClass":"controlledVocabulary","value":["Other"]},{"typeName":"studyAssayTechnologyType","multiple":true,"typeClass":"controlledVocabulary","value":["culture
+        based drug susceptibility testing, single concentration"]},{"typeName":"studyAssayPlatform","multiple":true,"typeClass":"controlledVocabulary","value":["300-MS
+        quadrupole GC/MS (Varian)"]},{"typeName":"studyAssayCellType","multiple":true,"typeClass":"primitive","value":["Cell
+        type"]}]},"journal":{"displayName":"Journal Metadata","fields":[{"typeName":"journalVolumeIssue","multiple":true,"typeClass":"compound","value":[{"journalVolume":{"typeName":"journalVolume","multiple":false,"typeClass":"primitive","value":"58"},"journalPubDate":{"typeName":"journalPubDate","multiple":false,"typeClass":"primitive","value":"2013"}}]},{"typeName":"journalArticleType","multiple":false,"typeClass":"controlledVocabulary","value":"research
+        article"}]}},"files":[{"label":"IvyLea_003.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1017,"filename":"IvyLea_003.txt","contentType":"text/plain","filesize":47448936,"storageIdentifier":"1636a2352bb-22db43182462","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"8df6b5a48581dcdc053fb2fbc6ff5926","checksum":{"type":"MD5","value":"8df6b5a48581dcdc053fb2fbc6ff5926"}}},{"label":"IvyLea_004.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1018,"filename":"IvyLea_004.txt","contentType":"text/plain","filesize":46736074,"storageIdentifier":"1636a2354cc-f3791627ff3f","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"83bb4179eda579caeb66d89bbb85bdd3","checksum":{"type":"MD5","value":"83bb4179eda579caeb66d89bbb85bdd3"}}},{"label":"IvyLea_005.txt","restricted":false,"version":2,"datasetVersionId":288,"categories":["2007","Ivy
+        Lea files - unzipped"],"dataFile":{"id":1067,"filename":"IvyLea_005.txt","contentType":"text/plain","filesize":47463997,"storageIdentifier":"1638947b5ba-bacc17b56368","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"8618ca34b435dac777d46df62081f3b7","checksum":{"type":"MD5","value":"8618ca34b435dac777d46df62081f3b7"}}},{"label":"IvyLea_006.txt","restricted":false,"version":2,"datasetVersionId":288,"categories":["2007","Ivy
+        Lea files - unzipped"],"dataFile":{"id":1068,"filename":"IvyLea_006.txt","contentType":"text/plain","filesize":47723143,"storageIdentifier":"1638947a3c0-1474fd701300","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"a81f31fdd176cfd35d43930a41fe5f49","checksum":{"type":"MD5","value":"a81f31fdd176cfd35d43930a41fe5f49"}}},{"label":"IvyLea_007.txt","restricted":false,"version":2,"datasetVersionId":288,"categories":["2007","Ivy
+        Lea files - unzipped"],"dataFile":{"id":1069,"filename":"IvyLea_007.txt","contentType":"text/plain","filesize":47650790,"storageIdentifier":"16389479177-4aa38e2d1fc4","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"09297e5710ddb21a73e1de5324664a08","checksum":{"type":"MD5","value":"09297e5710ddb21a73e1de5324664a08"}}},{"label":"IvyLea_008.txt","restricted":false,"version":2,"datasetVersionId":288,"categories":["2007","Ivy
+        Lea files - unzipped"],"dataFile":{"id":1066,"filename":"IvyLea_008.txt","contentType":"text/plain","filesize":47770757,"storageIdentifier":"16389477fe3-98f2d14926cf","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"d7b112a973369d17b31c90535d659678","checksum":{"type":"MD5","value":"d7b112a973369d17b31c90535d659678"}}},{"description":"Ivy
+        Lea Dataset","label":"IvyLea_Data.zip","restricted":false,"version":1,"datasetVersionId":288,"categories":["Data"],"dataFile":{"id":1070,"filename":"IvyLea_Data.zip","contentType":"application/zip","filesize":129349271,"description":"Ivy
+        Lea Dataset","storageIdentifier":"1638949c778-1e833ce91672","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"63b55fe856c48f891a67ed5ae316afd7","checksum":{"type":"MD5","value":"63b55fe856c48f891a67ed5ae316afd7"}}},{"label":"IvyLea_Rockface.JPG","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1019,"filename":"IvyLea_Rockface.JPG","contentType":"image/jpeg","filesize":905137,"storageIdentifier":"1636a235576-9a19a8aaa522","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"0cf19b8fa582bc6426c9de883041fe56","checksum":{"type":"MD5","value":"0cf19b8fa582bc6426c9de883041fe56"}}},{"label":"ReadMe.pdf","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1020,"filename":"ReadMe.pdf","contentType":"application/pdf","filesize":46613,"storageIdentifier":"1636a23557c-ef2f97a5ba0f","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"573604864ba47c3f971c4391984e01c3","checksum":{"type":"MD5","value":"573604864ba47c3f971c4391984e01c3"}}},{"label":"Sudbury1_006.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1076,"filename":"Sudbury1_006.txt","contentType":"text/plain","filesize":47400611,"storageIdentifier":"163894ba42b-981e8fef05ce","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"c33f4e5b47c30183a68f92ee9aee04a7","checksum":{"type":"MD5","value":"c33f4e5b47c30183a68f92ee9aee04a7"}}},{"label":"Sudbury1_007.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1075,"filename":"Sudbury1_007.txt","contentType":"text/plain","filesize":47305862,"storageIdentifier":"163894b92e4-965dd878a7bb","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"6ceb2fdb788b25a1e516545692d81412","checksum":{"type":"MD5","value":"6ceb2fdb788b25a1e516545692d81412"}}},{"label":"Sudbury1_008.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1074,"filename":"Sudbury1_008.txt","contentType":"text/plain","filesize":47083155,"storageIdentifier":"163894b7f54-b107e33e1d3c","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"46e69c0381c16a8bcb7d48127d585f00","checksum":{"type":"MD5","value":"46e69c0381c16a8bcb7d48127d585f00"}}},{"label":"Sudbury1_009.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1073,"filename":"Sudbury1_009.txt","contentType":"text/plain","filesize":47079037,"storageIdentifier":"163894b6dae-e85eb9bb80fb","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"188e44824ac66e1cd046e97f66aba5c9","checksum":{"type":"MD5","value":"188e44824ac66e1cd046e97f66aba5c9"}}},{"label":"Sudbury1_010.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1071,"filename":"Sudbury1_010.txt","contentType":"text/plain","filesize":46679232,"storageIdentifier":"163894b4a31-34b320bc3a13","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"a531dc79683d428a2c80d207b14048ee","checksum":{"type":"MD5","value":"a531dc79683d428a2c80d207b14048ee"}}},{"label":"Sudbury1_011.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1072,"filename":"Sudbury1_011.txt","contentType":"text/plain","filesize":47220033,"storageIdentifier":"163894b5b76-862b1843cf06","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"c4d9647b24397a7f5df5bda53f227e60","checksum":{"type":"MD5","value":"c4d9647b24397a7f5df5bda53f227e60"}}},{"label":"Sudbury1_Rockface.jpg","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1021,"filename":"Sudbury1_Rockface.jpg","contentType":"image/jpeg","filesize":2662215,"storageIdentifier":"1636a235594-6769e3801f79","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"4bcbb8f0b71878e47909c1bfcd0d02e7","checksum":{"type":"MD5","value":"4bcbb8f0b71878e47909c1bfcd0d02e7"}}},{"label":"Sudbury2_012.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1077,"filename":"Sudbury2_012.txt","contentType":"text/plain","filesize":47128559,"storageIdentifier":"163894d386d-1fe868b6721a","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"9f50f34cf6b926526e9c014c16c25679","checksum":{"type":"MD5","value":"9f50f34cf6b926526e9c014c16c25679"}}},{"label":"Sudbury2_013.JPG","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1022,"filename":"Sudbury2_013.JPG","contentType":"image/jpeg","filesize":2155967,"storageIdentifier":"1636a2355b0-131dde7d09b6","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"6dbd7de91e8fd82d9267eb373aa29c5b","checksum":{"type":"MD5","value":"6dbd7de91e8fd82d9267eb373aa29c5b"}}},{"label":"Sudbury2_013.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1078,"filename":"Sudbury2_013.txt","contentType":"text/plain","filesize":47100981,"storageIdentifier":"163894d3a8b-fdb9147c4b95","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"cdadbd85dee559b3e499e6be78140c11","checksum":{"type":"MD5","value":"cdadbd85dee559b3e499e6be78140c11"}}},{"label":"Sudbury2_014.JPG","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1023,"filename":"Sudbury2_014.JPG","contentType":"image/jpeg","filesize":2177802,"storageIdentifier":"1636a2355cb-236b929f391b","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"c37ba95f39d7062a8552e5268bc92afd","checksum":{"type":"MD5","value":"c37ba95f39d7062a8552e5268bc92afd"}}},{"label":"Sudbury2_014.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1079,"filename":"Sudbury2_014.txt","contentType":"text/plain","filesize":46776426,"storageIdentifier":"163894d3c9d-b05e6ba42265","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"73187c9b9e5f6b69169f29966eda9116","checksum":{"type":"MD5","value":"73187c9b9e5f6b69169f29966eda9116"}}},{"label":"Sudbury2_015.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1081,"filename":"Sudbury2_015.txt","contentType":"text/plain","filesize":46740383,"storageIdentifier":"163894d4123-bcd0be54cf10","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"1f05c2619b68d7c1716fe3f805e2cd83","checksum":{"type":"MD5","value":"1f05c2619b68d7c1716fe3f805e2cd83"}}},{"label":"Sudbury2_016.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1080,"filename":"Sudbury2_016.txt","contentType":"text/plain","filesize":45240135,"storageIdentifier":"163894d3e90-c8a7fb1bcf0e","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"af37b90d29877ca2ef2cf86e21e0d510","checksum":{"type":"MD5","value":"af37b90d29877ca2ef2cf86e21e0d510"}}},{"label":"Sudbury2_017.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1082,"filename":"Sudbury2_017.txt","contentType":"text/plain","filesize":45488293,"storageIdentifier":"163894d435c-d5fbf79358b6","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"3a0807046bcefbb8ff72128b95e3fbab","checksum":{"type":"MD5","value":"3a0807046bcefbb8ff72128b95e3fbab"}}},{"label":"Sudbury3_030.JPG","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1024,"filename":"Sudbury3_030.JPG","contentType":"image/jpeg","filesize":1810501,"storageIdentifier":"1636a2355e2-1d4345802ff0","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"52f9f52e552dfb84b4606b6fac1dd03b","checksum":{"type":"MD5","value":"52f9f52e552dfb84b4606b6fac1dd03b"}}},{"label":"Sudbury3_030.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1083,"filename":"Sudbury3_030.txt","contentType":"text/plain","filesize":47269461,"storageIdentifier":"163894d45ee-30115dbd384f","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"254c6f87ffab670323d4c87e8459cfb6","checksum":{"type":"MD5","value":"254c6f87ffab670323d4c87e8459cfb6"}}},{"label":"Sudbury3_031.JPG","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1084,"filename":"Sudbury3_031.JPG","contentType":"image/jpeg","filesize":1709490,"storageIdentifier":"163894d46bd-bef5a6896e1e","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"6c544facadb39085ce383b41b338d0d4","checksum":{"type":"MD5","value":"6c544facadb39085ce383b41b338d0d4"}}},{"label":"Sudbury3_031.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1085,"filename":"Sudbury3_031.txt","contentType":"text/plain","filesize":46821457,"storageIdentifier":"163894d487a-6cc13250f551","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"6b7221fc5d946fc3321f4645a9fa59d0","checksum":{"type":"MD5","value":"6b7221fc5d946fc3321f4645a9fa59d0"}}},{"description":"Extra
+        zip","label":"Sudbury_Data (2).zip","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1107,"filename":"Sudbury_Data
+        (2).zip","contentType":"application/zip","filesize":572267025,"description":"Extra
+        zip","storageIdentifier":"16389609a8b-18069a5351a7","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"250858e1c62a2d09ad81f3c0aa752eae","checksum":{"type":"MD5","value":"250858e1c62a2d09ad81f3c0aa752eae"}}},{"label":"Sudbury_Data.zip","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1086,"filename":"Sudbury_Data.zip","contentType":"application/zip","filesize":264969606,"storageIdentifier":"163894e534c-b1f4d7fefaaa","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"16a2d8c5e7ce2039581a360941ac8824","checksum":{"type":"MD5","value":"16a2d8c5e7ce2039581a360941ac8824"}}},{"label":"Thompson1_001.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1087,"filename":"Thompson1_001.txt","contentType":"text/plain","filesize":41492544,"storageIdentifier":"16389508906-a4dd3b7bb5ad","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"c6a6d3ab0d18ef5efcf159edf55bccfc","checksum":{"type":"MD5","value":"c6a6d3ab0d18ef5efcf159edf55bccfc"}}},{"label":"Thompson1_002.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1088,"filename":"Thompson1_002.txt","contentType":"text/plain","filesize":41202802,"storageIdentifier":"16389508ad0-9bfbb200599a","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"d26aa614aefe823d22de30daa53256d3","checksum":{"type":"MD5","value":"d26aa614aefe823d22de30daa53256d3"}}},{"label":"Thompson1_003.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1089,"filename":"Thompson1_003.txt","contentType":"text/plain","filesize":40528999,"storageIdentifier":"16389508c9b-e8e605cba834","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"9b3ae7d1663b4ac081d92a85bb3a4db2","checksum":{"type":"MD5","value":"9b3ae7d1663b4ac081d92a85bb3a4db2"}}},{"label":"Thompson1_004.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1090,"filename":"Thompson1_004.txt","contentType":"text/plain","filesize":41441180,"storageIdentifier":"16389508e63-62c2ba7f9fe1","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"d2e6182eb4c6084b5c88ff837149d6ec","checksum":{"type":"MD5","value":"d2e6182eb4c6084b5c88ff837149d6ec"}}},{"label":"Thompson1_005.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1091,"filename":"Thompson1_005.txt","contentType":"text/plain","filesize":41244376,"storageIdentifier":"16389509026-d96b5bf90b14","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"65c4cf7735b24b36c9290f17745b9e8b","checksum":{"type":"MD5","value":"65c4cf7735b24b36c9290f17745b9e8b"}}},{"label":"Thompson1_006.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1092,"filename":"Thompson1_006.txt","contentType":"text/plain","filesize":40829022,"storageIdentifier":"163895091df-505a98a781f0","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"4f2d787c55aa6ff8925d40f889fe39f2","checksum":{"type":"MD5","value":"4f2d787c55aa6ff8925d40f889fe39f2"}}},{"label":"Thompson1_007.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1093,"filename":"Thompson1_007.txt","contentType":"text/plain","filesize":40626470,"storageIdentifier":"16389509391-77c1163906c1","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"ed0ecf3e938a601b80d6259c50859648","checksum":{"type":"MD5","value":"ed0ecf3e938a601b80d6259c50859648"}}},{"label":"Thompson1_008.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1094,"filename":"Thompson1_008.txt","contentType":"text/plain","filesize":40590048,"storageIdentifier":"16389509540-7561d43fb17c","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"201b552dcc79e0d9721d048e188dd25d","checksum":{"type":"MD5","value":"201b552dcc79e0d9721d048e188dd25d"}}},{"label":"Thompson1_009.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1095,"filename":"Thompson1_009.txt","contentType":"text/plain","filesize":41209949,"storageIdentifier":"16389509700-7d796c9c6ab4","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"d1fce25a2a0f1dbec877f5dc4cf6e28c","checksum":{"type":"MD5","value":"d1fce25a2a0f1dbec877f5dc4cf6e28c"}}},{"label":"Thompson1_010.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1096,"filename":"Thompson1_010.txt","contentType":"text/plain","filesize":40926117,"storageIdentifier":"163895098ca-7adf35280ea0","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"9dea6441a9bfa521f4a4266aed247ce5","checksum":{"type":"MD5","value":"9dea6441a9bfa521f4a4266aed247ce5"}}},{"label":"Thompson1_011.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1097,"filename":"Thompson1_011.txt","contentType":"text/plain","filesize":41321919,"storageIdentifier":"16389509adc-53208eaf39e0","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"fef83e10374b482116c4d221e32c6424","checksum":{"type":"MD5","value":"fef83e10374b482116c4d221e32c6424"}}},{"label":"Thompson1_012.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1098,"filename":"Thompson1_012.txt","contentType":"text/plain","filesize":41513636,"storageIdentifier":"16389509cf2-0051115cb654","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"67436c506ca14f59a2a3f4c41afb5b7e","checksum":{"type":"MD5","value":"67436c506ca14f59a2a3f4c41afb5b7e"}}},{"label":"Thompson1_013.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1099,"filename":"Thompson1_013.txt","contentType":"text/plain","filesize":42177376,"storageIdentifier":"16389509f1c-e9ffd32a3172","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"e15fbb66cfd6f07b5b1c2b72bd9c9dbf","checksum":{"type":"MD5","value":"e15fbb66cfd6f07b5b1c2b72bd9c9dbf"}}},{"label":"Thompson1_014.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1100,"filename":"Thompson1_014.txt","contentType":"text/plain","filesize":42045124,"storageIdentifier":"1638950a150-f94e690da73e","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"fcd8cd228cbad822fff722fcc3709cc7","checksum":{"type":"MD5","value":"fcd8cd228cbad822fff722fcc3709cc7"}}},{"label":"Thompson1.jpg","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1025,"filename":"Thompson1.jpg","contentType":"image/jpeg","filesize":268690,"storageIdentifier":"1636a2355ef-ca2d3f8021e1","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"c1d68ec89c2e166e26adef6141e39178","checksum":{"type":"MD5","value":"c1d68ec89c2e166e26adef6141e39178"}}},{"label":"Thompson2_001.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1028,"filename":"Thompson2_001.txt","contentType":"text/plain","filesize":44937245,"storageIdentifier":"1636a39bc24-466ac6091c6d","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"160cc92c25c1d4397c8d78ad9a38f3f7","checksum":{"type":"MD5","value":"160cc92c25c1d4397c8d78ad9a38f3f7"}}},{"label":"Thompson2_002.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1101,"filename":"Thompson2_002.txt","contentType":"text/plain","filesize":43630142,"storageIdentifier":"1638950a546-908d44a25054","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"16dc521cbe7f25f5e22d465560b14af4","checksum":{"type":"MD5","value":"16dc521cbe7f25f5e22d465560b14af4"}}},{"label":"Thompson2_003.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1102,"filename":"Thompson2_003.txt","contentType":"text/plain","filesize":45132741,"storageIdentifier":"1638950a76b-2944f59a6e60","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"b012a0e4a04e0e362fae3f990f9547c2","checksum":{"type":"MD5","value":"b012a0e4a04e0e362fae3f990f9547c2"}}},{"label":"Thompson2_004.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1103,"filename":"Thompson2_004.txt","contentType":"text/plain","filesize":44519018,"storageIdentifier":"1638950a973-85cc64f0bd4d","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"b58ff751b9467876ab5ebc3e6d5f0822","checksum":{"type":"MD5","value":"b58ff751b9467876ab5ebc3e6d5f0822"}}},{"label":"Thompson2_005.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1104,"filename":"Thompson2_005.txt","contentType":"text/plain","filesize":44861403,"storageIdentifier":"1638950ab83-0b8f157b5314","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"5327f5585a2d94e3789ad3c5f67ee725","checksum":{"type":"MD5","value":"5327f5585a2d94e3789ad3c5f67ee725"}}},{"label":"Thompson2_006.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1105,"filename":"Thompson2_006.txt","contentType":"text/plain","filesize":45573811,"storageIdentifier":"1638950ada7-2edf073a8f91","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"8dd2a1372bb59d9e25c96e7a926d7c23","checksum":{"type":"MD5","value":"8dd2a1372bb59d9e25c96e7a926d7c23"}}},{"label":"Thompson2_007.txt","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1027,"filename":"Thompson2_007.txt","contentType":"text/plain","filesize":45728693,"storageIdentifier":"1636a39ba11-b354866160e0","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"89e73e31734b25ba5314d6701e4fe775","checksum":{"type":"MD5","value":"89e73e31734b25ba5314d6701e4fe775"}}},{"label":"Thompson2.jpg","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1026,"filename":"Thompson2.jpg","contentType":"image/jpeg","filesize":296646,"storageIdentifier":"1636a2355f6-5d592bb0da39","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"14e858bda0714291f6b99e32f13356c9","checksum":{"type":"MD5","value":"14e858bda0714291f6b99e32f13356c9"}}},{"description":"Extra
+        zip","label":"Thompson_Data (4).zip","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1106,"filename":"Thompson_Data
+        (4).zip","contentType":"application/zip","filesize":307297171,"description":"Extra
+        zip","storageIdentifier":"163895f5a06-4882e9beb6c6","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"a275001ab655ff84aebc97c21195cd93","checksum":{"type":"MD5","value":"a275001ab655ff84aebc97c21195cd93"}}},{"description":"Thompson
+        Data Set","label":"Thompson_Data.zip","restricted":false,"version":1,"datasetVersionId":288,"dataFile":{"id":1029,"filename":"Thompson_Data.zip","contentType":"application/zip","filesize":307296899,"description":"Thompson
+        Data Set","storageIdentifier":"1636a3c444c-68443f89042b","originalFormatLabel":"UNKNOWN","rootDataFileId":-1,"md5":"94e4d1d89e4867ec43c80d00ce5f6060","checksum":{"type":"MD5","value":"94e4d1d89e4867ec43c80d00ce5f6060"}}}]}}'}
+    headers:
+      access-control-allow-origin: ['*']
+      content-type: [application/json]
+      date: ['Thu, 05 Jul 2018 18:59:03 GMT']
+      server: [Apache/2.4.6 (CentOS) mod_R/1.2.7 R/3.3.0 mod_apreq2-20090110/2.8.0]
+      strict-transport-security: [max-age=15768000]
     status: {code: 200, message: OK}
 version: 1
