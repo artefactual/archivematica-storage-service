@@ -137,7 +137,7 @@ class DSpaceREST(models.Model):
         root = etree.parse(mets_path)
 
         dmdids = {v: k for k, v in self._getdmdids(root.find("//mets:structMap[@ID='structMap_1']/", namespaces=utils.NSMAP)).iteritems()}
-        #LOGGER.info('Dmdids: %s', dmdids)
+        # LOGGER.info('Dmdids: %s', dmdids)
         metadata = []
         repos = {}
         package_title = ''
@@ -167,9 +167,9 @@ class DSpaceREST(models.Model):
                         metadata.append(self._format_metadata(dc_term, dc_metadata.findtext(md.tag,
                                                                                             namespaces=utils.NSMAP)))
 
-        if not metadata: # We have nothing and therefore filename becomes title
+        if not metadata:  # We have nothing and therefore filename becomes title
             LOGGER.warning('Could not find SIP level Dublin Core metadata in %s', input_path)
-            package_title = dirname[:dirname.find(aip_uuid)-1].replace('_', ' ').title()
+            package_title = dirname[:dirname.find(aip_uuid) - 1].replace('_', ' ').title()
             metadata = [self._format_metadata('dc.title', package_title)]
             LOGGER.info('Metadata: %s', metadata)
 
@@ -213,7 +213,6 @@ class DSpaceREST(models.Model):
         LOGGER.info('DS REST Cleaned: %s', self.ds_rest_url)
         LOGGER.info('AS Cleaned: %s', self.as_url)
 
-
     def move_from_storage_service(self, source_path, destination_path, package=None):
         LOGGER.info('source_path: %s, destination_path: %s, package: %s', source_path, destination_path, package)
         LOGGER.info('Package UUID: %s', package.uuid)
@@ -250,7 +249,7 @@ class DSpaceREST(models.Model):
                 dspace_collection = self.ds_aip_collection
 
         LOGGER.info("Repo coll: %s", repository_collections)
-        item = { # Structure necessary to create DSpace record
+        item = {  # Structure necessary to create DSpace record
             "type": "item",
             "metadata": metadata
         }
@@ -263,10 +262,9 @@ class DSpaceREST(models.Model):
             "Content-Type": 'application/json',
         }
 
-
         collection_url = self.ds_rest_url.scheme + '://' + self.ds_rest_url.netloc + self.ds_rest_url.path + '/collections/' + dspace_collection + '/items'
 
-        dspace_sessionid = self._login_to_dspace_rest() # Logging in to REST api gives us a session id
+        dspace_sessionid = self._login_to_dspace_rest()  # Logging in to REST api gives us a session id
 
         # Create item in DSpace
         try:
@@ -288,12 +286,11 @@ class DSpaceREST(models.Model):
 
             for root, __, files in os.walk(source_path):
                 for name in files:
-                    #with open(os.path.join(root, name), 'rb') as f:
+                    # with open(os.path.join(root, name), 'rb') as f:
                     #    content = f.read()
 
-                    bitstream_url = self.ds_rest_url.scheme + '://' + self.ds_rest_url.netloc + self.ds_rest_url.path \
-                                    + '/items/' + dspace_item['uuid'] \
-                                    + '/bitstreams?name=' + urllib.quote(name.encode('utf-8'))
+                    bitstream_url = self.ds_rest_url.scheme + '://' + self.ds_rest_url.netloc + self.ds_rest_url.path
+                    bitstream_url += '/items/' + dspace_item['uuid'] + '/bitstreams?name=' + urllib.quote(name.encode('utf-8'))
 
                     try:
                         with open(os.path.join(root, name), 'rb') as content:
@@ -306,7 +303,6 @@ class DSpaceREST(models.Model):
                     except Exception:
                         LOGGER.info('Error sending %s, to %s', name, bitstream_url)
 
-                    #LOGGER.info('Path: %s', root)
             shutil.rmtree(source_path)
 
             try:
@@ -341,9 +337,6 @@ class DSpaceREST(models.Model):
 
                 raise ValueError('ArchivesSpace Server error: %s', e.response.text)
 
-                #LOGGER.error('Response: %s', e.response)
-                #raise ValueError()
-
             LOGGER.info('ArchivesSpace Client: %s', client)
 
         else:
@@ -351,8 +344,8 @@ class DSpaceREST(models.Model):
             with open(source_path, 'r') as f:
                 content = f.read()
 
-            bitstream_url = self.ds_rest_url.scheme + '://' + self.ds_rest_url.netloc + self.ds_rest_url.path + '/items/' + \
-                            dspace_item['uuid'] + '/bitstreams?name=' + urllib.quote(os.path.basename(source_path).encode('utf-8'))
+            bitstream_url = self.ds_rest_url.scheme + '://' + self.ds_rest_url.netloc + self.ds_rest_url.path + '/items/'
+            bitstream_url += dspace_item['uuid'] + '/bitstreams?name=' + urllib.quote(os.path.basename(source_path).encode('utf-8'))
 
             try:
                 requests.post(bitstream_url,
@@ -363,8 +356,6 @@ class DSpaceREST(models.Model):
                 LOGGER.debug('%s successfully sent to %s', source_path, bitstream_url)
             except Exception:
                 LOGGER.info('Error sending %s, to %s', source_path, bitstream_url)
-
-            #LOGGER.debug('Dest: %s', bitstream_url)
 
             # Send AIP to Tivoli Storage Manager using command-line client
             command = ['dsmc', 'archive', source_path]
@@ -385,4 +376,3 @@ class DSpaceREST(models.Model):
             LOGGER.info('Logged out of REST API.')
         except Exception:
             LOGGER.info('Error logging out of DSpace REST API', exc_info=True)
-
