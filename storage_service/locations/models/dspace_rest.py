@@ -38,7 +38,7 @@ class DSpaceREST(models.Model):
     """Integration with DSpace using the REST API."""
     space = models.OneToOneField('Space', to_field='uuid')
     ds_rest_url = models.URLField(max_length=256,
-                                  verbose_name=_l("REST URL "),
+                                  verbose_name=_l("REST URL"),
                                   help_text=_l('URL of the REST API. E.g. http://demo.dspace.org/rest'))
 
     ds_user = models.CharField(max_length=64,

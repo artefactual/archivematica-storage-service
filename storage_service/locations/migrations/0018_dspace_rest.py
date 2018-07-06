@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
                                                  verbose_name='ArchivesSpace password')),
                 ('as_repository', models.CharField(help_text='Number of the default ArchivesSpace repository', max_length=64,
                                                    verbose_name='Default ArchivesSpace repository')),
-                ('as_url', models.URLField(help_text='URL of ArchivesSpace server. E.g. http://sandbox.archivesspace.org/ (default port 8089 if omitted)',
+                ('as_url', models.URLField(help_text='URL of ArchivesSpace server. E.g. http://sandbox.archivesspace.org:8089/ (default port 8089 if omitted)',
                                            max_length=256, verbose_name='ArchivesSpace URL')),
                 ('as_user', models.CharField(help_text='ArchivesSpace username to authenticate as', max_length=64,
                                              verbose_name='ArchivesSpace user')),
