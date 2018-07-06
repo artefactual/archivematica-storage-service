@@ -127,10 +127,9 @@ class DSpaceForm(forms.ModelForm):
 class DSpaceRESTForm(forms.ModelForm):
     class Meta:
         model = models.DSpaceREST
-        fields = ('rest_url', 'user', 'password', 'archive_format', 'dspace_dip_collection',
-                  'dspace_aip_collection', 'archivesspace_url',
-                  'archivesspace_user', 'archivesspace_password', 'archivesspace_repository',
-                  'archivesspace_archival_object')
+        fields = ('ds_rest_url', 'ds_user', 'ds_password', 'ds_dip_collection',
+                  'ds_aip_collection', 'as_url', 'as_user', 'as_password',
+                  'as_repository', 'as_archival_object')
 
 
 def get_gpg_key_choices():
