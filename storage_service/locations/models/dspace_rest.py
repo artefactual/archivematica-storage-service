@@ -69,7 +69,7 @@ class DSpaceREST(models.Model):
                                    verbose_name=_l("ArchivesSpace password"),
                                    help_text=_l('ArchivesSpace password to authenticate with'))
 
-    as_repository = models.CharField(max_length=12,
+    as_repository = models.CharField(max_length=64,
                                      verbose_name=_l("Default ArchivesSpace repository"),
                                      help_text=_l('Number of the default ArchivesSpace repository'))
 
