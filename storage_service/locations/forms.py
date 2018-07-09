@@ -129,7 +129,7 @@ class DSpaceRESTForm(forms.ModelForm):
         model = models.DSpaceREST
         fields = ('ds_rest_url', 'ds_user', 'ds_password', 'ds_dip_collection',
                   'ds_aip_collection', 'as_url', 'as_user', 'as_password',
-                  'as_repository', 'as_archival_object')
+                  'as_repository', 'as_archival_object', 'verify_ssl')
 
 
 def get_gpg_key_choices():

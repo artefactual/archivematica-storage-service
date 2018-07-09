@@ -32,6 +32,10 @@ class Migration(migrations.Migration):
                                                        verbose_name='Default DSpace AIP collection id')),
                 ('ds_dip_collection', models.CharField(help_text='UUID of default DSpace collection for the DIP to be deposited to', max_length=64,
                                                        verbose_name='Default DSpace DIP collection id')),
+                ('verify_ssl', models.BooleanField(default=True,
+                                                   help_text='If checked, HTTPS requests will verify the SSL certificates',
+                                                   verbose_name='Verify SSL certificates?'),
+                ),
             ],
             options={
                 'verbose_name': 'DSpace via REST API',
