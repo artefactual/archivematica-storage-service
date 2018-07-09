@@ -305,8 +305,7 @@ class DSpaceREST(models.Model):
                                       archivesspace_collection,
                                       package_uuid,
                                       title=package_title,
-                                      uri=self.ds_rest_url.scheme + '://' + self.ds_rest_url.netloc + '/handle/' +
-                                          dspace_item['handle'])
+                                      uri=self.ds_rest_url.scheme + '://' + self.ds_rest_url.netloc + '/handle/' + dspace_item['handle'])
         except RequestException as e:
             LOGGER.error('Could not add digital object to ArchivesSpace')
             if e.response and e.response.status_code == 404:
@@ -334,8 +333,6 @@ class DSpaceREST(models.Model):
             LOGGER.debug('%s successfully sent to %s', source_path, bitstream_url)
         except Exception:
             LOGGER.info('Error sending %s, to %s', source_path, bitstream_url)
-
-
 
     def move_from_storage_service(self, source_path, destination_path, package=None):
         LOGGER.info('source_path: %s, destination_path: %s, package: %s', source_path, destination_path, package)
