@@ -34,8 +34,7 @@ class Migration(migrations.Migration):
                                                        verbose_name='Default DSpace DIP collection id')),
                 ('verify_ssl', models.BooleanField(default=True,
                                                    help_text='If checked, HTTPS requests will verify the SSL certificates',
-                                                   verbose_name='Verify SSL certificates?'),
-                ),
+                                                   verbose_name='Verify SSL certificates?'),),
             ],
             options={
                 'verbose_name': 'DSpace via REST API',
