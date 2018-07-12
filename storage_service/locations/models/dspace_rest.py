@@ -7,7 +7,7 @@ from __future__ import absolute_import
 import json
 import logging
 import os
-import shutil
+# import shutil
 import subprocess
 import urllib
 
@@ -313,8 +313,7 @@ class DSpaceREST(models.Model):
             client.add_digital_object('/repositories/' + self.as_repository + '/archival_objects/' + as_archival_obj,
                                       package_uuid,
                                       title=package_title,
-                                      uri=self.ds_rest_url.scheme + '://' + self.ds_rest_url.netloc + '/handle/' +
-                                          ds_item['handle'])
+                                      uri=self.ds_rest_url.scheme + '://' + self.ds_rest_url.netloc + '/handle/' + ds_item['handle'])
         except RequestException as e:
             LOGGER.error('Could not add digital object to ArchivesSpace')
             if e.response and e.response.status_code == 404:
