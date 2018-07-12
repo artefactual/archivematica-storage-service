@@ -24,12 +24,15 @@ from requests import RequestException
 # This project, alphabetical
 from agentarchives import archivesspace
 
-
 # This module, alphabetical
 from common import utils
 from .location import Location
 
 LOGGER = logging.getLogger(__name__)
+
+
+class DSpaceRESTException(Exception):
+    pass
 
 
 class DSpaceREST(models.Model):
@@ -55,29 +58,33 @@ class DSpaceREST(models.Model):
                                          verbose_name=_l("Default DSpace AIP collection id"),
                                          help_text=_l('UUID of default DSpace collection for the AIP to be deposited to'))
 
-    as_url = models.URLField(max_length=256,
+    as_url = models.URLField(blank=True,
+                             max_length=256,
                              verbose_name=_l("ArchivesSpace URL"),
                              help_text=_l('URL of ArchivesSpace server. E.g. http://sandbox.archivesspace.org:8089/ (default port 8089 if omitted)'))
 
-    as_user = models.CharField(max_length=64,
+    as_user = models.CharField(blank=True,
+                               max_length=64,
                                verbose_name=_l("ArchivesSpace user"),
                                help_text=_l('ArchivesSpace username to authenticate as'))
 
-    as_password = models.CharField(max_length=64,
+    as_password = models.CharField(blank=True,
+                                   max_length=64,
                                    verbose_name=_l("ArchivesSpace password"),
                                    help_text=_l('ArchivesSpace password to authenticate with'))
 
-    as_repository = models.CharField(max_length=64,
+    as_repository = models.CharField(blank=True,
+                                     max_length=64,
                                      verbose_name=_l("Default ArchivesSpace repository"),
-                                     help_text=_l('Number of the default ArchivesSpace repository'))
+                                     help_text=_l('Identifier of the default ArchivesSpace repository'))
 
-    as_archival_object = models.CharField(max_length=64,
+    as_archival_object = models.CharField(blank=True,
+                                          max_length=64,
                                           verbose_name=_l("Default ArchivesSpace archival object"),
-                                          help_text=_l('Number of the default ArchivesSpace archival object'))
+                                          help_text=_l('Identifier of the default ArchivesSpace archival object'))
 
     verify_ssl = models.BooleanField(blank=True, default=True, verbose_name=_l("Verify SSL certificates?"),
-                                     help_text=_l(
-                                         "If checked, HTTPS requests will verify the SSL certificates"))
+                                     help_text=_l("If checked, HTTPS requests will verify the SSL certificates"))
 
     class Meta:
         verbose_name = _l("DSpace via REST API")
@@ -128,12 +135,13 @@ class DSpaceREST(models.Model):
                 output, err = p.communicate()
                 LOGGER.info('Output: %s', output)
             except subprocess.CalledProcessError:
-                LOGGER.error('Could not extract %s from %s', mets_path, input_path, exc_info=True)
+                LOGGER.warning('Could not extract {} from {}'.format(mets_path, input_path), exc_info=True)
         elif package_type == 'DIP':
             for dip_file in os.listdir(input_path):
                 if dip_file.startswith('METS') and dip_file.endswith(".xml"):
                     LOGGER.info("Dip file: %s", dip_file)
                     mets_path = os.path.join(input_path, dip_file)
+                    break
 
         # Fetch info
         root = etree.parse(mets_path)
@@ -155,7 +163,6 @@ class DSpaceREST(models.Model):
                     repos['dspace_dip_collection'] = other_metadata.findtext('dspace_dip_collection')
                     repos['dspace_aip_collection'] = other_metadata.findtext('dspace_aip_collection')
                     repos['archivesspace_dip_collection'] = other_metadata.findtext('archivesspace_dip_collection')
-                    repos['archivesspace_aip_collection'] = other_metadata.findtext('archivesspace_aip_collection')
                 elif dc_metadata is not None:
                     for md in dc_metadata:
                         dc_term = str(md.tag)[str(md.tag).find('}') + 1:]
@@ -199,6 +206,15 @@ class DSpaceREST(models.Model):
 
         return set_cookie[set_cookie.find('=') + 1:]
 
+    def _logout_from_dspace_rest(self, headers, ds_sessionid):
+        # Logout from DSpace API
+        url = self.ds_rest_url.scheme + '://' + self.ds_rest_url.netloc + self.ds_rest_url.path + 'logout'
+        try:
+            requests.post(url, headers=headers, cookies={'JSESSIONID': ds_sessionid}, verify=self.verify_ssl)
+            LOGGER.info('Logged out of REST API.')
+        except Exception:
+            LOGGER.warning('Error logging out of DSpace REST API', exc_info=True)
+
     def _parse_and_clean_urls(self):
         self.ds_rest_url = urlparse(self.ds_rest_url)
         self.as_url = urlparse(self.as_url)
@@ -215,7 +231,7 @@ class DSpaceREST(models.Model):
         LOGGER.info('DS REST Cleaned: %s', self.ds_rest_url)
         LOGGER.info('AS Cleaned: %s', self.as_url)
 
-    def _create_dspace_record(self, headers, metadata, dspace_sessionid, dspace_collection):
+    def _create_dspace_record(self, headers, metadata, ds_sessionid, ds_collection):
         item = {  # Structure necessary to create DSpace record
             "type": "item",
             "metadata": metadata
@@ -223,116 +239,109 @@ class DSpaceREST(models.Model):
 
         LOGGER.info("Item: %s", item)
 
-        collection_url = self.ds_rest_url.scheme + '://' + self.ds_rest_url.netloc + self.ds_rest_url.path + '/collections/' + dspace_collection + '/items'
+        collection_url = self.ds_rest_url.scheme + '://' + self.ds_rest_url.netloc + self.ds_rest_url.path + '/collections/' + ds_collection + '/items'
 
         # Create item in DSpace
         try:
             response = requests.post(collection_url,
                                      headers=headers,
-                                     cookies={'JSESSIONID': dspace_sessionid},
+                                     cookies={'JSESSIONID': ds_sessionid},
                                      data=json.dumps(item),
                                      verify=self.verify_ssl)
         except RequestException:
-            LOGGER.error('Could not create DSpace record: %s', collection_url)
-            raise RequestException('Could not create DSpace record: %s', collection_url)
+            msg = 'Could not create DSpace record: {}'.format(collection_url)
+            LOGGER.error(msg)
+            raise DSpaceRESTException(msg)
 
         return response.json()
 
-    def _assign_destination(self, package_type, repository_collections):
-        dspace_collection = archivesspace_collection = None
+    def _assign_destination(self, package_type, destinations):
+        ds_collection = as_archival_obj = None
 
         if package_type == 'DIP':
-            dspace_collection = repository_collections.get('dspace_dip_collection')
-            if not dspace_collection:
-                dspace_collection = self.ds_dip_collection
+            ds_collection = destinations.get('dspace_dip_collection', self.ds_dip_collection)
 
-            archivesspace_collection = repository_collections.get('archivesspace_dip_collection')
-            if not archivesspace_collection:
-                archivesspace_collection = self.as_archival_object
+            as_archival_obj = destinations.get('archivesspace_dip_archival_object', self.as_archival_object)
 
         elif package_type == 'AIP':
-            dspace_collection = repository_collections.get('dspace_aip_collection')
-            if not dspace_collection:
-                dspace_collection = self.ds_aip_collection
+            ds_collection = destinations.get('dspace_aip_collection', self.ds_aip_collection)
 
-        LOGGER.info("Repo coll: %s", repository_collections)
+        LOGGER.info("Repo coll: %s", destinations)
 
-        return dspace_collection, archivesspace_collection
+        return ds_collection, as_archival_obj
 
-    def _deposit_dip_to_dspace(self, source_path, headers, dspace_item, dspace_sessionid):
+    def _deposit_dip_to_dspace(self, source_path, headers, ds_item, ds_sessionid):
         LOGGER.info('Package is DIP. Sending file by file.')
+        base_url = self.ds_rest_url.scheme + '://' + self.ds_rest_url.netloc + self.ds_rest_url.path
+        base_url += '/items/' + ds_item['uuid']
 
         for root, __, files in os.walk(source_path):
             for name in files:
-                bitstream_url = self.ds_rest_url.scheme + '://' + self.ds_rest_url.netloc + self.ds_rest_url.path
-                bitstream_url += '/items/' + dspace_item['uuid'] + '/bitstreams?name=' + urllib.quote(
-                    name.encode('utf-8'))
+                bitstream_url = base_url + '/bitstreams?name=' + urllib.quote(name.encode('utf-8'))
 
                 try:
                     with open(os.path.join(root, name), 'rb') as content:
                         requests.post(bitstream_url,
                                       headers=headers,
-                                      cookies={'JSESSIONID': dspace_sessionid},
+                                      cookies={'JSESSIONID': ds_sessionid},
                                       data=content,
                                       verify=self.verify_ssl)
                     LOGGER.debug('%s successfully sent to %s', name, bitstream_url)
                 except Exception:
-                    LOGGER.info('Error sending %s, to %s', name, bitstream_url)
+                    msg = 'Error sending {}, to {}'.format(name, bitstream_url)
+                    LOGGER.error(msg)
+                    raise DSpaceRESTException(msg)
 
-        shutil.rmtree(source_path)
+        # shutil.rmtree(source_path)
 
-    def _link_dip_to_archivesspace(self, archivesspace_collection, package_uuid, package_title, dspace_item):
+    def _link_dip_to_archivesspace(self, as_archival_obj, package_uuid, package_title, ds_item):
         try:
-            # Create digital object in ArchivesSpace linking to DIP
             client = archivesspace.ArchivesSpaceClient(self.as_url.scheme + '://' + self.as_url.hostname,
                                                        self.as_user,
-                                                       self.as_password, self.as_url.port,
+                                                       self.as_password,
+                                                       self.as_url.port,
                                                        self.as_repository)
         except Exception:
-            LOGGER.error('Could not login to ArchivesSpace server: %s, port: %s, user: %s, repository: %s',
-                         self.as_url,
-                         self.as_url.port,
-                         self.as_user,
-                         self.as_repository)
-            raise Exception('Could not login to ArchivesSpace server: %s, port: %s, user: %s, repository: %s',
-                            self.as_url,
-                            self.as_url.port,
-                            self.as_user,
-                            self.as_repository)
-
-        try:
-            client.add_digital_object('/repositories/' + self.as_repository + '/archival_objects/' +
-                                      archivesspace_collection,
-                                      package_uuid,
-                                      title=package_title,
-                                      uri=self.ds_rest_url.scheme + '://' + self.ds_rest_url.netloc + '/handle/' + dspace_item['handle'])
-        except RequestException as e:
-            LOGGER.error('Could not add digital object to ArchivesSpace')
-            if e.response and e.response.status_code == 404:
-                raise ValueError('Either repository %s or archival object %s does not exist',
-                                 14, archivesspace_collection)
-
-            raise ValueError('ArchivesSpace Server error: %s', e.response.text)
+            msg = 'Could not login to ArchivesSpace server: {}, port: {}, user: {}, repository: {}'\
+                .format(self.as_url, self.as_url.port, self.as_user, self.as_repository)
+            LOGGER.error(msg)
+            raise DSpaceRESTException(msg)
 
         LOGGER.info('ArchivesSpace Client: %s', client)
 
-    def _deposit_aip_to_dspace(self, source_path, headers, dspace_item, dspace_sessionid):
+        try:
+            client.add_digital_object('/repositories/' + self.as_repository + '/archival_objects/' + as_archival_obj,
+                                      package_uuid,
+                                      title=package_title,
+                                      uri=self.ds_rest_url.scheme + '://' + self.ds_rest_url.netloc + '/handle/' +
+                                          ds_item['handle'])
+        except RequestException as e:
+            LOGGER.error('Could not add digital object to ArchivesSpace')
+            if e.response and e.response.status_code == 404:
+                msg = 'Either repository {} or archival object {} does not exist'.format(self.as_repository, as_archival_obj)
+                raise ValueError(msg)
+
+            msg = 'ArchivesSpace Server error: {}'.format(e.response.text)
+            raise DSpaceRESTException(msg)
+
+    def _deposit_aip_to_dspace(self, source_path, headers, ds_item, ds_sessionid):
         LOGGER.info('Package is AIP. Sending file.')
 
         bitstream_url = self.ds_rest_url.scheme + '://' + self.ds_rest_url.netloc + self.ds_rest_url.path + '/items/'
-        bitstream_url += dspace_item['uuid'] + '/bitstreams?name=' + urllib.quote(
-            os.path.basename(source_path).encode('utf-8'))
+        bitstream_url += ds_item['uuid'] + '/bitstreams?name=' + urllib.quote(os.path.basename(source_path).encode('utf-8'))
 
         try:
             with open(source_path, 'rb') as content:
                 requests.post(bitstream_url,
                               headers=headers,
-                              cookies={'JSESSIONID': dspace_sessionid},
+                              cookies={'JSESSIONID': ds_sessionid},
                               data=content,
                               verify=self.verify_ssl)
             LOGGER.debug('%s successfully sent to %s', source_path, bitstream_url)
         except Exception:
-            LOGGER.info('Error sending %s, to %s', source_path, bitstream_url)
+            msg = 'Error sending {}, to {}'.format(source_path, bitstream_url)
+            LOGGER.error(msg)
+            raise DSpaceRESTException(msg)
 
     def move_from_storage_service(self, source_path, destination_path, package=None):
         LOGGER.info('source_path: %s, destination_path: %s, package: %s', source_path, destination_path, package)
@@ -341,7 +350,7 @@ class DSpaceREST(models.Model):
         LOGGER.info('Verify SSL: %s', self.verify_ssl)
 
         if package is None:
-            LOGGER.warning('DSpace requires package param')
+            LOGGER.error('DSpace requires package param')
             return
 
         # This only handles compressed AIPs
@@ -351,13 +360,11 @@ class DSpaceREST(models.Model):
         self._parse_and_clean_urls()
 
         # Item to be created in DSpace
-        metadata, repository_collections, package_title = self._get_metadata(source_path,
-                                                                             package.uuid,
-                                                                             package.package_type)
+        metadata, destinations, package_title = self._get_metadata(source_path, package.uuid, package.package_type)
 
-        dspace_collection, archivesspace_collection = self._assign_destination(package.package_type, repository_collections)
+        ds_collection, as_archival_obj = self._assign_destination(package.package_type, destinations)
 
-        dspace_sessionid = self._login_to_dspace_rest()  # Logging in to REST api gives us a session id
+        ds_sessionid = self._login_to_dspace_rest()  # Logging in to REST api gives us a session id
 
         # Headers for connecting to DSpace REST API
         headers = {
@@ -365,34 +372,34 @@ class DSpaceREST(models.Model):
             "Content-Type": 'application/json',
         }
 
-        dspace_item = self._create_dspace_record(headers, metadata, dspace_sessionid, dspace_collection)
-
-        LOGGER.info('DSpace item: %s', dspace_item)
-
-        if package.package_type == 'DIP':
-            self._deposit_dip_to_dspace(source_path, headers, dspace_item, dspace_sessionid)
-
-            self._link_dip_to_archivesspace(archivesspace_collection, package.uuid, package_title, dspace_item)
-
-        else:
-            self._deposit_aip_to_dspace(source_path, headers, dspace_item, dspace_sessionid)
-
-            # Send AIP to Tivoli Storage Manager using command-line client
-            command = ['dsmc', 'archive', source_path]
-            try:
-                LOGGER.info('Command: %s', command)
-                p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                output, err = p.communicate()
-                LOGGER.info('Output: %s', output)
-            except OSError:
-                LOGGER.error('Could not run %s', command[0], exc_info=True)
-            except subprocess.CalledProcessError:
-                LOGGER.error('Could not archive %s using %s', source_path, command[0], exc_info=True)
-
-        # Logout from DSpace API
-        url = self.ds_rest_url.scheme + '://' + self.ds_rest_url.netloc + self.ds_rest_url.path + 'logout'
         try:
-            requests.post(url, headers=headers, cookies={'JSESSIONID': dspace_sessionid}, verify=self.verify_ssl)
-            LOGGER.info('Logged out of REST API.')
-        except Exception:
-            LOGGER.info('Error logging out of DSpace REST API', exc_info=True)
+            ds_item = self._create_dspace_record(headers, metadata, ds_sessionid, ds_collection)
+
+            LOGGER.info('DSpace item: %s', ds_item)
+
+            if package.package_type == 'DIP':
+                self._deposit_dip_to_dspace(source_path, headers, ds_item, ds_sessionid)
+
+                if self.as_url != '' and self.as_user != '' and self.as_password != '' and self.as_repository != '':
+                    self._link_dip_to_archivesspace(as_archival_obj, package.uuid, package_title, ds_item)
+
+            else:
+                self._deposit_aip_to_dspace(source_path, headers, ds_item, ds_sessionid)
+
+                # Send AIP to Tivoli Storage Manager using command-line client
+                command = ['dsmc', 'archive', source_path]
+                try:
+                    LOGGER.info('Command: %s', command)
+                    p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    output, err = p.communicate()
+                    LOGGER.info('Output: %s', output)
+                except OSError:
+                    LOGGER.error('Could not run %s', command[0], exc_info=True)
+                except subprocess.CalledProcessError:
+                    LOGGER.error('Could not archive %s using %s', source_path, command[0], exc_info=True)
+        except DSpaceRESTException as e:
+            msg = 'Error depositing to DSpace or ArchiveSpace: {}'.format(e)
+            LOGGER.error(msg)
+            raise DSpaceRESTException(msg)
+        finally:
+            self._logout_from_dspace_rest(headers, ds_sessionid)
