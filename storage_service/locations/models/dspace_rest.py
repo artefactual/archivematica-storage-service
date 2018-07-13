@@ -379,7 +379,7 @@ class DSpaceREST(models.Model):
             if package.package_type == 'DIP':
                 self._deposit_dip_to_dspace(source_path, headers, ds_item, ds_sessionid)
 
-                if self.as_url != '' and self.as_user != '' and self.as_password != '' and self.as_repository != '':
+                if all([self.as_url, self.as_user, self.as_password, self.as_repository, as_archival_obj]):
                     self._link_dip_to_archivesspace(as_archival_obj, package.uuid, package_title, ds_item)
 
             else:
