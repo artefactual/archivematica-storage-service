@@ -209,6 +209,9 @@ class DSpace(models.Model):
         except subprocess.CalledProcessError:
             LOGGER.error('Could not extract %s', input_path)
             raise
+        except OSError as e:
+            LOGGER.error('Is %s installed? %s', command[0], e)
+            raise
 
         # Move objects into their own directory
         objects_dir = os.path.join(output_dir, 'objects')
