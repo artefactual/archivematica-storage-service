@@ -130,6 +130,7 @@ class Space(models.Model):
     DATAVERSE = 'DV'
     DURACLOUD = 'DC'
     DSPACE = 'DSPACE'
+    DSPACE_REST = 'DSPC_RST'
     FEDORA = 'FEDORA'
     LOCAL_FILESYSTEM = 'FS'
     LOM = 'LOM'
@@ -138,12 +139,13 @@ class Space(models.Model):
     SWIFT = 'SWIFT'
     GPG = 'GPG'
     S3 = 'S3'
-    OBJECT_STORAGE = {DATAVERSE, DSPACE, DURACLOUD, SWIFT, S3}
+    OBJECT_STORAGE = {DATAVERSE, DSPACE, DSPACE_REST, DURACLOUD, SWIFT, S3}
     ACCESS_PROTOCOL_CHOICES = (
         (ARKIVUM, _l('Arkivum')),
         (DATAVERSE, _l('Dataverse')),
         (DURACLOUD, _l('DuraCloud')),
         (DSPACE, _l('DSpace via SWORD2 API')),
+        (DSPACE_REST, _l('DSpace via REST API')),
         (FEDORA, _l("FEDORA via SWORD2")),
         (GPG, _l("GPG encryption on Local Filesystem")),
         (LOCAL_FILESYSTEM, _l("Local Filesystem")),
