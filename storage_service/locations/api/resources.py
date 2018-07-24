@@ -154,7 +154,7 @@ class SpaceResource(ModelResource):
 
         fields = ['access_protocol', 'last_verified', 'location_set', 'path',
             'size', 'used', 'uuid', 'verified']
-        list_allowed_methods = ['get']
+        list_allowed_methods = ['get', 'post']
         detail_allowed_methods = ['get']
         detail_uri_name = 'uuid'
         always_return_data = True
@@ -201,9 +201,7 @@ class SpaceResource(ModelResource):
         access_protocol = bundle.data['access_protocol']
         keep_fields = PROTOCOL[access_protocol]['fields']
         fields_dict = {key: bundle.data[key] for key in keep_fields}
-
         bundle = super(SpaceResource, self).obj_create(bundle, **kwargs)
-
         model = PROTOCOL[access_protocol]['model']
         obj = model.objects.create(space=bundle.obj, **fields_dict)
         obj.save()

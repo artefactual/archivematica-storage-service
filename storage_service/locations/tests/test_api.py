@@ -15,6 +15,43 @@ THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, '..', 'fixtures', ''))
 
 
+class TestSpaceAPI(TestCase):
+
+    fixtures = ['base.json']
+
+    def setUp(self):
+        user = User.objects.get(username='test')
+        user.set_password('test')
+        self.client.defaults['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode('test:test')
+
+    def test_requires_auth(self):
+        del self.client.defaults['HTTP_AUTHORIZATION']
+        response = self.client.get('/api/v2/space/7d20c992-bc92-4f92-a794-7161ff2cc08b/')
+        assert response.status_code == 401
+
+    def test_create_space(self):
+        data = {
+            'access_protocol': 'S3',
+            'path': '',
+            'staging_path': '/',
+
+            # Specific to the S3 protocol.
+            'endpoint_url': 'http://127.0.0.1:12345',
+            'access_key_id': 'Cah4cae1',
+            'secret_access_key': 'Thu6Ahqu',
+            'region': 'us-west-2',
+        }
+        response = self.client.post(
+            '/api/v2/space/',
+            data=json.dumps(data),
+            content_type='application/json')
+        response_data = json.loads(response.content)
+        assert response.status_code == 201
+
+        protocol_model = models.S3.objects.get(space_id=response_data['uuid'])
+        assert protocol_model.endpoint_url == data['endpoint_url']
+
+
 class TestLocationAPI(TestCase):
 
     fixtures = ['base.json', 'pipelines.json', 'package.json']
