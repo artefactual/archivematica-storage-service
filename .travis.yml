@@ -1,7 +1,7 @@
 ---
 
 dist: trusty
-sudo: required
+sudo: false
 language: python
 
 addons:

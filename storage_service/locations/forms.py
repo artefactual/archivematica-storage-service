@@ -129,7 +129,22 @@ class DSpaceRESTForm(forms.ModelForm):
         model = models.DSpaceREST
         fields = ('ds_rest_url', 'ds_user', 'ds_password', 'ds_dip_collection',
                   'ds_aip_collection', 'as_url', 'as_user', 'as_password',
-                  'as_repository', 'as_archival_object', 'verify_ssl')
+                  'as_repository', 'as_archival_object', 'upload_to_tsm',
+                  'verify_ssl')
+
+    def as_p(self):
+        """Override in order to add an alert in the ArchivesSpace subsection
+        of the form.
+        """
+        content = super(DSpaceRESTForm, self).as_p()
+        needle = '<p><label for="id_protocol-as_url">'
+        as_fields_alert = '<div class="alert">{}</div>\n{}'.format(
+            _('The ArchivesSpace fields are optional. Leaving any of these'
+              ' fields blank will prevent ArchivesSpace linking requests from'
+              ' being sent, unless the metadata is included in the packages'
+              ' METS file in a dmdSec.'),
+            needle)
+        return content.replace(needle, as_fields_alert)
 
 
 def get_gpg_key_choices():
