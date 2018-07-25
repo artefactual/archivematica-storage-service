@@ -99,6 +99,46 @@ class TestLocationAPI(TestCase):
         assert location.relative_path == data['relative_path']
         assert location.description == data['description']
 
+    def test_create_default_location(self):
+        """Test that a new created location can be marked as default.
+
+        Storage Service allows users to define a location the default one for
+        its purpose application-wise.
+
+        In our fixtures we already have a TS added. We're going to add a new
+        one and confirm that it can be marked as the new default.
+        """
+        new_default_ts_location = {
+            'space': '/api/v2/space/7d20c992-bc92-4f92-a794-7161ff2cc08b/',
+            'description': 'new location',
+            'relative_path': 'new-location/foo/bar',
+            'purpose': 'TS',
+            'pipeline': [
+                '/api/v2/pipeline/b25f6b71-3ebf-4fcc-823c-1feb0a2553dd/'
+            ],
+            'default': True,
+        }
+
+        def _get_default_ts():
+            return self.client.get(
+                '/api/v2/location/default/TS/',
+                content_type='application/json')
+
+        response = _get_default_ts()
+        assert response.status_code == 404
+
+        # Create default location.
+        response = self.client.post(
+            '/api/v2/location/',
+            data=json.dumps(new_default_ts_location),
+            content_type='application/json')
+        body = json.loads(response.content)
+
+        response = _get_default_ts()
+        assert response.status_code == 302
+        assert response.url == \
+            'http://testserver/api/v2/location/%s/' % (body['uuid'],)
+
     def test_cant_move_from_non_existant_locations(self):
         data = {
             'origin_location': '/api/v2/location/dne1aacf-8492-4382-8ef3-262cc5420dne/',

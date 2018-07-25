@@ -319,6 +319,14 @@ class LocationResource(ModelResource):
                     pipeline=item.obj,
                     location=bundle.obj)
 
+    def obj_create(self, bundle, **kwargs):
+        """Create a new location and make it the default when requested."""
+        if 'default' in bundle.data:
+            # This is going to result in calling the `default` attribute setter
+            # in the underlying model (Location).
+            kwargs['default'] = bundle.data['default']
+        return super(LocationResource, self).obj_create(bundle, **kwargs)
+
     @_custom_endpoint(expected_methods=['get'])
     def browse(self, request, bundle, **kwargs):
         """ Returns all of the entries in a location, optionally at a subpath.
