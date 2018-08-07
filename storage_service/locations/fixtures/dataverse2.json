@@ -1,0 +1,42 @@
+[
+{
+    "fields": {
+        "host": "demodv.scholarsportal.info",
+        "api_key": "51c64df4-abd7-4613-af21-6a68715dca92",
+        "space": "d18a2763-60f0-4273-b30c-caa5d14d6d32",
+        "agent_name": "Archivematica Test Dataverse",
+        "agent_type": "TestOrganisation",
+        "agent_identifier": "https://demodv.scholarsportal.info/dataverse/archivematica"
+    },
+    "model": "locations.dataverse",
+    "pk": 3
+},
+{
+    "fields": {
+        "last_verified": null,
+        "used": 0,
+        "verified": false,
+        "uuid": "d18a2763-60f0-4273-b30c-caa5d14d6d32",
+        "access_protocol": "DV",
+        "staging_path": "/var/archivematica/storage_service/",
+        "path": "",
+        "size": null
+    },
+    "model": "locations.space",
+    "pk": 4
+},
+{
+    "fields": {
+        "used": 0,
+        "description": "",
+        "space": "d18a2763-60f0-4273-b30c-caa5d14d6d32",
+        "enabled": true,
+        "quota": null,
+        "relative_path": "test",
+        "purpose": "TS",
+        "uuid": "3af8a6a1-19f3-40be-87aa-bfa0940a1944"
+    },
+    "model": "locations.location",
+    "pk": 9
+}
+]
