@@ -598,6 +598,9 @@ class PackageResource(ModelResource):
             # Reingest
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/reingest%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('reingest_request'), name="reingest_request"),
 
+            # Move
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/move%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('move_request'), name="move_request"),
+
             # FEDORA/SWORD2 endpoints
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit'), name="sword_deposit"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/media%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit_media'), name="sword_deposit_media"),
@@ -1064,23 +1067,124 @@ class PackageResource(ModelResource):
         return http.HttpResponse(content=json.dumps(response), content_type='application/json')
 
     @_custom_endpoint(expected_methods=['post'],
-        required_fields=('pipeline', 'reingest_type'))
+                      required_fields=('pipeline', 'reingest_type'))
     def reingest_request(self, request, bundle, **kwargs):
+        """Request to reingest an AIP."""
         try:
             pipeline = Pipeline.objects.get(uuid=bundle.data['pipeline'])
         except (Pipeline.DoesNotExist, Pipeline.MultipleObjectsReturned):
             response = {
                 'error': True,
-                'message': _('Pipeline UUID %(uuid)s failed to return a pipeline') % {'uuid': bundle.data['pipeline']},
+                'message': _('Pipeline UUID %(uuid)s failed to return a pipeline')
+                % {'uuid': bundle.data['pipeline']},
             }
-            return self.create_response(request, response, response_class=http.HttpBadRequest)
+            return self.create_response(request,
+                                        response,
+                                        response_class=http.HttpBadRequest)
+
         reingest_type = bundle.data['reingest_type']
         processing_config = bundle.data.get('processing_config', 'default')
 
-        response = bundle.obj.start_reingest(pipeline, reingest_type, processing_config)
+        response = bundle.obj.start_reingest(pipeline,
+                                             reingest_type,
+                                             processing_config)
         status_code = response.get('status_code', 500)
 
         return self.create_response(request, response, status=status_code)
+
+    @_custom_endpoint(expected_methods=['post'])
+    def move_request(self, request, bundle, **kwargs):
+        """Request to move a stored AIP.
+
+        Called when a POST request is made to api/v2/file/UUID/move/ with a location_uuid
+        parameter with the UUID of the location that the AIP should be moved to.
+        """
+        package = bundle.obj
+
+        if package.status != Package.UPLOADED:
+            response = {
+                'error': True,
+                'message': _('The file must be in an %s state to be moved. '
+                             'Current state: %s'
+                             % (Package.UPLOADED, package.status)),
+            }
+            return self.create_response(request,
+                                        response,
+                                        response_class=http.HttpBadRequest)
+
+        location_uuid = request.POST.get('location_uuid')
+
+        if not location_uuid:
+            return http.HttpBadRequest(_('All of these fields must be provided: '
+                                         'location_uuid'))
+
+        try:
+            location = Location.objects.get(uuid=location_uuid)
+        except (Location.DoesNotExist, Location.MultipleObjectsReturned):
+            response = {
+                'error': True,
+                'message': _('Location UUID %(uuid)s \
+                failed to return a location') %
+                {'uuid': location_uuid},
+            }
+            return self.create_response(request,
+                                        response,
+                                        response_class=http.HttpBadRequest)
+
+        if location == package.current_location:
+            response = {
+                'error': True,
+                'message': _('New location must be different '
+                             'to the current location'),
+            }
+            return self.create_response(request,
+                                        response,
+                                        response_class=http.HttpBadRequest)
+
+        if location.purpose != package.current_location.purpose:
+            response = {
+                'error': True,
+                'message': _('New location must have the same purpose as '
+                             'the current location - %s'
+                             % package.current_location.purpose),
+            }
+            return self.create_response(request,
+                                        response,
+                                        response_class=http.HttpBadRequest)
+
+        number_matched = Package.objects \
+                                .filter(id=package.id, status=Package.UPLOADED) \
+                                .update(status=Package.MOVING)
+
+        if number_matched == 1:
+            package.refresh_from_db()
+        else:
+            response = {
+                'error': True,
+                'message': _('The package must be in an %s state to be moved. '
+                             'Current state: %s'
+                             % (Package.UPLOADED, package.status)),
+            }
+            return self.create_response(request,
+                                        response,
+                                        response_class=http.HttpBadRequest)
+
+        def task():
+            package.move(location)
+            package.status = Package.UPLOADED
+            package.save()
+            return _('Package moved successfully')
+
+        async_task = AsyncManager.run_task(task)
+
+        response = http.HttpAccepted()
+        response['Location'] = reverse('api_dispatch_detail', kwargs={
+            'api_name': 'v2',
+            'resource_name': 'async',
+            'id': async_task.id,
+        })
+
+        return response
 
     def sword_deposit(self, request, **kwargs):
         try:
