@@ -591,6 +591,9 @@ class PackageResource(ModelResource):
             # Reingest
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/reingest%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('reingest_request'), name="reingest_request"),
 
+            # Move
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/move%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('move_request'), name="move_request"),
+
             # FEDORA/SWORD2 endpoints
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit'), name="sword_deposit"),
             url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/media%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('sword_deposit_media'), name="sword_deposit_media"),
@@ -1074,6 +1077,35 @@ class PackageResource(ModelResource):
         status_code = response.get('status_code', 500)
 
         return self.create_response(request, response, status=status_code)
+
+    @_custom_endpoint(expected_methods=['post'])
+#        required_fields=(['location_uuid']))
+    def move_request(self, request, bundle, **kwargs):
+        '''
+        curl -d 'location_uuid=688c6909-9b97-43b0-9a32-4c6247bc0e84' -s -u test:test 'http://localhost:62081/api/v2/file/3e8387db-2614-4215-8a19-f4b121ba1777/move/'
+        '''
+
+        file = bundle.obj
+        location_uuid = request.POST.get('location_uuid')
+
+        if not location_uuid:
+            return http.HttpBadRequest(_('All of these fields must be provided: location_uuid'))
+
+        try:
+            location = Location.objects.get(uuid=location_uuid)
+        except (Location.DoesNotExist, Location.MultipleObjectsReturned):
+            response = {
+                'error': True,
+                'message': _('Location UUID %(uuid)s failed to return a location') % {'uuid': location_uuid},
+            }
+            return self.create_response(request, response, response_class=http.HttpBadRequest)
+
+
+        return http.HttpResponse(
+            json.dumps({"msg": "no worries, moving to %s" % location, "file_status": file.status}),
+            content_type="application/json",
+            status=201
+        )
 
     def sword_deposit(self, request, **kwargs):
         package = get_object_or_None(Package, uuid=kwargs['uuid'])
