@@ -1086,6 +1086,14 @@ class PackageResource(ModelResource):
         '''
 
         file = bundle.obj
+
+        if file.status != Package.UPLOADED:
+            response = {
+                'error': True,
+                'message': _('The file must be in an %s state to be moved. Current state: %s' % (Package.UPLOADED, file.status)),
+            }
+            return self.create_response(request, response, response_class=http.HttpBadRequest)
+
         location_uuid = request.POST.get('location_uuid')
 
         if not location_uuid:
@@ -1100,12 +1108,27 @@ class PackageResource(ModelResource):
             }
             return self.create_response(request, response, response_class=http.HttpBadRequest)
 
+        if location == file.current_location:
+            response = {
+                'error': True,
+                'message': _('New location must be different to the current location'),
+            }
+            return self.create_response(request, response, response_class=http.HttpBadRequest)
+
+        if location.purpose != file.current_location.purpose:
+            response = {
+                'error': True,
+                'message': _('New location must have the same purpose as the current location - %s' % file.current_location.purpose),
+            }
+            return self.create_response(request, response, response_class=http.HttpBadRequest)
+
 
         return http.HttpResponse(
-            json.dumps({"msg": "no worries, moving to %s" % location, "file_status": file.status}),
+            json.dumps({"msg": "no worries, moving to %s" % location}),
             content_type="application/json",
             status=201
         )
+
 
     def sword_deposit(self, request, **kwargs):
         package = get_object_or_None(Package, uuid=kwargs['uuid'])
