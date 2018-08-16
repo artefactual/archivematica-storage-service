@@ -95,6 +95,7 @@ class Package(models.Model):
     DEL_REQ = 'DEL_REQ'
     DELETED = 'DELETED'
     RECOVER_REQ = 'RECOVER_REQ'
+    MOVING = 'MOVING'
     FAIL = 'FAIL'
     FINALIZED = 'FINALIZE'
     STATUS_CHOICES = (
