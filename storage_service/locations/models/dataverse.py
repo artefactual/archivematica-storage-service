@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import json
 import logging
 import os
+import zipfile
 
 # Core Django, alphabetical
 from django.db import models
@@ -252,6 +253,7 @@ class Dataverse(models.Model):
 
         # Fetch all files in dataset.json
         for file_entry in dataset["latestVersion"]["files"]:
+            zipped_bundle = False
             entry_id = str(file_entry["dataFile"]["id"])
             if not file_entry["label"].endswith(".tab"):
                 download_path = os.path.join(
@@ -261,7 +263,21 @@ class Dataverse(models.Model):
                     self.host, entry_id
                 )
             else:
-                # If the file is the tab file, download the bundle instead
+                # If the file is a tab file, download the bundle instead.
+                #
+                # A table based dataset ingested into Dataverse is called a
+                # Tabular Data File. The .tab file format is downloaded as a
+                # 'bundle' from Dataverse. This bundle provides multiple
+                # representations in different formats of the same data.
+                #
+                # A bundle has the property of being a zip file when pulled
+                # down by the storage service. We want to extract this bundle
+                # below, and allow Archivematica to process other zip files as
+                # it would normally (as configured) in the transfer workflow.
+                #
+                # Integrity checks are completed by the Dataverse
+                # microservices.
+                zipped_bundle = True
                 download_path = os.path.join(
                     dest_path, file_entry["label"][:-4] + ".zip"
                 )
@@ -273,6 +289,11 @@ class Dataverse(models.Model):
             LOGGER.debug("Response: %s", response)
             with open(download_path, "wb") as f:
                 f.write(response.content)
+            if zipped_bundle and ".zip" in download_path:
+                # The bundle .zip itself is ephemeral, and so once downloaded
+                # unzip and remove the container here.
+                LOGGER.info("Bundle downloaded. Deleting.")
+                self.extract_and_remove_bundle(dest_path, download_path)
 
         # Add Agent info
         agent_info = [
@@ -286,3 +307,16 @@ class Dataverse(models.Model):
         agentjson_path = os.path.join(dest_path, "metadata", "agents.json")
         with open(agentjson_path, "w") as f:
             json.dump(agent_info, f)
+
+    @staticmethod
+    def extract_and_remove_bundle(dest_path, bundle_path):
+        try:
+            unzipper = zipfile.ZipFile(bundle_path, 'r')
+        except zipfile.BadZipfile as e:
+            # Log the error and return without extracting the bundle.
+            # Archivematica may still be able to work with the data returned.
+            LOGGER.info("Bundle '%s' error: %s", bundle_path, e)
+            return
+        unzipper.extractall(dest_path)
+        unzipper.close()
+        os.unlink(bundle_path)
