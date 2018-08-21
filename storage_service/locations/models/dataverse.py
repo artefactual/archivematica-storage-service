@@ -249,7 +249,8 @@ class Dataverse(models.Model):
         os.makedirs(os.path.join(dest_path, "metadata"))
         datasetjson_path = os.path.join(dest_path, "metadata", "dataset.json")
         with open(datasetjson_path, "w") as f:
-            json.dump(dataset, f)
+            json.dump(
+                dataset, f, sort_keys=True, indent=4, separators=(',', ': '))
 
         # Fetch all files in dataset.json
         for file_entry in dataset["latestVersion"]["files"]:
@@ -306,7 +307,8 @@ class Dataverse(models.Model):
         ]
         agentjson_path = os.path.join(dest_path, "metadata", "agents.json")
         with open(agentjson_path, "w") as f:
-            json.dump(agent_info, f)
+            json.dump(agent_info, f, sort_keys=True, indent=4,
+                      separators=(',', ': '))
 
     @staticmethod
     def extract_and_remove_bundle(dest_path, bundle_path):
