@@ -647,6 +647,9 @@ class PackageResource(ModelResource):
 
     Validate fixity (api/v1/file/<uuid>/check_fixity/) supports:
     GET: Scan package for fixity
+
+    Compress package (api/v1/file/<uuid>/compress/) supports:
+    PUT: Compress an existing Package
     """
 
     origin_pipeline = fields.ForeignKey(PipelineResource, "origin_pipeline")
@@ -708,118 +711,20 @@ class PackageResource(ModelResource):
 
     def prepend_urls(self):
         return [
-            url(
-                r"^(?P<resource_name>%s)/async%s$"
-                % (self._meta.resource_name, trailing_slash()),
-                self.wrap_view("obj_create_async"),
-                name="obj_create_async",
-            ),
-            url(
-                r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/delete_aip%s$"
-                % (
-                    self._meta.resource_name,
-                    self._meta.detail_uri_name,
-                    trailing_slash(),
-                ),
-                self.wrap_view("delete_aip_request"),
-                name="delete_aip_request",
-            ),
-            url(
-                r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/recover_aip%s$"
-                % (
-                    self._meta.resource_name,
-                    self._meta.detail_uri_name,
-                    trailing_slash(),
-                ),
-                self.wrap_view("recover_aip_request"),
-                name="recover_aip_request",
-            ),
-            url(
-                r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/extract_file%s$"
-                % (
-                    self._meta.resource_name,
-                    self._meta.detail_uri_name,
-                    trailing_slash(),
-                ),
-                self.wrap_view("extract_file_request"),
-                name="extract_file_request",
-            ),
-            url(
-                r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/download/(?P<chunk_number>\d+)%s$"
-                % (
-                    self._meta.resource_name,
-                    self._meta.detail_uri_name,
-                    trailing_slash(),
-                ),
-                self.wrap_view("download_request"),
-                name="download_lockss",
-            ),
-            url(
-                r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/download%s$"
-                % (
-                    self._meta.resource_name,
-                    self._meta.detail_uri_name,
-                    trailing_slash(),
-                ),
-                self.wrap_view("download_request"),
-                name="download_request",
-            ),
-            url(
-                r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/pointer_file%s$"
-                % (
-                    self._meta.resource_name,
-                    self._meta.detail_uri_name,
-                    trailing_slash(),
-                ),
-                self.wrap_view("pointer_file_request"),
-                name="pointer_file_request",
-            ),
-            url(
-                r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/check_fixity%s$"
-                % (
-                    self._meta.resource_name,
-                    self._meta.detail_uri_name,
-                    trailing_slash(),
-                ),
-                self.wrap_view("check_fixity_request"),
-                name="check_fixity_request",
-            ),
-            url(
-                r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/send_callback/post_store%s$"
-                % (
-                    self._meta.resource_name,
-                    self._meta.detail_uri_name,
-                    trailing_slash(),
-                ),
-                self.wrap_view("aip_store_callback_request"),
-                name="aip_store_callback_request",
-            ),
-            url(
-                r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/contents%s$"
-                % (
-                    self._meta.resource_name,
-                    self._meta.detail_uri_name,
-                    trailing_slash(),
-                ),
-                self.wrap_view("manage_contents"),
-                name="manage_contents",
-            ),
-            url(
-                r"^(?P<resource_name>%s)/metadata%s$"
-                % (self._meta.resource_name, trailing_slash()),
-                self.wrap_view("file_data"),
-                name="file_data",
-            ),
-            url(
-                r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/reindex%s$"
-                % (
-                    self._meta.resource_name,
-                    self._meta.detail_uri_name,
-                    trailing_slash(),
-                ),
-                self.wrap_view("reindex_request"),
-                name="reindex_request",
-            ),
+            url(r"^(?P<resource_name>%s)/async%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view('obj_create_async'), name='obj_create_async'),
+
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/delete_aip%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('delete_aip_request'), name="delete_aip_request"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/recover_aip%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('recover_aip_request'), name="recover_aip_request"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/extract_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('extract_file_request'), name="extract_file_request"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/download/(?P<chunk_number>\d+)%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('download_request'), name="download_lockss"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/download%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('download_request'), name="download_request"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/pointer_file%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('pointer_file_request'), name="pointer_file_request"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/check_fixity%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('check_fixity_request'), name="check_fixity_request"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/compress%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('compress_request'), name="compress_request"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/send_callback/post_store%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('aip_store_callback_request'), name="aip_store_callback_request"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/contents%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view("manage_contents"), name="manage_contents"),
+            url(r"^(?P<resource_name>%s)/metadata%s$" % (self._meta.resource_name, trailing_slash()), self.wrap_view("file_data"), name="file_data"),
+            url(r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/reindex%s$" % (self._meta.resource_name, self._meta.detail_uri_name, trailing_slash()), self.wrap_view('reindex_request'), name="reindex_request"),
             # Reingest
             url(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/reingest%s$"
@@ -1353,7 +1258,19 @@ class PackageResource(ModelResource):
         )
         return http.HttpResponse(report_json, content_type="application/json")
 
-    @_custom_endpoint(expected_methods=["get"])
+    @_custom_endpoint(expected_methods=['put'])
+    def compress_request(self, request, bundle, **kwargs):
+        """Compress an existing package.
+
+        PUT /api/v1/file/<uuid>/compress/
+        """
+        return http.HttpResponse(
+            {'response':
+             'You want to compress package {}'.format(bundle.obj.uuid)},
+            content_type="application/json"
+        )
+
+    @_custom_endpoint(expected_methods=['get'])
     def aip_store_callback_request(self, request, bundle, **kwargs):
         package = bundle.obj
 
@@ -1631,11 +1548,14 @@ class PackageResource(ModelResource):
         self.log_throttled_access(request)
         return sword_views.deposit_state(request, package or kwargs["uuid"])
 
-    def _attempt_package_request_event(
-        self, package, request_info, event_type, event_status
-    ):
-        pipeline = Pipeline.objects.get(uuid=request_info["pipeline"])
-        request_description = event_type.replace("_", " ").lower()
+    def _attempt_package_request_event(self, package, request_info, event_type, event_status):
+
+        import pprint
+        LOGGER.info('PACKAGE DELETE REQUEST:')
+        LOGGER.info(pprint.pformat(request_info))
+
+        pipeline = Pipeline.objects.get(uuid=request_info['pipeline'])
+        request_description = event_type.replace('_', ' ').lower()
 
         # See if an event already exists
         existing_requests = Event.objects.filter(

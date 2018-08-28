@@ -409,5 +409,21 @@ def get_ss_premis_agents(inst=True):
 
 
 StorageEffects = namedtuple(
-    "StorageEffects", ["events", "composition_level_updater", "inhibitors"]
-)
+    'StorageEffects',
+    ['events', 'composition_level_updater', 'inhibitors'])
+
+
+def recalculate_size(rein_aip_internal_path):
+    """Recalculate the size of a re-ingested AIP typically: it may have changed
+    because of changed preservation derivatives or because of a metadata-only
+    reingest. If the AIP is a directory, then calculate the size recursively.
+    """
+    if os.path.isdir(rein_aip_internal_path):
+        size = 0
+        for dirpath, ___, filenames in os.walk(rein_aip_internal_path):
+            for filename in filenames:
+                file_path = os.path.join(dirpath, filename)
+                size += os.path.getsize(file_path)
+    else:
+        size = os.path.getsize(rein_aip_internal_path)
+    return size

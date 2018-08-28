@@ -744,7 +744,8 @@ class Package(models.Model):
         values on the ``Package`` instance are updated (including status) and
         periodically saved to the db.
         """
-        LOGGER.info("store_aip called in Package class of SS")
+        LOGGER.info('store_aip called in Package class of SS')
+        LOGGER.info('store_aip got origin_path {}'.format(origin_path))
         v = self._store_aip_to_pending(origin_location, origin_path)
         storage_effects, checksum = self._store_aip_to_uploaded(v, related_package_uuid)
         self._store_aip_ensure_pointer_file(
@@ -765,7 +766,7 @@ class Package(models.Model):
 
     def _store_aip_to_pending(self, origin_location, origin_path):
         """Get this AIP to the "pending" stage of ``store_aip`` by
-        1. settting and persisting attributes on ``self`` (including
+        1. setting and persisting attributes on ``self`` (including
            ``status=Package.PENDING``),
         2. checking that the destination space has enough space for the AIP to
            be stored (and raising an exception if not), and
@@ -1323,6 +1324,48 @@ class Package(models.Model):
             return premisrw.PREMISEvent(data=event)
         return event
 
+    @staticmethod
+    def get_compression_event_detail(compression_algorithm):
+        """Return an eventDetail for the event of compressing an AIP using the
+        supplied algorithm.
+        """
+        # TODO: the program should be supplied by the caller
+        program = {
+            utils.COMPRESSION_TAR: 'tar', utils.COMPRESSION_TAR_BZIP2: 'tar'}.get(
+                compression_algorithm, '7z')
+        return 'program={}; algorithm="{}"'.format(program, compression_algorithm)
+
+    def get_premis_aip_compression_event(
+            self, event_detail, event_outcome_detail_note, agents=None,
+            inst=True):
+        """Return a PREMIS:EVENT describing the compression of an AIP."""
+        if not agents:
+            agents = utils.get_ss_premis_agents()
+        event = [
+            'event',
+            premisrw.PREMIS_META,
+            (
+                'event_identifier',
+                ('event_identifier_type', 'UUID'),
+                ('event_identifier_value', str(uuid4())),
+            ),
+            ('event_type', 'compression'),
+            ('event_date_time', utils.mets_file_now()),
+            ('event_detail', event_detail),
+            (
+                'event_outcome_information',
+                ('event_outcome', 'success'),
+                (
+                    'event_outcome_detail',
+                    ('event_outcome_detail_note', event_outcome_detail_note)
+                )
+            )
+        ]
+        event = tuple(utils.add_agents_to_event_as_list(event, agents))
+        if inst:
+            return premisrw.PREMISEvent(data=event)
+        return event
+
     def get_replication_validation_event(
         self,
         checksum_report,
@@ -1641,7 +1684,8 @@ class Package(models.Model):
             self.local_path = output_path
         return (output_path, extract_path)
 
-    def compress_package(self, algorithm, extract_path=None):
+    def compress_package(self, algorithm, extract_path=None,
+                         detailed_output=False):
         """
         Produces a compressed copy of the package.
 
@@ -1649,10 +1693,13 @@ class Package(models.Model):
             :const:`utils.COMPRESSION_ALGORITHMS`
         :param str extract_path: Path to compress to. If not provided, will
             compress to a temp directory in the SS internal location.
+        :param bool detailed_output: If true, the method will return a 3-tuple
+            where the new third element is a dict containing PREMIS-compatible
+            values for the premis:eventDetail and premis:eventOutcomeDetailNote.
         :return: Tuple with (path to the compressed file, parent directory of
-            compressed file)  Given that compressed packages are likely to
-            be large, this should generally be deleted after use if a temporary
-            directory was used.
+            compressed file, and dict of detials if detailed_output is True)
+            Given that compressed packages are likely to be large, this should
+            generally be deleted after use if a temporary directory was used.
         """
         LOGGER.debug("in package.py::compress_package")
 
@@ -1677,23 +1724,20 @@ class Package(models.Model):
             relative_path = os.path.dirname(full_path)
             algo = ""
             if algorithm == utils.COMPRESSION_TAR_BZIP2:
-                algo = "-j"  # Compress with bzip2
-                compressed_filename += ".bz2"
-            command = list(
-                filter(
-                    None,
-                    [
-                        "tar",
-                        "c",  # Create tar
-                        algo,  # Optional compression flag
-                        "-C",
-                        relative_path,  # Work in this directory
-                        "-f",
-                        compressed_filename,  # Output file
-                        os.path.basename(full_path),  # Relative path to source files
-                    ],
-                )
-            )
+                algo = '-j'  # Compress with bzip2
+                compressed_filename += '.bz2'
+            command = list(filter(None, [
+                'tar', 'c',  # Create tar
+                algo,  # Optional compression flag
+                '-C', relative_path,  # Work in this directory
+                '-f', compressed_filename,  # Output file
+                os.path.basename(full_path),   # Relative path to source files
+            ]))
+            if detailed_output:
+                tool_info_command = (
+                    'echo program="tar"\; '
+                    'algorithm="{}"\; '
+                    'version="`tar --version | grep tar`"'.format(algo))
         elif algorithm in (utils.COMPRESSION_7Z_BZIP, utils.COMPRESSION_7Z_LZMA):
             compressed_filename = os.path.join(extract_path, basename + ".7z")
             if algorithm == utils.COMPRESSION_7Z_BZIP:
@@ -1714,16 +1758,48 @@ class Package(models.Model):
                 compressed_filename,  # Destination
                 full_path,  # Source
             ]
+            if detailed_output:
+                tool_info_command = (
+                    '#!/bin/bash\n'
+                    'echo program="7z"\; '
+                    'algorithm="{}"\; '
+                    'version="`7z | grep Version`"'.format(algo))
         else:
             raise NotImplementedError(
                 _("Algorithm %(algorithm)s not implemented") % {"algorithm": algorithm}
             )
 
-        LOGGER.info("Compressing package with: %s to %s", command, compressed_filename)
-        rc = subprocess.call(command)
-        LOGGER.debug("Compress package RC: %s", rc)
+        LOGGER.info('Compressing package with: %s to %s', command, compressed_filename)
+        if detailed_output:
+            p = subprocess.Popen(command, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
+            stdout, stderr = p.communicate()
+            rc = p.returncode
+            LOGGER.debug('Compress package RC: %s', rc)
 
-        return (compressed_filename, extract_path)
+            script_path = '/tmp/{}'.format(str(uuid4()))
+            file_ = os.open(script_path, os.O_WRONLY | os.O_CREAT, 0o770)
+            os.write(file_, tool_info_command)
+            os.close(file_)
+            tic_cmd = [script_path]
+            p = subprocess.Popen(tic_cmd, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE, shell=True)
+            tic_stdout, tic_stderr = p.communicate()
+            os.remove(script_path)
+            LOGGER.debug('Tool info stdout')
+            LOGGER.debug(tool_info_command)
+            LOGGER.debug(tic_stdout)
+            LOGGER.debug(tic_stderr)
+            details = {
+                'event_detail': tic_stdout,
+                'event_outcome_detail_note':
+                    'Standard Output="{}"; Standard Error="{}"'.format(
+                        stdout, stderr)}
+            return (compressed_filename, extract_path, details)
+        else:
+            rc = subprocess.call(command)
+            LOGGER.debug('Compress package RC: %s', rc)
+            return (compressed_filename, extract_path)
 
     def _parse_mets(self, prefix):
         """
@@ -2121,10 +2197,9 @@ class Package(models.Model):
         # Check and set reingest pipeline
         if self.misc_attributes.get("reingest_pipeline", None):
             return {
-                "error": True,
-                "status_code": 409,
-                "message": _("This AIP is already being reingested on {pipeline}")
-                % {"pipeline": self.misc_attributes["reingest_pipeline"]},
+                'error': True,
+                'status_code': 409,
+                'message': _('This AIP is already being reingested on %(pipeline)s') % {'pipeline': self.misc_attributes['reingest_pipeline']},
             }
         self.misc_attributes.update({"reingest_pipeline": pipeline.uuid})
 
@@ -2454,14 +2529,12 @@ class Package(models.Model):
         #    to it and to its parent directory. At this point ``updated_aip``
         #    points to the same location as ``old_aip`` but the new var name
         #    indicates the update via reingest.
-        updated_aip_path, updated_aip_parent_path = self._compress_and_clean_for_reingest(
-            to_be_compressed,
-            was_compressed,
-            compression,
-            rein_aip_internal_path,
-            extract_path_to_delete,
-        )
-        self.size = _recalculate_size(updated_aip_path)
+        updated_aip_path, updated_aip_parent_path = (
+            self._compress_and_clean_for_reingest(
+                to_be_compressed, was_compressed,
+                compression, rein_aip_internal_path,
+                extract_path_to_delete))
+        self.size = utils.recalculate_size(updated_aip_path)
 
         # 7. Create a pointer file if AM has not done so.
         if (
@@ -3066,22 +3139,6 @@ def _replace_old_metdata_with_reingested(rein_aip_internal_path, old_aip_interna
     )
     if os.path.isdir(internal_metadata_dir):
         distutils.dir_util.copy_tree(internal_metadata_dir, this_metadata_dir)
-
-
-def _recalculate_size(rein_aip_internal_path):
-    """Recalculate size: it may have changed because of changed preservation
-    derivatives or because of a metadata-only reingest. If the AIP is a
-    directory, then calculate the size recursively.
-    """
-    if os.path.isdir(rein_aip_internal_path):
-        size = 0
-        for dirpath, ___, filenames in os.walk(rein_aip_internal_path):
-            for filename in filenames:
-                file_path = os.path.join(dirpath, filename)
-                size += os.path.getsize(file_path)
-    else:
-        size = os.path.getsize(rein_aip_internal_path)
-    return size
 
 
 def _find_compression_event(events):
