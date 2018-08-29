@@ -177,14 +177,14 @@ class Arkivum(models.Model):
         if package.is_compressed:
             url = 'https://' + self.host + '/api/2/files/release/' + package.misc_attributes['arkivum_identifier']
         else:
-            # To get replication status of an uncompressed package, 
+            # To get replication status of an uncompressed package,
             # use files/fileInfo API call (on file bag-info.txt)
-            # instead of ingest-manifest/status call with arkivum_identifier 
+            # instead of ingest-manifest/status call with arkivum_identifier
             # (which has not been reliable)
             location = Location.objects.get(uuid=package.current_location_id)
             url = 'https://' + self.host + '/api/2/files/fileInfo/' + \
-                   location.relative_path + '/' + \
-                   package.current_path + '/bag-info.txt'
+                location.relative_path + '/' + \
+                package.current_path + '/bag-info.txt'
 
         LOGGER.info('URL: %s', url)
         try:
