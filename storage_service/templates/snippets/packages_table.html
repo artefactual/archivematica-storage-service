@@ -78,9 +78,16 @@
           {% endif %}
           {% if package.package_type in package.PACKAGE_TYPE_CAN_DELETE %}
           <a href="#" class="request-delete"
+             data-package-type="{{ package.package_type }}"
              data-package-uuid="{{ package.uuid }}"
              data-package-pipeline="{{ package.origin_pipeline.uuid }}"
              >{% trans "Request Deletion" %}</a>
+          {% endif %}
+          {% if package.package_type in package.PACKAGE_TYPE_CAN_DELETE_DIRECTLY and package.status != package.DELETED %}
+            <form method="POST" action="{% url 'package_delete' package.uuid %}">
+              {% csrf_token %}
+              <button class="link" type="submit">{% trans "Delete" %}</button>
+            </form>
           {% endif %}
         </td>
       </tr>

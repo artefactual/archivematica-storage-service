@@ -21,6 +21,8 @@ urlpatterns = [
         name='package_list'),
     url(r'^packages/package_delete_request/$', views.package_delete_request,
         name='package_delete_request'),
+    url(r'^packages/(?P<uuid>' + UUID + ')/delete/$', views.package_delete,
+        name='package_delete'),
     url(r'^packages/(?P<uuid>' + UUID + ')/update_status/$', views.package_update_status,
         name='package_update_status'),
     url(r'^packages/aip_recover_request$', views.aip_recover_request,

@@ -60,3 +60,22 @@ label.required-field:after {
 .errorlist {
   color: red;
 }
+
+/* Mimic regular Bootstrap 2.x links.
+   This is used inside inline forms pretending to be just regular links! */
+
+button.link {
+  background: none !important;
+  color: #08c;
+  border: none;
+  padding: 0 !important;
+  font: inherit;
+  border: 0;
+  cursor: pointer;
+}
+
+button.link:hover,
+button.link:active {
+  color: #005580;
+  text-decoration: underline;
+}

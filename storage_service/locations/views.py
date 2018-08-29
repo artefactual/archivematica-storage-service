@@ -12,6 +12,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.template import RequestContext
 from django.utils.translation import ugettext as _
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 from tastypie.models import ApiKey
 
 from common import decorators
@@ -96,6 +97,40 @@ def aip_recover_request(request):
     config.execution_logic = execution_logic
 
     return _handle_package_request(request, config, 'aip_recover_request')
+
+
+@require_http_methods(["POST"])
+def package_delete(request, uuid):
+    """Delete packages without extra approval requirement.
+
+    This is limited to packages listed in
+    ``PACKAGE_TYPE_CAN_DELETE_DIRECTLY``.
+    """
+    package = get_object_or_404(Package, uuid=uuid)
+    package_list_url = reverse('package_list')
+
+    def respond(tag, message):
+        try:
+            message_method = getattr(messages, tag)
+        except AttributeError:
+            return
+        message_method(request, message)
+        return redirect(package_list_url)
+
+    if package.package_type not in package.PACKAGE_TYPE_CAN_DELETE_DIRECTLY:
+        return respond("error", _("Package of type %(type)s cannot be deleted"
+                                  " directly" % {"type": package.package_type}))
+    errmsg = _("Package deletion failed. Please contact an administrator or"
+               " see logs for details.")
+    try:
+        ok, err = package.delete_from_storage()
+    except Exception:
+        LOGGER.exception("Package deletion failed")
+        return respond("error", errmsg)
+    if not ok:
+        LOGGER.error("Package deletion failed: %s", err)
+        return respond("error", errmsg)
+    return respond("success", _("Package deleted successfully!"))
 
 
 def package_delete_request(request):

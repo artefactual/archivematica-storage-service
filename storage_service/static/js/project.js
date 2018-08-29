@@ -32,6 +32,7 @@ $(document).ready(function() {
         var self = $(this);
         var uuid = self.data('package-uuid');
         var pipeline = self.data('package-pipeline');
+        var packageType = self.data('package-type');
         var $userDataEl = $("#user-data-packages");
         var userId = $userDataEl.data('user-id');
         var userEmail = $userDataEl.data('user-email');
@@ -39,7 +40,7 @@ $(document).ready(function() {
         var userAPIKey = $userDataEl.data('user-api-key');
         var uri = $userDataEl.data('uri');
         var formData = {
-            "event_reason": "Storage Service user wants to delete AIP " + uuid + ".",
+            "event_reason": "Storage Service user wants to delete " + packageType + " " + uuid + ".",
             "pipeline": pipeline,
             "user_id": userId,
             "user_email": userEmail};
