@@ -4,6 +4,10 @@ import shutil
 import tempfile
 import vcr
 
+import mock
+
+from django.contrib.messages import get_messages
+from django.core.urlresolvers import reverse
 from django.test import TestCase
 
 from locations import models
@@ -32,6 +36,58 @@ class TestPackage(TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
+
+    def test_view_package_delete(self):
+        self.client.login(username="test", password="test")
+        url = reverse(
+            'package_delete', args=["00000000-0000-0000-0000-000000000000"])
+
+        # It does only accept POST, i.e. GET returns a 405
+        response = self.client.get(url, follow=True)
+        assert response.status_code == 405
+
+        # It returns a 404 when the UUID is unknown
+        response = self.client.post(url, follow=True)
+        assert response.status_code == 404
+
+        def verify_redirect_message(response, message):
+            assert response.status_code == 200
+            assert response.redirect_chain == [
+                ('http://testserver/packages/', 302)]
+            messages = list(get_messages(response.wsgi_request))
+            assert len(messages) == 1
+            assert str(messages[0]) == message
+
+        # It returns an "error" message when the package type is not allowed.
+        url = reverse(
+            'package_delete', args=[self.package.uuid])
+        response = self.client.post(url, follow=True)
+        verify_redirect_message(
+            response, "Package of type Transfer cannot be deleted directly")
+
+        # It returns a "success" message when the package was deleted
+        # successfully.
+        models.Package.objects.filter(
+            uuid=self.package.uuid).update(package_type=models.Package.DIP)
+        response = self.client.post(url, follow=True)
+        verify_redirect_message(response, "Package deleted successfully!")
+
+        # It returns an "error" message when the package could not be deleted
+        # and the underlying code raised an exception.
+        with mock.patch('locations.models.Package.delete_from_storage',
+                        side_effect=ValueError):
+            response = self.client.post(url, follow=True)
+            verify_redirect_message(
+                response, "Package deletion failed. Please contact an"
+                          " administrator or see logs for details.")
+
+        # It returns an "error" message when the package could not be deleted.
+        with mock.patch('locations.models.Package.delete_from_storage',
+                        return_value=(False, "Something went wrong")):
+            response = self.client.post(url, follow=True)
+            verify_redirect_message(
+                response, "Package deletion failed. Please contact an"
+                          " administrator or see logs for details.")
 
     def test_parsing_mets_data(self):
         mets_data = self.package._parse_mets(prefix=self.mets_path)
