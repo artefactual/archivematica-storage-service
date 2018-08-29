@@ -286,10 +286,10 @@ class Dataverse(models.Model):
                     self.host, entry_id
                 )
             LOGGER.debug("URL: %s, params: %s", url, params)
-            response = requests.get(url, params=params)
-            LOGGER.debug("Response: %s", response)
+            response = requests.get(url, params=params, stream=True)
             with open(download_path, "wb") as f:
-                f.write(response.content)
+                for chunk in response.iter_content(8192):
+                    f.write(chunk)
             if zipped_bundle and ".zip" in download_path:
                 # The bundle .zip itself is ephemeral, and so once downloaded
                 # unzip and remove the container here.
