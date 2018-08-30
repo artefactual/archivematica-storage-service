@@ -1126,8 +1126,21 @@ class PackageResource(ModelResource):
 
         # ok, we're good to start the move!
 
-        file.status = Package.MOVING
-        file.save()
+        # worried about a race, so let's make sure it's still 'UPLOADED' when we do the update
+        #file.status = Package.MOVING
+        #file.save()
+
+        # FIXME: is there a cleaner way to say this?
+        number_matched = Package.objects.filter(id=file.id, status=Package.UPLOADED).update(status=Package.MOVING)
+        if number_matched == 1:
+            file.refresh_from_db()
+        else:
+            response = {
+                'error': True,
+                'message': _('The file must be in an %s state to be moved. Current state: %s' % (Package.UPLOADED, file.status)),
+            }
+            return self.create_response(request, response, response_class=http.HttpBadRequest)
+
 
         def task():
             self._move_file(file, location)
