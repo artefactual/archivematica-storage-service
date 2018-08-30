@@ -21,7 +21,6 @@ from django.utils.translation import ugettext as _
 # Third party dependencies, alphabetical
 from annoying.functions import get_object_or_None
 import bagit
-from lxml import etree
 from tastypie.authentication import BasicAuthentication, ApiKeyAuthentication, MultiAuthentication, SessionAuthentication
 from tastypie.authorization import DjangoAuthorization
 import tastypie.exceptions
@@ -1143,7 +1142,9 @@ class PackageResource(ModelResource):
 
 
         def task():
-            self._move_file(file, location)
+            file.move(location)
+            file.status = Package.UPLOADED
+            file.save()
             return _('File moved successfully')
 
         async_task = AsyncManager.run_task(task)
@@ -1156,61 +1157,6 @@ class PackageResource(ModelResource):
                 })
 
         return response
-
-    def _move_file(self, file, to_location):
-        origin_space = file.current_location.space
-        destination_space = to_location.space
-
-        source_path = os.path.join(
-            file.current_location.relative_path,
-            file.current_path)
-
-        destination_path = os.path.join(
-            to_location.relative_path,
-            file.current_path)
-
-        try:
-            origin_space.posix_move(
-                source_path=source_path,
-                destination_path=destination_path,
-                destination_space=destination_space,
-                package=None
-                )
-        except PosixMoveUnsupportedError:
-            origin_space.move_to_storage_service(
-                source_path=source_path,
-                destination_path=destination_path,
-                destination_space=destination_space,
-                )
-            origin_space.post_move_to_storage_service()
-            destination_space.move_from_storage_service(
-                source_path=destination_path,
-                destination_path=destination_path,
-                package=None,
-                )
-            destination_space.post_move_from_storage_service(
-                destination_path, destination_path)
-
-        file.status = Package.UPLOADED
-        file.current_location = to_location
-        file.save()
-        file.current_location.space.update_package_status(file)
-
-        # Update pointer file's location information
-        if file.pointer_file_path and file.package_type in (Package.AIP, Package.AIC):
-            root = etree.parse(file.full_pointer_file_path)
-            element = root.find('.//mets:file', namespaces=utils.NSMAP)
-            flocat = element.find('mets:FLocat', namespaces=utils.NSMAP)
-            if file.uuid in element.get('ID', '') and flocat is not None:
-                # TODO: use PREFIX_NS in later version
-                flocat.set('{{{ns}}}href'.format(ns=utils.NSMAP['xlink']), file.full_path)
-            # Add USE="Archival Information Package" to fileGrp.  Required for
-            # LOCKSS, and not provided in Archivematica <=1.1
-            if root.find('.//mets:fileGrp[@USE="Archival Information Package"]', namespaces=utils.NSMAP) is None:
-                root.find('.//mets:fileGrp', namespaces=utils.NSMAP).set('USE', 'Archival Information Package')
-
-            with open(file.full_pointer_file_path, 'w') as f:
-                f.write(etree.tostring(root, pretty_print=True))
 
 
     def sword_deposit(self, request, **kwargs):

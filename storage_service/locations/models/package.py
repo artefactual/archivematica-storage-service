@@ -341,6 +341,71 @@ class Package(models.Model):
         location.used += self.size
         location.save()
 
+
+    def move(self, to_location):
+        """
+        Moves the package to location.
+        """
+
+        if self.current_location == to_location:
+            # nothing to do - hooray!
+            return
+
+        origin_space = self.current_location.space
+        destination_space = to_location.space
+
+        source_path = os.path.join(
+            self.current_location.relative_path,
+            self.current_path)
+
+        destination_path = os.path.join(
+            to_location.relative_path,
+            self.current_path)
+
+        try:
+            origin_space.posix_move(
+                source_path=source_path,
+                destination_path=destination_path,
+                destination_space=destination_space,
+                package=None
+                )
+        except PosixMoveUnsupportedError:
+            origin_space.move_to_storage_service(
+                source_path=source_path,
+                destination_path=destination_path,
+                destination_space=destination_space,
+                )
+            origin_space.post_move_to_storage_service()
+            destination_space.move_from_storage_service(
+                source_path=destination_path,
+                destination_path=destination_path,
+                package=None,
+                )
+            destination_space.post_move_from_storage_service(
+                destination_path, destination_path)
+
+        # If we get here then everything went well, so update with the new location
+        self.current_location = to_location
+        self.save()
+        self.current_location.space.update_package_status(self)
+
+        # Update pointer file's location information if required
+        if self.pointer_file_path and self.package_type in (Package.AIP, Package.AIC):
+            root = etree.parse(self.full_pointer_file_path)
+            element = root.find('.//mets:file', namespaces=utils.NSMAP)
+            flocat = element.find('mets:FLocat', namespaces=utils.NSMAP)
+            if self.uuid in element.get('ID', '') and flocat is not None:
+                # TODO: use PREFIX_NS in later version
+                flocat.set('{{{ns}}}href'.format(ns=utils.NSMAP['xlink']), self.full_path)
+            # Add USE="Archival Information Package" to fileGrp.  Required for
+            # LOCKSS, and not provided in Archivematica <=1.1
+            if root.find('.//mets:fileGrp[@USE="Archival Information Package"]', namespaces=utils.NSMAP) is None:
+                root.find('.//mets:fileGrp', namespaces=utils.NSMAP).set('USE', 'Archival Information Package')
+
+            with open(self.full_pointer_file_path, 'w') as f:
+                f.write(etree.tostring(root, pretty_print=True))
+
+
     def recover_aip(self, origin_location, origin_path):
         """ Recovers an AIP using files at a given location.
 
