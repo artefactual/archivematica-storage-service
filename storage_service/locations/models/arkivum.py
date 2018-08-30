@@ -177,14 +177,7 @@ class Arkivum(models.Model):
         if package.is_compressed:
             url = 'https://' + self.host + '/api/2/files/release/' + package.misc_attributes['arkivum_identifier']
         else:
-            # To get replication status of an uncompressed package,
-            # use files/fileInfo API call (on file bag-info.txt)
-            # instead of ingest-manifest/status call with arkivum_identifier
-            # (which has not been reliable)
-            location = Location.objects.get(uuid=package.current_location_id)
-            url = 'https://' + self.host + '/api/2/files/fileInfo/' + \
-                location.relative_path + '/' + \
-                package.current_path + '/bag-info.txt'
+            url = 'https://' + self.host + '/api/3/ingest-manifest/status/' + package.misc_attributes['arkivum_identifier']
 
         LOGGER.info('URL: %s', url)
         try:
@@ -207,6 +200,39 @@ class Arkivum(models.Model):
             return {'error': True, 'error_message': msg}
         return response_json
 
+    def _get_baginfo_txt_info(self, package):
+        """
+        Return information for the file bag-info.txt from a package in Arkivum.
+        To be used as a fallback to obtain replication status of an
+        uncompressed package when it is not returned by the
+        ingest-manifest/status call in _get_package_info()
+        """
+        location = package.current_location
+        url = 'https://' + self.host + '/api/2/files/fileInfo/' + \
+            location.relative_path.strip('/') + '/' + \
+            package.current_path.strip('/') + '/bag-info.txt'
+        LOGGER.info('URL: %s', url)
+
+        try:
+            response = requests.get(url, verify=VERIFY)
+        except Exception:
+            msg = _('Error fetching file info')
+            LOGGER.warning(msg, exc_info=True)
+            return {'error': True, 'error_message': msg}
+        LOGGER.info('Response: %s, Response text: %s', response.status_code, response.text)
+        if response.status_code != 200:
+            msg = _('Response from Arkivum server was %(response)s') % {'response': response}
+            LOGGER.warning(msg)
+            return {'error': True, 'error_message': msg}
+
+        try:
+            response_json = response.json()
+        except ValueError:
+            msg = _('JSON could not be parsed from file info')
+            LOGGER.warning(msg)
+            return {'error': True, 'error_message': msg}
+        return response_json
+
     def update_package_status(self, package):
         LOGGER.info('Package status: %s', package.status)
         response_json = self._get_package_info(package)
@@ -217,7 +243,14 @@ class Arkivum(models.Model):
             replication = response_json.get('fileInformation', {}).get('replicationState', '')
         else:  # uncompressed bag
             # Look for ['replicationState'] == 'green'
-            replication = response_json.get('replicationState', '')
+            replication = response_json.get('replicationState')
+            # If response to _get_package_info() didn't contain replicationState
+            # try with _get_baginfo_txt_info()
+            if replication is None:
+                response_json = self._get_baginfo_txt_info(package)
+                if response_json.get('error'):
+                    return (None, response_json['error_message'])
+                replication = response_json.get('replicationState', '')
         if replication.lower() == 'green':
             # Set status to UPLOADED
             package.status = Package.UPLOADED
