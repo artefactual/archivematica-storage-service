@@ -79,10 +79,21 @@ class SpaceForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(SpaceForm, self).__init__(*args, **kwargs)
         instance = getattr(self, 'instance', None)
+        self.filter_beta_protocols()
         if instance and instance.uuid:
             # If editing (not creating a new object) access protocol shouldn't
             # be changed.  Remove from fields, print in template
             del self.fields['access_protocol']
+
+    def filter_beta_protocols(self):
+        """Remove the Space.BETA_PROTOCOLS from the "Access protocol:" field's
+        choices.
+        """
+        filtered_protocols = [
+            choice for choice in list(self.fields['access_protocol'].choices) if
+            choice[0] not in self._meta.model.BETA_PROTOCOLS]
+        self.fields['access_protocol'].choices = filtered_protocols
+        self.fields['access_protocol'].widget.choices = filtered_protocols
 
     def clean_access_protocol(self):
         instance = getattr(self, 'instance', None)
