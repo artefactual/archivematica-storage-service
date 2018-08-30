@@ -155,7 +155,8 @@ class DSpaceRESTForm(forms.ModelForm):
               ' being sent, unless the metadata is included in the packages'
               ' METS file in a dmdSec.'),
             needle)
-        return content.replace(needle, as_fields_alert)
+        return django.utils.safestring.mark_safe(
+            content.replace(needle, as_fields_alert))
 
 
 def get_gpg_key_choices():
