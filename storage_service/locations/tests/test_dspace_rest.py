@@ -434,7 +434,7 @@ def test_move_from_storage_service(mocker, package, ds_aip_collection,
         cookies=None,
         data={'password': DS_PASSWORD,
               'email': DS_EMAIL},
-        headers=JSON_HEADERS,
+        headers=None,
         verify=VERIFY_SSL)
     assert actual_logout_call == mocker.call(
         DS_REST_LOGOUT_URL,

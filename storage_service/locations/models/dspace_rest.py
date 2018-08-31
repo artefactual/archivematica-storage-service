@@ -252,7 +252,7 @@ class DSpaceREST(models.Model):
         body = {'email': self.ds_user, 'password': self.ds_password}
         login_url = '{}/login'.format(self._get_base_url(self.ds_rest_url))
         try:
-            response = self._post(login_url, data=body)
+            response = self._post(login_url, data=body, headers=None)
             response.raise_for_status()
         except requests.HTTPError as err:
             raise DSpaceRESTException(
@@ -267,7 +267,13 @@ class DSpaceREST(models.Model):
                 url=login_url,
                 email=self.ds_user)
         else:
-            set_cookie = response.headers['Set-Cookie'].split(';')[0]
+            try:
+                set_cookie = response.headers['Set-Cookie'].split(';')[0]
+            except KeyError:
+                raise DSpaceRESTException(
+                    'Unable to login to the DSpace REST API: no'
+                    ' "Set-Cookie" in response headers:'
+                    ' {}.'.format(response.headers))
             return set_cookie[set_cookie.find('=') + 1:]
 
     def _logout_from_dspace_rest(self, ds_sessionid):
@@ -292,11 +298,11 @@ class DSpaceREST(models.Model):
             self.ds_rest_url = self.ds_rest_url._replace(
                 netloc='{}:{}'.format(self.ds_rest_url.netloc, DFLT_DS_PORT))
 
-    def _post(self, url, data=None, cookies=None):
+    def _post(self, url, data=None, cookies=None, headers=HEADERS):
         return requests.post(url,
                              cookies=cookies,
                              data=data,
-                             headers=HEADERS,
+                             headers=headers,
                              verify=self.verify_ssl)
 
     def _create_dspace_record(self, metadata, ds_sessionid, ds_collection):
@@ -308,13 +314,14 @@ class DSpaceREST(models.Model):
                 ds_collection=ds_collection))
         try:  # Create item in DSpace
             response = self._post(collection_url,
-                                 cookies={'JSESSIONID': ds_sessionid},
-                                 data=json.dumps(item))
+                                  cookies={'JSESSIONID': ds_sessionid},
+                                  data=json.dumps(item))
             response.raise_for_status()
             return response.json()
-        except RequestException:
+        except RequestException as err:
             raise DSpaceRESTException(
-                'Could not create DSpace record: {}.'.format(collection_url))
+                'Could not create DSpace record: {}: {}.'.format(
+                    collection_url, err))
         except ValueError:
             raise DSpaceRESTException('Not a JSON response.')
 
