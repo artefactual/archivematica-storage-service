@@ -730,10 +730,9 @@ class Package(models.Model):
                                          self.origin_path),
                 destination_path=self.current_path,  # This should include Location.path
                 destination_space=v.dest_space)
-            # We have to manually construct the SS Internal location's path for
-            # the AIP here; ``self.get_local_path()`` won't work.
-            ssi = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
-            local_aip_path = os.path.join(ssi.full_path, self.current_path)
+            # We have to manually construct the AIP's current path here;
+            # ``self.get_local_path()`` won't work.
+            local_aip_path = os.path.join(v.dest_space.staging_path, self.current_path)
             checksum = None
             if v.should_have_pointer and (not v.already_generated_ptr_exists):
                 checksum = utils.generate_checksum(
