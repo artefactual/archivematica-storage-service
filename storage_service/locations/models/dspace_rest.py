@@ -202,12 +202,10 @@ class DSpaceREST(models.Model):
                     'archivesspace_dip_collection')
             elif dc_metadata is not None:
                 for md in dc_metadata:
-                    dc_term = str(md.tag)[str(md.tag).find('}') + 1:]
-                    if dc_term == 'title':
-                        dc_term = 'dc.' + dc_term
-                        package_title = md.text
-                    else:
-                        dc_term = 'dcterms.' + dc_term
+                    dc_term = 'dc.' + str(md.tag)[str(md.tag).find('}') + 1:]
+
+                    if dc_term == 'dc.title':
+                        package_title = dc_metadata.findtext(md.tag, namespaces=utils.NSMAP)
                     metadata.append(self._format_metadata(dc_term, md.text))
         return metadata, repos, package_title
 
