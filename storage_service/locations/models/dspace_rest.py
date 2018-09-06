@@ -347,16 +347,18 @@ class DSpaceREST(models.Model):
             self._get_base_url(self.ds_rest_url), ds_item['uuid'])
         for root, __, files in os.walk(source_path):
             for name in files:
-                bitstream_url = '{}/bitstreams?name={}'.format(
-                    base_url, urllib.quote(name.encode('utf-8')))
-                try:
-                    with open(os.path.join(root, name), 'rb') as content:
-                        self._post(bitstream_url,
-                                  data=content,
-                                  cookies={'JSESSIONID': ds_sessionid})
-                except Exception:
-                    raise DSpaceRESTException(
-                        'Error sending {} to {}.'.format(name, bitstream_url))
+                if not 'processingMCP.xml' in name and not (name.startswith('METS') and name.endswith(".xml")):
+                    bitstream_url = '{}/bitstreams?name={}'.format(
+                        base_url, urllib.quote(name.encode('utf-8'))[37:])
+
+                    try:
+                        with open(os.path.join(root, name), 'rb') as content:
+                            self._post(bitstream_url,
+                                      data=content,
+                                      cookies={'JSESSIONID': ds_sessionid})
+                    except Exception:
+                        raise DSpaceRESTException(
+                            'Error sending {} to {}.'.format(name, bitstream_url))
 
     def _get_as_client(self):
         try:
