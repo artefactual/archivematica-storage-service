@@ -424,7 +424,8 @@ class DSpaceREST(models.Model):
         if all([self.as_url, self.as_user, self.as_password,
                 self.as_repository, as_archival_obj]):
             self._link_dip_to_archivesspace(
-                self._get_as_client(), as_archival_obj, package.uuid,
+                self._get_as_client(), as_archival_obj,
+                package.full_path[package.full_path.rfind('/')+1:],  # Hack to obtain transfer name + AIP UUID,
                 package_title, ds_item)
 
     def _handle_aip(self, source_path, ds_item, ds_sessionid):
