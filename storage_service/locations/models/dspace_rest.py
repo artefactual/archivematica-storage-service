@@ -400,8 +400,8 @@ class DSpaceREST(models.Model):
         try:
             with open(source_path, 'rb') as content:
                 response = self._post(bitstream_url,
-                                     data=content,
-                                     cookies={'JSESSIONID': ds_sessionid})
+                                      data=content,
+                                      cookies={'JSESSIONID': ds_sessionid})
             response.raise_for_status()
         except Exception:
             raise DSpaceRESTException(
@@ -416,19 +416,19 @@ class DSpaceREST(models.Model):
                 self.as_repository, as_archival_obj]):
             self._link_dip_to_archivesspace(
                 self._get_as_client(), as_archival_obj,
-                package.full_path[package.full_path.rfind('/')+1:],  # Hack to obtain transfer name + AIP UUID,
+                package.full_path[-36:],  # Hack to obtain AIP UUID
                 package_title, ds_item)
 
-    def _handle_aip(self, source_path, ds_item, ds_sessionid):
+    def _handle_aip(self, source_path, package_uuid, ds_item, ds_sessionid):
         self._deposit_aip_to_dspace(
             source_path, ds_item, ds_sessionid)
         if self.upload_to_tsm:
-            self._upload_to_tsm(source_path)
+            self._upload_to_tsm(source_path, package_uuid)
 
     @staticmethod
-    def _upload_to_tsm(source_path):
+    def _upload_to_tsm(source_path, package_uuid):
         """Send AIP to Tivoli Storage Manager using command-line client."""
-        command = ['dsmc', 'archive', source_path]
+        command = ['dsmc', 'archive', source_path, '-description={}'.format(package_uuid)]
         try:
             subprocess.Popen(
                 command, stdout=subprocess.PIPE,
@@ -465,6 +465,6 @@ class DSpaceREST(models.Model):
                 self._handle_dip(source_path, ds_item, ds_sessionid,
                                  as_archival_obj, package, package_title)
             else:
-                self._handle_aip(source_path, ds_item, ds_sessionid)
+                self._handle_aip(source_path, package.uuid, ds_item, ds_sessionid)
         finally:
             self._logout_from_dspace_rest(ds_sessionid)
