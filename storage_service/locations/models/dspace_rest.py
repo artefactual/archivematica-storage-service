@@ -14,7 +14,7 @@ import urllib
 # Core Django, alphabetical
 from django.db import models
 from django.utils.six.moves.urllib.parse import urlparse
-from django.utils.translation import ugettext_lazy as _l
+from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
 from lxml import etree
@@ -59,77 +59,77 @@ class DSpaceREST(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
     ds_rest_url = models.URLField(
         max_length=256,
-        verbose_name=_l("REST URL"),
-        help_text=_l('URL of the REST API. E.g. http://demo.dspace.org/rest'))
+        verbose_name=_("REST URL"),
+        help_text=_('URL of the REST API. E.g. http://demo.dspace.org/rest'))
 
     ds_user = models.CharField(
         max_length=64,
-        verbose_name=_l("User"),
-        help_text=_l('DSpace username to authenticate as'))
+        verbose_name=_("User"),
+        help_text=_('DSpace username to authenticate as'))
 
     ds_password = models.CharField(
         max_length=64,
-        verbose_name=_l("Password"),
-        help_text=_l('DSpace password to authenticate with'))
+        verbose_name=_("Password"),
+        help_text=_('DSpace password to authenticate with'))
 
     ds_dip_collection = models.CharField(
         max_length=64,
-        verbose_name=_l("Default DSpace DIP collection id"),
-        help_text=_l('UUID of default DSpace collection for the DIP to be'
-                     ' deposited to'))
+        verbose_name=_("Default DSpace DIP collection id"),
+        help_text=_('UUID of default DSpace collection for the DIP to be'
+                    ' deposited to'))
 
     ds_aip_collection = models.CharField(
         max_length=64,
-        verbose_name=_l("Default DSpace AIP collection id"),
-        help_text=_l('UUID of default DSpace collection for the AIP to be'
-                     ' deposited to'))
+        verbose_name=_("Default DSpace AIP collection id"),
+        help_text=_('UUID of default DSpace collection for the AIP to be'
+                    ' deposited to'))
 
     as_url = models.URLField(
         blank=True,
         max_length=256,
-        verbose_name=_l("ArchivesSpace URL"),
-        help_text=_l('URL of ArchivesSpace server. E.g.'
-                     ' http://sandbox.archivesspace.org:8089/ (default port'
-                     ' 8089 if omitted)'))
+        verbose_name=_("ArchivesSpace URL"),
+        help_text=_('URL of ArchivesSpace server. E.g.'
+                    ' http://sandbox.archivesspace.org:8089/ (default port'
+                    ' 8089 if omitted)'))
 
     as_user = models.CharField(
         blank=True,
         max_length=64,
-        verbose_name=_l("ArchivesSpace user"),
-        help_text=_l('ArchivesSpace username to authenticate as'))
+        verbose_name=_("ArchivesSpace user"),
+        help_text=_('ArchivesSpace username to authenticate as'))
 
     as_password = models.CharField(
         blank=True,
         max_length=64,
-        verbose_name=_l("ArchivesSpace password"),
-        help_text=_l('ArchivesSpace password to authenticate with'))
+        verbose_name=_("ArchivesSpace password"),
+        help_text=_('ArchivesSpace password to authenticate with'))
 
     as_repository = models.CharField(
         blank=True,
         max_length=64,
-        verbose_name=_l("Default ArchivesSpace repository"),
-        help_text=_l('Identifier of the default ArchivesSpace repository'))
+        verbose_name=_("Default ArchivesSpace repository"),
+        help_text=_('Identifier of the default ArchivesSpace repository'))
 
     as_archival_object = models.CharField(
         blank=True,
         max_length=64,
-        verbose_name=_l("Default ArchivesSpace archival object"),
-        help_text=_l('Identifier of the default ArchivesSpace archival object'))
+        verbose_name=_("Default ArchivesSpace archival object"),
+        help_text=_('Identifier of the default ArchivesSpace archival object'))
 
     verify_ssl = models.BooleanField(
-        blank=True, default=True, verbose_name=_l("Verify SSL certificates?"),
-        help_text=_l('If checked, HTTPS requests will verify the SSL'
-                     ' certificates'))
+        blank=True, default=True, verbose_name=_("Verify SSL certificates?"),
+        help_text=_('If checked, HTTPS requests will verify the SSL'
+                    ' certificates'))
 
     upload_to_tsm = models.BooleanField(
         blank=True, default=False,
-        verbose_name=_l("Send AIP to Tivoli Storage Manager?"),
-        help_text=_l('If checked, will attempt to send the AIP to the Tivoli'
-                     ' Storage Manager using command-line client dsmc, which'
-                     ' must be installed manually'))
+        verbose_name=_("Send AIP to Tivoli Storage Manager?"),
+        help_text=_('If checked, will attempt to send the AIP to the Tivoli'
+                    ' Storage Manager using command-line client dsmc, which'
+                    ' must be installed manually'))
 
     class Meta:
-        verbose_name = _l("DSpace via REST API")
+        verbose_name = _("DSpace via REST API")
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [

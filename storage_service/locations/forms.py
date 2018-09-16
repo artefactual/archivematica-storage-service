@@ -6,7 +6,7 @@ import django.utils
 import django.core.exceptions
 from django.db.models import Count
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext as _, ugettext_lazy as _l
+from django.utils.translation import ugettext_lazy as _
 
 from common import gpgutils
 from locations import models
@@ -64,8 +64,8 @@ class DisableableSelectWidget(forms.Select):
 class PipelineForm(forms.ModelForm):
     create_default_locations = forms.BooleanField(required=False,
         initial=True,
-        label=_l("Default Locations:"),
-        help_text=_l("Enabled if default locations should be created for this pipeline"))
+        label=_("Default Locations:"),
+        help_text=_("Enabled if default locations should be created for this pipeline"))
 
     class Meta:
         model = models.Pipeline
@@ -228,7 +228,7 @@ class S3Form(forms.ModelForm):
 
 
 class LocationForm(forms.ModelForm):
-    default = forms.BooleanField(required=False, label=_l("Set as global default location for its purpose"))
+    default = forms.BooleanField(required=False, label=_("Set as global default location for its purpose"))
 
     class Meta:
         model = models.Location
@@ -351,14 +351,14 @@ class CallbackForm(forms.ModelForm):
 
 class ReingestForm(forms.Form):
     REINGEST_CHOICES = (
-        (models.Package.METADATA_ONLY, _l('Metadata re-ingest')),
-        (models.Package.OBJECTS, _l('Partial re-ingest')),
-        (models.Package.FULL, _l('Full re-ingest')),
+        (models.Package.METADATA_ONLY, _('Metadata re-ingest')),
+        (models.Package.OBJECTS, _('Partial re-ingest')),
+        (models.Package.FULL, _('Full re-ingest')),
     )
 
-    pipeline = forms.ModelChoiceField(label=_l("Pipeline"), queryset=models.Pipeline.active.all())
-    reingest_type = forms.ChoiceField(label=_l("Reingest type"), choices=REINGEST_CHOICES, widget=forms.RadioSelect)
+    pipeline = forms.ModelChoiceField(label=_("Pipeline"), queryset=models.Pipeline.active.all())
+    reingest_type = forms.ChoiceField(label=_("Reingest type"), choices=REINGEST_CHOICES, widget=forms.RadioSelect)
     processing_config = forms.CharField(required=False, initial='default',
-        label=_l("Processing config"),
-        help_text=_l('Optional: The processing config is only used with full re-ingest'),
+        label=_("Processing config"),
+        help_text=_('Optional: The processing config is only used with full re-ingest'),
         widget=forms.TextInput(attrs={'placeholder': 'default'}))

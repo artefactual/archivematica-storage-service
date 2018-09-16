@@ -9,7 +9,7 @@ import tempfile
 
 # Core Django, alphabetical
 from django.db import models
-from django.utils.translation import ugettext_lazy as _l
+from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
 
@@ -29,20 +29,20 @@ class PipelineLocalFS(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
 
     remote_user = models.CharField(max_length=64,
-        verbose_name=_l("Remote user"),
-        help_text=_l("Username on the remote machine accessible via ssh"))
+        verbose_name=_("Remote user"),
+        help_text=_("Username on the remote machine accessible via ssh"))
     remote_name = models.CharField(max_length=256,
-        verbose_name=_l("Remote name"),
-        help_text=_l("Name or IP of the remote machine."))
+        verbose_name=_("Remote name"),
+        help_text=_("Name or IP of the remote machine."))
     # Space.path is the path on the remote machine
 
     assume_rsync_daemon = models.BooleanField(default=False,
-        verbose_name=_l("Assume remote host serving files with rsync daemon"),
-        help_text=_l("If checked, will use rsync daemon-style commands instead of the default rsync with remote shell transport"))
+        verbose_name=_("Assume remote host serving files with rsync daemon"),
+        help_text=_("If checked, will use rsync daemon-style commands instead of the default rsync with remote shell transport"))
     rsync_password = models.CharField(max_length=64, blank=True, default="", help_text="RSYNC_PASSWORD value (rsync daemon)")
 
     class Meta:
-        verbose_name = _l("Pipeline Local FS")
+        verbose_name = _("Pipeline Local FS")
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [

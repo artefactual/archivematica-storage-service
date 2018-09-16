@@ -6,7 +6,7 @@ import logging
 from django.db import models
 from django.utils import six
 from django.utils.six.moves import cPickle as pickle
-from django.utils.translation import ugettext_lazy as _l
+from django.utils.translation import ugettext_lazy as _
 
 __all__ = ('Async',)
 
@@ -17,12 +17,12 @@ class Async(models.Model):
     """ Stores information about currently running asynchronous tasks. """
 
     completed = models.BooleanField(default=False,
-        verbose_name=_l('Completed'),
-        help_text=_l("True if this task has finished."))
+        verbose_name=_('Completed'),
+        help_text=_("True if this task has finished."))
 
     was_error = models.BooleanField(default=False,
-        verbose_name=_l('Was there an exception?'),
-        help_text=_l("True if this task threw an exception."))
+        verbose_name=_('Was there an exception?'),
+        help_text=_("True if this task threw an exception."))
 
     _result = models.BinaryField(null=True, db_column='result')
 
@@ -52,7 +52,7 @@ class Async(models.Model):
         self._error = pickle.dumps(str(type(value)) + ": " + str(value))
 
     class Meta:
-        verbose_name = _l("Async")
+        verbose_name = _("Async")
         app_label = 'locations'
 
     def __unicode__(self):

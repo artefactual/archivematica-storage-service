@@ -6,7 +6,7 @@ import os
 # Core Django, alphabetical
 from django.dispatch import receiver
 from django.db import models
-from django.utils.translation import ugettext as _, ugettext_lazy as _l
+from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
 from django_extensions.db.fields import UUIDField
@@ -26,7 +26,7 @@ class Location(models.Model):
     """ Stores information about a location. """
 
     uuid = UUIDField(editable=False, unique=True, version=4,
-        help_text=_l("Unique identifier"))
+        help_text=_("Unique identifier"))
     space = models.ForeignKey('Space', to_field='uuid')
 
     # Sorted by display name
@@ -42,50 +42,50 @@ class Location(models.Model):
     REPLICATOR = 'RP'
 
     PURPOSE_CHOICES = (
-        (AIP_RECOVERY, _l('AIP Recovery')),
-        (AIP_STORAGE, _l('AIP Storage')),
-        (CURRENTLY_PROCESSING, _l('Currently Processing')),
-        (DIP_STORAGE, _l('DIP Storage')),
-        (SWORD_DEPOSIT, _l('FEDORA Deposits')),
+        (AIP_RECOVERY, _('AIP Recovery')),
+        (AIP_STORAGE, _('AIP Storage')),
+        (CURRENTLY_PROCESSING, _('Currently Processing')),
+        (DIP_STORAGE, _('DIP Storage')),
+        (SWORD_DEPOSIT, _('FEDORA Deposits')),
         # (QUARANTINE, 'Quarantine'),
-        (STORAGE_SERVICE_INTERNAL, _l('Storage Service Internal Processing')),
-        (BACKLOG, _l('Transfer Backlog')),
-        (TRANSFER_SOURCE, _l('Transfer Source')),
-        (REPLICATOR, _l('Replicator')),
+        (STORAGE_SERVICE_INTERNAL, _('Storage Service Internal Processing')),
+        (BACKLOG, _('Transfer Backlog')),
+        (TRANSFER_SOURCE, _('Transfer Source')),
+        (REPLICATOR, _('Replicator')),
     )
     purpose = models.CharField(max_length=2,
         choices=PURPOSE_CHOICES,
-        verbose_name=_l('Purpose'),
-        help_text=_l("Purpose of the space.  Eg. AIP storage, Transfer source"))
+        verbose_name=_('Purpose'),
+        help_text=_("Purpose of the space.  Eg. AIP storage, Transfer source"))
     pipeline = models.ManyToManyField('Pipeline', through='LocationPipeline',
         blank=True,
-        verbose_name=_l('Pipeline'),
-        help_text=_l("UUID of the Archivematica instance using this location."))
+        verbose_name=_('Pipeline'),
+        help_text=_("UUID of the Archivematica instance using this location."))
     relative_path = models.TextField(
-        verbose_name=_l('Relative Path'),
-        help_text=_l("Path to location, relative to the storage space's path."))
+        verbose_name=_('Relative Path'),
+        help_text=_("Path to location, relative to the storage space's path."))
     description = models.CharField(max_length=256, default=None,
-        verbose_name=_l('Description'),
-        null=True, blank=True, help_text=_l("Human-readable description."))
+        verbose_name=_('Description'),
+        null=True, blank=True, help_text=_("Human-readable description."))
     quota = models.BigIntegerField(default=None, null=True, blank=True,
-        verbose_name=_l('Quota'),
-        help_text=_l("Size, in bytes (optional)"))
+        verbose_name=_('Quota'),
+        help_text=_("Size, in bytes (optional)"))
     used = models.BigIntegerField(default=0,
-        verbose_name=_l('Used'),
-        help_text=_l("Amount used, in bytes."))
+        verbose_name=_('Used'),
+        help_text=_("Amount used, in bytes."))
     enabled = models.BooleanField(default=True,
-        verbose_name=_l('Enabled'),
-        help_text=_l("True if space can be accessed."))
+        verbose_name=_('Enabled'),
+        help_text=_("True if space can be accessed."))
     replicators = models.ManyToManyField(
         'Location',
         blank=True,
         related_name='masters',
-        verbose_name=_l('Replicators'),
-        help_text=_l('Other locations that will be used to create replicas of'
+        verbose_name=_('Replicators'),
+        help_text=_('Other locations that will be used to create replicas of'
                      ' the packages stored in this location'))
 
     class Meta:
-        verbose_name = _l("Location")
+        verbose_name = _("Location")
         app_label = 'locations'
 
     objects = models.Manager()
@@ -171,7 +171,7 @@ class LocationPipeline(models.Model):
     pipeline = models.ForeignKey('Pipeline', to_field='uuid')
 
     class Meta:
-        verbose_name = _l("Location associated with a Pipeline")
+        verbose_name = _("Location associated with a Pipeline")
         app_label = 'locations'
 
     def __unicode__(self):

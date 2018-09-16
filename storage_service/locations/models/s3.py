@@ -5,7 +5,7 @@ import os
 
 # Core Django, alphabetical
 from django.db import models
-from django.utils.translation import ugettext as _, ugettext_lazy as _l
+from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
 import boto3
@@ -23,18 +23,18 @@ LOGGER = logging.getLogger(__name__)
 class S3(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
     endpoint_url = models.CharField(max_length=2048,
-        verbose_name=_l('S3 Endpoint URL'),
-        help_text=_l('S3 Endpoint URL. Eg. https://s3.amazonaws.com'))
+        verbose_name=_('S3 Endpoint URL'),
+        help_text=_('S3 Endpoint URL. Eg. https://s3.amazonaws.com'))
     access_key_id = models.CharField(max_length=64,
-        verbose_name=_l('Access Key ID to authenticate'))
+        verbose_name=_('Access Key ID to authenticate'))
     secret_access_key = models.CharField(max_length=256,
-        verbose_name=_l('Secret Access Key to authenticate with'))
+        verbose_name=_('Secret Access Key to authenticate with'))
     region = models.CharField(max_length=64,
-        verbose_name=_l('Region'),
-        help_text=_l('Region in S3. Eg. us-east-2'))
+        verbose_name=_('Region'),
+        help_text=_('Region in S3. Eg. us-east-2'))
 
     class Meta:
-        verbose_name = _l("S3")
+        verbose_name = _("S3")
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [

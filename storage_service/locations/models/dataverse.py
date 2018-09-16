@@ -9,7 +9,7 @@ import zipfile
 
 # Core Django, alphabetical
 from django.db import models
-from django.utils.translation import ugettext as _, ugettext_lazy as _l
+from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
 import requests
@@ -28,33 +28,33 @@ class Dataverse(URLMixin, models.Model):
 
     host = models.CharField(
         max_length=256,
-        verbose_name=_l("Host"),
-        help_text=_l(
+        verbose_name=_("Host"),
+        help_text=_(
             "Hostname of the Dataverse instance. Eg. apitest.dataverse.org"
         ),
     )
     api_key = models.CharField(
         max_length=50,
-        verbose_name=_l("API key"),
-        help_text=_l(
+        verbose_name=_("API key"),
+        help_text=_(
             "API key for Dataverse instance. Eg. "
             "b84d6b87-7b1e-4a30-a374-87191dbbbe2d"
         ),
     )
     agent_name = models.CharField(
         max_length=50,
-        verbose_name=_l("Agent name"),
-        help_text=_l("Agent name for premis:agentName in Archivematica"),
+        verbose_name=_("Agent name"),
+        help_text=_("Agent name for premis:agentName in Archivematica"),
     )
     agent_type = models.CharField(
         max_length=50,
-        verbose_name=_l("Agent type"),
-        help_text=_l("Agent type for premis:agentType in Archivematica"),
+        verbose_name=_("Agent type"),
+        help_text=_("Agent type for premis:agentType in Archivematica"),
     )
     agent_identifier = models.CharField(
         max_length=256,
-        verbose_name=_l("Agent identifier"),
-        help_text=_l(
+        verbose_name=_("Agent identifier"),
+        help_text=_(
             "URI agent identifier for premis:agentIdentifierValue "
             "in Archivematica"
         ),
@@ -62,7 +62,7 @@ class Dataverse(URLMixin, models.Model):
     # FIXME disallow string in space.path
 
     class Meta:
-        verbose_name = _l("Dataverse")
+        verbose_name = _("Dataverse")
         app_label = "locations"
 
     ALLOWED_LOCATION_PURPOSE = [Location.TRANSFER_SOURCE]

@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib import auth
-from django.utils.translation import ugettext as _, ugettext_lazy as _l
+from django.utils.translation import ugettext_lazy as _
 
 from common import utils
 
@@ -82,9 +82,9 @@ class SettingsForm(forms.Form):
 class CommonSettingsForm(SettingsForm):
     """ Configures common or generic settings that don't belong elsewhere. """
     pipelines_disabled = forms.BooleanField(required=False,
-        label=_l("Pipelines are disabled upon creation?"))
+        label=_("Pipelines are disabled upon creation?"))
     object_counting_disabled = forms.BooleanField(required=False,
-        label=_l("Object counting in spaces is disabled?"))
+        label=_("Object counting in spaces is disabled?"))
     recover_request_notification_url = forms.URLField(required=False,
         label=_('Recovery request: URL to notify'))
     recover_request_notification_auth_username = forms.CharField(required=False,
@@ -98,38 +98,38 @@ class DefaultLocationsForm(SettingsForm):
     default_transfer_source = forms.MultipleChoiceField(
         choices=[],
         required=False,
-        label=_l("Default transfer source locations for new pipelines:"))
+        label=_("Default transfer source locations for new pipelines:"))
     new_transfer_source = DefaultLocationField(
         required=False,
-        label=_l("New Transfer Source:"))
+        label=_("New Transfer Source:"))
     default_aip_storage = forms.MultipleChoiceField(
         choices=[],
         required=False,
-        label=_l("Default AIP storage locations for new pipelines"))
+        label=_("Default AIP storage locations for new pipelines"))
     new_aip_storage = DefaultLocationField(
         required=False,
-        label=_l("New AIP Storage:"))
+        label=_("New AIP Storage:"))
     default_dip_storage = forms.MultipleChoiceField(
         choices=[],
         required=False,
-        label=_l("Default DIP storage locations for new pipelines"))
+        label=_("Default DIP storage locations for new pipelines"))
     new_dip_storage = DefaultLocationField(
         required=False,
-        label=_l("New DIP Storage:"))
+        label=_("New DIP Storage:"))
     default_backlog = forms.MultipleChoiceField(
         choices=[],
         required=False,
-        label=_l("Default transfer backlog locations for new pipelines:"))
+        label=_("Default transfer backlog locations for new pipelines:"))
     new_backlog = DefaultLocationField(
         required=False,
-        label=_l("New Transfer Backlog:"))
+        label=_("New Transfer Backlog:"))
     default_recovery = forms.MultipleChoiceField(
         choices=[],
         required=False,
-        label=_l("Default AIP recovery locations for new pipelines:"))
+        label=_("Default AIP recovery locations for new pipelines:"))
     new_recovery = DefaultLocationField(
         required=False,
-        label=_l("New AIP Recovery:"))
+        label=_("New AIP Recovery:"))
 
     def __init__(self, *args, **kwargs):
         super(DefaultLocationsForm, self).__init__(*args, **kwargs)
@@ -214,8 +214,8 @@ class UserChangeForm(auth.forms.UserChangeForm):
 
 class KeyCreateForm(forms.Form):
     required_css_class = 'required-field'
-    name_real = forms.CharField(label=_l('Name'))
-    name_email = forms.EmailField(label=_l('Email'), required=False)
+    name_real = forms.CharField(label=_('Name'))
+    name_email = forms.EmailField(label=_('Email'), required=False)
 
 
 class KeyImportForm(forms.Form):

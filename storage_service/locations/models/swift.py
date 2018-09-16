@@ -5,7 +5,7 @@ import os
 
 # Core Django, alphabetical
 from django.db import models
-from django.utils.translation import ugettext as _, ugettext_lazy as _l
+from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
 import swiftclient
@@ -23,28 +23,28 @@ LOGGER = logging.getLogger(__name__)
 class Swift(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
     auth_url = models.CharField(max_length=256,
-        verbose_name=_l('Auth URL'),
-        help_text=_l('URL to authenticate against'))
+        verbose_name=_('Auth URL'),
+        help_text=_('URL to authenticate against'))
     auth_version = models.CharField(max_length=8, default='2',
-        verbose_name=_l('Auth version'),
-        help_text=_l('OpenStack auth version'))
+        verbose_name=_('Auth version'),
+        help_text=_('OpenStack auth version'))
     username = models.CharField(max_length=64,
-        verbose_name=_l('Username'),
-        help_text=_l('Username to authenticate as. E.g. http://example.com:5000/v2.0/'))
+        verbose_name=_('Username'),
+        help_text=_('Username to authenticate as. E.g. http://example.com:5000/v2.0/'))
     # HELP how do I store the password?  Has to be plaintext to send to Swift, but that seems like a bad idea
     password = models.CharField(max_length=256,
-        verbose_name=_l('Password'),
-        help_text=_l('Password to authenticate with'))
-    container = models.CharField(max_length=64, verbose_name=_l("Container"))
+        verbose_name=_('Password'),
+        help_text=_('Password to authenticate with'))
+    container = models.CharField(max_length=64, verbose_name=_("Container"))
     tenant = models.CharField(max_length=64, null=True, blank=True,
-        verbose_name=_l('Tenant'),
-        help_text=_l('The tenant/account name, required when connecting to an auth 2.0 system.'))
+        verbose_name=_('Tenant'),
+        help_text=_('The tenant/account name, required when connecting to an auth 2.0 system.'))
     region = models.CharField(max_length=64, null=True, blank=True,
-        verbose_name=_l('Region'),
-        help_text=_l('Optional: Region in Swift'))
+        verbose_name=_('Region'),
+        help_text=_('Optional: Region in Swift'))
 
     class Meta:
-        verbose_name = _l("Swift")
+        verbose_name = _("Swift")
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [

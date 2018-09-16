@@ -17,7 +17,7 @@ import urllib
 
 # Core Django, alphabetical
 from django.db import models
-from django.utils.translation import ugettext as _, ugettext_lazy as _l
+from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
 from lxml import etree
@@ -37,14 +37,14 @@ LOGGER = logging.getLogger(__name__)
 class DSpace(models.Model):
     """Integration with DSpace using the SWORD2 protocol."""
     space = models.OneToOneField('Space', to_field='uuid')
-    sd_iri = models.URLField(max_length=256, verbose_name=_l("Service Document IRI"),
-        help_text=_l('URL of the service document. E.g. http://demo.dspace.org/swordv2/servicedocument'))
-    user = models.CharField(max_length=64, verbose_name=_l("User"), help_text=_l('DSpace username to authenticate as'))
-    password = models.CharField(max_length=64, verbose_name=_l("Password"), help_text=_l('DSpace password to authenticate with'))
+    sd_iri = models.URLField(max_length=256, verbose_name=_("Service Document IRI"),
+        help_text=_('URL of the service document. E.g. http://demo.dspace.org/swordv2/servicedocument'))
+    user = models.CharField(max_length=64, verbose_name=_("User"), help_text=_('DSpace username to authenticate as'))
+    password = models.CharField(max_length=64, verbose_name=_("Password"), help_text=_('DSpace password to authenticate with'))
     metadata_policy = jsonfield.JSONField(
         blank=True, null=True, default=[],
-        verbose_name=_l('Restricted metadata policy'),
-        help_text=_l(
+        verbose_name=_('Restricted metadata policy'),
+        help_text=_(
             'Policy for restricted access metadata policy. '
             'Must be specified as a list of objects in JSON. '
             'This will override existing policies. '
@@ -56,12 +56,12 @@ class DSpace(models.Model):
         (ARCHIVE_FORMAT_ZIP, 'ZIP'),
         (ARCHIVE_FORMAT_7Z, '7z'),
     )
-    archive_format = models.CharField(max_length=3, choices=ARCHIVE_FORMAT_CHOICES, default=ARCHIVE_FORMAT_ZIP, verbose_name=_l('Archive format'))
+    archive_format = models.CharField(max_length=3, choices=ARCHIVE_FORMAT_CHOICES, default=ARCHIVE_FORMAT_ZIP, verbose_name=_('Archive format'))
 
     sword_connection = None
 
     class Meta:
-        verbose_name = _l("DSpace via SWORD2 API")
+        verbose_name = _("DSpace via SWORD2 API")
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [

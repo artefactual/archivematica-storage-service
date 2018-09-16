@@ -9,7 +9,7 @@ import urllib
 
 # Core Django, alphabetical
 from django.db import models
-from django.utils.translation import ugettext as _, ugettext_lazy as _l
+from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
 import requests
@@ -27,14 +27,14 @@ LOGGER = logging.getLogger(__name__)
 class Duracloud(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
     host = models.CharField(max_length=256,
-        verbose_name=_l('Host'),
-        help_text=_l('Hostname of the DuraCloud instance. Eg. trial.duracloud.org'))
-    user = models.CharField(max_length=64, verbose_name=_l('User'), help_text=_l('Username to authenticate as'))
-    password = models.CharField(max_length=64, verbose_name=_l('Password'), help_text=_l('Password to authenticate with'))
-    duraspace = models.CharField(max_length=64, verbose_name=_l('Duraspace'), help_text=_l('Name of the Space within DuraCloud'))
+        verbose_name=_('Host'),
+        help_text=_('Hostname of the DuraCloud instance. Eg. trial.duracloud.org'))
+    user = models.CharField(max_length=64, verbose_name=_('User'), help_text=_('Username to authenticate as'))
+    password = models.CharField(max_length=64, verbose_name=_('Password'), help_text=_('Password to authenticate with'))
+    duraspace = models.CharField(max_length=64, verbose_name=_('Duraspace'), help_text=_('Name of the Space within DuraCloud'))
 
     class Meta:
-        verbose_name = _l("DuraCloud")
+        verbose_name = _("DuraCloud")
         app_label = 'locations'
 
     ALLOWED_LOCATION_PURPOSE = [

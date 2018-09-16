@@ -13,7 +13,7 @@ from metsrw.plugins import premisrw
 # Core Django, alphabetical
 from django.conf import settings
 from django.db import models
-from django.utils.translation import ugettext as _, ugettext_lazy as _l
+from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
 
@@ -72,13 +72,13 @@ class GPG(models.Model):
     # creating them.
     key = models.CharField(
         max_length=256,
-        verbose_name=_l('GnuPG Private Key'),
-        help_text=_l('The GnuPG private key that will be able to'
-                     ' decrypt packages stored in this space.'))
+        verbose_name=_('GnuPG Private Key'),
+        help_text=_('The GnuPG private key that will be able to'
+                    ' decrypt packages stored in this space.'))
 
     class Meta:
-        verbose_name = _l("GPG encryption on Local Filesystem")
-        app_label = _l('locations')
+        verbose_name = _("GPG encryption on Local Filesystem")
+        app_label = _('locations')
 
     ALLOWED_LOCATION_PURPOSE = [
         Location.AIP_STORAGE,
