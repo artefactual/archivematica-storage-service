@@ -15,6 +15,7 @@ from metsrw.plugins import premisrw
 from django.core.exceptions import ObjectDoesNotExist
 from django import http
 from django.utils.translation import ugettext as _
+from django.utils import six
 
 from administration import models
 from storage_service import __version__ as ss_version
@@ -80,7 +81,7 @@ def set_setting(setting, value=None):
     its string representation.  Strings are automatically esacped. """
     # Since we call literal_eval on settings when we extract them, we need to
     # put quotes around strings so they remain strings
-    if isinstance(value, basestring):
+    if isinstance(value, six.string_types):
         value = "'{}'".format(value)
     setting, _ = models.Settings.objects.get_or_create(name=setting)
     setting.value = value
@@ -327,7 +328,7 @@ def coerce_str(string):
     :param basestring string: String to convert
     :return: string converted to str, encoded in utf-8 if needed.
     """
-    if isinstance(string, unicode):
+    if isinstance(string, six.text_type):
         return string.encode('utf-8')
     return string
 

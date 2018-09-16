@@ -14,6 +14,7 @@ from metsrw.plugins import premisrw
 from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from django.utils import six
 
 # Third party dependencies, alphabetical
 
@@ -185,7 +186,7 @@ class GPG(models.Model):
         filesystem. Based on ``Space.browse_local`` but has to deal with paths
         within encrypted directories (which are tarfiles).
         """
-        if isinstance(path, unicode):
+        if isinstance(path, six.text_type):
             path = path.encode('utf8')
         # Encrypted space only stores files, so strip trailing /.
         path = path.rstrip('/')

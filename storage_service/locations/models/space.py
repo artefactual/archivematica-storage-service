@@ -13,6 +13,7 @@ import tempfile
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from django.utils import six
 
 # Third party dependencies, alphabetical
 from django_extensions.db.fields import UUIDField
@@ -584,7 +585,7 @@ class Space(models.Model):
         'size': Size of the object, as determined by os.path.getsize. May be misleading for directories, suggest use 'object count'
         'object count': Number of objects in the directory, including children
         """
-        if isinstance(path, unicode):
+        if isinstance(path, six.text_type):
             path = str(path)
         if not os.path.exists(path):
             LOGGER.info('%s in %s does not exist', path, self)

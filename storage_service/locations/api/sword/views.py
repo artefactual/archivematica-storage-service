@@ -12,6 +12,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.translation import ugettext as _
+from django.utils import six
 
 # External dependencies, alphabetical
 
@@ -70,7 +71,7 @@ def collection(request, location):
     Example POST creation of deposit from another location:
       curl -v -H "In-Progress: true" --request POST http://localhost:8000/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/collection/?source_location=aab142a9-018f-4452-8f93-67c1bf7fd486&relative_path_to_files=archivematica-sampledata/SampleTransfers/Images
     """
-    if isinstance(location, basestring):
+    if isinstance(location, six.string_types):
         try:
             location = models.Location.active.get(uuid=location)
         except models.Location.DoesNotExist:
@@ -325,7 +326,7 @@ def deposit_edit(request, deposit):
     Example DELETE of deposit:
       curl -v -XDELETE http://127.0.0.1:8000/api/v1/file/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/
     """
-    if isinstance(deposit, basestring):
+    if isinstance(deposit, six.string_types):
         try:
             deposit = models.Package.objects.get(uuid=deposit)
         except models.Package.DoesNotExist:
@@ -427,7 +428,7 @@ def deposit_media(request, deposit):
       curl -v -XDELETE http://127.0.0.1:8000/api/v1/file/9c8b4ac0-0407-4360-a10d-af6c62a48b69/sword/media/?filename=joke.jpg
     """
 
-    if isinstance(deposit, basestring):
+    if isinstance(deposit, six.string_types):
         try:
             deposit = models.Package.objects.get(uuid=deposit)
         except models.Package.DoesNotExist:
@@ -508,7 +509,7 @@ def deposit_state(request, deposit):
     Example GET of state:
       curl -v http://localhost:8000/api/v1/location/96606387-cc70-4b09-b422-a7220606488d/sword/state/
     """
-    if isinstance(deposit, basestring):
+    if isinstance(deposit, six.string_types):
         try:
             deposit = models.Package.objects.get(uuid=deposit)
         except models.Package.DoesNotExist:
@@ -616,7 +617,7 @@ def _deposit_receipt_response(request, deposit, status_code):
     Generate SWORD 2.0 deposit receipt response
     """
     # Deposit needed for deposit receipt template
-    if isinstance(deposit, basestring):
+    if isinstance(deposit, six.string_types):
         deposit = models.Package.objects.get(uuid=deposit)
     # TODO: fix minor issues with template
     media_iri = request.build_absolute_uri(

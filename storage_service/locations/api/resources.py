@@ -17,6 +17,7 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.forms.models import model_to_dict
 from django.utils.translation import ugettext as _
+from django.utils import six
 
 # Third party dependencies, alphabetical
 from annoying.functions import get_object_or_None
@@ -343,7 +344,7 @@ class LocationResource(ModelResource):
         path = request.GET.get('path', '')
         path = self.decode_path(path)
         location_path = location.full_path
-        if isinstance(location_path, unicode):
+        if isinstance(location_path, six.text_type):
             location_path = location_path.encode('utf8')
         if not path.startswith(location_path):
             path = os.path.join(location_path, path)
