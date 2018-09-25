@@ -5,6 +5,7 @@ from django import forms
 import django.utils
 import django.core.exceptions
 from django.db.models import Count
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _, ugettext_lazy as _l
 
 from common import gpgutils
@@ -39,14 +40,14 @@ class DisableableSelectWidget(forms.Select):
     def render_option(self, selected_choices, option_value, option_label):
         option_value = django.utils.encoding.force_text(option_value)
         if option_value in selected_choices:
-            selected_html = django.utils.safestring.mark_safe(' selected="selected"')
+            selected_html = mark_safe(' selected="selected"')
             if not self.allow_multiple_selected:
                 # Only allow for a single selection.
                 selected_choices.remove(option_value)
         else:
             selected_html = ''
         if option_value in self.disabled_choices:
-            disabled_html = django.utils.safestring.mark_safe(' disabled="disabled"')
+            disabled_html = mark_safe(' disabled="disabled"')
         else:
             disabled_html = ''
         return django.utils.html.format_html(
@@ -116,11 +117,10 @@ class DataverseForm(forms.ModelForm):
 
     def as_p(self):
         # Add a warning to the Dataverse-specific section of the form
-        # FIXME this may not be the best way to add Space-specific warnings
         content = super(DataverseForm, self).as_p()
         content += '\n<div class="alert">{}</div>'.format(
-            _('Integration with Dataverse is currently a beta feature'))
-        return content
+            ('Integration with Dataverse is currently a beta feature'))
+        return mark_safe(content)
 
 
 class DuracloudForm(forms.ModelForm):
