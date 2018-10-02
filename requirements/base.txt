@@ -1,9 +1,5 @@
 # Base requirements - for all installations
 # updated May 9, 2017 for 0.11.0 release
-#pip and setuptools required specifically for ubuntu 14.04
-#does no harm on other systems
-pip==9.0.1
-setuptools
 bagit==1.5.4
 boto3==1.6.5
 brotli==0.5.2  # Better compression library for WhiteNoise
