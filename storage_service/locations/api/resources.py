@@ -20,7 +20,6 @@ from django.utils.translation import ugettext as _
 from django.utils import six
 
 # Third party dependencies, alphabetical
-from annoying.functions import get_object_or_None
 import bagit
 from tastypie.authentication import BasicAuthentication, ApiKeyAuthentication, MultiAuthentication, SessionAuthentication
 from tastypie.authorization import DjangoAuthorization
@@ -502,7 +501,10 @@ class LocationResource(ModelResource):
         return self._handle_location_file_move(move_files, request, *args, **kwargs)
 
     def sword_collection(self, request, **kwargs):
-        location = get_object_or_None(Location, uuid=kwargs['uuid'])
+        try:
+            location = Location.objects.get(uuid=kwargs['uuid'])
+        except Location.DoesNotExist:
+            location = None
         if location and (location.purpose != Location.SWORD_DEPOSIT or location.space.access_protocol != Space.FEDORA):
             return http.HttpBadRequest(_('This is not a SWORD server space.'))
         self.log_throttled_access(request)
@@ -1077,21 +1079,30 @@ class PackageResource(ModelResource):
         return self.create_response(request, response, status=status_code)
 
     def sword_deposit(self, request, **kwargs):
-        package = get_object_or_None(Package, uuid=kwargs['uuid'])
+        try:
+            package = Package.objects.get(uuid=kwargs['uuid'])
+        except Package.DoesNotExist:
+            package = None
         if package and package.package_type != Package.DEPOSIT:
             return http.HttpBadRequest(_('This is not a SWORD deposit location.'))
         self.log_throttled_access(request)
         return sword_views.deposit_edit(request, package or kwargs['uuid'])
 
     def sword_deposit_media(self, request, **kwargs):
-        package = get_object_or_None(Package, uuid=kwargs['uuid'])
+        try:
+            package = Package.objects.get(uuid=kwargs['uuid'])
+        except Package.DoesNotExist:
+            package = None
         if package and package.package_type != Package.DEPOSIT:
             return http.HttpBadRequest(_('This is not a SWORD deposit location.'))
         self.log_throttled_access(request)
         return sword_views.deposit_media(request, package or kwargs['uuid'])
 
     def sword_deposit_state(self, request, **kwargs):
-        package = get_object_or_None(Package, uuid=kwargs['uuid'])
+        try:
+            package = Package.objects.get(uuid=kwargs['uuid'])
+        except Package.DoesNotExist:
+            package = None
         if package and package.package_type != Package.DEPOSIT:
             return http.HttpBadRequest(_('This is not a SWORD deposit location.'))
         self.log_throttled_access(request)

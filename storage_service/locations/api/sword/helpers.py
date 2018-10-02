@@ -15,7 +15,6 @@ from django.utils import timezone
 from django.utils.translation import ugettext as _
 
 # External dependencies, alphabetical
-from annoying.functions import get_object_or_None
 import requests
 
 # This project, alphabetical
@@ -30,7 +29,10 @@ def get_deposit(uuid):
     """
     Shortcut to retrieve deposit data. Returns deposit model object or None
     """
-    return get_object_or_None(models.Package, uuid=uuid)
+    try:
+        return models.Package.objects.get(uuid=uuid)
+    except models.Package.DoesNotExist:
+        return None
 
 
 def deposit_list(location_uuid):
