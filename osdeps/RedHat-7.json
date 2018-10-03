@@ -6,7 +6,8 @@
     "epel-release: required for nginx, unar",
     "gcc: required to build some pip dependencies",
     "pip installed with get_pip, do not install package python-pip",
-    "virtualenv installed with pip, do not install package python-virtualenv"
+    "virtualenv installed with pip, do not install package python-virtualenv",
+    "mariadb-devel: removed due to dependency conflicts ref. https://github.com/archivematica/Issues/issues/22"
   ],
   "osdeps_packages": [
    { "name": "epel-release", "state": "latest"}
@@ -21,7 +22,6 @@
    { "name": "zlib-devel", "state": "latest"},
    { "name": "libffi-devel", "state": "latest"},
    { "name": "openssl-devel", "state": "latest"},
-   { "name": "mariadb-devel", "state": "latest"},
    { "name": "gcc", "state": "latest"},
    { "name": "gcc-c++", "state": "latest"},
    { "name": "p7zip", "state": "latest"},
