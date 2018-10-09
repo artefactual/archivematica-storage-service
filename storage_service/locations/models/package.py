@@ -1237,15 +1237,26 @@ class Package(models.Model):
         for agent in premis_agents:
             mets_fs_entry.add_premis_agent(agent.serialize())
         pointer_file.append_file(mets_fs_entry)
-        # 3. Validate the pointer file
+        # Validate the pointer file
         if validate:
-            is_valid, report = metsrw.validate(
-                pointer_file.serialize(), schematron=metsrw.AM_PNTR_SCT_PATH)
-            if is_valid:
-                LOGGER.info('Pointer file constructed for %s is valid.', self.uuid)
-            else:
-                LOGGER.warning('Pointer file constructed for %s is not valid.\n%s',
-                            self.uuid, metsrw.report_string(report))
+            try:
+                is_valid, report = metsrw.validate(
+                    pointer_file.serialize(),
+                    schematron=metsrw.AM_PNTR_SCT_PATH)
+            except etree.XMLSchemaParseError as err:
+                # It has been observed that this function can fail validating,
+                # for example against the Library of Congress' (LoC) XSD for
+                # METS if the LoC server is down it will fail. We don't want
+                # this to happen so if the pointer file xml is not valid at
+                # this point in time we need to rely on a different mechanism
+                # to manage that.
+                LOGGER.warning("Failed to parse validation schema: %s", err)
+                return pointer_file
+            if not is_valid:
+                LOGGER.error(
+                    'Pointer file constructed for %s is not valid.\n%s',
+                    self.uuid, metsrw.report_string(report))
+        LOGGER.info("Returning pointer file for: %s", self.uuid)
         return pointer_file
 
     def _create_aip_premis_object(self,
