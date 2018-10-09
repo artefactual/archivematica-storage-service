@@ -141,7 +141,7 @@ class Space(models.Model):
     GPG = 'GPG'
     S3 = 'S3'
     # These will not be displayed in the Space Create GUI (see locations/forms.py)
-    BETA_PROTOCOLS = {DSPACE_REST}
+    BETA_PROTOCOLS = {}
     OBJECT_STORAGE = {DATAVERSE, DSPACE, DSPACE_REST, DURACLOUD, SWIFT, S3}
     ACCESS_PROTOCOL_CHOICES = (
         (ARKIVUM, _('Arkivum')),
