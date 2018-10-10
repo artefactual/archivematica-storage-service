@@ -1285,18 +1285,24 @@ class Package(models.Model):
         __, extension = os.path.splitext(self.current_path)
         now = timezone.now().strftime("%Y-%m-%dT%H:%M:%S")  # YYYY-MM-DDTHH:MM:SS
         premis_relationships = premis_relationships or []
-        return premisrw.PREMISObject(
+        kwargs = dict(
             xsi_type='premis:file',
             identifier_value=self.uuid,
             message_digest_algorithm=message_digest_algorithm,
             message_digest=message_digest,
             size=str(self.size),
-            format_name=pronom_conversion[extension]['name'],
-            format_registry_key=pronom_conversion[extension]['puid'],
             creating_application_name=archive_tool,
             creating_application_version=compression_program_version,
             date_created_by_application=now,
             relationship=premis_relationships)
+        try:
+            kwargs.update({
+                "format_name": pronom_conversion[extension]["name"],
+                "format_registry_key": pronom_conversion[extension]["puid"],
+            })
+        except KeyError:
+            pass
+        return premisrw.PREMISObject(**kwargs)
 
     def create_replicas(self):
         """Create replicas of this AIP in any replicator locations.
