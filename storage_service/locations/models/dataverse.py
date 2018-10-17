@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 # stdlib, alphabetical
+from collections import OrderedDict
 import json
 import logging
 import os
@@ -132,7 +133,7 @@ class Dataverse(URLMixin, models.Model):
             'per_page': 50,
             'show_entity_ids': True,
         }
-        properties = {}
+        properties = OrderedDict()
         while True:
             LOGGER.debug('URL: %s, params: %s', url, params)
             response = requests.get(url, params=params)
@@ -154,9 +155,8 @@ class Dataverse(URLMixin, models.Model):
                 raise StorageException(
                     _('Unable to parse JSON from response to %(url)s')
                     % {'url': url})
-            properties.update(
-                {str(ds['entity_id']): {'verbose name': ds['name']}
-                 for ds in items})
+            for ds in items:
+                properties[str(ds['entity_id'])] = {'verbose name': ds['name']}
             if params['start'] + data['count_in_response'] < data['total_count']:
                 params['start'] += data['count_in_response']
             else:
@@ -176,7 +176,11 @@ class Dataverse(URLMixin, models.Model):
             '/api/v1/datasets/{dataset_identifier}/versions/:latest'.format(
                 dataset_identifier=dataset_identifier))
         url = self._generate_dataverse_url(slug=files_in_dataset_path)
-        params = {'key': self.api_key}
+        params = {
+            'key': self.api_key,
+            'sort': 'name',
+            'order': 'asc',
+        }
         LOGGER.debug('URL: %s, params: %s', url, params)
         response = requests.get(url, params=params)
         LOGGER.debug('Response: %s', response)
@@ -197,9 +201,11 @@ class Dataverse(URLMixin, models.Model):
             raise StorageException(
                 _('Unable to parse JSON from response to %(url)s')
                 % {'url': url})
-        properties = {
-            f['dataFile']['filename']: {'size': f['dataFile']['filesize']}
-            for f in files}
+        properties = OrderedDict()
+        for f in files:
+            properties[f['dataFile']['filename']] = {
+                'size': f['dataFile']['filesize']
+            }
         entries = list(properties.keys())
         return {
             'directories': [],

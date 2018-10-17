@@ -545,7 +545,7 @@ interactions:
       Connection: [keep-alive]
       User-Agent: [python-requests/2.14.2]
     method: GET
-    uri: https://demodv.scholarsportal.info/api/v1/datasets/1016/versions/:latest?key=51c64df4-abd7-4613-af21-6a68715dca92
+    uri: https://demodv.scholarsportal.info/api/v1/datasets/1016/versions/:latest?sort=name&order=asc&key=51c64df4-abd7-4613-af21-6a68715dca92
   response:
     body: {string: !!python/unicode '{"status":"OK","data":{"id":288,"versionNumber":2,"versionMinorNumber":0,"versionState":"RELEASED","productionDate":"Production
         Date","lastUpdateTime":"2018-05-22T19:45:15Z","releaseTime":"2018-05-22T19:45:15Z","createTime":"2018-05-22T19:16:50Z","license":"NONE","termsOfUse":"This
