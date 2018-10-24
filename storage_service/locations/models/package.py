@@ -1809,7 +1809,7 @@ class Package(models.Model):
         if pointer_path:
             try:
                 os.remove(pointer_path)
-            except OSError as e:
+            except OSError:
                 LOGGER.info("Error deleting pointer file %s for package %s",
                             pointer_path, self.uuid, exc_info=True)
             utils.removedirs(os.path.dirname(self.pointer_file_path),

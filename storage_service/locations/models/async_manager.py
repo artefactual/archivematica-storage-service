@@ -17,7 +17,7 @@ import time
 
 from django.utils import timezone
 
-from async import Async
+from async import Async  # noqa
 
 LOGGER = logging.getLogger(__name__)
 

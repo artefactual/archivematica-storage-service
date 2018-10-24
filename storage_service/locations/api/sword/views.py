@@ -118,7 +118,7 @@ def collection(request, location):
                     # parse name and content URLs out of XML
                     try:
                         mets_data = _parse_name_and_content_urls_from_mets_file(temp_filepath)
-                    except etree.XMLSyntaxError as e:
+                    except etree.XMLSyntaxError:
                         os.unlink(temp_filepath)
                         mets_data = None
 
@@ -150,7 +150,7 @@ def collection(request, location):
                             return _deposit_receipt_response(request, deposit, 200)
                     else:
                         return helpers.sword_error_response(request, 412, _('Error parsing XML.'))
-                except Exception as e:
+                except Exception:
                     return helpers.sword_error_response(request, 400, traceback.format_exc())
             elif source_location or relative_path_to_files:
                 if not source_location or not relative_path_to_files:
@@ -352,7 +352,7 @@ def deposit_edit(request, deposit):
             temp_filepath = helpers.write_request_body_to_temp_file(request)
             try:
                 mets_data = _parse_name_and_content_urls_from_mets_file(temp_filepath)
-            except etree.XMLSyntaxError as e:
+            except etree.XMLSyntaxError:
                 os.unlink(temp_filepath)
                 mets_data = None
 
