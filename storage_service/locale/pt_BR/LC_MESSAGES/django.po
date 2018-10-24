@@ -10,12 +10,12 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2018-10-24 09:08-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Natalie Vielfaure <Natalie.Vielfaure@umanitoba.ca>, 2018\n"
-"Language-Team: French (https://www.transifex.com/artefactual/teams/1506/fr/)\n"
+"Last-Translator: Cristina Ruth Santos <cristiruth@an.gov.br>, 2018\n"
+"Language-Team: Portuguese (Brazil) (https://www.transifex.com/artefactual/teams/1506/pt_BR/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: fr\n"
+"Language: pt_BR\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #: administration/forms.py:37 locations/models/space.py:185
@@ -23,12 +23,12 @@ msgstr ""
 #: templates/locations/location_form.html:20
 #: templates/snippets/locations_table.html:12
 msgid "Space"
-msgstr ""
+msgstr "Espaço"
 
 #: administration/forms.py:37 locations/models/location.py:65
 #: templates/locations/location_detail.html:14
 msgid "Relative Path"
-msgstr ""
+msgstr "Caminho relativo"
 
 #: administration/forms.py:37 locations/models/location.py:68
 #: locations/models/pipeline.py:40 templates/locations/location_detail.html:12
@@ -37,11 +37,11 @@ msgstr ""
 #: templates/snippets/packages_table.html:6
 #: templates/snippets/pipelines_table.html:6
 msgid "Description"
-msgstr "Description"
+msgstr "Descrição"
 
 #: administration/forms.py:37 locations/models/location.py:71
 msgid "Quota"
-msgstr ""
+msgstr "cota"
 
 #: administration/forms.py:85
 msgid "Pipelines are disabled upon creation?"
@@ -53,15 +53,15 @@ msgstr ""
 
 #: administration/forms.py:89
 msgid "Recovery request: URL to notify"
-msgstr ""
+msgstr "Pedido de recuperação: URL para notificar"
 
 #: administration/forms.py:91
 msgid "Recovery request notification: Username (optional)"
-msgstr ""
+msgstr "Notificação de solicitação de recuperação: nome de usuário (opcional)"
 
 #: administration/forms.py:93
 msgid "Recovery request notification: Password (optional)"
-msgstr ""
+msgstr "Notificação de solicitação de recuperação: senha (opcional)"
 
 #: administration/forms.py:101
 msgid "Default transfer source locations for new pipelines:"
@@ -107,26 +107,26 @@ msgstr ""
 #: administration/forms.py:149 administration/forms.py:153
 #: administration/forms.py:157
 msgid "Create new location for each pipeline"
-msgstr ""
+msgstr "Criar novo local para cada pipeline"
 
 #: administration/forms.py:165 administration/forms.py:171
 #: administration/forms.py:177
 msgid "Relative path is required"
-msgstr ""
+msgstr "O caminho relativo é obrigatório"
 
 #: administration/forms.py:167 administration/forms.py:173
 #: administration/forms.py:179
 msgid "Relative path cannot start with /"
-msgstr ""
+msgstr "O caminho relativo não pode começar com /"
 
 #: administration/forms.py:193 administration/forms.py:205
 msgid "Administrator?"
-msgstr ""
+msgstr "Administrador?"
 
 #: administration/forms.py:217 templates/administration/user_detail.html:13
 #: templates/administration/user_list.html:15
 msgid "Name"
-msgstr "Nom"
+msgstr "Nome"
 
 #: administration/forms.py:218
 msgid "Email"
@@ -134,39 +134,39 @@ msgstr ""
 
 #: administration/views.py:39
 msgid "Setting saved."
-msgstr ""
+msgstr "Configuração salvada."
 
 #: administration/views.py:75
 msgid "Edit User"
-msgstr ""
+msgstr "Editar Usuário"
 
 #: administration/views.py:81
 msgid "User information saved."
-msgstr ""
+msgstr "Informações do usuário salvas"
 
 #: administration/views.py:88
 msgid "Password changed."
-msgstr ""
+msgstr "Senha alterada."
 
 #: administration/views.py:98
 msgid "Create User"
-msgstr ""
+msgstr "Criar Usuário"
 
 #: administration/views.py:102
 #, python-format
 msgid "New user %(username)s created."
-msgstr ""
+msgstr "Novo usuário %(username)s criado."
 
 #: administration/views.py:156 administration/views.py:250
 #: administration/views.py:296
 #, python-format
 msgid "GPG key with fingerprint %(fingerprint)s does not exist."
-msgstr ""
+msgstr "Chave GPG com impressão digital %(fingerprint)s não existe."
 
 #: administration/views.py:175 administration/views.py:229
 #, python-format
 msgid "New key %(fingerprint)s created."
-msgstr ""
+msgstr "Nova chave%(fingerprint)s criada."
 
 #: administration/views.py:182
 #, python-format
@@ -244,7 +244,7 @@ msgstr ""
 
 #: common/utils.py:122
 msgid "File not found"
-msgstr "Fichier introuvable"
+msgstr "Arquivo não encontrado"
 
 #: locations/api/resources.py:77
 #, python-format
@@ -271,7 +271,7 @@ msgstr ""
 
 #: locations/api/resources.py:472 locations/api/resources.py:498
 msgid "Files moved successfully"
-msgstr ""
+msgstr "Arquivos movidos com sucesso"
 
 #: locations/api/resources.py:509
 msgid "This is not a SWORD server space."
@@ -515,11 +515,11 @@ msgstr ""
 
 #: locations/api/sword/views.py:574
 msgid "File does not exist."
-msgstr "Ce fichier n'existe pas."
+msgstr ""
 
 #: locations/api/sword/views.py:578
 msgid "File already exists."
-msgstr "Ce fichier existe déjà."
+msgstr ""
 
 #: locations/api/sword/views.py:586
 msgid "No filename found in Content-disposition header."
@@ -595,7 +595,7 @@ msgstr ""
 #: templates/locations/package_request.html:59
 #: templates/snippets/locations_table.html:7
 msgid "Pipeline"
-msgstr "Pipeline"
+msgstr ""
 
 #: locations/forms.py:360
 msgid "Reingest type"
@@ -620,7 +620,7 @@ msgstr ""
 
 #: locations/models/arkivum.py:44 locations/models/pipeline_local.py:32
 msgid "Remote user"
-msgstr "Utilisateur à distance"
+msgstr ""
 
 #: locations/models/arkivum.py:45
 msgid ""
@@ -639,7 +639,7 @@ msgstr ""
 
 #: locations/models/arkivum.py:51 locations/models/space.py:147
 msgid "Arkivum"
-msgstr "Arkivum"
+msgstr ""
 
 #: locations/models/arkivum.py:142
 #, python-format
@@ -693,7 +693,7 @@ msgstr ""
 #: locations/models/arkivum.py:321
 #, python-format
 msgid "Package %(package)s"
-msgstr "Paquet %(package)s"
+msgstr ""
 
 #: locations/models/arkivum.py:322
 #, python-format
@@ -742,7 +742,7 @@ msgstr ""
 #: templates/administration/user_detail.html:18
 #: templates/administration/user_form.html:30
 msgid "API key"
-msgstr "Clé API"
+msgstr ""
 
 #: locations/models/dataverse.py:41
 msgid ""
@@ -775,7 +775,7 @@ msgstr ""
 
 #: locations/models/dataverse.py:66 locations/models/space.py:148
 msgid "Dataverse"
-msgstr "Dataverse"
+msgstr ""
 
 #: locations/models/dataverse.py:148 locations/models/dataverse.py:194
 #, python-format
@@ -817,7 +817,7 @@ msgstr ""
 #: templates/locations/package_request.html:18
 #: templates/locations/package_request.html:60
 msgid "User"
-msgstr "Utilisateur"
+msgstr ""
 
 #: locations/models/dspace.py:42 locations/models/dspace_rest.py:68
 msgid "DSpace username to authenticate as"
@@ -826,7 +826,7 @@ msgstr ""
 #: locations/models/dspace.py:43 locations/models/dspace_rest.py:72
 #: locations/models/duracloud.py:33 locations/models/swift.py:36
 msgid "Password"
-msgstr "Mot de passe"
+msgstr ""
 
 #: locations/models/dspace.py:43 locations/models/dspace_rest.py:73
 msgid "DSpace password to authenticate with"
@@ -893,7 +893,7 @@ msgstr ""
 
 #: locations/models/dspace_rest.py:90
 msgid "ArchivesSpace URL"
-msgstr "URL d'ArchivesSpace"
+msgstr ""
 
 #: locations/models/dspace_rest.py:91
 msgid ""
@@ -903,7 +903,7 @@ msgstr ""
 
 #: locations/models/dspace_rest.py:98
 msgid "ArchivesSpace user"
-msgstr "Utilisateur d'ArchivesSpace"
+msgstr ""
 
 #: locations/models/dspace_rest.py:99
 msgid "ArchivesSpace username to authenticate as"
@@ -911,7 +911,7 @@ msgstr ""
 
 #: locations/models/dspace_rest.py:104
 msgid "ArchivesSpace password"
-msgstr "Mot de passe d'ArchivesSpace"
+msgstr ""
 
 #: locations/models/dspace_rest.py:105
 msgid "ArchivesSpace password to authenticate with"
@@ -969,7 +969,7 @@ msgstr ""
 
 #: locations/models/duracloud.py:34
 msgid "Duraspace"
-msgstr "Duraspace"
+msgstr ""
 
 #: locations/models/duracloud.py:34
 msgid "Name of the Space within DuraCloud"
@@ -977,7 +977,7 @@ msgstr ""
 
 #: locations/models/duracloud.py:37 locations/models/space.py:149
 msgid "DuraCloud"
-msgstr "DuraCloud"
+msgstr ""
 
 #: locations/models/duracloud.py:80 locations/models/duracloud.py:110
 #, python-format
@@ -1003,7 +1003,7 @@ msgstr ""
 #: locations/models/duracloud.py:425
 #, python-format
 msgid "%(path)s does not exist."
-msgstr "%(path)s n'existe pas."
+msgstr ""
 
 #: locations/models/duracloud.py:427
 #, python-format
@@ -1044,7 +1044,7 @@ msgstr ""
 #: locations/models/event.py:86 templates/locations/callback_detail.html:10
 #: templates/snippets/callbacks_table.html:6
 msgid "URI"
-msgstr "Adresse URI"
+msgstr ""
 
 #: locations/models/event.py:87
 msgid "URL to contact upon callback execution."
@@ -1115,7 +1115,7 @@ msgstr ""
 
 #: locations/models/fedora.py:23
 msgid "Fedora user"
-msgstr "Utilisateur Fedora"
+msgstr ""
 
 #: locations/models/fedora.py:24
 msgid "Fedora user name (for SWORD functionality)"
@@ -1139,7 +1139,7 @@ msgstr ""
 
 #: locations/models/fedora.py:33
 msgid "FEDORA"
-msgstr "FEDORA"
+msgstr ""
 
 #: locations/models/fedora.py:63
 msgid "Package Download Task"
@@ -1165,7 +1165,7 @@ msgstr ""
 #: locations/models/fedora.py:119
 #, python-format
 msgid "Download %(filename)s from %(url)s (%(status)s"
-msgstr "Télécharger %(filename)s de %(url)s (%(status)s"
+msgstr ""
 
 #: locations/models/fixity_log.py:23
 msgid "Fixity Log"
@@ -1469,7 +1469,7 @@ msgstr ""
 #: locations/models/nfs.py:30 templates/administration/base.html:11
 #: templates/administration/version.html:11
 msgid "Version"
-msgstr "Version"
+msgstr ""
 
 #: locations/models/nfs.py:31
 msgid ""
@@ -1917,7 +1917,7 @@ msgstr ""
 #: locations/models/swift.py:32 templates/administration/user_detail.html:11
 #: templates/administration/user_list.html:14
 msgid "Username"
-msgstr "Nom d'utilisateur"
+msgstr "Nome de usuário"
 
 #: locations/models/swift.py:33
 msgid "Username to authenticate as. E.g. http://example.com:5000/v2.0/"
@@ -2126,15 +2126,15 @@ msgstr ""
 
 #: storage_service/settings/base.py:90
 msgid "English"
-msgstr "Anglais"
+msgstr ""
 
 #: storage_service/settings/base.py:91
 msgid "French"
-msgstr "Français"
+msgstr ""
 
 #: storage_service/settings/base.py:92
 msgid "Spanish"
-msgstr "Espagnol"
+msgstr ""
 
 #: storage_service/settings/base.py:93
 msgid "Japanese"
@@ -2142,7 +2142,7 @@ msgstr ""
 
 #: storage_service/settings/base.py:94
 msgid "Portuguese"
-msgstr "Portugais"
+msgstr ""
 
 #: storage_service/settings/base.py:95
 msgid "Brazilian Portuguese"
@@ -2154,7 +2154,7 @@ msgstr ""
 
 #: templates/404.html:4 templates/404.html.py:6
 msgid "Page Not found"
-msgstr "Page non trouvée"
+msgstr ""
 
 #: templates/404.html:9
 msgid "This is not the page you were looking for."
@@ -2162,16 +2162,16 @@ msgstr ""
 
 #: templates/500.html:2
 msgid "Whoops!"
-msgstr "Oups!"
+msgstr ""
 
 #: templates/administration/base.html:9
 msgid "Configuration"
-msgstr "Configuration"
+msgstr ""
 
 #: templates/administration/base.html:10
 #: templates/administration/user_list.html:4
 msgid "Users"
-msgstr "Utilisateurs"
+msgstr ""
 
 #: templates/administration/base.html:12
 msgid "Service callbacks"
@@ -2184,7 +2184,7 @@ msgstr ""
 #: templates/administration/base.html:14
 #: templates/administration/language_form.html:14
 msgid "Language"
-msgstr "Langue"
+msgstr ""
 
 #: templates/administration/key_delete.html:14
 #: templates/administration/key_detail.html:23
@@ -2196,14 +2196,14 @@ msgstr "Langue"
 #: templates/snippets/locations_table.html:54
 #: templates/snippets/pipelines_table.html:17
 msgid "Delete"
-msgstr "Supprimer"
+msgstr ""
 
 #: templates/administration/key_delete.html:16
 #: templates/locations/delete.html:26
 #: templates/locations/location_form.html:77
 #: templates/locations/package_reingest.html:15
 msgid "Cancel"
-msgstr "Annuler"
+msgstr ""
 
 #: templates/administration/key_detail.html:4
 #, python-format
@@ -2241,7 +2241,7 @@ msgstr ""
 #: templates/snippets/locations_table.html:18
 #: templates/snippets/packages_table.html:17
 msgid "Actions"
-msgstr "Actions"
+msgstr ""
 
 #: templates/administration/key_list.html:4
 msgid "Encryption Keys"
@@ -2275,15 +2275,15 @@ msgstr ""
 
 #: templates/administration/language_form.html:43
 msgid "Change"
-msgstr "Changer"
+msgstr ""
 
 #: templates/administration/settings_form.html:4
 msgid "Settings"
-msgstr "Paramètres"
+msgstr ""
 
 #: templates/administration/settings_form.html:13
 msgid "Default Locations"
-msgstr "Emplacements par défaut"
+msgstr ""
 
 #: templates/administration/settings_form.html:14
 msgid ""
@@ -2293,12 +2293,12 @@ msgstr ""
 
 #: templates/administration/settings_form.html:17
 msgid "Save"
-msgstr "Sauvegarder"
+msgstr ""
 
 #: templates/administration/user_detail.html:15
 #: templates/administration/user_list.html:16
 msgid "E-mail"
-msgstr "Courriel"
+msgstr "E-mail"
 
 #: templates/administration/user_form.html:23
 msgid ""
@@ -2308,24 +2308,24 @@ msgstr ""
 
 #: templates/administration/user_form.html:24
 msgid "Change Password"
-msgstr "Modifier le mot de passe"
+msgstr ""
 
 #: templates/administration/user_list.html:9
 msgid "Create New User"
-msgstr "Créer un nouvel utilisateur"
+msgstr "Criar novo usuário"
 
 #: templates/administration/user_list.html:17
 msgid "Administrator"
-msgstr "Administrateur"
+msgstr "Administrador"
 
 #: templates/administration/user_list.html:18
 msgid "Active"
-msgstr ""
+msgstr "Ativo"
 
 #: templates/administration/user_list.html:27
 #: templates/administration/user_list.html:28
 msgid "True,False"
-msgstr "Vrai,Faux"
+msgstr "Verdadeiro falso"
 
 #: templates/administration/user_list.html:32
 #: templates/locations/callback_detail.html:17
@@ -2335,19 +2335,19 @@ msgstr "Vrai,Faux"
 #: templates/snippets/pipelines_table.html:8
 #: templates/snippets/pipelines_table.html:17
 msgid "Edit"
-msgstr "Modifier"
+msgstr "Editar"
 
 #: templates/administration/user_list.html:34
 msgid "View"
-msgstr ""
+msgstr "Visualizar"
 
 #: templates/administration/version.html:4
 msgid "About Archivematica Storage Service"
-msgstr ""
+msgstr "Sobre o serviço de armazenamento do Archivematica"
 
 #: templates/administration/version.html:17
 msgid "Git commit"
-msgstr ""
+msgstr "Git commit"
 
 #: templates/base.html:9 templates/base.html.py:47 templates/base.html:69
 #: templates/index.html:4
@@ -2356,12 +2356,12 @@ msgstr ""
 
 #: templates/base.html:50
 msgid "Home"
-msgstr "Accueil"
+msgstr ""
 
 #: templates/base.html:51 templates/index.html:10
 #: templates/locations/location_detail.html:65
 msgid "Pipelines"
-msgstr "Pipelines"
+msgstr ""
 
 #: templates/base.html:52 templates/index.html:13
 msgid "Spaces"
@@ -2375,15 +2375,15 @@ msgstr ""
 #: templates/base.html:54 templates/index.html:19
 #: templates/locations/location_detail.html:73
 msgid "Packages"
-msgstr "Paquets"
+msgstr ""
 
 #: templates/base.html:55 templates/index.html:22
 msgid "Administration"
-msgstr "Administration"
+msgstr ""
 
 #: templates/base.html:57
 msgid "Log out"
-msgstr "Fermer la session"
+msgstr ""
 
 #: templates/index.html:8
 msgid ""
@@ -2411,7 +2411,7 @@ msgstr ""
 #: templates/snippets/locations_table.html:52
 #: templates/snippets/pipelines_table.html:16
 msgid "Enabled,Disabled"
-msgstr "Activer,Désactiver"
+msgstr ""
 
 #: templates/locations/callback_detail.html:18
 #: templates/locations/location_detail.html:58
@@ -2420,7 +2420,7 @@ msgstr "Activer,Désactiver"
 #: templates/snippets/locations_table.html:54
 #: templates/snippets/pipelines_table.html:17
 msgid "Disable,Enable"
-msgstr "Désactiver,Activer"
+msgstr ""
 
 #: templates/locations/callback_list.html:4
 msgid "All Callbacks"
@@ -2440,7 +2440,7 @@ msgstr ""
 
 #: templates/locations/fixity_results.html:12
 msgid "Date"
-msgstr "Date"
+msgstr ""
 
 #: templates/locations/fixity_results.html:13
 msgid "Error"
@@ -2462,7 +2462,7 @@ msgstr ""
 #: templates/locations/location_detail.html:15
 #: templates/snippets/locations_table.html:15
 msgid "Usage"
-msgstr "Utilisation"
+msgstr ""
 
 #: templates/locations/location_detail.html:17
 #: templates/snippets/locations_table.html:17
@@ -2472,7 +2472,7 @@ msgstr ""
 #: templates/locations/location_detail.html:17
 #: templates/snippets/locations_table.html:53
 msgid "Yes,No"
-msgstr "Oui,Non"
+msgstr ""
 
 #: templates/locations/location_detail.html:22
 msgid "Master locations"
@@ -2500,7 +2500,7 @@ msgstr ""
 
 #: templates/locations/location_form.html:71
 msgid "Select a directory"
-msgstr "Sélectionner un répertoire"
+msgstr ""
 
 #: templates/locations/location_list.html:4
 msgid "All Locations"
@@ -2547,7 +2547,7 @@ msgstr ""
 #: templates/locations/package_request.html:57
 #: templates/snippets/packages_table.html:10
 msgid "Type"
-msgstr "Type"
+msgstr ""
 
 #: templates/locations/package_request.html:16
 #: templates/locations/package_request.html:58
@@ -2557,7 +2557,7 @@ msgstr ""
 
 #: templates/locations/package_request.html:20
 msgid "Approve/Reject"
-msgstr "Approuver/Rejeter"
+msgstr ""
 
 #: templates/locations/package_request.html:31
 #: templates/locations/package_request.html:75
@@ -2735,19 +2735,19 @@ msgstr ""
 
 #: templates/snippets/packages_table.html:7
 msgid "Originating Pipeline"
-msgstr "Pipeline d'origine"
+msgstr ""
 
 #: templates/snippets/packages_table.html:8
 msgid "Current Location"
-msgstr "Emplacement actuel"
+msgstr ""
 
 #: templates/snippets/packages_table.html:11
 msgid "Replicas"
-msgstr "Répliques"
+msgstr ""
 
 #: templates/snippets/packages_table.html:12
 msgid "Is Replica Of"
-msgstr "est une réplique de"
+msgstr ""
 
 #: templates/snippets/packages_table.html:13
 #: templates/snippets/packages_table.html:56
@@ -2774,7 +2774,7 @@ msgstr ""
 
 #: templates/snippets/packages_table.html:64
 msgid "Update Status"
-msgstr "Mise à jour de statut"
+msgstr ""
 
 #: templates/snippets/packages_table.html:71
 msgid "Success,Failed,"
@@ -2786,7 +2786,7 @@ msgstr ""
 
 #: templates/snippets/packages_table.html:83
 msgid "Request Deletion"
-msgstr "Demande de suppression"
+msgstr ""
 
 #: templates/snippets/pipeline_description.html:2
 msgid ""

@@ -2,7 +2,7 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-# 
+#
 #, fuzzy
 msgid ""
 msgstr ""
@@ -10,13 +10,13 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2018-10-24 09:08-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Natalie Vielfaure <Natalie.Vielfaure@umanitoba.ca>, 2018\n"
-"Language-Team: French (https://www.transifex.com/artefactual/teams/1506/fr/)\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: fr\n"
-"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 
 #: administration/forms.py:37 locations/models/space.py:185
 #: templates/locations/location_detail.html:10
@@ -37,7 +37,7 @@ msgstr ""
 #: templates/snippets/packages_table.html:6
 #: templates/snippets/pipelines_table.html:6
 msgid "Description"
-msgstr "Description"
+msgstr ""
 
 #: administration/forms.py:37 locations/models/location.py:71
 msgid "Quota"
@@ -126,7 +126,7 @@ msgstr ""
 #: administration/forms.py:217 templates/administration/user_detail.html:13
 #: templates/administration/user_list.html:15
 msgid "Name"
-msgstr "Nom"
+msgstr ""
 
 #: administration/forms.py:218
 msgid "Email"
@@ -178,14 +178,14 @@ msgstr ""
 #: administration/views.py:187
 #, python-format
 msgid ""
-"Generate a new GPG key. The key will not have a passphrase. It will be a key"
-" of type %(key_type)s and length %(key_length)s."
+"Generate a new GPG key. The key will not have a passphrase. It will be a key "
+"of type %(key_type)s and length %(key_length)s."
 msgstr ""
 
 #: administration/views.py:219
 msgid ""
-"Import failed. Sorry, we were unable to create a key with the supplied ASCII"
-" armor"
+"Import failed. Sorry, we were unable to create a key with the supplied ASCII "
+"armor"
 msgstr ""
 
 #: administration/views.py:224
@@ -197,11 +197,11 @@ msgstr ""
 #: administration/views.py:233
 msgid ""
 "Import an existing GPG key. Paste here the ASCII armor of the GPG private "
-"key, which you can get by running <code>gpg --armor --export-secret-"
-"keys</code> followed by the fingerprint, email or name associated with the "
-"key. The key should begin with <code>-----BEGIN PGP PRIVATE KEY "
-"BLOCK-----</code> and end with <code>-----END PGP PRIVATE KEY "
-"BLOCK-----</code> and it must not have a passphrase."
+"key, which you can get by running <code>gpg --armor --export-secret-keys</"
+"code> followed by the fingerprint, email or name associated with the key. "
+"The key should begin with <code>-----BEGIN PGP PRIVATE KEY BLOCK-----</code> "
+"and end with <code>-----END PGP PRIVATE KEY BLOCK-----</code> and it must "
+"not have a passphrase."
 msgstr ""
 
 #: administration/views.py:252
@@ -219,8 +219,8 @@ msgstr ""
 #: administration/views.py:272
 #, python-format
 msgid ""
-"GPG key %(fingerprint)s cannot be deleted because at least one package (AIP,"
-" transfer) needs it in order to be decrypted."
+"GPG key %(fingerprint)s cannot be deleted because at least one package (AIP, "
+"transfer) needs it in order to be decrypted."
 msgstr ""
 
 #: administration/views.py:277
@@ -244,7 +244,7 @@ msgstr ""
 
 #: common/utils.py:122
 msgid "File not found"
-msgstr "Fichier introuvable"
+msgstr ""
 
 #: locations/api/resources.py:77
 #, python-format
@@ -411,8 +411,8 @@ msgstr ""
 #: locations/api/sword/helpers.py:364
 #, python-format
 msgid ""
-"Request to pipeline %(uuid)s transfer approval API failed: check credentials"
-" and REST API IP whitelist."
+"Request to pipeline %(uuid)s transfer approval API failed: check credentials "
+"and REST API IP whitelist."
 msgstr ""
 
 #: locations/api/sword/views.py:78
@@ -466,8 +466,8 @@ msgstr ""
 
 #: locations/api/sword/views.py:259
 msgid ""
-"If using CHECKSUM attribute, CHECKSUMTYPE attribute value must be set to MD5"
-" in XML"
+"If using CHECKSUM attribute, CHECKSUMTYPE attribute value must be set to MD5 "
+"in XML"
 msgstr ""
 
 #: locations/api/sword/views.py:333 locations/api/sword/views.py:435
@@ -491,8 +491,7 @@ msgstr ""
 
 #: locations/api/sword/views.py:405
 msgid ""
-"The In-Progress header must be set to false when starting deposit "
-"processing."
+"The In-Progress header must be set to false when starting deposit processing."
 msgstr ""
 
 #: locations/api/sword/views.py:468
@@ -515,11 +514,11 @@ msgstr ""
 
 #: locations/api/sword/views.py:574
 msgid "File does not exist."
-msgstr "Ce fichier n'existe pas."
+msgstr ""
 
 #: locations/api/sword/views.py:578
 msgid "File already exists."
-msgstr "Ce fichier existe déjà."
+msgstr ""
 
 #: locations/api/sword/views.py:586
 msgid "No filename found in Content-disposition header."
@@ -595,7 +594,7 @@ msgstr ""
 #: templates/locations/package_request.html:59
 #: templates/snippets/locations_table.html:7
 msgid "Pipeline"
-msgstr "Pipeline"
+msgstr ""
 
 #: locations/forms.py:360
 msgid "Reingest type"
@@ -620,7 +619,7 @@ msgstr ""
 
 #: locations/models/arkivum.py:44 locations/models/pipeline_local.py:32
 msgid "Remote user"
-msgstr "Utilisateur à distance"
+msgstr ""
 
 #: locations/models/arkivum.py:45
 msgid ""
@@ -639,7 +638,7 @@ msgstr ""
 
 #: locations/models/arkivum.py:51 locations/models/space.py:147
 msgid "Arkivum"
-msgstr "Arkivum"
+msgstr ""
 
 #: locations/models/arkivum.py:142
 #, python-format
@@ -693,7 +692,7 @@ msgstr ""
 #: locations/models/arkivum.py:321
 #, python-format
 msgid "Package %(package)s"
-msgstr "Paquet %(package)s"
+msgstr ""
 
 #: locations/models/arkivum.py:322
 #, python-format
@@ -742,7 +741,7 @@ msgstr ""
 #: templates/administration/user_detail.html:18
 #: templates/administration/user_form.html:30
 msgid "API key"
-msgstr "Clé API"
+msgstr ""
 
 #: locations/models/dataverse.py:41
 msgid ""
@@ -775,7 +774,7 @@ msgstr ""
 
 #: locations/models/dataverse.py:66 locations/models/space.py:148
 msgid "Dataverse"
-msgstr "Dataverse"
+msgstr ""
 
 #: locations/models/dataverse.py:148 locations/models/dataverse.py:194
 #, python-format
@@ -808,8 +807,8 @@ msgstr ""
 
 #: locations/models/dspace.py:41
 msgid ""
-"URL of the service document. E.g. "
-"http://demo.dspace.org/swordv2/servicedocument"
+"URL of the service document. E.g. http://demo.dspace.org/swordv2/"
+"servicedocument"
 msgstr ""
 
 #: locations/models/dspace.py:42 locations/models/dspace_rest.py:67
@@ -817,7 +816,7 @@ msgstr ""
 #: templates/locations/package_request.html:18
 #: templates/locations/package_request.html:60
 msgid "User"
-msgstr "Utilisateur"
+msgstr ""
 
 #: locations/models/dspace.py:42 locations/models/dspace_rest.py:68
 msgid "DSpace username to authenticate as"
@@ -826,7 +825,7 @@ msgstr ""
 #: locations/models/dspace.py:43 locations/models/dspace_rest.py:72
 #: locations/models/duracloud.py:33 locations/models/swift.py:36
 msgid "Password"
-msgstr "Mot de passe"
+msgstr ""
 
 #: locations/models/dspace.py:43 locations/models/dspace_rest.py:73
 msgid "DSpace password to authenticate with"
@@ -838,9 +837,9 @@ msgstr ""
 
 #: locations/models/dspace.py:48
 msgid ""
-"Policy for restricted access metadata policy. Must be specified as a list of"
-" objects in JSON. This will override existing policies. Example: "
-"[{\"action\":\"READ\",\"groupId\":\"5\",\"rpType\":\"TYPE_CUSTOM\"}]"
+"Policy for restricted access metadata policy. Must be specified as a list of "
+"objects in JSON. This will override existing policies. Example: [{\"action\":"
+"\"READ\",\"groupId\":\"5\",\"rpType\":\"TYPE_CUSTOM\"}]"
 msgstr ""
 
 #: locations/models/dspace.py:59
@@ -893,7 +892,7 @@ msgstr ""
 
 #: locations/models/dspace_rest.py:90
 msgid "ArchivesSpace URL"
-msgstr "URL d'ArchivesSpace"
+msgstr ""
 
 #: locations/models/dspace_rest.py:91
 msgid ""
@@ -903,7 +902,7 @@ msgstr ""
 
 #: locations/models/dspace_rest.py:98
 msgid "ArchivesSpace user"
-msgstr "Utilisateur d'ArchivesSpace"
+msgstr ""
 
 #: locations/models/dspace_rest.py:99
 msgid "ArchivesSpace username to authenticate as"
@@ -911,7 +910,7 @@ msgstr ""
 
 #: locations/models/dspace_rest.py:104
 msgid "ArchivesSpace password"
-msgstr "Mot de passe d'ArchivesSpace"
+msgstr ""
 
 #: locations/models/dspace_rest.py:105
 msgid "ArchivesSpace password to authenticate with"
@@ -947,8 +946,8 @@ msgstr ""
 
 #: locations/models/dspace_rest.py:127
 msgid ""
-"If checked, will attempt to send the AIP to the Tivoli Storage Manager using"
-" command-line client dsmc, which must be installed manually"
+"If checked, will attempt to send the AIP to the Tivoli Storage Manager using "
+"command-line client dsmc, which must be installed manually"
 msgstr ""
 
 #: locations/models/dspace_rest.py:132 locations/models/space.py:151
@@ -969,7 +968,7 @@ msgstr ""
 
 #: locations/models/duracloud.py:34
 msgid "Duraspace"
-msgstr "Duraspace"
+msgstr ""
 
 #: locations/models/duracloud.py:34
 msgid "Name of the Space within DuraCloud"
@@ -977,7 +976,7 @@ msgstr ""
 
 #: locations/models/duracloud.py:37 locations/models/space.py:149
 msgid "DuraCloud"
-msgstr "DuraCloud"
+msgstr ""
 
 #: locations/models/duracloud.py:80 locations/models/duracloud.py:110
 #, python-format
@@ -1003,7 +1002,7 @@ msgstr ""
 #: locations/models/duracloud.py:425
 #, python-format
 msgid "%(path)s does not exist."
-msgstr "%(path)s n'existe pas."
+msgstr ""
 
 #: locations/models/duracloud.py:427
 #, python-format
@@ -1044,7 +1043,7 @@ msgstr ""
 #: locations/models/event.py:86 templates/locations/callback_detail.html:10
 #: templates/snippets/callbacks_table.html:6
 msgid "URI"
-msgstr "Adresse URI"
+msgstr ""
 
 #: locations/models/event.py:87
 msgid "URL to contact upon callback execution."
@@ -1115,7 +1114,7 @@ msgstr ""
 
 #: locations/models/fedora.py:23
 msgid "Fedora user"
-msgstr "Utilisateur Fedora"
+msgstr ""
 
 #: locations/models/fedora.py:24
 msgid "Fedora user name (for SWORD functionality)"
@@ -1139,7 +1138,7 @@ msgstr ""
 
 #: locations/models/fedora.py:33
 msgid "FEDORA"
-msgstr "FEDORA"
+msgstr ""
 
 #: locations/models/fedora.py:63
 msgid "Package Download Task"
@@ -1165,7 +1164,7 @@ msgstr ""
 #: locations/models/fedora.py:119
 #, python-format
 msgid "Download %(filename)s from %(url)s (%(status)s"
-msgstr "Télécharger %(filename)s de %(url)s (%(status)s"
+msgstr ""
 
 #: locations/models/fixity_log.py:23
 msgid "Fixity Log"
@@ -1352,8 +1351,8 @@ msgstr ""
 
 #: locations/models/lockssomatic.py:38
 msgid ""
-"URL of LOCKSS-o-matic service document IRI, eg. "
-"http://lockssomatic.example.org/api/sword/2.0/sd-iri"
+"URL of LOCKSS-o-matic service document IRI, eg. http://lockssomatic.example."
+"org/api/sword/2.0/sd-iri"
 msgstr ""
 
 #: locations/models/lockssomatic.py:39
@@ -1362,8 +1361,8 @@ msgstr ""
 
 #: locations/models/lockssomatic.py:40
 msgid ""
-"URL to post the packages to, eg. "
-"http://lockssomatic.example.org/api/sword/2.0/col-iri/12"
+"URL to post the packages to, eg. http://lockssomatic.example.org/api/"
+"sword/2.0/col-iri/12"
 msgstr ""
 
 #: locations/models/lockssomatic.py:42
@@ -1469,12 +1468,12 @@ msgstr ""
 #: locations/models/nfs.py:30 templates/administration/base.html:11
 #: templates/administration/version.html:11
 msgid "Version"
-msgstr "Version"
+msgstr ""
 
 #: locations/models/nfs.py:31
 msgid ""
-"Type of the filesystem, i.e. nfs, or nfs4.         Should match a command in"
-" `mount`."
+"Type of the filesystem, i.e. nfs, or nfs4.         Should match a command in "
+"`mount`."
 msgstr ""
 
 #: locations/models/nfs.py:35
@@ -1581,8 +1580,8 @@ msgstr ""
 #: locations/models/package.py:332
 #, python-format
 msgid ""
-"AIP too big for quota on %(location)s; Used: %(used)s; Quota: %(quota)s; AIP"
-" size: %(aip_size)s"
+"AIP too big for quota on %(location)s; Used: %(used)s; Quota: %(quota)s; AIP "
+"size: %(aip_size)s"
 msgstr ""
 
 #: locations/models/package.py:1353
@@ -1668,10 +1667,10 @@ msgstr ""
 #: locations/models/package.py:2707
 #, python-format
 msgid ""
-"Failed to extract compression details for AIP %(aip_uuid)s. This AIP needs a"
-" pointer file, however the Archivematica pipeline did not create one and it "
-"also did not provide the compression event needed for the Storage Service to"
-" create one."
+"Failed to extract compression details for AIP %(aip_uuid)s. This AIP needs a "
+"pointer file, however the Archivematica pipeline did not create one and it "
+"also did not provide the compression event needed for the Storage Service to "
+"create one."
 msgstr ""
 
 #: locations/models/pipeline.py:32 templates/locations/pipeline_detail.html:10
@@ -1917,7 +1916,7 @@ msgstr ""
 #: locations/models/swift.py:32 templates/administration/user_detail.html:11
 #: templates/administration/user_list.html:14
 msgid "Username"
-msgstr "Nom d'utilisateur"
+msgstr ""
 
 #: locations/models/swift.py:33
 msgid "Username to authenticate as. E.g. http://example.com:5000/v2.0/"
@@ -1974,7 +1973,8 @@ msgstr ""
 #, python-format
 msgid ""
 "\n"
-"A fixity check failed for the package with UUID %(uuid)s. This package is currently stored at: %(location)s\n"
+"A fixity check failed for the package with UUID %(uuid)s. This package is "
+"currently stored at: %(location)s\n"
 "\n"
 "Full failure report (in JSON format):\n"
 "%(report)s\n"
@@ -2126,15 +2126,15 @@ msgstr ""
 
 #: storage_service/settings/base.py:90
 msgid "English"
-msgstr "Anglais"
+msgstr ""
 
 #: storage_service/settings/base.py:91
 msgid "French"
-msgstr "Français"
+msgstr ""
 
 #: storage_service/settings/base.py:92
 msgid "Spanish"
-msgstr "Espagnol"
+msgstr ""
 
 #: storage_service/settings/base.py:93
 msgid "Japanese"
@@ -2142,7 +2142,7 @@ msgstr ""
 
 #: storage_service/settings/base.py:94
 msgid "Portuguese"
-msgstr "Portugais"
+msgstr ""
 
 #: storage_service/settings/base.py:95
 msgid "Brazilian Portuguese"
@@ -2154,7 +2154,7 @@ msgstr ""
 
 #: templates/404.html:4 templates/404.html.py:6
 msgid "Page Not found"
-msgstr "Page non trouvée"
+msgstr ""
 
 #: templates/404.html:9
 msgid "This is not the page you were looking for."
@@ -2162,16 +2162,16 @@ msgstr ""
 
 #: templates/500.html:2
 msgid "Whoops!"
-msgstr "Oups!"
+msgstr ""
 
 #: templates/administration/base.html:9
 msgid "Configuration"
-msgstr "Configuration"
+msgstr ""
 
 #: templates/administration/base.html:10
 #: templates/administration/user_list.html:4
 msgid "Users"
-msgstr "Utilisateurs"
+msgstr ""
 
 #: templates/administration/base.html:12
 msgid "Service callbacks"
@@ -2184,7 +2184,7 @@ msgstr ""
 #: templates/administration/base.html:14
 #: templates/administration/language_form.html:14
 msgid "Language"
-msgstr "Langue"
+msgstr ""
 
 #: templates/administration/key_delete.html:14
 #: templates/administration/key_detail.html:23
@@ -2196,14 +2196,14 @@ msgstr "Langue"
 #: templates/snippets/locations_table.html:54
 #: templates/snippets/pipelines_table.html:17
 msgid "Delete"
-msgstr "Supprimer"
+msgstr ""
 
 #: templates/administration/key_delete.html:16
 #: templates/locations/delete.html:26
 #: templates/locations/location_form.html:77
 #: templates/locations/package_reingest.html:15
 msgid "Cancel"
-msgstr "Annuler"
+msgstr ""
 
 #: templates/administration/key_detail.html:4
 #, python-format
@@ -2241,7 +2241,7 @@ msgstr ""
 #: templates/snippets/locations_table.html:18
 #: templates/snippets/packages_table.html:17
 msgid "Actions"
-msgstr "Actions"
+msgstr ""
 
 #: templates/administration/key_list.html:4
 msgid "Encryption Keys"
@@ -2275,15 +2275,15 @@ msgstr ""
 
 #: templates/administration/language_form.html:43
 msgid "Change"
-msgstr "Changer"
+msgstr ""
 
 #: templates/administration/settings_form.html:4
 msgid "Settings"
-msgstr "Paramètres"
+msgstr ""
 
 #: templates/administration/settings_form.html:13
 msgid "Default Locations"
-msgstr "Emplacements par défaut"
+msgstr ""
 
 #: templates/administration/settings_form.html:14
 msgid ""
@@ -2293,12 +2293,12 @@ msgstr ""
 
 #: templates/administration/settings_form.html:17
 msgid "Save"
-msgstr "Sauvegarder"
+msgstr ""
 
 #: templates/administration/user_detail.html:15
 #: templates/administration/user_list.html:16
 msgid "E-mail"
-msgstr "Courriel"
+msgstr ""
 
 #: templates/administration/user_form.html:23
 msgid ""
@@ -2308,15 +2308,15 @@ msgstr ""
 
 #: templates/administration/user_form.html:24
 msgid "Change Password"
-msgstr "Modifier le mot de passe"
+msgstr ""
 
 #: templates/administration/user_list.html:9
 msgid "Create New User"
-msgstr "Créer un nouvel utilisateur"
+msgstr ""
 
 #: templates/administration/user_list.html:17
 msgid "Administrator"
-msgstr "Administrateur"
+msgstr ""
 
 #: templates/administration/user_list.html:18
 msgid "Active"
@@ -2325,7 +2325,7 @@ msgstr ""
 #: templates/administration/user_list.html:27
 #: templates/administration/user_list.html:28
 msgid "True,False"
-msgstr "Vrai,Faux"
+msgstr ""
 
 #: templates/administration/user_list.html:32
 #: templates/locations/callback_detail.html:17
@@ -2335,7 +2335,7 @@ msgstr "Vrai,Faux"
 #: templates/snippets/pipelines_table.html:8
 #: templates/snippets/pipelines_table.html:17
 msgid "Edit"
-msgstr "Modifier"
+msgstr ""
 
 #: templates/administration/user_list.html:34
 msgid "View"
@@ -2356,12 +2356,12 @@ msgstr ""
 
 #: templates/base.html:50
 msgid "Home"
-msgstr "Accueil"
+msgstr ""
 
 #: templates/base.html:51 templates/index.html:10
 #: templates/locations/location_detail.html:65
 msgid "Pipelines"
-msgstr "Pipelines"
+msgstr ""
 
 #: templates/base.html:52 templates/index.html:13
 msgid "Spaces"
@@ -2375,15 +2375,15 @@ msgstr ""
 #: templates/base.html:54 templates/index.html:19
 #: templates/locations/location_detail.html:73
 msgid "Packages"
-msgstr "Paquets"
+msgstr ""
 
 #: templates/base.html:55 templates/index.html:22
 msgid "Administration"
-msgstr "Administration"
+msgstr ""
 
 #: templates/base.html:57
 msgid "Log out"
-msgstr "Fermer la session"
+msgstr ""
 
 #: templates/index.html:8
 msgid ""
@@ -2411,7 +2411,7 @@ msgstr ""
 #: templates/snippets/locations_table.html:52
 #: templates/snippets/pipelines_table.html:16
 msgid "Enabled,Disabled"
-msgstr "Activer,Désactiver"
+msgstr ""
 
 #: templates/locations/callback_detail.html:18
 #: templates/locations/location_detail.html:58
@@ -2420,7 +2420,7 @@ msgstr "Activer,Désactiver"
 #: templates/snippets/locations_table.html:54
 #: templates/snippets/pipelines_table.html:17
 msgid "Disable,Enable"
-msgstr "Désactiver,Activer"
+msgstr ""
 
 #: templates/locations/callback_list.html:4
 msgid "All Callbacks"
@@ -2440,7 +2440,7 @@ msgstr ""
 
 #: templates/locations/fixity_results.html:12
 msgid "Date"
-msgstr "Date"
+msgstr ""
 
 #: templates/locations/fixity_results.html:13
 msgid "Error"
@@ -2462,7 +2462,7 @@ msgstr ""
 #: templates/locations/location_detail.html:15
 #: templates/snippets/locations_table.html:15
 msgid "Usage"
-msgstr "Utilisation"
+msgstr ""
 
 #: templates/locations/location_detail.html:17
 #: templates/snippets/locations_table.html:17
@@ -2472,7 +2472,7 @@ msgstr ""
 #: templates/locations/location_detail.html:17
 #: templates/snippets/locations_table.html:53
 msgid "Yes,No"
-msgstr "Oui,Non"
+msgstr ""
 
 #: templates/locations/location_detail.html:22
 msgid "Master locations"
@@ -2500,7 +2500,7 @@ msgstr ""
 
 #: templates/locations/location_form.html:71
 msgid "Select a directory"
-msgstr "Sélectionner un répertoire"
+msgstr ""
 
 #: templates/locations/location_list.html:4
 msgid "All Locations"
@@ -2509,8 +2509,8 @@ msgstr ""
 #: templates/locations/location_list.html:15
 #, python-format
 msgid ""
-"No locations currently exist.  Please create one from the <a "
-"href=\"%(space_list_url)s\">spaces</a> page."
+"No locations currently exist.  Please create one from the <a href="
+"\"%(space_list_url)s\">spaces</a> page."
 msgstr ""
 
 #: templates/locations/package_list.html:4
@@ -2547,7 +2547,7 @@ msgstr ""
 #: templates/locations/package_request.html:57
 #: templates/snippets/packages_table.html:10
 msgid "Type"
-msgstr "Type"
+msgstr ""
 
 #: templates/locations/package_request.html:16
 #: templates/locations/package_request.html:58
@@ -2557,7 +2557,7 @@ msgstr ""
 
 #: templates/locations/package_request.html:20
 msgid "Approve/Reject"
-msgstr "Approuver/Rejeter"
+msgstr ""
 
 #: templates/locations/package_request.html:31
 #: templates/locations/package_request.html:75
@@ -2613,8 +2613,8 @@ msgstr ""
 #: templates/locations/pipeline_detail.html:32
 #, python-format
 msgid ""
-"No locations currently exist. Please create one from the <a "
-"href=\"%(space_list_url)s\">spaces</a> page."
+"No locations currently exist. Please create one from the <a href="
+"\"%(space_list_url)s\">spaces</a> page."
 msgstr ""
 
 #: templates/locations/pipeline_list.html:4
@@ -2704,8 +2704,8 @@ msgstr ""
 #: templates/snippets/callback_description.html:2
 msgid ""
 "Callbacks allow REST calls to be made by the Archivematica Storage Service "
-"after performing certain types of actions.  This allows external services to"
-" be notified when internal actions have taken place."
+"after performing certain types of actions.  This allows external services to "
+"be notified when internal actions have taken place."
 msgstr ""
 
 #: templates/snippets/callbacks_table.html:8
@@ -2735,19 +2735,19 @@ msgstr ""
 
 #: templates/snippets/packages_table.html:7
 msgid "Originating Pipeline"
-msgstr "Pipeline d'origine"
+msgstr ""
 
 #: templates/snippets/packages_table.html:8
 msgid "Current Location"
-msgstr "Emplacement actuel"
+msgstr ""
 
 #: templates/snippets/packages_table.html:11
 msgid "Replicas"
-msgstr "Répliques"
+msgstr ""
 
 #: templates/snippets/packages_table.html:12
 msgid "Is Replica Of"
-msgstr "est une réplique de"
+msgstr ""
 
 #: templates/snippets/packages_table.html:13
 #: templates/snippets/packages_table.html:56
@@ -2774,7 +2774,7 @@ msgstr ""
 
 #: templates/snippets/packages_table.html:64
 msgid "Update Status"
-msgstr "Mise à jour de statut"
+msgstr ""
 
 #: templates/snippets/packages_table.html:71
 msgid "Success,Failed,"
@@ -2786,13 +2786,13 @@ msgstr ""
 
 #: templates/snippets/packages_table.html:83
 msgid "Request Deletion"
-msgstr "Demande de suppression"
+msgstr ""
 
 #: templates/snippets/pipeline_description.html:2
 msgid ""
 "Each pipeline is an Archivematica installation, and has a unique ID that "
-"identifies the server and all associated clients.  Locations are assigned to"
-" pipelines and can only be accessed by that pipeline."
+"identifies the server and all associated clients.  Locations are assigned to "
+"pipelines and can only be accessed by that pipeline."
 msgstr ""
 
 #: templates/snippets/space_description.html:2

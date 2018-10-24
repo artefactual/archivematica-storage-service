@@ -1,4 +1,4 @@
-# -*- coding: utf8 -*-
+# -*- coding: utf-8 -*-
 """Tests for the DSpace REST space."""
 
 from __future__ import print_function

@@ -87,10 +87,10 @@ LOCALE_PATHS = [
 ]
 
 LANGUAGES = [
-    ('fr', _('French')),
     ('en', _('English')),
+    ('fr', _('French')),
     ('es', _('Spanish')),
-    ('pt', _('Portuguese')),
+    ('pt-br', _('Brazilian Portuguese')),
 ]
 # ######## END LOCALE CONFIGURATION
 

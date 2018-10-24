@@ -10,33 +10,33 @@ msgstr ""
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2017-11-04 09:24-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Natalie Vielfaure <Natalie.Vielfaure@umanitoba.ca>, 2018\n"
-"Language-Team: French (https://www.transifex.com/artefactual/teams/1506/fr/)\n"
+"Last-Translator: Marcelo Moro Brondani <mbrondani@inf.ufsm.br>, 2018\n"
+"Language-Team: Portuguese (Brazil) (https://www.transifex.com/artefactual/teams/1506/pt_BR/)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: fr\n"
+"Language: pt_BR\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #: static/js/directory_picker.js:44
 msgid "Select"
-msgstr "Sélectionner"
+msgstr "Selecione"
 
 #: static/js/directory_picker.js:45
 msgid "Select directory"
-msgstr "Sélectionner un répertoire"
+msgstr "Selecione o diretório"
 
 #: static/js/directory_picker.js:46
 msgid "Add"
-msgstr "Ajouter"
+msgstr "Adicionar"
 
 #: static/js/directory_picker.js:68
 msgid "De-select directory"
-msgstr "Désélectionner le répertoire"
+msgstr "Deselecionar diretório"
 
 #: static/js/directory_picker.js:69
 msgid "Are you sure you want to de-select this?"
-msgstr "Êtes-vous certain de vouloir désélectionner ce critère?"
+msgstr "Tem certeza de que deseja desmarcar isso?"
 
 #: static/js/directory_picker.js:124
 msgid "OK"
@@ -44,68 +44,68 @@ msgstr "Ok"
 
 #: static/js/directory_picker.js:142
 msgid "Yes"
-msgstr "Oui"
+msgstr "Sim"
 
 #: static/js/directory_picker.js:149
 msgid "Cancel"
-msgstr "Annuler"
+msgstr "Cancelar"
 
 #: static/js/project.js:7
 msgid "No data available in table"
-msgstr "Aucune donnée disponible dans le tableau"
+msgstr "Sem dados disponíveis na tabela"
 
 #: static/js/project.js:8
 msgid "Showing _START_ to _END_ of _TOTAL_ entries"
-msgstr "Affichage de l'élement _START_ à _END_ sur _TOTAL_ éléments"
+msgstr "Mostrando _START_ a _END_ de _TOTAL_ registros"
 
 #: static/js/project.js:9
 msgid "Showing 0 to 0 of 0 entries"
-msgstr "Affichage de l'élément 0 à 0 sur 0 éléments"
+msgstr "Mostrando 0 a 0 de 0 registros"
 
 #: static/js/project.js:10
 msgid "(filtered from _MAX_ total entries)"
-msgstr "(filtré de _MAX_ éléments au total)"
+msgstr "(filtrado um total de _MAX_ registros)"
 
 #: static/js/project.js:13
 msgid "Show _MENU_ entries"
-msgstr "Afficher _MENU_ éléments"
+msgstr "Mostrar registros do _MENU_"
 
 #: static/js/project.js:14
 msgid "Loading..."
-msgstr "Chargement en cours..."
+msgstr "Carregando..."
 
 #: static/js/project.js:15
 msgid "Processing..."
-msgstr "Traitement en cours..."
+msgstr "Processando..."
 
 #: static/js/project.js:16
 msgid "Search:"
-msgstr "Rechercher :"
+msgstr "Pesquisar"
 
 #: static/js/project.js:17
 msgid "No matching records found"
-msgstr "Aucun élément à afficher"
+msgstr "Nenhum registro correspondente encontrado"
 
 #: static/js/project.js:19
 msgid "First"
-msgstr "Premier"
+msgstr "Primeiro"
 
 #: static/js/project.js:20
 msgid "Last"
-msgstr "Dernier"
+msgstr "Último"
 
 #: static/js/project.js:21
 msgid "Next"
-msgstr "Suivant"
+msgstr "Próximo"
 
 #: static/js/project.js:22
 msgid "Previous"
-msgstr "Précédent"
+msgstr "Anterior"
 
 #: static/js/project.js:25
 msgid ": activate to sort column ascending"
-msgstr ": activer pour trier la colonne par ordre croissant"
+msgstr ": ativar para classificar coluna ascendente"
 
 #: static/js/project.js:26
 msgid ": activate to sort column descending"
-msgstr ": activer pour trier la colonne par ordre décroissant"
+msgstr ": ativar para classificar coluna descendente"
