@@ -41,6 +41,12 @@ class Location(models.Model):
     TRANSFER_SOURCE = 'TS'
     REPLICATOR = 'RP'
 
+    # List of purposes where moving is not allowed.
+    PURPOSES_DISALLOWED_MOVE = (
+        BACKLOG,
+        AIP_STORAGE,
+    )
+
     PURPOSE_CHOICES = (
         (AIP_RECOVERY, _('AIP Recovery')),
         (AIP_STORAGE, _('AIP Storage')),
@@ -132,6 +138,10 @@ class Location(models.Model):
     def get_description(self):
         """ Returns a user-friendly description (or the path). """
         return self.description or self.full_path
+
+    def is_move_allowed(self):
+        """Returns whether it's allowed to move contents from this location."""
+        return self.purpose not in self.PURPOSES_DISALLOWED_MOVE
 
 
 @receiver(models.signals.pre_delete, sender=Location)

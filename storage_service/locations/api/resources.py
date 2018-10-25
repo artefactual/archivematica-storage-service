@@ -372,6 +372,10 @@ class LocationResource(ModelResource):
                 destination_location.relative_path, destination_path)
 
             try:
+                if not origin_location.is_move_allowed():
+                    LOGGER.debug(
+                        'Moving files from this location is not allowed')
+                    raise PosixMoveUnsupportedError
                 origin_space.posix_move(
                     source_path=source_path,
                     destination_path=destination_path,
