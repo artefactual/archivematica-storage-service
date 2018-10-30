@@ -15,6 +15,7 @@ RUN set -ex \
 	&& apt-get update -qq \
 	&& apt-get install -qq -y --no-install-recommends \
 		gettext \
+		gnupg \
 		p7zip-full \
 		rsync \
 		unar \
@@ -23,8 +24,8 @@ RUN set -ex \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Set the locale
-ENV LANG en_US.UTF-8  
-ENV LANGUAGE en_US:en  
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 
 ADD requirements/ /src/requirements/

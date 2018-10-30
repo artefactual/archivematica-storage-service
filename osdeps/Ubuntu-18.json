@@ -8,6 +8,9 @@
     "virtualenv installed with pip, do not install package python-virtualenv",
     "build-essential is needed to compile brotli (cc1plus)"
   ],
+  "osdeps_repos": [
+    "deb http://archive.ubuntu.com/ubuntu/ bionic universe"
+  ],
   "osdeps_packages": [
    { "name": "nginx", "state": "latest"},
    { "name": "unar", "state": "latest"},
@@ -22,7 +25,7 @@
    { "name": "libffi-dev", "state": "latest"},
    { "name": "libssl-dev", "state": "latest"},
    { "name": "gcc", "state": "latest"},
-   { "name": "gnupg", "state": "latest"},
+   { "name": "gnupg1", "state": "latest"},
    { "name": "rng-tools", "state": "latest"}
   ]
 }
