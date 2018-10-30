@@ -469,13 +469,6 @@ class Package(models.Model):
         replica_package.status = Package.PENDING
         replica_package.save()
 
-        # Get the master AIP's pointer file and extract the checksum details
-        master_ptr = self.get_pointer_instance()
-        master_ptr_aip_fsentry = master_ptr.get_file(file_uuid=self.uuid)
-        master_premis_object = master_ptr_aip_fsentry.get_premis_objects()[0]
-        master_checksum_algorithm = master_premis_object.message_digest_algorithm
-        master_checksum = master_premis_object.message_digest
-
         # Copy replicandum AIP from its source location to the SS
         src_space.move_to_storage_service(
             source_path=os.path.join(replicandum_location.relative_path,
@@ -486,29 +479,37 @@ class Package(models.Model):
         replica_package.save()
         src_space.post_move_to_storage_service()
 
-        # Calculate the checksum of the replica while we have it locally,
-        # compare it to the master's checksum and create a PREMIS validation
-        # event out of the result.
-        replica_local_path = self.get_local_path()
-        replica_checksum = utils.generate_checksum(
-            replica_local_path, master_checksum_algorithm).hexdigest()
-        checksum_report = _get_checksum_report(
-            master_checksum, self.uuid, replica_checksum, replica_package.uuid,
-            master_checksum_algorithm)
-        replication_validation_event = (
-            replica_package.get_replication_validation_event(
-                checksum_report=checksum_report,
-                master_aip_uuid=self.uuid))
+        # Get the master AIP's pointer file and extract the checksum details
+        master_ptr = self.get_pointer_instance()
+        if master_ptr:
+            master_ptr_aip_fsentry = master_ptr.get_file(file_uuid=self.uuid)
+            master_premis_object = master_ptr_aip_fsentry.get_premis_objects()[0]
+            master_checksum_algorithm = master_premis_object.message_digest_algorithm
+            master_checksum = master_premis_object.message_digest
 
-        # Create and write to disk the pointer file for the replica, which
-        # contains the PREMIS replication event.
-        replication_event_uuid = str(uuid4())
-        replica_pointer_file = self.create_replica_pointer_file(
-            replica_package, replication_event_uuid,
-            replication_validation_event, master_ptr=master_ptr)
-        write_pointer_file(replica_pointer_file,
-                           replica_package.full_pointer_file_path)
-        replica_package.save()
+            # Calculate the checksum of the replica while we have it locally,
+            # compare it to the master's checksum and create a PREMIS validation
+            # event out of the result.
+            replica_local_path = self.get_local_path()
+            replica_checksum = utils.generate_checksum(
+                replica_local_path, master_checksum_algorithm).hexdigest()
+            checksum_report = _get_checksum_report(
+                master_checksum, self.uuid, replica_checksum, replica_package.uuid,
+                master_checksum_algorithm)
+            replication_validation_event = (
+                replica_package.get_replication_validation_event(
+                    checksum_report=checksum_report,
+                    master_aip_uuid=self.uuid))
+
+            # Create and write to disk the pointer file for the replica, which
+            # contains the PREMIS replication event.
+            replication_event_uuid = str(uuid4())
+            replica_pointer_file = self.create_replica_pointer_file(
+                replica_package, replication_event_uuid,
+                replication_validation_event, master_ptr=master_ptr)
+            write_pointer_file(replica_pointer_file,
+                               replica_package.full_pointer_file_path)
+            replica_package.save()
 
         # Copy replicandum AIP from the SS to replica package's replicator
         # location.
@@ -532,17 +533,19 @@ class Package(models.Model):
             # a ``lxml.etree._Element`` instance and not the expected
             # ``premisrw.PREMISObject``. As a result, the following is required:
             replica_pointer_file = replica_package.get_pointer_instance()
-            revised_replica_pointer_file = (
-                replica_package.create_new_pointer_file_given_storage_effects(
-                    replica_pointer_file, replica_storage_effects))
-            write_pointer_file(revised_replica_pointer_file,
-                               replica_package.full_pointer_file_path)
+            if replica_pointer_file:
+                revised_replica_pointer_file = (
+                    replica_package.create_new_pointer_file_given_storage_effects(
+                        replica_pointer_file, replica_storage_effects))
+                write_pointer_file(revised_replica_pointer_file,
+                                   replica_package.full_pointer_file_path)
 
         # Update the pointer file of the replicated AIP (master) so that it
         # contains a record of its replication.
-        new_master_pointer_file = self.create_new_pointer_file_with_replication(
-            master_ptr, replica_package, replication_event_uuid)
-        write_pointer_file(new_master_pointer_file, self.full_pointer_file_path)
+        if master_ptr:
+            new_master_pointer_file = self.create_new_pointer_file_with_replication(
+                master_ptr, replica_package, replication_event_uuid)
+            write_pointer_file(new_master_pointer_file, self.full_pointer_file_path)
 
         LOGGER.info('Finished replicating package %s as replica package %s',
                     replicandum_uuid, replica_package.uuid)
@@ -608,11 +611,12 @@ class Package(models.Model):
             premis_agents=premis_agents, aip_subtype=aip_subtype)
         if storage_effects:
             pointer_file = self.get_pointer_instance()
-            revised_pointer_file = (
-                self.create_new_pointer_file_given_storage_effects(
-                    pointer_file, storage_effects))
-            write_pointer_file(revised_pointer_file,
-                               self.full_pointer_file_path)
+            if pointer_file:
+                revised_pointer_file = (
+                    self.create_new_pointer_file_given_storage_effects(
+                        pointer_file, storage_effects))
+                write_pointer_file(revised_pointer_file,
+                                   self.full_pointer_file_path)
         self.create_replicas()
 
     def _store_aip_to_pending(self, origin_location, origin_path):
@@ -852,7 +856,9 @@ class Package(models.Model):
 
     def get_pointer_instance(self):
         """Return this package's pointer file as a ``metsrw.METSDocument``
-        instance.
+        instance. Return `None` in packages without pointer file, like
+        uncompressed AIPs. See artefactual/archivematica-storage-service#324
+        for further enhancements.
         """
         if not self.should_have_pointer_file():
             return None
@@ -2147,11 +2153,12 @@ class Package(models.Model):
             reingest_space, reingest_location, old_aip_internal_path)
         if storage_effects:
             pointer_file = self.get_pointer_instance()
-            revised_pointer_file = (
-                self.create_new_pointer_file_given_storage_effects(
-                    pointer_file, storage_effects))
-            write_pointer_file(revised_pointer_file,
-                               self.full_pointer_file_path)
+            if pointer_file:
+                revised_pointer_file = (
+                    self.create_new_pointer_file_given_storage_effects(
+                        pointer_file, storage_effects))
+                write_pointer_file(revised_pointer_file,
+                                   self.full_pointer_file_path)
 
         # 9. Update the pointer file.
         self._process_pointer_file_for_reingest(
