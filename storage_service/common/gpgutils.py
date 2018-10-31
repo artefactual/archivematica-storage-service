@@ -18,6 +18,8 @@ from django.apps import apps
 from django.conf import settings
 from django.utils.translation import ugettext as _
 
+from .which import which
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -35,22 +37,46 @@ ENCR_WORKS = 'yes'
 ENCR_FAILS = 'no'
 
 
+class GPGBinaryPathError(Exception):
+    """Raised when the GnuPG binary could not be found in the system path."""
+
+
 class GPG(object):
+
+    # List of binaries in order of preference. In distros like Ubuntu 18.04,
+    # GnuPG v1 is only available via ``gpg1`` (package ``gnupg1``).
+    PREFERRED_GNUPG_BINARIES = ['gpg1', 'gpg']
 
     def __init__(self):
         self._gpg = None
 
     def __call__(self):
         if not self._gpg:
-            gnupg_home_path = settings.GNUPG_HOME_PATH
-            if not gnupg_home_path:
-                Location = apps.get_model(app_label='locations',
-                                          model_name='Location')
-                ss_internal = Location.active.get(
-                    purpose=Location.STORAGE_SERVICE_INTERNAL)
-                gnupg_home_path = ss_internal.full_path
-            self._gpg = gnupg.GPG(gnupghome=gnupg_home_path)
+            self._gpg = gnupg.GPG(
+                gnupghome=self._get_gnupg_home_path(),
+                gpgbinary=self._get_gnupg_bin_path())
         return self._gpg
+
+    def _get_gnupg_home_path(self):
+        """Find and return the home path for GnuPG to store its config."""
+        gnupg_home_path = settings.GNUPG_HOME_PATH
+        if not gnupg_home_path:
+            Location = apps.get_model(app_label='locations',
+                                      model_name='Location')
+            ss_internal = Location.active.get(
+                purpose=Location.STORAGE_SERVICE_INTERNAL)
+            gnupg_home_path = ss_internal.full_path
+        return gnupg_home_path
+
+    def _get_gnupg_bin_path(self):
+        """Find and return the path of the preferred GnuPG binary."""
+        for item in self.PREFERRED_GNUPG_BINARIES:
+            ret = which(item)
+            if ret is not None:
+                return ret
+        raise GPGBinaryPathError(
+            'GnuPG binary not found in the system path.'
+            ' Preferred binary names: %s' % self.PREFERRED_GNUPG_BINARIES)
 
 
 gpg = GPG()
