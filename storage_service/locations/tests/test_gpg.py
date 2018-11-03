@@ -21,9 +21,7 @@ GPG_VERSION = '1.4.16'
 SS_VERSION = '0.11.0'
 SUCCESS_STATUS = 'good times'
 DECRYPT_RET_FAIL_STATUS = 'bad stuff happened'
-RAW_GPG_VERSION = ('gpg (GnuPG) {}\n'
-                   'and some other nonsense\n'
-                   'and some more nonsense'.format(GPG_VERSION))
+RAW_GPG_VERSION = (1, 4, 16)
 SOME_FINGERPRINT = EXP_FINGERPRINT = 'B9C518917A958DD0B1F5E1B80C3D34DDA5958532'
 SOME_OTHER_FINGERPRINT = 'BBBB18917A958DD0B1F5E1B80C3D34DDA595BBBB'
 TEST_AGENTS = [
@@ -358,8 +356,7 @@ def test__parse_gpg_version():
 
 
 def test_create_encryption_event(mocker):
-    mocker.patch.object(subprocess, 'check_output',
-                        return_value=RAW_GPG_VERSION)
+    mocker.patch.object(gpg, '_get_gpg_version', return_value=GPG_VERSION)
     mocker.patch.object(utils, 'get_ss_premis_agents', return_value=TEST_AGENTS)
     stderr = 'me contain " quote'
     encr_result = FakeGPGRet(ok=True, status=SUCCESS_STATUS, stderr=stderr)
@@ -378,7 +375,6 @@ def test_create_encryption_event(mocker):
     assert [x for x in lai if x[0] == 'linking_agent_identifier_value'][0][1] == (
         'Archivematica-Storage-Service-{}'.format(SS_VERSION))
     utils.get_ss_premis_agents.assert_called_once()
-    subprocess.check_output.assert_called_once_with(['gpg', '--version'])
 
 
 @pytest.mark.parametrize(

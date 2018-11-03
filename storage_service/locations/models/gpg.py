@@ -347,14 +347,16 @@ def _extract_tar(tarpath):
 
 
 def _parse_gpg_version(raw_gpg_version):
-    return raw_gpg_version.splitlines()[0].split()[-1]
+    return ".".join(str(i) for i in raw_gpg_version)
 
 
 def _get_gpg_version():
-    """Return the version of GPG installed. The first line of stdout from ``gpg
-    --version`` is expected to be something like 'gpg (GnuPG) 1.4.16'
+    """Return the version of GPG installed as a string.
+
+    ``gpgutils.gpg.version`` is a 3-item tuple of integers, e.g.:
+    ``(1, 4, 16)`` for GnuPG v1.4.16.
     """
-    return _parse_gpg_version(subprocess.check_output(['gpg', '--version']))
+    return _parse_gpg_version(gpgutils.gpg().version)
 
 
 def create_encryption_event(encr_result, key_fingerprint):
