@@ -95,6 +95,7 @@ class Package(models.Model):
     DEL_REQ = 'DEL_REQ'
     DELETED = 'DELETED'
     RECOVER_REQ = 'RECOVER_REQ'
+    MOVING = 'MOVING'
     FAIL = 'FAIL'
     FINALIZED = 'FINALIZE'
     STATUS_CHOICES = (
@@ -339,6 +340,50 @@ class Package(models.Model):
         space.save()
         location.used += self.size
         location.save()
+
+    def move(self, to_location):
+        """Move the package to location."""
+        if self.current_location == to_location:
+            return
+
+        origin_space = self.current_location.space
+        destination_space = to_location.space
+
+        source_path = os.path.join(
+            self.current_location.relative_path,
+            self.current_path)
+
+        destination_path = os.path.join(
+            to_location.relative_path,
+            self.current_path)
+
+        try:
+            origin_space.posix_move(
+                source_path=source_path,
+                destination_path=destination_path,
+                destination_space=destination_space,
+                package=None)
+
+        except PosixMoveUnsupportedError:
+            origin_space.move_to_storage_service(
+                source_path=source_path,
+                destination_path=destination_path,
+                destination_space=destination_space,)
+
+            origin_space.post_move_to_storage_service()
+            destination_space.move_from_storage_service(
+                source_path=destination_path,
+                destination_path=destination_path,
+                package=None,)
+
+            destination_space.post_move_from_storage_service(
+                destination_path, destination_path)
+
+        # If we get here everything went well, update with new location
+        self.current_location = to_location
+        self.save()
+        self.current_location.space.update_package_status(self)
+        self._update_existing_ptr_loc_info()
 
     def recover_aip(self, origin_location, origin_path):
         """ Recovers an AIP using files at a given location.
