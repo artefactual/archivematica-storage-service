@@ -43,29 +43,27 @@ path.append(DJANGO_ROOT)
 DEBUG = False
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#test-runner
-TEST_RUNNER = 'django.test.runner.DiscoverRunner'
+TEST_RUNNER = "django.test.runner.DiscoverRunner"
 # ######## END DEBUG CONFIGURATION
 
 
 # ######## MANAGER CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#admins
-ADMINS = (
-    ('Your Name', 'your_email@example.com'),
-)
+ADMINS = (("Your Name", "your_email@example.com"),)
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#managers
 MANAGERS = ADMINS
 # ######## END MANAGER CONFIGURATION
 
 # Lets us know whether we're behind an HTTPS connection
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # ######## GENERAL CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#time-zone
-TIME_ZONE = 'America/Los_Angeles'
+TIME_ZONE = "America/Los_Angeles"
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#language-code
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#site-id
 SITE_ID = 1
@@ -82,49 +80,45 @@ USE_TZ = True
 
 
 # ######## LOCALE CONFIGURATION
-LOCALE_PATHS = [
-    normpath(join(SITE_ROOT, 'locale')),
-]
+LOCALE_PATHS = [normpath(join(SITE_ROOT, "locale"))]
 
 LANGUAGES = [
-    ('en', _('English')),
-    ('fr', _('French')),
-    ('es', _('Spanish')),
-    ('pt-br', _('Brazilian Portuguese')),
+    ("en", _("English")),
+    ("fr", _("French")),
+    ("es", _("Spanish")),
+    ("pt-br", _("Brazilian Portuguese")),
 ]
 # ######## END LOCALE CONFIGURATION
 
 
 # ######## MEDIA CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#media-root
-MEDIA_ROOT = normpath(join(SITE_ROOT, 'media'))
+MEDIA_ROOT = normpath(join(SITE_ROOT, "media"))
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#media-url
-MEDIA_URL = '/media/'
+MEDIA_URL = "/media/"
 # ######## END MEDIA CONFIGURATION
 
 
 # ######## STATIC FILE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#static-root
-STATIC_ROOT = normpath(join(SITE_ROOT, 'assets'))
+STATIC_ROOT = normpath(join(SITE_ROOT, "assets"))
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#static-url
-STATIC_URL = '/static/'
+STATIC_URL = "/static/"
 
 # See:
 # https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#std:setting-STATICFILES_DIRS
-STATICFILES_DIRS = (
-    normpath(join(SITE_ROOT, 'static')),
-)
+STATICFILES_DIRS = (normpath(join(SITE_ROOT, "static")),)
 
 # See:
 # https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#staticfiles-finders
 STATICFILES_FINDERS = (
-    'django.contrib.staticfiles.finders.FileSystemFinder',
-    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+    "django.contrib.staticfiles.finders.FileSystemFinder",
+    "django.contrib.staticfiles.finders.AppDirectoriesFinder",
 )
 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 # END STATIC FILE CONFIGURATION
 
 
@@ -138,16 +132,14 @@ SECRET_KEY = "SECRET_KEY"
 # ######## SITE CONFIGURATION
 # Hosts/domain names that are valid for this site
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["*"]
 # ######## END SITE CONFIGURATION
 
 
 # ######## FIXTURE CONFIGURATION
 # See:
 # https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-FIXTURE_DIRS
-FIXTURE_DIRS = (
-    normpath(join(SITE_ROOT, 'fixtures')),
-)
+FIXTURE_DIRS = (normpath(join(SITE_ROOT, "fixtures")),)
 # ######## END FIXTURE CONFIGURATION
 
 
@@ -155,23 +147,23 @@ FIXTURE_DIRS = (
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [normpath(join(SITE_ROOT, 'templates'))],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.contrib.auth.context_processors.auth',
-                'django.template.context_processors.debug',
-                'django.template.context_processors.i18n',
-                'django.template.context_processors.media',
-                'django.template.context_processors.static',
-                'django.template.context_processors.tz',
-                'django.template.context_processors.request',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [normpath(join(SITE_ROOT, "templates"))],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.contrib.auth.context_processors.auth",
+                "django.template.context_processors.debug",
+                "django.template.context_processors.i18n",
+                "django.template.context_processors.media",
+                "django.template.context_processors.static",
+                "django.template.context_processors.tz",
+                "django.template.context_processors.request",
+                "django.contrib.messages.context_processors.messages",
             ],
-            'debug': DEBUG,
+            "debug": DEBUG,
         },
-    },
+    }
 ]
 
 # ######## END TEMPLATE CONFIGURATION
@@ -180,69 +172,59 @@ TEMPLATES = [
 # ######### AUTHENTICATION CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#authentication-backends
 
-AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
-]
+AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
 # ######### END AUTHENTICATION CONFIGURATION
 
 # ######### MIDDLEWARE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#middleware-classes
 MIDDLEWARE_CLASSES = [
     # 'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
     # Automatic language selection is disabled.
     # See #723 for more details.
-    'common.middleware.ForceDefaultLanguageMiddleware',
-    'django.middleware.locale.LocaleMiddleware',
-
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'common.middleware.LoginRequiredMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "common.middleware.ForceDefaultLanguageMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "common.middleware.LoginRequiredMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 # ######## END MIDDLEWARE CONFIGURATION
 
 
 # ######## URL CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#root-urlconf
-ROOT_URLCONF = '%s.urls' % SITE_NAME
+ROOT_URLCONF = "%s.urls" % SITE_NAME
 # ######## END URL CONFIGURATION
 
 
 # ######## APP CONFIGURATION
 DJANGO_APPS = [
     # Default Django apps:
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.sites',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.sites",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
     # Useful template tags:
     # 'django.contrib.humanize',
-
     # Admin panel and documentation:
-    'django.contrib.admin',
+    "django.contrib.admin",
     # 'django.contrib.admindocs',
 ]
 
 THIRD_PARTY_APPS = [
-    'tastypie',  # REST framework
-    'longerusername', # Longer (> 30 characters) username
+    "tastypie",  # REST framework
+    "longerusername",  # Longer (> 30 characters) username
 ]
 
 # Apps specific for this project go here.
-LOCAL_APPS = [
-    'administration',
-    'common',
-    'locations',
-]
+LOCAL_APPS = ["administration", "common", "locations"]
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -250,14 +232,9 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 
 # ######## LOGIN REQUIRED MIDDLEWARE CONFIGURATION
-LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/'
-LOGIN_EXEMPT_URLS = (
-    r'^api/',
-    r'^admin/',
-    r'^Shibboleth.sso/',
-    r'^login/',
-)
+LOGIN_URL = "/login/"
+LOGIN_REDIRECT_URL = "/"
+LOGIN_EXEMPT_URLS = (r"^api/", r"^admin/", r"^Shibboleth.sso/", r"^login/")
 # ######## END LOGIN REQUIRED MIDDLEWARE CONFIGURATION
 
 
@@ -270,71 +247,49 @@ LOGGING_CONFIG = None
 
 # Location of the logging configuration file that we're going to pass to
 # `logging.config.fileConfig` unless it doesn't exist.
-LOGGING_CONFIG_FILE = '/etc/archivematica/storageService.logging.json'
+LOGGING_CONFIG_FILE = "/etc/archivematica/storageService.logging.json"
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'filters': {
-        'require_debug_false': {
-            '()': 'django.utils.log.RequireDebugFalse'
-        }
-    },
-    'formatters': {
-        'simple': {
-            'format': '%(levelname)-8s  %(name)s.%(funcName)s:  %(message)s',
-        },
-        'detailed': {
-            'format': '%(levelname)-8s  %(asctime)s  %(name)s:%(module)s:%(funcName)s:%(lineno)d:  %(message)s',
-            'datefmt': '%Y-%m-%d %H:%M:%S'
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {"require_debug_false": {"()": "django.utils.log.RequireDebugFalse"}},
+    "formatters": {
+        "simple": {"format": "%(levelname)-8s  %(name)s.%(funcName)s:  %(message)s"},
+        "detailed": {
+            "format": "%(levelname)-8s  %(asctime)s  %(name)s:%(module)s:%(funcName)s:%(lineno)d:  %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
         },
     },
-    'handlers': {
-        'null': {
-            'level': 'DEBUG',
-            'class': 'logging.NullHandler'
+    "handlers": {
+        "null": {"level": "DEBUG", "class": "logging.NullHandler"},
+        "console": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "formatter": "detailed",
         },
-        'console': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
-            'formatter': 'detailed',
-        },
-        'mail_admins': {
-            'level': 'ERROR',
-            'filters': ['require_debug_false'],
-            'class': 'django.utils.log.AdminEmailHandler'
+        "mail_admins": {
+            "level": "ERROR",
+            "filters": ["require_debug_false"],
+            "class": "django.utils.log.AdminEmailHandler",
         },
     },
-    'loggers': {
-        'django.request': {
-            'handlers': ['mail_admins'],
-            'level': 'ERROR',
-            'propagate': True,
+    "loggers": {
+        "django.request": {
+            "handlers": ["mail_admins"],
+            "level": "ERROR",
+            "propagate": True,
         },
-        'django.request.tastypie': {
-            'level': 'ERROR',
-        },
-        'administration': {
-            'level': 'DEBUG',
-        },
-        'common': {
-            'level': 'DEBUG',
-        },
-        'locations': {
-            'level': 'DEBUG',
-        },
-        'sword2': {
-            'level': 'INFO',
-        }
+        "django.request.tastypie": {"level": "ERROR"},
+        "administration": {"level": "DEBUG"},
+        "common": {"level": "DEBUG"},
+        "locations": {"level": "DEBUG"},
+        "sword2": {"level": "INFO"},
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'WARNING',
-    },
+    "root": {"handlers": ["console"], "level": "WARNING"},
 }
 
 if isfile(LOGGING_CONFIG_FILE):
-    with open(LOGGING_CONFIG_FILE, 'rt') as f:
+    with open(LOGGING_CONFIG_FILE, "rt") as f:
         LOGGING = logging.config.dictConfig(json.load(f))
 else:
     logging.config.dictConfig(LOGGING)
@@ -343,55 +298,55 @@ else:
 
 # ######## SESSION CONFIGURATION
 # So the cookies don't conflict with archivematica cookies
-SESSION_COOKIE_NAME = 'storageapi_sessionid'
+SESSION_COOKIE_NAME = "storageapi_sessionid"
 # ######## END SESSION CONFIGURATION
 
 
 # ######## WSGI CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#wsgi-application
-WSGI_APPLICATION = '%s.wsgi.application' % SITE_NAME
+WSGI_APPLICATION = "%s.wsgi.application" % SITE_NAME
 # ######## END WSGI CONFIGURATION
 
 ALLOW_USER_EDITS = True
 
 
 def is_true(env_str):
-    return env_str.lower() in ['true', 'yes', 'on', '1']
+    return env_str.lower() in ["true", "yes", "on", "1"]
 
-SHIBBOLETH_AUTHENTICATION = is_true(environ.get('SS_SHIBBOLETH_AUTHENTICATION', ''))
+
+SHIBBOLETH_AUTHENTICATION = is_true(environ.get("SS_SHIBBOLETH_AUTHENTICATION", ""))
 if SHIBBOLETH_AUTHENTICATION:
-    SHIBBOLETH_LOGOUT_URL = '/Shibboleth.sso/Logout?target=%s'
+    SHIBBOLETH_LOGOUT_URL = "/Shibboleth.sso/Logout?target=%s"
 
-    SHIBBOLETH_REMOTE_USER_HEADER = 'HTTP_EPPN'
+    SHIBBOLETH_REMOTE_USER_HEADER = "HTTP_EPPN"
     SHIBBOLETH_ATTRIBUTE_MAP = {
         # Automatic user fields
-        'HTTP_GIVENNAME': (False, 'first_name'),
-        'HTTP_SN': (False, 'last_name'),
-        'HTTP_MAIL': (False, 'email'),
+        "HTTP_GIVENNAME": (False, "first_name"),
+        "HTTP_SN": (False, "last_name"),
+        "HTTP_MAIL": (False, "email"),
         # Entitlement field (which we handle manually)
-        'HTTP_ENTITLEMENT': (True, 'entitlement'),
+        "HTTP_ENTITLEMENT": (True, "entitlement"),
     }
 
     # If the user has this entitlement, they will be a superuser/admin
-    SHIBBOLETH_ADMIN_ENTITLEMENT = 'preservation-admin'
+    SHIBBOLETH_ADMIN_ENTITLEMENT = "preservation-admin"
 
-    TEMPLATES[0]['OPTIONS']['context_processors'] += [
-        'shibboleth.context_processors.logout_link',
+    TEMPLATES[0]["OPTIONS"]["context_processors"] += [
+        "shibboleth.context_processors.logout_link"
     ]
 
-    AUTHENTICATION_BACKENDS += [
-        'shibboleth.backends.ShibbolethRemoteUserBackend',
-    ]
+    AUTHENTICATION_BACKENDS += ["shibboleth.backends.ShibbolethRemoteUserBackend"]
 
     # Insert Shibboleth after the authentication middleware
     MIDDLEWARE_CLASSES.insert(
         MIDDLEWARE_CLASSES.index(
-            'django.contrib.auth.middleware.AuthenticationMiddleware',
-        ) + 1,
-        'common.middleware.CustomShibbolethRemoteUserMiddleware',
+            "django.contrib.auth.middleware.AuthenticationMiddleware"
+        )
+        + 1,
+        "common.middleware.CustomShibbolethRemoteUserMiddleware",
     )
 
-    INSTALLED_APPS += ['shibboleth']
+    INSTALLED_APPS += ["shibboleth"]
 
     ALLOW_USER_EDITS = False
 
@@ -401,12 +356,11 @@ if SHIBBOLETH_AUTHENTICATION:
 # between gevent and multiprocessing (BagIt) concurrency strategies. See
 # https://github.com/artefactual/archivematica/issues/708
 try:
-    BAG_VALIDATION_NO_PROCESSES = int(
-        environ.get('SS_BAG_VALIDATION_NO_PROCESSES', 1))
+    BAG_VALIDATION_NO_PROCESSES = int(environ.get("SS_BAG_VALIDATION_NO_PROCESSES", 1))
 except ValueError:
     BAG_VALIDATION_NO_PROCESSES = 1
 
-GNUPG_HOME_PATH = environ.get('SS_GNUPG_HOME_PATH', None)
+GNUPG_HOME_PATH = environ.get("SS_GNUPG_HOME_PATH", None)
 
 # SS uses a Python HTTP library called requests. If this setting is set to True,
 # we will skip the SSL certificate verification process. Read more here:
@@ -414,4 +368,4 @@ GNUPG_HOME_PATH = environ.get('SS_GNUPG_HOME_PATH', None)
 # This setting is honored in:
 # - locations.models.pipeline
 # - locations.models.dspace
-INSECURE_SKIP_VERIFY = is_true(environ.get('SS_INSECURE_SKIP_VERIFY', ''))
+INSECURE_SKIP_VERIFY = is_true(environ.get("SS_INSECURE_SKIP_VERIFY", ""))

@@ -38,6 +38,7 @@ class EnvironmentVarGuard(collections.MutableMapping):
 
     It can be used as a context manager.
     """
+
     def __init__(self):
         self._environ = os.environ
         self._changed = {}
@@ -87,15 +88,14 @@ class EnvironmentVarGuard(collections.MutableMapping):
 
 
 class TestWhich(unittest.TestCase):
-
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp(prefix="Tmp")
         self.addCleanup(shutil.rmtree, self.temp_dir, True)
         # Give the temp_file an ".exe" suffix for all.
         # It's needed on Windows and not harmful on other platforms.
-        self.temp_file = tempfile.NamedTemporaryFile(dir=self.temp_dir,
-                                                     prefix="Tmp",
-                                                     suffix=".Exe")
+        self.temp_file = tempfile.NamedTemporaryFile(
+            dir=self.temp_dir, prefix="Tmp", suffix=".Exe"
+        )
         os.chmod(self.temp_file.name, stat.S_IXUSR)
         self.addCleanup(self.temp_file.close)
         self.dir, self.file = os.path.split(self.temp_file.name)
@@ -136,8 +136,9 @@ class TestWhich(unittest.TestCase):
                 # Other platforms: shouldn't match in the current directory.
                 self.assertIsNone(rv)
 
-    @unittest.skipIf(hasattr(os, 'geteuid') and os.geteuid() == 0,
-                     'non-root user required')
+    @unittest.skipIf(
+        hasattr(os, "geteuid") and os.geteuid() == 0, "non-root user required"
+    )
     def test_non_matching_mode(self):
         # Set the file read-only and ask for writeable files.
         os.chmod(self.temp_file.name, stat.S_IREAD)
@@ -157,8 +158,7 @@ class TestWhich(unittest.TestCase):
         rv = which("foo.exe", path=self.dir)
         self.assertIsNone(rv)
 
-    @unittest.skipUnless(sys.platform == "win32",
-                         "pathext check is Windows-only")
+    @unittest.skipUnless(sys.platform == "win32", "pathext check is Windows-only")
     def test_pathext_checking(self):
         # Ask for the file without the ".exe" extension, then ensure that
         # it gets found properly with the extension.
@@ -167,19 +167,19 @@ class TestWhich(unittest.TestCase):
 
     def test_environ_path(self):
         with EnvironmentVarGuard() as env:
-            env['PATH'] = self.dir
+            env["PATH"] = self.dir
             rv = which(self.file)
             self.assertEqual(rv, self.temp_file.name)
 
     def test_empty_path(self):
         with change_cwd(path=self.dir):
             with EnvironmentVarGuard() as env:
-                env['PATH'] = self.dir
-                rv = which(self.file, path='')
+                env["PATH"] = self.dir
+                rv = which(self.file, path="")
                 self.assertIsNone(rv)
 
     def test_empty_path_no_PATH(self):
         with EnvironmentVarGuard() as env:
-            env.pop('PATH', None)
+            env.pop("PATH", None)
             rv = which(self.file)
             self.assertIsNone(rv)

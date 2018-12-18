@@ -4,7 +4,6 @@ from south.v2 import SchemaMigration
 
 
 class Migration(SchemaMigration):
-
     def forwards(self, orm):
         pass
 
@@ -13,4 +12,4 @@ class Migration(SchemaMigration):
 
     models = {}
 
-    complete_apps = ['locations']
+    complete_apps = ["locations"]

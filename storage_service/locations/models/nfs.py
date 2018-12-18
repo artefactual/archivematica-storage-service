@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+
 # stdlib, alphabetical
 import datetime
 import os
@@ -17,27 +18,36 @@ from .location import Location
 
 class NFS(models.Model):
     """ Spaces accessed over NFS. """
-    space = models.OneToOneField('Space', to_field='uuid')
+
+    space = models.OneToOneField("Space", to_field="uuid")
 
     # Space.path is the local path
-    remote_name = models.CharField(max_length=256,
-        verbose_name=_('Remote name'),
-        help_text=_("Name of the NFS server."))
+    remote_name = models.CharField(
+        max_length=256,
+        verbose_name=_("Remote name"),
+        help_text=_("Name of the NFS server."),
+    )
     remote_path = models.TextField(
-        verbose_name=_('Remote path'),
-        help_text=_("Path on the NFS server to the export."))
-    version = models.CharField(max_length=64, default='nfs4',
-        verbose_name=_('Version'),
-        help_text=_("Type of the filesystem, i.e. nfs, or nfs4. \
-        Should match a command in `mount`."))
+        verbose_name=_("Remote path"),
+        help_text=_("Path on the NFS server to the export."),
+    )
+    version = models.CharField(
+        max_length=64,
+        default="nfs4",
+        verbose_name=_("Version"),
+        help_text=_(
+            "Type of the filesystem, i.e. nfs, or nfs4. \
+        Should match a command in `mount`."
+        ),
+    )
     # https://help.ubuntu.com/community/NFSv4Howto
     manually_mounted = models.BooleanField(
-        verbose_name=_('Manually mounted'),
-        default=False)
+        verbose_name=_("Manually mounted"), default=False
+    )
 
     class Meta:
         verbose_name = _("Network File System (NFS)")
-        app_label = 'locations'
+        app_label = "locations"
 
     ALLOWED_LOCATION_PURPOSE = [
         Location.AIP_RECOVERY,
@@ -84,7 +94,9 @@ class NFS(models.Model):
         # may need to tweak options
         pass
 
-    def posix_move(self, source_path, destination_path, destination_space, package=None):
+    def posix_move(
+        self, source_path, destination_path, destination_space, package=None
+    ):
         """
         Move from this POSIX filesystem to another POSIX filesytem; copying
         from self.path/source_path to destination_space.path/destination_path

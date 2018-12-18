@@ -1,4 +1,3 @@
-
 from django.db import models
 
 
@@ -7,4 +6,4 @@ class Settings(models.Model):
     value = models.TextField(null=True, blank=True)
 
     def __unicode__(self):
-        return u'{}: {}'.format(self.name, self.value)
+        return u"{}: {}".format(self.name, self.value)

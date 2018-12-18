@@ -29,17 +29,28 @@ def _notify_administrators(subject, message):
 
 @receiver(deletion_request, dispatch_uid="deletion_request")
 def report_deletion_request(sender, **kwargs):
-    subject = _('Deletion request for package %(uuid)s') % {'uuid': kwargs['uuid']}
-    message = _("""A package deletion request was received:
+    subject = _("Deletion request for package %(uuid)s") % {"uuid": kwargs["uuid"]}
+    message = (
+        _(
+            """A package deletion request was received:
 
 Pipeline UUID: %(pipeline)s
 Package UUID: %(uuid)s
-Package location: %(location)s""") % {'pipeline': kwargs['pipeline'], 'uuid': kwargs['uuid'], 'location': kwargs['location']}
+Package location: %(location)s"""
+        )
+        % {
+            "pipeline": kwargs["pipeline"],
+            "uuid": kwargs["uuid"],
+            "location": kwargs["location"],
+        }
+    )
 
     # The URL may not be configured in the site; if it isn't,
     # don't try to tell the user the URL to approve/deny the request.
     if kwargs["url"]:
-        message = message + _('To approve this deletion request, visit: %(url)s') % {'url': kwargs['url'] + reverse('package_delete_request')}
+        message = message + _("To approve this deletion request, visit: %(url)s") % {
+            "url": kwargs["url"] + reverse("package_delete_request")
+        }
 
     _notify_administrators(subject, message)
 
@@ -48,36 +59,48 @@ def _log_report(uuid, success, message=None):
     # NOTE Importing this at the top of the module fails because this file is
     # imported in models.__init__.py and seems to cause a circular import error
     from . import models
+
     package = models.Package.objects.get(uuid=uuid)
-    models.FixityLog.objects.create(package=package, success=success, error_details=message)
+    models.FixityLog.objects.create(
+        package=package, success=success, error_details=message
+    )
 
 
 @receiver(failed_fixity_check, dispatch_uid="fixity_check")
 def report_failed_fixity_check(sender, **kwargs):
-    report_data = json.loads(kwargs['report'])
-    _log_report(kwargs['uuid'], False, report_data['message'])
+    report_data = json.loads(kwargs["report"])
+    _log_report(kwargs["uuid"], False, report_data["message"])
 
-    subject = _('Fixity check failed for package %(uuid)s') % {'uuid': kwargs['uuid']}
-    message = _("""
+    subject = _("Fixity check failed for package %(uuid)s") % {"uuid": kwargs["uuid"]}
+    message = (
+        _(
+            """
 A fixity check failed for the package with UUID %(uuid)s. This package is currently stored at: %(location)s
 
 Full failure report (in JSON format):
 %(report)s
-""") % {'uuid': kwargs['uuid'], 'location': kwargs['location'], 'report': kwargs['report']}
+"""
+        )
+        % {
+            "uuid": kwargs["uuid"],
+            "location": kwargs["location"],
+            "report": kwargs["report"],
+        }
+    )
 
     _notify_administrators(subject, message)
 
 
 @receiver(successful_fixity_check, dispatch_uid="fixity_check")
 def report_successful_fixity_check(sender, **kwargs):
-    _log_report(kwargs['uuid'], True)
+    _log_report(kwargs["uuid"], True)
 
 
 @receiver(fixity_check_not_run, dispatch_uid="fixity_check")
 def report_not_run_fixity_check(sender, **kwargs):
     """Handle a fixity not run signal."""
-    report_data = json.loads(kwargs['report'])
-    _log_report(uuid=kwargs['uuid'], success=None, message=report_data['message'])
+    report_data = json.loads(kwargs["report"])
+    _log_report(uuid=kwargs["uuid"], success=None, message=report_data["message"])
 
 
 # Create an API key for every user, for TastyPie

@@ -4,7 +4,6 @@ from south.v2 import DataMigration
 
 
 class Migration(DataMigration):
-
     def forwards(self, orm):
         "Write your forwards methods here."
         # Note: Don't use "from appname.models import ModelName".
@@ -15,13 +14,21 @@ class Migration(DataMigration):
         "Write your backwards methods here."
 
     models = {
-        u'administration.settings': {
-            'Meta': {'object_name': 'Settings'},
-            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255'}),
-            'value': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'})
+        u"administration.settings": {
+            "Meta": {"object_name": "Settings"},
+            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "name": (
+                "django.db.models.fields.CharField",
+                [],
+                {"unique": "True", "max_length": "255"},
+            ),
+            "value": (
+                "django.db.models.fields.TextField",
+                [],
+                {"null": "True", "blank": "True"},
+            ),
         }
     }
 
-    complete_apps = ['administration']
+    complete_apps = ["administration"]
     symmetrical = True
