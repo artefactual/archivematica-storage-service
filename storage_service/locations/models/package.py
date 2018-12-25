@@ -861,7 +861,7 @@ class Package(models.Model):
         """
         checksum_algorithm = Package.DEFAULT_CHECKSUM_ALGORITHM
         premis_events = [
-            premisrw.PREMISEvent(data=event) for event in premis_events]
+            premisrw.PREMISEvent(data=event, premis_version=premisrw.PREMIS_3_VERSION) for event in premis_events]
         __, compression_program_version, archive_tool = (
             _get_compression_details_from_premis_events(
                 premis_events, self.uuid))
@@ -1028,6 +1028,7 @@ class Package(models.Model):
             xsi_type=old_premis_object.xsi_type,
             object_identifier=old_premis_object.find('object_identifier'),
             object_characteristics=old_premis_object.find('object_characteristics'),
+            premis_version=premisrw.PREMIS_3_VERSION,
             relationship=new_relationships)
         for ss_agent in ss_agents:
             if ss_agent not in old_premis_agents:
@@ -1071,7 +1072,8 @@ class Package(models.Model):
             relationship=old_premis_object.relationship,
             # New attributes:
             inhibitors=new_inhibitors,
-            composition_level=new_composition_level
+            composition_level=new_composition_level,
+            premis_version=premisrw.PREMIS_3_VERSION,
         )
         return self.create_pointer_file(
             new_premis_object,
@@ -1114,7 +1116,7 @@ class Package(models.Model):
         ]
         event = tuple(utils.add_agents_to_event_as_list(event, agents))
         if inst:
-            return premisrw.PREMISEvent(data=event)
+            return premisrw.PREMISEvent(data=event, premis_version=premisrw.PREMIS_3_VERSION)
         return event
 
     def get_premis_aip_creation_event(self, master_aip_uuid=None, agents=None,
@@ -1154,7 +1156,7 @@ class Package(models.Model):
         ]
         event = tuple(utils.add_agents_to_event_as_list(event, agents))
         if inst:
-            return premisrw.PREMISEvent(data=event)
+            return premisrw.PREMISEvent(data=event, premis_version=premisrw.PREMIS_3_VERSION)
         return event
 
     def get_replication_validation_event(
@@ -1204,7 +1206,7 @@ class Package(models.Model):
         ]
         event = tuple(utils.add_agents_to_event_as_list(event, agents))
         if inst:
-            return premisrw.PREMISEvent(data=event)
+            return premisrw.PREMISEvent(data=event, premis_version=premisrw.PREMIS_3_VERSION)
         return event
 
     def create_pointer_file(self,
@@ -1256,10 +1258,10 @@ class Package(models.Model):
         # premisrw.PREMISElement subclass instances. Note that
         # instantiating a PREMISElement by passing in an existing instance via
         # the ``data`` kwarg will construct an equivalent instance.
-        premis_object = premisrw.PREMISObject(data=premis_object)
-        premis_events = [premisrw.PREMISEvent(data=event) for event in premis_events]
+        premis_object = premisrw.PREMISObject(data=premis_object, premis_version=premisrw.PREMIS_3_VERSION)
+        premis_events = [premisrw.PREMISEvent(data=event, premis_version=premisrw.PREMIS_3_VERSION) for event in premis_events]
         premis_agents = premis_agents or []
-        premis_agents = [premisrw.PREMISAgent(data=agent) for agent in premis_agents]
+        premis_agents = [premisrw.PREMISAgent(data=agent, premis_version=premisrw.PREMIS_3_VERSION) for agent in premis_agents]
 
         compression_event = _find_compression_event(premis_events)
         if not compression_event:  # no pointer files for uncompressed AIPs
@@ -1345,7 +1347,8 @@ class Package(models.Model):
             creating_application_name=archive_tool,
             creating_application_version=compression_program_version,
             date_created_by_application=now,
-            relationship=premis_relationships)
+            relationship=premis_relationships,
+            premis_version=premisrw.PREMIS_3_VERSION)
         try:
             kwargs.update({
                 "format_name": pronom_conversion[extension]["name"],
@@ -2752,7 +2755,7 @@ def _get_compression_details_from_premis_events(premis_events, aip_uuid):
     compression_program_version, and archive_tool.
     """
     premis_events = [
-        premisrw.PREMISEvent(data=event) for event in premis_events]
+        premisrw.PREMISEvent(data=event, premis_version=premisrw.PREMIS_3_VERSION) for event in premis_events]
     compression_event = _find_compression_event(premis_events)
     if not compression_event:
         raise StorageException(_(
@@ -2809,9 +2812,9 @@ def _get_replication_derivation_relationship(related_aip_uuid,
     """
     if not premis_version:
         premis_version = premisrw.PREMIS_META['version']
-    related_object_identifier = {'2.2': 'related_object_identification'}.get(
+    related_object_identifier = {'3.0': 'related_object_identification'}.get(
         premis_version, 'related_object_identifier')
-    related_event_identifier = {'2.2': 'related_event_identification'}.get(
+    related_event_identifier = {'3.0': 'related_event_identification'}.get(
         premis_version, 'related_event_identifier')
     return (
         'relationship',

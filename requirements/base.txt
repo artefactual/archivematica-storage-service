@@ -14,7 +14,7 @@ gunicorn==19.9.0
 jsonfield==2.0.1
 logutils==0.3.4.1
 lxml==3.7.3
-metsrw==0.2.4
+git+https://github.com/artefactual-labs/mets-reader-writer@8186e8e3da4a777cf212d0e6f7796343613ca294#egg=metsrw
 ndg-httpsclient==0.4.2
 pyasn1==0.2.3
 python-gnupg==0.4.0

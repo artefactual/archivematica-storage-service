@@ -29,7 +29,7 @@ NSMAP = {
     'dcterms': 'http://purl.org/dc/terms/',
     'lom': 'http://lockssomatic.info/SWORD2',
     'mets': 'http://www.loc.gov/METS/',
-    'premis': 'info:lc/xmlns/premis-v2',
+    'premis': 'http://www.loc.gov/premis/v3',
     'sword': 'http://purl.org/net/sword/terms/',
     'xlink': 'http://www.w3.org/1999/xlink',
     'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
@@ -188,7 +188,9 @@ def mets_event(digiprov_id, event_type, event_detail='', event_outcome_detail_no
         ),
         EP.eventType(event_type),
         EP.eventDateTime(now),
-        EP.eventDetail(event_detail),
+        EP.eventDetailInformation(
+            EP.eventDetail(event_detail),
+        ),
         EP.eventOutcomeInformation(
             EP.eventOutcome(),
             EP.eventOutcomeDetail(
@@ -199,9 +201,9 @@ def mets_event(digiprov_id, event_type, event_detail='', event_outcome_detail_no
             EP.linkingAgentIdentifierType(agent_type),
             EP.linkingAgentIdentifierValue(agent_value),
         ),
-        version='2.2'
+        version='3.0'
     )
-    premis_event.set('{' + NSMAP['xsi'] + '}schemaLocation', 'info:lc/xmlns/premis-v2 http://www.loc.gov/standards/premis/v2/premis-v2-2.xsd')
+    premis_event.set('{' + NSMAP['xsi'] + '}schemaLocation', 'http://www.loc.gov/premis/v3 http://www.loc.gov/standards/premis/v3/premis.xsd')
 
     # digiprovMD to wrap PREMIS event
     digiprov_event = EM.digiprovMD(
@@ -380,7 +382,7 @@ def get_ss_premis_agents(inst=True):
         ('agent_type', 'software')
     )]
     if inst:
-        return [premisrw.PREMISAgent(data=data) for data in agents]
+        return [premisrw.PREMISAgent(data=data, premis_version=premisrw.PREMIS_3_VERSION) for data in agents]
     return agents
 
 

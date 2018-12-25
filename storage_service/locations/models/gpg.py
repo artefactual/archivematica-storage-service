@@ -390,7 +390,7 @@ def create_encryption_event(encr_result, key_fingerprint):
         )
     ]
     event = tuple(utils.add_agents_to_event_as_list(event, agents))
-    return premisrw.PREMISEvent(data=event)
+    return premisrw.PREMISEvent(data=event, premis_version=premisrw.PREMIS_3_VERSION)
 
 
 def _gpg_decrypt(path):
