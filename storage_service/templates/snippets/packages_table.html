@@ -71,11 +71,16 @@
           <a href="{% url 'package_fixity' package.uuid %}">{{ package.latest_fixity_check_result|yesno:_("Success,Failed,") }}</a>
         </td>
         <td>
-          <a href="{% url 'download_request' 'v2' 'file' package.uuid %}">{% trans "Download" %}</a>
+
+          {% if package.status != package.DELETED %}
+            <a href="{% url 'download_request' 'v2' 'file' package.uuid %}">{% trans "Download" %}</a>
+          {% endif %}
+
           <!-- Replicas should not be re-ingestible -->
           {% if package.package_type in 'AIP AIC' and not package.replicated_package %}
             <a href="{% url 'aip_reingest' package.uuid %}?next={{ request.path }}">{% trans "Re-ingest" %}</a>
           {% endif %}
+
           {% if package.package_type in package.PACKAGE_TYPE_CAN_DELETE %}
           <a href="#" class="request-delete"
              data-package-type="{{ package.package_type }}"
