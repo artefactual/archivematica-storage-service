@@ -115,13 +115,6 @@ class DataverseForm(forms.ModelForm):
         model = models.Dataverse
         fields = ('host', 'api_key', 'agent_name', 'agent_type', 'agent_identifier')
 
-    def as_p(self):
-        # Add a warning to the Dataverse-specific section of the form
-        content = super(DataverseForm, self).as_p()
-        content += '\n<div class="alert">{}</div>'.format(
-            _('Integration with Dataverse is currently a beta feature'))
-        return mark_safe(content)
-
 
 class DuracloudForm(forms.ModelForm):
     class Meta:
