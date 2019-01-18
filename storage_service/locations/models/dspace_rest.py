@@ -156,7 +156,6 @@ class DSpaceREST(models.Model):
         """Locate, extract (if necessary), XML-parse and return the METS file
         for this package.
         """
-        mets_path = ''
         if package_type == 'AIP':
             relative_mets_path = os.path.join(
                 dirname, 'data', 'METS.' + aip_uuid + '.xml')
@@ -198,6 +197,8 @@ class DSpaceREST(models.Model):
                     'dspace_dip_collection')
                 repos['dspace_aip_collection'] = other_metadata.findtext(
                     'dspace_aip_collection')
+                repos['archivesspace_dip_repository'] = other_metadata.findtext(
+                    'archivesspace_dip_repository')
                 repos['archivesspace_dip_collection'] = other_metadata.findtext(
                     'archivesspace_dip_collection')
             elif dc_metadata is not None:
@@ -326,16 +327,18 @@ class DSpaceREST(models.Model):
             raise DSpaceRESTException('Not a JSON response.')
 
     def _assign_destination(self, package_type, destinations):
-        ds_collection = as_archival_obj = None
+        ds_collection = as_archival_repo = as_archival_obj = None
         if package_type == 'DIP':
             ds_collection = destinations.get(
                 'dspace_dip_collection', self.ds_dip_collection)
+            as_archival_repo = destinations.get(
+                'archivesspace_dip_repository', self.as_repository)
             as_archival_obj = destinations.get(
                 'archivesspace_dip_archival_object', self.as_archival_object)
         elif package_type == 'AIP':
             ds_collection = destinations.get(
                 'dspace_aip_collection', self.ds_aip_collection)
-        return ds_collection, as_archival_obj
+        return ds_collection, as_archival_repo, as_archival_obj
 
     @staticmethod
     def _get_base_url(parsed_url):
@@ -358,7 +361,7 @@ class DSpaceREST(models.Model):
                     raise DSpaceRESTException(
                         'Error sending {} to {}.'.format(name, bitstream_url))
 
-    def _get_as_client(self):
+    def _get_as_client(self, as_archival_repo):
         try:
             login_url = '{}://{}'.format(self.as_url.scheme,
                                          self.as_url.hostname)
@@ -367,20 +370,20 @@ class DSpaceREST(models.Model):
                 self.as_user,
                 self.as_password,
                 self.as_url.port,
-                self.as_repository)
+                as_archival_repo)
         except Exception:
             raise DSpaceRESTException(
                 'Could not login to ArchivesSpace server: {}, port: {},'
                 ' user: {}, repository: {}.'.format(
                     login_url, self.as_url.port, self.as_user,
-                    self.as_repository))
+                    as_archival_repo))
 
-    def _link_dip_to_archivesspace(self, as_client, as_archival_obj,
+    def _link_dip_to_archivesspace(self, as_client, as_archival_repo, as_archival_obj,
                                    package_uuid, package_title, ds_item):
         try:
             as_client.add_digital_object(
                 '/repositories/{}/archival_objects/{}'.format(
-                    self.as_repository, as_archival_obj),
+                    as_archival_repo, as_archival_obj),
                 package_uuid,
                 title=package_title,
                 uri='{}://{}/handle/{}'.format(
@@ -417,15 +420,15 @@ class DSpaceREST(models.Model):
                 'Error depositing AIP at {} to DSpace via URL {}.'.format(
                     source_path, bitstream_url))
 
-    def _handle_dip(self, source_path, ds_item, ds_sessionid, as_archival_obj,
-                    package, package_title):
+    def _handle_dip(self, source_path, ds_item, ds_sessionid, as_archival_repo,
+                    as_archival_obj, package, package_title):
         self._deposit_dip_to_dspace(
             source_path, ds_item, ds_sessionid)
         if all([self.as_url, self.as_user, self.as_password,
                 self.as_repository, as_archival_obj]):
             self._link_dip_to_archivesspace(
-                self._get_as_client(), as_archival_obj, package.uuid,
-                package_title, ds_item)
+                self._get_as_client(as_archival_repo), as_archival_repo,
+                as_archival_obj, package.uuid, package_title, ds_item)
 
     def _handle_aip(self, source_path, ds_item, ds_sessionid):
         self._deposit_aip_to_dspace(
@@ -462,7 +465,7 @@ class DSpaceREST(models.Model):
         # Item to be created in DSpace
         metadata, destinations, package_title = self._get_metadata(
             source_path, package.uuid, package.package_type)
-        ds_collection, as_archival_obj = self._assign_destination(
+        ds_collection, as_archival_repo, as_archival_obj = self._assign_destination(
             package.package_type, destinations)
         # Logging in to REST api gives us a session id
         ds_sessionid = self._login_to_dspace_rest()
@@ -470,7 +473,7 @@ class DSpaceREST(models.Model):
             ds_item = self._create_dspace_record(
                 metadata, ds_sessionid, ds_collection)
             if package.package_type == 'DIP':
-                self._handle_dip(source_path, ds_item, ds_sessionid,
+                self._handle_dip(source_path, ds_item, ds_sessionid, as_archival_repo,
                                  as_archival_obj, package, package_title)
             else:
                 self._handle_aip(source_path, ds_item, ds_sessionid)
