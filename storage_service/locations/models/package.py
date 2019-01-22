@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 # stdlib, alphabetical
 from collections import namedtuple
+import codecs
 import distutils.dir_util
 import json
 import logging
@@ -3112,6 +3113,11 @@ def _replace_old_pres_ders_with_reingested(
 
 def _update_bag_payload_and_verify(old_aip_internal_path):
     """Create a new bag from the AIP at ``old_aip_internal_path`` and validate it."""
+    # Use BagIt v0.97 to ensure that optional tag manifests are updated too.
+    with codecs.open(os.path.join(old_aip_internal_path, "bagit.txt"), "w",
+                     encoding="utf-8", errors="strict") as bagit_file:
+        bagit_file.write(
+            "BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n")
     bag = bagit.Bag(old_aip_internal_path)
     bag.save(manifests=True)
     # Workaround for bug
