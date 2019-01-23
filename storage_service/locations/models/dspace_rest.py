@@ -193,14 +193,10 @@ class DSpaceREST(models.Model):
                 'mets:xmlData'.format(dmdid),
                 namespaces=utils.NSMAP)
             if other_metadata is not None:
-                repos['dspace_dip_collection'] = other_metadata.findtext(
-                    'dspace_dip_collection')
-                repos['dspace_aip_collection'] = other_metadata.findtext(
-                    'dspace_aip_collection')
-                repos['archivesspace_dip_repository'] = other_metadata.findtext(
-                    'archivesspace_dip_repository')
-                repos['archivesspace_dip_collection'] = other_metadata.findtext(
-                    'archivesspace_dip_collection')
+                for repo_key in ['dspace_dip_collection', 'dspace_aip_collection',
+                                 'archivesspace_dip_repository', 'archivesspace_dip_collection']:
+                    if other_metadata.findtext(repo_key) is not None:
+                        repos[repo_key] = other_metadata.findtext(repo_key)
             elif dc_metadata is not None:
                 for md in dc_metadata:
                     dc_term = str(md.tag)[str(md.tag).find('}') + 1:]
