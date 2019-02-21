@@ -31,6 +31,7 @@ class LocalFilesystem(models.Model):
         Location.STORAGE_SERVICE_INTERNAL,
         Location.TRANSFER_SOURCE,
         Location.BACKLOG,
+        Location.TRANSFER_STORAGE,
         Location.REPLICATOR,
     ]
 

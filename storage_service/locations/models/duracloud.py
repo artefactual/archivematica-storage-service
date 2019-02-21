@@ -43,6 +43,7 @@ class Duracloud(models.Model):
         Location.DIP_STORAGE,
         Location.TRANSFER_SOURCE,
         Location.BACKLOG,
+        Location.TRANSFER_STORAGE,
     ]
 
     MANIFEST_SUFFIX = '.dura-manifest'

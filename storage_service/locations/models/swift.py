@@ -52,6 +52,7 @@ class Swift(models.Model):
         Location.DIP_STORAGE,
         Location.TRANSFER_SOURCE,
         Location.BACKLOG,
+        Location.TRANSFER_STORAGE,
     ]
 
     def __init__(self, *args, **kwargs):

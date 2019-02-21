@@ -84,6 +84,7 @@ class GPG(models.Model):
     ALLOWED_LOCATION_PURPOSE = [
         Location.AIP_STORAGE,
         Location.BACKLOG,
+        Location.TRANSFER_STORAGE,
         Location.REPLICATOR
     ]
 

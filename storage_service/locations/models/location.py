@@ -38,12 +38,14 @@ class Location(models.Model):
     # QUARANTINE = 'QU'
     STORAGE_SERVICE_INTERNAL = 'SS'
     BACKLOG = 'BL'
+    TRANSFER_STORAGE = 'BL2'
     TRANSFER_SOURCE = 'TS'
     REPLICATOR = 'RP'
 
     # List of purposes where moving is not allowed.
     PURPOSES_DISALLOWED_MOVE = (
         BACKLOG,
+        TRANSFER_STORAGE,
         AIP_STORAGE,
     )
 
@@ -56,6 +58,7 @@ class Location(models.Model):
         # (QUARANTINE, 'Quarantine'),
         (STORAGE_SERVICE_INTERNAL, _('Storage Service Internal Processing')),
         (BACKLOG, _('Transfer Backlog')),
+        (TRANSFER_STORAGE, _('Transfer Storage')),
         (TRANSFER_SOURCE, _('Transfer Source')),
         (REPLICATOR, _('Replicator')),
     )

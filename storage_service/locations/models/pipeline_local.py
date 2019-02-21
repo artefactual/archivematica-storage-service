@@ -52,6 +52,7 @@ class PipelineLocalFS(models.Model):
         Location.CURRENTLY_PROCESSING,
         Location.TRANSFER_SOURCE,
         Location.BACKLOG,
+        Location.TRANSFER_STORAGE,
     ]
 
     def _format_host_path(self, path, user=None, host=None):

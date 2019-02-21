@@ -93,6 +93,12 @@ def startup():
             'default_setting': 'default_backlog',
         },
         {
+            'purpose': locations_models.Location.TRANSFER_STORAGE,
+            'relative_path': os.path.join('var', 'archivematica', 'sharedDirectory', 'TransferStore'),
+            'description': 'Default transfer storage',
+            'default_setting': 'default_transfer_storage',
+        },
+        {
             'purpose': locations_models.Location.STORAGE_SERVICE_INTERNAL,
             'relative_path': os.path.join('var', 'archivematica', 'storage_service'),
             'description': 'For storage service internal usage.',
