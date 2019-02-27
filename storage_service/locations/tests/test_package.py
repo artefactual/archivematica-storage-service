@@ -12,6 +12,8 @@ from django.test import TestCase
 
 from locations import models
 
+import bagit
+
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures", ""))
 
@@ -156,9 +158,9 @@ class TestPackage(TestCase):
         )
         success, failures, message, timestamp = package.check_fixity()
         assert success is False
-        # Failures are: missing file (dne.txt), bad checksum (dne.txt, test.txt, manifest-md5.txt)
-        assert len(failures) == 4
-        assert message == "invalid bag"
+        assert len(failures) == 1
+        assert isinstance(failures[0], bagit.FileMissing)
+        assert message == "Bag validation failed"
         assert timestamp is None
 
     def test_fixity_package_type(self):
@@ -325,3 +327,52 @@ class TestPackage(TestCase):
         output_path, extract_path = package.extract_file(extract_path=self.tmp_dir)
         assert output_path == os.path.join(self.tmp_dir, basedir)
         assert os.path.join(output_path, "manifest-md5.txt")
+
+
+class TestTransferPackage(TestCase):
+    """Test integration of transfer reading and indexing.
+
+    It uses ``tiny_transfer``, a small transfer part of fixtures/."""
+
+    def setUp(self):
+        self.tmp_dir = tempfile.mkdtemp()
+        self.space = models.Space.objects.create(path="/", access_protocol="FS")
+        self.location = models.Location.objects.create(space=self.space, purpose="TB")
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp_dir)
+
+    def _create_transfer_package(self, fixture_dir, name, make_bagit=False):
+        src = os.path.join(FIXTURES_DIR, fixture_dir)
+        dst = os.path.join(self.tmp_dir, name)
+        shutil.copytree(src, dst)
+        if make_bagit:
+            bagit.make_bag(dst)
+        return models.Package.objects.create(
+            current_location=self.location, current_path=dst
+        )
+
+    def test_transfer_indexing(self):
+        package = self._create_transfer_package("tiny_transfer", "test1")
+        file_data = package._parse_mets(package.full_path)
+        assert len(file_data["files"]) == 1
+        assert file_data["transfer_uuid"] == "328f0967-94a0-4376-bf92-9224da033248"
+        assert file_data["files"][0]["path"] == "test1/objects/MARBLES.TGA"
+        package.index_file_data_from_transfer_mets()
+        files = models.File.objects.filter(package=package)
+        assert files.count() == 1
+        assert files[0].name == "test1/objects/MARBLES.TGA"
+
+    def test_transfer_bagit_indexing(self):
+        """Test that the path reflects the BagIt directory structure."""
+        package = self._create_transfer_package(
+            "tiny_transfer", "test2", make_bagit=True
+        )
+        file_data = package._parse_mets(package.full_path)
+        assert len(file_data["files"]) == 1
+        assert file_data["transfer_uuid"] == "328f0967-94a0-4376-bf92-9224da033248"
+        assert file_data["files"][0]["path"] == "test2/data/objects/MARBLES.TGA"
+        package.index_file_data_from_transfer_mets()
+        files = models.File.objects.filter(package=package)
+        assert files.count() == 1
+        assert files[0].name == "test2/data/objects/MARBLES.TGA"
