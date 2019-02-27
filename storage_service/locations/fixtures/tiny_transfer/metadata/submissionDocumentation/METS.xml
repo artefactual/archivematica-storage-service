@@ -1,0 +1,65 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mets:mets xmlns:mets="http://www.loc.gov/METS/" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OBJID="328f0967-94a0-4376-bf92-9224da033248" xsi:schemaLocation="http://www.loc.gov/METS/ http://www.loc.gov/standards/mets/mets.xsd">
+  <mets:metsHdr CREATEDATE="2019-03-06T22:06:02">
+    <mets:agent OTHERTYPE="SOFTWARE" ROLE="CREATOR" TYPE="OTHER">
+      <mets:name>f1d803b9-c429-441c-bc3a-d9d334ac71bc</mets:name>
+      <mets:note>Archivematica dashboard UUID</mets:note>
+    </mets:agent>
+  </mets:metsHdr>
+  <mets:amdSec ID="digiprov-d8c71be6-4088-49c0-91f0-11a4b02dfd5b">
+    <mets:digiprovMD ID="digiprovMD_1">
+      <mets:mdWrap MDTYPE="PREMIS:EVENT">
+        <mets:xmlData>
+          <premis:event xmlns:premis="info:lc/xmlns/premis-v2" xsi:schemaLocation="info:lc/xmlns/premis-v2 http://www.loc.gov/standards/premis/v2/premis-v2-2.xsd" version="2.2">
+            <premis:eventIdentifier>
+              <premis:eventIdentifierType>UUID</premis:eventIdentifierType>
+              <premis:eventIdentifierValue>49610aa5-0f10-4b23-aa3a-4fd76f5128a7</premis:eventIdentifierValue>
+            </premis:eventIdentifier>
+            <premis:eventType>ingestion</premis:eventType>
+            <premis:eventDateTime>2019-03-06T22:05:58.742911+00:00</premis:eventDateTime>
+            <premis:eventDetail></premis:eventDetail>
+            <premis:eventOutcomeInformation>
+              <premis:eventOutcome></premis:eventOutcome>
+              <premis:eventOutcomeDetail>
+                <premis:eventOutcomeDetailNote></premis:eventOutcomeDetailNote>
+              </premis:eventOutcomeDetail>
+            </premis:eventOutcomeInformation>
+            <premis:linkingAgentIdentifier>
+              <premis:linkingAgentIdentifierType>preservation system</premis:linkingAgentIdentifierType>
+              <premis:linkingAgentIdentifierValue>Archivematica-1.9</premis:linkingAgentIdentifierValue>
+            </premis:linkingAgentIdentifier>
+            <premis:linkingAgentIdentifier>
+              <premis:linkingAgentIdentifierType>repository code</premis:linkingAgentIdentifierType>
+              <premis:linkingAgentIdentifierValue>test</premis:linkingAgentIdentifierValue>
+            </premis:linkingAgentIdentifier>
+            <premis:linkingAgentIdentifier>
+              <premis:linkingAgentIdentifierType>Archivematica user pk</premis:linkingAgentIdentifierType>
+              <premis:linkingAgentIdentifierValue>1</premis:linkingAgentIdentifierValue>
+            </premis:linkingAgentIdentifier>
+          </premis:event>
+        </mets:xmlData>
+      </mets:mdWrap>
+    </mets:digiprovMD>
+  </mets:amdSec>
+  <mets:fileSec>
+    <mets:fileGrp USE="original">
+      <mets:file ID="file-d8c71be6-4088-49c0-91f0-11a4b02dfd5b" ADMID="digiprov-d8c71be6-4088-49c0-91f0-11a4b02dfd5b">
+        <mets:FLocat xlink:href="objects/MARBLES.TGA" LOCTYPE="OTHER" OTHERLOCTYPE="SYSTEM"/>
+      </mets:file>
+    </mets:fileGrp>
+  </mets:fileSec>
+  <mets:structMap TYPE="physical" LABEL="original">
+    <mets:div TYPE="directory" LABEL="TinyTransfer-328f0967-94a0-4376-bf92-9224da033248">
+      <mets:div TYPE="directory" LABEL="objects">
+        <mets:fptr FILEID="file-d8c71be6-4088-49c0-91f0-11a4b02dfd5b"/>
+      </mets:div>
+    </mets:div>
+  </mets:structMap>
+  <mets:structMap LABEL="processed" TYPE="physical">
+    <mets:div TYPE="directory" LABEL="TinyTransfer-328f0967-94a0-4376-bf92-9224da033248">
+      <mets:div TYPE="directory" LABEL="objects">
+        <mets:fptr FILEID="file-d8c71be6-4088-49c0-91f0-11a4b02dfd5b"/>
+      </mets:div>
+    </mets:div>
+  </mets:structMap>
+</mets:mets>

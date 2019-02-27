@@ -1725,20 +1725,13 @@ class Package(models.Model):
 
         return (compressed_filename, extract_path)
 
-    def _parse_mets(
-        self,
-        prefix=None,
-        relative_path=["metadata", "submissionDocumentation", "METS.xml"],
-    ):
+    def _parse_mets(self, prefix):
         """
         Parses a transfer's METS file, and returns a dict with metadata about
         the transfer and each file it contains.
 
         :param prefix: The location of the transfer containing the METS file
             to parse. If not provided, self.full_path is used.
-        :param relative_path: An array containing one or more path components.
-            These will be joined together with the prefix to produce the
-            complete path of the METS within this transfer.
         :return: A dict in the following structure:
             {
                 "transfer_uuid": "The UUID of the originating transfer",
@@ -1757,9 +1750,10 @@ class Package(models.Model):
         :raises StorageException: if the requested METS file cannot be found,
             or if required elements are missing.
         """
-        if prefix is None:
-            prefix = self.full_path
-
+        relative_path = ["metadata", "submissionDocumentation", "METS.xml"]
+        is_bagit = _is_bagit(prefix)
+        if is_bagit:
+            relative_path.insert(0, "data")
         mets_path = os.path.join(prefix, *relative_path)
         if not os.path.isfile(mets_path):
             raise StorageException(
@@ -1848,10 +1842,10 @@ class Package(models.Model):
                         "%transferDirectory%", "", 1
                     )
 
-            file_data = {
-                "path": os.path.join(package_basename, relative_path),
-                "file_uuid": uuid,
-            }
+            path = [package_basename, relative_path]
+            if is_bagit:
+                path.insert(1, "data")
+            file_data = {"path": os.path.join(*path), "file_uuid": uuid}
 
             files_data.append(file_data)
 
@@ -3244,3 +3238,12 @@ def write_pointer_file(pointer_file, pointer_file_path):
     if not os.path.isdir(pointer_dir_path):
         os.makedirs(pointer_dir_path)
     pointer_file.write(pointer_file_path, pretty_print=True)
+
+
+def _is_bagit(path):
+    """Determine whether ``path`` is a BagIt package."""
+    try:
+        bagit.Bag(path)
+    except bagit.BagError:
+        return False
+    return True
