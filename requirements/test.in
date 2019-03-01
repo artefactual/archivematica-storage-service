@@ -1,0 +1,11 @@
+# Test dependencies go here.
+-r base.txt
+
+pytest==3.8.0
+pytest-cov==2.4.0
+coverage==4.2
+pytest-django
+pytest-mock>=1,<2
+tox
+vcrpy>=1.0.0
+ipdb
