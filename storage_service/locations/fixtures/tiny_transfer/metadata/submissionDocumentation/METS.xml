@@ -5,6 +5,7 @@
       <mets:name>f1d803b9-c429-441c-bc3a-d9d334ac71bc</mets:name>
       <mets:note>Archivematica dashboard UUID</mets:note>
     </mets:agent>
+    <mets:altRecordID TYPE="Accession number">12345</mets:altRecordID>
   </mets:metsHdr>
   <mets:amdSec ID="digiprov-d8c71be6-4088-49c0-91f0-11a4b02dfd5b">
     <mets:digiprovMD ID="digiprovMD_1">
@@ -40,11 +41,44 @@
         </mets:xmlData>
       </mets:mdWrap>
     </mets:digiprovMD>
+    <mets:digiprovMD ID="digiprovMD_2">
+      <mets:mdWrap MDTYPE="PREMIS:EVENT">
+        <mets:xmlData>
+          <premis:event xmlns:premis="info:lc/xmlns/premis-v2" xsi:schemaLocation="info:lc/xmlns/premis-v2 http://www.loc.gov/standards/premis/v2/premis-v2-2.xsd" version="2.2">
+            <premis:eventIdentifier>
+              <premis:eventIdentifierType>UUID</premis:eventIdentifierType>
+              <premis:eventIdentifierValue>49610aa5-0f10-4b23-aa3a-4fd76f5128a7</premis:eventIdentifierValue>
+            </premis:eventIdentifier>
+            <premis:eventType>name cleanup</premis:eventType>
+            <premis:eventDateTime>2019-03-06T22:05:58.742911+00:00</premis:eventDateTime>
+            <premis:eventDetail>prohibited characters removed:program="sanitize_names"; version="1.10.d0ccb7d7661cf35c769dcc0846d8f087998af713"</premis:eventDetail>        
+            <premis:eventOutcomeInformation>
+              <premis:eventOutcome></premis:eventOutcome>
+              <premis:eventOutcomeDetail>
+                <premis:eventOutcomeDetailNote>Original name="%transferDirectory%objects/foo bar.bmp"; cleaned up name="%transferDirectory%objects/foobar.bmp"</premis:eventOutcomeDetailNote>
+              </premis:eventOutcomeDetail>
+            </premis:eventOutcomeInformation>
+            <premis:linkingAgentIdentifier>
+              <premis:linkingAgentIdentifierType>preservation system</premis:linkingAgentIdentifierType>
+              <premis:linkingAgentIdentifierValue>Archivematica-1.9</premis:linkingAgentIdentifierValue>
+            </premis:linkingAgentIdentifier>
+            <premis:linkingAgentIdentifier>
+              <premis:linkingAgentIdentifierType>repository code</premis:linkingAgentIdentifierType>
+              <premis:linkingAgentIdentifierValue>test</premis:linkingAgentIdentifierValue>
+            </premis:linkingAgentIdentifier>
+            <premis:linkingAgentIdentifier>
+              <premis:linkingAgentIdentifierType>Archivematica user pk</premis:linkingAgentIdentifierType>
+              <premis:linkingAgentIdentifierValue>1</premis:linkingAgentIdentifierValue>
+            </premis:linkingAgentIdentifier>
+          </premis:event>
+        </mets:xmlData>
+      </mets:mdWrap>
+    </mets:digiprovMD>
   </mets:amdSec>
   <mets:fileSec>
     <mets:fileGrp USE="original">
       <mets:file ID="file-d8c71be6-4088-49c0-91f0-11a4b02dfd5b" ADMID="digiprov-d8c71be6-4088-49c0-91f0-11a4b02dfd5b">
-        <mets:FLocat xlink:href="objects/MARBLES.TGA" LOCTYPE="OTHER" OTHERLOCTYPE="SYSTEM"/>
+        <mets:FLocat xlink:href="objects/foo bar.bmp" LOCTYPE="OTHER" OTHERLOCTYPE="SYSTEM"/>
       </mets:file>
     </mets:fileGrp>
   </mets:fileSec>
