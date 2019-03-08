@@ -1,36 +1,29 @@
 # -*- coding: utf-8 -*-
 from django.test import TestCase
 import os
-import shutil
 import vcr
 
 from locations import models
+from . import TempDirMixin
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
 
 
-class TestDataverse(TestCase):
+class TestDataverse(TempDirMixin, TestCase):
 
     fixtures = ["base.json", "dataverse.json", "dataverse2.json"]
 
     def setUp(self):
+        super(TestDataverse, self).setUp()
         self.dataverse = models.Dataverse.objects.all()[0]
         self.dataverse_location = models.Location.objects.get(
             space=self.dataverse.space
         )
 
         self.space = models.Space.objects.get(access_protocol="FS")
-        self.space.staging_path = os.path.join(
-            FIXTURES_DIR
-        )  # Make staging path the fixtures dir
-        self.dest_path = os.path.join(self.space.staging_path, "dataverse/")
-
-    def tearDown(self):
-        try:
-            shutil.rmtree(self.dest_path)
-        except Exception:
-            pass
+        self.space.staging_path = str(self.tmpdir)
+        self.dest_path = str(self.tmpdir / "dataverse") + os.sep
 
     def test_has_required_attributes(self):
         assert self.dataverse.host
