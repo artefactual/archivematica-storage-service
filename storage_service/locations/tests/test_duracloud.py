@@ -1,32 +1,32 @@
 from lxml import etree
 import os
+import shutil
 import requests
 
 from django.test import TestCase
 import vcr
 
 from locations import models
+from . import TempDirMixin
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
 
 
-class TestDuracloud(TestCase):
+class TestDuracloud(TempDirMixin, TestCase):
 
     fixtures = ["base.json", "duracloud.json"]
 
     def setUp(self):
-        self.ds_object = models.Duracloud.objects.all()[0]
+        super(TestDuracloud, self).setUp()
+        self.ds_object = models.Duracloud.objects.first()
         self.auth = requests.auth.HTTPBasicAuth(
             self.ds_object.user, self.ds_object.password
         )
-
-        # Move to a location that is writeable
-        self.old_dir = os.getcwd()
-        os.chdir("/var/archivematica/storage_service")
-
-    def tearDown(self):
-        os.chdir(self.old_dir)
+        # Set the staging path of the space to a temporary directory.
+        models.Space.objects.filter(uuid="6fb34c82-4222-425e-b0ea-30acfd31f52e").update(
+            staging_path=str(self.tmpdir)
+        )
 
     def test_has_required_attributes(self):
         assert self.ds_object.host
@@ -204,9 +204,10 @@ class TestDuracloud(TestCase):
     )
     def test_move_from_ss_file(self):
         # Create test.txt
-        open("test.txt", "w").write("test file\n")
+        testfile = self.tmpdir / "test.txt"
+        testfile.open("w").write(u"test file\n")
         # Upload
-        self.ds_object.move_from_storage_service("test.txt", "test/test.txt")
+        self.ds_object.move_from_storage_service(str(testfile), "test/test.txt")
         # Verify
         response = requests.get(
             "https://archivematica.duracloud.org/durastore/testing/test/test.txt",
@@ -215,7 +216,6 @@ class TestDuracloud(TestCase):
         assert response.status_code == 200
         assert response.text == "test file\n"
         # Cleanup
-        os.remove("test.txt")
         requests.delete(
             "https://"
             + self.ds_object.host
@@ -232,12 +232,12 @@ class TestDuracloud(TestCase):
     )
     def test_move_from_ss_folder(self):
         # Create test folder
-        os.mkdir("test")
-        os.mkdir("test/subfolder")
-        open("test/test.txt", "w").write("test file\n")
-        open("test/subfolder/test2.txt", "w").write("test file2\n")
+        testdir = self.tmpdir / "test"
+        (testdir / "subfolder").mkdir(parents=True)
+        (testdir / "test.txt").open("w").write(u"test file\n")
+        (testdir / "subfolder" / "test2.txt").open("w").write(u"test file2\n")
         # Upload
-        self.ds_object.move_from_storage_service("test/", "test/foo/")
+        self.ds_object.move_from_storage_service(str(testdir) + os.sep, "test/foo/")
         # Verify
         response = requests.get(
             "https://archivematica.duracloud.org/durastore/testing/test/foo/test.txt",
@@ -252,9 +252,6 @@ class TestDuracloud(TestCase):
         assert response.status_code == 200
         assert response.text == "test file2\n"
         # Cleanup
-        os.remove("test/test.txt")
-        os.remove("test/subfolder/test2.txt")
-        os.removedirs("test/subfolder")
         requests.delete(
             "https://"
             + self.ds_object.host
@@ -281,9 +278,10 @@ class TestDuracloud(TestCase):
     )
     def test_move_from_ss_percent_encoding(self):
         # Create bad #name.txt
-        open("bad #name.txt", "w").write("bad #name file\n")
+        testfile = self.tmpdir / "bad #name.txt"
+        testfile.open("w").write(u"test file\n")
         # Upload
-        self.ds_object.move_from_storage_service("bad #name.txt", "test/bad #name.txt")
+        self.ds_object.move_from_storage_service(str(testfile), "test/bad #name.txt")
         # Verify
         response = requests.get(
             "https://archivematica.duracloud.org/durastore/testing/test/bad%20%23name.txt",
@@ -292,7 +290,6 @@ class TestDuracloud(TestCase):
         assert response.status_code == 200
         assert response.text == "bad #name file\n"
         # Cleanup
-        os.remove("bad #name.txt")
         requests.delete(
             "https://"
             + self.ds_object.host
@@ -308,7 +305,8 @@ class TestDuracloud(TestCase):
         )
     )
     def test_move_from_ss_chunked_file(self):
-        file_path = os.path.join(FIXTURES_DIR, "chunk_file.txt")
+        shutil.copy(os.path.join(FIXTURES_DIR, "chunk_file.txt"), str(self.tmpdir))
+        file_path = str(self.tmpdir / "chunk_file.txt")
         self.ds_object.CHUNK_SIZE = 10 * 1024  # Set testing chunk size
         # Upload
         self.ds_object.move_from_storage_service(
@@ -397,7 +395,8 @@ class TestDuracloud(TestCase):
     )
     def test_move_from_ss_chunked_resume(self):
         # Setup
-        file_path = os.path.join(FIXTURES_DIR, "chunk_file.txt")
+        shutil.copy(os.path.join(FIXTURES_DIR, "chunk_file.txt"), str(self.tmpdir))
+        file_path = str(self.tmpdir / "chunk_file.txt")
         self.ds_object.CHUNK_SIZE = 10 * 1024  # Set testing chunk size
         requests.put(
             "https://"
@@ -431,7 +430,7 @@ class TestDuracloud(TestCase):
         assert response.status_code == 404
         # Upload
         self.ds_object.move_from_storage_service(
-            file_path, "chunked/chunked_image.txt", resume=True
+            str(file_path), "chunked/chunked_image.txt", resume=True
         )
         # Verify
         response = requests.get(
@@ -514,39 +513,32 @@ class TestDuracloud(TestCase):
         os.path.join(FIXTURES_DIR, "vcr_cassettes", "duracloud_move_to_ss_file.yaml")
     )
     def test_move_to_ss_file(self):
+        tmpdir = self.tmpdir / "move_to_ss_file_dir"
+        tmpfile = tmpdir / "test.txt"
         # Test file
-        self.ds_object.move_to_storage_service(
-            "test/test.txt", "move_to_ss_file_dir/test.txt", None
-        )
-        assert os.path.isdir("move_to_ss_file_dir")
-        assert os.path.isfile("move_to_ss_file_dir/test.txt")
-        assert open("move_to_ss_file_dir/test.txt", "r").read() == "test file\n"
-        # Cleanup
-        os.remove("move_to_ss_file_dir/test.txt")
-        os.removedirs("move_to_ss_file_dir")
+        self.ds_object.move_to_storage_service("test/test.txt", str(tmpfile), None)
+        assert tmpdir.is_dir()
+        assert tmpfile.is_file()
+        assert tmpfile.open().read() == u"test file\n"
 
     @vcr.use_cassette(
         os.path.join(FIXTURES_DIR, "vcr_cassettes", "duracloud_move_to_ss_folder.yaml")
     )
     def test_move_to_ss_folder(self):
+        tmpdir = self.tmpdir / "move_to_ss_file_dir"
         # Test folder
         self.ds_object.move_to_storage_service(
-            "test/foo/", "move_to_ss_folder_dir/test/", None
+            "test/foo/", str(tmpdir / "test") + os.sep, None
         )
-        assert os.path.isdir("move_to_ss_folder_dir")
-        assert os.path.isdir("move_to_ss_folder_dir/test")
-        assert os.path.isdir("move_to_ss_folder_dir/test/subfolder")
-        assert os.path.isfile("move_to_ss_folder_dir/test/test.txt")
-        assert os.path.isfile("move_to_ss_folder_dir/test/subfolder/test2.txt")
-        assert open("move_to_ss_folder_dir/test/test.txt").read() == "test file\n"
+        assert tmpdir.is_dir()
+        assert (tmpdir / "test").is_dir()
+        assert (tmpdir / "test" / "subfolder").is_dir()
+        assert (tmpdir / "test" / "test.txt").is_file()
+        assert (tmpdir / "test" / "test.txt").open().read() == u"test file\n"
+        assert (tmpdir / "test" / "subfolder" / "test2.txt").is_file()
         assert (
-            open("move_to_ss_folder_dir/test/subfolder/test2.txt").read()
-            == "test file2\n"
-        )
-        # Cleanup
-        os.remove("move_to_ss_folder_dir/test/test.txt")
-        os.remove("move_to_ss_folder_dir/test/subfolder/test2.txt")
-        os.removedirs("move_to_ss_folder_dir/test/subfolder")
+            tmpdir / "test" / "subfolder" / "test2.txt"
+        ).open().read() == u"test file2\n"
 
     @vcr.use_cassette(
         os.path.join(
@@ -554,26 +546,20 @@ class TestDuracloud(TestCase):
         )
     )
     def test_move_to_ss_folder_globbing(self):
+        tmpdir = self.tmpdir / "move_to_ss_folder_globbing_dir"
         # Test with globbing
         self.ds_object.move_to_storage_service(
-            "test/foo/.", "move_to_ss_folder_globbing_dir/test/", None
+            "test/foo/.", str(tmpdir / "test") + os.sep, None
         )
-        assert os.path.isdir("move_to_ss_folder_globbing_dir")
-        assert os.path.isdir("move_to_ss_folder_globbing_dir/test")
-        assert os.path.isdir("move_to_ss_folder_globbing_dir/test/subfolder")
-        assert os.path.isfile("move_to_ss_folder_globbing_dir/test/test.txt")
-        assert os.path.isfile("move_to_ss_folder_globbing_dir/test/subfolder/test2.txt")
+        assert tmpdir.is_dir()
+        assert (tmpdir / "test").is_dir()
+        assert (tmpdir / "test" / "subfolder").is_dir()
+        assert (tmpdir / "test" / "test.txt").is_file()
+        assert (tmpdir / "test" / "test.txt").open().read() == u"test file\n"
+        assert (tmpdir / "test" / "subfolder" / "test2.txt").is_file()
         assert (
-            open("move_to_ss_folder_globbing_dir/test/test.txt").read() == "test file\n"
-        )
-        assert (
-            open("move_to_ss_folder_globbing_dir/test/subfolder/test2.txt").read()
-            == "test file2\n"
-        )
-        # Cleanup
-        os.remove("move_to_ss_folder_globbing_dir/test/test.txt")
-        os.remove("move_to_ss_folder_globbing_dir/test/subfolder/test2.txt")
-        os.removedirs("move_to_ss_folder_globbing_dir/test/subfolder")
+            tmpdir / "test" / "subfolder" / "test2.txt"
+        ).open().read() == u"test file2\n"
 
     @vcr.use_cassette(
         os.path.join(
@@ -581,17 +567,16 @@ class TestDuracloud(TestCase):
         )
     )
     def test_move_to_ss_percent_encoding(self):
+        testdir = self.tmpdir / "move_to_ss_percent_dir"
+        testfile = testdir / "bad #name.txt"
         # Move to SS with # in path & filename
         self.ds_object.move_to_storage_service(
-            "test/bad #name/bad #name.txt", "move_to_ss_percent_dir/bad #name.txt", None
+            "test/bad #name/bad #name.txt", str(testfile), None
         )
         # Verify
-        assert os.path.isdir("move_to_ss_percent_dir")
-        assert os.path.isfile("move_to_ss_percent_dir/bad #name.txt")
-        assert open("move_to_ss_percent_dir/bad #name.txt").read() == "test file\n"
-        # Cleanup
-        os.remove("move_to_ss_percent_dir/bad #name.txt")
-        os.removedirs("move_to_ss_percent_dir")
+        assert testdir.is_dir()
+        assert testfile.is_file()
+        assert testfile.open().read() == "test file\n"
 
     @vcr.use_cassette(
         os.path.join(
@@ -599,22 +584,16 @@ class TestDuracloud(TestCase):
         )
     )
     def test_move_to_ss_chunked_file(self):
+        testdir = self.tmpdir / "move_to_ss_chunked"
+        testfile = testdir / "chunked #image.jpg"
         # chunked #image.jpg is actually chunked
         self.ds_object.move_to_storage_service(
-            "chunked/chunked #image.jpg", "move_to_ss_chunked/chunked #image.jpg", None
+            "chunked/chunked #image.jpg", str(testfile), None
         )
         # Verify
-        assert os.path.isdir("move_to_ss_chunked")
-        assert not os.path.exists("move_to_ss_chunked/chunked #image.jpg.dura-manifest")
-        assert not os.path.exists(
-            "move_to_ss_chunked/chunked #image.jpg.dura-chunk-0000"
-        )
-        assert not os.path.exists(
-            "move_to_ss_chunked/chunked #image.jpg.dura-chunk-0001"
-        )
-        assert os.path.isfile("move_to_ss_chunked/chunked #image.jpg")
-        assert os.path.getsize("move_to_ss_chunked/chunked #image.jpg") == 158131
-
-        # Cleanup
-        os.remove("move_to_ss_chunked/chunked #image.jpg")
-        os.removedirs("move_to_ss_chunked")
+        assert testdir.is_dir()
+        assert not (testdir / "chunked #image.jpg.dura-manifest").exists()
+        assert not (testdir / "chunked #image.jpg.dura-chunk-0000").exists()
+        assert not (testdir / "chunked #image.jpg.dura-chunk-0001").exists()
+        assert testfile.is_file()
+        assert testfile.stat().st_size == 158131

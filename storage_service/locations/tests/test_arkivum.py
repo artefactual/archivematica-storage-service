@@ -6,10 +6,10 @@ import vcr
 from django.test import TestCase
 
 from locations import models
+from . import TempDirMixin
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
-ARKIVUM_DIR = os.path.abspath(os.path.join(FIXTURES_DIR, "arkivum"))
 
 
 def get_pkg_uuid_path(package_uuid):
@@ -17,16 +17,17 @@ def get_pkg_uuid_path(package_uuid):
     return os.path.join(*[tmp[i : i + 4] for i in range(0, len(tmp), 4)])
 
 
-class TestArkivum(TestCase):
+class TestArkivum(TempDirMixin, TestCase):
 
     fixtures = ["base.json", "arkivum.json"]
 
     def setUp(self):
-        self.arkivum_object = models.Arkivum.objects.all()[0]
-        self.arkivum_object.space.path = FIXTURES_DIR
-        self.arkivum_object.space.staging_path = FIXTURES_DIR
-
+        super(TestArkivum, self).setUp()
+        self.arkivum_object = models.Arkivum.objects.first()
+        self.arkivum_object.space.path = str(self.tmpdir)
+        self.arkivum_object.space.staging_path = str(self.tmpdir)
         self.arkivum_object.space.save()
+        self.arkivum_object.save()
         package_uuid = "c0f8498f-b92e-4a8b-8941-1b34ba062ed8"
         self.package = models.Package.objects.get(uuid=package_uuid)
         # Here we make sure that the test pointer file is where the package
@@ -43,22 +44,19 @@ class TestArkivum(TestCase):
             get_pkg_uuid_path(package_uuid),
             pointer_fname,
         )
-        try:
-            os.makedirs(os.path.dirname(pointer_dst_path))
-        except OSError:
-            pass
+        os.makedirs(os.path.dirname(pointer_dst_path))
         shutil.copyfile(pointer_src_path, pointer_dst_path)
         self.uncompressed_package = models.Package.objects.get(
             uuid="e52c518d-fcf4-46cc-8581-bbc01aff7af3"
         )
-        # Create filesystem to interact with
-        os.mkdir(os.path.join(ARKIVUM_DIR, "aips"))
-        os.mkdir(os.path.join(ARKIVUM_DIR, "ts"))
-        with open(os.path.join(ARKIVUM_DIR, "test.txt"), "ab") as f:
-            f.write("test.txt contents")
 
-    def tearDown(self):
-        shutil.rmtree(ARKIVUM_DIR)
+        # Create filesystem to interact with
+        shutil.copy(os.path.join(FIXTURES_DIR, "working_bag.zip"), str(self.tmpdir))
+        self.arkivum_dir = self.tmpdir / "arkivum"
+        (self.arkivum_dir / "aips").mkdir()
+        (self.arkivum_dir / "ts").mkdir()
+        (self.arkivum_dir / "test.txt").open("ab").write(u"test.txt contents")
+        self.arkivum_dir = str(self.arkivum_dir)
 
     def test_has_required_attributes(self):
         assert self.arkivum_object.host
@@ -68,7 +66,7 @@ class TestArkivum(TestCase):
         )
 
     def test_browse(self):
-        response = self.arkivum_object.browse(ARKIVUM_DIR)
+        response = self.arkivum_object.browse(self.arkivum_dir)
         assert response
         assert set(response["directories"]) == set(["aips", "ts", "storage_service"])
         assert set(response["entries"]) == set(
@@ -122,9 +120,7 @@ class TestArkivum(TestCase):
     def test_post_move_from_ss(self):
         # POST to Arkivum about file
         self.arkivum_object.post_move_from_storage_service(
-            os.path.join(FIXTURES_DIR, "working_bag.zip"),
-            self.package.full_path,
-            self.package,
+            str(self.tmpdir / "working_bag.zip"), self.package.full_path, self.package
         )
         assert self.package.misc_attributes["arkivum_identifier"] == (
             "a09f9c18-df2b-474f-8c7f-50eb3dedba2d"
@@ -186,6 +182,7 @@ class TestArkivum(TestCase):
         )
     )
     def test_update_package_status_uncompressed(self):
+        self.uncompressed_package.current_path = str(self.tmpdir)
         # Setup request_id
         self.uncompressed_package.misc_attributes.update(
             {"arkivum_identifier": "5afe9428-c6d6-4d0f-9196-5e7fd028726d"}

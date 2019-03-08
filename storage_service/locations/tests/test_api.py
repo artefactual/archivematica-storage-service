@@ -10,6 +10,7 @@ from django.utils.six.moves.urllib.parse import urlparse
 
 from locations import models
 from locations.api.sword.views import _parse_name_and_content_urls_from_mets_file
+from . import TempDirMixin
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures", ""))
@@ -208,22 +209,26 @@ class TestLocationAPI(TestCase):
         assert response.status_code == 404
 
 
-class TestPackageAPI(TestCase):
+class TestPackageAPI(TempDirMixin, TestCase):
 
     fixtures = ["base.json", "package.json", "arkivum.json"]
 
     def setUp(self):
+        super(TestPackageAPI, self).setUp()
+        ss_internal = self.tmpdir / "ss-internal"
+        ss_internal.mkdir()
         self.test_location = models.Location.objects.get(
             uuid="615103f0-0ee0-4a12-ba17-43192d1143ea"
         )
-        # Set up locations to point to fixtures directory
+        # Set up locations with fixtures
+        shutil.copy(os.path.join(FIXTURES_DIR, "working_bag.zip"), str(self.tmpdir))
         self.test_location.relative_path = FIXTURES_DIR[1:]
         self.test_location.save()
         models.Space.objects.filter(uuid="6fb34c82-4222-425e-b0ea-30acfd31f52e").update(
-            path=FIXTURES_DIR
+            path=str(self.tmpdir)
         )
         ss_int = models.Location.objects.get(purpose="SS")
-        ss_int.relative_path = FIXTURES_DIR[1:]
+        ss_int.relative_path = str(ss_internal)[1:]
         ss_int.save()
         # Set Arkivum package request ID
         models.Package.objects.filter(
@@ -239,11 +244,6 @@ class TestPackageAPI(TestCase):
         self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
             "test:test"
         )
-
-    def tearDown(self):
-        for entry in os.listdir(FIXTURES_DIR):
-            if entry.startswith("tmp"):
-                shutil.rmtree(os.path.join(FIXTURES_DIR, entry))
 
     def test_requires_auth(self):
         del self.client.defaults["HTTP_AUTHORIZATION"]

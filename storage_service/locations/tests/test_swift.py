@@ -1,29 +1,24 @@
 # -*- coding: utf-8 -*-
 import os
-import shutil
 
 from django.test import TestCase
 import pytest
 import vcr
 
 from locations import models
+from . import TempDirMixin
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
 
 
-class TestSwift(TestCase):
+class TestSwift(TempDirMixin, TestCase):
 
     fixtures = ["base.json", "swift.json"]
 
     def setUp(self):
-        self.swift_object = models.Swift.objects.all()[0]
-
-    def tearDown(self):
-        if os.path.exists("test"):
-            shutil.rmtree("test")
-        if os.path.exists("test.txt"):
-            os.remove("test.txt")
+        super(TestSwift, self).setUp()
+        self.swift_object = models.Swift.objects.first()
 
     def test_has_required_attributes(self):
         assert self.swift_object.auth_url
@@ -73,21 +68,18 @@ class TestSwift(TestCase):
 
     @vcr.use_cassette(os.path.join(FIXTURES_DIR, "vcr_cassettes", "swift_move_to.yaml"))
     def test_move_to_ss(self):
-        test_file = "test/%percent.txt"
-        # Not here already
-        try:
-            os.remove(test_file)
-        except OSError:
-            pass
-        assert not os.path.exists(test_file)
+        test_file = self.tmpdir / "test" / "%percent.txt"
+        assert not test_file.exists()
         # Test
         self.swift_object.move_to_storage_service(
-            "transfers/SampleTransfers/badNames/objects/%percent.txt", test_file, None
+            "transfers/SampleTransfers/badNames/objects/%percent.txt",
+            str(test_file),
+            None,
         )
         # Verify
-        assert os.path.isdir("test")
-        assert os.path.isfile(test_file)
-        assert open(test_file, "r").read() == "%percent\n"
+        assert test_file.parent.is_dir()
+        assert test_file.is_file()
+        assert test_file.open().read() == "%percent\n"
 
     @vcr.use_cassette(
         os.path.join(FIXTURES_DIR, "vcr_cassettes", "swift_move_to_not_exist.yaml")
@@ -105,38 +97,31 @@ class TestSwift(TestCase):
         os.path.join(FIXTURES_DIR, "vcr_cassettes", "swift_move_to_folder.yaml")
     )
     def test_move_to_ss_folder(self):
-        test_dir = "test/subdir/"
-        try:
-            shutil.rmtree(test_dir)
-        except (OSError, shutil.Error):
-            pass
-        assert not os.path.exists(test_dir)
+        test_dir = self.tmpdir / "test" / "subdir"
+        assert not test_dir.exists()
         self.swift_object.move_to_storage_service(
-            "transfers/SampleTransfers/badNames/objects/%/", test_dir, None
+            "transfers/SampleTransfers/badNames/objects/%/",
+            str(test_dir) + os.sep,
+            None,
         )
         # Verify
-        assert os.path.isdir(test_dir)
-        assert os.path.isfile(os.path.join(test_dir, "@at.txt"))
-        assert open(os.path.join(test_dir, "@at.txt"), "r").read() == "data\n"
-        assert os.path.isfile(os.path.join(test_dir, "control.txt"))
-        assert open(os.path.join(test_dir, "control.txt"), "r").read() == "test file\n"
+        assert test_dir.is_dir()
+        assert (test_dir / "@at.txt").is_file()
+        assert (test_dir / "@at.txt").open().read() == "data\n"
+        assert (test_dir / "control.txt").is_file()
+        assert (test_dir / "control.txt").open().read() == "test file\n"
 
     @vcr.use_cassette(
         os.path.join(FIXTURES_DIR, "vcr_cassettes", "swift_move_to_bad_etag.yaml")
     )
     def test_move_to_ss_bad_etag(self):
-        test_file = "test/%percent.txt"
-        # Not here already
-        try:
-            os.remove(test_file)
-        except OSError:
-            pass
-        assert not os.path.exists(test_file)
+        test_file = self.tmpdir / "test" / "%percent.txt"
+        assert not test_file.exists()
         # Test
         with pytest.raises(models.StorageException):
             self.swift_object.move_to_storage_service(
                 "transfers/SampleTransfers/badNames/objects/%percent.txt",
-                test_file,
+                str(test_file),
                 None,
             )
 
@@ -145,10 +130,11 @@ class TestSwift(TestCase):
     )
     def test_move_from_ss(self):
         # create test.txt
-        open("test.txt", "w").write("test file\n")
+        test_file = self.tmpdir / "test.txt"
+        test_file.open("w").write(u"test file\n")
         # Test
         self.swift_object.move_from_storage_service(
-            "test.txt", "transfers/SampleTransfers/test.txt"
+            str(test_file), "transfers/SampleTransfers/test.txt"
         )
         # Verify
         resp = self.swift_object.browse("transfers/SampleTransfers/")

@@ -315,8 +315,7 @@ class TestPackage(TestCase):
                 relative_path="working_bag/manifest-sha512.txt",
                 extract_path=self.tmp_dir,
             )
-
-        assert e_info.value.message == "Extraction error"
+        assert e_info.value.args[0] == "Extraction error"
 
     def test_extract_file_aip_from_compressed_aip(self):
         """ It should return an aip """
