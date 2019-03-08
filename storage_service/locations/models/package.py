@@ -1755,26 +1755,15 @@ class Package(models.Model):
         if is_bagit:
             relative_path.insert(0, "data")
         mets_path = os.path.join(prefix, *relative_path)
-        if not os.path.isfile(mets_path):
-            raise StorageException(
-                _("No METS found at location: %(path)s") % {"path": mets_path}
-            )
-
-        doc = etree.parse(mets_path)
-
-        namespaces = {"m": utils.NSMAP["mets"], "p": utils.NSMAP["premis"]}
-        mets = doc.xpath("/m:mets", namespaces=namespaces)
-        if not mets:
-            raise StorageException(_("<mets> element not found in METS file!"))
-        else:
-            mets = mets[0]
+        doc = metsrw.METSDocument.fromfile(mets_path)
+        namespaces = metsrw.utils.NAMESPACES
 
         try:
-            transfer_uuid = mets.attrib["OBJID"]
+            transfer_uuid = doc.tree.getroot().attrib["OBJID"]
         except KeyError:
             raise StorageException(_("<mets> element did not have an OBJID attribute!"))
 
-        header = doc.find("m:metsHdr", namespaces=namespaces)
+        header = doc.tree.find("mets:metsHdr", namespaces=namespaces)
         if header is None:
             raise StorageException(_("<metsHdr> element not found in METS file!"))
 
@@ -1787,66 +1776,46 @@ class Package(models.Model):
 
         accession_id = (
             header.findtext(
-                './m:altRecordID[@TYPE="Accession number"]', namespaces=namespaces
+                './mets:altRecordID[@TYPE="Accession number"]', namespaces=namespaces
             )
             or ""
         )
 
         agent = header.xpath(
-            './m:agent[@ROLE="CREATOR"][@TYPE="OTHER"][@OTHERTYPE="SOFTWARE"]/m:note[.="Archivematica dashboard UUID"]/../m:name',
+            './mets:agent[@ROLE="CREATOR"][@TYPE="OTHER"][@OTHERTYPE="SOFTWARE"]/mets:note[.="Archivematica dashboard UUID"]/../mets:name',
             namespaces=namespaces,
         )
         if not agent:
             raise StorageException(_("No <agent> element found!"))
         dashboard_uuid = agent[0].text
 
-        files = mets.xpath(".//m:FLocat", namespaces=namespaces)
         package_basename = os.path.basename(self.current_path)
-
         files_data = []
-        for f in files:
-            file_id = f.getparent().attrib["ID"]
-
+        for f in doc.all_files():
             # Only include files listed in the "processed" structMap;
             # some files may not be present in this transfer.
-            if (
-                mets.find(
-                    './m:structMap[@LABEL="processed"]//m:fptr[@FILEID="{}"]'.format(
-                        file_id
-                    ),
-                    namespaces=namespaces,
-                )
-                is None
-            ):
+            if not f.file_uuid:
                 continue
-
-            relative_path = f.attrib["{" + utils.NSMAP["xlink"] + "}href"]
-            uuid = file_id[-36:]
-
+            relative_path = f.path
+            uuid = f.file_uuid
             # If the filename has been sanitized, the path in the fileSec
             # may be outdated; check for a cleanup event and use that,
             # if present.
-            cleanup_events = mets.xpath(
-                'm:amdSec[@ID="digiprov-{}"]/m:digiprovMD/m:mdWrap/m:xmlData/p:event/p:eventType[text()="name cleanup"]/../p:eventOutcomeInformation/p:eventOutcomeDetail/p:eventOutcomeDetailNote/text()'.format(
-                    uuid
-                ),
-                namespaces=namespaces,
-                smart_strings=False,
-            )
-            if cleanup_events:
-                cleaned_up_name = re.match(
-                    r'.*cleaned up name="(.*)"$', cleanup_events[0]
-                )
+            for item in f.get_premis_events():
+                if item.event_type != "name cleanup":
+                    continue
+                event_note = item.event_outcome_detail_note
+                if not event_note:
+                    continue
+                cleaned_up_name = re.match(r'.*cleaned up name="(.*)"$', event_note)
                 if cleaned_up_name:
                     relative_path = cleaned_up_name.groups()[0].replace(
                         "%transferDirectory%", "", 1
                     )
-
             path = [package_basename, relative_path]
             if is_bagit:
                 path.insert(1, "data")
             file_data = {"path": os.path.join(*path), "file_uuid": uuid}
-
             files_data.append(file_data)
 
         return {

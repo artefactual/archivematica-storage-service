@@ -112,13 +112,13 @@ class TestPackage(TestCase):
         assert mets_data["creation_date"] == "2015-02-21T01:55:08"
         assert len(mets_data["files"]) == 11
         # This file's name was sanitized, so check to see if the correct name is used
-        assert (
-            mets_data["files"][9]["file_uuid"] == "742f10b0-768a-4158-b255-94847a97c465"
-        )
-        assert (
-            mets_data["files"][9]["path"]
-            == "images-transfer-de1b31fa-97dd-48e0-8417-03be78359531/objects/pictures/Landing_zone.jpg"
-        )
+        for item in mets_data["files"]:
+            if item["file_uuid"] != "742f10b0-768a-4158-b255-94847a97c465":
+                continue
+            assert (
+                item["path"]
+                == "images-transfer-de1b31fa-97dd-48e0-8417-03be78359531/objects/pictures/Landing_zone.jpg"
+            )
 
     def test_files_are_added_to_database(self):
         self.package.index_file_data_from_transfer_mets(prefix=self.mets_path)
@@ -356,12 +356,15 @@ class TestTransferPackage(TestCase):
         package = self._create_transfer_package("tiny_transfer", "test1")
         file_data = package._parse_mets(package.full_path)
         assert len(file_data["files"]) == 1
+        assert file_data["dashboard_uuid"] == "f1d803b9-c429-441c-bc3a-d9d334ac71bc"
+        assert file_data["creation_date"] == "2019-03-06T22:06:02"
+        assert file_data["accession_id"] == "12345"
         assert file_data["transfer_uuid"] == "328f0967-94a0-4376-bf92-9224da033248"
-        assert file_data["files"][0]["path"] == "test1/objects/MARBLES.TGA"
+        assert file_data["files"][0]["path"] == "test1/objects/foobar.bmp"
         package.index_file_data_from_transfer_mets()
         files = models.File.objects.filter(package=package)
         assert files.count() == 1
-        assert files[0].name == "test1/objects/MARBLES.TGA"
+        assert files[0].name == "test1/objects/foobar.bmp"
 
     def test_transfer_bagit_indexing(self):
         """Test that the path reflects the BagIt directory structure."""
@@ -369,10 +372,7 @@ class TestTransferPackage(TestCase):
             "tiny_transfer", "test2", make_bagit=True
         )
         file_data = package._parse_mets(package.full_path)
-        assert len(file_data["files"]) == 1
-        assert file_data["transfer_uuid"] == "328f0967-94a0-4376-bf92-9224da033248"
-        assert file_data["files"][0]["path"] == "test2/data/objects/MARBLES.TGA"
+        assert file_data["files"][0]["path"] == "test2/data/objects/foobar.bmp"
         package.index_file_data_from_transfer_mets()
         files = models.File.objects.filter(package=package)
-        assert files.count() == 1
-        assert files[0].name == "test2/data/objects/MARBLES.TGA"
+        assert files[0].name == "test2/data/objects/foobar.bmp"
