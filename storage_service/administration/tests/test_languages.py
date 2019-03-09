@@ -5,10 +5,10 @@ from django.test import TestCase, override_settings
 class TestLanguageSwitching(TestCase):
     @classmethod
     def setUpClass(cls):
+        super(TestLanguageSwitching, cls).setUpClass()
         User.objects.create_user(
             username="admin", password="admin", email="admin@example.com"
         )
-        super(TestLanguageSwitching, cls).setUpClass()
 
     def setUp(self):
         self.client.login(username="admin", password="admin")
