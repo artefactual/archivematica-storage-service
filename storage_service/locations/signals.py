@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import json
 import logging
+import sys
 
 from django.dispatch import receiver, Signal
 from django.contrib.auth.models import User
@@ -103,5 +104,16 @@ def report_not_run_fixity_check(sender, **kwargs):
     _log_report(uuid=kwargs["uuid"], success=None, message=report_data["message"])
 
 
-# Create an API key for every user, for TastyPie
-signals.post_save.connect(create_api_key, sender=User)
+def _create_api_key(sender, *args, **kwargs):
+    """Create API key for every user, for TastyPie.
+
+    We don't want to run this in our tests because our fixtures provision a
+    custom key. Tell me there is a better way to do this that does not require
+    more scattering of signal business.
+    """
+    if "pytest" in sys.modules:
+        return
+    create_api_key(sender, **kwargs)
+
+
+signals.post_save.connect(_create_api_key, sender=User)
