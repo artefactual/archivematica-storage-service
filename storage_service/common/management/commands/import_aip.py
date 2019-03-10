@@ -60,6 +60,7 @@ import tempfile
 import bagit
 from django.core.management.base import BaseCommand
 from django.db.utils import IntegrityError
+from django.utils.six.moves import input
 
 from administration.models import Settings
 from common import utils
@@ -333,7 +334,7 @@ def check_if_aip_already_exists(aip_uuid):
             'An AIP with UUID {} already exists in this Storage Service? If you'
             ' want to import this AIP anyway (and destroy the existing one),'
             ' then enter "y" or "yes": '.format(aip_uuid))
-        user_response = raw_input(prompt)
+        user_response = input(prompt)
         if user_response.lower() not in ('y', 'yes'):
             raise ImportAIPException(
                 'Aborting importation of an already existing AIP')

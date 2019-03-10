@@ -1736,8 +1736,8 @@ class Package(models.Model):
             ]))
             if detailed_output:
                 tool_info_command = (
-                    'echo program="tar"\; '
-                    'algorithm="{}"\; '
+                    'echo program="tar"\\; '
+                    'algorithm="{}"\\; '
                     'version="`tar --version | grep tar`"'.format(algo))
         elif algorithm in (utils.COMPRESSION_7Z_BZIP, utils.COMPRESSION_7Z_LZMA):
             compressed_filename = os.path.join(extract_path, basename + ".7z")
@@ -1762,8 +1762,8 @@ class Package(models.Model):
             if detailed_output:
                 tool_info_command = (
                     '#!/bin/bash\n'
-                    'echo program="7z"\; '
-                    'algorithm="{}"\; '
+                    'echo program="7z"\\; '
+                    'algorithm="{}"\\; '
                     'version="`7z | grep Version`"'.format(algo))
         else:
             raise NotImplementedError(
