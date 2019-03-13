@@ -68,7 +68,7 @@ def get_setting(setting, default=None):
     """ Returns the value of 'setting' from models.Settings, 'default' if not found."""
     try:
         setting = models.Settings.objects.get(name=setting)
-    except:
+    except models.Settings.DoesNotExist:
         return_value = default
     else:
         return_value = ast.literal_eval(setting.value)
