@@ -9,6 +9,7 @@ manage (i.e., list, created, import, delete) GPG keys.
 """
 
 from __future__ import absolute_import
+
 # stdlib, alphabetical
 import logging
 
@@ -25,16 +26,16 @@ LOGGER = logging.getLogger(__name__)
 
 
 # Defaults for the default AM SS GPG key
-DFLT_KEY_TYPE = 'RSA'
+DFLT_KEY_TYPE = "RSA"
 DFLT_KEY_LENGTH = 4096
-DFLT_KEY_REAL_NAME = _('Archivematica Storage Service GPG Key')
-DFLT_KEY_PASSPHRASE = ''
+DFLT_KEY_REAL_NAME = _("Archivematica Storage Service GPG Key")
+DFLT_KEY_PASSPHRASE = ""
 
 
-PASSPHRASED = 'passphrased'
-IMPORT_ERROR = 'import error'
-ENCR_WORKS = 'yes'
-ENCR_FAILS = 'no'
+PASSPHRASED = "passphrased"
+IMPORT_ERROR = "import error"
+ENCR_WORKS = "yes"
+ENCR_FAILS = "no"
 
 
 class GPGBinaryPathError(Exception):
@@ -45,7 +46,7 @@ class GPG(object):
 
     # List of binaries in order of preference. In distros like Ubuntu 18.04,
     # GnuPG v1 is only available via ``gpg1`` (package ``gnupg1``).
-    PREFERRED_GNUPG_BINARIES = ['gpg1', 'gpg']
+    PREFERRED_GNUPG_BINARIES = ["gpg1", "gpg"]
 
     def __init__(self):
         self._gpg = None
@@ -54,17 +55,16 @@ class GPG(object):
         if not self._gpg:
             self._gpg = gnupg.GPG(
                 gnupghome=self._get_gnupg_home_path(),
-                gpgbinary=self._get_gnupg_bin_path())
+                gpgbinary=self._get_gnupg_bin_path(),
+            )
         return self._gpg
 
     def _get_gnupg_home_path(self):
         """Find and return the home path for GnuPG to store its config."""
         gnupg_home_path = settings.GNUPG_HOME_PATH
         if not gnupg_home_path:
-            Location = apps.get_model(app_label='locations',
-                                      model_name='Location')
-            ss_internal = Location.active.get(
-                purpose=Location.STORAGE_SERVICE_INTERNAL)
+            Location = apps.get_model(app_label="locations", model_name="Location")
+            ss_internal = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
             gnupg_home_path = ss_internal.full_path
         return gnupg_home_path
 
@@ -75,8 +75,9 @@ class GPG(object):
             if ret is not None:
                 return ret
         raise GPGBinaryPathError(
-            'GnuPG binary not found in the system path.'
-            ' Preferred binary names: %s' % self.PREFERRED_GNUPG_BINARIES)
+            "GnuPG binary not found in the system path."
+            " Preferred binary names: %s" % self.PREFERRED_GNUPG_BINARIES
+        )
 
 
 gpg = GPG()
@@ -107,7 +108,7 @@ def get_default_gpg_key(keys):
     or return ``None``.
     """
     for key in keys:
-        uids = key['uids']
+        uids = key["uids"]
         for uid in uids:
             if uid.startswith(DFLT_KEY_REAL_NAME):
                 return key
@@ -126,12 +127,11 @@ def generate_default_gpg_key():
         key_type=DFLT_KEY_TYPE,
         key_length=DFLT_KEY_LENGTH,
         name_real=DFLT_KEY_REAL_NAME,
-        passphrase=DFLT_KEY_PASSPHRASE
+        passphrase=DFLT_KEY_PASSPHRASE,
     )
-    LOGGER.info('Creating default AM SS key with name %s', DFLT_KEY_REAL_NAME)
+    LOGGER.info("Creating default AM SS key with name %s", DFLT_KEY_REAL_NAME)
     gpg().gen_key(input_data)
-    LOGGER.info('Finished creating default AM SS key with name %s',
-                DFLT_KEY_REAL_NAME)
+    LOGGER.info("Finished creating default AM SS key with name %s", DFLT_KEY_REAL_NAME)
 
 
 def generate_gpg_key(name_real, name_email):
@@ -141,7 +141,7 @@ def generate_gpg_key(name_real, name_email):
         key_length=DFLT_KEY_LENGTH,
         name_real=name_real,
         name_email=name_email,
-        passphrase=DFLT_KEY_PASSPHRASE
+        passphrase=DFLT_KEY_PASSPHRASE,
     )
     return gpg().gen_key(input_data)
 
@@ -170,25 +170,24 @@ def encryption_works(fingerprint):
     ``fingerprint``. Return 'yes' if it does, 'no' if it doesn't and
     'passphrased' if it doesn't because a passphrase is required.
     """
-    unencrypted_string = 'secrets'
-    encrypted_data = gpg().encrypt(
-        unencrypted_string, fingerprint, always_trust=True)
+    unencrypted_string = "secrets"
+    encrypted_data = gpg().encrypt(unencrypted_string, fingerprint, always_trust=True)
     encrypted_string = str(encrypted_data)
-    LOGGER.info('Checking encryption with key %s', fingerprint)
-    LOGGER.info('encrypt ok: %s', encrypted_data.ok)
-    LOGGER.info('encrypt status: %s', encrypted_data.status)
-    LOGGER.info('encrypt stderr: %s', encrypted_data.stderr)
+    LOGGER.info("Checking encryption with key %s", fingerprint)
+    LOGGER.info("encrypt ok: %s", encrypted_data.ok)
+    LOGGER.info("encrypt status: %s", encrypted_data.status)
+    LOGGER.info("encrypt stderr: %s", encrypted_data.stderr)
     if not encrypted_data.ok:
         return ENCR_FAILS  # unable to encrypt
     decrypted_data = gpg().decrypt(encrypted_string)
-    LOGGER.info('Checking decryption with key %s', fingerprint)
-    LOGGER.info('decrypt ok: %s', decrypted_data.ok)
-    LOGGER.info('decrypt status: %s', decrypted_data.status)
-    LOGGER.info('decrypt stderr: %s', decrypted_data.stderr)
+    LOGGER.info("Checking decryption with key %s", fingerprint)
+    LOGGER.info("decrypt ok: %s", decrypted_data.ok)
+    LOGGER.info("decrypt status: %s", decrypted_data.status)
+    LOGGER.info("decrypt stderr: %s", decrypted_data.stderr)
     if decrypted_data.ok:
         return ENCR_WORKS
     else:
-        if decrypted_data.status == 'need passphrase':
+        if decrypted_data.status == "need passphrase":
             return PASSPHRASED
         return ENCR_FAILS
 
@@ -204,7 +203,7 @@ def delete_gpg_key(fingerprint):
     """Delete the GPG key with fingerprint ``fingerprint``.  """
     result = gpg().delete_keys(fingerprint, True)
     try:
-        assert str(result) == 'ok'
+        assert str(result) == "ok"
         return True
     except AssertionError:
         return False
@@ -214,7 +213,7 @@ def gpg_decrypt_file(path, decr_path):
     """Use GPG to decrypt the file at ``path`` and save the decrypted file to
     ``decr_path``.
     """
-    with open(path, 'rb') as stream:
+    with open(path, "rb") as stream:
         return gpg().decrypt_file(stream, output=decr_path)
 
 
@@ -224,12 +223,13 @@ def gpg_encrypt_file(path, recipient_fingerprint):
     is given the .gpg extension and its path and the Python-GnuPG encryption
     result <gnupg.Crypt> object are returned.
     """
-    encr_path = path + '.gpg'
-    with open(path, 'rb') as stream:
+    encr_path = path + ".gpg"
+    with open(path, "rb") as stream:
         result = gpg().encrypt_file(
             stream,
             [recipient_fingerprint],
             armor=False,
             always_trust=True,  # so we can use imported keys
-            output=encr_path)
+            output=encr_path,
+        )
     return encr_path, result

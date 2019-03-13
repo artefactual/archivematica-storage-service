@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+
 # stdlib, alphabetical
 import logging
 import os
@@ -21,31 +22,50 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Swift(models.Model):
-    space = models.OneToOneField('Space', to_field='uuid')
-    auth_url = models.CharField(max_length=256,
-        verbose_name=_('Auth URL'),
-        help_text=_('URL to authenticate against'))
-    auth_version = models.CharField(max_length=8, default='2',
-        verbose_name=_('Auth version'),
-        help_text=_('OpenStack auth version'))
-    username = models.CharField(max_length=64,
-        verbose_name=_('Username'),
-        help_text=_('Username to authenticate as. E.g. http://example.com:5000/v2.0/'))
+    space = models.OneToOneField("Space", to_field="uuid")
+    auth_url = models.CharField(
+        max_length=256,
+        verbose_name=_("Auth URL"),
+        help_text=_("URL to authenticate against"),
+    )
+    auth_version = models.CharField(
+        max_length=8,
+        default="2",
+        verbose_name=_("Auth version"),
+        help_text=_("OpenStack auth version"),
+    )
+    username = models.CharField(
+        max_length=64,
+        verbose_name=_("Username"),
+        help_text=_("Username to authenticate as. E.g. http://example.com:5000/v2.0/"),
+    )
     # HELP how do I store the password?  Has to be plaintext to send to Swift, but that seems like a bad idea
-    password = models.CharField(max_length=256,
-        verbose_name=_('Password'),
-        help_text=_('Password to authenticate with'))
+    password = models.CharField(
+        max_length=256,
+        verbose_name=_("Password"),
+        help_text=_("Password to authenticate with"),
+    )
     container = models.CharField(max_length=64, verbose_name=_("Container"))
-    tenant = models.CharField(max_length=64, null=True, blank=True,
-        verbose_name=_('Tenant'),
-        help_text=_('The tenant/account name, required when connecting to an auth 2.0 system.'))
-    region = models.CharField(max_length=64, null=True, blank=True,
-        verbose_name=_('Region'),
-        help_text=_('Optional: Region in Swift'))
+    tenant = models.CharField(
+        max_length=64,
+        null=True,
+        blank=True,
+        verbose_name=_("Tenant"),
+        help_text=_(
+            "The tenant/account name, required when connecting to an auth 2.0 system."
+        ),
+    )
+    region = models.CharField(
+        max_length=64,
+        null=True,
+        blank=True,
+        verbose_name=_("Region"),
+        help_text=_("Optional: Region in Swift"),
+    )
 
     class Meta:
         verbose_name = _("Swift")
-        app_label = 'locations'
+        app_label = "locations"
 
     ALLOWED_LOCATION_PURPOSE = [
         Location.AIP_STORAGE,
@@ -67,7 +87,7 @@ class Swift(models.Model):
                 key=self.password,
                 tenant_name=self.tenant,
                 auth_version=self.auth_version,
-                os_options={'region_name': self.region}
+                os_options={"region_name": self.region},
             )
         return self._connection
 
@@ -82,33 +102,35 @@ class Swift(models.Model):
         'timestamp': Last modified timestamp of the object or directory
         """
         # Can only browse directories. Add a trailing / to make Swift happy
-        if not path.endswith('/'):
-            path += '/'
-        _, content = self.connection.get_container(self.container, delimiter='/', prefix=path)
+        if not path.endswith("/"):
+            path += "/"
+        _, content = self.connection.get_container(
+            self.container, delimiter="/", prefix=path
+        )
         # Replace path, strip trailing /, sort
         entries = []
         directories = []
         properties = {}
         for entry in content:
-            if 'subdir' in entry:  # Directories
-                basename = os.path.basename(entry['subdir'].rstrip('/'))
+            if "subdir" in entry:  # Directories
+                basename = os.path.basename(entry["subdir"].rstrip("/"))
                 directories.append(basename)
-            elif 'name' in entry:  # Files
-                basename = os.path.basename(entry['name'])
+            elif "name" in entry:  # Files
+                basename = os.path.basename(entry["name"])
                 properties[basename] = {
-                    'size': entry['bytes'],
-                    'timestamp': entry['last_modified'],
+                    "size": entry["bytes"],
+                    "timestamp": entry["last_modified"],
                 }
             else:
                 # Error
-                LOGGER.warning('%s is neither a file nor a directory.', entry)
+                LOGGER.warning("%s is neither a file nor a directory.", entry)
                 continue
             entries.append(basename)
 
         return {
-            'directories': sorted(directories, key=lambda s: s.lower()),
-            'entries': sorted(entries, key=lambda s: s.lower()),
-            'properties': properties,
+            "directories": sorted(directories, key=lambda s: s.lower()),
+            "entries": sorted(entries, key=lambda s: s.lower()),
+            "properties": properties,
         }
 
     def delete_path(self, delete_path):
@@ -120,11 +142,17 @@ class Swift(models.Model):
             # doesn't exist, assume it is supposed to be a folder and fetch all
             # items with that prefix to delete.
             try:
-                _, content = self.connection.get_container(self.container, prefix=delete_path)
+                _, content = self.connection.get_container(
+                    self.container, prefix=delete_path
+                )
             except swiftclient.exceptions.ClientException:
-                LOGGER.warning('Neither file %s nor container %s exist; unable to delete any content.', delete_path, self.container)
+                LOGGER.warning(
+                    "Neither file %s nor container %s exist; unable to delete any content.",
+                    delete_path,
+                    self.container,
+                )
                 return
-            to_delete = [x['name'] for x in content if x.get('name')]
+            to_delete = [x["name"] for x in content if x.get("name")]
             for d in to_delete:
                 self.connection.delete_object(self.container, d)
 
@@ -139,13 +167,19 @@ class Swift(models.Model):
         # TODO find a way to stream content to dest_path, instead of having to put it in memory
         headers, content = self.connection.get_object(self.container, remote_path)
         self.space.create_local_directory(download_path)
-        with open(download_path, 'wb') as f:
+        with open(download_path, "wb") as f:
             f.write(content)
         # Check ETag matches checksum of this file
-        if 'etag' in headers:
+        if "etag" in headers:
             checksum = utils.generate_checksum(download_path)
-            if checksum.hexdigest() != headers['etag']:
-                message = _('ETag %(remote_path)s for %(etag)s does not match %(checksum)s') % {'remote_path': remote_path, 'etag': headers['etag'], 'checksum': checksum.hexdigest()}
+            if checksum.hexdigest() != headers["etag"]:
+                message = _(
+                    "ETag %(remote_path)s for %(etag)s does not match %(checksum)s"
+                ) % {
+                    "remote_path": remote_path,
+                    "etag": headers["etag"],
+                    "checksum": checksum.hexdigest(),
+                }
                 logging.warning(message)
                 raise StorageException(message)
 
@@ -158,7 +192,7 @@ class Swift(models.Model):
             # doesn't exist, assume it is supposed to be a folder and fetch all
             # items with that prefix.
             _, content = self.connection.get_container(self.container, prefix=src_path)
-            to_get = [x['name'] for x in content if x.get('name')]
+            to_get = [x["name"] for x in content if x.get("name")]
             if not to_get:
                 # If nothing found, try normalizing src_path to remove possible
                 # extra characters like / /* /.  These glob-match on a
@@ -166,8 +200,10 @@ class Swift(models.Model):
                 # Normalize dest_path as well, so replace continues to work
                 src_path = os.path.normpath(src_path)
                 dest_path = os.path.normpath(dest_path)
-                _, content = self.connection.get_container(self.container, prefix=src_path)
-                to_get = [x['name'] for x in content if x.get('name')]
+                _, content = self.connection.get_container(
+                    self.container, prefix=src_path
+                )
+                to_get = [x["name"] for x in content if x.get("name")]
             for entry in to_get:
                 dest = entry.replace(src_path, dest_path, 1)
                 self._download_file(entry, dest)
@@ -176,24 +212,24 @@ class Swift(models.Model):
         """ Moves self.staging_path/src_path to dest_path. """
         if os.path.isdir(source_path):
             # Both source and destination paths should end with /
-            destination_path = os.path.join(destination_path, '')
+            destination_path = os.path.join(destination_path, "")
             # Swift does not accept folders, so upload each file individually
             for path, dirs, files in os.walk(source_path):
                 for basename in files:
                     entry = os.path.join(path, basename)
                     dest = entry.replace(source_path, destination_path, 1)
                     checksum = utils.generate_checksum(entry)
-                    with open(entry, 'rb') as f:
+                    with open(entry, "rb") as f:
                         self.connection.put_object(
                             self.container,
                             obj=dest,
                             contents=f,
                             etag=checksum.hexdigest(),
-                            content_length=os.path.getsize(entry)
+                            content_length=os.path.getsize(entry),
                         )
         elif os.path.isfile(source_path):
             checksum = utils.generate_checksum(source_path)
-            with open(source_path, 'rb') as f:
+            with open(source_path, "rb") as f:
                 self.connection.put_object(
                     self.container,
                     obj=destination_path,
@@ -203,5 +239,6 @@ class Swift(models.Model):
                 )
         else:
             raise StorageException(
-                _('%(path)s is neither a file nor a directory, may not exist') %
-                {'path': source_path})
+                _("%(path)s is neither a file nor a directory, may not exist")
+                % {"path": source_path}
+            )

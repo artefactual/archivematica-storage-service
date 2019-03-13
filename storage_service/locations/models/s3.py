@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+
 # stdlib, alphabetical
 import logging
 import os
@@ -21,25 +22,29 @@ LOGGER = logging.getLogger(__name__)
 
 
 class S3(models.Model):
-    space = models.OneToOneField('Space', to_field='uuid')
-    endpoint_url = models.CharField(max_length=2048,
-        verbose_name=_('S3 Endpoint URL'),
-        help_text=_('S3 Endpoint URL. Eg. https://s3.amazonaws.com'))
-    access_key_id = models.CharField(max_length=64,
-        verbose_name=_('Access Key ID to authenticate'))
-    secret_access_key = models.CharField(max_length=256,
-        verbose_name=_('Secret Access Key to authenticate with'))
-    region = models.CharField(max_length=64,
-        verbose_name=_('Region'),
-        help_text=_('Region in S3. Eg. us-east-2'))
+    space = models.OneToOneField("Space", to_field="uuid")
+    endpoint_url = models.CharField(
+        max_length=2048,
+        verbose_name=_("S3 Endpoint URL"),
+        help_text=_("S3 Endpoint URL. Eg. https://s3.amazonaws.com"),
+    )
+    access_key_id = models.CharField(
+        max_length=64, verbose_name=_("Access Key ID to authenticate")
+    )
+    secret_access_key = models.CharField(
+        max_length=256, verbose_name=_("Secret Access Key to authenticate with")
+    )
+    region = models.CharField(
+        max_length=64,
+        verbose_name=_("Region"),
+        help_text=_("Region in S3. Eg. us-east-2"),
+    )
 
     class Meta:
         verbose_name = _("S3")
-        app_label = 'locations'
+        app_label = "locations"
 
-    ALLOWED_LOCATION_PURPOSE = [
-        Location.AIP_STORAGE,
-    ]
+    ALLOWED_LOCATION_PURPOSE = [Location.AIP_STORAGE]
 
     def __init__(self, *args, **kwargs):
         super(S3, self).__init__(*args, **kwargs)
@@ -50,22 +55,24 @@ class S3(models.Model):
     def client(self):
         if self._client is None:
             self._client = boto3.client(
-                service_name='s3',
+                service_name="s3",
                 endpoint_url=self.endpoint_url,
                 aws_access_key_id=self.access_key_id,
                 aws_secret_access_key=self.secret_access_key,
-                region_name=self.region)
+                region_name=self.region,
+            )
         return self._client
 
     @property
     def resource(self):
         if self._resource is None:
             self._resource = boto3.resource(
-                service_name='s3',
+                service_name="s3",
                 endpoint_url=self.endpoint_url,
                 aws_access_key_id=self.access_key_id,
                 aws_secret_access_key=self.secret_access_key,
-                region_name=self.region)
+                region_name=self.region,
+            )
         return self._resource
 
     def _ensure_bucket_exists(self):
@@ -76,7 +83,7 @@ class S3(models.Model):
 
     def browse(self, path):
         # strip leading slash on path
-        path = path.lstrip('/')
+        path = path.lstrip("/")
 
         # We need a trailing slash on non-empty prefixes because a path like:
         #
@@ -88,8 +95,8 @@ class S3(models.Model):
         #
         # which is not the intention!
         #
-        if path != '':
-            path = path.rstrip('/') + '/'
+        if path != "":
+            path = path.rstrip("/") + "/"
 
         objects = self.resource.Bucket(self._bucket_name()).objects.filter(Prefix=path)
 
@@ -98,30 +105,32 @@ class S3(models.Model):
         properties = {}
 
         for objectSummary in objects:
-            relative_key = objectSummary.key.replace(path, '', 1).lstrip('/')
+            relative_key = objectSummary.key.replace(path, "", 1).lstrip("/")
 
-            if '/' in relative_key:
-                directory_name = re.sub('/.*', '', relative_key)
+            if "/" in relative_key:
+                directory_name = re.sub("/.*", "", relative_key)
                 if directory_name:
                     directories.add(directory_name)
                     entries.add(directory_name)
             else:
                 entries.add(relative_key)
                 properties[relative_key] = {
-                    'verbose name': objectSummary.key,
-                    'size': objectSummary.size,
-                    'timestamp': objectSummary.last_modified,
-                    'e_tag': objectSummary.e_tag,
+                    "verbose name": objectSummary.key,
+                    "size": objectSummary.size,
+                    "timestamp": objectSummary.last_modified,
+                    "e_tag": objectSummary.e_tag,
                 }
 
         return {
-            'directories': list(directories),
-            'entries': list(entries),
-            'properties': properties,
+            "directories": list(directories),
+            "entries": list(entries),
+            "properties": properties,
         }
 
     def delete_path(self, delete_path):
-        objects = self.resource.Bucket(self._bucket_name()).objects.filter(Prefix=delete_path)
+        objects = self.resource.Bucket(self._bucket_name()).objects.filter(
+            Prefix=delete_path
+        )
 
         for objectSummary in objects:
             objectSummary.delete()
@@ -131,9 +140,11 @@ class S3(models.Model):
         bucket = self.resource.Bucket(self._bucket_name())
 
         # strip leading slash on src_path
-        src_path = src_path.lstrip('/')
+        src_path = src_path.lstrip("/")
 
-        objects = self.resource.Bucket(self._bucket_name()).objects.filter(Prefix=src_path)
+        objects = self.resource.Bucket(self._bucket_name()).objects.filter(
+            Prefix=src_path
+        )
 
         for objectSummary in objects:
             dest_file = objectSummary.key.replace(src_path, dest_path, 1)
@@ -147,28 +158,29 @@ class S3(models.Model):
 
         if os.path.isdir(src_path):
             # ensure trailing slash on both paths
-            src_path = os.path.join(src_path, '')
-            dest_path = os.path.join(dest_path, '')
+            src_path = os.path.join(src_path, "")
+            dest_path = os.path.join(dest_path, "")
 
             # strip leading slash on dest_path
-            dest_path = dest_path.lstrip('/')
+            dest_path = dest_path.lstrip("/")
 
             for path, dirs, files in os.walk(src_path):
                 for basename in files:
                     entry = os.path.join(path, basename)
                     dest = entry.replace(src_path, dest_path, 1)
 
-                    with open(entry, 'rb') as data:
+                    with open(entry, "rb") as data:
                         bucket.upload_fileobj(data, dest)
 
         elif os.path.isfile(src_path):
             # strip leading slash on dest_path
-            dest_path = dest_path.lstrip('/')
+            dest_path = dest_path.lstrip("/")
 
-            with open(src_path, 'rb') as data:
+            with open(src_path, "rb") as data:
                 bucket.upload_fileobj(data, dest_path)
 
         else:
             raise StorageException(
-                _('%(path)s is neither a file nor a directory, may not exist') %
-                {'path': src_path})
+                _("%(path)s is neither a file nor a directory, may not exist")
+                % {"path": src_path}
+            )

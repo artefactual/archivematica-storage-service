@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+
 # stdlib, alphabetical
 import datetime
 import os
@@ -16,26 +17,31 @@ from .location import Location
 
 class Fedora(models.Model):
     """ Accepts deposits from FEDORA via a SWORD2 server. """
-    space = models.OneToOneField('Space', to_field='uuid')
+
+    space = models.OneToOneField("Space", to_field="uuid")
 
     # Authentication related attributes
-    fedora_user = models.CharField(max_length=64,
+    fedora_user = models.CharField(
+        max_length=64,
         verbose_name=_("Fedora user"),
-        help_text=_("Fedora user name (for SWORD functionality)"))
-    fedora_password = models.CharField(max_length=256,
+        help_text=_("Fedora user name (for SWORD functionality)"),
+    )
+    fedora_password = models.CharField(
+        max_length=256,
         verbose_name=_("Fedora password"),
-        help_text=_("Fedora password (for SWORD functionality)"))
-    fedora_name = models.CharField(max_length=256,
+        help_text=_("Fedora password (for SWORD functionality)"),
+    )
+    fedora_name = models.CharField(
+        max_length=256,
         verbose_name=_("Fedora name"),
-        help_text=_("Name or IP of the remote Fedora machine."))
+        help_text=_("Name or IP of the remote Fedora machine."),
+    )
 
     class Meta:
         verbose_name = _("FEDORA")
-        app_label = 'locations'
+        app_label = "locations"
 
-    ALLOWED_LOCATION_PURPOSE = [
-        Location.SWORD_DEPOSIT
-    ]
+    ALLOWED_LOCATION_PURPOSE = [Location.SWORD_DEPOSIT]
 
     def save(self, *args, **kwargs):
         self.verify()
@@ -51,9 +57,10 @@ class Fedora(models.Model):
 
 # For SWORD asynchronous downloading support
 class PackageDownloadTask(models.Model):
-    uuid = UUIDField(editable=False, unique=True, version=4,
-        help_text=_("Unique identifier"))
-    package = models.ForeignKey('Package', to_field='uuid')
+    uuid = UUIDField(
+        editable=False, unique=True, version=4, help_text=_("Unique identifier")
+    )
+    package = models.ForeignKey("Package", to_field="uuid")
 
     downloads_attempted = models.IntegerField(default=0)
     downloads_completed = models.IntegerField(default=0)
@@ -61,14 +68,17 @@ class PackageDownloadTask(models.Model):
 
     class Meta:
         verbose_name = _("Package Download Task")
-        app_label = 'locations'
+        app_label = "locations"
 
     def __unicode__(self):
-        return _(u'PackageDownloadTask ID: %(uuid)s for %(package)s') % {'uuid': self.uuid, 'package': self.package}
+        return _(u"PackageDownloadTask ID: %(uuid)s for %(package)s") % {
+            "uuid": self.uuid,
+            "package": self.package,
+        }
 
-    COMPLETE = 'complete'
-    INCOMPLETE = 'incomplete'
-    FAILED = 'failed'
+    COMPLETE = "complete"
+    INCOMPLETE = "incomplete"
+    FAILED = "failed"
 
     def downloading_status(self):
         """
@@ -99,30 +109,39 @@ class PackageDownloadTask(models.Model):
 
 
 class PackageDownloadTaskFile(models.Model):
-    uuid = UUIDField(editable=False, unique=True, version=4,
-        help_text=_("Unique identifier"))
-    task = models.ForeignKey('PackageDownloadTask', to_field='uuid', related_name='download_file_set')
+    uuid = UUIDField(
+        editable=False, unique=True, version=4, help_text=_("Unique identifier")
+    )
+    task = models.ForeignKey(
+        "PackageDownloadTask", to_field="uuid", related_name="download_file_set"
+    )
 
     filename = models.CharField(max_length=256)
     url = models.TextField()
 
-    completed = models.BooleanField(default=False,
-        help_text=_("True if file downloaded successfully."))
-    failed = models.BooleanField(default=False,
-        help_text=_("True if file failed to download."))
+    completed = models.BooleanField(
+        default=False, help_text=_("True if file downloaded successfully.")
+    )
+    failed = models.BooleanField(
+        default=False, help_text=_("True if file failed to download.")
+    )
 
     class Meta:
         verbose_name = _("Package Download Task File")
-        app_label = 'locations'
+        app_label = "locations"
 
     def __unicode__(self):
-        return _(u'Download %(filename)s from %(url)s (%(status)s') % {'filename': self.filename, 'url': self.url, 'status': self.downloading_status()}
+        return _(u"Download %(filename)s from %(url)s (%(status)s") % {
+            "filename": self.filename,
+            "url": self.url,
+            "status": self.downloading_status(),
+        }
 
     def downloading_status(self):
         if self.completed:
-            return 'complete'
+            return "complete"
         else:
             if self.failed:
-                return 'failed'
+                return "failed"
             else:
-                return 'downloading'
+                return "downloading"

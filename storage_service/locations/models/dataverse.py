@@ -30,9 +30,7 @@ class Dataverse(URLMixin, models.Model):
     host = models.CharField(
         max_length=256,
         verbose_name=_("Host"),
-        help_text=_(
-            "Hostname of the Dataverse instance. Eg. apitest.dataverse.org"
-        ),
+        help_text=_("Hostname of the Dataverse instance. Eg. apitest.dataverse.org"),
     )
     api_key = models.CharField(
         max_length=50,
@@ -56,8 +54,7 @@ class Dataverse(URLMixin, models.Model):
         max_length=256,
         verbose_name=_("Agent identifier"),
         help_text=_(
-            "URI agent identifier for premis:agentIdentifierValue "
-            "in Archivematica"
+            "URI agent identifier for premis:agentIdentifierValue " "in Archivematica"
         ),
     )
     # FIXME disallow string in space.path
@@ -109,8 +106,9 @@ class Dataverse(URLMixin, models.Model):
         """
         LOGGER.info("Path received: %s", path)
         dataset_id, subtree, query_string = self.get_query_and_subtree(path)
-        LOGGER.info("Dataset ID: %s Subtree: %s Query: %s",
-            dataset_id, subtree, query_string)
+        LOGGER.info(
+            "Dataset ID: %s Subtree: %s Query: %s", dataset_id, subtree, query_string
+        )
         if dataset_id:
             return self._browse_dataset(dataset_id)
         return self._browse_dataverse(query_string, subtree)
@@ -123,95 +121,81 @@ class Dataverse(URLMixin, models.Model):
         LOGGER.info("Query: %s", query_string)
         url = self._generate_dataverse_url(slug="/api/search/")
         params = {
-            'key': self.api_key,
-            'q': query_string,
-            'subtree': subtree,
-            'type': 'dataset',
-            'sort': 'name',
-            'order': 'asc',
-            'start': 0,
-            'per_page': 50,
-            'show_entity_ids': True,
+            "key": self.api_key,
+            "q": query_string,
+            "subtree": subtree,
+            "type": "dataset",
+            "sort": "name",
+            "order": "asc",
+            "start": 0,
+            "per_page": 50,
+            "show_entity_ids": True,
         }
         properties = OrderedDict()
         while True:
-            LOGGER.debug('URL: %s, params: %s', url, params)
+            LOGGER.debug("URL: %s, params: %s", url, params)
             response = requests.get(url, params=params)
-            LOGGER.debug('Response: %s', response)
+            LOGGER.debug("Response: %s", response)
             # If the request isn't successful, i.e. doesn't return 200, then
             # raise an exception. Other use cases from Dataverse might need to
             # be considered, but we haven't examples of those as yet to go on
             # and test with. We're only looking for 200 OK at present.
             if response.status_code != 200:
-                LOGGER.warning('%s: Response: %s', response, response.text)
+                LOGGER.warning("%s: Response: %s", response, response.text)
                 raise StorageException(
-                    _('Unable to fetch datasets from %(url)s')
-                    % {'url': url})
+                    _("Unable to fetch datasets from %(url)s") % {"url": url}
+                )
             try:
-                data = response.json()['data']
-                items = data['items']
+                data = response.json()["data"]
+                items = data["items"]
             except json.JSONDecodeError:
-                LOGGER.error('Could not parse JSON from response to %s', url)
+                LOGGER.error("Could not parse JSON from response to %s", url)
                 raise StorageException(
-                    _('Unable to parse JSON from response to %(url)s')
-                    % {'url': url})
+                    _("Unable to parse JSON from response to %(url)s") % {"url": url}
+                )
             for ds in items:
-                properties[str(ds['entity_id'])] = {'verbose name': ds['name']}
-            if params['start'] + data['count_in_response'] < data['total_count']:
-                params['start'] += data['count_in_response']
+                properties[str(ds["entity_id"])] = {"verbose name": ds["name"]}
+            if params["start"] + data["count_in_response"] < data["total_count"]:
+                params["start"] += data["count_in_response"]
             else:
                 break
         entries = list(properties.keys())
-        return {
-            'directories': entries,
-            'entries': entries,
-            'properties': properties,
-        }
+        return {"directories": entries, "entries": entries, "properties": properties}
 
     def _browse_dataset(self, dataset_identifier):
         """Return all files in the dataset with ``entity_id``
         ``dataset_identifier`` (conforming to ``browse`` protocol).
         """
-        files_in_dataset_path = (
-            '/api/v1/datasets/{dataset_identifier}/versions/:latest'.format(
-                dataset_identifier=dataset_identifier))
+        files_in_dataset_path = "/api/v1/datasets/{dataset_identifier}/versions/:latest".format(
+            dataset_identifier=dataset_identifier
+        )
         url = self._generate_dataverse_url(slug=files_in_dataset_path)
-        params = {
-            'key': self.api_key,
-            'sort': 'name',
-            'order': 'asc',
-        }
-        LOGGER.debug('URL: %s, params: %s', url, params)
+        params = {"key": self.api_key, "sort": "name", "order": "asc"}
+        LOGGER.debug("URL: %s, params: %s", url, params)
         response = requests.get(url, params=params)
-        LOGGER.debug('Response: %s', response)
+        LOGGER.debug("Response: %s", response)
         # If the request isn't successful, i.e. doesn't return 200, then raise
         # an exception. Other use cases from Dataverse might need to be
         # considered, but we haven't examples of those as yet to go on and test
         # with. We're only looking for 200 OK at present.
         if response.status_code != 200:
-            LOGGER.warning('%s: Response: %s', response, response.text)
+            LOGGER.warning("%s: Response: %s", response, response.text)
             raise StorageException(
-                _('Unable to fetch datasets from %(url)s')
-                % {'url': url})
+                _("Unable to fetch datasets from %(url)s") % {"url": url}
+            )
         try:
-            data = response.json()['data']
-            files = data['files']
+            data = response.json()["data"]
+            files = data["files"]
         except json.JSONDecodeError:
-            LOGGER.error('Could not parse JSON from response to %s', url)
+            LOGGER.error("Could not parse JSON from response to %s", url)
             raise StorageException(
-                _('Unable to parse JSON from response to %(url)s')
-                % {'url': url})
+                _("Unable to parse JSON from response to %(url)s") % {"url": url}
+            )
         properties = OrderedDict()
         for f in files:
-            properties[f['dataFile']['filename']] = {
-                'size': f['dataFile']['filesize']
-            }
+            properties[f["dataFile"]["filename"]] = {"size": f["dataFile"]["filesize"]}
         entries = list(properties.keys())
-        return {
-            'directories': [],
-            'entries': entries,
-            'properties': properties,
-        }
+        return {"directories": [], "entries": entries, "properties": properties}
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         """
@@ -222,8 +206,8 @@ class Dataverse(URLMixin, models.Model):
         # Verify src_path has to be a number
         if not src_path.isdigit():
             storage_err = _(
-                "Invalid value for src_path: %(value)s. Must be a numeric "
-                "entity_id") % {"value": src_path}
+                "Invalid value for src_path: %(value)s. Must be a numeric " "entity_id"
+            ) % {"value": src_path}
             raise StorageException(storage_err)
         # Fetch dataset info
         datasets_url = "/api/datasets/{}".format(src_path)
@@ -241,9 +225,7 @@ class Dataverse(URLMixin, models.Model):
             dataset = response.json()["data"]
         except json.JSONDecodeError:
             LOGGER.error("Could not parse JSON from response to %s", url)
-            raise StorageException(
-                _("Unable parse JSON from response to %s" % url)
-            )
+            raise StorageException(_("Unable parse JSON from response to %s" % url))
 
         # Create directories
         self.space.create_local_directory(dest_path)
@@ -252,8 +234,7 @@ class Dataverse(URLMixin, models.Model):
         os.makedirs(os.path.join(dest_path, "metadata"))
         datasetjson_path = os.path.join(dest_path, "metadata", "dataset.json")
         with open(datasetjson_path, "w") as f:
-            json.dump(
-                dataset, f, sort_keys=True, indent=4, separators=(',', ': '))
+            json.dump(dataset, f, sort_keys=True, indent=4, separators=(",", ": "))
 
         # Fetch all files in dataset.json
         for file_entry in dataset["latestVersion"]["files"]:
@@ -308,8 +289,7 @@ class Dataverse(URLMixin, models.Model):
         ]
         agentjson_path = os.path.join(dest_path, "metadata", "agents.json")
         with open(agentjson_path, "w") as f:
-            json.dump(agent_info, f, sort_keys=True, indent=4,
-                      separators=(',', ': '))
+            json.dump(agent_info, f, sort_keys=True, indent=4, separators=(",", ": "))
 
     @staticmethod
     def extract_and_remove_bundle(dest_path, bundle_path):
@@ -317,7 +297,7 @@ class Dataverse(URLMixin, models.Model):
         then remove the original file from the file system.
         """
         try:
-            with zipfile.ZipFile(bundle_path, 'r') as unzipper:
+            with zipfile.ZipFile(bundle_path, "r") as unzipper:
                 unzipper.extractall(dest_path)
                 os.unlink(bundle_path)
         except zipfile.BadZipfile as err:

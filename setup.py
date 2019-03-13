@@ -28,7 +28,7 @@ from setuptools import setup
 
 def read(*parts):
     path = os.path.join(os.path.dirname(__file__), *parts)
-    with codecs.open(path, encoding='utf-8') as fobj:
+    with codecs.open(path, encoding="utf-8") as fobj:
         return fobj.read()
 
 
@@ -40,12 +40,13 @@ def find_version(*file_paths):
     raise RuntimeError("Unable to find version string.")
 
 
-setup(name='archivematica-storage-service',
-      packages=['storage_service'],
-      version=find_version('storage_service', 'storage_service', '__init__.py'),
-      author=u'Artefactual Systems Inc',
-      author_email='info@artefactual.com',
-      url='https://github.com/artefacutal/archivematica-storage-service',
-      description='Django based webapp for managing storage in an Archivematica installation',
-      license='Affero GNU General Public License v3 or later',
-      )
+setup(
+    name="archivematica-storage-service",
+    packages=["storage_service"],
+    version=find_version("storage_service", "storage_service", "__init__.py"),
+    author=u"Artefactual Systems Inc",
+    author_email="info@artefactual.com",
+    url="https://github.com/artefacutal/archivematica-storage-service",
+    description="Django based webapp for managing storage in an Archivematica installation",
+    license="Affero GNU General Public License v3 or later",
+)

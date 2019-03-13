@@ -6,9 +6,9 @@ from django.views.i18n import javascript_catalog
 from shibboleth.views import ShibbolethLogoutView, LOGOUT_SESSION_KEY
 
 
-@cache_page(86400, key_prefix='js18n-%s' % get_language())
+@cache_page(86400, key_prefix="js18n-%s" % get_language())
 @last_modified(lambda req, **kw: timezone.now())
-def cached_javascript_catalog(request, domain='djangojs', packages=None):
+def cached_javascript_catalog(request, domain="djangojs", packages=None):
     return javascript_catalog(request, domain, packages)
 
 

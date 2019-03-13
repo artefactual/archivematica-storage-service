@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+
 # stdlib, alphabetical
 import datetime
 import os
@@ -17,11 +18,12 @@ from .location import Location
 
 class LocalFilesystem(models.Model):
     """ Spaces found in the local filesystem of the storage service."""
-    space = models.OneToOneField('Space', to_field='uuid')
+
+    space = models.OneToOneField("Space", to_field="uuid")
 
     class Meta:
         verbose_name = _("Local Filesystem")
-        app_label = 'locations'
+        app_label = "locations"
 
     ALLOWED_LOCATION_PURPOSE = [
         Location.AIP_RECOVERY,
@@ -52,7 +54,9 @@ class LocalFilesystem(models.Model):
         self.space.verified = verified
         self.space.last_verified = datetime.datetime.now()
 
-    def posix_move(self, source_path, destination_path, destination_space, package=None):
+    def posix_move(
+        self, source_path, destination_path, destination_space, package=None
+    ):
         """
         Move from this POSIX filesystem to another POSIX filesytem; copying
         from self.path/source_path to destination_space.path/destination_path

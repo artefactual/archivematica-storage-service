@@ -1,5 +1,6 @@
 # flake8: noqa
 from __future__ import absolute_import
+
 # Note that while the signals are not actually used here,
 # they should be imported here to make sure that they
 # are imported very early on globally. This ensures that
@@ -10,7 +11,9 @@ from .. import signals
 # Required by other files
 class StorageException(Exception):
     """ Exceptions specific to the service."""
+
     pass
+
 
 # Common
 # May have multiple models, so import * and use __all__ in file.
@@ -21,6 +24,7 @@ from .package import *
 from .pipeline import *
 from .space import *
 from .fixity_log import *
+
 # not importing managers as that is internal
 
 # Protocol Spaces

@@ -20,18 +20,20 @@ from django_extensions.db.fields import UUIDField
 
 # This project, alphabetical
 from common import utils
+
 LOGGER = logging.getLogger(__name__)
 
 # This module, alphabetical
 from . import StorageException  # noqa: E402
 
-__all__ = ('Space', 'PosixMoveUnsupportedError', )
+__all__ = ("Space", "PosixMoveUnsupportedError")
 
 
 def validate_space_path(path):
     """ Validation for path in Space.  Must be absolute. """
-    if path[0] != '/':
+    if path[0] != "/":
         raise ValidationError(_("Path must begin with a /"))
+
 
 # To add a new storage space the following places must be updated:
 #  locations/models/space.py (this file)
@@ -123,32 +125,34 @@ class Space(models.Model):
 
     Knows what protocol to use to access a storage space, but all protocol
     specific information is in children classes with ForeignKeys to Space."""
-    uuid = UUIDField(editable=False, unique=True, version=4,
-        help_text=_("Unique identifier"))
+
+    uuid = UUIDField(
+        editable=False, unique=True, version=4, help_text=_("Unique identifier")
+    )
 
     # Max length 8 (see access_protocol definition)
-    ARKIVUM = 'ARKIVUM'
-    DATAVERSE = 'DV'
-    DURACLOUD = 'DC'
-    DSPACE = 'DSPACE'
-    DSPACE_REST = 'DSPC_RST'
-    FEDORA = 'FEDORA'
-    LOCAL_FILESYSTEM = 'FS'
-    LOM = 'LOM'
-    NFS = 'NFS'
-    PIPELINE_LOCAL_FS = 'PIPE_FS'
-    SWIFT = 'SWIFT'
-    GPG = 'GPG'
-    S3 = 'S3'
+    ARKIVUM = "ARKIVUM"
+    DATAVERSE = "DV"
+    DURACLOUD = "DC"
+    DSPACE = "DSPACE"
+    DSPACE_REST = "DSPC_RST"
+    FEDORA = "FEDORA"
+    LOCAL_FILESYSTEM = "FS"
+    LOM = "LOM"
+    NFS = "NFS"
+    PIPELINE_LOCAL_FS = "PIPE_FS"
+    SWIFT = "SWIFT"
+    GPG = "GPG"
+    S3 = "S3"
     # These will not be displayed in the Space Create GUI (see locations/forms.py)
     BETA_PROTOCOLS = {}
     OBJECT_STORAGE = {DATAVERSE, DSPACE, DSPACE_REST, DURACLOUD, SWIFT, S3}
     ACCESS_PROTOCOL_CHOICES = (
-        (ARKIVUM, _('Arkivum')),
-        (DATAVERSE, _('Dataverse')),
-        (DURACLOUD, _('DuraCloud')),
-        (DSPACE, _('DSpace via SWORD2 API')),
-        (DSPACE_REST, _('DSpace via REST API')),
+        (ARKIVUM, _("Arkivum")),
+        (DATAVERSE, _("Dataverse")),
+        (DURACLOUD, _("DuraCloud")),
+        (DSPACE, _("DSpace via SWORD2 API")),
+        (DSPACE_REST, _("DSpace via REST API")),
         (FEDORA, _("FEDORA via SWORD2")),
         (GPG, _("GPG encryption on Local Filesystem")),
         (LOCAL_FILESYSTEM, _("Local Filesystem")),
@@ -158,32 +162,51 @@ class Space(models.Model):
         (SWIFT, _("Swift")),
         (S3, _("S3")),
     )
-    access_protocol = models.CharField(max_length=8,
+    access_protocol = models.CharField(
+        max_length=8,
         choices=ACCESS_PROTOCOL_CHOICES,
         verbose_name=_("Access protocol"),
-        help_text=_("How the space can be accessed."))
-    size = models.BigIntegerField(default=None, null=True, blank=True,
+        help_text=_("How the space can be accessed."),
+    )
+    size = models.BigIntegerField(
+        default=None,
+        null=True,
+        blank=True,
         verbose_name=_("Size"),
-        help_text=_("Size in bytes (optional)"))
-    used = models.BigIntegerField(default=0,
-        verbose_name=_("Used"),
-        help_text=_("Amount used in bytes"))
-    path = models.TextField(default='', blank=True,
+        help_text=_("Size in bytes (optional)"),
+    )
+    used = models.BigIntegerField(
+        default=0, verbose_name=_("Used"), help_text=_("Amount used in bytes")
+    )
+    path = models.TextField(
+        default="",
+        blank=True,
         verbose_name=_("Path"),
-        help_text=_("Absolute path to the space on the storage service machine."))
-    staging_path = models.TextField(validators=[validate_space_path],
+        help_text=_("Absolute path to the space on the storage service machine."),
+    )
+    staging_path = models.TextField(
+        validators=[validate_space_path],
         verbose_name=_("Staging path"),
-        help_text=_("Absolute path to a staging area.  Must be UNIX filesystem compatible, preferably on the same filesystem as the path."))
-    verified = models.BooleanField(default=False,
+        help_text=_(
+            "Absolute path to a staging area.  Must be UNIX filesystem compatible, preferably on the same filesystem as the path."
+        ),
+    )
+    verified = models.BooleanField(
+        default=False,
         verbose_name=_("Verified"),
-        help_text=_("Whether or not the space has been verified to be accessible."))
-    last_verified = models.DateTimeField(default=None, null=True, blank=True,
+        help_text=_("Whether or not the space has been verified to be accessible."),
+    )
+    last_verified = models.DateTimeField(
+        default=None,
+        null=True,
+        blank=True,
         verbose_name=_("Last verified"),
-        help_text=_("Time this location was last verified to be accessible."))
+        help_text=_("Time this location was last verified to be accessible."),
+    )
 
     class Meta:
-        verbose_name = _('Space')
-        app_label = 'locations'
+        verbose_name = _("Space")
+        app_label = "locations"
 
     def __unicode__(self):
         return u"{uuid}: {path} ({access_protocol})".format(
@@ -196,7 +219,7 @@ class Space(models.Model):
         # Object storage spaces do not require a path, or for it to start with /
         if self.access_protocol not in self.OBJECT_STORAGE:
             if not self.path:
-                raise ValidationError(_('Path is required'))
+                raise ValidationError(_("Path is required"))
             validate_space_path(self.path)
 
     def get_child_space(self):
@@ -204,7 +227,8 @@ class Space(models.Model):
         # Importing PROTOCOL here because importing locations.constants at the
         # top of the file causes a circular dependency
         from ..constants import PROTOCOL
-        protocol_model = PROTOCOL[self.access_protocol]['model']
+
+        protocol_model = PROTOCOL[self.access_protocol]["model"]
         protocol_space = protocol_model.objects.get(space=self)
         # TODO try-catch AttributeError if remote_user or remote_name not exist?
         return protocol_space
@@ -243,11 +267,11 @@ class Space(models.Model):
         :param str path: Full path to return info for
         :return: Dictionary of object information detailed above.
         """
-        LOGGER.info('path: %s', path)
+        LOGGER.info("path: %s", path)
         try:
             return self.get_child_space().browse(path, *args, **kwargs)
         except AttributeError:
-            LOGGER.debug('Falling back to default browse local', exc_info=False)
+            LOGGER.debug("Falling back to default browse local", exc_info=False)
             return self.browse_local(path)
 
     def delete_path(self, delete_path, *args, **kwargs):
@@ -261,27 +285,33 @@ class Space(models.Model):
         # Enforce delete_path is in self.path
         if not delete_path.startswith(self.path):
             raise ValueError(
-                _('%(delete_path)s is not within %(path)s'),
-                {'delete_path': delete_path, 'path': self.path})
+                _("%(delete_path)s is not within %(path)s"),
+                {"delete_path": delete_path, "path": self.path},
+            )
         try:
             return self.get_child_space().delete_path(delete_path, *args, **kwargs)
         except AttributeError:
             return self._delete_path_local(delete_path)
 
-    def posix_move(self, source_path, destination_path, destination_space, package=None):
+    def posix_move(
+        self, source_path, destination_path, destination_space, package=None
+    ):
         """
         Move self.path/source_path direct to destination_space.path/destination_path bypassing staging.
         """
-        if (not hasattr(self.get_child_space(), 'posix_move') or
-                not hasattr(destination_space.get_child_space(), 'posix_move')):
-            LOGGER.debug('posix_move: not supported as %s and %s are not both POSIX filesystems',
+        if not hasattr(self.get_child_space(), "posix_move") or not hasattr(
+            destination_space.get_child_space(), "posix_move"
+        ):
+            LOGGER.debug(
+                "posix_move: not supported as %s and %s are not both POSIX filesystems",
                 type(self.get_child_space()),
-                type(destination_space.get_child_space()))
+                type(destination_space.get_child_space()),
+            )
             raise PosixMoveUnsupportedError()
 
-        LOGGER.debug('posix_move: source_path: %s', source_path)
-        LOGGER.debug('posix_move: destination_path: %s', destination_path)
-        LOGGER.debug('posix_move: destination_space.path: %s', destination_space.path)
+        LOGGER.debug("posix_move: source_path: %s", source_path)
+        LOGGER.debug("posix_move: destination_path: %s", destination_path)
+        LOGGER.debug("posix_move: destination_space.path: %s", destination_space.path)
 
         source_path = os.path.join(self.path, source_path)
 
@@ -291,10 +321,12 @@ class Space(models.Model):
         abs_destination_path = os.path.join(destination_space.path, destination_path)
 
         return self.get_child_space().posix_move(
-            source_path, abs_destination_path, destination_space, package)
+            source_path, abs_destination_path, destination_space, package
+        )
 
-    def move_to_storage_service(self, source_path, destination_path,
-                                destination_space, *args, **kwargs):
+    def move_to_storage_service(
+        self, source_path, destination_path, destination_space, *args, **kwargs
+    ):
         """ Move source_path to destination_path in the staging area of destination_space.
 
         If source_path is not an absolute path, it is assumed to be relative to
@@ -305,9 +337,9 @@ class Space(models.Model):
 
         This is implemented by the child protocol spaces.
         """
-        LOGGER.debug('TO: src: %s', source_path)
-        LOGGER.debug('TO: dst: %s', destination_path)
-        LOGGER.debug('TO: staging: %s', destination_space.staging_path)
+        LOGGER.debug("TO: src: %s", source_path)
+        LOGGER.debug("TO: dst: %s", destination_path)
+        LOGGER.debug("TO: staging: %s", destination_space.staging_path)
 
         # TODO enforce source_path is inside self.path
         # Path pre-processing
@@ -317,13 +349,22 @@ class Space(models.Model):
             destination_path = destination_path.lstrip(os.sep)
             # Alternative implementation
             # os.path.join(*destination_path.split(os.sep)[1:]) # Strips up to first os.sep
-        destination_path = os.path.join(destination_space.staging_path, destination_path)
+        destination_path = os.path.join(
+            destination_space.staging_path, destination_path
+        )
 
         try:
             self.get_child_space().move_to_storage_service(
-                source_path, destination_path, destination_space, *args, **kwargs)
+                source_path, destination_path, destination_space, *args, **kwargs
+            )
         except AttributeError:
-            raise NotImplementedError(_('%(protocol)s space has not implemented %(method)s') % {'protocol': self.get_access_protocol_display(), 'method': 'move_to_storage_service'})
+            raise NotImplementedError(
+                _("%(protocol)s space has not implemented %(method)s")
+                % {
+                    "protocol": self.get_access_protocol_display(),
+                    "method": "move_to_storage_service",
+                }
+            )
 
     def post_move_to_storage_service(self, *args, **kwargs):
         """ Hook for any actions that need to be taken after moving to the storage service. """
@@ -361,8 +402,7 @@ class Space(models.Model):
 
         return staging_path, destination_path
 
-    def move_from_storage_service(self, source_path, destination_path,
-                                  *args, **kwargs):
+    def move_from_storage_service(self, source_path, destination_path, *args, **kwargs):
         """ Move source_path in this Space's staging area to destination_path in this Space.
 
         That is, moves self.staging_path/source_path to self.path/destination_path.
@@ -374,18 +414,29 @@ class Space(models.Model):
 
         This is implemented by the child protocol spaces.
         """
-        LOGGER.debug('FROM: src: %s', source_path)
-        LOGGER.debug('FROM: dst: %s', destination_path)
+        LOGGER.debug("FROM: src: %s", source_path)
+        LOGGER.debug("FROM: dst: %s", destination_path)
 
-        source_path, destination_path = self._move_from_path_mangling(source_path, destination_path)
+        source_path, destination_path = self._move_from_path_mangling(
+            source_path, destination_path
+        )
         child_space = self.get_child_space()
-        if hasattr(child_space, 'move_from_storage_service'):
+        if hasattr(child_space, "move_from_storage_service"):
             return child_space.move_from_storage_service(
-                source_path, destination_path, *args, **kwargs)
+                source_path, destination_path, *args, **kwargs
+            )
         else:
-            raise NotImplementedError(_('%(protocol)s space has not implemented %(method)s') % {'protocol': self.get_access_protocol_display(), 'method': 'move_from_storage_service'})
+            raise NotImplementedError(
+                _("%(protocol)s space has not implemented %(method)s")
+                % {
+                    "protocol": self.get_access_protocol_display(),
+                    "method": "move_from_storage_service",
+                }
+            )
 
-    def post_move_from_storage_service(self, staging_path, destination_path, package=None, *args, **kwargs):
+    def post_move_from_storage_service(
+        self, staging_path, destination_path, package=None, *args, **kwargs
+    ):
         """
         Hook for any actions that need to be taken after moving from the storage
         service to the final destination.
@@ -397,13 +448,17 @@ class Space(models.Model):
         if staging_path is None or destination_path is None:
             staging_path = destination_path = None
         if staging_path and destination_path:
-            staging_path, destination_path = self._move_from_path_mangling(staging_path, destination_path)
+            staging_path, destination_path = self._move_from_path_mangling(
+                staging_path, destination_path
+            )
         try:
             self.get_child_space().post_move_from_storage_service(
                 staging_path=staging_path,
                 destination_path=destination_path,
                 package=package,
-                *args, **kwargs)
+                *args,
+                **kwargs
+            )
         except AttributeError:
             # This is optional for the child class to implement
             pass
@@ -421,7 +476,7 @@ class Space(models.Model):
                 elif os.path.isfile(staging_path):
                     os.remove(os.path.normpath(staging_path))
             except OSError:
-                logging.warning('Unable to remove %s', staging_path, exc_info=True)
+                logging.warning("Unable to remove %s", staging_path, exc_info=True)
 
     def update_package_status(self, package):
         """
@@ -430,7 +485,10 @@ class Space(models.Model):
         try:
             return self.get_child_space().update_package_status(package)
         except AttributeError:
-            message = _('%(protocol)s space has not implemented %(method)s') % {'protocol': self.get_access_protocol_display(), 'method': 'update_package_status'}
+            message = _("%(protocol)s space has not implemented %(method)s") % {
+                "protocol": self.get_access_protocol_display(),
+                "method": "update_package_status",
+            }
             return (None, message)
 
     def check_package_fixity(self, package):
@@ -440,17 +498,24 @@ class Space(models.Model):
         :param package: Package to check
         """
         child = self.get_child_space()
-        if hasattr(child, 'check_package_fixity'):
+        if hasattr(child, "check_package_fixity"):
             return child.check_package_fixity(package)
         else:
             raise NotImplementedError(
-                _('Space %(protocol)s does not implement check_package_fixity') %
-                {'protocol': self.get_access_protocol_display()}
+                _("Space %(protocol)s does not implement check_package_fixity")
+                % {"protocol": self.get_access_protocol_display()}
             )
 
     # HELPER FUNCTIONS
 
-    def move_rsync(self, source, destination, try_mv_local=False, assume_rsync_daemon=False, rsync_password=None):
+    def move_rsync(
+        self,
+        source,
+        destination,
+        try_mv_local=False,
+        assume_rsync_daemon=False,
+        rsync_password=None,
+    ):
         """ Moves a file from source to destination.
 
         By default, uses rsync to move files.
@@ -474,14 +539,14 @@ class Space(models.Model):
 
         if try_mv_local:
             # Try using mv, and if that fails, fallback to rsync
-            chmod_command = ['chmod', '--recursive', 'ug+rw,o+r', destination]
+            chmod_command = ["chmod", "--recursive", "ug+rw,o+r", destination]
             try:
                 os.rename(source, destination)
                 # Set permissions (rsync does with --chmod=ugo+rw)
                 subprocess.call(chmod_command)
                 return
             except OSError:
-                LOGGER.debug('os.rename failed, trying with normalized paths')
+                LOGGER.debug("os.rename failed, trying with normalized paths")
             source_norm = os.path.normpath(source)
             dest_norm = os.path.normpath(destination)
             try:
@@ -490,17 +555,29 @@ class Space(models.Model):
                 subprocess.call(chmod_command)
                 return
             except OSError:
-                LOGGER.debug('os.rename failed, falling back to rsync. Source: %s; Destination: %s', source_norm, dest_norm)
+                LOGGER.debug(
+                    "os.rename failed, falling back to rsync. Source: %s; Destination: %s",
+                    source_norm,
+                    dest_norm,
+                )
 
         # Rsync file over
         # TODO Do this asyncronously, with restarting failed attempts
-        command = ['rsync', '-t', '-O', '--protect-args', '-vv',
-                   '--chmod=Fug+rw,o-rwx,Dug+rwx,o-rwx',
-                   '-r', source, destination]
+        command = [
+            "rsync",
+            "-t",
+            "-O",
+            "--protect-args",
+            "-vv",
+            "--chmod=Fug+rw,o-rwx,Dug+rwx,o-rwx",
+            "-r",
+            source,
+            destination,
+        ]
         LOGGER.info("rsync command: %s", command)
-        kwargs = {'stdout': subprocess.PIPE, 'stderr': subprocess.STDOUT}
+        kwargs = {"stdout": subprocess.PIPE, "stderr": subprocess.STDOUT}
         if assume_rsync_daemon:
-            kwargs['env'] = {'RSYNC_PASSWORD': rsync_password}
+            kwargs["env"] = {"RSYNC_PASSWORD": rsync_password}
         p = subprocess.Popen(command, **kwargs)
         stdout, _ = p.communicate()
         if p.returncode != 0:
@@ -518,9 +595,16 @@ class Space(models.Model):
             represented in octal (like bash or the stat module)
         """
         if mode is None:
-            mode = (stat.S_IRUSR + stat.S_IWUSR + stat.S_IXUSR +
-                    stat.S_IRGRP + stat.S_IWGRP + stat.S_IXGRP +
-                    stat.S_IROTH + stat.S_IXOTH)
+            mode = (
+                stat.S_IRUSR
+                + stat.S_IWUSR
+                + stat.S_IXUSR
+                + stat.S_IRGRP
+                + stat.S_IWGRP
+                + stat.S_IXGRP
+                + stat.S_IROTH
+                + stat.S_IXOTH
+            )
         dir_path = os.path.dirname(path)
         if not dir_path:
             return
@@ -554,19 +638,27 @@ class Space(models.Model):
         # these will be created one at a time
         directories = []
         path = destination_path
-        while path != '' and path != '/':
+        while path != "" and path != "/":
             directories.insert(0, path)
             path = os.path.dirname(path)
 
         # Syncing an empty directory will ensure no files get transferred
-        temp_dir = os.path.join(tempfile.mkdtemp(), '')
+        temp_dir = os.path.join(tempfile.mkdtemp(), "")
 
         # Creates the destination_path directory without copying any files
         # Dir must end in a / for rsync to create it
         for directory in directories:
-            path = os.path.join(os.path.dirname(directory), '')
+            path = os.path.join(os.path.dirname(directory), "")
             path = "{}@{}:{}".format(user, host, utils.coerce_str(path))
-            cmd = ['rsync', '-vv', '--protect-args', '--chmod=ug=rwx,o=rx', '--recursive', temp_dir, path]
+            cmd = [
+                "rsync",
+                "-vv",
+                "--protect-args",
+                "--chmod=ug=rwx,o=rx",
+                "--recursive",
+                temp_dir,
+                path,
+            ]
             LOGGER.info("rsync path creation command: %s", cmd)
             try:
                 subprocess.check_call(cmd)
@@ -588,11 +680,13 @@ class Space(models.Model):
         if isinstance(path, six.text_type):
             path = str(path)
         if not os.path.exists(path):
-            LOGGER.info('%s in %s does not exist', path, self)
-            return {'directories': [], 'entries': [], 'properties': {}}
+            LOGGER.info("%s in %s does not exist", path, self)
+            return {"directories": [], "entries": [], "properties": {}}
         return path2browse_dict(path)
 
-    def browse_rsync(self, path, ssh_key=None, assume_rsync_daemon=False, rsync_password=None):
+    def browse_rsync(
+        self, path, ssh_key=None, assume_rsync_daemon=False, rsync_password=None
+    ):
         """
         Returns browse results for a ssh (rsync) accessible space.
 
@@ -609,25 +703,27 @@ class Space(models.Model):
         :return: See docstring for Space.browse
         """
         if ssh_key is None:
-            ssh_key = '/var/lib/archivematica/.ssh/id_rsa'
+            ssh_key = "/var/lib/archivematica/.ssh/id_rsa"
 
         # Form command string used to get entries
-        command = ['rsync',
-                   '--protect-args',
-                   '--list-only',
-                   '--exclude', '.*',  # Ignore hidden files
-                   ]
+        command = [
+            "rsync",
+            "--protect-args",
+            "--list-only",
+            "--exclude",
+            ".*",  # Ignore hidden files
+        ]
         if not assume_rsync_daemon:
             # Specify identity file
-            command += ['--rsh', 'ssh -i ' + ssh_key]
+            command += ["--rsh", "ssh -i " + ssh_key]
         command += [path]
 
-        LOGGER.info('rsync list command: %s', command)
+        LOGGER.info("rsync list command: %s", command)
         LOGGER.debug('"%s"', '" "'.join(command))  # For copying to shell
         try:
             env = os.environ.copy()
             if assume_rsync_daemon:
-                env['RSYNC_PASSWORD'] = rsync_password
+                env["RSYNC_PASSWORD"] = rsync_password
             output = subprocess.check_output(command, env=env)
         except Exception as e:
             LOGGER.warning("rsync list failed: %s", e, exc_info=True)
@@ -642,30 +738,34 @@ class Space(models.Model):
             # Eg: lrwxrwxrwx             78 2015/02/19 12:13:40 sharedDirectory
             # Parse out the path and type
             # Define groups for type, permissions, size, timestamp and name
-            regex = r'^(?P<type>.)(?P<permissions>.{9}) +(?P<size>[\d,]+) (?P<timestamp>..../../.. ..:..:..) (?P<name>.*)$'
+            regex = r"^(?P<type>.)(?P<permissions>.{9}) +(?P<size>[\d,]+) (?P<timestamp>..../../.. ..:..:..) (?P<name>.*)$"
             matches = [re.match(regex, e) for e in output]
             # Take the last entry. Ignore empty lines and '.'
-            entries = [e.group('name') for e in matches
-                if e and e.group('name') != '.']
+            entries = [e.group("name") for e in matches if e and e.group("name") != "."]
             # Only items whose type is not '-'. Links count as dirs.
-            directories = [e.group('name') for e in matches
-                if e and e.group('name') != '.' and e.group('type') != '-']
+            directories = [
+                e.group("name")
+                for e in matches
+                if e and e.group("name") != "." and e.group("type") != "-"
+            ]
             # Generate properties for each entry
             properties = {}
             for e in matches:
-                name = e.group('name')
+                name = e.group("name")
                 if name not in entries:
                     continue
                 properties[name] = {}
-                properties[name]['timestamp'] = datetime.datetime.strptime(e.group('timestamp'), '%Y/%m/%d %H:%M:%S').isoformat()
+                properties[name]["timestamp"] = datetime.datetime.strptime(
+                    e.group("timestamp"), "%Y/%m/%d %H:%M:%S"
+                ).isoformat()
                 if name not in directories:
-                    properties[name]['size'] = int(e.group('size').replace(',', ''))
+                    properties[name]["size"] = int(e.group("size").replace(",", ""))
 
         directories = sorted(directories, key=lambda s: s.lower())
         entries = sorted(entries, key=lambda s: s.lower())
-        LOGGER.debug('entries: %s', entries)
-        LOGGER.debug('directories: %s', directories)
-        return {'directories': directories, 'entries': entries}
+        LOGGER.debug("entries: %s", entries)
+        LOGGER.debug("directories: %s", directories)
+        return {"directories": directories, "entries": entries}
 
     def _delete_path_local(self, delete_path):
         """
@@ -692,21 +792,18 @@ def path2browse_dict(path):
     """
     properties = {}
     # Sorted list of all entries in directory, excluding hidden files
-    entries = [name for name in os.listdir(path) if name[0] != '.']
+    entries = [name for name in os.listdir(path) if name[0] != "."]
     entries = sorted(entries, key=lambda s: s.lower())
     directories = []
     for name in entries:
         full_path = os.path.join(path, name)
-        properties[name] = {'size': os.path.getsize(full_path)}
-        if utils.get_setting('object_counting_disabled', False):
-            properties[name]['object count'] = '0+'
+        properties[name] = {"size": os.path.getsize(full_path)}
+        if utils.get_setting("object_counting_disabled", False):
+            properties[name]["object count"] = "0+"
         elif os.path.isdir(full_path) and os.access(full_path, os.R_OK):
             directories.append(name)
-            properties[name]['object count'] = count_objects_in_directory(
-                full_path)
-    return {'directories': directories,
-            'entries': entries,
-            'properties': properties}
+            properties[name]["object count"] = count_objects_in_directory(full_path)
+    return {"directories": directories, "entries": entries, "properties": properties}
 
 
 def count_objects_in_directory(path):
@@ -718,5 +815,5 @@ def count_objects_in_directory(path):
         total_files += len(files)
         # Limit the number of files counted to keep it from being too slow
         if total_files > 5000:
-            return '5000+'
+            return "5000+"
     return total_files
