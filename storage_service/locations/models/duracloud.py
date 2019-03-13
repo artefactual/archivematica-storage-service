@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+
 # stdlib, alphabetical
 import logging
 from lxml import etree
@@ -25,17 +26,31 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Duracloud(models.Model):
-    space = models.OneToOneField('Space', to_field='uuid')
-    host = models.CharField(max_length=256,
-        verbose_name=_('Host'),
-        help_text=_('Hostname of the DuraCloud instance. Eg. trial.duracloud.org'))
-    user = models.CharField(max_length=64, verbose_name=_('User'), help_text=_('Username to authenticate as'))
-    password = models.CharField(max_length=64, verbose_name=_('Password'), help_text=_('Password to authenticate with'))
-    duraspace = models.CharField(max_length=64, verbose_name=_('Duraspace'), help_text=_('Name of the Space within DuraCloud'))
+    space = models.OneToOneField("Space", to_field="uuid")
+    host = models.CharField(
+        max_length=256,
+        verbose_name=_("Host"),
+        help_text=_("Hostname of the DuraCloud instance. Eg. trial.duracloud.org"),
+    )
+    user = models.CharField(
+        max_length=64,
+        verbose_name=_("User"),
+        help_text=_("Username to authenticate as"),
+    )
+    password = models.CharField(
+        max_length=64,
+        verbose_name=_("Password"),
+        help_text=_("Password to authenticate with"),
+    )
+    duraspace = models.CharField(
+        max_length=64,
+        verbose_name=_("Duraspace"),
+        help_text=_("Name of the Space within DuraCloud"),
+    )
 
     class Meta:
         verbose_name = _("DuraCloud")
-        app_label = 'locations'
+        app_label = "locations"
 
     ALLOWED_LOCATION_PURPOSE = [
         Location.AIP_RECOVERY,
@@ -45,7 +60,7 @@ class Duracloud(models.Model):
         Location.BACKLOG,
     ]
 
-    MANIFEST_SUFFIX = '.dura-manifest'
+    MANIFEST_SUFFIX = ".dura-manifest"
     CHUNK_SIZE = 1 * 1024 * 1024 * 1024  # 1 GB
 
     def __init__(self, *args, **kwargs):
@@ -61,7 +76,7 @@ class Duracloud(models.Model):
 
     @property
     def duraspace_url(self):
-        return 'https://' + self.host + '/durastore/' + self.duraspace + '/'
+        return "https://" + self.host + "/durastore/" + self.duraspace + "/"
 
     def _get_files_list(self, prefix, show_split_files=True):
         """
@@ -71,13 +86,15 @@ class Duracloud(models.Model):
         :param bool show_split_files: If True, will show files ending with .dura-chunk-#### and .dura-manifest. If False, will show the original file name (everything before .dura-manifest)
         :returns: Iterator of paths
         """
-        params = {'prefix': prefix}
-        LOGGER.debug('URL: %s, params: %s', self.duraspace_url, params)
+        params = {"prefix": prefix}
+        LOGGER.debug("URL: %s, params: %s", self.duraspace_url, params)
         response = self.session.get(self.duraspace_url, params=params)
-        LOGGER.debug('Response: %s', response)
+        LOGGER.debug("Response: %s", response)
         if response.status_code != 200:
-            LOGGER.warning('%s: Response: %s', response, response.text)
-            raise StorageException(_('Unable to get list of files in %(prefix)s') % {'prefix': prefix})
+            LOGGER.warning("%s: Response: %s", response, response.text)
+            raise StorageException(
+                _("Unable to get list of files in %(prefix)s") % {"prefix": prefix}
+            )
         # Response is XML in the form:
         # <space id="self.durastore">
         #   <item>path</item>
@@ -85,9 +102,9 @@ class Duracloud(models.Model):
         # </space>
         root = etree.fromstring(response.content)
         paths = [p.text for p in root]
-        LOGGER.debug('Paths first 10: %s', paths[:10])
-        LOGGER.debug('Paths last 10: %s', paths[-10:])
-        durachunk_regex = r'.dura-chunk-\d{4}$'
+        LOGGER.debug("Paths first 10: %s", paths[:10])
+        LOGGER.debug("Paths last 10: %s", paths[-10:])
+        durachunk_regex = r".dura-chunk-\d{4}$"
         duramanifest_len = len(self.MANIFEST_SUFFIX)
         while paths:
             for p in paths:
@@ -101,17 +118,19 @@ class Duracloud(models.Model):
                     if re.search(durachunk_regex, p):
                         continue
                 yield utils.coerce_str(p)
-            params['marker'] = paths[-1]
-            LOGGER.debug('URL: %s, params: %s', self.duraspace_url, params)
+            params["marker"] = paths[-1]
+            LOGGER.debug("URL: %s, params: %s", self.duraspace_url, params)
             response = self.session.get(self.duraspace_url, params=params)
-            LOGGER.debug('Response: %s', response)
+            LOGGER.debug("Response: %s", response)
             if response.status_code != 200:
-                LOGGER.warning('%s: Response: %s', response, response.text)
-                raise StorageException(_('Unable to get list of files in %(prefix)s') % {'prefix': prefix})
+                LOGGER.warning("%s: Response: %s", response, response.text)
+                raise StorageException(
+                    _("Unable to get list of files in %(prefix)s") % {"prefix": prefix}
+                )
             root = etree.fromstring(response.content)
             paths = [p.text for p in root]
-            LOGGER.debug('Paths first 10: %s', paths[:10])
-            LOGGER.debug('Paths last 10: %s', paths[-10:])
+            LOGGER.debug("Paths first 10: %s", paths[:10])
+            LOGGER.debug("Paths last 10: %s", paths[-10:])
 
     def browse(self, path):
         """
@@ -122,15 +141,15 @@ class Duracloud(models.Model):
         Properties provided:
         'object count': Number of objects in the directory, including children
         """
-        if path and not path.endswith('/'):
-            path += '/'
+        if path and not path.endswith("/"):
+            path += "/"
         entries = set()
         directories = set()
         properties = {}
         # Handle paths one at a time to deal with lots of files
         paths = self._get_files_list(path, show_split_files=False)
         for p in paths:
-            path_parts = p.replace(path, '', 1).split('/')
+            path_parts = p.replace(path, "", 1).split("/")
             dirname = path_parts[0]
             if not dirname:
                 continue
@@ -138,31 +157,39 @@ class Duracloud(models.Model):
             if len(path_parts) > 1:
                 directories.add(dirname)
                 properties[dirname] = properties.get(dirname, {})  # Default empty dict
-                properties[dirname]['object count'] = properties[dirname].get('object count', 0) + 1  # Increment object count
+                properties[dirname]["object count"] = (
+                    properties[dirname].get("object count", 0) + 1
+                )  # Increment object count
 
         entries = sorted(entries, key=lambda s: s.lower())  # Also converts to list
-        directories = sorted(directories, key=lambda s: s.lower())  # Also converts to list
-        return {'directories': directories, 'entries': entries, 'properties': properties}
+        directories = sorted(
+            directories, key=lambda s: s.lower()
+        )  # Also converts to list
+        return {
+            "directories": directories,
+            "entries": entries,
+            "properties": properties,
+        }
 
     def delete_path(self, delete_path):
         # BUG If delete_path is a folder but provided without a trailing /, will delete a file with the same name.
         # Files
         url = self.duraspace_url + urllib.quote(delete_path)
-        LOGGER.debug('URL: %s', url)
+        LOGGER.debug("URL: %s", url)
         response = self.session.delete(url)
-        LOGGER.debug('Response: %s', response)
+        LOGGER.debug("Response: %s", response)
         if response.status_code == 404:
             # Check if this is a chunked file
             manifest_url = url + self.MANIFEST_SUFFIX
-            LOGGER.debug('Manifest URL: %s', manifest_url)
+            LOGGER.debug("Manifest URL: %s", manifest_url)
             response = self.session.get(manifest_url)
-            LOGGER.debug('Response: %s', response)
+            LOGGER.debug("Response: %s", response)
             if response.ok:
                 # Get list of file chunks
                 root = etree.fromstring(response.content)
-                to_delete = [e.attrib['chunkId'] for e in root.findall('chunks/chunk')]
+                to_delete = [e.attrib["chunkId"] for e in root.findall("chunks/chunk")]
                 to_delete.append(delete_path + self.MANIFEST_SUFFIX)
-                LOGGER.debug('Chunks to delete: %s', to_delete)
+                LOGGER.debug("Chunks to delete: %s", to_delete)
             else:
                 # File cannot be found - this may be a folder
                 to_delete = self._get_files_list(delete_path, show_split_files=True)
@@ -181,64 +208,74 @@ class Duracloud(models.Model):
         :return: True on success, False if file not found
         :raises: StorageException if response code not 200 or 404
         """
-        LOGGER.debug('URL: %s', url)
+        LOGGER.debug("URL: %s", url)
         response = self.session.get(url)
-        LOGGER.debug('Response: %s', response)
+        LOGGER.debug("Response: %s", response)
         if response.status_code == 404:
             # Check if chunked by looking for a .dura-manifest
             manifest_url = url + self.MANIFEST_SUFFIX
-            LOGGER.debug('Manifest URL: %s', manifest_url)
+            LOGGER.debug("Manifest URL: %s", manifest_url)
             response = self.session.get(manifest_url)
-            LOGGER.debug('Response: %s', response)
+            LOGGER.debug("Response: %s", response)
             # No manifest - this file does not exist
             if not response.ok:
                 return False
 
             # Get chunks, expected size, checksum
             root = etree.fromstring(response.content)
-            expected_size = int(root.findtext('header/sourceContent/byteSize'))
-            checksum = root.findtext('header/sourceContent/md5')
-            chunk_elements = [e for e in root.findall('chunks/chunk')]
+            expected_size = int(root.findtext("header/sourceContent/byteSize"))
+            checksum = root.findtext("header/sourceContent/md5")
+            chunk_elements = [e for e in root.findall("chunks/chunk")]
             # Download each chunk and append to original file
             self.space.create_local_directory(download_path)
-            LOGGER.debug('Writing to %s', download_path)
-            with open(download_path, 'wb') as output_f:
+            LOGGER.debug("Writing to %s", download_path)
+            with open(download_path, "wb") as output_f:
                 for e in chunk_elements:
                     # Parse chunk element
-                    chunk = e.attrib['chunkId']
-                    size = int(e.findtext('byteSize'))
-                    md5 = e.findtext('md5')
+                    chunk = e.attrib["chunkId"]
+                    size = int(e.findtext("byteSize"))
+                    md5 = e.findtext("md5")
                     # Download
                     chunk_url = self.duraspace_url + urllib.quote(chunk)
-                    LOGGER.debug('Chunk URL: %s', chunk_url)
+                    LOGGER.debug("Chunk URL: %s", chunk_url)
                     chunk_path = chunk_url.replace(url, download_path)
-                    LOGGER.debug('Chunk path: %s', chunk_path)
+                    LOGGER.debug("Chunk path: %s", chunk_path)
                     self._download_file(chunk_url, chunk_path, size, md5)
                     # Append to output
-                    with open(chunk_path, 'rb') as chunk_f:
+                    with open(chunk_path, "rb") as chunk_f:
                         shutil.copyfileobj(chunk_f, output_f)
                     # Delete chunk_path
                     os.remove(chunk_path)
         elif response.status_code != 200:
-            LOGGER.warning('Response: %s when fetching %s', response, url)
-            LOGGER.warning('Response text: %s', response.text)
-            raise StorageException('Unable to fetch %s' % url)
+            LOGGER.warning("Response: %s when fetching %s", response, url)
+            LOGGER.warning("Response text: %s", response.text)
+            raise StorageException("Unable to fetch %s" % url)
         else:  # Status code 200 - file exists
             self.space.create_local_directory(download_path)
-            LOGGER.debug('Writing to %s', download_path)
-            with open(download_path, 'wb') as f:
+            LOGGER.debug("Writing to %s", download_path)
+            with open(download_path, "wb") as f:
                 f.write(response.content)
 
         # Verify file, if size or checksum is known
         if expected_size and os.path.getsize(download_path) != expected_size:
             raise StorageException(
-                _('File %(path)s does not match expected size of %(expected_size)s bytes, but was actually %(actual_size)s bytes'),
-                {'path': download_path,
-                 'expected_size': expected_size,
-                 'actual_size': os.path.getsize(download_path)})
-        calculated_checksum = utils.generate_checksum(download_path, 'md5')
+                _(
+                    "File %(path)s does not match expected size of %(expected_size)s bytes, but was actually %(actual_size)s bytes"
+                ),
+                {
+                    "path": download_path,
+                    "expected_size": expected_size,
+                    "actual_size": os.path.getsize(download_path),
+                },
+            )
+        calculated_checksum = utils.generate_checksum(download_path, "md5")
         if checksum and checksum != calculated_checksum.hexdigest():
-            raise StorageException('File %s does not match expected checksum of %s, but was actually %s', download_path, checksum, calculated_checksum.hexdigest())
+            raise StorageException(
+                "File %s does not match expected checksum of %s, but was actually %s",
+                download_path,
+                checksum,
+                calculated_checksum.hexdigest(),
+            )
 
         return True
 
@@ -252,15 +289,15 @@ class Duracloud(models.Model):
         url = self.duraspace_url + urllib.quote(src_path)
         success = self._download_file(url, dest_path)
         if not success:
-            LOGGER.debug('%s not found, trying as folder', src_path)
+            LOGGER.debug("%s not found, trying as folder", src_path)
             # File cannot be found - this may be a folder
             # Remove /. and /* at the end of the string. These glob-match on a
             # filesystem, but do not character-match in Duracloud.
             # Normalize dest_path as well so replace continues to work
-            find_regex = r'/[\.\*]$'
-            src_path = re.sub(find_regex, '/', src_path)
-            dest_path = re.sub(find_regex, '/', dest_path)
-            LOGGER.debug('Modified paths: src: %s dest: %s', src_path, dest_path)
+            find_regex = r"/[\.\*]$"
+            src_path = re.sub(find_regex, "/", src_path)
+            dest_path = re.sub(find_regex, "/", dest_path)
+            LOGGER.debug("Modified paths: src: %s dest: %s", src_path, dest_path)
             to_get = self._get_files_list(src_path, show_split_files=False)
             for entry in to_get:
                 url = self.duraspace_url + urllib.quote(entry)
@@ -271,7 +308,7 @@ class Duracloud(models.Model):
         bytes_read = 0
         bytes_to_read = 1024 * 1024  # 1MB
 
-        with open(chunk_path, 'w') as fchunk:
+        with open(chunk_path, "w") as fchunk:
             while bytes_read < self.CHUNK_SIZE:
                 data = f.read(bytes_to_read)
                 fchunk.write(data)
@@ -294,10 +331,12 @@ class Duracloud(models.Model):
         :returns: None
         :raises: StorageException if error storing file
         """
-        LOGGER.debug('Upload %s to %s', upload_file, url)
+        LOGGER.debug("Upload %s to %s", upload_file, url)
         filesize = os.path.getsize(upload_file)
         if filesize > self.CHUNK_SIZE:
-            LOGGER.debug('%s size (%s) larger than %s', upload_file, filesize, self.CHUNK_SIZE)
+            LOGGER.debug(
+                "%s size (%s) larger than %s", upload_file, filesize, self.CHUNK_SIZE
+            )
             # Create manifest info for complete file.  Eg:
             # <header schemaVersion="0.2">
             #   <sourceContent contentId="chunked/chunked_image.jpg">
@@ -306,34 +345,36 @@ class Duracloud(models.Model):
             #     <md5>9497f70a1a17943ddfcbed567538900d</md5>
             #   </sourceContent>
             # </header>
-            relative_path = urllib.unquote(url.replace(self.duraspace_url, '', 1))
-            LOGGER.debug('File name: %s', relative_path)
-            checksum = utils.generate_checksum(upload_file, 'md5')
-            LOGGER.debug('Checksum for %s: %s', upload_file, checksum.hexdigest())
-            root = etree.Element('{duracloud.org}chunksManifest', nsmap={'dur': 'duracloud.org'})
-            header = etree.SubElement(root, 'header', schemaVersion="0.2")
-            content = etree.SubElement(header, 'sourceContent', contentId=relative_path)
-            etree.SubElement(content, 'mimetype').text = 'application/octet-stream'
-            etree.SubElement(content, 'byteSize').text = str(filesize)
-            etree.SubElement(content, 'md5').text = checksum.hexdigest()
-            chunks = etree.SubElement(root, 'chunks')
+            relative_path = urllib.unquote(url.replace(self.duraspace_url, "", 1))
+            LOGGER.debug("File name: %s", relative_path)
+            checksum = utils.generate_checksum(upload_file, "md5")
+            LOGGER.debug("Checksum for %s: %s", upload_file, checksum.hexdigest())
+            root = etree.Element(
+                "{duracloud.org}chunksManifest", nsmap={"dur": "duracloud.org"}
+            )
+            header = etree.SubElement(root, "header", schemaVersion="0.2")
+            content = etree.SubElement(header, "sourceContent", contentId=relative_path)
+            etree.SubElement(content, "mimetype").text = "application/octet-stream"
+            etree.SubElement(content, "byteSize").text = str(filesize)
+            etree.SubElement(content, "md5").text = checksum.hexdigest()
+            chunks = etree.SubElement(root, "chunks")
             # Split file into chunks
-            with open(upload_file, 'rb') as f:
+            with open(upload_file, "rb") as f:
                 # If resume, check if chunks already exists
                 if resume:
                     chunklist = set(self._get_files_list(relative_path))
-                    LOGGER.debug('Chunklist %s', chunklist)
+                    LOGGER.debug("Chunklist %s", chunklist)
                 file_complete = False
                 i = 0
                 while not file_complete:
                     # Setup chunk info
-                    chunk_suffix = '.dura-chunk-' + str(i).zfill(4)
+                    chunk_suffix = ".dura-chunk-" + str(i).zfill(4)
                     chunk_path = upload_file + chunk_suffix
-                    LOGGER.debug('Chunk path: %s', chunk_path)
+                    LOGGER.debug("Chunk path: %s", chunk_path)
                     chunk_url = url + chunk_suffix
-                    LOGGER.debug('Chunk URL: %s', chunk_url)
+                    LOGGER.debug("Chunk URL: %s", chunk_url)
                     chunkid = relative_path + chunk_suffix
-                    LOGGER.debug('Chunk ID: %s', chunkid)
+                    LOGGER.debug("Chunk ID: %s", chunkid)
                     try:
                         self._process_chunk(f, chunk_path)
                     except StopIteration:
@@ -344,13 +385,17 @@ class Duracloud(models.Model):
                     #   <md5>ddbb227beaac5a9dc34eb49608997abf</md5>
                     # </chunk>
                     checksum = utils.generate_checksum(chunk_path)
-                    chunk_e = etree.SubElement(chunks, 'chunk', chunkId=chunkid)
-                    etree.SubElement(chunk_e, 'byteSize').text = str(os.path.getsize(chunk_path))
-                    etree.SubElement(chunk_e, 'md5').text = checksum.hexdigest()
+                    chunk_e = etree.SubElement(chunks, "chunk", chunkId=chunkid)
+                    etree.SubElement(chunk_e, "byteSize").text = str(
+                        os.path.getsize(chunk_path)
+                    )
+                    etree.SubElement(chunk_e, "md5").text = checksum.hexdigest()
                     # Upload chunk
                     # Check if chunk exists already
                     if resume and chunkid in chunklist:
-                        LOGGER.info('%s already in Duracloud, skipping upload', chunk_path)
+                        LOGGER.info(
+                            "%s already in Duracloud, skipping upload", chunk_path
+                        )
                     else:
                         self._upload_chunk(chunk_url, chunk_path)
                     # Delete chunk
@@ -359,8 +404,12 @@ class Duracloud(models.Model):
             # Write .dura-manifest
             manifest_path = upload_file + self.MANIFEST_SUFFIX
             manifest_url = url + self.MANIFEST_SUFFIX
-            with open(manifest_path, 'w') as f:
-                f.write(etree.tostring(root, pretty_print=True, xml_declaration=True, encoding='UTF-8'))
+            with open(manifest_path, "w") as f:
+                f.write(
+                    etree.tostring(
+                        root, pretty_print=True, xml_declaration=True, encoding="UTF-8"
+                    )
+                )
             # Upload .dura-manifest
             self._upload_chunk(manifest_url, manifest_path)
             os.remove(manifest_path)
@@ -383,34 +432,37 @@ class Duracloud(models.Model):
         :raises: StorageException if error storing file
         """
         try:
-            LOGGER.debug('PUT URL: %s', url)
-            with open(upload_file, 'rb') as f:
+            LOGGER.debug("PUT URL: %s", url)
+            with open(upload_file, "rb") as f:
                 response = self.session.put(url, data=f)
-            LOGGER.debug('Response: %s', response)
+            LOGGER.debug("Response: %s", response)
         except Exception:
-            LOGGER.exception('Error in PUT to %s', url)
+            LOGGER.exception("Error in PUT to %s", url)
             if retry_attempts > 0:
-                LOGGER.info('Retrying %s', upload_file)
+                LOGGER.info("Retrying %s", upload_file)
                 self._upload_chunk(url, upload_file, retry_attempts - 1)
             else:
                 raise
         else:
             if response.status_code != 201:
-                LOGGER.warning('%s: Response: %s', response, response.text)
+                LOGGER.warning("%s: Response: %s", response, response.text)
                 if retry_attempts > 0:
-                    LOGGER.info('Retrying %s', upload_file)
+                    LOGGER.info("Retrying %s", upload_file)
                     self._upload_chunk(url, upload_file, retry_attempts - 1)
                 else:
                     raise StorageException(
-                        _('Unable to store %(filename)s') % {'filename': upload_file})
+                        _("Unable to store %(filename)s") % {"filename": upload_file}
+                    )
 
-    def move_from_storage_service(self, source_path, destination_path, package=None, resume=False):
+    def move_from_storage_service(
+        self, source_path, destination_path, package=None, resume=False
+    ):
         """ Moves self.staging_path/src_path to dest_path. """
         source_path = utils.coerce_str(source_path)
         destination_path = utils.coerce_str(destination_path)
         if os.path.isdir(source_path):
             # Both source and destination paths should end with /
-            destination_path = os.path.join(destination_path, '')
+            destination_path = os.path.join(destination_path, "")
             # Duracloud does not accept folders, so upload each file individually
             for path, dirs, files in os.walk(source_path):
                 for basename in files:
@@ -422,6 +474,10 @@ class Duracloud(models.Model):
             url = self.duraspace_url + urllib.quote(destination_path)
             self._upload_file(url, source_path, resume=resume)
         elif not os.path.exists(source_path):
-            raise StorageException(_('%(path)s does not exist.') % {'path': source_path})
+            raise StorageException(
+                _("%(path)s does not exist.") % {"path": source_path}
+            )
         else:
-            raise StorageException(_('%(path)s is not a file or directory.') % {'path': source_path})
+            raise StorageException(
+                _("%(path)s is not a file or directory.") % {"path": source_path}
+            )

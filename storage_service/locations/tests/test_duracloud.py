@@ -1,4 +1,3 @@
-
 from lxml import etree
 import os
 import requests
@@ -9,20 +8,22 @@ import vcr
 from locations import models
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, '..', 'fixtures'))
+FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
 
 
 class TestDuracloud(TestCase):
 
-    fixtures = ['base.json', 'duracloud.json']
+    fixtures = ["base.json", "duracloud.json"]
 
     def setUp(self):
         self.ds_object = models.Duracloud.objects.all()[0]
-        self.auth = requests.auth.HTTPBasicAuth(self.ds_object.user, self.ds_object.password)
+        self.auth = requests.auth.HTTPBasicAuth(
+            self.ds_object.user, self.ds_object.password
+        )
 
         # Move to a location that is writeable
         self.old_dir = os.getcwd()
-        os.chdir('/var/archivematica/storage_service')
+        os.chdir("/var/archivematica/storage_service")
 
     def tearDown(self):
         os.chdir(self.old_dir)
@@ -33,284 +34,587 @@ class TestDuracloud(TestCase):
         assert self.ds_object.password
         assert self.ds_object.duraspace
 
-    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'duracloud_browse.yaml'))
+    @vcr.use_cassette(
+        os.path.join(FIXTURES_DIR, "vcr_cassettes", "duracloud_browse.yaml")
+    )
     def test_browse(self):
-        resp = self.ds_object.browse('SampleTransfers')
+        resp = self.ds_object.browse("SampleTransfers")
         assert resp
-        assert resp['directories'] == ['Images', 'Multimedia', 'OCRImage']
-        assert resp['entries'] == ['BagTransfer.zip', 'Images', 'Multimedia', 'OCRImage']
-        assert resp['properties']['Images']['object count'] == 10
-        assert resp['properties']['Multimedia']['object count'] == 7
-        assert resp['properties']['OCRImage']['object count'] == 1
-        resp = self.ds_object.browse('SampleTransfers/Images')
+        assert resp["directories"] == ["Images", "Multimedia", "OCRImage"]
+        assert resp["entries"] == [
+            "BagTransfer.zip",
+            "Images",
+            "Multimedia",
+            "OCRImage",
+        ]
+        assert resp["properties"]["Images"]["object count"] == 10
+        assert resp["properties"]["Multimedia"]["object count"] == 7
+        assert resp["properties"]["OCRImage"]["object count"] == 1
+        resp = self.ds_object.browse("SampleTransfers/Images")
         assert resp
-        assert resp['directories'] == ['pictures']
-        assert resp['entries'] == ['799px-Euroleague-LE Roma vs Toulouse IC-27.bmp', 'BBhelmet.ai', 'G31DS.TIF', 'lion.svg', 'Nemastylis_geminiflora_Flower.PNG', 'oakland03.jp2', 'pictures', 'Vector.NET-Free-Vector-Art-Pack-28-Freedom-Flight.eps', 'WFPC01.GIF']
-        assert resp['properties']['pictures']['object count'] == 2
+        assert resp["directories"] == ["pictures"]
+        assert resp["entries"] == [
+            "799px-Euroleague-LE Roma vs Toulouse IC-27.bmp",
+            "BBhelmet.ai",
+            "G31DS.TIF",
+            "lion.svg",
+            "Nemastylis_geminiflora_Flower.PNG",
+            "oakland03.jp2",
+            "pictures",
+            "Vector.NET-Free-Vector-Art-Pack-28-Freedom-Flight.eps",
+            "WFPC01.GIF",
+        ]
+        assert resp["properties"]["pictures"]["object count"] == 2
 
-    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'duracloud_browse_split_files.yaml'))
+    @vcr.use_cassette(
+        os.path.join(FIXTURES_DIR, "vcr_cassettes", "duracloud_browse_split_files.yaml")
+    )
     def test_browse_split_files(self):
         # Hide split files
-        resp = self.ds_object.browse('chunked')
+        resp = self.ds_object.browse("chunked")
         assert resp
-        assert resp['directories'] == []
-        assert resp['entries'] == ['chunked_image.jpg']
+        assert resp["directories"] == []
+        assert resp["entries"] == ["chunked_image.jpg"]
 
-    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'duracloud_delete_file.yaml'))
+    @vcr.use_cassette(
+        os.path.join(FIXTURES_DIR, "vcr_cassettes", "duracloud_delete_file.yaml")
+    )
     def test_delete_file(self):
         # Verify exists
-        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg', auth=self.auth)
+        response = requests.head(
+            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg",
+            auth=self.auth,
+        )
         assert response.status_code == 200
         # Delete file
-        self.ds_object.delete_path('delete/delete.svg')
+        self.ds_object.delete_path("delete/delete.svg")
         # Verify deleted
-        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg', auth=self.auth)
+        response = requests.head(
+            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg",
+            auth=self.auth,
+        )
         assert response.status_code == 404
 
-    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'duracloud_delete_folder.yaml'))
+    @vcr.use_cassette(
+        os.path.join(FIXTURES_DIR, "vcr_cassettes", "duracloud_delete_folder.yaml")
+    )
     def test_delete_folder(self):
         # Verify exists
-        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete/delete.svg', auth=self.auth)
+        response = requests.head(
+            "https://archivematica.duracloud.org/durastore/testing/delete/delete/delete.svg",
+            auth=self.auth,
+        )
         assert response.status_code == 200
-        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg', auth=self.auth)
+        response = requests.head(
+            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg",
+            auth=self.auth,
+        )
         assert response.status_code == 200
         # Delete folder
         # BUG If delete_path is a folder but provided without a trailing /, will deleted a file with the same name.
-        self.ds_object.delete_path('delete/delete/')
+        self.ds_object.delete_path("delete/delete/")
         # Verify deleted
-        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete/delete.svg', auth=self.auth)
+        response = requests.head(
+            "https://archivematica.duracloud.org/durastore/testing/delete/delete/delete.svg",
+            auth=self.auth,
+        )
         assert response.status_code == 404
         # Verify that file with same prefix not deleted
-        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg', auth=self.auth)
+        response = requests.head(
+            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg",
+            auth=self.auth,
+        )
         assert response.status_code == 200
 
-    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'duracloud_delete_percent_encoding.yaml'))
+    @vcr.use_cassette(
+        os.path.join(
+            FIXTURES_DIR, "vcr_cassettes", "duracloud_delete_percent_encoding.yaml"
+        )
+    )
     def test_delete_percent_encoding(self):
         # Verify exists
-        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete%20%23.svg', auth=self.auth)
+        response = requests.head(
+            "https://archivematica.duracloud.org/durastore/testing/delete/delete%20%23.svg",
+            auth=self.auth,
+        )
         assert response.status_code == 200
         # Delete file
-        self.ds_object.delete_path('delete/delete #.svg')
+        self.ds_object.delete_path("delete/delete #.svg")
         # Verify deleted
-        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete%20%23.svg', auth=self.auth)
+        response = requests.head(
+            "https://archivematica.duracloud.org/durastore/testing/delete/delete%20%23.svg",
+            auth=self.auth,
+        )
         assert response.status_code == 404
 
-    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'duracloud_delete_chunked_file.yaml'))
+    @vcr.use_cassette(
+        os.path.join(
+            FIXTURES_DIR, "vcr_cassettes", "duracloud_delete_chunked_file.yaml"
+        )
+    )
     def test_delete_chunked_file(self):
         # Ensure file exists
-        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg', auth=self.auth)
+        response = requests.head(
+            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg",
+            auth=self.auth,
+        )
         assert response.status_code == 404
-        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dura-manifest', auth=self.auth)
+        response = requests.head(
+            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dura-manifest",
+            auth=self.auth,
+        )
         assert response.status_code == 200
-        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dnd', auth=self.auth)
+        response = requests.head(
+            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dnd",
+            auth=self.auth,
+        )
         assert response.status_code == 200
         # Delete file
-        self.ds_object.delete_path('delete/delete.svg')
+        self.ds_object.delete_path("delete/delete.svg")
         # Verify deleted
-        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg', auth=self.auth)
+        response = requests.head(
+            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg",
+            auth=self.auth,
+        )
         assert response.status_code == 404
-        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dura-manifest', auth=self.auth)
+        response = requests.head(
+            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dura-manifest",
+            auth=self.auth,
+        )
         assert response.status_code == 404
-        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dura-chunk-0000', auth=self.auth)
+        response = requests.head(
+            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dura-chunk-0000",
+            auth=self.auth,
+        )
         assert response.status_code == 404
-        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dura-chunk-0001', auth=self.auth)
+        response = requests.head(
+            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dura-chunk-0001",
+            auth=self.auth,
+        )
         assert response.status_code == 404
         # Verify file with same prefix not deleted
-        response = requests.head('https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dnd', auth=self.auth)
+        response = requests.head(
+            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dnd",
+            auth=self.auth,
+        )
         assert response.status_code == 200
 
-    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'duracloud_move_from_ss_file.yaml'))
+    @vcr.use_cassette(
+        os.path.join(FIXTURES_DIR, "vcr_cassettes", "duracloud_move_from_ss_file.yaml")
+    )
     def test_move_from_ss_file(self):
         # Create test.txt
-        open('test.txt', 'w').write('test file\n')
+        open("test.txt", "w").write("test file\n")
         # Upload
-        self.ds_object.move_from_storage_service('test.txt', 'test/test.txt')
+        self.ds_object.move_from_storage_service("test.txt", "test/test.txt")
         # Verify
-        response = requests.get('https://archivematica.duracloud.org/durastore/testing/test/test.txt', auth=self.auth)
+        response = requests.get(
+            "https://archivematica.duracloud.org/durastore/testing/test/test.txt",
+            auth=self.auth,
+        )
         assert response.status_code == 200
-        assert response.text == 'test file\n'
+        assert response.text == "test file\n"
         # Cleanup
-        os.remove('test.txt')
-        requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/test/test.txt', auth=self.auth)
+        os.remove("test.txt")
+        requests.delete(
+            "https://"
+            + self.ds_object.host
+            + "/durastore/"
+            + self.ds_object.duraspace
+            + "/test/test.txt",
+            auth=self.auth,
+        )
 
-    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'duracloud_move_from_ss_folder.yaml'))
+    @vcr.use_cassette(
+        os.path.join(
+            FIXTURES_DIR, "vcr_cassettes", "duracloud_move_from_ss_folder.yaml"
+        )
+    )
     def test_move_from_ss_folder(self):
         # Create test folder
-        os.mkdir('test')
-        os.mkdir('test/subfolder')
-        open('test/test.txt', 'w').write('test file\n')
-        open('test/subfolder/test2.txt', 'w').write('test file2\n')
+        os.mkdir("test")
+        os.mkdir("test/subfolder")
+        open("test/test.txt", "w").write("test file\n")
+        open("test/subfolder/test2.txt", "w").write("test file2\n")
         # Upload
-        self.ds_object.move_from_storage_service('test/', 'test/foo/')
+        self.ds_object.move_from_storage_service("test/", "test/foo/")
         # Verify
-        response = requests.get('https://archivematica.duracloud.org/durastore/testing/test/foo/test.txt', auth=self.auth)
+        response = requests.get(
+            "https://archivematica.duracloud.org/durastore/testing/test/foo/test.txt",
+            auth=self.auth,
+        )
         assert response.status_code == 200
-        assert response.text == 'test file\n'
-        response = requests.get('https://archivematica.duracloud.org/durastore/testing/test/foo/subfolder/test2.txt', auth=self.auth)
+        assert response.text == "test file\n"
+        response = requests.get(
+            "https://archivematica.duracloud.org/durastore/testing/test/foo/subfolder/test2.txt",
+            auth=self.auth,
+        )
         assert response.status_code == 200
-        assert response.text == 'test file2\n'
+        assert response.text == "test file2\n"
         # Cleanup
-        os.remove('test/test.txt')
-        os.remove('test/subfolder/test2.txt')
-        os.removedirs('test/subfolder')
-        requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/test/foo/test.txt', auth=self.auth)
-        requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/test/foo/subfolder/test2.txt', auth=self.auth)
+        os.remove("test/test.txt")
+        os.remove("test/subfolder/test2.txt")
+        os.removedirs("test/subfolder")
+        requests.delete(
+            "https://"
+            + self.ds_object.host
+            + "/durastore/"
+            + self.ds_object.duraspace
+            + "/test/foo/test.txt",
+            auth=self.auth,
+        )
+        requests.delete(
+            "https://"
+            + self.ds_object.host
+            + "/durastore/"
+            + self.ds_object.duraspace
+            + "/test/foo/subfolder/test2.txt",
+            auth=self.auth,
+        )
 
-    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'duracloud_move_from_ss_percent_encoding.yaml'))
+    @vcr.use_cassette(
+        os.path.join(
+            FIXTURES_DIR,
+            "vcr_cassettes",
+            "duracloud_move_from_ss_percent_encoding.yaml",
+        )
+    )
     def test_move_from_ss_percent_encoding(self):
         # Create bad #name.txt
-        open('bad #name.txt', 'w').write('bad #name file\n')
+        open("bad #name.txt", "w").write("bad #name file\n")
         # Upload
-        self.ds_object.move_from_storage_service('bad #name.txt', 'test/bad #name.txt')
+        self.ds_object.move_from_storage_service("bad #name.txt", "test/bad #name.txt")
         # Verify
-        response = requests.get('https://archivematica.duracloud.org/durastore/testing/test/bad%20%23name.txt', auth=self.auth)
+        response = requests.get(
+            "https://archivematica.duracloud.org/durastore/testing/test/bad%20%23name.txt",
+            auth=self.auth,
+        )
         assert response.status_code == 200
-        assert response.text == 'bad #name file\n'
+        assert response.text == "bad #name file\n"
         # Cleanup
-        os.remove('bad #name.txt')
-        requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/test/bad%20%23name.txt', auth=self.auth)
+        os.remove("bad #name.txt")
+        requests.delete(
+            "https://"
+            + self.ds_object.host
+            + "/durastore/"
+            + self.ds_object.duraspace
+            + "/test/bad%20%23name.txt",
+            auth=self.auth,
+        )
 
-    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'duracloud_move_from_ss_chunked.yaml'))
+    @vcr.use_cassette(
+        os.path.join(
+            FIXTURES_DIR, "vcr_cassettes", "duracloud_move_from_ss_chunked.yaml"
+        )
+    )
     def test_move_from_ss_chunked_file(self):
-        file_path = os.path.join(FIXTURES_DIR, 'chunk_file.txt')
+        file_path = os.path.join(FIXTURES_DIR, "chunk_file.txt")
         self.ds_object.CHUNK_SIZE = 10 * 1024  # Set testing chunk size
         # Upload
-        self.ds_object.move_from_storage_service(file_path, 'chunked/chunked #image.txt')
+        self.ds_object.move_from_storage_service(
+            file_path, "chunked/chunked #image.txt"
+        )
         # Verify
-        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked%20%23image.txt', auth=self.auth)
+        response = requests.get(
+            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked%20%23image.txt",
+            auth=self.auth,
+        )
         assert response.status_code == 404
-        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked%20%23image.txt.dura-manifest', auth=self.auth)
+        response = requests.get(
+            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked%20%23image.txt.dura-manifest",
+            auth=self.auth,
+        )
         assert response.status_code == 200
         # Verify manifest
         root = etree.fromstring(response.content)
-        assert root.find('header/sourceContent').attrib['contentId'] == 'chunked/chunked #image.txt'
-        assert root.find('header/sourceContent/byteSize').text == '11037'
-        assert root.find('header/sourceContent/md5').text == 'e7aba5d09b490b9f91c65867754ae190'
-        assert root.find('chunks')[0].attrib['chunkId'] == 'chunked/chunked #image.txt.dura-chunk-0000'
-        assert root.find('chunks')[0].find('byteSize').text == '10240'
-        assert root.find('chunks')[0].find('md5').text == '2147aa269812cac6204ad66ec953ccfe'
-        assert root.find('chunks')[1].attrib['chunkId'] == 'chunked/chunked #image.txt.dura-chunk-0001'
-        assert root.find('chunks')[1].find('byteSize').text == '797'
-        assert root.find('chunks')[1].find('md5').text == 'aa9d2932a31f4b81cbfd1bcdb2c75020'
-        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked%20%23image.txt.dura-chunk-0000', auth=self.auth)
+        assert (
+            root.find("header/sourceContent").attrib["contentId"]
+            == "chunked/chunked #image.txt"
+        )
+        assert root.find("header/sourceContent/byteSize").text == "11037"
+        assert (
+            root.find("header/sourceContent/md5").text
+            == "e7aba5d09b490b9f91c65867754ae190"
+        )
+        assert (
+            root.find("chunks")[0].attrib["chunkId"]
+            == "chunked/chunked #image.txt.dura-chunk-0000"
+        )
+        assert root.find("chunks")[0].find("byteSize").text == "10240"
+        assert (
+            root.find("chunks")[0].find("md5").text
+            == "2147aa269812cac6204ad66ec953ccfe"
+        )
+        assert (
+            root.find("chunks")[1].attrib["chunkId"]
+            == "chunked/chunked #image.txt.dura-chunk-0001"
+        )
+        assert root.find("chunks")[1].find("byteSize").text == "797"
+        assert (
+            root.find("chunks")[1].find("md5").text
+            == "aa9d2932a31f4b81cbfd1bcdb2c75020"
+        )
+        response = requests.get(
+            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked%20%23image.txt.dura-chunk-0000",
+            auth=self.auth,
+        )
         assert response.status_code == 200
-        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked%20%23image.txt.dura-chunk-0001', auth=self.auth)
+        response = requests.get(
+            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked%20%23image.txt.dura-chunk-0001",
+            auth=self.auth,
+        )
         assert response.status_code == 200
         # Cleanup
-        requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/chunked/chunked%20%23image.txt.dura-manifest', auth=self.auth)
-        requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/chunked/chunked%20%23image.txt.dura-chunk-0000', auth=self.auth)
-        requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/chunked/chunked%20%23image.txt.dura-chunk-0001', auth=self.auth)
+        requests.delete(
+            "https://"
+            + self.ds_object.host
+            + "/durastore/"
+            + self.ds_object.duraspace
+            + "/chunked/chunked%20%23image.txt.dura-manifest",
+            auth=self.auth,
+        )
+        requests.delete(
+            "https://"
+            + self.ds_object.host
+            + "/durastore/"
+            + self.ds_object.duraspace
+            + "/chunked/chunked%20%23image.txt.dura-chunk-0000",
+            auth=self.auth,
+        )
+        requests.delete(
+            "https://"
+            + self.ds_object.host
+            + "/durastore/"
+            + self.ds_object.duraspace
+            + "/chunked/chunked%20%23image.txt.dura-chunk-0001",
+            auth=self.auth,
+        )
 
-    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'duracloud_move_from_ss_chunked_resume.yaml'))
+    @vcr.use_cassette(
+        os.path.join(
+            FIXTURES_DIR, "vcr_cassettes", "duracloud_move_from_ss_chunked_resume.yaml"
+        )
+    )
     def test_move_from_ss_chunked_resume(self):
         # Setup
-        file_path = os.path.join(FIXTURES_DIR, 'chunk_file.txt')
+        file_path = os.path.join(FIXTURES_DIR, "chunk_file.txt")
         self.ds_object.CHUNK_SIZE = 10 * 1024  # Set testing chunk size
-        requests.put('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/chunked/chunked_image.txt.dura-chunk-0000', auth=self.auth, data='Placeholder')
+        requests.put(
+            "https://"
+            + self.ds_object.host
+            + "/durastore/"
+            + self.ds_object.duraspace
+            + "/chunked/chunked_image.txt.dura-chunk-0000",
+            auth=self.auth,
+            data="Placeholder",
+        )
         # Verify initial state
-        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt', auth=self.auth)
+        response = requests.get(
+            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt",
+            auth=self.auth,
+        )
         assert response.status_code == 404
-        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-manifest', auth=self.auth)
+        response = requests.get(
+            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-manifest",
+            auth=self.auth,
+        )
         assert response.status_code == 404
-        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0000', auth=self.auth)
+        response = requests.get(
+            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0000",
+            auth=self.auth,
+        )
         assert response.status_code == 200
-        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0001', auth=self.auth)
+        response = requests.get(
+            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0001",
+            auth=self.auth,
+        )
         assert response.status_code == 404
         # Upload
-        self.ds_object.move_from_storage_service(file_path, 'chunked/chunked_image.txt', resume=True)
+        self.ds_object.move_from_storage_service(
+            file_path, "chunked/chunked_image.txt", resume=True
+        )
         # Verify
-        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt', auth=self.auth)
+        response = requests.get(
+            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt",
+            auth=self.auth,
+        )
         assert response.status_code == 404
-        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-manifest', auth=self.auth)
+        response = requests.get(
+            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-manifest",
+            auth=self.auth,
+        )
         assert response.status_code == 200
         # Verify manifest
         root = etree.fromstring(response.content)
-        assert root.find('header/sourceContent').attrib['contentId'] == 'chunked/chunked_image.txt'
-        assert root.find('header/sourceContent/byteSize').text == '11037'
-        assert root.find('header/sourceContent/md5').text == 'e7aba5d09b490b9f91c65867754ae190'
-        assert root.find('chunks')[0].attrib['chunkId'] == 'chunked/chunked_image.txt.dura-chunk-0000'
-        assert root.find('chunks')[0].find('byteSize').text == '10240'
-        assert root.find('chunks')[0].find('md5').text == '2147aa269812cac6204ad66ec953ccfe'
-        assert root.find('chunks')[1].attrib['chunkId'] == 'chunked/chunked_image.txt.dura-chunk-0001'
-        assert root.find('chunks')[1].find('byteSize').text == '797'
-        assert root.find('chunks')[1].find('md5').text == 'aa9d2932a31f4b81cbfd1bcdb2c75020'
-        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0000', auth=self.auth)
+        assert (
+            root.find("header/sourceContent").attrib["contentId"]
+            == "chunked/chunked_image.txt"
+        )
+        assert root.find("header/sourceContent/byteSize").text == "11037"
+        assert (
+            root.find("header/sourceContent/md5").text
+            == "e7aba5d09b490b9f91c65867754ae190"
+        )
+        assert (
+            root.find("chunks")[0].attrib["chunkId"]
+            == "chunked/chunked_image.txt.dura-chunk-0000"
+        )
+        assert root.find("chunks")[0].find("byteSize").text == "10240"
+        assert (
+            root.find("chunks")[0].find("md5").text
+            == "2147aa269812cac6204ad66ec953ccfe"
+        )
+        assert (
+            root.find("chunks")[1].attrib["chunkId"]
+            == "chunked/chunked_image.txt.dura-chunk-0001"
+        )
+        assert root.find("chunks")[1].find("byteSize").text == "797"
+        assert (
+            root.find("chunks")[1].find("md5").text
+            == "aa9d2932a31f4b81cbfd1bcdb2c75020"
+        )
+        response = requests.get(
+            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0000",
+            auth=self.auth,
+        )
         assert response.status_code == 200
-        assert response.text == 'Placeholder'
-        response = requests.get('https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0001', auth=self.auth)
+        assert response.text == "Placeholder"
+        response = requests.get(
+            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0001",
+            auth=self.auth,
+        )
         assert response.status_code == 200
         # Cleanup
-        requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/chunked/chunked_image.txt.dura-manifest', auth=self.auth)
-        requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/chunked/chunked_image.txt.dura-chunk-0000', auth=self.auth)
-        requests.delete('https://' + self.ds_object.host + '/durastore/' + self.ds_object.duraspace + '/chunked/chunked_image.txt.dura-chunk-0001', auth=self.auth)
+        requests.delete(
+            "https://"
+            + self.ds_object.host
+            + "/durastore/"
+            + self.ds_object.duraspace
+            + "/chunked/chunked_image.txt.dura-manifest",
+            auth=self.auth,
+        )
+        requests.delete(
+            "https://"
+            + self.ds_object.host
+            + "/durastore/"
+            + self.ds_object.duraspace
+            + "/chunked/chunked_image.txt.dura-chunk-0000",
+            auth=self.auth,
+        )
+        requests.delete(
+            "https://"
+            + self.ds_object.host
+            + "/durastore/"
+            + self.ds_object.duraspace
+            + "/chunked/chunked_image.txt.dura-chunk-0001",
+            auth=self.auth,
+        )
 
-    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'duracloud_move_to_ss_file.yaml'))
+    @vcr.use_cassette(
+        os.path.join(FIXTURES_DIR, "vcr_cassettes", "duracloud_move_to_ss_file.yaml")
+    )
     def test_move_to_ss_file(self):
         # Test file
-        self.ds_object.move_to_storage_service('test/test.txt', 'move_to_ss_file_dir/test.txt', None)
-        assert os.path.isdir('move_to_ss_file_dir')
-        assert os.path.isfile('move_to_ss_file_dir/test.txt')
-        assert open('move_to_ss_file_dir/test.txt', 'r').read() == 'test file\n'
+        self.ds_object.move_to_storage_service(
+            "test/test.txt", "move_to_ss_file_dir/test.txt", None
+        )
+        assert os.path.isdir("move_to_ss_file_dir")
+        assert os.path.isfile("move_to_ss_file_dir/test.txt")
+        assert open("move_to_ss_file_dir/test.txt", "r").read() == "test file\n"
         # Cleanup
-        os.remove('move_to_ss_file_dir/test.txt')
-        os.removedirs('move_to_ss_file_dir')
+        os.remove("move_to_ss_file_dir/test.txt")
+        os.removedirs("move_to_ss_file_dir")
 
-    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'duracloud_move_to_ss_folder.yaml'))
+    @vcr.use_cassette(
+        os.path.join(FIXTURES_DIR, "vcr_cassettes", "duracloud_move_to_ss_folder.yaml")
+    )
     def test_move_to_ss_folder(self):
         # Test folder
-        self.ds_object.move_to_storage_service('test/foo/', 'move_to_ss_folder_dir/test/', None)
-        assert os.path.isdir('move_to_ss_folder_dir')
-        assert os.path.isdir('move_to_ss_folder_dir/test')
-        assert os.path.isdir('move_to_ss_folder_dir/test/subfolder')
-        assert os.path.isfile('move_to_ss_folder_dir/test/test.txt')
-        assert os.path.isfile('move_to_ss_folder_dir/test/subfolder/test2.txt')
-        assert open('move_to_ss_folder_dir/test/test.txt').read() == 'test file\n'
-        assert open('move_to_ss_folder_dir/test/subfolder/test2.txt').read() == 'test file2\n'
+        self.ds_object.move_to_storage_service(
+            "test/foo/", "move_to_ss_folder_dir/test/", None
+        )
+        assert os.path.isdir("move_to_ss_folder_dir")
+        assert os.path.isdir("move_to_ss_folder_dir/test")
+        assert os.path.isdir("move_to_ss_folder_dir/test/subfolder")
+        assert os.path.isfile("move_to_ss_folder_dir/test/test.txt")
+        assert os.path.isfile("move_to_ss_folder_dir/test/subfolder/test2.txt")
+        assert open("move_to_ss_folder_dir/test/test.txt").read() == "test file\n"
+        assert (
+            open("move_to_ss_folder_dir/test/subfolder/test2.txt").read()
+            == "test file2\n"
+        )
         # Cleanup
-        os.remove('move_to_ss_folder_dir/test/test.txt')
-        os.remove('move_to_ss_folder_dir/test/subfolder/test2.txt')
-        os.removedirs('move_to_ss_folder_dir/test/subfolder')
+        os.remove("move_to_ss_folder_dir/test/test.txt")
+        os.remove("move_to_ss_folder_dir/test/subfolder/test2.txt")
+        os.removedirs("move_to_ss_folder_dir/test/subfolder")
 
-    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'duracloud_move_to_ss_folder_globbing.yaml'))
+    @vcr.use_cassette(
+        os.path.join(
+            FIXTURES_DIR, "vcr_cassettes", "duracloud_move_to_ss_folder_globbing.yaml"
+        )
+    )
     def test_move_to_ss_folder_globbing(self):
         # Test with globbing
-        self.ds_object.move_to_storage_service('test/foo/.', 'move_to_ss_folder_globbing_dir/test/', None)
-        assert os.path.isdir('move_to_ss_folder_globbing_dir')
-        assert os.path.isdir('move_to_ss_folder_globbing_dir/test')
-        assert os.path.isdir('move_to_ss_folder_globbing_dir/test/subfolder')
-        assert os.path.isfile('move_to_ss_folder_globbing_dir/test/test.txt')
-        assert os.path.isfile('move_to_ss_folder_globbing_dir/test/subfolder/test2.txt')
-        assert open('move_to_ss_folder_globbing_dir/test/test.txt').read() == 'test file\n'
-        assert open('move_to_ss_folder_globbing_dir/test/subfolder/test2.txt').read() == 'test file2\n'
+        self.ds_object.move_to_storage_service(
+            "test/foo/.", "move_to_ss_folder_globbing_dir/test/", None
+        )
+        assert os.path.isdir("move_to_ss_folder_globbing_dir")
+        assert os.path.isdir("move_to_ss_folder_globbing_dir/test")
+        assert os.path.isdir("move_to_ss_folder_globbing_dir/test/subfolder")
+        assert os.path.isfile("move_to_ss_folder_globbing_dir/test/test.txt")
+        assert os.path.isfile("move_to_ss_folder_globbing_dir/test/subfolder/test2.txt")
+        assert (
+            open("move_to_ss_folder_globbing_dir/test/test.txt").read() == "test file\n"
+        )
+        assert (
+            open("move_to_ss_folder_globbing_dir/test/subfolder/test2.txt").read()
+            == "test file2\n"
+        )
         # Cleanup
-        os.remove('move_to_ss_folder_globbing_dir/test/test.txt')
-        os.remove('move_to_ss_folder_globbing_dir/test/subfolder/test2.txt')
-        os.removedirs('move_to_ss_folder_globbing_dir/test/subfolder')
+        os.remove("move_to_ss_folder_globbing_dir/test/test.txt")
+        os.remove("move_to_ss_folder_globbing_dir/test/subfolder/test2.txt")
+        os.removedirs("move_to_ss_folder_globbing_dir/test/subfolder")
 
-    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'duracloud_move_to_ss_percent_encoding.yaml'))
+    @vcr.use_cassette(
+        os.path.join(
+            FIXTURES_DIR, "vcr_cassettes", "duracloud_move_to_ss_percent_encoding.yaml"
+        )
+    )
     def test_move_to_ss_percent_encoding(self):
         # Move to SS with # in path & filename
-        self.ds_object.move_to_storage_service('test/bad #name/bad #name.txt', 'move_to_ss_percent_dir/bad #name.txt', None)
+        self.ds_object.move_to_storage_service(
+            "test/bad #name/bad #name.txt", "move_to_ss_percent_dir/bad #name.txt", None
+        )
         # Verify
-        assert os.path.isdir('move_to_ss_percent_dir')
-        assert os.path.isfile('move_to_ss_percent_dir/bad #name.txt')
-        assert open('move_to_ss_percent_dir/bad #name.txt').read() == 'test file\n'
+        assert os.path.isdir("move_to_ss_percent_dir")
+        assert os.path.isfile("move_to_ss_percent_dir/bad #name.txt")
+        assert open("move_to_ss_percent_dir/bad #name.txt").read() == "test file\n"
         # Cleanup
-        os.remove('move_to_ss_percent_dir/bad #name.txt')
-        os.removedirs('move_to_ss_percent_dir')
+        os.remove("move_to_ss_percent_dir/bad #name.txt")
+        os.removedirs("move_to_ss_percent_dir")
 
-    @vcr.use_cassette(os.path.join(FIXTURES_DIR, 'vcr_cassettes', 'duracloud_move_to_ss_chunked_file.yaml'))
+    @vcr.use_cassette(
+        os.path.join(
+            FIXTURES_DIR, "vcr_cassettes", "duracloud_move_to_ss_chunked_file.yaml"
+        )
+    )
     def test_move_to_ss_chunked_file(self):
         # chunked #image.jpg is actually chunked
-        self.ds_object.move_to_storage_service('chunked/chunked #image.jpg', 'move_to_ss_chunked/chunked #image.jpg', None)
+        self.ds_object.move_to_storage_service(
+            "chunked/chunked #image.jpg", "move_to_ss_chunked/chunked #image.jpg", None
+        )
         # Verify
-        assert os.path.isdir('move_to_ss_chunked')
-        assert not os.path.exists('move_to_ss_chunked/chunked #image.jpg.dura-manifest')
-        assert not os.path.exists('move_to_ss_chunked/chunked #image.jpg.dura-chunk-0000')
-        assert not os.path.exists('move_to_ss_chunked/chunked #image.jpg.dura-chunk-0001')
-        assert os.path.isfile('move_to_ss_chunked/chunked #image.jpg')
-        assert os.path.getsize('move_to_ss_chunked/chunked #image.jpg') == 158131
+        assert os.path.isdir("move_to_ss_chunked")
+        assert not os.path.exists("move_to_ss_chunked/chunked #image.jpg.dura-manifest")
+        assert not os.path.exists(
+            "move_to_ss_chunked/chunked #image.jpg.dura-chunk-0000"
+        )
+        assert not os.path.exists(
+            "move_to_ss_chunked/chunked #image.jpg.dura-chunk-0001"
+        )
+        assert os.path.isfile("move_to_ss_chunked/chunked #image.jpg")
+        assert os.path.getsize("move_to_ss_chunked/chunked #image.jpg") == 158131
 
         # Cleanup
-        os.remove('move_to_ss_chunked/chunked #image.jpg')
-        os.removedirs('move_to_ss_chunked')
+        os.remove("move_to_ss_chunked/chunked #image.jpg")
+        os.removedirs("move_to_ss_chunked")

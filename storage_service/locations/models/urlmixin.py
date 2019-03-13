@@ -2,7 +2,6 @@ from django.utils.six.moves.urllib.parse import urlparse
 
 
 class URLMixin(object):
-
     def parse_and_fix_url(self, remote_name, scheme="http"):
         """Returns a ParseResult object based on the remote_name field.
 
@@ -12,8 +11,8 @@ class URLMixin(object):
         when the pipeline was behind a HTTPS front-end.
         """
         res = urlparse(remote_name)
-        if res.scheme == '' and res.netloc == '' and res.path != '':
+        if res.scheme == "" and res.netloc == "" and res.path != "":
             res = res._replace(scheme=scheme)
             res = res._replace(netloc=res.path)
-            res = res._replace(path='')
+            res = res._replace(path="")
         return res

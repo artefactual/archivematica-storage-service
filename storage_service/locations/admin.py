@@ -1,6 +1,5 @@
 from django.contrib import admin
-from .models import (Event, Package, LocalFilesystem, Location, NFS, Pipeline,
-    Space)
+from .models import Event, Package, LocalFilesystem, Location, NFS, Pipeline, Space
 
 admin.site.register(Event)
 admin.site.register(Package)

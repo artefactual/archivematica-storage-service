@@ -1,4 +1,3 @@
-
 try:
     from functools import wraps
 except ImportError:
@@ -10,7 +9,7 @@ from django.template import RequestContext
 
 # Requires confirmation from a prompt page before executing a request
 # (see http://djangosnippets.org/snippets/1922/)
-def confirm_required(template_name, context_creator, key='__confirm__'):
+def confirm_required(template_name, context_creator, key="__confirm__"):
     """
     Decorator for views that need confirmation page. For example, delete
     object view. Decorated view renders confirmation page defined by template
@@ -40,13 +39,19 @@ def confirm_required(template_name, context_creator, key='__confirm__'):
         </form>
 
     """
+
     def decorator(func):
         def inner(request, *args, **kwargs):
             if key in request.POST:
                 return func(request, *args, **kwargs)
             else:
-                context = context_creator and context_creator(request, *args, **kwargs) \
+                context = (
+                    context_creator
+                    and context_creator(request, *args, **kwargs)
                     or RequestContext(request)
+                )
                 return render_to_response(template_name, context)
+
         return wraps(func)(inner)
+
     return decorator

@@ -66,25 +66,33 @@ class AsyncManager(object):
         with AsyncManager.lock:
             # Delete any tasks that have expired before finishing
             # (i.e. interrupted due to a server restart)
-            Async.objects \
-                 .filter(completed=False,
-                         updated_time__lte=(timezone.now() - TASK_TIMEOUT_SECONDS)) \
-                 .delete()
+            Async.objects.filter(
+                completed=False,
+                updated_time__lte=(timezone.now() - TASK_TIMEOUT_SECONDS),
+            ).delete()
 
             # Delete any tasks whose results have expired
-            Async.objects \
-                 .filter(completed=True,
-                         completed_time__lte=(timezone.now() - MAX_TASK_AGE_SECONDS)) \
-                 .delete()
+            Async.objects.filter(
+                completed=True,
+                completed_time__lte=(timezone.now() - MAX_TASK_AGE_SECONDS),
+            ).delete()
 
             # Touch the update time of any running task.  If we crash/restart then these will expire.
-            running_task_ids = [task.async_id
-                                for task in AsyncManager.running_tasks
-                                if task.thread.is_alive()]
-            Async.objects.filter(id__in=running_task_ids).update(updated_time=timezone.now())
+            running_task_ids = [
+                task.async_id
+                for task in AsyncManager.running_tasks
+                if task.thread.is_alive()
+            ]
+            Async.objects.filter(id__in=running_task_ids).update(
+                updated_time=timezone.now()
+            )
 
             # Find any tasks that have completed since we last looked
-            completed_tasks = [task for task in AsyncManager.running_tasks if not task.thread.is_alive()]
+            completed_tasks = [
+                task
+                for task in AsyncManager.running_tasks
+                if not task.thread.is_alive()
+            ]
 
             for task in completed_tasks:
                 AsyncManager.running_tasks.remove(task)
@@ -105,13 +113,19 @@ class AsyncManager(object):
                     # This generally shouldn't happen, but if it does that
                     # would suggest that the watchdog had failed to update
                     # the running task for quite a long time.
-                    LOGGER.debug("Watchdog attempted to update Async object %d but couldn't find it!" % (task.async_id))
+                    LOGGER.debug(
+                        "Watchdog attempted to update Async object %d but couldn't find it!"
+                        % (task.async_id)
+                    )
 
-            LOGGER.debug("Watchdog sees %d tasks running" % (len(AsyncManager.running_tasks)))
+            LOGGER.debug(
+                "Watchdog sees %d tasks running" % (len(AsyncManager.running_tasks))
+            )
 
     @staticmethod
     def _wrap_task(task, task_fn):
         """Run a function, capturing its output/errors in `task`"""
+
         def wrapper(*args, **kwargs):
             value = error = None
 
@@ -139,7 +153,9 @@ class AsyncManager(object):
 
         task = RunningTask()
         task.async_id = async_task.id
-        task.thread = threading.Thread(target=AsyncManager._wrap_task(task, task_fn), args=args, kwargs=kwargs)
+        task.thread = threading.Thread(
+            target=AsyncManager._wrap_task(task, task_fn), args=args, kwargs=kwargs
+        )
 
         # Note: Important to start the thread prior to adding it to our list of
         # running tasks.  Otherwise the is_alive check might fire before the

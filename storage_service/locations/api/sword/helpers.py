@@ -42,11 +42,12 @@ def deposit_list(location_uuid):
     Returns list containing all deposits in the Location with `location_uuid`.
     """
     # TODO: filter out completed ones?
-    deposits = models.Package.objects.filter(
-        package_type=models.Package.DEPOSIT).filter(
-        current_location_id=location_uuid).exclude(
-        status=models.Package.DELETED).exclude(
-        status=models.Package.FINALIZED)
+    deposits = (
+        models.Package.objects.filter(package_type=models.Package.DEPOSIT)
+        .filter(current_location_id=location_uuid)
+        .exclude(status=models.Package.DELETED)
+        .exclude(status=models.Package.FINALIZED)
+    )
     return deposits
 
 
@@ -57,7 +58,7 @@ def write_request_body_to_temp_file(request):
     Return the temp file's path
     """
     _, temp_filepath = tempfile.mkstemp()
-    with open(temp_filepath, 'ab') as f:
+    with open(temp_filepath, "ab") as f:
         f.write(request.body)
     return temp_filepath
 
@@ -69,7 +70,7 @@ def parse_filename_from_content_disposition(header):
     Return filename
     """
     _, params = cgi.parse_header(header)
-    filename = params.get('filename', '')
+    filename = params.get("filename", "")
     return filename
 
 
@@ -85,11 +86,15 @@ def pad_destination_filepath_if_it_already_exists(filepath, original=None, attem
         original = filepath
     attempt = attempt + 1
     if os.path.exists(filepath):
-        return pad_destination_filepath_if_it_already_exists(original + '_' + str(attempt), original, attempt)
+        return pad_destination_filepath_if_it_already_exists(
+            original + "_" + str(attempt), original, attempt
+        )
     return filepath
 
 
-def download_resource(url, destination_path, filename=None, username=None, password=None):
+def download_resource(
+    url, destination_path, filename=None, username=None, password=None
+):
     """
     Download a resource.
 
@@ -97,7 +102,7 @@ def download_resource(url, destination_path, filename=None, username=None, passw
 
     Returns filename of downloaded resource
     """
-    LOGGER.info('downloading url: %s', url)
+    LOGGER.info("downloading url: %s", url)
 
     auth = None
     if username is not None and password is not None:
@@ -106,14 +111,16 @@ def download_resource(url, destination_path, filename=None, username=None, passw
     verify = not settings.INSECURE_SKIP_VERIFY
     response = requests.get(url, auth=auth, verify=verify)
     if filename is None:
-        if 'content-disposition' in response.headers:
-            filename = parse_filename_from_content_disposition(response.headers['content-disposition'])
+        if "content-disposition" in response.headers:
+            filename = parse_filename_from_content_disposition(
+                response.headers["content-disposition"]
+            )
         else:
             filename = os.path.basename(url)
-    LOGGER.info('Filename set to ' + filename)
+    LOGGER.info("Filename set to " + filename)
 
     filepath = os.path.join(destination_path, filename)
-    with open(filepath, 'wb') as fp:
+    with open(filepath, "wb") as fp:
         fp.write(response.content)
 
     return filename
@@ -167,8 +174,8 @@ def _fetch_content(deposit_uuid, objects, subdirs=None):
 
     # Get deposit protocol info
     deposit_space = deposit.current_location.space.get_child_space()
-    fedora_username = getattr(deposit_space, 'fedora_user', None)
-    fedora_password = getattr(deposit_space, 'fedora_password', None)
+    fedora_username = getattr(deposit_space, "fedora_user", None)
+    fedora_password = getattr(deposit_space, "fedora_password", None)
 
     # download the files
     temp_dir = tempfile.mkdtemp()
@@ -179,29 +186,33 @@ def _fetch_content(deposit_uuid, objects, subdirs=None):
         task_file.save()
 
         try:
-            filename = item['filename']
+            filename = item["filename"]
 
             task_file.filename = filename
-            task_file.url = item['url']
+            task_file.url = item["url"]
             task_file.save()
 
             download_resource(
-                url=item['url'],
+                url=item["url"],
                 destination_path=temp_dir,
                 filename=filename,
                 username=fedora_username,
-                password=fedora_password
+                password=fedora_password,
             )
 
             temp_filename = os.path.join(temp_dir, filename)
 
-            if item['checksum'] is not None and item['checksum'] != generate_checksum(temp_filename, 'md5').hexdigest():
+            if (
+                item["checksum"] is not None
+                and item["checksum"]
+                != generate_checksum(temp_filename, "md5").hexdigest()
+            ):
                 os.unlink(temp_filename)
                 raise Exception(_("Incorrect checksum"))
 
             # Some MODS records have no proper filenames
-            if filename == 'MODS Record':
-                filename = item['object_id'].replace(':', '-') + '-MODS.xml'
+            if filename == "MODS Record":
+                filename = item["object_id"].replace(":", "-") + "-MODS.xml"
 
             if subdirs:
                 base_path = os.path.join(deposit.full_path, *subdirs)
@@ -215,17 +226,17 @@ def _fetch_content(deposit_uuid, objects, subdirs=None):
             task_file.completed = True
             task_file.save()
 
-            LOGGER.info('Saved file to ' + new_path)
+            LOGGER.info("Saved file to " + new_path)
             completed += 1
 
             file_record = models.File(
-                name=item['filename'],
-                source_id=item['object_id'],
-                checksum=generate_checksum(new_path, 'sha512').hexdigest()
+                name=item["filename"],
+                source_id=item["object_id"],
+                checksum=generate_checksum(new_path, "sha512").hexdigest(),
             )
             file_record.save()
         except Exception as e:
-            LOGGER.exception('Package download task encountered an error:' + str(e))
+            LOGGER.exception("Package download task encountered an error:" + str(e))
             # an error occurred
             task_file.failed = True
             task_file.save()
@@ -240,8 +251,13 @@ def _fetch_content(deposit_uuid, objects, subdirs=None):
 
     # if the deposit is ready for finalization and this is the last batch
     # download to complete, then finalize
-    ready_for_finalization = deposit.misc_attributes.get('ready_for_finalization', False)
-    if ready_for_finalization and deposit_downloading_status(deposit) == models.PackageDownloadTask.COMPLETE:
+    ready_for_finalization = deposit.misc_attributes.get(
+        "ready_for_finalization", False
+    )
+    if (
+        ready_for_finalization
+        and deposit_downloading_status(deposit) == models.PackageDownloadTask.COMPLETE
+    ):
         _finalize_if_not_empty(deposit_uuid)
 
 
@@ -264,33 +280,32 @@ def _finalize_if_not_empty(deposit_uuid):
     """
     deposit = get_deposit(deposit_uuid)
     completed = False
-    result = {
-        'error': True,
-        'message': _('Deposit empty, or not done downloading.'),
-    }
+    result = {"error": True, "message": _("Deposit empty, or not done downloading.")}
     # don't finalize if still downloading
     if deposit_downloading_status(deposit) == models.PackageDownloadTask.COMPLETE:
         if len(os.listdir(deposit.full_path)) > 0:
             # get sword server so we can access pipeline information
             if not deposit.current_location.pipeline.exists():
                 return {
-                    'error': True,
-                    'message': _('No Pipeline associated with this collection')
+                    "error": True,
+                    "message": _("No Pipeline associated with this collection"),
                 }
             pipeline = deposit.current_location.pipeline.all()[0]
-            result = activate_transfer_and_request_approval_from_pipeline(deposit, pipeline)
-            if result.get('error', False):
-                LOGGER.warning('Error creating transfer: %s', result)
+            result = activate_transfer_and_request_approval_from_pipeline(
+                deposit, pipeline
+            )
+            if result.get("error", False):
+                LOGGER.warning("Error creating transfer: %s", result)
             else:
                 completed = True
 
     if completed:
         # mark deposit as complete
-        deposit.misc_attributes.update({'deposit_completion_time': timezone.now()})
+        deposit.misc_attributes.update({"deposit_completion_time": timezone.now()})
         deposit.status = models.Package.FINALIZED
     else:
         # make finalization as having failed
-        deposit.misc_attributes.update({'finalization_attempt_failed': True})
+        deposit.misc_attributes.update({"finalization_attempt_failed": True})
     deposit.save()
 
     return result
@@ -311,23 +326,27 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
     }
     """
     # make sure pipeline API access is configured
-    attrs = ('remote_name', 'api_username', 'api_key')
+    attrs = ("remote_name", "api_username", "api_key")
     if not all([getattr(pipeline, attr, None) for attr in attrs]):
         missing_attrs = [a for a in attrs if not getattr(pipeline, a, None)]
         return {
-            'error': True,
-            'message': _('Pipeline properties %(properties)s not set.') % {'properties': ', '.join(missing_attrs)}
+            "error": True,
+            "message": _("Pipeline properties %(properties)s not set.")
+            % {"properties": ", ".join(missing_attrs)},
         }
 
     # TODO: add error if more than one location is returned
     processing_location = models.Location.objects.get(
-        pipeline=pipeline,
-        purpose=models.Location.CURRENTLY_PROCESSING)
+        pipeline=pipeline, purpose=models.Location.CURRENTLY_PROCESSING
+    )
 
     destination_path = os.path.join(
         processing_location.full_path,
-        'watchedDirectories', 'activeTransfers', 'standardTransfer',
-        deposit.current_path)
+        "watchedDirectories",
+        "activeTransfers",
+        "standardTransfer",
+        deposit.current_path,
+    )
 
     # FIXME this should use Space.move_[to|from]_storage_service
     # move to standard transfers directory
@@ -339,43 +358,49 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
         try:
             results = pipeline.list_unapproved_transfers()
         except Exception:
-            LOGGER.exception('Retrieval of unapproved transfers failed')
+            LOGGER.exception("Retrieval of unapproved transfers failed")
         else:
             directories = [
-                result['directory'] for result in results['results']
-                if result['type'] == 'standard']
+                result["directory"]
+                for result in results["results"]
+                if result["type"] == "standard"
+            ]
             if deposit.current_path in directories:
                 break
         time.sleep(5)
 
     # Approve transfer.
     try:
-        results = pipeline.approve_transfer(deposit.current_path,
-                                            transfer_type='standard')
+        results = pipeline.approve_transfer(
+            deposit.current_path, transfer_type="standard"
+        )
     except Exception:
         LOGGER.exception(
-            'Automatic approval of transfer for deposit %s failed',
-            deposit.uuid)
+            "Automatic approval of transfer for deposit %s failed", deposit.uuid
+        )
         # Move back to deposit directory. FIXME: moving the files out form under
         # Archivematica leaves a transfer that will always error out - leave it?
         shutil.move(destination_path, deposit.full_path)
         return {
-            'error': True,
-            'message': _('Request to pipeline %(uuid)s transfer approval API '
-                         'failed: check credentials and REST API IP '
-                         'whitelist.') % {'uuid': pipeline.uuid},
+            "error": True,
+            "message": _(
+                "Request to pipeline %(uuid)s transfer approval API "
+                "failed: check credentials and REST API IP "
+                "whitelist."
+            )
+            % {"uuid": pipeline.uuid},
         }
     return results
 
 
 def sword_error_response(request, status, summary):
     """ Generate SWORD 2.0 error response """
-    error_details = {'summary': summary, 'status': status}
-    error_details['request'] = request
-    error_details['update_time'] = datetime.datetime.now().__str__()
-    error_details['user_agent'] = request.META['HTTP_USER_AGENT']
-    error_xml = render_to_string('locations/api/sword/error.xml', error_details)
-    return HttpResponse(error_xml, status=error_details['status'])
+    error_details = {"summary": summary, "status": status}
+    error_details["request"] = request
+    error_details["update_time"] = datetime.datetime.now().__str__()
+    error_details["user_agent"] = request.META["HTTP_USER_AGENT"]
+    error_xml = render_to_string("locations/api/sword/error.xml", error_details)
+    return HttpResponse(error_xml, status=error_details["status"])
 
 
 def store_mets_data(mets_path, deposit, object_id):
@@ -386,25 +411,25 @@ def store_mets_data(mets_path, deposit, object_id):
     Also moves the METS into the submission documentation directory, overwriting anything already there.
     """
     create_dirs = [
-        os.path.join(deposit.full_path, 'submissionDocumentation', 'mods'),
-        os.path.join(deposit.full_path, object_id.replace(':', '-'))
+        os.path.join(deposit.full_path, "submissionDocumentation", "mods"),
+        os.path.join(deposit.full_path, object_id.replace(":", "-")),
     ]
     for d in create_dirs:
         try:
-            LOGGER.debug('Creating %s', d)
+            LOGGER.debug("Creating %s", d)
             os.makedirs(d)
         except OSError:
             if not os.path.isdir(d):
                 raise
 
-    mets_name = object_id.replace(':', '-') + '-METS.xml'
-    target = os.path.join(deposit.full_path, 'submissionDocumentation', mets_name)
+    mets_name = object_id.replace(":", "-") + "-METS.xml"
+    target = os.path.join(deposit.full_path, "submissionDocumentation", mets_name)
 
     # There may be a previous METS file if the same file is being
     # re-transferred, so remove and update the METS in this case.
     if os.path.exists(target):
-        LOGGER.debug('Removing existing %s', target)
+        LOGGER.debug("Removing existing %s", target)
         os.unlink(target)
 
-    LOGGER.debug('Move METS file from %s to %s', mets_path, target)
+    LOGGER.debug("Move METS file from %s to %s", mets_path, target)
     shutil.move(mets_path, target)

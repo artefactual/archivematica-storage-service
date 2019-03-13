@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+
 # stdlib, alphabetical
 import logging
 import os
@@ -17,7 +18,7 @@ from administration.models import Settings
 # This module, alphabetical
 from .managers import Enabled
 
-__all__ = ('Location', 'LocationPipeline')
+__all__ = ("Location", "LocationPipeline")
 
 LOGGER = logging.getLogger(__name__)
 
@@ -25,74 +26,92 @@ LOGGER = logging.getLogger(__name__)
 class Location(models.Model):
     """ Stores information about a location. """
 
-    uuid = UUIDField(editable=False, unique=True, version=4,
-        help_text=_("Unique identifier"))
-    space = models.ForeignKey('Space', to_field='uuid')
+    uuid = UUIDField(
+        editable=False, unique=True, version=4, help_text=_("Unique identifier")
+    )
+    space = models.ForeignKey("Space", to_field="uuid")
 
     # Sorted by display name
-    AIP_RECOVERY = 'AR'
-    AIP_STORAGE = 'AS'
-    CURRENTLY_PROCESSING = 'CP'
-    DIP_STORAGE = 'DS'
-    SWORD_DEPOSIT = 'SD'
+    AIP_RECOVERY = "AR"
+    AIP_STORAGE = "AS"
+    CURRENTLY_PROCESSING = "CP"
+    DIP_STORAGE = "DS"
+    SWORD_DEPOSIT = "SD"
     # QUARANTINE = 'QU'
-    STORAGE_SERVICE_INTERNAL = 'SS'
-    BACKLOG = 'BL'
-    TRANSFER_SOURCE = 'TS'
-    REPLICATOR = 'RP'
+    STORAGE_SERVICE_INTERNAL = "SS"
+    BACKLOG = "BL"
+    TRANSFER_SOURCE = "TS"
+    REPLICATOR = "RP"
 
     # List of purposes where moving is not allowed.
-    PURPOSES_DISALLOWED_MOVE = (
-        BACKLOG,
-        AIP_STORAGE,
-    )
+    PURPOSES_DISALLOWED_MOVE = (BACKLOG, AIP_STORAGE)
 
     PURPOSE_CHOICES = (
-        (AIP_RECOVERY, _('AIP Recovery')),
-        (AIP_STORAGE, _('AIP Storage')),
-        (CURRENTLY_PROCESSING, _('Currently Processing')),
-        (DIP_STORAGE, _('DIP Storage')),
-        (SWORD_DEPOSIT, _('FEDORA Deposits')),
+        (AIP_RECOVERY, _("AIP Recovery")),
+        (AIP_STORAGE, _("AIP Storage")),
+        (CURRENTLY_PROCESSING, _("Currently Processing")),
+        (DIP_STORAGE, _("DIP Storage")),
+        (SWORD_DEPOSIT, _("FEDORA Deposits")),
         # (QUARANTINE, 'Quarantine'),
-        (STORAGE_SERVICE_INTERNAL, _('Storage Service Internal Processing')),
-        (BACKLOG, _('Transfer Backlog')),
-        (TRANSFER_SOURCE, _('Transfer Source')),
-        (REPLICATOR, _('Replicator')),
+        (STORAGE_SERVICE_INTERNAL, _("Storage Service Internal Processing")),
+        (BACKLOG, _("Transfer Backlog")),
+        (TRANSFER_SOURCE, _("Transfer Source")),
+        (REPLICATOR, _("Replicator")),
     )
-    purpose = models.CharField(max_length=2,
+    purpose = models.CharField(
+        max_length=2,
         choices=PURPOSE_CHOICES,
-        verbose_name=_('Purpose'),
-        help_text=_("Purpose of the space.  Eg. AIP storage, Transfer source"))
-    pipeline = models.ManyToManyField('Pipeline', through='LocationPipeline',
+        verbose_name=_("Purpose"),
+        help_text=_("Purpose of the space.  Eg. AIP storage, Transfer source"),
+    )
+    pipeline = models.ManyToManyField(
+        "Pipeline",
+        through="LocationPipeline",
         blank=True,
-        verbose_name=_('Pipeline'),
-        help_text=_("UUID of the Archivematica instance using this location."))
+        verbose_name=_("Pipeline"),
+        help_text=_("UUID of the Archivematica instance using this location."),
+    )
     relative_path = models.TextField(
-        verbose_name=_('Relative Path'),
-        help_text=_("Path to location, relative to the storage space's path."))
-    description = models.CharField(max_length=256, default=None,
-        verbose_name=_('Description'),
-        null=True, blank=True, help_text=_("Human-readable description."))
-    quota = models.BigIntegerField(default=None, null=True, blank=True,
-        verbose_name=_('Quota'),
-        help_text=_("Size, in bytes (optional)"))
-    used = models.BigIntegerField(default=0,
-        verbose_name=_('Used'),
-        help_text=_("Amount used, in bytes."))
-    enabled = models.BooleanField(default=True,
-        verbose_name=_('Enabled'),
-        help_text=_("True if space can be accessed."))
-    replicators = models.ManyToManyField(
-        'Location',
+        verbose_name=_("Relative Path"),
+        help_text=_("Path to location, relative to the storage space's path."),
+    )
+    description = models.CharField(
+        max_length=256,
+        default=None,
+        verbose_name=_("Description"),
+        null=True,
         blank=True,
-        related_name='masters',
-        verbose_name=_('Replicators'),
-        help_text=_('Other locations that will be used to create replicas of'
-                     ' the packages stored in this location'))
+        help_text=_("Human-readable description."),
+    )
+    quota = models.BigIntegerField(
+        default=None,
+        null=True,
+        blank=True,
+        verbose_name=_("Quota"),
+        help_text=_("Size, in bytes (optional)"),
+    )
+    used = models.BigIntegerField(
+        default=0, verbose_name=_("Used"), help_text=_("Amount used, in bytes.")
+    )
+    enabled = models.BooleanField(
+        default=True,
+        verbose_name=_("Enabled"),
+        help_text=_("True if space can be accessed."),
+    )
+    replicators = models.ManyToManyField(
+        "Location",
+        blank=True,
+        related_name="masters",
+        verbose_name=_("Replicators"),
+        help_text=_(
+            "Other locations that will be used to create replicas of"
+            " the packages stored in this location"
+        ),
+    )
 
     class Meta:
         verbose_name = _("Location")
-        app_label = 'locations'
+        app_label = "locations"
 
     objects = models.Manager()
     active = Enabled()
@@ -104,7 +123,11 @@ class Location(models.Model):
     _default = None
 
     def __unicode__(self):
-        return _('%(uuid)s: %(path)s (%(purpose)s)') % {'uuid': self.uuid, 'purpose': self.get_purpose_display(), 'path': self.relative_path}
+        return _("%(uuid)s: %(path)s (%(purpose)s)") % {
+            "uuid": self.uuid,
+            "purpose": self.get_purpose_display(),
+            "path": self.relative_path,
+        }
 
     # Attributes
     @property
@@ -116,15 +139,14 @@ class Location(models.Model):
         if self.space.access_protocol == self.space.DATAVERSE:
             return self.relative_path
         # Else act as normal.
-        return os.path.normpath(
-            os.path.join(self.space.path, self.relative_path))
+        return os.path.normpath(os.path.join(self.space.path, self.relative_path))
 
     @property
     def default(self):
         """ Looks up whether this location is the default one application-wise. """
         if self._default is None:
             try:
-                name = 'default_{}_location'.format(self.purpose)
+                name = "default_{}_location".format(self.purpose)
                 Settings.objects.get(name=name, value=self.uuid)
                 self._default = True
             except Settings.DoesNotExist:
@@ -146,12 +168,14 @@ class Location(models.Model):
 
 @receiver(models.signals.pre_delete, sender=Location)
 def unset_default_location(sender, instance, using, **kwargs):
-    name = 'default_{}_location'.format(instance.purpose)
+    name = "default_{}_location".format(instance.purpose)
     Settings.objects.filter(name=name, value=instance.uuid).delete()
 
 
 @receiver(models.signals.pre_save, sender=Location)
-def set_default_location_pre_save(sender, instance, raw, using, update_fields, **kwargs):
+def set_default_location_pre_save(
+    sender, instance, raw, using, update_fields, **kwargs
+):
     # Is this an edit? Has the purpose changed? If both are true, it's possible
     # that a default location setting with the previous purpose exists and it
     # needs to be deleted.
@@ -163,26 +187,31 @@ def set_default_location_pre_save(sender, instance, raw, using, update_fields, *
         return
     if old.purpose != instance.purpose:
         Settings.objects.filter(
-            name='default_{}_location'.format(old.purpose),
-            value=old.uuid).delete()
+            name="default_{}_location".format(old.purpose), value=old.uuid
+        ).delete()
 
 
 @receiver(models.signals.post_save, sender=Location)
-def set_default_location_post_save(sender, instance, created, raw, using, update_fields, **kwargs):
-    name = 'default_{}_location'.format(instance.purpose)
+def set_default_location_post_save(
+    sender, instance, created, raw, using, update_fields, **kwargs
+):
+    name = "default_{}_location".format(instance.purpose)
     if instance.default:
-        Settings.objects.update_or_create(name=name, defaults={'value': instance.uuid})
+        Settings.objects.update_or_create(name=name, defaults={"value": instance.uuid})
     else:
         Settings.objects.filter(name=name, value=instance.uuid).delete()
 
 
 class LocationPipeline(models.Model):
-    location = models.ForeignKey('Location', to_field='uuid')
-    pipeline = models.ForeignKey('Pipeline', to_field='uuid')
+    location = models.ForeignKey("Location", to_field="uuid")
+    pipeline = models.ForeignKey("Pipeline", to_field="uuid")
 
     class Meta:
         verbose_name = _("Location associated with a Pipeline")
-        app_label = 'locations'
+        app_label = "locations"
 
     def __unicode__(self):
-        return _('%(location)s is associated with %(pipeline)s') % {'location': self.location, 'pipeline': self.pipeline}
+        return _("%(location)s is associated with %(pipeline)s") % {
+            "location": self.location,
+            "pipeline": self.pipeline,
+        }

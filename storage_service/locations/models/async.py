@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+
 # stdlib, alphabetical
 import logging
 
@@ -8,7 +9,7 @@ from django.utils import six
 from django.utils.six.moves import cPickle as pickle
 from django.utils.translation import ugettext_lazy as _
 
-__all__ = ('Async',)
+__all__ = ("Async",)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -16,17 +17,21 @@ LOGGER = logging.getLogger(__name__)
 class Async(models.Model):
     """ Stores information about currently running asynchronous tasks. """
 
-    completed = models.BooleanField(default=False,
-        verbose_name=_('Completed'),
-        help_text=_("True if this task has finished."))
+    completed = models.BooleanField(
+        default=False,
+        verbose_name=_("Completed"),
+        help_text=_("True if this task has finished."),
+    )
 
-    was_error = models.BooleanField(default=False,
-        verbose_name=_('Was there an exception?'),
-        help_text=_("True if this task threw an exception."))
+    was_error = models.BooleanField(
+        default=False,
+        verbose_name=_("Was there an exception?"),
+        help_text=_("True if this task threw an exception."),
+    )
 
-    _result = models.BinaryField(null=True, db_column='result')
+    _result = models.BinaryField(null=True, db_column="result")
 
-    _error = models.BinaryField(null=True, db_column='error')
+    _error = models.BinaryField(null=True, db_column="error")
 
     created_time = models.DateTimeField(auto_now_add=True)
     updated_time = models.DateTimeField(auto_now=True)
@@ -53,7 +58,7 @@ class Async(models.Model):
 
     class Meta:
         verbose_name = _("Async")
-        app_label = 'locations'
+        app_label = "locations"
 
     def __unicode__(self):
         return str(self.id)
