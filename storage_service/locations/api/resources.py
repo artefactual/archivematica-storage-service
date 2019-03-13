@@ -1042,7 +1042,7 @@ class PackageResource(ModelResource):
         if not bundle.obj or not self.get_bundle_detail_data(bundle):
             try:
                 lookup_kwargs = self.lookup_kwargs_with_identifiers(bundle, kwargs)
-            except:
+            except Exception:
                 # if there is trouble hydrating the data, fall back to just
                 # using kwargs by itself (usually it only contains a "pk" key
                 # and this will work fine.
