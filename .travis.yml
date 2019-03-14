@@ -4,6 +4,11 @@ dist: trusty
 sudo: false
 language: python
 
+branches:
+  only:
+    - qa/0.x
+    - /^stable\/\d+\.\d+\.x$/
+
 addons:
   apt:
     packages:
