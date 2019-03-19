@@ -68,69 +68,71 @@ from locations import models
 
 
 # Suppress the logging from models/package.py
-logging.config.dictConfig({
-    'version': 1,
-    'disable_existing_loggers': True,
-})
+logging.config.dictConfig({"version": 1, "disable_existing_loggers": True})
 
 
-DEFAULT_AS_LOCATION = 'default_AS_location'
-DEFAULT_UNIX_OWNER = 'archivematica'
-ANSI_HEADER = '\033[95m'
-ANSI_OKGREEN = '\033[92m'
-ANSI_WARNING = '\033[93m'
-ANSI_FAIL = '\033[91m'
-ANSI_ENDC = '\033[0m'
+DEFAULT_AS_LOCATION = "default_AS_location"
+DEFAULT_UNIX_OWNER = "archivematica"
+ANSI_HEADER = "\033[95m"
+ANSI_OKGREEN = "\033[92m"
+ANSI_WARNING = "\033[93m"
+ANSI_FAIL = "\033[91m"
+ANSI_ENDC = "\033[0m"
 
 
 class Command(BaseCommand):
 
-    help = 'Import an AIP into the Storage Service'
+    help = "Import an AIP into the Storage Service"
 
     def add_arguments(self, parser):
+        parser.add_argument("aip_path", help="Full path to the AIP to be imported")
         parser.add_argument(
-            'aip_path', help='Full path to the AIP to be imported')
-        parser.add_argument(
-            '--aip-storage-location',
-            help='UUID of the AIP Storage Location where the imported AIP'
-                 ' should be stored. Defaults to default AS location.',
+            "--aip-storage-location",
+            help="UUID of the AIP Storage Location where the imported AIP"
+            " should be stored. Defaults to default AS location.",
             default=DEFAULT_AS_LOCATION,
-            required=False)
+            required=False,
+        )
         parser.add_argument(
-            '--pipeline',
-            help='UUID of a pipeline that should be listed as the AIP\'s'
-                 ' origin. Defaults to an arbitrary pipeline.',
-            required=False)
+            "--pipeline",
+            help="UUID of a pipeline that should be listed as the AIP's"
+            " origin. Defaults to an arbitrary pipeline.",
+            required=False,
+        )
         parser.add_argument(
-            '--decompress-source',
-            help='Use this flag to indicate that AIP_PATH should be'
-                 ' decompressed and the resulting DIRECTORY should be the'
-                 ' UNCOMPRESSED AIP to be imported.',
-            action='store_true',
-            default=False)
+            "--decompress-source",
+            help="Use this flag to indicate that AIP_PATH should be"
+            " decompressed and the resulting DIRECTORY should be the"
+            " UNCOMPRESSED AIP to be imported.",
+            action="store_true",
+            default=False,
+        )
         parser.add_argument(
-            '--compression-algorithm',
-            help='The compression algorithm to use when compressing the'
-                 ' imported AIP. Omit this if the AIP is already compressed or'
-                 ' if you want to import an uncompressed AIP as is.',
+            "--compression-algorithm",
+            help="The compression algorithm to use when compressing the"
+            " imported AIP. Omit this if the AIP is already compressed or"
+            " if you want to import an uncompressed AIP as is.",
             choices=utils.COMPRESSION_ALGORITHMS,
-            default=None)
+            default=None,
+        )
         parser.add_argument(
-            '--unix-owner',
-            help='The Unix system user that should own the file(s) of the'
-                 ' imported AIP. Default: {}'.format(DEFAULT_UNIX_OWNER),
-            default=DEFAULT_UNIX_OWNER)
+            "--unix-owner",
+            help="The Unix system user that should own the file(s) of the"
+            " imported AIP. Default: {}".format(DEFAULT_UNIX_OWNER),
+            default=DEFAULT_UNIX_OWNER,
+        )
 
     def handle(self, *args, **options):
-        print(header(
-            'Attempting to import the AIP at {}.'.format(options['aip_path'])))
+        print(header("Attempting to import the AIP at {}.".format(options["aip_path"])))
         try:
-            import_aip(options['aip_path'],
-                       options['aip_storage_location'],
-                       options['decompress_source'],
-                       options['compression_algorithm'],
-                       options['pipeline'],
-                       options['unix_owner'])
+            import_aip(
+                options["aip_path"],
+                options["aip_storage_location"],
+                options["decompress_source"],
+                options["compression_algorithm"],
+                options["pipeline"],
+                options["unix_owner"],
+            )
         except ImportAIPException as err:
             print(fail(err))
 
@@ -140,7 +142,7 @@ class ImportAIPException(Exception):
 
 
 def ansi_format(start_sym, string):
-    return '{}{}{}'.format(start_sym, string, ANSI_ENDC)
+    return "{}{}{}".format(start_sym, string, ANSI_ENDC)
 
 
 def header(string):
@@ -165,12 +167,12 @@ def is_compressed(aip_path):
 
 def tree(path):
     for root, _, files in os.walk(path):
-        level = root.replace(path, '').count(os.sep)
-        indent = ' ' * 4 * (level)
-        print(header('{}{}/'.format(indent, os.path.basename(root))))
-        subindent = ' ' * 4 * (level + 1)
+        level = root.replace(path, "").count(os.sep)
+        indent = " " * 4 * (level)
+        print(header("{}{}/".format(indent, os.path.basename(root))))
+        subindent = " " * 4 * (level + 1)
         for f in files:
-            print(okgreen('{}{}'.format(subindent, f)))
+            print(okgreen("{}{}".format(subindent, f)))
 
 
 def decompress(aip_path, decompress_source):
@@ -180,11 +182,10 @@ def decompress(aip_path, decompress_source):
 
 
 def _decompress(aip_path):
-    is_tar_gz = aip_path.endswith('.tar.gz')
-    is_7z = aip_path.endswith('.7z')
+    is_tar_gz = aip_path.endswith(".tar.gz")
+    is_7z = aip_path.endswith(".7z")
     if not (is_tar_gz or is_7z):
-        raise ImportAIPException(
-            'Unable to decompress the AIP at {}'.format(aip_path))
+        raise ImportAIPException("Unable to decompress the AIP at {}".format(aip_path))
     if is_tar_gz:
         return _decompress_tar_gz(aip_path)
     if is_7z:
@@ -201,24 +202,23 @@ def _decompress_tar_gz(aip_path):
 
 def _decompress_7z(aip_path):
     temp_dir = tempfile.mkdtemp()
-    cmd = shlex.split('7z x {} -o{}'.format(aip_path, temp_dir))
+    cmd = shlex.split("7z x {} -o{}".format(aip_path, temp_dir))
     subprocess.check_output(cmd)
     return os.path.join(temp_dir, os.listdir(temp_dir)[0])
 
 
 def confirm_aip_exists(aip_path):
     if not os.path.exists(aip_path):
-        raise ImportAIPException('There is nothing at {}'.format(aip_path))
+        raise ImportAIPException("There is nothing at {}".format(aip_path))
 
 
 def validate(aip_path):
-    error_msg = 'The AIP at {} is not a valid Bag; aborting.'.format(aip_path)
+    error_msg = "The AIP at {} is not a valid Bag; aborting.".format(aip_path)
     try:
         bag = bagit.Bag(aip_path)
     except bagit.BagError:
         if is_compressed(aip_path):
-            error_msg = '{} Try passing the --decompress-source flag.'.format(
-                error_msg)
+            error_msg = "{} Try passing the --decompress-source flag.".format(error_msg)
         raise ImportAIPException(error_msg)
     else:
         if not bag.is_valid():
@@ -226,10 +226,9 @@ def validate(aip_path):
 
 
 def get_aip_mets_path(aip_path):
-    aip_mets_path = glob.glob(os.path.join(aip_path, 'data', 'METS*xml'))
+    aip_mets_path = glob.glob(os.path.join(aip_path, "data", "METS*xml"))
     if not aip_mets_path:
-        raise ImportAIPException(
-            'Unable to find a METS file in {}.'.format(aip_path))
+        raise ImportAIPException("Unable to find a METS file in {}.".format(aip_path))
     return aip_mets_path[0]
 
 
@@ -252,18 +251,21 @@ def get_aip_storage_locations(aip_storage_location_uuid):
     """
     if aip_storage_location_uuid == DEFAULT_AS_LOCATION:
         aip_storage_location_uuid = Settings.objects.get(
-            name=aip_storage_location_uuid).value
+            name=aip_storage_location_uuid
+        ).value
     try:
-        final_as_location = models.Location.objects.get(
-            uuid=aip_storage_location_uuid)
+        final_as_location = models.Location.objects.get(uuid=aip_storage_location_uuid)
     except models.Location.DoesNotExist:
         raise ImportAIPException(
-            'Unable to find an AIP storage location matching {}.'.format(
-                aip_storage_location_uuid))
+            "Unable to find an AIP storage location matching {}.".format(
+                aip_storage_location_uuid
+            )
+        )
     else:
         if final_as_location.space.access_protocol != models.Space.LOCAL_FILESYSTEM:
             local_as_location = models.Location.objects.filter(
-                space__access_protocol=models.Space.LOCAL_FILESYSTEM).first()
+                space__access_protocol=models.Space.LOCAL_FILESYSTEM
+            ).first()
             return local_as_location, final_as_location
         return final_as_location, final_as_location
 
@@ -283,27 +285,43 @@ def fix_ownership(aip_path, unix_owner):
             os.chown(os.path.join(root, file_), am_uid, am_uid)
 
 
-def copy_aip_to_aip_storage_location(aip_model_inst, aip_path,
-                                     local_as_location, unix_owner):
+def copy_aip_to_aip_storage_location(
+    aip_model_inst, aip_path, local_as_location, unix_owner
+):
     aip_storage_location_path = local_as_location.full_path
-    dest = os.path.join(
-        aip_storage_location_path, aip_model_inst.current_path)
+    dest = os.path.join(aip_storage_location_path, aip_model_inst.current_path)
     copy_rsync(aip_path, dest)
     fix_ownership(dest, unix_owner)
-    print(okgreen('Location: {} ({}).'.format(
-        local_as_location.uuid, local_as_location.space.access_protocol)))
+    print(
+        okgreen(
+            "Location: {} ({}).".format(
+                local_as_location.uuid, local_as_location.space.access_protocol
+            )
+        )
+    )
 
 
 def copy_rsync(source, destination):
-    source = os.path.join(source, '')
+    source = os.path.join(source, "")
     p = subprocess.Popen(
-        ['rsync', '-t', '-O', '--protect-args', '--chmod=ugo+rw', '-r', source,
-         destination],
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        [
+            "rsync",
+            "-t",
+            "-O",
+            "--protect-args",
+            "--chmod=ugo+rw",
+            "-r",
+            source,
+            destination,
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
     p.communicate()
     if p.returncode != 0:
         raise ImportAIPException(
-            'Unable to move the AIP from {} to {}.'.format(source, destination))
+            "Unable to move the AIP from {} to {}.".format(source, destination)
+        )
 
 
 def get_pipeline(adoptive_pipeline_uuid):
@@ -312,10 +330,10 @@ def get_pipeline(adoptive_pipeline_uuid):
             return models.Pipeline.objects.get(uuid=adoptive_pipeline_uuid)
         except models.Pipeline.DoesNotExist:
             raise ImportAIPException(
-                'There is no pipeline with uuid {}'.format(
-                    adoptive_pipeline_uuid))
+                "There is no pipeline with uuid {}".format(adoptive_pipeline_uuid)
+            )
     ret = models.Pipeline.objects.first()
-    print(okgreen('Pipeline: {}'.format(ret.uuid)))
+    print(okgreen("Pipeline: {}".format(ret.uuid)))
     return ret
 
 
@@ -331,13 +349,13 @@ def check_if_aip_already_exists(aip_uuid):
     duplicates = models.Package.objects.filter(uuid=aip_uuid).all()
     if duplicates:
         prompt = warning(
-            'An AIP with UUID {} already exists in this Storage Service? If you'
-            ' want to import this AIP anyway (and destroy the existing one),'
-            ' then enter "y" or "yes": '.format(aip_uuid))
+            "An AIP with UUID {} already exists in this Storage Service? If you"
+            " want to import this AIP anyway (and destroy the existing one),"
+            ' then enter "y" or "yes": '.format(aip_uuid)
+        )
         user_response = input(prompt)
-        if user_response.lower() not in ('y', 'yes'):
-            raise ImportAIPException(
-                'Aborting importation of an already existing AIP')
+        if user_response.lower() not in ("y", "yes"):
+            raise ImportAIPException("Aborting importation of an already existing AIP")
 
 
 def compress(aip_model_inst, compression_algorithm):
@@ -349,28 +367,37 @@ def compress(aip_model_inst, compression_algorithm):
     """
     if not compression_algorithm:
         return
-    compressed_aip_path, compressed_aip_parent_path, details = (
-        aip_model_inst.compress_package(
-            compression_algorithm, detailed_output=True))
+    compressed_aip_path, compressed_aip_parent_path, details = aip_model_inst.compress_package(
+        compression_algorithm, detailed_output=True
+    )
     compressed_aip_fname = os.path.basename(compressed_aip_path)
     aip_current_dir = os.path.dirname(aip_model_inst.current_path)
     shutil.rmtree(aip_model_inst.full_path)
     new_current_path = os.path.join(aip_current_dir, compressed_aip_fname)
     new_full_path = os.path.join(
-        aip_model_inst.current_location.full_path, new_current_path)
+        aip_model_inst.current_location.full_path, new_current_path
+    )
     shutil.move(compressed_aip_path, new_full_path)
     aip_model_inst.current_path = new_current_path
     shutil.rmtree(compressed_aip_parent_path)
     aip_model_inst.size = utils.recalculate_size(new_full_path)
     compression_agents = utils.get_ss_premis_agents()
     compression_event = aip_model_inst.get_premis_aip_compression_event(
-        details['event_detail'], details['event_outcome_detail_note'],
-        agents=compression_agents)
+        details["event_detail"],
+        details["event_outcome_detail_note"],
+        agents=compression_agents,
+    )
     return aip_model_inst, compression_event, compression_agents
 
 
-def import_aip(aip_path, aip_storage_location_uuid, decompress_source,
-               compression_algorithm, adoptive_pipeline_uuid, unix_owner):
+def import_aip(
+    aip_path,
+    aip_storage_location_uuid,
+    decompress_source,
+    compression_algorithm,
+    adoptive_pipeline_uuid,
+    unix_owner,
+):
     confirm_aip_exists(aip_path)
     aip_path = decompress(aip_path, decompress_source)
     validate(aip_path)
@@ -378,29 +405,42 @@ def import_aip(aip_path, aip_storage_location_uuid, decompress_source,
     aip_uuid = get_aip_uuid(aip_mets_path)
     check_if_aip_already_exists(aip_uuid)
     local_as_location, final_as_location = get_aip_storage_locations(
-        aip_storage_location_uuid)
+        aip_storage_location_uuid
+    )
     aip_model_inst = models.Package(
         uuid=aip_uuid,
-        package_type='AIP',
-        status='UPLOADED',
+        package_type="AIP",
+        status="UPLOADED",
         size=utils.recalculate_size(aip_path),
         origin_pipeline=get_pipeline(adoptive_pipeline_uuid),
         current_location=local_as_location,
-        current_path=os.path.basename(os.path.normpath(aip_path)))
-    copy_aip_to_aip_storage_location(aip_model_inst, aip_path,
-                                     local_as_location, unix_owner)
+        current_path=os.path.basename(os.path.normpath(aip_path)),
+    )
+    copy_aip_to_aip_storage_location(
+        aip_model_inst, aip_path, local_as_location, unix_owner
+    )
     premis_events = premis_agents = None
     if compression_algorithm:
         aip_model_inst, compression_event, premis_agents = compress(
-            aip_model_inst, compression_algorithm)
+            aip_model_inst, compression_algorithm
+        )
         premis_events = [compression_event]
     aip_model_inst.current_location = final_as_location
     save_aip_model_instance(aip_model_inst)
-    aip_model_inst.store_aip(origin_location=local_as_location,
-                             origin_path=aip_model_inst.current_path,
-                             premis_events=premis_events,
-                             premis_agents=premis_agents)
-    print(okgreen('Path: {}.'.format(os.path.join(
-        aip_model_inst.current_location.full_path,
-        aip_model_inst.current_path))))
-    print(okgreen('Successfully imported AIP {}.'.format(aip_uuid)))
+    aip_model_inst.store_aip(
+        origin_location=local_as_location,
+        origin_path=aip_model_inst.current_path,
+        premis_events=premis_events,
+        premis_agents=premis_agents,
+    )
+    print(
+        okgreen(
+            "Path: {}.".format(
+                os.path.join(
+                    aip_model_inst.current_location.full_path,
+                    aip_model_inst.current_path,
+                )
+            )
+        )
+    )
+    print(okgreen("Successfully imported AIP {}.".format(aip_uuid)))

@@ -745,8 +745,8 @@ class Package(models.Model):
         values on the ``Package`` instance are updated (including status) and
         periodically saved to the db.
         """
-        LOGGER.info('store_aip called in Package class of SS')
-        LOGGER.info('store_aip got origin_path {}'.format(origin_path))
+        LOGGER.info("store_aip called in Package class of SS")
+        LOGGER.info("store_aip got origin_path {}".format(origin_path))
         v = self._store_aip_to_pending(origin_location, origin_path)
         storage_effects, checksum = self._store_aip_to_uploaded(v, related_package_uuid)
         self._store_aip_ensure_pointer_file(
@@ -1332,35 +1332,36 @@ class Package(models.Model):
         """
         # TODO: the program should be supplied by the caller
         program = {
-            utils.COMPRESSION_TAR: 'tar', utils.COMPRESSION_TAR_BZIP2: 'tar'}.get(
-                compression_algorithm, '7z')
+            utils.COMPRESSION_TAR: "tar",
+            utils.COMPRESSION_TAR_BZIP2: "tar",
+        }.get(compression_algorithm, "7z")
         return 'program={}; algorithm="{}"'.format(program, compression_algorithm)
 
     def get_premis_aip_compression_event(
-            self, event_detail, event_outcome_detail_note, agents=None,
-            inst=True):
+        self, event_detail, event_outcome_detail_note, agents=None, inst=True
+    ):
         """Return a PREMIS:EVENT describing the compression of an AIP."""
         if not agents:
             agents = utils.get_ss_premis_agents()
         event = [
-            'event',
+            "event",
             premisrw.PREMIS_META,
             (
-                'event_identifier',
-                ('event_identifier_type', 'UUID'),
-                ('event_identifier_value', str(uuid4())),
+                "event_identifier",
+                ("event_identifier_type", "UUID"),
+                ("event_identifier_value", str(uuid4())),
             ),
-            ('event_type', 'compression'),
-            ('event_date_time', utils.mets_file_now()),
-            ('event_detail', event_detail),
+            ("event_type", "compression"),
+            ("event_date_time", utils.mets_file_now()),
+            ("event_detail", event_detail),
             (
-                'event_outcome_information',
-                ('event_outcome', 'success'),
+                "event_outcome_information",
+                ("event_outcome", "success"),
                 (
-                    'event_outcome_detail',
-                    ('event_outcome_detail_note', event_outcome_detail_note)
-                )
-            )
+                    "event_outcome_detail",
+                    ("event_outcome_detail_note", event_outcome_detail_note),
+                ),
+            ),
         ]
         event = tuple(utils.add_agents_to_event_as_list(event, agents))
         if inst:
@@ -1685,8 +1686,7 @@ class Package(models.Model):
             self.local_path = output_path
         return (output_path, extract_path)
 
-    def compress_package(self, algorithm, extract_path=None,
-                         detailed_output=False):
+    def compress_package(self, algorithm, extract_path=None, detailed_output=False):
         """
         Produces a compressed copy of the package.
 
@@ -1725,20 +1725,29 @@ class Package(models.Model):
             relative_path = os.path.dirname(full_path)
             algo = ""
             if algorithm == utils.COMPRESSION_TAR_BZIP2:
-                algo = '-j'  # Compress with bzip2
-                compressed_filename += '.bz2'
-            command = list(filter(None, [
-                'tar', 'c',  # Create tar
-                algo,  # Optional compression flag
-                '-C', relative_path,  # Work in this directory
-                '-f', compressed_filename,  # Output file
-                os.path.basename(full_path),   # Relative path to source files
-            ]))
+                algo = "-j"  # Compress with bzip2
+                compressed_filename += ".bz2"
+            command = list(
+                filter(
+                    None,
+                    [
+                        "tar",
+                        "c",  # Create tar
+                        algo,  # Optional compression flag
+                        "-C",
+                        relative_path,  # Work in this directory
+                        "-f",
+                        compressed_filename,  # Output file
+                        os.path.basename(full_path),  # Relative path to source files
+                    ],
+                )
+            )
             if detailed_output:
                 tool_info_command = (
                     'echo program="tar"\\; '
                     'algorithm="{}"\\; '
-                    'version="`tar --version | grep tar`"'.format(algo))
+                    'version="`tar --version | grep tar`"'.format(algo)
+                )
         elif algorithm in (utils.COMPRESSION_7Z_BZIP, utils.COMPRESSION_7Z_LZMA):
             compressed_filename = os.path.join(extract_path, basename + ".7z")
             if algorithm == utils.COMPRESSION_7Z_BZIP:
@@ -1761,45 +1770,49 @@ class Package(models.Model):
             ]
             if detailed_output:
                 tool_info_command = (
-                    '#!/bin/bash\n'
+                    "#!/bin/bash\n"
                     'echo program="7z"\\; '
                     'algorithm="{}"\\; '
-                    'version="`7z | grep Version`"'.format(algo))
+                    'version="`7z | grep Version`"'.format(algo)
+                )
         else:
             raise NotImplementedError(
                 _("Algorithm %(algorithm)s not implemented") % {"algorithm": algorithm}
             )
 
-        LOGGER.info('Compressing package with: %s to %s', command, compressed_filename)
+        LOGGER.info("Compressing package with: %s to %s", command, compressed_filename)
         if detailed_output:
-            p = subprocess.Popen(command, stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
+            p = subprocess.Popen(
+                command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
             stdout, stderr = p.communicate()
             rc = p.returncode
-            LOGGER.debug('Compress package RC: %s', rc)
+            LOGGER.debug("Compress package RC: %s", rc)
 
-            script_path = '/tmp/{}'.format(str(uuid4()))
+            script_path = "/tmp/{}".format(str(uuid4()))
             file_ = os.open(script_path, os.O_WRONLY | os.O_CREAT, 0o770)
             os.write(file_, tool_info_command)
             os.close(file_)
             tic_cmd = [script_path]
-            p = subprocess.Popen(tic_cmd, stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE, shell=True)
+            p = subprocess.Popen(
+                tic_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+            )
             tic_stdout, tic_stderr = p.communicate()
             os.remove(script_path)
-            LOGGER.debug('Tool info stdout')
+            LOGGER.debug("Tool info stdout")
             LOGGER.debug(tool_info_command)
             LOGGER.debug(tic_stdout)
             LOGGER.debug(tic_stderr)
             details = {
-                'event_detail': tic_stdout,
-                'event_outcome_detail_note':
-                    'Standard Output="{}"; Standard Error="{}"'.format(
-                        stdout, stderr)}
+                "event_detail": tic_stdout,
+                "event_outcome_detail_note": 'Standard Output="{}"; Standard Error="{}"'.format(
+                    stdout, stderr
+                ),
+            }
             return (compressed_filename, extract_path, details)
         else:
             rc = subprocess.call(command)
-            LOGGER.debug('Compress package RC: %s', rc)
+            LOGGER.debug("Compress package RC: %s", rc)
             return (compressed_filename, extract_path)
 
     def _parse_mets(self, prefix):
@@ -2198,9 +2211,10 @@ class Package(models.Model):
         # Check and set reingest pipeline
         if self.misc_attributes.get("reingest_pipeline", None):
             return {
-                'error': True,
-                'status_code': 409,
-                'message': _('This AIP is already being reingested on %(pipeline)s') % {'pipeline': self.misc_attributes['reingest_pipeline']},
+                "error": True,
+                "status_code": 409,
+                "message": _("This AIP is already being reingested on %(pipeline)s")
+                % {"pipeline": self.misc_attributes["reingest_pipeline"]},
             }
         self.misc_attributes.update({"reingest_pipeline": pipeline.uuid})
 
@@ -2530,11 +2544,13 @@ class Package(models.Model):
         #    to it and to its parent directory. At this point ``updated_aip``
         #    points to the same location as ``old_aip`` but the new var name
         #    indicates the update via reingest.
-        updated_aip_path, updated_aip_parent_path = (
-            self._compress_and_clean_for_reingest(
-                to_be_compressed, was_compressed,
-                compression, rein_aip_internal_path,
-                extract_path_to_delete))
+        updated_aip_path, updated_aip_parent_path = self._compress_and_clean_for_reingest(
+            to_be_compressed,
+            was_compressed,
+            compression,
+            rein_aip_internal_path,
+            extract_path_to_delete,
+        )
         self.size = utils.recalculate_size(updated_aip_path)
 
         # 7. Create a pointer file if AM has not done so.
@@ -3114,10 +3130,13 @@ def _replace_old_pres_ders_with_reingested(
 def _update_bag_payload_and_verify(old_aip_internal_path):
     """Create a new bag from the AIP at ``old_aip_internal_path`` and validate it."""
     # Use BagIt v0.97 to ensure that optional tag manifests are updated too.
-    with codecs.open(os.path.join(old_aip_internal_path, "bagit.txt"), "w",
-                     encoding="utf-8", errors="strict") as bagit_file:
-        bagit_file.write(
-            "BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n")
+    with codecs.open(
+        os.path.join(old_aip_internal_path, "bagit.txt"),
+        "w",
+        encoding="utf-8",
+        errors="strict",
+    ) as bagit_file:
+        bagit_file.write("BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n")
     bag = bagit.Bag(old_aip_internal_path)
     bag.save(manifests=True)
     # Workaround for bug

@@ -409,8 +409,8 @@ def get_ss_premis_agents(inst=True):
 
 
 StorageEffects = namedtuple(
-    'StorageEffects',
-    ['events', 'composition_level_updater', 'inhibitors'])
+    "StorageEffects", ["events", "composition_level_updater", "inhibitors"]
+)
 
 
 def recalculate_size(rein_aip_internal_path):
