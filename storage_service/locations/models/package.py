@@ -27,7 +27,9 @@ from metsrw.plugins import premisrw
 import requests
 
 # This project, alphabetical
+from common import compression_management as compress
 from common import utils
+
 from locations import signals
 
 # This module, alphabetical
@@ -1427,11 +1429,8 @@ class Package(models.Model):
             # differently than 7z/tar do: the resulting .-prefixed files have
             # different sizes than those created via unar. This makes
             # ``bag.validate`` choke.
-            if self.full_pointer_file_path:
-                compression = utils.get_compression(self.full_pointer_file_path)
-            else:
-                compression = None  # no pointer file :. command will be unar
-            command = _get_decompr_cmd(compression, extract_path, full_path)
+            compression = compress.get_compression(self.full_pointer_file_path)
+            command = compress.get_decompr_cmd(compression, extract_path, full_path)
             if relative_path:
                 command.append(relative_path)
             LOGGER.info('Extracting file with: %s to %s', command, output_path)
@@ -1461,7 +1460,7 @@ class Package(models.Model):
         Produces a compressed copy of the package.
 
         :param algorithm: Compression algorithm to use. Should be one of
-            :const:`utils.COMPRESSION_ALGORITHMS`
+            :const:`compress.COMPRESSION_ALGORITHMS`
         :param str extract_path: Path to compress to. If not provided, will
             compress to a temp directory in the SS internal location.
         :return: Tuple with (path to the compressed file, parent directory of
@@ -1474,8 +1473,8 @@ class Package(models.Model):
         if extract_path is None:
             ss_internal = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
             extract_path = tempfile.mkdtemp(dir=ss_internal.full_path)
-        if algorithm not in utils.COMPRESSION_ALGORITHMS:
-            raise ValueError(_('Algorithm %(algorithm)s not in %(algorithms)s') % {'algorithm': algorithm, 'algorithms': utils.COMPRESSION_ALGORITHMS})
+        if algorithm not in compress.COMPRESSION_ALGORITHMS:
+            raise ValueError(_('Algorithm %(algorithm)s not in %(algorithms)s') % {'algorithm': algorithm, 'algorithms': compress.COMPRESSION_ALGORITHMS})
 
         full_path = self.fetch_local_path()
 
@@ -1484,11 +1483,11 @@ class Package(models.Model):
         else:
             basename = os.path.basename(full_path)
 
-        if algorithm in (utils.COMPRESSION_TAR, utils.COMPRESSION_TAR_BZIP2):
+        if algorithm in (compress.COMPRESSION_TAR, compress.COMPRESSION_TAR_BZIP2):
             compressed_filename = os.path.join(extract_path, basename + '.tar')
             relative_path = os.path.dirname(full_path)
             algo = ''
-            if algorithm == utils.COMPRESSION_TAR_BZIP2:
+            if algorithm == compress.COMPRESSION_TAR_BZIP2:
                 algo = '-j'  # Compress with bzip2
                 compressed_filename += '.bz2'
             command = list(filter(None, [
@@ -1498,11 +1497,11 @@ class Package(models.Model):
                 '-f', compressed_filename,  # Output file
                 os.path.basename(full_path),   # Relative path to source files
             ]))
-        elif algorithm in (utils.COMPRESSION_7Z_BZIP, utils.COMPRESSION_7Z_LZMA):
+        elif algorithm in (compress.COMPRESSION_7Z_BZIP, compress.COMPRESSION_7Z_LZMA):
             compressed_filename = os.path.join(extract_path, basename + '.7z')
-            if algorithm == utils.COMPRESSION_7Z_BZIP:
+            if algorithm == compress.COMPRESSION_7Z_BZIP:
                 algo = 'bzip2'
-            elif algorithm == utils.COMPRESSION_7Z_LZMA:
+            elif algorithm == compress.COMPRESSION_7Z_LZMA:
                 algo = 'lzma'
             command = [
                 '7z', 'a',  # Add
@@ -2155,9 +2154,9 @@ class Package(models.Model):
                         premis_events, self.uuid))
                 try:
                     compression = {
-                        'bzip2': utils.COMPRESSION_7Z_BZIP,
-                        'lzma': utils.COMPRESSION_7Z_LZMA,
-                        'pbzip2': utils.COMPRESSION_TAR_BZIP2}[
+                        'bzip2': compress.COMPRESSION_7Z_BZIP,
+                        'lzma': compress.COMPRESSION_7Z_LZMA,
+                        'pbzip2': compress.COMPRESSION_TAR_BZIP2}[
                             compression_algorithm]
                     LOGGER.info('Exctracted compression "{}" from AM-passed'
                                 ' PREMIS events'.format(compression))
@@ -2167,7 +2166,7 @@ class Package(models.Model):
                         ' "{}"; does not match any of the following recognized'
                         ' options: {}'.format(
                             compression,
-                            ', '.join(utils.COMPRESSION_ALGORITHMS)))
+                            ', '.join(compress.COMPRESSION_ALGORITHMS)))
 
         # 6. Compress the re-ingested AIP (if necessary) and get the local path
         #    to it and to its parent directory. At this point ``updated_aip``
@@ -2388,8 +2387,8 @@ class Package(models.Model):
             root = etree.parse(self.full_pointer_file_path)
             # Add compression event (if compressed)
             amdsec = root.find('mets:amdSec', namespaces=utils.NSMAP)
-            if compression in (utils.COMPRESSION_7Z_BZIP,
-                               utils.COMPRESSION_7Z_LZMA):
+            if compression in (compress.COMPRESSION_7Z_BZIP,
+                               compress.COMPRESSION_7Z_LZMA):
                 try:
                     version = [x for x in
                                subprocess.check_output('7z').splitlines() if
@@ -2397,8 +2396,8 @@ class Package(models.Model):
                     event_detail = 'program="7z"; version="{}"'.format(version)
                 except (subprocess.CalledProcessError, Exception):
                     event_detail = 'program="7z"'
-            elif compression in (utils.COMPRESSION_TAR_BZIP2,
-                                 utils.COMPRESSION_TAR):
+            elif compression in (compress.COMPRESSION_TAR_BZIP2,
+                                 compress.COMPRESSION_TAR):
                 try:
                     version = subprocess.check_output(
                         ['tar', '--version']).splitlines()[0]
@@ -2470,11 +2469,11 @@ class Package(models.Model):
             transform_order = 2  # encryption is a prior transformation
 
         transform_file = []
-        if compression in (utils.COMPRESSION_7Z_BZIP,
-                           utils.COMPRESSION_7Z_LZMA):
-            if compression == utils.COMPRESSION_7Z_BZIP:
+        if compression in (compress.COMPRESSION_7Z_BZIP,
+                           compress.COMPRESSION_7Z_LZMA):
+            if compression == compress.COMPRESSION_7Z_BZIP:
                 algo = 'bzip2'
-            elif compression == utils.COMPRESSION_7Z_LZMA:
+            elif compression == compress.COMPRESSION_7Z_LZMA:
                 algo = 'lzma'
             transform_file.append(
                 etree.Element(utils.PREFIX_NS['mets'] + "transformFile",
@@ -2492,9 +2491,9 @@ class Package(models.Model):
                 'program_version': version
             }
 
-        elif compression in (utils.COMPRESSION_TAR_BZIP2,
-                             utils.COMPRESSION_TAR):
-            if compression == utils.COMPRESSION_TAR_BZIP2:
+        elif compression in (compress.COMPRESSION_TAR_BZIP2,
+                             compress.COMPRESSION_TAR):
+            if compression == compress.COMPRESSION_TAR_BZIP2:
                 transform_file.append(
                     etree.Element(utils.PREFIX_NS['mets'] + "transformFile",
                                   TRANSFORMORDER=str(transform_order),
@@ -2579,19 +2578,6 @@ class Package(models.Model):
     # SWORD-related methods
     def has_been_submitted_for_processing(self):
         return 'deposit_completion_time' in self.misc_attributes
-
-
-def _get_decompr_cmd(compression, extract_path, full_path):
-    """Returns a decompression command (as a list), given ``compression``
-    (one of ``COMPRESSION_ALGORITHMS``), the destination path
-    ``extract_path`` and the path of the archive ``full_path``.
-    """
-    if compression in (utils.COMPRESSION_7Z_BZIP, utils.COMPRESSION_7Z_LZMA):
-        return ['7z', 'x', '-bd', '-y', '-o{0}'.format(extract_path),
-                full_path]
-    elif compression == utils.COMPRESSION_TAR_BZIP2:
-        return ['/bin/tar', 'xvjf', full_path, '-C', extract_path]
-    return ['unar', '-force-overwrite', '-o', extract_path, full_path]
 
 
 def _extract_rein_aip(internal_location, rein_aip_internal_path):

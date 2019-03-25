@@ -35,18 +35,6 @@ NSMAP = {
     'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
 }
 
-# Compression options for packages
-COMPRESSION_7Z_BZIP = '7z with bzip'
-COMPRESSION_7Z_LZMA = '7z with lzma'
-COMPRESSION_TAR = 'tar'
-COMPRESSION_TAR_BZIP2 = 'tar bz2'
-COMPRESSION_ALGORITHMS = (
-    COMPRESSION_7Z_BZIP,
-    COMPRESSION_7Z_LZMA,
-    COMPRESSION_TAR,
-    COMPRESSION_TAR_BZIP2,
-)
-
 PREFIX_NS = {k: '{' + v + '}' for k, v in NSMAP.items()}
 
 
@@ -246,32 +234,6 @@ def mets_ss_agent(xml, digiprov_id, agent_value=None, agent_type='storage servic
         ID=digiprov_id,
     )
     return digiprov_agent
-
-
-def get_compression(pointer_path):
-    """Return the compression algorithm used to compress the package, as
-    documented in the pointer file at ``pointer_path``. Returns one of the
-    constants in ``COMPRESSION_ALGORITHMS``.
-    """
-    doc = etree.parse(pointer_path)
-    puid = doc.findtext('.//premis:formatRegistryKey', namespaces=NSMAP)
-    if puid == 'fmt/484':  # 7 Zip
-        algo = doc.find('.//mets:transformFile',
-                        namespaces=NSMAP).get('TRANSFORMALGORITHM')
-        if algo == 'bzip2':
-            return COMPRESSION_7Z_BZIP
-        elif algo == 'lzma':
-            return COMPRESSION_7Z_LZMA
-        else:
-            LOGGER.warning('Unable to determine reingested compression'
-                           ' algorithm, defaulting to bzip2.')
-            return COMPRESSION_7Z_BZIP
-    elif puid == 'x-fmt/268':  # Bzipped (probably tar)
-        return COMPRESSION_TAR_BZIP2
-    else:
-        LOGGER.warning('Unable to determine reingested file format,'
-                       ' defaulting recompression algorithm to bzip2.')
-        return COMPRESSION_7Z_BZIP
 
 
 # ########### OTHER ############

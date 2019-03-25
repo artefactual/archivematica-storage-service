@@ -32,6 +32,7 @@ from tastypie.utils import trailing_slash, dict_strip_unicode_keys
 
 # This project, alphabetical
 from administration.models import Settings
+from common import compression_management as compress
 from common import utils
 from locations.api.sword import views as sword_views
 
@@ -943,7 +944,7 @@ class PackageResource(ModelResource):
             temp_dir = None
             full_path = package.get_download_path(lockss_au_number)
         except StorageException:
-            full_path, temp_dir = package.compress_package(utils.COMPRESSION_TAR)
+            full_path, temp_dir = package.compress_package(compress.COMPRESSION_TAR)
         response = utils.download_file_stream(full_path, temp_dir)
         return response
 
