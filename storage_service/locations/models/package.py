@@ -1434,9 +1434,17 @@ class Package(models.Model):
             if relative_path:
                 command.append(relative_path)
             LOGGER.info('Extracting file with: %s to %s', command, output_path)
-            rc = subprocess.check_output(command)
+            try:
+                rc = subprocess.check_output(command)
+            except subprocess.CalledProcessError as err:
+                err_str = "Extract: returned non-zero exit status {}".format(err.returncode)
+                LOGGER.error(err_str)
+                LOGGER.error(err.output)
+                raise StorageException(err_str)
             if 'No files extracted' in rc:
-                raise StorageException(_('Extraction error'))
+                err_str = "Extraction error: No files extracted"
+                LOGGER.error(err_str)
+                raise StorageException(err_str)
         else:
             if relative_path:
                 # copy only one file out of aip

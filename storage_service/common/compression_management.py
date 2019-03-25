@@ -7,6 +7,8 @@ decompressing AIPs prior to reingest.
 """
 
 import logging
+import os
+
 from lxml import etree
 
 
@@ -35,7 +37,8 @@ def get_compression(pointer_path):
     documented in the pointer file at ``pointer_path``. Returns one of the
     constants in ``COMPRESSION_ALGORITHMS``.
     """
-    if not pointer_path:
+    if not pointer_path or not os.path.isfile(pointer_path):
+        LOGGER.info("Cannot access pointer file: %s", pointer_path)
         return None  	# Unar is the fall-back without a pointer file.
     doc = etree.parse(pointer_path)
     puid = doc.findtext('.//premis:formatRegistryKey', namespaces=NSMAP)
