@@ -61,7 +61,7 @@ class Pipeline(URLMixin, models.Model):
         null=True,
         blank=True,
         verbose_name=_("Remote name"),
-        help_text=_("Host or IP address of the pipeline server for making API calls."),
+        help_text=_("Base URL of the pipeline server for making API calls."),
     )
     api_username = models.CharField(
         max_length=256,
