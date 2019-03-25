@@ -228,8 +228,7 @@ class TestPackage(TestCase):
         package = models.Package.objects.get(uuid='88deec53-c7dc-4828-865c-7356386e9399')
         with pytest.raises(Exception) as e_info:
             output_path, extract_path = package.extract_file(relative_path='working_bag/manifest-sha512.txt', extract_path=self.tmp_dir)
-
-        assert e_info.value.message == 'Extraction error'
+        assert 'Extraction error: No files extracted' in e_info.value.message
 
     def test_extract_file_aip_from_compressed_aip(self):
         """ It should return an aip """
