@@ -240,4 +240,4 @@ class TestPackage(TestCase):
         basedir = package.get_base_directory()
         output_path, extract_path = package.extract_file(extract_path=self.tmp_dir)
         assert output_path == os.path.join(self.tmp_dir, basedir)
-        assert os.path.join(output_path, 'manifest-md5.txt')
+        assert os.path.exists(os.path.join(output_path, 'manifest-md5.txt'))
