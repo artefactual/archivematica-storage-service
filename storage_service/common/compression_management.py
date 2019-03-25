@@ -43,32 +43,41 @@ class PackageExtractException(Exception):
 
 LOGGER = logging.getLogger(__name__)
 
-# Compression options for packages
+# Different compression options used for storing packages.
 COMPRESSION_7Z_BZIP = '7z with bzip'
 COMPRESSION_7Z_LZMA = '7z with lzma'
 COMPRESSION_TAR = 'tar'
 COMPRESSION_TAR_BZIP2 = 'tar bz2'
+COMPRESSION_7Z_GENERIC = "7z generic"
 COMPRESSION_ALGORITHMS = (
+    COMPRESSION_7Z_GENERIC,
     COMPRESSION_7Z_BZIP,
     COMPRESSION_7Z_LZMA,
     COMPRESSION_TAR,
     COMPRESSION_TAR_BZIP2,
 )
 
+mime_map = {
+    "application/x-7z-compressed": COMPRESSION_7Z_GENERIC,
+    "application/x-tar": COMPRESSION_TAR,
+    "application/x-bzip2": COMPRESSION_TAR_BZIP2,
+}
+
+# XML namespace entries.
 NSMAP = {
     'mets': 'http://www.loc.gov/METS/',
     'premis': 'info:lc/xmlns/premis-v2',
 }
 
 
-def get_compression(pointer_path):
+def get_compression(pointer_path, package_location):
     """Return the compression algorithm used to compress the package, as
     documented in the pointer file at ``pointer_path``. Returns one of the
     constants in ``COMPRESSION_ALGORITHMS``.
     """
     if not pointer_path or not os.path.isfile(pointer_path):
         LOGGER.info("Cannot access pointer file: %s", pointer_path)
-        return None  	# Unar is the fall-back without a pointer file.
+        return fallback_identification(package_location)
     doc = etree.parse(pointer_path)
     puid = doc.findtext('.//premis:formatRegistryKey', namespaces=NSMAP)
     if puid == 'fmt/484':  # 7 Zip
@@ -96,7 +105,8 @@ def get_decompr_cmd(compression, extract_path, full_path):
     Returns a decompression command as a list, given a compression algorithm
     found in COMPRESSION_ALGORITHMS.
     """
-    if compression in (COMPRESSION_7Z_BZIP, COMPRESSION_7Z_LZMA):
+    if compression in (
+            COMPRESSION_7Z_BZIP, COMPRESSION_7Z_LZMA, COMPRESSION_7Z_GENERIC):
         return ['7z', 'x', '-bd', '-y', '-o{0}'.format(extract_path),
                 full_path]
     elif compression == COMPRESSION_TAR_BZIP2:
@@ -105,20 +115,51 @@ def get_decompr_cmd(compression, extract_path, full_path):
 
 
 def extract_files(
-        pointer_file_path, extract_path, full_path, output_path, relative_path):
+        pointer_file_path, extract_path, full_path,
+        output_path, relative_path):
     """Extract files from a compressed package."""
-    command = get_decompr_cmd(get_compression(pointer_file_path), extract_path, full_path)
+    command = get_decompr_cmd(
+        get_compression(pointer_file_path, full_path), extract_path, full_path)
     if relative_path:
         command.append(relative_path)
     LOGGER.info('Extracting file with: %s to %s', command, output_path)
     try:
-        rc = subprocess.check_output(command)
+        subprocess.check_output(command)
     except subprocess.CalledProcessError as err:
-        err_str = "Extract: returned non-zero exit status {}".format(err.returncode)
+        err_str = "Extract: returned non-zero exit status {}"\
+            .format(err.returncode)
         LOGGER.error(err_str)
         LOGGER.error(err.output)
         raise PackageExtractException(err_str)
-    if 'No files extracted' in rc:
-        err_str = "Extraction error: No files extracted"
+    # Not every extraction tool responds the same, some will error when nothing
+    # is extracted, some will not, so test the response on its merit, i.e.
+    # if a file or path exists at the extract_path.
+    path_to_test = extract_path
+    if relative_path:
+        path_to_test = os.path.join(path_to_test, relative_path)
+    if not os.path.exists(path_to_test):
+        err_str = "Extraction error: no files extracted"
         LOGGER.error(err_str)
         raise PackageExtractException(err_str)
+
+
+def _return_compression(file_output):
+    """Split the $file command output and return the compression type."""
+    try:
+        mime_type = file_output.rsplit(":")[1].strip()
+    except IndexError:
+        return None
+    return mime_map.get(mime_type, None)
+
+
+def fallback_identification(package_location):
+    """Attempt to identify our package using Linux's $file utility."""
+    file_cmd = ['file', "-F", ":", "--mime-type", package_location]
+    try:
+        file_output = subprocess.check_output(file_cmd)
+    except subprocess.CalledProcessError as err:
+        err_str = "Identify compression: returned non-zero exit status {}"\
+            .format(err.returncode)
+        LOGGER.error(err_str)
+        return None
+    return _return_compression(file_output)

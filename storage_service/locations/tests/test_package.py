@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import os
 import pytest
 import shutil
@@ -10,6 +12,7 @@ from django.contrib.messages import get_messages
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 
+from common.compression_management import PackageExtractException
 from locations import models
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -31,7 +34,6 @@ class TestPackage(TestCase):
         models.Location.objects.filter(purpose='SS').update(relative_path=FIXTURES_DIR[1:])
         # Arkivum space points at fixtures directory
         models.Space.objects.filter(uuid='6fb34c82-4222-425e-b0ea-30acfd31f52e').update(path=FIXTURES_DIR)
-
         self.tmp_dir = tempfile.mkdtemp()
 
     def tearDown(self):
@@ -226,9 +228,11 @@ class TestPackage(TestCase):
     def test_extract_file_file_does_not_exist_compressed(self):
         """ It should raise an error because the requested file does not exist"""
         package = models.Package.objects.get(uuid='88deec53-c7dc-4828-865c-7356386e9399')
-        with pytest.raises(Exception) as e_info:
-            output_path, extract_path = package.extract_file(relative_path='working_bag/manifest-sha512.txt', extract_path=self.tmp_dir)
-        assert 'Extraction error: No files extracted' in e_info.value.message
+        file_manifest_doesnt_exist = 'working_bag/manifest-sha512.txt'
+        try:
+            output_path, extract_path = package.extract_file(relative_path=file_manifest_doesnt_exist, extract_path=self.tmp_dir)
+        except PackageExtractException as err:
+            assert "Extraction error: no files extracted" in err
 
     def test_extract_file_aip_from_compressed_aip(self):
         """ It should return an aip """
