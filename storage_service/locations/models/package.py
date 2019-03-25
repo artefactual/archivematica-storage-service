@@ -1412,39 +1412,13 @@ class Package(models.Model):
             output_path = os.path.join(extract_path, basename)
 
         if self.is_compressed:
-            # The command used to extract the compressed file at
-            # full_path was, previously, universally::
-            #
-            #     $ unar -force-overwrite -o extract_path full_path
-            #
-            # The problem with this command is that unar treats __MACOSX .rsrc
-            # ("resource fork") files differently than 7z and tar do. 7z and
-            # tar convert these .rsrc files to ._-prefixed files. Similar
-            # behaviour with unar can be achieved by passing `-k hidden`.
-            # However, while a command like::
-            #
-            #     $ unar -force-overwrite -k hidden -o extract_path full_path
-            #
-            # preserves the .rsrc MACOSX files as ._-prefixed files, it does so
-            # differently than 7z/tar do: the resulting .-prefixed files have
-            # different sizes than those created via unar. This makes
-            # ``bag.validate`` choke.
-            compression = compress.get_compression(self.full_pointer_file_path)
-            command = compress.get_decompr_cmd(compression, extract_path, full_path)
-            if relative_path:
-                command.append(relative_path)
-            LOGGER.info('Extracting file with: %s to %s', command, output_path)
-            try:
-                rc = subprocess.check_output(command)
-            except subprocess.CalledProcessError as err:
-                err_str = "Extract: returned non-zero exit status {}".format(err.returncode)
-                LOGGER.error(err_str)
-                LOGGER.error(err.output)
-                raise StorageException(err_str)
-            if 'No files extracted' in rc:
-                err_str = "Extraction error: No files extracted"
-                LOGGER.error(err_str)
-                raise StorageException(err_str)
+            compress.extract_files(
+                pointer_file_path=self.full_pointer_file_path,
+                extract_path=extract_path,
+                full_path=full_path,
+                output_path=output_path,
+                relative_path=relative_path,
+            )
         else:
             if relative_path:
                 # copy only one file out of aip
