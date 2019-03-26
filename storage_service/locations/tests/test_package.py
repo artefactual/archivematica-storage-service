@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import os
-import pytest
-import shutil
 import tempfile
 import vcr
 
@@ -244,7 +242,6 @@ class TestPackage(TestCase):
         assert output_path == os.path.join(self.tmp_dir, basedir)
         assert os.path.exists(os.path.join(output_path, 'manifest-md5.txt'))
 
-
     # Table based tests to help with refactor of compression handling
     # in package.py.
     compress_packages_types = [
@@ -253,33 +250,32 @@ class TestPackage(TestCase):
          "name": "7z.bz-b95b4ad1-c2e0-4fed-b02a-e124f3848cdb",
          "mets": "data/METS.b95b4ad1-c2e0-4fed-b02a-e124f3848cdb.xml",
          "error": "Extraction error: no files extracted"
-        },
+         },
         {"uuid": "37ddac23-f41d-46d9-a204-b77491ef2a03", "specific": compress.COMPRESSION_7Z_LZMA,
          "generic": compress.COMPRESSION_7Z_GENERIC, "cmd": ['7z'],
          "name": "7z.lzma-37ddac23-f41d-46d9-a204-b77491ef2a03",
          "mets": "data/METS.37ddac23-f41d-46d9-a204-b77491ef2a03.xml",
          "error": "Extraction error: no files extracted"
-        },
+         },
         {"uuid": "39166cf0-b7c5-414c-b73e-da378142b692", "specific": compress.COMPRESSION_7Z_COPY,
          "generic": compress.COMPRESSION_7Z_GENERIC, "cmd": ['7z'],
          "name": "7z.copy-39166cf0-b7c5-414c-b73e-da378142b692",
          "mets": "data/METS.39166cf0-b7c5-414c-b73e-da378142b692.xml",
          "error": "Extraction error: no files extracted",
-        },
+         },
         {"uuid": "78bf60f4-018c-4298-b015-7a57bd785ad4", "specific": compress.COMPRESSION_TAR_BZIP2,
          "generic": compress.COMPRESSION_TAR_BZIP2, "cmd": ['/bin/tar'],
          "name": "tar.bz-78bf60f4-018c-4298-b015-7a57bd785ad4",
          "mets": "data/METS.78bf60f4-018c-4298-b015-7a57bd785ad4.xml",
-         "error": "Extraction error: no files extracted",
-         "ignore": True
-        },
+         "error": "Extract: returned non-zero exit status 2",
+         },
         {"uuid": "0b97c973-6be2-4aff-96f1-d7590a294b80", "specific": compress.COMPRESSION_TAR,
          "generic": compress.COMPRESSION_TAR, "cmd": ['unar'],
          "name": "tar-0b97c973-6be2-4aff-96f1-d7590a294b80",
          "mets": "data/METS.0b97c973-6be2-4aff-96f1-d7590a294b80.xml",
          "error": "Extraction error: no files extracted",
          "pointer": False,
-        },
+         },
     ]
 
     def test_get_compression_pointer(self):
@@ -289,15 +285,16 @@ class TestPackage(TestCase):
                 package = \
                     models.Package.objects.get(uuid=compress_type.get("uuid"))
                 assert compress_type.get("specific", "") == \
-                compress.get_compression(package.full_pointer_file_path)
+                    compress.get_compression(package.full_pointer_file_path)
 
     def test_get_compression_no_pointer(self):
         """Test the compression type returned when there isn't a pointer file.
         """
         for compress_type in self.compress_packages_types:
-            package = models.Package.objects.get(uuid=compress_type.get("uuid"))
+            package = \
+                models.Package.objects.get(uuid=compress_type.get("uuid"))
             assert compress_type.get("generic", "") == \
-            compress.get_compression(None, package.fetch_local_path())
+                compress.get_compression(None, package.fetch_local_path())
 
     def test_get_compression_command(self):
         """Test the compression command returned for a given type."""
@@ -319,38 +316,36 @@ class TestPackage(TestCase):
         service.
         """
         for compress_type in self.compress_packages_types:
-            if not compress_type.get("ignore", False):
-                package = \
-                    models.Package.objects.get(uuid=compress_type.get("uuid"))
-                output_path, extract_path = \
-                    package.extract_file(extract_path=self.tmp_dir)
-                assert output_path == \
-                    os.path.join(self.tmp_dir, package.get_base_directory())
-                assert os.path.exists(
-                    os.path.join(output_path, compress_type.get("mets", "")))
+            package = \
+                models.Package.objects.get(uuid=compress_type.get("uuid"))
+            output_path, extract_path = \
+                package.extract_file(extract_path=self.tmp_dir)
+            assert output_path == \
+                os.path.join(self.tmp_dir, package.get_base_directory())
+            assert os.path.exists(
+                os.path.join(output_path, compress_type.get("mets", "")))
 
     def test_get_file_for_each(self):
         """Test extract of an individual for each type of compressed package
         in the Storage Service.
         """
         for compress_type in self.compress_packages_types:
-            if not compress_type.get("ignore", False):
-                package = \
-                    models.Package.objects.get(uuid=compress_type.get("uuid"))
-                relative_path = \
-                    os.path.join(
-                        compress_type.get("name", ""),
-                        compress_type.get("mets", "")
-                    )
-                output_path, extract_path = \
-                    package.extract_file(
-                        relative_path=relative_path, extract_path=self.tmp_dir)
-                assert output_path == \
-                    os.path.join(
-                        extract_path, package.get_base_directory(),
-                        compress_type.get("mets", "")
-                    )
-                assert os.path.isfile(output_path)
+            package = \
+                models.Package.objects.get(uuid=compress_type.get("uuid"))
+            relative_path = \
+                os.path.join(
+                    compress_type.get("name", ""),
+                    compress_type.get("mets", "")
+                )
+            output_path, extract_path = \
+                package.extract_file(
+                    relative_path=relative_path, extract_path=self.tmp_dir)
+            assert output_path == \
+                os.path.join(
+                    extract_path, package.get_base_directory(),
+                    compress_type.get("mets", "")
+                )
+            assert os.path.isfile(output_path)
 
     def test_get_none_file_for_each(self):
         """Test extract of an individual for each type of compressed package
@@ -358,15 +353,16 @@ class TestPackage(TestCase):
         """
         nothing_to_see = "data/no-file-here.dat"
         for compress_type in self.compress_packages_types:
-            if not compress_type.get("ignore", False):
-                package = \
-                    models.Package.objects.get(uuid=compress_type.get("uuid"))
-                relative_path = \
-                    os.path.join(compress_type.get("name", ""), nothing_to_see)
-                try:
-                    output_path, extract_path = \
-                        package.extract_file(
-                            relative_path=relative_path, extract_path=self.tmp_dir)
-                except compress.PackageExtractException as err:
-                    assert compress_type.get("error", "") in err
-                    assert True
+            package = \
+                models.Package.objects.get(uuid=compress_type.get("uuid"))
+            relative_path = \
+                os.path.join(compress_type.get("name", ""), nothing_to_see)
+            try:
+                output_path, extract_path = \
+                    package.extract_file(
+                        relative_path=relative_path,
+                        extract_path=self.tmp_dir
+                    )
+            except compress.PackageExtractException as err:
+                assert compress_type.get("error", "") in err
+                assert True

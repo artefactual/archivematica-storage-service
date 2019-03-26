@@ -108,12 +108,13 @@ def get_decompr_cmd(compression, extract_path, full_path):
     Returns a decompression command as a list, given a compression algorithm
     found in COMPRESSION_ALGORITHMS.
     """
-    if compression in (
-            COMPRESSION_7Z_BZIP,
-            COMPRESSION_7Z_LZMA,
-            COMPRESSION_7Z_COPY,
-            COMPRESSION_7Z_GENERIC
-        ):
+    if compression in \
+            (
+                COMPRESSION_7Z_BZIP,
+                COMPRESSION_7Z_LZMA,
+                COMPRESSION_7Z_COPY,
+                COMPRESSION_7Z_GENERIC
+            ):
         return ['7z', 'x', '-bd', '-y', '-o{0}'.format(extract_path),
                 full_path]
     elif compression == COMPRESSION_TAR_BZIP2:
