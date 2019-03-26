@@ -1,0 +1,5 @@
+# Ensure that fixtures do not generate additional noise for those
+# doing code-review.
+
+# Archivematica generated pointer files.
+storage_service/locations/fixtures/compression_fixtures/pointer_files/*.xml linguist-generated=true
