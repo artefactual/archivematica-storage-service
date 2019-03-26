@@ -46,6 +46,7 @@ LOGGER = logging.getLogger(__name__)
 # Different compression options used for storing packages.
 COMPRESSION_7Z_BZIP = '7z with bzip'
 COMPRESSION_7Z_LZMA = '7z with lzma'
+COMPRESSION_7Z_COPY = "7z with copy"
 COMPRESSION_TAR = 'tar'
 COMPRESSION_TAR_BZIP2 = 'tar bz2'
 COMPRESSION_7Z_GENERIC = "7z generic"
@@ -87,6 +88,8 @@ def get_compression(pointer_path, package_location=None):
             return COMPRESSION_7Z_BZIP
         elif algo == 'lzma':
             return COMPRESSION_7Z_LZMA
+        elif algo == 'copy':
+            return COMPRESSION_7Z_COPY
         else:
             LOGGER.warning('Unable to determine reingested compression'
                            ' algorithm, defaulting to bzip2.')
@@ -106,7 +109,11 @@ def get_decompr_cmd(compression, extract_path, full_path):
     found in COMPRESSION_ALGORITHMS.
     """
     if compression in (
-            COMPRESSION_7Z_BZIP, COMPRESSION_7Z_LZMA, COMPRESSION_7Z_GENERIC):
+            COMPRESSION_7Z_BZIP,
+            COMPRESSION_7Z_LZMA,
+            COMPRESSION_7Z_COPY,
+            COMPRESSION_7Z_GENERIC
+        ):
         return ['7z', 'x', '-bd', '-y', '-o{0}'.format(extract_path),
                 full_path]
     elif compression == COMPRESSION_TAR_BZIP2:
