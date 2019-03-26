@@ -611,7 +611,12 @@ class Package(models.Model):
                 self.current_path)
         if not package_type:
             package_type = self.package_type
-        isfile = os.path.isfile(package_full_path)
+        # The package hasn't been moved yet, test for it being a file on the
+        # originating Space.
+        try:
+            isfile = self.origin_location.space.isfile(package_full_path)
+        except NotImplementedError:
+            isfile = os.path.isfile(package_full_path)
         isaip = package_type in (Package.AIP, Package.AIC)
         ret = isfile and isaip
         if not ret:

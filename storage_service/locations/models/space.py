@@ -448,6 +448,17 @@ class Space(models.Model):
                 {'protocol': self.get_access_protocol_display()}
             )
 
+    def isfile(self, path):
+        """Verify that something is a file in the context of a given space."""
+        child = self.get_child_space()
+        if hasattr(child, 'isfile'):
+            return child.isfile(path)
+        else:
+            raise NotImplementedError(
+                _('Space %(protocol)s does not implement isfile') %
+                {'protocol': self.get_access_protocol_display()}
+            )
+
     # HELPER FUNCTIONS
 
     def move_rsync(self, source, destination, try_mv_local=False, assume_rsync_daemon=False, rsync_password=None):
