@@ -12,7 +12,7 @@ from django.contrib.messages import get_messages
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 
-from common.compression_management import PackageExtractException
+from common import compression_management as compress
 from locations import models
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -231,7 +231,7 @@ class TestPackage(TestCase):
         file_manifest_doesnt_exist = 'working_bag/manifest-sha512.txt'
         try:
             output_path, extract_path = package.extract_file(relative_path=file_manifest_doesnt_exist, extract_path=self.tmp_dir)
-        except PackageExtractException as err:
+        except compress.PackageExtractException as err:
             assert "Extraction error: no files extracted" in err
 
     def test_extract_file_aip_from_compressed_aip(self):
@@ -241,3 +241,104 @@ class TestPackage(TestCase):
         output_path, extract_path = package.extract_file(extract_path=self.tmp_dir)
         assert output_path == os.path.join(self.tmp_dir, basedir)
         assert os.path.exists(os.path.join(output_path, 'manifest-md5.txt'))
+
+
+    # Table based tests to help with refactor of compression handling
+    # in package.py.
+
+    compress_packages_types = [
+        {"uuid": "b95b4ad1-c2e0-4fed-b02a-e124f3848cdb", "specific": compress.COMPRESSION_7Z_BZIP,
+         "generic": compress.COMPRESSION_7Z_GENERIC, "cmd": ['7z'],
+         "name": "7z.bz-b95b4ad1-c2e0-4fed-b02a-e124f3848cdb",
+         "mets": "data/METS.b95b4ad1-c2e0-4fed-b02a-e124f3848cdb.xml",
+         "error": "Extraction error: no files extracted"
+        },
+    ]
+
+    def test_get_compression_pointer(self):
+        """Test the compression type returned when there is a pointer file."""
+        for compress_type in self.compress_packages_types:
+            # if compress_type.get("pointer", True):
+            package = models.Package.objects.get(uuid=compress_type.get("uuid"))
+            assert compress_type.get("specific", "") == \
+            compress.get_compression(package.full_pointer_file_path)
+
+
+    def test_get_compression_no_pointer(self):
+        """Test the compression type returned when there isn't a pointer file.
+        """
+        for compress_type in self.compress_packages_types:
+            package = models.Package.objects.get(uuid=compress_type.get("uuid"))
+            assert compress_type.get("generic", "") == \
+            compress.get_compression(None, package.fetch_local_path())
+
+
+    def test_get_compression_command(self):
+        """Test the compression command returned for a given type."""
+        for compress_type in self.compress_packages_types:
+            package = \
+                models.Package.objects.get(uuid=compress_type.get("uuid"))
+            compression = None
+            if not compress_type.get("pointer", True):
+                compression = \
+                    compress.get_compression(None, package.fetch_local_path())
+            else:
+                compression = \
+                    compress.get_compression(package.full_pointer_file_path)
+            assert compress_type.get("cmd", "")[0] == \
+                compress.get_decompr_cmd(compression, "", "")[0]
+
+
+    def test_get_package_for_each(self):
+        """Test retrieval of each type of compressed package in the storage
+        service.
+        """
+        for compress_type in self.compress_packages_types:
+            package = \
+                models.Package.objects.get(uuid=compress_type.get("uuid"))
+            output_path, extract_path = \
+                package.extract_file(extract_path=self.tmp_dir)
+            assert output_path == \
+                os.path.join(self.tmp_dir, package.get_base_directory())
+            assert os.path.exists(
+                os.path.join(output_path, compress_type.get("mets", "")))
+
+    def test_get_file_for_each(self):
+        """Test extract of an individual for each type of compressed package
+        in the Storage Service.
+        """
+        for compress_type in self.compress_packages_types:
+            package = \
+                models.Package.objects.get(uuid=compress_type.get("uuid"))
+            relative_path = \
+                os.path.join(
+                    compress_type.get("name", ""),
+                    compress_type.get("mets", "")
+                )
+            output_path, extract_path = \
+                package.extract_file(
+                    relative_path=relative_path, extract_path=self.tmp_dir)
+            assert output_path == \
+                os.path.join(
+                    extract_path, package.get_base_directory(),
+                    compress_type.get("mets", "")
+                )
+            assert os.path.isfile(output_path)
+
+
+    def test_get_none_file_for_each(self):
+        """Test extract of an individual for each type of compressed package
+        in the Storage Service.
+        """
+        nothing_to_see = "data/no-file-here.dat"
+        for compress_type in self.compress_packages_types:
+            package = \
+                models.Package.objects.get(uuid=compress_type.get("uuid"))
+            relative_path = \
+                os.path.join(compress_type.get("name", ""), nothing_to_see)
+            try:
+                output_path, extract_path = \
+                    package.extract_file(
+                        relative_path=relative_path, extract_path=self.tmp_dir)
+            except compress.PackageExtractException as err:
+                assert compress_type.get("error", "") in err

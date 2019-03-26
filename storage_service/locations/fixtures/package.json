@@ -161,5 +161,90 @@
         "accessionid": "",
         "origin": "91d13621-d2c1-4c70-a67e-77e96dced036"
     }
+},
+{
+ "pk": 9,
+    "model": "locations.package",
+    "fields": {
+        "uuid": "b95b4ad1-c2e0-4fed-b02a-e124f3848cdb",
+        "description": "7z.bz",
+        "origin_pipeline": null,
+        "current_location": "615103f0-0ee0-4a12-ba17-43192d1143ea",
+        "current_path": "compression_fixtures/7z.bz-b95b4ad1-c2e0-4fed-b02a-e124f3848cdb.7z",
+        "pointer_file_location": "72ee3a1a-9497-46db-aa58-56ea8d7fedc5",
+        "pointer_file_path": "compression_fixtures/pointer_files/pointer.b95b4ad1-c2e0-4fed-b02a-e124f3848cdb.xml",
+        "size": 2600,
+        "package_type": "AIP",
+        "status": "Uploaded",
+        "misc_attributes": "{}"
+    }
+},
+{
+ "pk": 10,
+    "model": "locations.package",
+    "fields": {
+        "uuid": "39166cf0-b7c5-414c-b73e-da378142b692",
+        "description": "7z.copy",
+        "origin_pipeline": null,
+        "current_location": "615103f0-0ee0-4a12-ba17-43192d1143ea",
+        "current_path": "compression_fixtures/7z.copy-39166cf0-b7c5-414c-b73e-da378142b692.7z",
+        "pointer_file_location": "72ee3a1a-9497-46db-aa58-56ea8d7fedc5",
+        "pointer_file_path": "compression_fixtures/pointer_files/pointer.39166cf0-b7c5-414c-b73e-da378142b692.xml",
+        "size": 2600,
+        "package_type": "AIP",
+        "status": "Uploaded",
+        "misc_attributes": "{}"
+    }
+},
+{
+ "pk": 11,
+    "model": "locations.package",
+    "fields": {
+        "uuid": "37ddac23-f41d-46d9-a204-b77491ef2a03",
+        "description": "7z.lzma",
+        "origin_pipeline": null,
+        "current_location": "615103f0-0ee0-4a12-ba17-43192d1143ea",
+        "current_path": "compression_fixtures/7z.lzma-37ddac23-f41d-46d9-a204-b77491ef2a03.7z",
+        "pointer_file_location": "72ee3a1a-9497-46db-aa58-56ea8d7fedc5",
+        "pointer_file_path": "compression_fixtures/pointer_files/pointer.37ddac23-f41d-46d9-a204-b77491ef2a03.xml",
+        "size": 2600,
+        "package_type": "AIP",
+        "status": "Uploaded",
+        "misc_attributes": "{}"
+    }
+},
+{
+ "pk": 12,
+    "model": "locations.package",
+    "fields": {
+        "uuid": "78bf60f4-018c-4298-b015-7a57bd785ad4",
+        "description": "tar.bz",
+        "origin_pipeline": null,
+        "current_location": "615103f0-0ee0-4a12-ba17-43192d1143ea",
+        "current_path": "compression_fixtures/tar.bz-78bf60f4-018c-4298-b015-7a57bd785ad4.tar.bz2",
+        "pointer_file_location": "72ee3a1a-9497-46db-aa58-56ea8d7fedc5",
+        "pointer_file_path": "compression_fixtures/pointer_files/pointer.78bf60f4-018c-4298-b015-7a57bd785ad4.xml",
+        "size": 2600,
+        "package_type": "AIP",
+        "status": "Uploaded",
+        "misc_attributes": "{}"
+    }
+},
+{
+ "pk": 13,
+    "model": "locations.package",
+    "fields": {
+        "uuid": "0b97c973-6be2-4aff-96f1-d7590a294b80",
+        "description": "tar",
+        "origin_pipeline": null,
+        "current_location": "615103f0-0ee0-4a12-ba17-43192d1143ea",
+        "current_path": "compression_fixtures/tar-0b97c973-6be2-4aff-96f1-d7590a294b80.tar",
+        "pointer_file_location": "",
+        "pointer_file_path": "",
+        "size": 2600,
+        "package_type": "AIP",
+        "status": "Uploaded",
+        "misc_attributes": "{}"
+    }
 }
 ]

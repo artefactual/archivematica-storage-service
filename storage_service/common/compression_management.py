@@ -70,7 +70,7 @@ NSMAP = {
 }
 
 
-def get_compression(pointer_path, package_location):
+def get_compression(pointer_path, package_location=None):
     """Return the compression algorithm used to compress the package, as
     documented in the pointer file at ``pointer_path``. Returns one of the
     constants in ``COMPRESSION_ALGORITHMS``.
