@@ -11,7 +11,7 @@ ENV SS_GUNICORN_ERRORLOG -
 ENV FORWARDED_ALLOW_IPS *
 
 # OS dependencies
-RUN echo "deb http://deb.debian.org/debian jessie main" > /etc/apt/sources.list \
+RUN echo "deb http://deb.debian.org/debian stretch main" > /etc/apt/sources.list \
   && set -ex \
 	&& apt-get update -qq \
 	&& apt-get install -qq -y --no-install-recommends \
