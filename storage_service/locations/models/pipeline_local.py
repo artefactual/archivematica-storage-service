@@ -172,3 +172,14 @@ class PipelineLocalFS(models.Model):
             assume_rsync_daemon=self.assume_rsync_daemon,
             rsync_password=self.rsync_password,
         )
+
+    def isfile(self, path):
+        """Verify that something is a file in this Space's context."""
+        LOGGER.info("Testing if isfile in pipeline file system: %s", path)
+        basename = os.path.basename(path)
+        if not basename:
+            return False
+        location_entries = self.space.browse(os.path.dirname(path))
+        return basename in location_entries.get(
+            "entries", []
+        ) and basename not in location_entries.get("directories", [])
