@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import absolute_import
 
 # stdlib, alphabetical
@@ -77,7 +78,32 @@ class S3(models.Model):
         return self._resource
 
     def _ensure_bucket_exists(self):
-        self.client.create_bucket(Bucket=self._bucket_name())
+        """Ensure that the bucket exists by asking it something about itself.
+        If we cannot retrieve metadata about it, and specifically, we can
+        determine the endpoint has returned a `NoSuchBucket' error code then
+        we attempt to create the bucket, else, we raise a StorageException.
+
+        NB. Boto3 has an API called head_bucket that looks to return 400,
+        Bad Request at time of 1.9.174 when the S3 documents suggest 404, or
+        more 'specifically':
+
+            > Otherwise, the operation might return responses such as 404 Not
+            > Found and 403 Forbidden. "
+            via-- Amazon AWS: https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
+        """
+        LOGGER.debug("Test the S3 bucket '%s' exists", self._bucket_name())
+        try:
+            loc_info = self.client.get_bucket_location(Bucket=self._bucket_name())
+            LOGGER.debug("S3 bucket's response: %s", loc_info)
+        except self.client.exceptions.ClientError as err:
+            error_code = err.response["Error"]["Code"]
+            if error_code != "NoSuchBucket":
+                raise StorageException(err)
+            LOGGER.info("Creating S3 bucket '%s'", self._bucket_name())
+            self.client.create_bucket(
+                Bucket=self._bucket_name(),
+                CreateBucketConfiguration={"LocationConstraint": self.region},
+            )
 
     def _bucket_name(self):
         return self.space_id
