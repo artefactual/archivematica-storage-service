@@ -12,6 +12,7 @@ from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
 import boto3
+import botocore
 import re
 import scandir
 
@@ -26,21 +27,27 @@ LOGGER = logging.getLogger(__name__)
 
 class S3(models.Model):
     space = models.OneToOneField("Space", to_field="uuid")
-    endpoint_url = models.CharField(
-        max_length=2048,
-        verbose_name=_("S3 Endpoint URL"),
-        help_text=_("S3 Endpoint URL. Eg. https://s3.amazonaws.com"),
-    )
     access_key_id = models.CharField(
         max_length=64, verbose_name=_("Access Key ID to authenticate")
     )
     secret_access_key = models.CharField(
         max_length=256, verbose_name=_("Secret Access Key to authenticate with")
     )
+    endpoint_url = models.CharField(
+        max_length=2048,
+        verbose_name=_("S3 Endpoint URL"),
+        help_text=_("S3 Endpoint URL. Eg. https://s3.amazonaws.com"),
+    )
     region = models.CharField(
         max_length=64,
         verbose_name=_("Region"),
         help_text=_("Region in S3. Eg. us-east-2"),
+    )
+    bucket = models.CharField(
+        max_length=64,
+        verbose_name=_("S3 Bucket"),
+        blank=True,
+        help_text=_("S3 Bucket Name"),
     )
 
     class Meta:
@@ -92,25 +99,25 @@ class S3(models.Model):
             > Found and 403 Forbidden. "
             via-- Amazon AWS: https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketHEAD.html
         """
-        LOGGER.debug("Test the S3 bucket '%s' exists", self._bucket_name())
+        LOGGER.debug("Test the S3 bucket '%s' exists", self.bucket_name)
         try:
-            loc_info = self.client.get_bucket_location(Bucket=self._bucket_name())
+            loc_info = self.client.get_bucket_location(Bucket=self.bucket_name)
             LOGGER.debug("S3 bucket's response: %s", loc_info)
         except self.client.exceptions.ClientError as err:
             error_code = err.response["Error"]["Code"]
             if error_code != "NoSuchBucket":
                 raise StorageException(err)
-            LOGGER.info("Creating S3 bucket '%s'", self._bucket_name())
+            LOGGER.info("Creating S3 bucket '%s'", self.bucket_name)
             self.client.create_bucket(
-                Bucket=self._bucket_name(),
+                Bucket=self.bucket_name,
                 CreateBucketConfiguration={"LocationConstraint": self.region},
             )
 
-    def _bucket_name(self):
-        return self.space_id
+    @property
+    def bucket_name(self):
+        return self.bucket or self.space_id
 
     def browse(self, path):
-        # strip leading slash on path
         path = path.lstrip("/")
 
         # We need a trailing slash on non-empty prefixes because a path like:
@@ -126,7 +133,7 @@ class S3(models.Model):
         if path != "":
             path = path.rstrip("/") + "/"
 
-        objects = self.resource.Bucket(self._bucket_name()).objects.filter(Prefix=path)
+        objects = self.resource.Bucket(self.bucket_name).objects.filter(Prefix=path)
 
         directories = set()
         entries = set()
@@ -143,7 +150,6 @@ class S3(models.Model):
             else:
                 entries.add(relative_key)
                 properties[relative_key] = {
-                    "verbose name": objectSummary.key,
                     "size": objectSummary.size,
                     "timestamp": objectSummary.last_modified,
                     "e_tag": objectSummary.e_tag,
@@ -167,9 +173,7 @@ class S3(models.Model):
                 )
             )
             delete_path = delete_path.lstrip(os.sep)
-        obj = self.resource.Bucket(self._bucket_name()).objects.filter(
-            Prefix=delete_path
-        )
+        obj = self.resource.Bucket(self.bucket_name).objects.filter(Prefix=delete_path)
         items = False
         for object_summary in obj:
             items = True
@@ -183,14 +187,12 @@ class S3(models.Model):
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         self._ensure_bucket_exists()
-        bucket = self.resource.Bucket(self._bucket_name())
+        bucket = self.resource.Bucket(self.bucket_name)
 
         # strip leading slash on src_path
         src_path = src_path.lstrip("/")
 
-        objects = self.resource.Bucket(self._bucket_name()).objects.filter(
-            Prefix=src_path
-        )
+        objects = self.resource.Bucket(self.bucket_name).objects.filter(Prefix=src_path)
 
         for objectSummary in objects:
             dest_file = objectSummary.key.replace(src_path, dest_path, 1)
@@ -200,7 +202,7 @@ class S3(models.Model):
 
     def move_from_storage_service(self, src_path, dest_path, package=None):
         self._ensure_bucket_exists()
-        bucket = self.resource.Bucket(self._bucket_name())
+        bucket = self.resource.Bucket(self.bucket_name)
 
         if os.path.isdir(src_path):
             # ensure trailing slash on both paths

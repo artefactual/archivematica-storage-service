@@ -1,0 +1,59 @@
+[
+{
+    "pk": 1,
+    "model": "locations.s3",
+    "fields": {
+        "space": "ae37f081-8baf-4d5d-9b1f-aebe367f1707",
+        "access_key_id": "",
+        "secret_access_key": "",
+        "endpoint_url": "https://s3.amazonaws.com",
+        "region": "us-east-1",
+        "bucket": "test-bucket"
+    }
+},
+{
+    "pk": 2,
+    "model": "locations.space",
+    "fields": {
+        "last_verified": null,
+        "used": 0,
+        "verified": false,
+        "uuid": "ae37f081-8baf-4d5d-9b1f-aebe367f1707",
+        "access_protocol": "S3",
+        "staging_path": "/var/archivematica/storage_service/",
+        "path": "/archivematica",
+        "size": null
+    }
+},
+{
+    "pk": 7,
+    "model": "locations.location",
+    "fields": {
+        "used": 0,
+        "description": "S3",
+        "space": "ae37f081-8baf-4d5d-9b1f-aebe367f1707",
+        "enabled": true,
+        "quota": null,
+        "relative_path": "aips",
+        "purpose": "AS",
+        "uuid": "a2f62831-717b-4890-9292-35b5f4c444c6"
+    }
+},
+{
+    "pk": 1,
+    "model": "locations.package",
+    "fields": {
+        "uuid": "4607c3d9-7b0c-4001-9150-44a373105b45",
+        "description": null,
+        "origin_pipeline": null,
+        "current_location": "a2f62831-717b-4890-9292-35b5f4c444c6",
+        "current_path": "locations/fixtures/small_compressed_bag.zip",
+        "pointer_file_location": "",
+        "pointer_file_path": "",
+        "size": 0,
+        "package_type": "AIP",
+        "status": "Uploaded",
+        "misc_attributes": {}
+    }
+}
+]
