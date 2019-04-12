@@ -256,7 +256,13 @@ class SwiftForm(forms.ModelForm):
 class S3Form(forms.ModelForm):
     class Meta:
         model = models.S3
-        fields = ("endpoint_url", "access_key_id", "secret_access_key", "region")
+        fields = (
+            "endpoint_url",
+            "access_key_id",
+            "secret_access_key",
+            "region",
+            "bucket",
+        )
 
 
 class LocationForm(forms.ModelForm):
