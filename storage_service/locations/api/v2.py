@@ -45,6 +45,9 @@ class PackageResource(resources.PackageResource):
 
     current_full_path = fields.CharField(attribute="full_path", readonly=True)
 
+    accession_id = fields.CharField(attribute="accession_id", blank=True)
+    extra_metadata = fields.DictField(attribute="extra_metadata")
+
 
 class AsyncResource(resources.AsyncResource):
     pass

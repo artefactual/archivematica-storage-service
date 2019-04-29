@@ -138,6 +138,17 @@ class Package(models.Model):
         help_text=_("For storing flexible, often Space-specific, attributes"),
     )
 
+    accession_id = models.TextField(blank=True)
+    extra_metadata = jsonfield.JSONField(
+        blank=True,
+        null=True,
+        default={},
+        help_text=_(
+            "Stores additional metadata about a package, for access "
+            "in receipt files and callbacks."
+        ),
+    )
+
     # Temporary attributes to track path on locally accessible filesystem
     local_path = None
     local_path_location = None

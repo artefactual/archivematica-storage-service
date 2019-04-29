@@ -2,6 +2,7 @@ import base64
 import json
 import os
 import shutil
+import uuid
 import vcr
 
 from django.contrib.auth.models import User
@@ -519,6 +520,143 @@ class TestPackageAPI(TempDirMixin, TestCase):
         j = json.loads(response.content)
         assert j["error"] is True
         assert "Error" in j["message"] and "Arkivum" in j["message"]
+
+    def test_create_package(self):
+        pipeline = models.Pipeline.objects.create()
+        package_data = {
+            "uuid": str(uuid.uuid4()),
+            "current_location": "/api/v2/location/4056b25d-6a85-4557-b9a5-9c85565fd892/",
+            "origin_location": "/api/v2/location/4056b25d-6a85-4557-b9a5-9c85565fd892/",
+            "current_path": "/dev/null/images-transfer-de1b31fa-97dd-48e0-8417-03be78359531",
+            "origin_pipeline": "/api/v2/pipeline/{}/".format(pipeline.uuid),
+        }
+        response = self.client.post(
+            "/api/v2/file/",
+            data=json.dumps(package_data),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 201
+
+        response_content = json.loads(response.content)
+        created_obj = models.Package.objects.get(uuid=response_content["uuid"])
+
+        assert response_content["uuid"] == package_data["uuid"]
+        assert created_obj.origin_pipeline == pipeline
+        assert created_obj.accession_id == ""
+        assert created_obj.extra_metadata == {}
+
+    def test_create_package_with_extra_metadata(self):
+        pipeline = models.Pipeline.objects.create()
+        package_data = {
+            "uuid": str(uuid.uuid4()),
+            "current_location": "/api/v2/location/4056b25d-6a85-4557-b9a5-9c85565fd892/",
+            "origin_location": "/api/v2/location/4056b25d-6a85-4557-b9a5-9c85565fd892/",
+            "current_path": "/dev/null/images-transfer-de1b31fa-97dd-48e0-8417-03be78359531",
+            "origin_pipeline": "/api/v2/pipeline/{}/".format(pipeline.uuid),
+            "accession_id": "identifier-1235",
+            "extra_metadata": {
+                "dc": {"identifier": 12345},
+                "another_id": "qarsd-124.36462-a",
+            },
+        }
+        response = self.client.post(
+            "/api/v2/file/",
+            data=json.dumps(package_data),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 201
+
+        response_content = json.loads(response.content)
+        assert response_content["accession_id"] == package_data["accession_id"]
+        assert (
+            response_content["extra_metadata"]["dc"]["identifier"]
+            == package_data["extra_metadata"]["dc"]["identifier"]
+        )
+        assert (
+            response_content["extra_metadata"]["another_id"]
+            == package_data["extra_metadata"]["another_id"]
+        )
+
+        created_obj = models.Package.objects.get(uuid=response_content["uuid"])
+        assert created_obj.accession_id == package_data["accession_id"]
+        assert (
+            created_obj.extra_metadata["dc"]["identifier"]
+            == package_data["extra_metadata"]["dc"]["identifier"]
+        )
+        assert (
+            created_obj.extra_metadata["another_id"]
+            == package_data["extra_metadata"]["another_id"]
+        )
+
+    def test_update_package(self):
+        package = models.Package.objects.get(
+            uuid="88deec53-c7dc-4828-865c-7356386e9399"
+        )
+        pipeline = models.Pipeline.objects.create()
+
+        package_data = {
+            "current_location": "/api/v2/location/4056b25d-6a85-4557-b9a5-9c85565fd892/",
+            "origin_location": "/api/v2/location/4056b25d-6a85-4557-b9a5-9c85565fd892/",
+            "current_path": "/dev/null/images-transfer-de1b31fa-97dd-48e0-8417-03be78359531",
+            "origin_pipeline": "/api/v2/pipeline/{}/".format(pipeline.uuid),
+        }
+        response = self.client.put(
+            "/api/v2/file/{}/".format(package.uuid),
+            data=json.dumps(package_data),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 200
+
+        response_content = json.loads(response.content)
+        updated_obj = models.Package.objects.get(uuid=response_content["uuid"])
+
+        assert updated_obj.uuid == package.uuid
+        assert updated_obj.current_path == package_data["current_path"]
+        assert updated_obj.origin_pipeline == pipeline
+        assert updated_obj.accession_id == ""
+        assert updated_obj.extra_metadata == {}
+
+    def test_update_package_with_extra_metadata(self):
+        package = models.Package.objects.get(
+            uuid="88deec53-c7dc-4828-865c-7356386e9399"
+        )
+        pipeline = models.Pipeline.objects.create()
+
+        package_data = {
+            "current_location": "/api/v2/location/4056b25d-6a85-4557-b9a5-9c85565fd892/",
+            "origin_location": "/api/v2/location/4056b25d-6a85-4557-b9a5-9c85565fd892/",
+            "current_path": "/dev/null/images-transfer-de1b31fa-97dd-48e0-8417-03be78359531",
+            "origin_pipeline": "/api/v2/pipeline/{}/".format(pipeline.uuid),
+            "accession_id": "identifier-1235",
+            "extra_metadata": {
+                "dc": {"identifier": 12345},
+                "another_id": "qarsd-124.36462-a",
+            },
+        }
+        response = self.client.put(
+            "/api/v2/file/{}/".format(package.uuid),
+            data=json.dumps(package_data),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 200
+
+        response_content = json.loads(response.content)
+        updated_obj = models.Package.objects.get(uuid=response_content["uuid"])
+
+        assert updated_obj.uuid == package.uuid
+        assert updated_obj.accession_id == package_data["accession_id"]
+        assert (
+            updated_obj.extra_metadata["dc"]["identifier"]
+            == package_data["extra_metadata"]["dc"]["identifier"]
+        )
+        assert (
+            updated_obj.extra_metadata["another_id"]
+            == package_data["extra_metadata"]["another_id"]
+        )
 
 
 class TestSwordAPI(TestCase):
