@@ -7,6 +7,7 @@ from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
 from django_extensions.db.fields import UUIDField
+from six.moves.urllib.parse import urlparse
 import requests
 
 # This project, alphabetical
@@ -136,6 +137,12 @@ class Callback(models.Model):
         if not url:
             url = self.uri
 
+        url_components = urlparse(url)
+        if url_components.scheme == "file":
+            return self.write_callback_file(
+                url_components.path, host=url_components.netloc
+            )
+
         try:
             response = getattr(requests, self.method)(url)
         except requests.exceptions.ConnectionError as e:
@@ -143,6 +150,23 @@ class Callback(models.Model):
 
         if not response.status_code == self.expected_status:
             raise CallbackError(response.text)
+
+    def write_callback_file(self, path, host=None):
+        """
+        Writes a 'receipt' file to the path given
+
+        Provides an alternative to HTTP based callbacks.
+        """
+        # TODO: support remote writes?
+        if host:
+            raise ValueError("Only callbacks to local file URIs are supported.")
+
+        try:
+            with open(path, "w") as receipt_file:
+                # TODO: actual receipt body
+                receipt_file.write("This is a receipt file.")
+        except OSError as err:
+            raise CallbackError(str(err))
 
 
 class File(models.Model):
