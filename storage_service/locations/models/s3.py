@@ -5,6 +5,7 @@ from __future__ import absolute_import
 import logging
 import os
 import pprint
+from functools import wraps
 
 # Core Django, alphabetical
 from django.db import models
@@ -23,6 +24,17 @@ from . import StorageException
 from .location import Location
 
 LOGGER = logging.getLogger(__name__)
+
+
+def boto_exception(fn):
+    @wraps(fn)
+    def _inner(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except botocore.exceptions.BotoCoreError as e:
+            raise StorageException("AWS error: %r", e)
+
+    return _inner
 
 
 class S3(models.Model):
@@ -85,6 +97,7 @@ class S3(models.Model):
             )
         return self._resource
 
+    @boto_exception
     def _ensure_bucket_exists(self):
         """Ensure that the bucket exists by asking it something about itself.
         If we cannot retrieve metadata about it, and specifically, we can
