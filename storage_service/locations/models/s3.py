@@ -5,6 +5,7 @@ from __future__ import absolute_import
 import logging
 import os
 import pprint
+from functools import wraps
 
 # Core Django, alphabetical
 from django.db import models
@@ -23,9 +24,18 @@ from .location import Location
 LOGGER = logging.getLogger(__name__)
 
 
+def boto_exception(fn):
+    @wraps(fn)
+    def _inner(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except botocore.exceptions.BotoCoreError as e:
+            raise StorageException('AWS error: %r', e)
+    return _inner
+
+
 class S3(models.Model):
     space = models.OneToOneField('Space', to_field='uuid')
-
     access_key_id = models.CharField(
         max_length=64,
         blank=True,
@@ -57,7 +67,6 @@ class S3(models.Model):
 
     ALLOWED_LOCATION_PURPOSE = [Location.AIP_STORAGE, Location.REPLICATOR, Location.TRANSFER_SOURCE]
 
-
     @property
     def resource(self):
         if not hasattr(self, "_resource"):
@@ -76,6 +85,7 @@ class S3(models.Model):
 
         return self._resource
 
+    @boto_exception
     def _ensure_bucket_exists(self):
         """Ensure that the bucket exists by asking it something about itself.
         If we cannot retrieve metadata about it, and specifically, we can
@@ -92,7 +102,7 @@ class S3(models.Model):
         """
         LOGGER.debug("Test the S3 bucket '%s' exists", self.bucket_name)
         try:
-            loc_info = self.resource.get_bucket_location(Bucket=self.bucket_name)
+            loc_info = self.resource.meta.client.get_bucket_location(Bucket=self.bucket_name)
             LOGGER.debug("S3 bucket's response: %s", loc_info)
         except botocore.exceptions.ClientError as err:
             error_code = err.response["Error"]["Code"]
