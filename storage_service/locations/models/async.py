@@ -50,7 +50,10 @@ class Async(models.Model):
 
     @property
     def error(self):
-        return pickle.loads(self._error)
+        error = self._error
+        if isinstance(error, six.memoryview):
+            error = str(error)
+        return pickle.loads(error)
 
     @error.setter
     def error(self, value):
