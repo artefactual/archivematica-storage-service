@@ -20,7 +20,7 @@ FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures", ""))
 
 class TestPackage(TestCase):
 
-    fixtures = ["base.json", "package.json", "arkivum.json"]
+    fixtures = ["base.json", "package.json", "arkivum.json", "callback.json"]
 
     def setUp(self):
         self.package = models.Package.objects.all()[0]
@@ -326,6 +326,36 @@ class TestPackage(TestCase):
         output_path, extract_path = package.extract_file(extract_path=self.tmp_dir)
         assert output_path == os.path.join(self.tmp_dir, basedir)
         assert os.path.join(output_path, "manifest-md5.txt")
+
+    def test_run_post_store_callbacks_aip(self):
+        uuid = "0d4e739b-bf60-4b87-bc20-67a379b28cea"
+        aip = models.Package.objects.get(uuid=uuid)
+        with mock.patch("locations.models.Callback.execute") as mocked_execute:
+            aip.run_post_store_callbacks()
+            # Only `post_store_aip` callbacks are executed
+            assert mocked_execute.call_count == 1
+
+    def test_run_post_store_callbacks_aic(self):
+        uuid = "0d4e739b-bf60-4b87-bc20-67a379b28cea"
+        aic, _ = models.Package.objects.update_or_create(
+            uuid=uuid, defaults={"package_type": models.Package.AIC}
+        )
+        with mock.patch("locations.models.Callback.execute") as mocked_execute:
+            aic.run_post_store_callbacks()
+            # Only enabled callbacks are executed
+            assert mocked_execute.call_count == 1
+
+    def test_run_post_store_callbacks_dip(self):
+        uuid = "0d4e739b-bf60-4b87-bc20-67a379b28cea"
+        dip, _ = models.Package.objects.update_or_create(
+            uuid=uuid, defaults={"package_type": models.Package.DIP}
+        )
+        with mock.patch("locations.models.Callback.execute") as mocked_execute:
+            dip.run_post_store_callbacks()
+            # Placeholder is replaced by the UUID in URI and body
+            url = "https://consumer.com/api/v1/dip/%s/stored" % uuid
+            body = '{"download_url": "http://ss.com/api/v2/file/%s/download/"}' % uuid
+            mocked_execute.assert_called_with(url, body)
 
 
 class TestTransferPackage(TestCase):

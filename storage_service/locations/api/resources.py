@@ -1381,7 +1381,7 @@ class PackageResource(ModelResource):
     def aip_store_callback_request(self, request, bundle, **kwargs):
         package = bundle.obj
 
-        callbacks = Callback.objects.filter(event="post_store")
+        callbacks = Callback.objects.filter(event="post_store", enabled=True)
         if len(callbacks) == 0:
             return http.HttpNoContent()
 
@@ -1428,8 +1428,9 @@ class PackageResource(ModelResource):
             for file_ in files:
                 for callback in callbacks:
                     uri = callback.uri.replace("<source_id>", file_.source_id)
+                    body = callback.body.replace("<source_id>", file_.source_id)
                     try:
-                        callback.execute(uri)
+                        callback.execute(uri, body)
                         file_.stored = True
                         file_.save()
                     except CallbackError:

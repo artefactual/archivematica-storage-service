@@ -7,9 +7,20 @@
 
 <div class="callback">
   <dl>
+    <dt>{% trans "Event" %}</dt> <dd>{{ callback.get_event_display }}</dd>
     <dt>{% trans "URI" %}</dt> <dd>{{ callback.uri }}</dd>
-    <dt>{% trans "Event" %}</dt> <dd>{{ callback.event }}</dd>
     <dt>{% trans "HTTP Method" %}</dt> <dd>{{ callback.method }}</dd>
+    <dt>{% trans "Headers" %}</dt>
+    {% if callback.headers %}
+      <dd>
+        <ul>
+          {% for key, value in callback.get_headers.items %}
+            <li>{{ key }}: {{ value }}</li>
+          {% endfor %}
+        </ul>
+      </dd>
+    {% endif %}
+    <dt>{% trans "Body" %}</dt> <dd>{{ callback.body|linebreaksbr }}</dd>
     <dt>{% trans "Expected status" %}</dt> <dd>{{ callback.expected_status }}</dd>
     <dt>{% trans "Enabled" %}</dt> <dd>{{ callback.enabled|yesno:_("Enabled,Disabled")}}</dd>
     <dt>{% trans "Actions" %}</dt> <dd>

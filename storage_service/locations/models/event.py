@@ -1,4 +1,6 @@
 # stdlib, alphabetical
+from collections import OrderedDict
+import json
 
 # Core Django, alphabetical
 from django.conf import settings
@@ -70,7 +72,12 @@ class Callback(models.Model):
     particular HTTP method.
     """
 
-    EVENTS = (("post_store", "Post-store"),)
+    EVENTS = (
+        ("post_store", _("Post-store AIP (source files)")),
+        ("post_store_aip", _("Post-store AIP")),
+        ("post_store_aic", _("Post-store AIC")),
+        ("post_store_dip", _("Post-store DIP")),
+    )
 
     HTTP_METHODS = (
         ("delete", "DELETE"),
@@ -100,6 +107,20 @@ class Callback(models.Model):
         verbose_name=_("Method"),
         help_text=_("HTTP request method to use in connecting to the URL."),
     )
+    body = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name=_("Body"),
+        help_text=_(
+            "Body content for each request. Set the 'Content-type' header accordingly."
+        ),
+    )
+    headers = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name=_("Headers"),
+        help_text=_("Headers for each request."),
+    )
     expected_status = models.IntegerField(
         default=200,
         verbose_name=_("Expected Status"),
@@ -117,12 +138,20 @@ class Callback(models.Model):
         verbose_name = _("Callback")
         app_label = "locations"
 
-    def execute(self, url=None):
+    def get_headers(self):
+        """Loads the headers string into a key/value OrderedDict."""
+        return (
+            json.loads(self.headers, object_pairs_hook=OrderedDict)
+            if self.headers
+            else {}
+        )
+
+    def execute(self, url=None, body=None):
         """
         Execute the callback by contacting the external service.
 
-        The url parameter can be provided in case the URL needs to be
-        altered. For instance, the URL might contain a placeholder such
+        The url and body parameters can be provided in case they need to
+        be altered. For instance, they might contain a placeholder such
         as <file_uuid>, which will be replaced with the real file UUID
         before executing.
 
@@ -135,9 +164,13 @@ class Callback(models.Model):
         """
         if not url:
             url = self.uri
+        if not body:
+            body = self.body
 
         try:
-            response = getattr(requests, self.method)(url)
+            response = getattr(requests, self.method)(
+                url, data=body or "", headers=self.get_headers()
+            )
         except requests.exceptions.ConnectionError as e:
             raise CallbackError(str(e))
 

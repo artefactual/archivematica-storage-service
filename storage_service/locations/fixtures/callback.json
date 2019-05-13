@@ -1,0 +1,72 @@
+[
+{
+  "fields": {
+    "body": "",
+    "expected_status": 200,
+    "uuid": "6020d3d9-ecb0-4339-8bbb-0d9ec1d6877b",
+    "enabled": true,
+    "uri": "http://consumer.com/api/v1/file/<source_id>/",
+    "method": "delete",
+    "headers": "",
+    "event": "post_store"
+  },
+  "model": "locations.callback",
+  "pk": 1
+},
+{
+  "fields": {
+    "body": "",
+    "expected_status": 200,
+    "uuid": "24eb7980-27de-4729-927a-ac91f726469d",
+    "enabled": true,
+    "uri": "http://consumer.com/api/v1/aip/<package_uuid>/",
+    "method": "post",
+    "headers": "",
+    "event": "post_store_aip"
+  },
+  "model": "locations.callback",
+  "pk": 2
+},
+{
+  "fields": {
+    "body": "",
+    "expected_status": 200,
+    "uuid": "6be67a5a-b970-4d88-b7dc-548195476853",
+    "enabled": true,
+    "uri": "http://consumer.com/api/v1/aic/<package_uuid>/",
+    "method": "post",
+    "headers": "",
+    "event": "post_store_aic"
+  },
+  "model": "locations.callback",
+  "pk": 3
+},
+{
+  "fields": {
+    "body": "",
+    "expected_status": 200,
+    "uuid": "6be67a5a-b970-4d88-b7dc-548195476853",
+    "enabled": false,
+    "uri": "http://consumer.com/api/v1/aic/<package_uuid>/",
+    "method": "post",
+    "headers": "",
+    "event": "post_store_aic"
+  },
+  "model": "locations.callback",
+  "pk": 4
+},
+{
+  "fields": {
+    "body": "{\"download_url\": \"http://ss.com/api/v2/file/<package_uuid>/download/\"}",
+    "expected_status": 202,
+    "uuid": "ef0672a2-d0ed-474b-95f6-ff8f9ea1fc15",
+    "enabled": true,
+    "uri": "https://consumer.com/api/v1/dip/<package_uuid>/stored",
+    "method": "post",
+    "headers": "{\"Authorization\": \"Token token_string\", \"Origin\": \"http://ss.com\"}",
+    "event": "post_store_dip"
+  },
+  "model": "locations.callback",
+  "pk": 5
+}
+]

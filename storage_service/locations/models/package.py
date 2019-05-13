@@ -36,7 +36,7 @@ from locations import signals
 from . import StorageException
 from .location import Location
 from .space import Space, PosixMoveUnsupportedError
-from .event import File
+from .event import Callback, CallbackError, File
 from .fixity_log import FixityLog
 
 __all__ = ("Package",)
@@ -769,6 +769,7 @@ class Package(models.Model):
                 )
                 write_pointer_file(revised_pointer_file, self.full_pointer_file_path)
         self.create_replicas()
+        self.run_post_store_callbacks()
 
     def _store_aip_to_pending(self, origin_location, origin_path):
         """Get this AIP to the "pending" stage of ``store_aip`` by
@@ -1612,6 +1613,38 @@ class Package(models.Model):
         replicator_locs = self.current_location.replicators.all()
         for replicator_loc in replicator_locs:
             self.replicate(replicator_loc.uuid)
+
+    def run_post_store_callbacks(self):
+        """Checks if post store callbacks exist and executes them.
+
+        Currently, the following post store callback events exists:
+        - "post_store": for AIP source files.
+        - "post_store_aip": for AIPs.
+        - "post_store_aic": for AICs.
+        - "post_store_dip": for DIPs.
+
+        The AIP source files callbacks are executed when a request is sent
+        to ".../send_callback/post_store" from the "post_store_aip_hook"
+        MCPClient script, but the response is ignored in there at this
+        point and it's probably better to execute all callbacks in here
+        in the future.
+        """
+        # Only execute callbacks for AIPs, AICs and DIPs in here
+        callbacks = []
+        if self.package_type == Package.AIP:
+            callbacks = Callback.objects.filter(event="post_store_aip", enabled=True)
+        if self.package_type == Package.AIC:
+            callbacks = Callback.objects.filter(event="post_store_aic", enabled=True)
+        if self.package_type == Package.DIP:
+            callbacks = Callback.objects.filter(event="post_store_dip", enabled=True)
+        for callback in callbacks:
+            uri = callback.uri.replace("<package_uuid>", self.uuid)
+            body = callback.body.replace("<package_uuid>", self.uuid)
+            try:
+                LOGGER.info("Executing %s callback: %s", callback.event, uri)
+                callback.execute(uri, body)
+            except CallbackError as e:
+                LOGGER.error("Error in %s callback: %s", callback.event, str(e))
 
     def extract_file(self, relative_path="", extract_path=None):
         """Attempts to extract this package.

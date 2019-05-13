@@ -1,24 +1,25 @@
 body {
-    font-size:100%;
+  font-size:100%;
 }
 
 h1 {
-    font-size:2em;
+  font-size:2em;
 }
 
 h2 {
-    font-size: 1.8em;
-    margin-top: 1em;
+  font-size: 1.8em;
+  margin-top: 1em;
 }
 
 p {
-    font-size:0.875em;
+  font-size:0.875em;
 }
 
 .row {
-    display: table-row;
-    margin-left: 0;
+  display: table-row;
+  margin-left: 0;
 }
+
 .sidebar ul,
 .sidebar li {
   list-style: none;
@@ -31,8 +32,8 @@ p {
 }
 
 div.sidebar {
-    width: 15%;
-    min-width: 120px;
+  width: 15%;
+  min-width: 120px;
 }
 
 form ul {
@@ -54,16 +55,17 @@ table.attr-val-table td {
 }
 
 label.required-field:after {
-    content: '*'
+  content: '*';
 }
 
 .errorlist {
   color: red;
 }
 
-/* Mimic regular Bootstrap 2.x links.
-   This is used inside inline forms pretending to be just regular links! */
-
+/*
+Mimic regular Bootstrap 2.x links. This is used inside
+inline forms pretending to be just regular links!
+*/
 button.link {
   background: none !important;
   color: #08c;
@@ -78,4 +80,12 @@ button.link:hover,
 button.link:active {
   color: #005580;
   text-decoration: underline;
+}
+
+.callback > form input[name^=header_] {
+  margin: 0 10px 0 0;
+}
+
+.callback-extended-description {
+  margin-bottom: 20px;
 }

@@ -14,7 +14,7 @@
     <tbody>
     {% for callback in callbacks %}
       <tr>
-        <td>{{ callback.event }}</td>
+        <td>{{ callback.get_event_display }}</td>
         <td>{{ callback.uri }}</td>
         <td>{{ callback.method }}</td>
         <td>{{ callback.expected_status }}</td>

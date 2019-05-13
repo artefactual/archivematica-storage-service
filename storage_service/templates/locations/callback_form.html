@@ -1,18 +1,38 @@
 {% extends "administration/base.html" %}
-
+{% load i18n %}
 {% block page_title %}{{ action }}{% endblock %}
-
 {% block content %}
+{% include 'snippets/callback_description.html' %}
 
-<div class='callback'>
-    {% if callback %}
-    <form action="{% url 'callback_edit' callback.uuid %}" method="post">
-    {% else %}
-    <form action="{% url 'callback_create' %}" method="post">
-    {% endif %}
-    {% csrf_token %}
-        {{ form.as_p }}
-        <input type="submit" value="{{action}}" class='btn btn-primary' />
-    </form>
+<div class="callback-extended-description">
+  <p>{% trans "Those actions are determined by the following events:" %}</p>
+  <p>
+    <strong>{% trans "Post-store AIP (source files)" %}:</strong>
+    {% blocktrans with placeholder="<em>&lt;source_id&gt;</em>" trimmed %}
+    Occurs after an AIP has been stored and it causes the execution of a request for
+    each source file of the AIP. If the placeholder {{ placeholder }} is found
+    in the callback URL or body, it will be replaced by the source file UUID.
+    {% endblocktrans %}
+  </p>
+  <p>
+    <strong>{% trans "Post-store AIP, Post-store AIC and Post-store DIP" %}:</strong>
+    {% blocktrans with placeholder="<em>&lt;package_uuid&gt;</em>" trimmed %}
+    Occur after an AIP, AIC or DIP has been stored and they cause the execution of a
+    single request for the package. If the placeholder {{ placeholder }} is found
+    in the callback URL or body, it will be replaced by the AIP, AIC or DIP UUID.
+    {% endblocktrans %}
+  </p>
+</div>
+
+<div class="callback">
+  {% if callback %}
+  <form action="{% url 'callback_edit' callback.uuid %}" method="post">
+  {% else %}
+  <form action="{% url 'callback_create' %}" method="post">
+  {% endif %}
+  {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="{{action}}" class="btn btn-primary"/>
+  </form>
 </div>
 {% endblock %}

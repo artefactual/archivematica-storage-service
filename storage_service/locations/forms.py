@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+from collections import OrderedDict
+import json
 import logging
 
 from django import forms
@@ -392,10 +394,120 @@ class ConfirmEventForm(forms.ModelForm):
         self.fields["status_reason"].required = True
 
 
+class HeaderWidget(forms.MultiWidget):
+    """Key/value text inputs widget for Callback header."""
+
+    def __init__(self, *args, **kwargs):
+        widgets = (forms.TextInput(), forms.TextInput())
+        super(HeaderWidget, self).__init__(widgets, *args, **kwargs)
+
+    def decompress(self, value):
+        return value or [None, None]
+
+
+class HeaderField(forms.fields.MultiValueField):
+    """Key/value form field for Callback header."""
+
+    widget = HeaderWidget
+
+    def __init__(self, *args, **kwargs):
+        fields = (forms.fields.CharField(), forms.fields.CharField())
+        super(HeaderField, self).__init__(fields, *args, **kwargs)
+
+    def compress(self, data_list):
+        return data_list or [None, None]
+
+
 class CallbackForm(forms.ModelForm):
     class Meta:
         model = models.Callback
-        fields = ("uri", "event", "method", "expected_status")
+        fields = ("event", "uri", "method", "body", "expected_status", "enabled")
+
+    def __init__(self, *args, **kwargs):
+        """Extends model form initialization.
+
+        Adds extra fields for Callback headers and reorders form fields.
+        """
+        super(CallbackForm, self).__init__(*args, **kwargs)
+        # Save field order to include the headers after the method field
+        field_order = ["event", "uri", "method"]
+        # Add fields for existing headers
+        counter = 0
+        if self.instance:
+            for header in self.instance.get_headers().items():
+                field_name = "header_%s" % counter
+                self.fields[field_name] = HeaderField(
+                    initial=header, label="", required=False
+                )
+                field_order.append(field_name)
+                counter += 1
+        # And add an extra empty header field
+        field_name = "header_%s" % counter
+        self.fields[field_name] = HeaderField(label="", required=False)
+        field_order.append(field_name)
+        # Add label only to first header field
+        self.fields["header_0"].label = _("Headers (key/value)")
+        # Add remaining fields to field order and reorder
+        field_order.extend(["body", "expected_status", "enabled"])
+        self.order_fields(field_order)
+
+    def order_fields(self, field_order):
+        """Rearranges the fields according to field_order.
+
+        Copied from Django 1.9, BaseForm class.
+        """
+        if field_order is None:
+            return
+        fields = OrderedDict()
+        for key in field_order:
+            try:
+                fields[key] = self.fields.pop(key)
+            except KeyError:  # ignore unknown fields
+                pass
+        fields.update(self.fields)  # add remaining fields in original order
+        self.fields = fields
+
+    def clean(self):
+        """Formats headers inputs to save them in the Callback instance.
+
+        Checks the key and value for each header multi-field to create an OrderedDict
+        that is dumped as a string to be added to the intance's `headers` text field.
+        """
+        cleaned_data = super(CallbackForm, self).clean()
+        headers = OrderedDict()
+        counter = 0
+        field_name = "header_%s" % counter
+        while cleaned_data.get(field_name):
+            key, value = cleaned_data[field_name]
+            if key and value:
+                headers[key] = value
+            cleaned_data.pop(field_name)
+            counter += 1
+            field_name = "header_%s" % counter
+        # Fields added dinamically via JS are not included in the cleaned data.
+        # This fields are multi-fields for the headers key/vale pairs and, since
+        # they are not combined in the cleaning process, we need to look for both
+        # fields in the data QueryDict following the counter.
+        key = self.data.get("header_%s_0" % counter)
+        value = self.data.get("header_%s_1" % counter)
+        # Continue if the key and value exist in data
+        while key is not None and value is not None:
+            # But only add them to the headers if populated
+            if key and value:
+                headers[key] = value
+            counter += 1
+            key = self.data.get("header_%s_0" % counter)
+            value = self.data.get("header_%s_1" % counter)
+        cleaned_data["headers"] = json.dumps(headers) if headers else ""
+        return cleaned_data
+
+    def save(self, commit=True):
+        """Adds the formatted headers to the instance before save."""
+        callback = super(CallbackForm, self).save(commit=False)
+        callback.headers = self.cleaned_data["headers"]
+        if commit:
+            callback.save()
+        return callback
 
 
 class ReingestForm(forms.Form):
