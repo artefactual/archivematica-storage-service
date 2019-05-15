@@ -8,6 +8,7 @@ from lxml.builder import ElementMaker
 import mimetypes
 import os
 import shutil
+import subprocess
 import uuid
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -36,14 +37,22 @@ NSMAP = {
 # Compression options for packages
 COMPRESSION_7Z_BZIP = "7z with bzip"
 COMPRESSION_7Z_LZMA = "7z with lzma"
+COMPRESSION_7Z_COPY = "7z without compression"
 COMPRESSION_TAR = "tar"
 COMPRESSION_TAR_BZIP2 = "tar bz2"
+COMPRESSION_TAR_GZIP = "tar gz"
 COMPRESSION_ALGORITHMS = (
     COMPRESSION_7Z_BZIP,
     COMPRESSION_7Z_LZMA,
+    COMPRESSION_7Z_COPY,
     COMPRESSION_TAR,
     COMPRESSION_TAR_BZIP2,
+    COMPRESSION_TAR_GZIP,
 )
+
+PRONOM_7Z = "fmt/484"
+PRONOM_BZIP2 = "x-fmt/268"
+PRONOM_GZIP = "x-fmt/266"
 
 PREFIX_NS = {k: "{" + v + "}" for k, v in NSMAP.items()}
 
@@ -260,12 +269,14 @@ def mets_ss_agent(xml, digiprov_id, agent_value=None, agent_type="storage servic
 
 def get_compression(pointer_path):
     """Return the compression algorithm used to compress the package, as
-    documented in the pointer file at ``pointer_path``. Returns one of the
-    constants in ``COMPRESSION_ALGORITHMS``.
+    documented in the pointer file at ``pointer_path``.
+
+    :param pointer_path: path to xml pointer file
+    :returns: one of the constants in ``COMPRESSION_ALGORITHMS``.
     """
     doc = etree.parse(pointer_path)
     puid = doc.findtext(".//premis:formatRegistryKey", namespaces=NSMAP)
-    if puid == "fmt/484":  # 7 Zip
+    if puid == PRONOM_7Z:  # 7 Zip
         algo = doc.find(".//mets:transformFile", namespaces=NSMAP).get(
             "TRANSFORMALGORITHM"
         )
@@ -273,20 +284,271 @@ def get_compression(pointer_path):
             return COMPRESSION_7Z_BZIP
         elif algo == "lzma":
             return COMPRESSION_7Z_LZMA
+        elif algo == "copy":
+            return COMPRESSION_7Z_COPY
         else:
             LOGGER.warning(
                 "Unable to determine reingested compression"
                 " algorithm, defaulting to bzip2."
             )
             return COMPRESSION_7Z_BZIP
-    elif puid == "x-fmt/268":  # Bzipped (probably tar)
+    elif puid == PRONOM_BZIP2:  # Bzipped (probably tar)
         return COMPRESSION_TAR_BZIP2
+    elif puid == PRONOM_GZIP:
+        return COMPRESSION_TAR_GZIP
     else:
         LOGGER.warning(
             "Unable to determine reingested file format,"
             " defaulting recompression algorithm to bzip2."
         )
         return COMPRESSION_7Z_BZIP
+
+
+def get_compress_command(compression, extract_path, basename, full_path):
+    """Return command for compressing the package
+
+    :param compression: one of the constants in ``COMPRESSION_ALGORITHMS``.
+    :param extract_path: target path for the compressed file
+    :param basename: base name of the file (without extension)
+    :param full_path: Path of source files
+    :returns: (command, compressed_filename) where
+        `command` is the compression command (as a list of strings)
+        `compressed_filename` is the full path to the compressed file
+    """
+    if compression in (COMPRESSION_TAR, COMPRESSION_TAR_BZIP2, COMPRESSION_TAR_GZIP):
+        compressed_filename = os.path.join(extract_path, basename + ".tar")
+        relative_path = os.path.dirname(full_path)
+        algo = ""
+        if compression == COMPRESSION_TAR_BZIP2:
+            algo = "-j"  # Compress with bzip2
+            compressed_filename += ".bz2"
+        elif compression == COMPRESSION_TAR_GZIP:
+            algo = "-z"  # Compress with gzip
+            compressed_filename += ".gz"
+        command = [
+            "tar",
+            "c",  # Create tar
+            algo,  # Optional compression flag
+            "-C",
+            relative_path,  # Work in this directory
+            "-f",
+            compressed_filename,  # Output file
+            os.path.basename(full_path),  # Relative path to source files
+        ]
+    elif compression in (COMPRESSION_7Z_BZIP, COMPRESSION_7Z_LZMA, COMPRESSION_7Z_COPY):
+        compressed_filename = os.path.join(extract_path, basename + ".7z")
+        if compression == COMPRESSION_7Z_BZIP:
+            algo = "bzip2"
+        elif compression == COMPRESSION_7Z_LZMA:
+            algo = "lzma"
+        elif compression == COMPRESSION_7Z_COPY:
+            algo = "copy"
+        command = [
+            "7z",
+            "a",  # Add
+            "-bd",  # Disable percentage indicator
+            "-t7z",  # Type of archive
+            "-y",  # Assume Yes on all queries
+            "-m0=" + algo,  # Compression method
+            "-mtc=on",
+            "-mtm=on",
+            "-mta=on",  # Keep timestamps (create, mod, access)
+            "-mmt=on",  # Multithreaded
+            compressed_filename,  # Destination
+            full_path,  # Source
+        ]
+
+    else:
+        raise NotImplementedError(
+            _("Algorithm %(algorithm)s not implemented") % {"algorithm": compression}
+        )
+
+    command = list(filter(None, command))
+    return (command, compressed_filename)
+
+
+def get_tool_info_command(compression):
+    """Return command for outputting compression tool details
+
+    :param compression: one of the constants in ``COMPRESSION_ALGORITHMS``.
+    :returns: command in string format
+    """
+    if compression in (COMPRESSION_TAR, COMPRESSION_TAR_BZIP2, COMPRESSION_TAR_GZIP):
+        algo = {COMPRESSION_TAR_BZIP2: "-j", COMPRESSION_TAR_GZIP: "-z"}.get(
+            compression, ""
+        )
+
+        tool_info_command = (
+            'echo program="tar"\\; '
+            'algorithm="{}"\\; '
+            'version="`tar --version | grep tar`"'.format(algo)
+        )
+    elif compression in (COMPRESSION_7Z_BZIP, COMPRESSION_7Z_LZMA, COMPRESSION_7Z_COPY):
+        algo = {
+            COMPRESSION_7Z_BZIP: "bzip2",
+            COMPRESSION_7Z_LZMA: "lzma",
+            COMPRESSION_7Z_COPY: "copy",
+        }.get(compression, "")
+        tool_info_command = (
+            "#!/bin/bash\n"
+            'echo program="7z"\\; '
+            'algorithm="{}"\\; '
+            'version="`7z | grep Version`"'.format(algo)
+        )
+    else:
+        raise NotImplementedError(
+            _("Algorithm %(algorithm)s not implemented") % {"algorithm": compression}
+        )
+
+    return tool_info_command
+
+
+def get_compression_event_detail(compression):
+    """Return details of compression
+
+    :param compression: one of the constants in ``COMPRESSION_ALGORITHMS``.
+    :returns: compression details in string format
+    """
+    if compression in (COMPRESSION_7Z_BZIP, COMPRESSION_7Z_LZMA, COMPRESSION_7Z_COPY):
+        try:
+            version = [
+                line
+                for line in subprocess.check_output("7z").splitlines()
+                if "Version" in line
+            ][0]
+            event_detail = 'program="7z"; version="{}"'.format(version)
+        except (subprocess.CalledProcessError, Exception):
+            event_detail = 'program="7z"'
+    elif compression in (COMPRESSION_TAR_BZIP2, COMPRESSION_TAR, COMPRESSION_TAR_GZIP):
+        try:
+            version = subprocess.check_output(["tar", "--version"]).splitlines()[0]
+            event_detail = 'program="tar"; version="{}"'.format(version)
+        except (subprocess.CalledProcessError, Exception):
+            event_detail = 'program="tar"'
+    else:
+        LOGGER.warning(
+            "Unknown compression algorithm, cannot correctly update pointer file"
+        )
+        event_detail = _("Unknown compression")
+
+    return event_detail
+
+
+def get_compression_transforms(compression, transform_order):
+    """Get descriptions of compression transforms performed on package
+
+    :param compression: one of the constants in ``COMPRESSION_ALGORITHMS``.
+    :param int transform_order: Starting value of the transform order
+    :return: list of `etree.Element`s
+    """
+    transforms = []
+    if compression in (COMPRESSION_7Z_BZIP, COMPRESSION_7Z_LZMA, COMPRESSION_7Z_COPY):
+        if compression == COMPRESSION_7Z_BZIP:
+            algo = "bzip2"
+        elif compression == COMPRESSION_7Z_LZMA:
+            algo = "lzma"
+        elif compression == COMPRESSION_7Z_COPY:
+            algo = "copy"
+        transforms.append(
+            etree.Element(
+                PREFIX_NS["mets"] + "transformFile",
+                TRANSFORMORDER=str(transform_order),
+                TRANSFORMTYPE="decompression",
+                TRANSFORMALGORITHM=algo,
+            )
+        )
+
+    elif compression in (COMPRESSION_TAR_BZIP2, COMPRESSION_TAR):
+        if compression == COMPRESSION_TAR_BZIP2:
+            transforms.append(
+                etree.Element(
+                    PREFIX_NS["mets"] + "transformFile",
+                    TRANSFORMORDER=str(transform_order),
+                    TRANSFORMTYPE="decompression",
+                    TRANSFORMALGORITHM="bzip2",
+                )
+            )
+            transform_order += 1
+
+        transforms.append(
+            etree.Element(
+                PREFIX_NS["mets"] + "transformFile",
+                TRANSFORMORDER=str(transform_order),
+                TRANSFORMTYPE="decompression",
+                TRANSFORMALGORITHM="tar",
+            )
+        )
+
+    elif compression == COMPRESSION_TAR_GZIP:
+        transforms.append(
+            etree.Element(
+                PREFIX_NS["mets"] + "transformFile",
+                TRANSFORMORDER=str(transform_order),
+                TRANSFORMTYPE="decompression",
+                TRANSFORMALGORITHM="gzip",
+            )
+        )
+        transform_order += 1
+
+        transforms.append(
+            etree.Element(
+                PREFIX_NS["mets"] + "transformFile",
+                TRANSFORMORDER=str(transform_order),
+                TRANSFORMTYPE="decompression",
+                TRANSFORMALGORITHM="tar",
+            )
+        )
+
+    return transforms
+
+
+def get_format_info(compression):
+    """Get info about file format for the given compression method
+
+    :param compression: one of the constants in ``COMPRESSION_ALGORITHMS``.
+    :param int transform_order: Starting value of the transform order
+    :return: dict describing file format
+        `name`: user friendly name of the format
+        `registry_name`: name of registry to which `registry_key` refers (currently always `PRONOM`)
+        `registry_key': key of format in the registry
+        `program_name`: name of program which created the format
+        `program_version`: string describing version of the program
+    """
+    if compression in (COMPRESSION_7Z_BZIP, COMPRESSION_7Z_LZMA, COMPRESSION_7Z_COPY):
+        version = [
+            line
+            for line in subprocess.check_output("7z").splitlines()
+            if "Version" in line
+        ][0]
+        format_info = {
+            "name": "7Zip format",
+            "registry_name": "PRONOM",
+            "registry_key": PRONOM_7Z,
+            "program_name": "7-Zip",
+            "program_version": version,
+        }
+
+    elif compression in (COMPRESSION_TAR_BZIP2, COMPRESSION_TAR):
+        version = subprocess.check_output(["tar", "--version"]).splitlines()[0]
+        format_info = {
+            "name": "BZIP2 Compressed Archive",
+            "registry_name": "PRONOM",
+            "registry_key": PRONOM_BZIP2,
+            "program_name": "tar",
+            "program_version": version,
+        }
+
+    elif compression == COMPRESSION_TAR_GZIP:
+        version = subprocess.check_output(["tar", "--version"]).splitlines()[0]
+        format_info = {
+            "name": "GZIP Compressed Archive",
+            "registry_name": "PRONOM",
+            "registry_key": PRONOM_GZIP,
+            "program_name": "tar",
+            "program_version": version,
+        }
+
+    return format_info
 
 
 # ########### OTHER ############
