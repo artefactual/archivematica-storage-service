@@ -357,6 +357,27 @@ class TestPackage(TestCase):
             body = '{"download_url": "http://ss.com/api/v2/file/%s/download/"}' % uuid
             mocked_execute.assert_called_with(url, body)
 
+    def test_replicate_aip(self):
+        space_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="space")
+        replication_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="replication")
+        aip = models.Package.objects.get(uuid="0d4e739b-bf60-4b87-bc20-67a379b28cea")
+        aip.current_location.space.staging_path = space_dir
+        aip.current_location.space.save()
+        aip.current_location.replicators.create(
+            space=aip.current_location.space,
+            relative_path=replication_dir,
+            purpose=models.Location.REPLICATOR,
+        )
+
+        aip.create_replicas()
+        replica = aip.replicated_package
+
+        assert replica is not None
+        # The relationship is a little bit broken here; one would think that the
+        # _original_ AIP should have replicas, and the replicated AIP should not.
+        assert aip.replicas.count() == 0
+        assert replica.replicas.count() == 1
+
 
 class TestTransferPackage(TestCase):
     """Test integration of transfer reading and indexing.
