@@ -1192,7 +1192,7 @@ class Package(models.Model):
         replication_event = self.create_replication_event(
             replica_package, event_uuid=replication_event_uuid, agents=ss_agents
         )
-        old_premis_events += (replication_event,)
+        old_premis_events.append(replication_event)
         replication_relationship = _get_replication_derivation_relationship(
             replica_package.uuid, replication_event_uuid
         )
@@ -1206,7 +1206,7 @@ class Package(models.Model):
         )
         for ss_agent in ss_agents:
             if ss_agent not in old_premis_agents:
-                old_premis_agents += (ss_agent,)
+                old_premis_agents.append(ss_agent)
         return self.create_pointer_file(
             new_premis_object,
             old_premis_events,
