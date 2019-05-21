@@ -9,3 +9,4 @@ pytest-mock>=1,<2
 tox
 vcrpy>=1.0.0
 ipdb
+pip-tools==3.7.0
