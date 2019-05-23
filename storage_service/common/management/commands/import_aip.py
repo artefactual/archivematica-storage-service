@@ -399,9 +399,9 @@ def import_aip(
     unix_owner,
 ):
     confirm_aip_exists(aip_path)
-    aip_path = decompress(aip_path, decompress_source)
-    validate(aip_path)
-    aip_mets_path = get_aip_mets_path(aip_path)
+    dec_aip_path = decompress(aip_path, decompress_source)
+    validate(dec_aip_path)
+    aip_mets_path = get_aip_mets_path(dec_aip_path)
     aip_uuid = get_aip_uuid(aip_mets_path)
     check_if_aip_already_exists(aip_uuid)
     local_as_location, final_as_location = get_aip_storage_locations(
@@ -411,13 +411,13 @@ def import_aip(
         uuid=aip_uuid,
         package_type="AIP",
         status="UPLOADED",
-        size=utils.recalculate_size(aip_path),
+        size=utils.recalculate_size(dec_aip_path),
         origin_pipeline=get_pipeline(adoptive_pipeline_uuid),
         current_location=local_as_location,
-        current_path=os.path.basename(os.path.normpath(aip_path)),
+        current_path=os.path.basename(os.path.normpath(dec_aip_path)),
     )
     copy_aip_to_aip_storage_location(
-        aip_model_inst, aip_path, local_as_location, unix_owner
+        aip_model_inst, dec_aip_path, local_as_location, unix_owner
     )
     premis_events = premis_agents = None
     if compression_algorithm:
@@ -444,3 +444,6 @@ def import_aip(
         )
     )
     print(okgreen("Successfully imported AIP {}.".format(aip_uuid)))
+    # Delete temp dir if imported AIP was decompressed for processing
+    if dec_aip_path != aip_path:
+        shutil.rmtree(os.path.split(dec_aip_path)[0])
