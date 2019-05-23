@@ -60,3 +60,9 @@ CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"
 #     'debug_toolbar.middleware.DebugToolbarMiddleware',
 # )
 # ########## END TOOLBAR CONFIGURATION
+
+######### LDAP CONFIGURATION #########
+if LDAP_AUTHENTICATION and DEBUG:
+    # Don't validate certs if debug is on
+    AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_REQUIRE_CERT] = ldap.OPT_X_TLS_NEVER
+######### END LDAP CONFIGURATION #########

@@ -12,6 +12,12 @@ from sys import path
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import ugettext_lazy as _
 
+try:
+    import ldap
+    from django_auth_ldap import config as ldap_config
+except ImportError:
+    ldap, ldap_config = None, None
+
 
 def get_env_variable(var_name):
     """ Get the environment variable or return exception """
@@ -312,6 +318,78 @@ ALLOW_USER_EDITS = True
 
 def is_true(env_str):
     return env_str.lower() in ["true", "yes", "on", "1"]
+
+
+######### LDAP CONFIGURATION #########
+LDAP_AUTHENTICATION = is_true(environ.get("SS_LDAP_AUTHENTICATION", ""))
+if LDAP_AUTHENTICATION:
+    if ldap is None or ldap_config is None:
+        raise ImproperlyConfigured(
+            "python-ldap and django-auth-ldap must be installed to use LDAP authentication."
+        )
+
+    # LDAP Backend should come before ModelBackend
+    AUTHENTICATION_BACKENDS.insert(0, "django_auth_ldap.backend.LDAPBackend")
+
+    AUTH_LDAP_SERVER_URI = environ.get("AUTH_LDAP_SERVER_URI", "ldap://localhost")
+    AUTH_LDAP_BIND_DN = environ.get("AUTH_LDAP_BIND_DN", "")
+    AUTH_LDAP_BIND_PASSWORD = environ.get("AUTH_LDAP_BIND_PASSWORD", "")
+
+    if "AUTH_LDAP_USER_SEARCH_BASE_DN" in environ:
+        AUTH_LDAP_USER_SEARCH = ldap_config.LDAPSearch(
+            environ.get("AUTH_LDAP_USER_SEARCH_BASE_DN"),
+            ldap.SCOPE_SUBTREE,
+            environ.get("AUTH_LDAP_USER_SEARCH_BASE_FILTERSTR", "(uid=%(user)s)"),
+        )
+    AUTH_LDAP_USER_DN_TEMPLATE = environ.get("AUTH_LDAP_USER_DN_TEMPLATE", None)
+    AUTH_LDAP_USER_ATTR_MAP = {
+        "first_name": "givenName",
+        "last_name": "sn",
+        "email": "mail",
+    }
+
+    AUTH_LDAP_USER_FLAGS_BY_GROUP = {}
+    if "AUTH_LDAP_GROUP_IS_ACTIVE" in environ:
+        AUTH_LDAP_USER_FLAGS_BY_GROUP["is_active"] = environ.get(
+            "AUTH_LDAP_GROUP_IS_ACTIVE"
+        )
+    if "AUTH_LDAP_GROUP_IS_STAFF" in environ:
+        AUTH_LDAP_USER_FLAGS_BY_GROUP["is_staff"] = environ.get(
+            "AUTH_LDAP_GROUP_IS_STAFF"
+        )
+    if "AUTH_LDAP_GROUP_IS_SUPERUSER" in environ:
+        AUTH_LDAP_USER_FLAGS_BY_GROUP["is_superuser"] = environ.get(
+            "AUTH_LDAP_GROUP_IS_SUPERUSER"
+        )
+
+    if "AUTH_LDAP_GROUP_SEARCH_BASE_DN" in environ:
+        AUTH_LDAP_GROUP_SEARCH = ldap_config.LDAPSearch(
+            base_dn=environ.get("AUTH_LDAP_GROUP_SEARCH_BASE_DN", ""),
+            scope=ldap.SCOPE_SUBTREE,
+            filterstr=environ.get("AUTH_LDAP_GROUP_SEARCH_FILTERSTR", ""),
+        )
+
+    # https://pythonhosted.org/django-auth-ldap/groups.html#types-of-groups
+    AUTH_LDAP_GROUP_TYPE = ldap_config.ActiveDirectoryGroupType()
+
+    AUTH_LDAP_REQUIRE_GROUP = environ.get("AUTH_LDAP_REQUIRE_GROUP", None)
+    AUTH_LDAP_DENY_GROUP = environ.get("AUTH_LDAP_DENY_GROUP", None)
+
+    AUTH_LDAP_FIND_GROUP_PERMS = is_true(
+        environ.get("AUTH_LDAP_FIND_GROUP_PERMS", "FALSE")
+    )
+    AUTH_LDAP_CACHE_GROUPS = is_true(environ.get("AUTH_LDAP_CACHE_GROUPS", "FALSE"))
+    try:
+        AUTH_LDAP_GROUP_CACHE_TIMEOUT = int(environ.get("AUTH_LDAP_DENY_GROUP", ""))
+    except ValueError:
+        AUTH_LDAP_GROUP_CACHE_TIMEOUT = None
+
+    # Non-configurable sane defaults
+    AUTH_LDAP_START_TLS = True
+    AUTH_LDAP_ALWAYS_UPDATE_USER = True
+    AUTH_LDAP_GLOBAL_OPTIONS = {}
+
+######### END LDAP CONFIGURATION #########
 
 
 SHIBBOLETH_AUTHENTICATION = is_true(environ.get("SS_SHIBBOLETH_AUTHENTICATION", ""))
