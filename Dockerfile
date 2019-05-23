@@ -21,6 +21,8 @@ RUN set -ex \
 		unar \
 		locales \
 		locales-all \
+		libldap2-dev \
+		libsasl2-dev \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Set the locale
