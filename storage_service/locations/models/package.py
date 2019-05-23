@@ -138,10 +138,6 @@ class Package(models.Model):
         help_text=_("For storing flexible, often Space-specific, attributes"),
     )
 
-    # Temporary attributes to track path on locally accessible filesystem
-    local_path = None
-    local_path_location = None
-
     PACKAGE_TYPE_CAN_DELETE = (AIP, AIC, TRANSFER)
     PACKAGE_TYPE_CAN_DELETE_DIRECTLY = (DIP,)
     PACKAGE_TYPE_CAN_EXTRACT = (AIP, AIC)
@@ -159,6 +155,14 @@ class Package(models.Model):
     class Meta:
         verbose_name = _("Package")
         app_label = "locations"
+
+    def __init__(self, *args, **kwargs):
+        super(Package, self).__init__(*args, **kwargs)
+
+        # Temporary attributes to track path on locally accessible filesystem
+        self.local_path = None
+        self.local_path_location = None
+        self.origin_location = None
 
     def __unicode__(self):
         return u"{uuid}: {path}".format(uuid=self.uuid, path=self.full_path)
@@ -696,10 +700,15 @@ class Package(models.Model):
             package_type = self.package_type
         # The package hasn't been moved yet, test for it being a file on the
         # originating Space.
-        try:
-            isfile = self.origin_location.space.isfile(package_full_path)
-        except NotImplementedError:
+        isfile = None
+        if self.origin_location is not None:
+            try:
+                isfile = self.origin_location.space.isfile(package_full_path)
+            except NotImplementedError:
+                pass
+        if isfile is None:
             isfile = os.path.isfile(package_full_path)
+
         isaip = package_type in (Package.AIP, Package.AIC)
         ret = isfile and isaip
         if not ret:
@@ -1188,7 +1197,7 @@ class Package(models.Model):
             replica_package.uuid, replication_event_uuid
         )
         new_relationships = old_premis_object.findall("relationship")
-        new_relationships.append(replication_relationship)
+        new_relationships += (replication_relationship,)
         new_premis_object = premisrw.PREMISObject(
             xsi_type=old_premis_object.xsi_type,
             object_identifier=old_premis_object.find("object_identifier"),
