@@ -40,10 +40,12 @@ def boto_exception(fn):
 class S3(models.Model):
     space = models.OneToOneField("Space", to_field="uuid")
     access_key_id = models.CharField(
-        max_length=64, verbose_name=_("Access Key ID to authenticate")
+        max_length=64, blank=True, verbose_name=_("Access Key ID to authenticate")
     )
     secret_access_key = models.CharField(
-        max_length=256, verbose_name=_("Secret Access Key to authenticate with")
+        max_length=256,
+        blank=True,
+        verbose_name=_("Secret Access Key to authenticate with"),
     )
     endpoint_url = models.CharField(
         max_length=2048,
@@ -68,33 +70,22 @@ class S3(models.Model):
 
     ALLOWED_LOCATION_PURPOSE = [Location.AIP_STORAGE, Location.REPLICATOR]
 
-    def __init__(self, *args, **kwargs):
-        super(S3, self).__init__(*args, **kwargs)
-        self._client = None
-        self._resource = None
-
-    @property
-    def client(self):
-        if self._client is None:
-            self._client = boto3.client(
-                service_name="s3",
-                endpoint_url=self.endpoint_url,
-                aws_access_key_id=self.access_key_id,
-                aws_secret_access_key=self.secret_access_key,
-                region_name=self.region,
-            )
-        return self._client
-
     @property
     def resource(self):
-        if self._resource is None:
-            self._resource = boto3.resource(
-                service_name="s3",
-                endpoint_url=self.endpoint_url,
-                aws_access_key_id=self.access_key_id,
-                aws_secret_access_key=self.secret_access_key,
-                region_name=self.region,
-            )
+        if not hasattr(self, "_resource"):
+            boto_args = {
+                "service_name": "s3",
+                "endpoint_url": self.endpoint_url,
+                "region_name": self.region,
+            }
+            if self.access_key_id and self.secret_access_key:
+                boto_args.update(
+                    aws_access_key_id=self.access_key_id,
+                    aws_secret_access_key=self.secret_access_key,
+                )
+
+            self._resource = boto3.resource(**boto_args)
+
         return self._resource
 
     @boto_exception
@@ -114,14 +105,16 @@ class S3(models.Model):
         """
         LOGGER.debug("Test the S3 bucket '%s' exists", self.bucket_name)
         try:
-            loc_info = self.client.get_bucket_location(Bucket=self.bucket_name)
+            loc_info = self.resource.meta.client.get_bucket_location(
+                Bucket=self.bucket_name
+            )
             LOGGER.debug("S3 bucket's response: %s", loc_info)
-        except self.client.exceptions.ClientError as err:
+        except botocore.exceptions.ClientError as err:
             error_code = err.response["Error"]["Code"]
             if error_code != "NoSuchBucket":
                 raise StorageException(err)
-            LOGGER.info("Creating S3 bucket '%s'", self.bucket_name)
-            self.client.create_bucket(
+            LOGGER.info("Creating S3 bucket '%s'", self._bucket_name())
+            self.resource.create_bucket(
                 Bucket=self.bucket_name,
                 CreateBucketConfiguration={"LocationConstraint": self.region},
             )
