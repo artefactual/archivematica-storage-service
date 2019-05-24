@@ -41,7 +41,7 @@ class TestS3Storage(TestCase):
         client.head_bucket(Bucket="test-bucket")
 
     def test_ensure_bucket_exists_get_location_fails(self):
-        self.s3_object.client.get_bucket_location = mock.Mock(
+        self.s3_object.resource.meta.client.get_bucket_location = mock.Mock(
             side_effect=botocore.exceptions.BotoCoreError
         )
 
@@ -49,10 +49,10 @@ class TestS3Storage(TestCase):
             self.s3_object._ensure_bucket_exists()
 
     def test_ensure_bucket_exists_creation_fails(self):
-        self.s3_object.client.get_bucket_location = mock.Mock(
+        self.s3_object.resource.meta.client.get_bucket_location = mock.Mock(
             side_effect=botocore.exceptions.BotoCoreError
         )
-        self.s3_object.client.create_bucket = mock.Mock(
+        self.s3_object.resource.meta.client.create_bucket = mock.Mock(
             side_effect=botocore.exceptions.BotoCoreError
         )
 
