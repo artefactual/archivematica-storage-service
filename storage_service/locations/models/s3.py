@@ -68,7 +68,11 @@ class S3(models.Model):
         verbose_name = _("S3")
         app_label = "locations"
 
-    ALLOWED_LOCATION_PURPOSE = [Location.AIP_STORAGE, Location.REPLICATOR]
+    ALLOWED_LOCATION_PURPOSE = [
+        Location.AIP_STORAGE,
+        Location.REPLICATOR,
+        Location.TRANSFER_SOURCE,
+    ]
 
     @property
     def resource(self):
@@ -124,6 +128,7 @@ class S3(models.Model):
         return self.bucket or self.space_id
 
     def browse(self, path):
+        LOGGER.debug("Browsing s3://%s/%s on S3 storage", self.bucket_name, path)
         path = path.lstrip("/")
 
         # We need a trailing slash on non-empty prefixes because a path like:
@@ -153,7 +158,7 @@ class S3(models.Model):
                 if directory_name:
                     directories.add(directory_name)
                     entries.add(directory_name)
-            else:
+            elif relative_key != "":
                 entries.add(relative_key)
                 properties[relative_key] = {
                     "size": objectSummary.size,

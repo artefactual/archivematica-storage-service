@@ -1,11 +1,18 @@
+import os
+
 import botocore
 import boto3
 import mock
 import pytest
+
 from django.test import TestCase
 from moto import mock_s3
 
 from locations import models
+
+
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
 
 
 @mock_s3
@@ -58,3 +65,24 @@ class TestS3Storage(TestCase):
 
         with pytest.raises(models.StorageException):
             self.s3_object._ensure_bucket_exists()
+
+    def test_browse(self):
+        client = boto3.client("s3", region_name="us-east-1")
+        client.create_bucket(Bucket="test-bucket")
+
+        client.upload_file(
+            os.path.join(FIXTURES_DIR, "working_bag.zip"),
+            "test-bucket",
+            "subdir/bag.zip",
+        )
+
+        contents = self.s3_object.browse("/")
+        assert "subdir" in contents["entries"]
+        assert "subdir" in contents["directories"]
+
+        contents = self.s3_object.browse("/subdir")
+        assert "bag.zip" in contents["entries"]
+        properties = contents["properties"]["bag.zip"]
+        assert "timestamp" in properties
+        assert properties["e_tag"] == '"e917f867114dedf9bdb430e838da647d"'
+        assert properties["size"] == 1564
