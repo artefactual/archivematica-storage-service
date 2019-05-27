@@ -3,6 +3,7 @@ from __future__ import absolute_import
 # stdlib, alphabetical
 from collections import namedtuple
 import codecs
+import copy
 import distutils.dir_util
 import json
 import logging
@@ -531,7 +532,7 @@ class Package(models.Model):
         success, failures, message, __ = self.check_fixity(force_local=True)
         return success, failures, message
 
-    def replicate(self, replicator_location_uuid):
+    def replicate(self, replicator_location):
         """Replicate this package in the database and on disk by
         1. creating a new ``Package`` model instance that references this one in
            its ``replicated_package`` attribute,
@@ -542,8 +543,6 @@ class Package(models.Model):
         4. updating the pointer file for the replicated AIP, which encodes the
            replication event.
         """
-        self_uuid = self.uuid
-        replicator_location = Location.objects.get(uuid=replicator_location_uuid)
         # Replicandum is the package to be replicated, i.e., ``self``
         replicandum_location = self.current_location
         replicandum_path = self.current_path
@@ -551,14 +550,10 @@ class Package(models.Model):
         LOGGER.info(
             "Replicating package %s to replicator location %s",
             replicandum_uuid,
-            replicator_location_uuid,
+            replicator_location.uuid,
         )
-        replica_package = _replicate_package_mdl_inst(self)
 
-        # It is necessary to re-retrieve ``self`` here because otherwise the
-        # package model instance replication will cause ``self`` to reference
-        # the replica.
-        self = Package.objects.get(uuid=self_uuid)
+        replica_package = _replicate_package_mdl_inst(self)
 
         # Remove the /uuid/path from the replica's current_path and replace the
         # old UUID in the basename with the new UUID.
@@ -1414,7 +1409,7 @@ class Package(models.Model):
         """
         replicator_locs = self.current_location.replicators.all()
         for replicator_loc in replicator_locs:
-            self.replicate(replicator_loc.uuid)
+            self.replicate(replicator_loc)
 
     def run_post_store_callbacks(self):
         """Checks if post store callbacks exist and executes them.
@@ -2984,18 +2979,17 @@ def _get_compression_details_from_premis_events(premis_events, aip_uuid):
     return compression_event.compression_details
 
 
-def _replicate_package_mdl_inst(package_mdl):
+def _replicate_package_mdl_inst(package):
     """Create a new Django ``Package`` instance that is exactly like
     ``package_mdl`` but which has a new primary key and UUID, and references
     ``package_mdl`` as its ``replicated_package``.
     """
-    package_uuid = package_mdl.uuid
-    replica_package = package_mdl
-    # After setting ``pk`` to ``None``, ``save()`` will create a new instance/db row
+    replica_package = copy.deepcopy(package)
     replica_package.pk = None
-    replica_package.uuid = None  # will trigger new UUID generation
-    replica_package.replicated_package_id = package_uuid
-    replica_package.save()
+    replica_package.uuid = None
+    replica_package.replicated_package = package
+    replica_package.save()  # Generate a new id and UUID
+
     return replica_package
 
 
