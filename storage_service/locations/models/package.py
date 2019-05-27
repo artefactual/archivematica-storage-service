@@ -1214,14 +1214,22 @@ class Package(models.Model):
         replication_relationship = premis.create_replication_derivation_relationship(
             replica_package.uuid, replication_event_uuid
         )
-        new_relationships = old_premis_object.findall("relationship")
-        new_relationships += (replication_relationship,)
-        new_premis_object = premisrw.PREMISObject(
-            xsi_type=old_premis_object.xsi_type,
-            object_identifier=old_premis_object.find("object_identifier"),
-            object_characteristics=old_premis_object.find("object_characteristics"),
-            relationship=new_relationships,
+        new_relationships = [
+            relationship.data
+            for relationship in old_premis_object.findall("relationship")
+        ]
+        new_relationships.append(replication_relationship)
+        new_premis_meta = premisrw.PREMIS_META.copy()
+        new_premis_meta["xsi:type"] = old_premis_object.attributes.get(
+            "xsi_type", "premis:file"
         )
+        new_premis_data = (
+            "object",
+            new_premis_meta,
+            old_premis_object.find("object_identifier"),
+            old_premis_object.find("object_characteristics"),
+        ) + tuple(new_relationships)
+        new_premis_object = premisrw.PREMISObject(data=new_premis_data)
         for ss_agent in ss_agents:
             if ss_agent not in old_premis_agents:
                 old_premis_agents.append(ss_agent)
