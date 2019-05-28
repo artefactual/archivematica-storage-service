@@ -16,6 +16,7 @@ import threading
 import time
 
 from django.utils import timezone
+from gevent.threadpool import ThreadPoolExecutor
 
 from async import Async  # noqa
 
@@ -168,7 +169,7 @@ class AsyncManager(object):
         return async_task
 
 
-# Start our watchdog thread.
-AsyncManager.watchdog = threading.Thread(target=AsyncManager._watchdog)
-AsyncManager.watchdog.daemon = True
-AsyncManager.watchdog.start()
+# Start our watchdog thread using ``gevent.threadpool.ThreadPoolExecutor``
+# because it uses native threads.
+pool = ThreadPoolExecutor(max_workers=1)
+pool.submit(AsyncManager._watchdog)
