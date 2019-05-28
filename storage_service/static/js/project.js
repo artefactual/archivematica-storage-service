@@ -27,8 +27,8 @@ $(document).ready(function() {
     }
   });
 
-  $("a.request-delete").click(function() {
-    var self = $(this);
+  $("body").on("click", "a.request-delete", function(event) {
+    var self = $(event.target);
     var uuid = self.data('package-uuid');
     var pipeline = self.data('package-pipeline');
     var packageType = self.data('package-type');
@@ -73,17 +73,15 @@ $(document).ready(function() {
   // allowed to submit the form instead.
   // Used in `packages_table.html` (delete DIP functionality).
   // Currently limited to one form per page, see jQuery.each for more.
-  $("form.submit-confirm").each(function(index, target) {
-    var $form = $(target);
+  $("body").on("click", "form.submit-confirm button[type=submit]", function(event) {
+    var $button = $(event.target);
+    var $form = $button.closest('form');
     var $modal = $form.find(".confirm-modal");
-    $form.on("click", "button[type=submit]", function(event) {
-      var $button = $(event.target);
-      if ($button.parents(".confirm-modal").length) {
-        return true;
-      }
-      event.preventDefault();
-      $modal.modal("show");
-    });
+    if ($button.parents(".confirm-modal").length) {
+      return true;
+    }
+    event.preventDefault();
+    $modal.modal("show");
   });
 
   /***************
