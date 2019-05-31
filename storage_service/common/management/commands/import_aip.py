@@ -175,33 +175,31 @@ def tree(path):
             print(okgreen("{}{}".format(subindent, f)))
 
 
-def decompress(aip_path, decompress_source):
+def decompress(aip_path, decompress_source, temp_dir):
     if decompress_source and is_compressed(aip_path):
-        return _decompress(aip_path)
+        return _decompress(aip_path, temp_dir)
     return aip_path
 
 
-def _decompress(aip_path):
+def _decompress(aip_path, temp_dir):
     is_tar_gz = aip_path.endswith(".tar.gz")
     is_7z = aip_path.endswith(".7z")
     if not (is_tar_gz or is_7z):
         raise ImportAIPException("Unable to decompress the AIP at {}".format(aip_path))
     if is_tar_gz:
-        return _decompress_tar_gz(aip_path)
+        return _decompress_tar_gz(aip_path, temp_dir)
     if is_7z:
-        return _decompress_7z(aip_path)
+        return _decompress_7z(aip_path, temp_dir)
 
 
-def _decompress_tar_gz(aip_path):
-    temp_dir = tempfile.mkdtemp()
+def _decompress_tar_gz(aip_path, temp_dir):
     with tarfile.open(aip_path) as tar:
         aip_root_dir = os.path.commonprefix(tar.getnames())
         tar.extractall(path=temp_dir)
     return os.path.join(temp_dir, aip_root_dir)
 
 
-def _decompress_7z(aip_path):
-    temp_dir = tempfile.mkdtemp()
+def _decompress_7z(aip_path, temp_dir):
     cmd = shlex.split("7z x {} -o{}".format(aip_path, temp_dir))
     subprocess.check_output(cmd)
     return os.path.join(temp_dir, os.listdir(temp_dir)[0])
@@ -399,7 +397,8 @@ def import_aip(
     unix_owner,
 ):
     confirm_aip_exists(aip_path)
-    aip_path = decompress(aip_path, decompress_source)
+    temp_dir = tempfile.mkdtemp()
+    aip_path = decompress(aip_path, decompress_source, temp_dir)
     validate(aip_path)
     aip_mets_path = get_aip_mets_path(aip_path)
     aip_uuid = get_aip_uuid(aip_mets_path)
@@ -433,6 +432,8 @@ def import_aip(
         premis_events=premis_events,
         premis_agents=premis_agents,
     )
+    shutil.rmtree(temp_dir)
+
     print(
         okgreen(
             "Path: {}.".format(
