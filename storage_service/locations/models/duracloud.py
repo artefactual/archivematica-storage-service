@@ -61,7 +61,15 @@ class Duracloud(models.Model):
     ]
 
     MANIFEST_SUFFIX = ".dura-manifest"
-    CHUNK_SIZE = 1 * 1024 * 1024 * 1024  # 1 GB
+
+    # DuraCloud client tools need to handle chunking and stitching contents.
+    # This may change in the future, see https://jira.duraspace.org/browse/DURACLOUD-922 for more.
+    #
+    # DuraCloud's default is 1 GB (1,000,000,000 bytes).
+    CHUNK_SIZE = 10 ** 9
+
+    # Size of chunks when reading files from disk to be uploaded - 1 MB (1,000,000 bytes).
+    BUFFER_SIZE = 10 ** 6
 
     def __init__(self, *args, **kwargs):
         super(Duracloud, self).__init__(*args, **kwargs)
@@ -306,16 +314,15 @@ class Duracloud(models.Model):
 
     def _process_chunk(self, f, chunk_path):
         bytes_read = 0
-        bytes_to_read = 1024 * 1024  # 1MB
 
         with open(chunk_path, "w") as fchunk:
             while bytes_read < self.CHUNK_SIZE:
-                data = f.read(bytes_to_read)
+                data = f.read(self.BUFFER_SIZE)
                 fchunk.write(data)
 
                 length = len(data)
 
-                if length < bytes_to_read:
+                if length < self.BUFFER_SIZE:
                     raise StopIteration(_("End of file reached"))
                 else:
                     bytes_read += length
@@ -345,7 +352,9 @@ class Duracloud(models.Model):
             #     <md5>9497f70a1a17943ddfcbed567538900d</md5>
             #   </sourceContent>
             # </header>
-            relative_path = urllib.unquote(url.replace(self.duraspace_url, "", 1))
+            relative_path = urllib.unquote(
+                url.replace(self.duraspace_url, "", 1)
+            ).lstrip("/")
             LOGGER.debug("File name: %s", relative_path)
             checksum = utils.generate_checksum(upload_file, "md5")
             LOGGER.debug("Checksum for %s: %s", upload_file, checksum.hexdigest())
@@ -385,7 +394,9 @@ class Duracloud(models.Model):
                     #   <md5>ddbb227beaac5a9dc34eb49608997abf</md5>
                     # </chunk>
                     checksum = utils.generate_checksum(chunk_path)
-                    chunk_e = etree.SubElement(chunks, "chunk", chunkId=chunkid)
+                    chunk_e = etree.SubElement(
+                        chunks, "chunk", chunkId=chunkid, index=str(i)
+                    )
                     etree.SubElement(chunk_e, "byteSize").text = str(
                         os.path.getsize(chunk_path)
                     )
