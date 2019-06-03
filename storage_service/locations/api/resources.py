@@ -5,6 +5,7 @@
 import json
 import logging
 import os
+import pprint
 import re
 import shutil
 import urllib
@@ -1659,11 +1660,15 @@ class PackageResource(ModelResource):
     def _attempt_package_request_event(
         self, package, request_info, event_type, event_status
     ):
-
-        import pprint
-
-        LOGGER.info("PACKAGE DELETE REQUEST:")
-        LOGGER.info(pprint.pformat(request_info))
+        """Generic package request handler, e.g. package recovery: RECOVER_REQ,
+        or package deletion: DEL_REQ.
+        """
+        LOGGER.info(
+            "Package event: '{}' requested, with package status: '{}'".format(
+                event_type, event_status
+            )
+        )
+        LOGGER.debug(pprint.pformat(request_info))
 
         pipeline = Pipeline.objects.get(uuid=request_info["pipeline"])
         request_description = event_type.replace("_", " ").lower()
@@ -1684,11 +1689,6 @@ class PackageResource(ModelResource):
                 store_data=package.status,
             )
             request_event.save()
-
-            # Update package status
-            package.status = event_status
-            package.save()
-
             response = {
                 "message": _("%(event_type)s request created successfully.")
                 % {"event_type": request_description.title()},

@@ -3,6 +3,7 @@ from __future__ import absolute_import
 # stdlib, alphabetical
 import logging
 import os
+import pprint
 
 # Core Django, alphabetical
 from django.db import models
@@ -128,12 +129,30 @@ class S3(models.Model):
         }
 
     def delete_path(self, delete_path):
-        objects = self.resource.Bucket(self._bucket_name()).objects.filter(
+        """Delete an object from an S3 bucket. We assume an object exists, if
+        it doesn't then the generator returned by the S3 library (Boto3) cannot
+        be iterated, and we raise a StorageException.
+        """
+        if delete_path.startswith(os.sep):
+            LOGGER.info(
+                "S3 path to delete {} begins with {}; removing from path prior to deletion".format(
+                    delete_path, os.sep
+                )
+            )
+            delete_path = delete_path.lstrip(os.sep)
+        obj = self.resource.Bucket(self._bucket_name()).objects.filter(
             Prefix=delete_path
         )
-
-        for objectSummary in objects:
-            objectSummary.delete()
+        items = False
+        for object_summary in obj:
+            items = True
+            resp = object_summary.delete()
+            LOGGER.debug("S3 response when attempting to delete:")
+            LOGGER.debug(pprint.pformat(resp))
+        if not items:
+            err_str = "No packages found in S3 at: {}".format(delete_path)
+            LOGGER.warning(err_str)
+            raise StorageException(err_str)
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
         self._ensure_bucket_exists()

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import absolute_import
 
 # stdlib, alphabetical
@@ -1935,10 +1936,10 @@ class Package(models.Model):
                 error = lom._delete_update_lom(self, delete_lom_ids)
         try:
             self.current_location.space.delete_path(self.full_path)
-        except Exception as e:
-            error = e.message
-
-        # Remove pointer file, and the UUID quad directories if they're empty
+        except (StorageException, NotImplementedError, ValueError) as err:
+            return False, err
+        # If deleted correctly, remove pointer file, and the UUID quad
+        # directories if they're empty.
         pointer_path = self.full_pointer_file_path
         if pointer_path:
             try:
@@ -1954,8 +1955,6 @@ class Package(models.Model):
                 os.path.dirname(self.pointer_file_path),
                 base=self.pointer_file_location.full_path,
             )
-
-        self.status = self.DELETED
         self.save()
         return True, error
 

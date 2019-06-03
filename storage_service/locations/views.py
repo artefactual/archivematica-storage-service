@@ -230,10 +230,11 @@ def _handle_package_request(request, config, view_name):
                 event = req.form.save()
                 event.status_reason = req.form.cleaned_data["status_reason"]
                 event.admin_id = auth.get_user(request)
-
                 # Handle administrator decision and optionally notify remote REST endpoint
                 if "reject" in request.POST:
                     event.status = Event.REJECTED
+                    # Request is rejected so the package status set back to
+                    # what it was stored as previously.
                     event.package.status = event.store_data
                     notification_message = _handle_package_request_remote_result_notification(
                         config, event, False
@@ -243,7 +244,6 @@ def _handle_package_request(request, config, view_name):
                     messages.success(request, config.reject_message)
                 elif "approve" in request.POST:
                     event.status = Event.APPROVED
-                    event.package.status = config.approved_status
                     success, err_msg = config.execution_logic(event.package)
                     if not success:
                         error_message = "{}: {}. {}".format(
@@ -260,6 +260,9 @@ def _handle_package_request(request, config, view_name):
                             error_message += " " + notification_message
                         messages.error(request, error_message)
                     else:
+                        # Package deletion was a success so update the package
+                        # status per the event.
+                        event.package.status = config.approved_status
                         approval_message = _("Request approved: %(message)s") % {
                             "message": config.execution_success_message
                         }
@@ -271,7 +274,6 @@ def _handle_package_request(request, config, view_name):
                         messages.success(request, approval_message)
                         if err_msg:
                             messages.info(request, err_msg)
-
                 event.save()
                 event.package.save()
                 return redirect(view_name)
