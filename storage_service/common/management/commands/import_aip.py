@@ -63,7 +63,7 @@ from django.db.utils import IntegrityError
 from django.utils.six.moves import input
 
 from administration.models import Settings
-from common import utils
+from common import premis, utils
 from locations import models
 
 
@@ -360,7 +360,7 @@ def compress(aip_model_inst, compression_algorithm):
     """Use the Package model's compress_package method to compress the AIP
     being imported, update the Package model's ``size`` attribute, retrieve
     PREMIS agents and event for the compression (using the package model's
-    ``get_premis_aip_compression_event`` method) and return a 3-tuple:
+    ``create_premis_aip_compression_event`` method) and return a 3-tuple:
     (aip_model_inst, compression_event, compression_agents).
     """
     if not compression_algorithm:
@@ -379,8 +379,8 @@ def compress(aip_model_inst, compression_algorithm):
     aip_model_inst.current_path = new_current_path
     shutil.rmtree(compressed_aip_parent_path)
     aip_model_inst.size = utils.recalculate_size(new_full_path)
-    compression_agents = utils.get_ss_premis_agents()
-    compression_event = aip_model_inst.get_premis_aip_compression_event(
+    compression_agents = [premis.SS_AGENT]
+    compression_event = premis.create_premis_aip_compression_event(
         details["event_detail"],
         details["event_outcome_detail_note"],
         agents=compression_agents,

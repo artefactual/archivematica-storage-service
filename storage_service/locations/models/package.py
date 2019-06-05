@@ -18,7 +18,6 @@ from uuid import uuid4
 from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from django.utils import timezone
 
 # Third party dependencies, alphabetical
 import bagit
@@ -29,7 +28,7 @@ from metsrw.plugins import premisrw
 import requests
 
 # This project, alphabetical
-from common import utils
+from common import premis, utils
 from locations import signals
 
 # This module, alphabetical
@@ -619,8 +618,10 @@ class Package(models.Model):
                 replica_package.uuid,
                 master_checksum_algorithm,
             )
-            replication_validation_event = replica_package.get_replication_validation_event(
-                checksum_report=checksum_report, master_aip_uuid=self.uuid
+            replication_validation_event = premis.create_replication_validation_event(
+                replica_package.uuid,
+                checksum_report=checksum_report,
+                master_aip_uuid=self.uuid,
             )
 
             # Create and write to disk the pointer file for the replica, which
@@ -1010,8 +1011,15 @@ class Package(models.Model):
         __, compression_program_version, archive_tool = _get_compression_details_from_premis_events(
             premis_events, self.uuid
         )
-        premis_object = self._create_aip_premis_object(
-            checksum_algorithm, checksum, archive_tool, compression_program_version
+        __, extension = os.path.splitext(self.current_path)
+        premis_object = premis.create_aip_premis_object(
+            self.uuid,
+            self.size,
+            extension,
+            checksum_algorithm,
+            checksum,
+            archive_tool,
+            compression_program_version,
         )
         pointer_file = self.create_pointer_file(
             premis_object,
@@ -1089,7 +1097,8 @@ class Package(models.Model):
             >>> __, fixity_report = (
                 replica_package.get_fixity_check_report_send_signals())
             >>> replication_validation_event = (
-                replica_package.get_replication_validation_event(
+                create_replication_validation_event(
+                    replica_package.uuid,
                     checksum_report=checksum_report,
                     master_aip_uuid=self.uuid,
                     fixity_report=fixity_report,
@@ -1135,24 +1144,30 @@ class Package(models.Model):
         master_premis_agents = master_ptr_aip_fsentry.get_premis_agents()
 
         # 3. Construct the pointer file and return it
-        replica_premis_creation_agents = utils.get_ss_premis_agents()
+        replica_premis_creation_agents = [premis.SS_AGENT]
         __, compression_program_version, archive_tool = (
             master_compression_event.compression_details
         )
         replica_premis_relationships = [
-            _get_replication_derivation_relationship(
+            premis.create_replication_derivation_relationship(
                 master_aip_uuid, replication_event_uuid
             )
         ]
-        replica_premis_object = replica_package._create_aip_premis_object(
+        __, extension = os.path.splitext(replica_package.current_path)
+        replica_premis_object = premis.create_aip_premis_object(
+            replica_package.uuid,
+            replica_package.size,
+            extension,
             master_checksum_algorithm,
             master_checksum,
             archive_tool,
             compression_program_version,
             premis_relationships=replica_premis_relationships,
         )
-        replica_premis_creation_event = replica_package.get_premis_aip_creation_event(
-            master_aip_uuid=master_aip_uuid, agents=replica_premis_creation_agents
+        replica_premis_creation_event = premis.create_premis_aip_creation_event(
+            replica_package.uuid,
+            master_aip_uuid=master_aip_uuid,
+            agents=replica_premis_creation_agents,
         )
         replica_premis_agents = list(
             set(master_premis_agents + replica_premis_creation_agents)
@@ -1188,12 +1203,15 @@ class Package(models.Model):
         old_premis_object = old_fsentry.get_premis_objects()[0]
         old_premis_events = old_fsentry.get_premis_events()
         old_premis_agents = old_fsentry.get_premis_agents()
-        ss_agents = utils.get_ss_premis_agents()
-        replication_event = self.create_replication_event(
-            replica_package, event_uuid=replication_event_uuid, agents=ss_agents
+        ss_agents = [premis.SS_AGENT]
+        replication_event = premis.create_replication_event(
+            self.uuid,
+            replica_package.uuid,
+            event_uuid=replication_event_uuid,
+            agents=ss_agents,
         )
         old_premis_events.append(replication_event)
-        replication_relationship = _get_replication_derivation_relationship(
+        replication_relationship = premis.create_replication_derivation_relationship(
             replica_package.uuid, replication_event_uuid
         )
         new_relationships = old_premis_object.findall("relationship")
@@ -1228,7 +1246,7 @@ class Package(models.Model):
         old_premis_events = old_fsentry.get_premis_events()
         old_premis_agents = old_fsentry.get_premis_agents()
         new_premis_events = list(set(old_premis_events + storage_effects.events))
-        new_premis_agents = list(set(old_premis_agents + utils.get_ss_premis_agents()))
+        new_premis_agents = list(set(old_premis_agents + [premis.SS_AGENT]))
         new_composition_level = old_composition_level
         if storage_effects.composition_level_updater:
             new_composition_level = storage_effects.composition_level_updater(
@@ -1257,189 +1275,6 @@ class Package(models.Model):
             premis_agents=new_premis_agents,
             package_subtype=package_subtype,
         )
-
-    def create_replication_event(
-        self, replica_package, event_uuid=None, agents=None, inst=True
-    ):
-        """Return a PREMIS:EVENT for replication of an AIP, as a
-        premisrw.PREMISEvent or, if ``inst`` is ``False``, as a python
-        Python tuple.
-        """
-        outcome_detail_note = (
-            "Replicated Archival Information Package (AIP) {} by creating"
-            " replica {}.".format(self.uuid, replica_package.uuid)
-        )
-        if not agents:
-            agents = utils.get_ss_premis_agents()
-        if not event_uuid:
-            event_uuid = str(uuid4())
-        event = [
-            "event",
-            premisrw.PREMIS_META,
-            (
-                "event_identifier",
-                ("event_identifier_type", "UUID"),
-                ("event_identifier_value", event_uuid),
-            ),
-            ("event_type", "replication"),
-            ("event_date_time", utils.mets_file_now()),
-            ("event_detail", "Replication of an Archival Information Package"),
-            (
-                "event_outcome_information",
-                ("event_outcome", "success"),
-                (
-                    "event_outcome_detail",
-                    ("event_outcome_detail_note", outcome_detail_note),
-                ),
-            ),
-        ]
-        event = tuple(utils.add_agents_to_event_as_list(event, agents))
-        if inst:
-            return premisrw.PREMISEvent(data=event)
-        return event
-
-    def get_premis_aip_creation_event(
-        self, master_aip_uuid=None, agents=None, inst=True
-    ):
-        """Return a PREMIS:EVENT for creation of an AIP as a Python tuple."""
-        if master_aip_uuid:
-            outcome_detail_note = (
-                "Created Archival Information Package (AIP) {} by replicating"
-                " previously created AIP {}".format(self.uuid, master_aip_uuid)
-            )
-        else:
-            outcome_detail_note = "Created Archival Information Package (AIP) {}".format(
-                self.uuid
-            )
-        if not agents:
-            agents = utils.get_ss_premis_agents()
-        event = [
-            "event",
-            premisrw.PREMIS_META,
-            (
-                "event_identifier",
-                ("event_identifier_type", "UUID"),
-                ("event_identifier_value", str(uuid4())),
-            ),
-            # Question: use the more specific 'information package creation'
-            # PREMIS event?
-            ("event_type", "creation"),
-            ("event_date_time", utils.mets_file_now()),
-            ("event_detail", "Creation of an Archival Information Package"),
-            (
-                "event_outcome_information",
-                ("event_outcome", "success"),
-                (
-                    "event_outcome_detail",
-                    ("event_outcome_detail_note", outcome_detail_note),
-                ),
-            ),
-        ]
-        event = tuple(utils.add_agents_to_event_as_list(event, agents))
-        if inst:
-            return premisrw.PREMISEvent(data=event)
-        return event
-
-    @staticmethod
-    def get_compression_event_detail(compression_algorithm):
-        """Return an eventDetail for the event of compressing an AIP using the
-        supplied algorithm.
-        """
-        # TODO: the program should be supplied by the caller
-        program = {
-            utils.COMPRESSION_TAR: "tar",
-            utils.COMPRESSION_TAR_BZIP2: "tar",
-        }.get(compression_algorithm, "7z")
-        return 'program={}; algorithm="{}"'.format(program, compression_algorithm)
-
-    def get_premis_aip_compression_event(
-        self, event_detail, event_outcome_detail_note, agents=None, inst=True
-    ):
-        """Return a PREMIS:EVENT describing the compression of an AIP."""
-        if not agents:
-            agents = utils.get_ss_premis_agents()
-        event = [
-            "event",
-            premisrw.PREMIS_META,
-            (
-                "event_identifier",
-                ("event_identifier_type", "UUID"),
-                ("event_identifier_value", str(uuid4())),
-            ),
-            ("event_type", "compression"),
-            ("event_date_time", utils.mets_file_now()),
-            ("event_detail", event_detail),
-            (
-                "event_outcome_information",
-                ("event_outcome", "success"),
-                (
-                    "event_outcome_detail",
-                    ("event_outcome_detail_note", event_outcome_detail_note),
-                ),
-            ),
-        ]
-        event = tuple(utils.add_agents_to_event_as_list(event, agents))
-        if inst:
-            return premisrw.PREMISEvent(data=event)
-        return event
-
-    def get_replication_validation_event(
-        self,
-        checksum_report,
-        master_aip_uuid,
-        fixity_report=None,
-        agents=None,
-        inst=True,
-    ):
-        """Return a PREMIS:EVENT (as a tuple) for validation of AIP
-        replication.
-        """
-        success = checksum_report["success"]
-        if fixity_report:
-            success = fixity_report["success"] and success
-        outcome = success and "success" or "failure"
-        detail = (
-            "Validated the replication of Archival Information Package (AIP)"
-            " {master_aip_uuid} to replica AIP {replica_aip_uuid}".format(
-                master_aip_uuid=master_aip_uuid, replica_aip_uuid=self.uuid
-            )
-        )
-        if fixity_report:
-            detail += (
-                " by performing a BagIt fixity check and by comparing" " checksums"
-            )
-            outcome_detail_note = "{}\n{}".format(
-                fixity_report["message"], checksum_report["message"]
-            )
-        else:
-            detail += " by comparing checksums"
-            outcome_detail_note = checksum_report["message"]
-        if not agents:
-            agents = utils.get_ss_premis_agents()
-        event = [
-            "event",
-            premisrw.PREMIS_META,
-            (
-                "event_identifier",
-                ("event_identifier_type", "UUID"),
-                ("event_identifier_value", str(uuid4())),
-            ),
-            ("event_type", "validation"),
-            ("event_date_time", utils.mets_file_now()),
-            ("event_detail", detail),
-            (
-                "event_outcome_information",
-                ("event_outcome", outcome),
-                (
-                    "event_outcome_detail",
-                    ("event_outcome_detail_note", outcome_detail_note),
-                ),
-            ),
-        ]
-        event = tuple(utils.add_agents_to_event_as_list(event, agents))
-        if inst:
-            return premisrw.PREMISEvent(data=event)
-        return event
 
     def create_pointer_file(
         self,
@@ -1550,56 +1385,6 @@ class Package(models.Model):
                 )
         LOGGER.info("Returning pointer file for: %s", self.uuid)
         return pointer_file
-
-    def _create_aip_premis_object(
-        self,
-        message_digest_algorithm,
-        message_digest,
-        archive_tool,
-        compression_program_version,
-        premis_relationships=None,
-    ):
-        """Return a <premis:object> element for this package's (AIP's) pointer
-        file.
-        :param str message_digest_algorithm: name of the algorithm used to generate
-            ``message_digest``.
-        :param str message_digest: hex string checksum for the
-            packaged/compressed AIP.
-        :param str archive_tool: name of the tool (program) used to compress
-            the AIP, e.g., '7-Zip'.
-        :param str compression_program_version: version of ``archive_tool``
-            used.
-        :returns: <premis:object> as a tuple.
-        """
-        # PRONOM ID and PRONOM name for each file extension
-        pronom_conversion = {
-            ".7z": {"puid": "fmt/484", "name": "7Zip format"},
-            ".bz2": {"puid": "x-fmt/268", "name": "BZIP2 Compressed Archive"},
-        }
-        __, extension = os.path.splitext(self.current_path)
-        now = timezone.now().strftime("%Y-%m-%dT%H:%M:%S")  # YYYY-MM-DDTHH:MM:SS
-        premis_relationships = premis_relationships or []
-        kwargs = dict(
-            xsi_type="premis:file",
-            identifier_value=self.uuid,
-            message_digest_algorithm=message_digest_algorithm,
-            message_digest=message_digest,
-            size=str(self.size),
-            creating_application_name=archive_tool,
-            creating_application_version=compression_program_version,
-            date_created_by_application=now,
-            relationship=premis_relationships,
-        )
-        try:
-            kwargs.update(
-                {
-                    "format_name": pronom_conversion[extension]["name"],
-                    "format_registry_key": pronom_conversion[extension]["puid"],
-                }
-            )
-        except KeyError:
-            pass
-        return premisrw.PREMISObject(**kwargs)
 
     def create_replicas(self):
         """Create replicas of this AIP in any replicator locations.
@@ -2855,9 +2640,9 @@ class Package(models.Model):
         """
         if to_be_compressed:
             # Update pointer file
-            root = etree.parse(self.full_pointer_file_path)
+            mets = metsrw.METSDocument.fromfile(self.full_pointer_file_path)
+            aip = mets.get_file(type="Archival Information Package")
             # Add compression event (if compressed)
-            amdsec = root.find("mets:amdSec", namespaces=utils.NSMAP)
             if compression in (utils.COMPRESSION_7Z_BZIP, utils.COMPRESSION_7Z_LZMA):
                 try:
                     version = [
@@ -2882,13 +2667,11 @@ class Package(models.Model):
                     " update pointer file"
                 )
                 event_detail = _("Unknown compression")
-            utils.mets_add_event(
-                amdsec,
-                "compression",
-                event_detail=event_detail,
-                event_outcome_detail_note="",
+            compression_event = premis.create_premis_aip_compression_event(
+                event_detail, ""
             )
-            self._update_pointer_file(compression, root=root, path=updated_aip_path)
+            aip.add_premis_event(compression_event)
+            self._update_pointer_file(compression, mets, path=updated_aip_path)
         elif was_compressed:
             # AIP used to be compressed, but is no longer so delete pointer file
             os.remove(self.full_pointer_file_path)
@@ -2899,162 +2682,108 @@ class Package(models.Model):
     # END Private methods for ``finish_reingest``
     # ==========================================================================
 
-    def _update_pointer_file(self, compression, root=None, path=None):
+    def _update_pointer_file(self, compression, mets, path=None):
         """Update the AIP's pointer file at the end of re-ingest."""
         LOGGER.debug("Updating pointer file at %s", self.full_pointer_file_path)
-        if not root:
-            root = etree.parse(self.full_pointer_file_path)
         if not path:
             path = self.fetch_local_path()
 
-        # Update FLocat to full path
-        file_ = root.find(
-            './/mets:fileGrp[@USE="Archival Information Package"]/mets:file',
-            namespaces=utils.NSMAP,
-        )
-        flocat = file_.find(
-            'mets:FLocat[@OTHERLOCTYPE="SYSTEM"][@LOCTYPE="OTHER"]',
-            namespaces=utils.NSMAP,
-        )
-        flocat.set(utils.PREFIX_NS["xlink"] + "href", self.full_path)
+        aip = mets.get_file(type="Archival Information Package")
+        premis_obj = aip.get_premis_objects()[0]
 
-        # Update fixity checksum
-        fixity_elem = root.find(".//premis:fixity", namespaces=utils.NSMAP)
-        algorithm = fixity_elem.findtext(
-            "premis:messageDigestAlgorithm", namespaces=utils.NSMAP
-        )
+        premis3_nsmap = utils.NSMAP.copy()
+        premis3_nsmap.update(premisrw.PREMIS_3_0_NAMESPACES)
+
         try:
-            checksum = utils.generate_checksum(path, algorithm)
+            checksum = utils.generate_checksum(
+                path, premis_obj.message_digest_algorithm
+            )
         except ValueError:
             # If incorrectly parsed algorithm, default to sha512, since that is
             # what AM uses
             checksum = utils.generate_checksum(path, "sha512")
-        fixity_elem.find(
-            "premis:messageDigest", namespaces=utils.NSMAP
-        ).text = checksum.hexdigest()
 
-        # Update size
-        root.find(".//premis:size", namespaces=utils.NSMAP).text = str(
-            os.path.getsize(path)
-        )
+        aip = mets.get_file(type="Archival Information Package")
+        aip.path = self.full_path
 
-        # Set compression-related data
-        transform_order = 1
-        decr_transform_file = file_.find(
-            './/mets:transformFile[@TRANSFORMTYPE="decryption"]', namespaces=utils.NSMAP
+        transform_types = set(
+            [transform.get("type") for transform in aip.transform_files]
         )
-        if decr_transform_file is not None:
+        if "decryption" in transform_types:
             transform_order = 2  # encryption is a prior transformation
+        else:
+            transform_order = 1
 
-        transform_file = []
         if compression in (utils.COMPRESSION_7Z_BZIP, utils.COMPRESSION_7Z_LZMA):
             if compression == utils.COMPRESSION_7Z_BZIP:
                 algo = "bzip2"
             elif compression == utils.COMPRESSION_7Z_LZMA:
                 algo = "lzma"
-            transform_file.append(
-                etree.Element(
-                    utils.PREFIX_NS["mets"] + "transformFile",
-                    TRANSFORMORDER=str(transform_order),
-                    TRANSFORMTYPE="decompression",
-                    TRANSFORMALGORITHM=algo,
-                )
+            aip.transform_files.append(
+                {
+                    "algorithm": algo,
+                    "order": str(transform_order),
+                    "type": "decompression",
+                }
             )
             version = [
                 x for x in subprocess.check_output("7z").splitlines() if "Version" in x
             ][0]
-            format_info = {
-                "name": "7Zip format",
-                "registry_name": "PRONOM",
-                "registry_key": "fmt/484",
-                "program_name": "7-Zip",
-                "program_version": version,
-            }
+            extension = ".7z"
+            program_name = "7-Zip"
 
         elif compression in (utils.COMPRESSION_TAR_BZIP2, utils.COMPRESSION_TAR):
             if compression == utils.COMPRESSION_TAR_BZIP2:
-                transform_file.append(
-                    etree.Element(
-                        utils.PREFIX_NS["mets"] + "transformFile",
-                        TRANSFORMORDER=str(transform_order),
-                        TRANSFORMTYPE="decompression",
-                        TRANSFORMALGORITHM="bzip2",
-                    )
+                aip.transform_files.append(
+                    {
+                        "algorithm": "bzip2",
+                        "order": str(transform_order),
+                        "type": "decompression",
+                    }
                 )
                 transform_order += 1
 
-            transform_file.append(
-                etree.Element(
-                    utils.PREFIX_NS["mets"] + "transformFile",
-                    TRANSFORMORDER=str(transform_order),
-                    TRANSFORMTYPE="decompression",
-                    TRANSFORMALGORITHM="tar",
-                )
+            aip.transform_files.append(
+                {
+                    "algorithm": "tar",
+                    "order": str(transform_order),
+                    "type": "decompression",
+                }
             )
             version = subprocess.check_output(["tar", "--version"]).splitlines()[0]
-            format_info = {
-                "name": "BZIP2 Compressed Archive",
-                "registry_name": "PRONOM",
-                "registry_key": "x-fmt/268",
-                "program_name": "tar",
-                "program_version": version,
-            }
+            extension = ".bz2"
+            program_name = "tar"
+        else:
+            raise ValueError("Unknown compression algorithm")
 
-        # Set new format info
-        fmt = root.find(".//premis:format", namespaces=utils.NSMAP)
-        fmt.clear()
-        fd = etree.SubElement(fmt, utils.PREFIX_NS["premis"] + "formatDesignation")
-        etree.SubElement(
-            fd, utils.PREFIX_NS["premis"] + "formatName"
-        ).text = format_info.get("name")
-        etree.SubElement(
-            fd, utils.PREFIX_NS["premis"] + "formatVersion"
-        ).text = format_info.get("version")
-        fr = etree.SubElement(fmt, utils.PREFIX_NS["premis"] + "formatRegistry")
-        etree.SubElement(
-            fr, utils.PREFIX_NS["premis"] + "formatRegistryName"
-        ).text = format_info.get("registry_name")
-        etree.SubElement(
-            fr, utils.PREFIX_NS["premis"] + "formatRegistryKey"
-        ).text = format_info.get("registry_key")
-
-        # Creating application info
-        now = utils.mets_file_now()
-        app = root.find(".//premis:creatingApplication", namespaces=utils.NSMAP)
-        app.clear()
-        etree.SubElement(
-            app, utils.PREFIX_NS["premis"] + "creatingApplicationName"
-        ).text = format_info.get("program_name")
-        etree.SubElement(
-            app, utils.PREFIX_NS["premis"] + "creatingApplicationVersion"
-        ).text = format_info.get("program_version")
-        etree.SubElement(
-            app, utils.PREFIX_NS["premis"] + "dateCreatedByApplication"
-        ).text = str(now)
-
-        # Remove existing decompression transformFiles
-        to_delete = file_.findall(
-            './/mets:transformFile[@TRANSFORMTYPE="decompression"]',
-            namespaces=utils.NSMAP,
+        reingest_premis_obj = premis.create_aip_premis_object(
+            premis_obj.identifier_value,
+            str(os.path.getsize(path)),
+            extension,
+            premis_obj.message_digest_algorithm,
+            checksum.hexdigest(),
+            program_name,
+            version,
+            composition_level=len(aip.transform_files),
         )
-        for elem in to_delete:
-            file_.remove(elem)
-        # Add new ones
-        for elem in transform_file:
-            file_.append(elem)
 
-        # Update compositionLevel
-        root.find(".//premis:compositionLevel", namespaces=utils.NSMAP).text = str(
-            len(file_.findall("mets:transformFile", namespaces=utils.NSMAP))
-        )
+        new_techmd = aip.add_premis_object(reingest_premis_obj)
+
+        # Mark the old techMD as superseded
+        current_techmd = None
+        for subsection in aip.amdsecs[0].subsections:
+            if subsection.subsection == "techMD" and subsection.status == "current":
+                current_techmd = subsection
+                break
+
+        if current_techmd is None:
+            current_techmd = aip.amdsecs[0].subsections[0]
+
+        current_techmd.replace_with(new_techmd)
 
         # Write out pointer file again
         with open(self.full_pointer_file_path, "w") as f:
-            f.write(
-                etree.tostring(
-                    root, pretty_print=True, xml_declaration=True, encoding="utf-8"
-                )
-            )
+            f.write(mets.tostring())
 
     # SWORD-related methods
     def has_been_submitted_for_processing(self):
@@ -3290,40 +3019,6 @@ def _get_checksum_report(
             )
         )
     return {"success": success, "message": message}
-
-
-def _get_replication_derivation_relationship(
-    related_aip_uuid, replication_event_uuid, premis_version=None
-):
-    """Return a PREMIS relationship of type derivation relating an implicit
-    PREMIS object (an AIP) to some to related AIP (with UUID
-    ``related_aip_uuid``) via a replication event with UUID
-    ``replication_event_uuid``. Note the complication wherein PREMIS v. 2.2
-    uses 'Identification' where PREMIS v. 3.0 uses 'Identifier'.
-    """
-    if not premis_version:
-        premis_version = premisrw.PREMIS_META["version"]
-    related_object_identifier = {"2.2": "related_object_identification"}.get(
-        premis_version, "related_object_identifier"
-    )
-    related_event_identifier = {"2.2": "related_event_identification"}.get(
-        premis_version, "related_event_identifier"
-    )
-    return (
-        "relationship",
-        ("relationship_type", "derivation"),
-        ("relationship_sub_type", ""),
-        (
-            related_object_identifier,
-            ("related_object_identifier_type", "UUID"),
-            ("related_object_identifier_value", related_aip_uuid),
-        ),
-        (
-            related_event_identifier,
-            ("related_event_identifier_type", "UUID"),
-            ("related_event_identifier_value", replication_event_uuid),
-        ),
-    )
 
 
 def write_pointer_file(pointer_file, pointer_file_path):

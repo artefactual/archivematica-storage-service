@@ -10,8 +10,6 @@ import os
 import shutil
 import uuid
 
-from metsrw.plugins import premisrw
-
 from django.core.exceptions import ObjectDoesNotExist
 from django import http
 from django.utils.translation import ugettext as _
@@ -349,63 +347,6 @@ def coerce_str(string):
     if isinstance(string, six.text_type):
         return string.encode("utf-8")
     return string
-
-
-def add_agents_to_event_as_list(event, agents):
-    """Add agents in ``agents`` to the list ``event`` which represents a
-    PREMIS:EVENT.
-    :param list event: a PREMIS:EVENT represented as a list
-    :param iterable agents: an iterable of premisrw.PREMISAgent instances.
-    """
-    for agent in agents:
-        event.append(
-            (
-                "linking_agent_identifier",
-                ("linking_agent_identifier_type", agent.identifier_type),
-                ("linking_agent_identifier_value", agent.identifier_value),
-            )
-        )
-    return event
-
-
-def mets_file_now():
-    return datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-
-
-def get_ss_premis_agents(inst=True):
-    """Return PREMIS agents for preservation events performed by the
-    Storage Service.
-    Note: Archivematica returns a 'repository code'-type agent while we
-    are currently just returning a 'preservation system' one. What is
-    the desired behaviour here? AM's agents used for compression from
-    db::
-
-        +----+-----------------------+----------------------+------------------------------------------------------+--------------------+
-        | pk | agentIdentifierType   | agentIdentifierValue | agentName                                            | agentType          |
-        +----+-----------------------+----------------------+------------------------------------------------------+--------------------+
-        |  1 | preservation system   | Archivematica-1.7    | Archivematica                                        | software           |
-        |  2 | repository code       | test                 | test                                                 | organization       |
-        +----+-----------------------+----------------------+------------------------------------------------------+--------------------+
-    """
-    agents = [
-        (
-            "agent",
-            premisrw.PREMIS_META,
-            (
-                "agent_identifier",
-                ("agent_identifier_type", "preservation system"),
-                (
-                    "agent_identifier_value",
-                    "Archivematica-Storage-Service-{}".format(ss_version),
-                ),
-            ),
-            ("agent_name", "Archivematica Storage Service"),
-            ("agent_type", "software"),
-        )
-    ]
-    if inst:
-        return [premisrw.PREMISAgent(data=data) for data in agents]
-    return agents
 
 
 StorageEffects = namedtuple(

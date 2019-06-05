@@ -7,9 +7,6 @@ import os
 import shutil
 import subprocess
 import tarfile
-from uuid import uuid4
-
-from metsrw.plugins import premisrw
 
 # Core Django, alphabetical
 from django.conf import settings
@@ -20,8 +17,7 @@ from django.utils import six
 # Third party dependencies, alphabetical
 
 # This project, alphabetical
-from common import utils
-from common import gpgutils
+from common import gpgutils, premis, utils
 
 # This module, alphabetical
 from .location import Location
@@ -184,7 +180,9 @@ class GPG(models.Model):
                 ("inhibitor_type", "GPG"),
                 ("inhibitor_target", "All content"),
             )
-            encryption_event = create_encryption_event(encr_result, key_fingerprint)
+            encryption_event = premis.create_encryption_event(
+                encr_result, key_fingerprint, _get_gpg_version()
+            )
             return utils.StorageEffects(
                 events=[encryption_event],
                 composition_level_updater=composition_level_updater,
@@ -293,16 +291,6 @@ def _encr_path2key_fingerprint(encr_path):
         raise GPGException(fail_msg)
 
 
-# This replaces non-unicode characters with a replacement character,
-# and is primarily used for arbitrary strings (e.g. filenames, paths)
-# that might not be valid unicode to begin with.
-# NOTE: non-DRY from archivematicaCommon/archivematicaFunctions.py
-def escape(string):
-    if isinstance(string, str):
-        string = string.decode("utf-8", errors="replace")
-    return string
-
-
 def _abort_create_tar(path, tarpath):
     fail_msg = _(
         "Failed to create a tarfile at %(tarpath)s for dir at %(path)s"
@@ -377,41 +365,6 @@ def _get_gpg_version():
     ``(1, 4, 16)`` for GnuPG v1.4.16.
     """
     return _parse_gpg_version(gpgutils.gpg().version)
-
-
-def create_encryption_event(encr_result, key_fingerprint):
-    """Return a PREMIS:EVENT for the encryption event."""
-    gpg_version = _get_gpg_version()
-    detail = escape(
-        "program=GPG; version={}; key={}".format(gpg_version, key_fingerprint)
-    )
-    outcome_detail_note = 'Status="{}"; Standard Error="{}"'.format(
-        encr_result.status.replace('"', r"\""),
-        encr_result.stderr.replace('"', r"\"").strip(),
-    )
-    agents = utils.get_ss_premis_agents()
-    event = [
-        "event",
-        premisrw.PREMIS_META,
-        (
-            "event_identifier",
-            ("event_identifier_type", "UUID"),
-            ("event_identifier_value", str(uuid4())),
-        ),
-        ("event_type", "encryption"),
-        ("event_date_time", utils.mets_file_now()),
-        ("event_detail", detail),
-        (
-            "event_outcome_information",
-            ("event_outcome", "success"),
-            (
-                "event_outcome_detail",
-                ("event_outcome_detail_note", outcome_detail_note),
-            ),
-        ),
-    ]
-    event = tuple(utils.add_agents_to_event_as_list(event, agents))
-    return premisrw.PREMISEvent(data=event)
 
 
 def _gpg_decrypt(path):

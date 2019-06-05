@@ -7,13 +7,12 @@ import os
 import shutil
 import subprocess
 import tarfile
-import unicodedata
 
 from django.test import TestCase
 from metsrw.plugins import premisrw
 import pytest
 
-from common import utils, gpgutils
+from common import gpgutils
 from locations.models import gpg, Package, space
 
 
@@ -208,6 +207,7 @@ def test_move_to_storage_service(
 def test_move_from_storage_service(
     mocker, src_path, dst_path, package, encrypt_ret, expect
 ):
+    mocker.patch("locations.models.gpg._get_gpg_version", return_value=GPG_VERSION)
     orig_pkg_key = package and package.encryption_key_fingerprint
     if isinstance(encrypt_ret, Exception):
         mocker.patch.object(gpg, "_gpg_encrypt", side_effect=encrypt_ret)
@@ -217,7 +217,10 @@ def test_move_from_storage_service(
     mocker.patch.object(gpg_space.space, "create_local_directory")
     mocker.patch.object(gpg_space.space, "move_rsync")
     encryption_event = 42
-    mocker.patch.object(gpg, "create_encryption_event", return_value=encryption_event)
+    mocker.patch(
+        "locations.models.gpg.premis.create_encryption_event",
+        return_value=encryption_event,
+    )
     if expect == "success":
         ret = gpg_space.move_from_storage_service(src_path, dst_path, package=package)
         if package.should_have_pointer_file():
@@ -365,22 +368,6 @@ def test__get_encrypted_path(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "inp, outp",
-    [
-        ("abc", "abc"),
-        (u"change\u0301", u"change\u0301"),
-        (u"change\u0301".encode("utf8"), u"change\u0301"),
-        (
-            unicodedata.normalize("NFC", u"change\u0301").encode("latin1"),
-            u"chang\uFFFD",
-        ),
-    ],
-)
-def test_escape(inp, outp):
-    assert outp == gpg.escape(inp)
-
-
-@pytest.mark.parametrize(
     "path, isfile, will_create_decrypt_file, decrypt_ret, expected",
     [
         DecryptCase(
@@ -453,32 +440,6 @@ def test__gpg_decrypt(
 
 def test__parse_gpg_version():
     assert GPG_VERSION == gpg._parse_gpg_version(RAW_GPG_VERSION)
-
-
-def test_create_encryption_event(mocker):
-    mocker.patch.object(gpg, "_get_gpg_version", return_value=GPG_VERSION)
-    mocker.patch.object(utils, "get_ss_premis_agents", return_value=TEST_AGENTS)
-    stderr = 'me contain " quote'
-    encr_result = FakeGPGRet(ok=True, status=SUCCESS_STATUS, stderr=stderr)
-    event = gpg.create_encryption_event(encr_result, SOME_FINGERPRINT).data
-    assert event[0] == "event"
-    event = event[2:]
-    assert [x for x in event if x[0] == "event_type"][0][1] == "encryption"
-    assert [x for x in event if x[0] == "event_detail"][0][1] == (
-        "program=GPG; version={}; key={}".format(GPG_VERSION, SOME_FINGERPRINT)
-    )
-    eoi = [x for x in event if x[0] == "event_outcome_information"][0]
-    assert [x for x in eoi if x[0] == "event_outcome"][0][1] == "success"
-    assert [x for x in eoi if x[0] == "event_outcome_detail"][0][1][1] == (
-        'Status="{}"; Standard Error="{}"'.format(
-            SUCCESS_STATUS, stderr.replace('"', r"\"")
-        )
-    )
-    lai = [x for x in event if x[0] == "linking_agent_identifier"][0]
-    assert [x for x in lai if x[0] == "linking_agent_identifier_value"][0][1] == (
-        "Archivematica-Storage-Service-{}".format(SS_VERSION)
-    )
-    utils.get_ss_premis_agents.assert_called_once()
 
 
 @pytest.mark.parametrize(
