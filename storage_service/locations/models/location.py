@@ -42,10 +42,7 @@ class Location(models.Model):
     REPLICATOR = 'RP'
 
     # List of purposes where moving is not allowed.
-    PURPOSES_DISALLOWED_MOVE = (
-        BACKLOG,
-        AIP_STORAGE,
-    )
+    PURPOSES_DISALLOWED_MOVE = (BACKLOG, AIP_STORAGE, TRANSFER_SOURCE)
 
     PURPOSE_CHOICES = (
         (AIP_RECOVERY, _('AIP Recovery')),
