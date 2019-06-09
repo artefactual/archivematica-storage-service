@@ -1280,6 +1280,196 @@ class Package(models.Model):
             package_subtype=package_subtype,
         )
 
+    def create_replication_event(
+        self, replica_package, event_uuid=None, agents=None, inst=True
+    ):
+        """Return a PREMIS:EVENT for replication of an AIP, as a
+        premisrw.PREMISEvent or, if ``inst`` is ``False``, as a python
+        Python tuple.
+        """
+        outcome_detail_note = (
+            "Replicated Archival Information Package (AIP) {} by creating"
+            " replica {}.".format(self.uuid, replica_package.uuid)
+        )
+        if not agents:
+            agents = utils.get_ss_premis_agents()
+        if not event_uuid:
+            event_uuid = str(uuid4())
+        event = [
+            "event",
+            premisrw.PREMIS_META,
+            (
+                "event_identifier",
+                ("event_identifier_type", "UUID"),
+                ("event_identifier_value", event_uuid),
+            ),
+            ("event_type", "replication"),
+            ("event_date_time", utils.mets_file_now()),
+            ("event_detail", "Replication of an Archival Information Package"),
+            (
+                "event_outcome_information",
+                ("event_outcome", "success"),
+                (
+                    "event_outcome_detail",
+                    ("event_outcome_detail_note", outcome_detail_note),
+                ),
+            ),
+        ]
+        event = tuple(utils.add_agents_to_event_as_list(event, agents))
+        if inst:
+            return premisrw.PREMISEvent(data=event)
+        return event
+
+    def get_premis_aip_creation_event(
+        self, master_aip_uuid=None, agents=None, inst=True
+    ):
+        """Return a PREMIS:EVENT for creation of an AIP as a Python tuple."""
+        if master_aip_uuid:
+            outcome_detail_note = (
+                "Created Archival Information Package (AIP) {} by replicating"
+                " previously created AIP {}".format(self.uuid, master_aip_uuid)
+            )
+        else:
+            outcome_detail_note = "Created Archival Information Package (AIP) {}".format(
+                self.uuid
+            )
+        if not agents:
+            agents = utils.get_ss_premis_agents()
+        event = [
+            "event",
+            premisrw.PREMIS_META,
+            (
+                "event_identifier",
+                ("event_identifier_type", "UUID"),
+                ("event_identifier_value", str(uuid4())),
+            ),
+            # Question: use the more specific 'information package creation'
+            # PREMIS event?
+            ("event_type", "creation"),
+            ("event_date_time", utils.mets_file_now()),
+            ("event_detail", "Creation of an Archival Information Package"),
+            (
+                "event_outcome_information",
+                ("event_outcome", "success"),
+                (
+                    "event_outcome_detail",
+                    ("event_outcome_detail_note", outcome_detail_note),
+                ),
+            ),
+        ]
+        event = tuple(utils.add_agents_to_event_as_list(event, agents))
+        if inst:
+            return premisrw.PREMISEvent(data=event)
+        return event
+
+    @staticmethod
+    def get_compression_event_detail(compression_algorithm):
+        """Return an eventDetail for the event of compressing an AIP using the
+        supplied algorithm.
+        """
+        # TODO: the program should be supplied by the caller
+        program = {
+            utils.COMPRESSION_TAR: "tar",
+            utils.COMPRESSION_TAR_BZIP2: "tar",
+        }.get(compression_algorithm, "7z")
+        return 'program={}; algorithm="{}"'.format(program, compression_algorithm)
+
+    def get_premis_aip_compression_event(
+        self, event_detail, event_outcome_detail_note, agents=None, inst=True
+    ):
+        """Return a PREMIS:EVENT describing the compression of an AIP."""
+        if not agents:
+            agents = utils.get_ss_premis_agents()
+        event = [
+            "event",
+            premisrw.PREMIS_META,
+            (
+                "event_identifier",
+                ("event_identifier_type", "UUID"),
+                ("event_identifier_value", str(uuid4())),
+            ),
+            ("event_type", "compression"),
+            ("event_date_time", utils.mets_file_now()),
+            ("event_detail", event_detail),
+            (
+                "event_outcome_information",
+                ("event_outcome", "success"),
+                (
+                    "event_outcome_detail",
+                    ("event_outcome_detail_note", event_outcome_detail_note),
+                ),
+            ),
+        ]
+        event = tuple(utils.add_agents_to_event_as_list(event, agents))
+        if inst:
+            return premisrw.PREMISEvent(data=event)
+        return event
+
+    def get_replication_validation_event(
+        self,
+        checksum_report,
+        master_aip_uuid,
+        fixity_report=None,
+        agents=None,
+        inst=True,
+    ):
+        """Return a PREMIS:EVENT (as a tuple) for validation of AIP
+        replication.
+        """
+        success = checksum_report["success"]
+        if fixity_report:
+            success = fixity_report["success"] and success
+        outcome = success and "success" or "failure"
+        detail = (
+            "Validated the replication of Archival Information Package (AIP)"
+            " {master_aip_uuid} to replica AIP {replica_aip_uuid}".format(
+                master_aip_uuid=master_aip_uuid, replica_aip_uuid=self.uuid
+            )
+        )
+        if fixity_report:
+            detail += (
+                " by performing a BagIt fixity check and by comparing" " checksums"
+            )
+            outcome_detail_note = "{}\n{}".format(
+                fixity_report["message"], checksum_report["message"]
+            )
+        else:
+            detail += " by comparing checksums"
+            outcome_detail_note = checksum_report["message"]
+        if not agents:
+            agents = utils.get_ss_premis_agents()
+        event = [
+            "event",
+            premisrw.PREMIS_META,
+            (
+                "event_identifier",
+                ("event_identifier_type", "UUID"),
+                ("event_identifier_value", str(uuid4())),
+            ),
+            ("event_type", "validation"),
+            ("event_date_time", utils.mets_file_now()),
+            ("event_detail", detail),
+            (
+                "event_outcome_information",
+                ("event_outcome", outcome),
+                (
+                    "event_outcome_detail",
+                    ("event_outcome_detail_note", outcome_detail_note),
+                ),
+            ),
+        ]
+        event = tuple(utils.add_agents_to_event_as_list(event, agents))
+        if inst:
+            return premisrw.PREMISEvent(data=event)
+        return event
+
+    @staticmethod
+    def construct_file_id_for_pointer(aip_path):
+        """Construct a name for the package that will be used to reference it
+        in the pointer file created for it.
+        """
+        return "file-{}".format(os.path.splitext(os.path.basename(aip_path))[0])
+
     def create_pointer_file(
         self,
         premis_object,
@@ -1354,6 +1544,7 @@ class Package(models.Model):
         package_subtype = package_subtype or AIP_PACKAGE_TYPE
         mets_fs_entry = metsrw.FSEntry(
             path=self.full_path,
+            fileid=self.construct_file_id_for_pointer(self.full_path),
             file_uuid=str(self.uuid),
             use=AIP_PACKAGE_TYPE,
             type=AIP_PACKAGE_TYPE,
