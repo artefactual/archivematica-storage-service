@@ -1281,6 +1281,18 @@ class Package(models.Model):
             package_subtype=package_subtype,
         )
 
+    @staticmethod
+    def construct_file_id_for_pointer(aip_path):
+        """Construct a name for the package that will be used as the fileSec ID
+        and filePtr FILEID in the pointer file created for it. By prefixing the
+        AIP name with 'file-' and letting Archivematica's filename cleanup
+        routines handle the other characters difficult to work with in a
+        file-system, we stand the best change of creating an ID and FILEID that
+        will validate against XML's xs:NCNAME limitations set by the METS
+        standard
+        """
+        return "file-{}".format(os.path.splitext(os.path.basename(aip_path))[0])
+
     def create_pointer_file(
         self,
         premis_object,
@@ -1355,6 +1367,7 @@ class Package(models.Model):
         package_subtype = package_subtype or AIP_PACKAGE_TYPE
         mets_fs_entry = metsrw.FSEntry(
             path=self.full_path,
+            fileid=self.construct_file_id_for_pointer(self.full_path),
             file_uuid=str(self.uuid),
             use=AIP_PACKAGE_TYPE,
             type=AIP_PACKAGE_TYPE,
