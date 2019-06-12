@@ -211,7 +211,7 @@ def test_get_compression_event_detail(
                 {
                     "type": utils.DECOMPRESS_TRANSFORM_TYPE,
                     "order": "1",
-                    "algorithm": "bzip2",
+                    "algorithm": "tar-bzip2",
                 },
                 {
                     "type": utils.DECOMPRESS_TRANSFORM_TYPE,
@@ -229,7 +229,7 @@ def test_get_compression_event_detail(
                 {
                     "type": utils.DECOMPRESS_TRANSFORM_TYPE,
                     "order": "1",
-                    "algorithm": "gzip",
+                    "algorithm": "tar-gzip",
                 },
                 {
                     "type": utils.DECOMPRESS_TRANSFORM_TYPE,

@@ -470,7 +470,7 @@ def get_compression_transforms(aip, compression, transform_order):
         if compression == COMPRESSION_TAR_BZIP2:
             aip.transform_files.append(
                 {
-                    "algorithm": "bzip2",
+                    "algorithm": "tar-bzip2",
                     "order": str(transform_order),
                     "type": DECOMPRESS_TRANSFORM_TYPE,
                 }
@@ -491,7 +491,7 @@ def get_compression_transforms(aip, compression, transform_order):
     elif compression == COMPRESSION_TAR_GZIP:
         aip.transform_files.append(
             {
-                "algorithm": "gzip",
+                "algorithm": "tar-gzip",
                 "order": str(transform_order),
                 "type": DECOMPRESS_TRANSFORM_TYPE,
             }
