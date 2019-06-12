@@ -8,6 +8,7 @@ import uuid
 import metsrw
 from django.utils import timezone
 
+from common import utils
 from storage_service import __version__ as ss_version
 
 
@@ -285,8 +286,9 @@ def create_aip_premis_object(
     """
     # PRONOM ID and PRONOM name for each file extension
     pronom_conversion = {
-        ".7z": {"puid": "fmt/484", "name": "7Zip format"},
-        ".bz2": {"puid": "x-fmt/268", "name": "BZIP2 Compressed Archive"},
+        ".7z": {"puid": utils.PRONOM_7Z, "name": "7Zip format"},
+        ".bz2": {"puid": utils.PRONOM_BZIP2, "name": "BZIP2 Compressed Archive"},
+        ".gz": {"puid": utils.PRONOM_GZIP, "name": "GZIP Compressed Archive"},
     }
     premis_relationships = premis_relationships or []
     kwargs = dict(

@@ -56,6 +56,7 @@ PRONOM_GZIP = "x-fmt/266"
 
 PREFIX_NS = {k: "{" + v + "}" for k, v in NSMAP.items()}
 
+DECOMPRESS_TRANSFORM_TYPE = "decompression"
 
 # ########## SETTINGS ############
 
@@ -435,23 +436,29 @@ def get_compression_event_detail(compression):
 
 
 def get_compression_transforms(aip, compression, transform_order):
-    """Get info about file format for the given compression method
+    """Return command for compressing the package
 
-    :param aip: metsrw FSentry object for the archival information package
     :param compression: one of the constants in ``COMPRESSION_ALGORITHMS``.
-    :param int transform_order: Starting value of the transform order
-    :return: tuple containing:
-        `version`: string describing version of the program
-        `extension`: string denoting the compressed files file format extension
-        `program_name`: name of program which created the format
+    :param extract_path: target path for the compressed file
+    :param basename: base name of the file (without extension)
+    :param full_path: Path of source files
+    :returns: (command, compressed_filename) where
+        `command` is the compression command (as a list of strings)
+        `compressed_filename` is the full path to the compressed file
     """
-    if compression in (COMPRESSION_7Z_BZIP, COMPRESSION_7Z_LZMA):
+    if compression in (COMPRESSION_7Z_BZIP, COMPRESSION_7Z_LZMA, COMPRESSION_7Z_COPY):
         if compression == COMPRESSION_7Z_BZIP:
             algo = "bzip2"
         elif compression == COMPRESSION_7Z_LZMA:
             algo = "lzma"
+        elif compression == COMPRESSION_7Z_COPY:
+            algo = "copy"
         aip.transform_files.append(
-            {"algorithm": algo, "order": str(transform_order), "type": "decompression"}
+            {
+                "algorithm": algo,
+                "order": str(transform_order),
+                "type": DECOMPRESS_TRANSFORM_TYPE,
+            }
         )
         version = [
             x for x in subprocess.check_output("7z").splitlines() if "Version" in x
@@ -465,17 +472,42 @@ def get_compression_transforms(aip, compression, transform_order):
                 {
                     "algorithm": "bzip2",
                     "order": str(transform_order),
-                    "type": "decompression",
+                    "type": DECOMPRESS_TRANSFORM_TYPE,
                 }
             )
             transform_order += 1
 
         aip.transform_files.append(
-            {"algorithm": "tar", "order": str(transform_order), "type": "decompression"}
+            {
+                "algorithm": "tar",
+                "order": str(transform_order),
+                "type": DECOMPRESS_TRANSFORM_TYPE,
+            }
         )
         version = subprocess.check_output(["tar", "--version"]).splitlines()[0]
         extension = ".bz2"
         program_name = "tar"
+
+    elif compression == COMPRESSION_TAR_GZIP:
+        aip.transform_files.append(
+            {
+                "algorithm": "gzip",
+                "order": str(transform_order),
+                "type": DECOMPRESS_TRANSFORM_TYPE,
+            }
+        )
+        transform_order += 1
+        aip.transform_files.append(
+            {
+                "algorithm": "tar",
+                "order": str(transform_order),
+                "type": DECOMPRESS_TRANSFORM_TYPE,
+            }
+        )
+        version = subprocess.check_output(["tar", "--version"]).splitlines()[0]
+        extension = ".gz"
+        program_name = "tar"
+
     else:
         raise ValueError("Unknown compression algorithm")
 

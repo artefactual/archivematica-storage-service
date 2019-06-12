@@ -3,6 +3,8 @@ from StringIO import StringIO
 import mock
 import pytest
 
+from metsrw import FSEntry
+
 from common import utils
 
 
@@ -159,54 +161,92 @@ def test_get_compression_event_detail(
 
 
 @pytest.mark.parametrize(
-    "compression,expected_transforms",
+    "compression, version,extension,program_name,transform",
     [
-        (utils.COMPRESSION_7Z_BZIP, ["bzip2"]),
-        (utils.COMPRESSION_7Z_LZMA, ["lzma"]),
-        (utils.COMPRESSION_7Z_COPY, ["copy"]),
-        (utils.COMPRESSION_TAR, ["tar"]),
-        (utils.COMPRESSION_TAR_BZIP2, ["bzip2", "tar"]),
-        (utils.COMPRESSION_TAR_GZIP, ["gzip", "tar"]),
-    ],
-)
-def test_get_compression_transforms(compression, expected_transforms):
-    transforms = utils.get_compression_transforms(compression, 1)
-
-    assert len(transforms) == len(expected_transforms)
-    for t1, t2 in zip(transforms, expected_transforms):
-        assert t1.tag.endswith(
-            "transformFile"
-        ), "Incorrect tag {0} for transform".format(t1.tag)
-        assert (
-            t1.attrib["TRANSFORMALGORITHM"] == t2
-        ), "Incorrect algorithm: {0} returned for {1}".format(
-            t1.attrib["TRANSFORMALGORITHM"], compression
-        )
-
-
-@pytest.mark.parametrize(
-    "compression,name,pronom,program",
-    [
-        (utils.COMPRESSION_7Z_BZIP, "7Zip format", utils.PRONOM_7Z, "7-Zip"),
-        (utils.COMPRESSION_7Z_LZMA, "7Zip format", utils.PRONOM_7Z, "7-Zip"),
-        (utils.COMPRESSION_7Z_COPY, "7Zip format", utils.PRONOM_7Z, "7-Zip"),
+        (
+            utils.COMPRESSION_7Z_BZIP,
+            "7z",
+            ".7z",
+            "7-Zip",
+            [
+                {
+                    "type": utils.DECOMPRESS_TRANSFORM_TYPE,
+                    "order": "1",
+                    "algorithm": "bzip2",
+                }
+            ],
+        ),
+        (
+            utils.COMPRESSION_7Z_LZMA,
+            "7z",
+            ".7z",
+            "7-Zip",
+            [
+                {
+                    "type": utils.DECOMPRESS_TRANSFORM_TYPE,
+                    "order": "1",
+                    "algorithm": "lzma",
+                }
+            ],
+        ),
+        (
+            utils.COMPRESSION_7Z_COPY,
+            "7z",
+            ".7z",
+            "7-Zip",
+            [
+                {
+                    "type": utils.DECOMPRESS_TRANSFORM_TYPE,
+                    "order": "1",
+                    "algorithm": "copy",
+                }
+            ],
+        ),
         (
             utils.COMPRESSION_TAR_BZIP2,
-            "BZIP2 Compressed Archive",
-            utils.PRONOM_BZIP2,
             "tar",
+            ".bz2",
+            "tar",
+            [
+                {
+                    "type": utils.DECOMPRESS_TRANSFORM_TYPE,
+                    "order": "1",
+                    "algorithm": "bzip2",
+                },
+                {
+                    "type": utils.DECOMPRESS_TRANSFORM_TYPE,
+                    "order": "2",
+                    "algorithm": "tar",
+                },
+            ],
         ),
         (
             utils.COMPRESSION_TAR_GZIP,
-            "GZIP Compressed Archive",
-            utils.PRONOM_GZIP,
             "tar",
+            ".gz",
+            "tar",
+            [
+                {
+                    "type": utils.DECOMPRESS_TRANSFORM_TYPE,
+                    "order": "1",
+                    "algorithm": "gzip",
+                },
+                {
+                    "type": utils.DECOMPRESS_TRANSFORM_TYPE,
+                    "order": "2",
+                    "algorithm": "tar",
+                },
+            ],
         ),
     ],
 )
-def test_get_format_info(compression, name, pronom, program):
-    info = utils.get_format_info(compression)
-
-    assert info["name"] == name
-    assert info["registry_key"] == pronom
-    assert info["program_name"] == program
+def test_get_format_info(compression, version, extension, program_name, transform):
+    """Ensure that the format information we write per compression is
+    consistent.
+    """
+    fsentry = FSEntry()
+    vers, ext, prog_name = utils.get_compression_transforms(fsentry, compression, 1)
+    assert version in vers
+    assert ext == extension
+    assert program_name in prog_name
+    assert fsentry.transform_files == transform
