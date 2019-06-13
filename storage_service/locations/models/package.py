@@ -553,7 +553,8 @@ class Package(models.Model):
             replicator_location.uuid,
         )
 
-        replica_package = _replicate_package_mdl_inst(self)
+        replica_package = self._clone()
+        replica_package.replicated_package = self
 
         # Remove the /uuid/path from the replica's current_path and replace the
         # old UUID in the basename with the new UUID.
@@ -2792,6 +2793,17 @@ class Package(models.Model):
     def has_been_submitted_for_processing(self):
         return "deposit_completion_time" in self.misc_attributes
 
+    def _clone(self):
+        """Create a new ``Package`` instance that is exactly like ``package`` but has
+        a new primary key and UUID.
+        """
+        clone = copy.deepcopy(self)
+        clone.pk = None
+        clone.uuid = None
+        clone.save()  # Generate a new id and UUID
+
+        return clone
+
 
 def _get_decompr_cmd(compression, extract_path, full_path):
     """Returns a decompression command (as a list), given ``compression``
@@ -2977,20 +2989,6 @@ def _get_compression_details_from_premis_events(premis_events, aip_uuid):
             )
         )
     return compression_event.compression_details
-
-
-def _replicate_package_mdl_inst(package):
-    """Create a new Django ``Package`` instance that is exactly like
-    ``package_mdl`` but which has a new primary key and UUID, and references
-    ``package_mdl`` as its ``replicated_package``.
-    """
-    replica_package = copy.deepcopy(package)
-    replica_package.pk = None
-    replica_package.uuid = None
-    replica_package.replicated_package = package
-    replica_package.save()  # Generate a new id and UUID
-
-    return replica_package
 
 
 def _get_checksum_report(
