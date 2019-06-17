@@ -3,6 +3,7 @@ from __future__ import absolute_import
 # stdlib, alphabetical
 from collections import namedtuple
 import codecs
+import copy
 import distutils.dir_util
 import json
 import logging
@@ -531,7 +532,7 @@ class Package(models.Model):
         success, failures, message, __ = self.check_fixity(force_local=True)
         return success, failures, message
 
-    def replicate(self, replicator_location_uuid):
+    def replicate(self, replicator_location):
         """Replicate this package in the database and on disk by
         1. creating a new ``Package`` model instance that references this one in
            its ``replicated_package`` attribute,
@@ -542,8 +543,6 @@ class Package(models.Model):
         4. updating the pointer file for the replicated AIP, which encodes the
            replication event.
         """
-        self_uuid = self.uuid
-        replicator_location = Location.objects.get(uuid=replicator_location_uuid)
         # Replicandum is the package to be replicated, i.e., ``self``
         replicandum_location = self.current_location
         replicandum_path = self.current_path
@@ -551,14 +550,11 @@ class Package(models.Model):
         LOGGER.info(
             "Replicating package %s to replicator location %s",
             replicandum_uuid,
-            replicator_location_uuid,
+            replicator_location.uuid,
         )
-        replica_package = _replicate_package_mdl_inst(self)
 
-        # It is necessary to re-retrieve ``self`` here because otherwise the
-        # package model instance replication will cause ``self`` to reference
-        # the replica.
-        self = Package.objects.get(uuid=self_uuid)
+        replica_package = self._clone()
+        replica_package.replicated_package = self
 
         # Remove the /uuid/path from the replica's current_path and replace the
         # old UUID in the basename with the new UUID.
@@ -1214,14 +1210,22 @@ class Package(models.Model):
         replication_relationship = premis.create_replication_derivation_relationship(
             replica_package.uuid, replication_event_uuid
         )
-        new_relationships = old_premis_object.findall("relationship")
-        new_relationships += (replication_relationship,)
-        new_premis_object = premisrw.PREMISObject(
-            xsi_type=old_premis_object.xsi_type,
-            object_identifier=old_premis_object.find("object_identifier"),
-            object_characteristics=old_premis_object.find("object_characteristics"),
-            relationship=new_relationships,
+        new_relationships = [
+            relationship.data
+            for relationship in old_premis_object.findall("relationship")
+        ]
+        new_relationships.append(replication_relationship)
+        new_premis_meta = premisrw.PREMIS_META.copy()
+        new_premis_meta["xsi:type"] = old_premis_object.attributes.get(
+            "xsi_type", "premis:file"
         )
+        new_premis_data = (
+            "object",
+            new_premis_meta,
+            old_premis_object.find("object_identifier"),
+            old_premis_object.find("object_characteristics"),
+        ) + tuple(new_relationships)
+        new_premis_object = premisrw.PREMISObject(data=new_premis_data)
         for ss_agent in ss_agents:
             if ss_agent not in old_premis_agents:
                 old_premis_agents.append(ss_agent)
@@ -1406,7 +1410,7 @@ class Package(models.Model):
         """
         replicator_locs = self.current_location.replicators.all()
         for replicator_loc in replicator_locs:
-            self.replicate(replicator_loc.uuid)
+            self.replicate(replicator_loc)
 
     def run_post_store_callbacks(self):
         """Checks if post store callbacks exist and executes them.
@@ -2676,6 +2680,17 @@ class Package(models.Model):
     def has_been_submitted_for_processing(self):
         return "deposit_completion_time" in self.misc_attributes
 
+    def _clone(self):
+        """Create a new ``Package`` instance that is exactly like ``package`` but has
+        a new primary key and UUID.
+        """
+        clone = copy.deepcopy(self)
+        clone.pk = None
+        clone.uuid = None
+        clone.save()  # Generate a new id and UUID
+
+        return clone
+
 
 def _get_decompr_cmd(compression, extract_path, full_path):
     """Returns a decompression command (as a list), given ``compression``
@@ -2867,21 +2882,6 @@ def _get_compression_details_from_premis_events(premis_events, aip_uuid):
             )
         )
     return compression_event.compression_details
-
-
-def _replicate_package_mdl_inst(package_mdl):
-    """Create a new Django ``Package`` instance that is exactly like
-    ``package_mdl`` but which has a new primary key and UUID, and references
-    ``package_mdl`` as its ``replicated_package``.
-    """
-    package_uuid = package_mdl.uuid
-    replica_package = package_mdl
-    # After setting ``pk`` to ``None``, ``save()`` will create a new instance/db row
-    replica_package.pk = None
-    replica_package.uuid = None  # will trigger new UUID generation
-    replica_package.replicated_package_id = package_uuid
-    replica_package.save()
-    return replica_package
 
 
 def _get_checksum_report(

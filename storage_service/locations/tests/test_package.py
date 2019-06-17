@@ -370,13 +370,37 @@ class TestPackage(TestCase):
         )
 
         aip.create_replicas()
-        replica = aip.replicated_package
 
+        assert aip.replicas.count() == 1
+
+        replica = aip.replicas.first()
         assert replica is not None
-        # The relationship is a little bit broken here; one would think that the
-        # _original_ AIP should have replicas, and the replicated AIP should not.
-        assert aip.replicas.count() == 0
-        assert replica.replicas.count() == 1
+        assert replica.origin_pipeline == aip.origin_pipeline
+        assert replica.replicas.count() == 0
+
+    def test_replicate_aip_twice(self):
+        space_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="space")
+        replication_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="replication")
+        replication_dir2 = tempfile.mkdtemp(dir=self.tmp_dir, prefix="replication")
+        aip = models.Package.objects.get(uuid="0d4e739b-bf60-4b87-bc20-67a379b28cea")
+        aip.current_location.space.staging_path = space_dir
+        aip.current_location.space.save()
+        aip.current_location.replicators.create(
+            space=aip.current_location.space,
+            relative_path=replication_dir,
+            purpose=models.Location.REPLICATOR,
+        )
+        aip.current_location.replicators.create(
+            space=aip.current_location.space,
+            relative_path=replication_dir2,
+            purpose=models.Location.REPLICATOR,
+        )
+
+        aip.create_replicas()
+
+        assert aip.replicas.count() == 2
+        for replica in aip.replicas.all():
+            assert replica.replicas.count() == 0
 
     @mock.patch("locations.models.gpg._gpg_encrypt")
     def test_replicate_aip_gpg_encrypted(self, mock_encrypt):
@@ -401,10 +425,10 @@ class TestPackage(TestCase):
         )
 
         aip.create_replicas()
-        replica = aip.replicated_package
+        replica = aip.replicas.first()
 
         assert replica is not None
-        assert mock_encrypt.call_args_list == [mock.call(aip.full_path, u"")]
+        assert mock_encrypt.call_args_list == [mock.call(replica.full_path, u"")]
 
 
 class TestTransferPackage(TestCase):
