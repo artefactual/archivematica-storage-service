@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "fluid.html" %}
 {% load i18n %}
 
 {% block page_title %}{% blocktrans %}{{ location }} Information{% endblocktrans %}{% endblock %}
@@ -72,7 +72,7 @@
 
 <h2>{% trans "Packages" %}</h2>
 
-{% if packages %}
+{% if package_count %}
   {% include "snippets/packages_table.html" %}
 {% else %}
   <p>{% trans "No packages in this space." %}</p>

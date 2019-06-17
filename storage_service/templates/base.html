@@ -62,19 +62,21 @@
       </div>
     </div>
 
-    <div class="container">
-      {% block sidebar %}{% endblock sidebar %}
+    {% block body %}
+      <div class="container">
+        {% block sidebar %}{% endblock sidebar %}
 
-      <div class="row">
-        <h1>{% block page_title %}{% trans "Archivematica Storage Service" %}{% endblock page_title %}</h1>
+        <div class="row">
+          <h1>{% block page_title %}{% trans "Archivematica Storage Service" %}{% endblock page_title %}</h1>
 
-        {% for message in messages %}
-          <div class='alert alert-{{message.tags}}'>{{ message }}</div>
-        {% endfor %}
+          {% for message in messages %}
+            <div class='alert alert-{{message.tags}}'>{{ message }}</div>
+          {% endfor %}
 
-        {% block content %}{% endblock content %}
-      </div>
-    </div> <!-- /container -->
+          {% block content %}{% endblock content %}
+        </div>
+      </div> <!-- /container -->
+    {% endblock %}
 
     <!-- Le javascript
     ================================================== -->
