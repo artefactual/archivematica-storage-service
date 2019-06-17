@@ -8,8 +8,10 @@ from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.http import HttpResponse
 from django.forms.models import model_to_dict
+from django.middleware.csrf import get_token
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template import RequestContext
+from django.template.loader import get_template
 from django.utils.translation import ugettext as _
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -30,6 +32,7 @@ from .models import (
     FixityLog,
     GPG,
 )
+from . import datatable_utils
 from . import forms
 from .constants import PROTOCOL
 
@@ -65,12 +68,43 @@ def get_delete_context_dict(request, model, object_uuid, default_cancel="/"):
 def package_list(request):
     api_key = ApiKey.objects.get(user=request.user).key
     context = {
-        "packages": Package.objects.all(),
+        "package_count": Package.objects.count(),
         "user": request.user,
         "api_key": api_key,
         "uri": request.build_absolute_uri("/"),
+        "redirect_path": request.path,
+        "csrf_token": get_token(request),
     }
     return render(request, "locations/package_list.html", context)
+
+
+def package_list_ajax(request):
+    datatable = datatable_utils.DataTable(request.GET)
+    data = []
+    csrf_token = get_token(request)
+    for package in datatable.packages:
+        data.append(
+            get_template("snippets/package_row.html")
+            .render(
+                {
+                    "package": package,
+                    "redirect_path": request.META.get("HTTP_REFERER", request.path),
+                    "csrf_token": csrf_token,
+                }
+            )
+            .strip()
+        )
+    # these are the values that DataTables expects from the server
+    # see "Reply from the server" in http://legacy.datatables.net/usage/server-side
+    response = {
+        "iTotalRecords": datatable.total_records,
+        "iTotalDisplayRecords": datatable.total_display_records,
+        "sEcho": datatable.echo,
+        "aaData": data,
+    }
+    return HttpResponse(
+        status=200, content=json.dumps(response), content_type="application/json"
+    )
 
 
 def package_fixity(request, package_uuid):
@@ -426,7 +460,7 @@ def location_detail(request, location_uuid):
         )
         return redirect("location_list")
     pipelines = Pipeline.objects.filter(location=location)
-    packages = Package.objects.filter(current_location=location)
+    package_count = Package.objects.filter(current_location=location).count()
     return render(request, "locations/location_detail.html", locals())
 
 

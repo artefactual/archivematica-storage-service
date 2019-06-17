@@ -1,5 +1,6 @@
 $(document).ready(function() {
-  $('.datatable').dataTable({
+  var uri = $("#user-data-packages").data("uri") || "/";
+  var dataTableOptions = {
     // List of language strings from https://datatables.net/reference/option/language
     oLanguage: {
       sDecimal:        "",
@@ -25,7 +26,32 @@ $(document).ready(function() {
         sSortDescending: gettext(": activate to sort column descending"),
       },
     }
+  };
+  // separate options for packages table
+  var packagesDataTableOptions = {};
+  for (var k in dataTableOptions) {
+    packagesDataTableOptions[k] = dataTableOptions[k];
+  }
+  // enable server-side processing
+  packagesDataTableOptions["bServerSide"] = true;
+  packagesDataTableOptions["bProcessing"] = true;
+  packagesDataTableOptions["sAjaxSource"] = uri + "packages_ajax";
+  var columns = [];
+  // for each column create a function that replaces the
+  // table cell content with the HTML returned by the server
+  $('.packages-datatable thead th').each(function(i, header) {
+    columns.push({
+      "mData": function(source, type, val) {
+        var $tr = $(Object.values(source).join(""));
+        return $tr.find('td').eq(i).html();
+      },
+      "bSortable": $(header).hasClass("sortable")
+    });
   });
+  packagesDataTableOptions["aoColumns"] = columns;
+
+  $('.datatable').dataTable(dataTableOptions);
+  $('.packages-datatable').dataTable(packagesDataTableOptions);
 
   $("body").on("click", "a.request-delete", function(event) {
     var self = $(event.target);

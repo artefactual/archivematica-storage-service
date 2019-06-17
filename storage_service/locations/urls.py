@@ -24,6 +24,7 @@ urlpatterns = [
     ),
     # Packages
     url(r"^packages/$", views.package_list, name="package_list"),
+    url(r"^packages_ajax/$", views.package_list_ajax, name="package_list_ajax"),
     url(
         r"^packages/package_delete_request/$",
         views.package_delete_request,
