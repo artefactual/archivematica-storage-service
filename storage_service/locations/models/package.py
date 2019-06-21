@@ -2634,9 +2634,6 @@ class Package(models.Model):
             # what AM uses
             checksum = utils.generate_checksum(path, "sha512")
 
-        aip = mets.get_file(type="Archival Information Package")
-        aip.path = self.full_path
-
         transform_types = set(
             [transform.get("type") for transform in aip.transform_files]
         )
@@ -2658,19 +2655,18 @@ class Package(models.Model):
             composition_level=len(aip.transform_files),
         )
 
-        new_techmd = aip.add_premis_object(reingest_premis_obj)
+        aip.path = self.full_path
+        aip.add_premis_object(reingest_premis_obj)
 
-        # Mark the old techMD as superseded
-        current_techmd = None
-        for subsection in aip.amdsecs[0].subsections:
-            if subsection.subsection == "techMD" and subsection.status == "current":
-                current_techmd = subsection
+        # Remove the previous techMD. At some point, this should probably be
+        # changed to superseding the old one, put pointer files aren't persisted
+        # between reingest, so that doesn't make sense here.
+        techmd_position = 0
+        for index, subsection in enumerate(aip.amdsecs[0].subsections):
+            if subsection.subsection == "techMD":
+                techmd_position = index
                 break
-
-        if current_techmd is None:
-            current_techmd = aip.amdsecs[0].subsections[0]
-
-        current_techmd.replace_with(new_techmd)
+        del aip.amdsecs[0].subsections[techmd_position]
 
         # Write out pointer file again
         with open(self.full_pointer_file_path, "w") as f:
