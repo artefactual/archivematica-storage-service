@@ -14,7 +14,7 @@ gunicorn==19.9.0
 jsonfield==2.0.1
 logutils==0.3.4.1
 lxml==3.7.3
-metsrw==0.3.8
+metsrw==0.3.9
 ndg-httpsclient==0.4.2
 python-gnupg==0.4.0
 python-keystoneclient==3.10.0
