@@ -2644,6 +2644,7 @@ class Package(models.Model):
         version, extension, program_name = utils.get_compression_transforms(
             aip, compression, transform_order
         )
+        transform_count = len(aip.transform_files)
         reingest_premis_obj = premis.create_aip_premis_object(
             premis_obj.identifier_value,
             str(os.path.getsize(path)),
@@ -2652,21 +2653,23 @@ class Package(models.Model):
             checksum.hexdigest(),
             program_name,
             version,
-            composition_level=len(aip.transform_files),
+            composition_level=transform_count,
         )
 
         aip.path = self.full_path
         aip.add_premis_object(reingest_premis_obj)
 
-        # Remove the previous techMD. At some point, this should probably be
-        # changed to superseding the old one, put pointer files aren't persisted
-        # between reingest, so that doesn't make sense here.
-        techmd_position = 0
-        for index, subsection in enumerate(aip.amdsecs[0].subsections):
-            if subsection.subsection == "techMD":
-                techmd_position = index
-                break
-        del aip.amdsecs[0].subsections[techmd_position]
+        # If we don't have any transforms, remove the previous techMD. At some point,
+        # this should probably be changed to superseding the old one, but pointer
+        # files aren't persisted between reingest, so that doesn't make sense here.
+        if transform_count == 1:
+            techmd_position = None
+            for index, subsection in enumerate(aip.amdsecs[0].subsections):
+                if subsection.subsection == "techMD":
+                    techmd_position = index
+                    break
+            if techmd_position is not None:
+                del aip.amdsecs[0].subsections[techmd_position]
 
         # Write out pointer file again
         with open(self.full_pointer_file_path, "w") as f:
