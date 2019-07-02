@@ -42,6 +42,11 @@ if "shibboleth" in settings.INSTALLED_APPS:
     urlpatterns += [url(r"^shib/", include(ShibbolethURLs, namespace="shibboleth"))]
 
 
+if settings.PROMETHEUS_ENABLED:
+    # Include prometheus metrics at /metrics
+    urlpatterns.append(url("", include("django_prometheus.urls")))
+
+
 def startup():
     import django.core.exceptions
     import errno

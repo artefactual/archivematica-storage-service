@@ -447,3 +447,13 @@ GNUPG_HOME_PATH = environ.get("SS_GNUPG_HOME_PATH", None)
 # - locations.models.pipeline
 # - locations.models.dspace
 INSECURE_SKIP_VERIFY = is_true(environ.get("SS_INSECURE_SKIP_VERIFY", ""))
+
+PROMETHEUS_ENABLED = is_true(environ.get("SS_PROMETHEUS_ENABLED", ""))
+if PROMETHEUS_ENABLED:
+    MIDDLEWARE_CLASSES = (
+        ["django_prometheus.middleware.PrometheusBeforeMiddleware"]
+        + MIDDLEWARE_CLASSES
+        + ["django_prometheus.middleware.PrometheusAfterMiddleware"]
+    )
+    INSTALLED_APPS = INSTALLED_APPS + ["django_prometheus"]
+    LOGIN_EXEMPT_URLS = LOGIN_EXEMPT_URLS + (r"^metrics$",)
