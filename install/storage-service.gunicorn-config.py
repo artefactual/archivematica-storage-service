@@ -2,6 +2,9 @@
 # Example: https://github.com/benoitc/gunicorn/blob/master/examples/example_config.py
 
 import os
+import shutil
+import tempfile
+
 
 # http://docs.gunicorn.org/en/stable/settings.html#user
 user = os.environ.get("SS_GUNICORN_USER", "archivematica")
@@ -48,3 +51,18 @@ proc_name = os.environ.get("SS_GUNICORN_PROC_NAME", "archivematica-storage-servi
 
 # http://docs.gunicorn.org/en/stable/settings.html#sendfile
 sendfile = os.environ.get("SS_GUNICORN_SENDFILE", "false")
+
+# If we're using more than one worker, collect stats in a tmpdir
+if os.environ.get("SS_PROMETHEUS_ENABLED") and workers != "1":
+    prometheus_multiproc_dir = tempfile.mkdtemp(prefix="prometheus-stats")
+    raw_env = ["prometheus_multiproc_dir={}".format(prometheus_multiproc_dir)]
+
+    def child_exit(server, worker):
+        # Lazy import to avoid checking for the existance of
+        # prometheus_multiproc_dir immediately
+        from prometheus_client import multiprocess  # noqa
+
+        multiprocess.mark_process_dead(worker.pid)
+
+    def on_exit(server):
+        shutil.rmtree(prometheus_multiproc_dir)
