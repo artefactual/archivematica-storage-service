@@ -74,6 +74,7 @@ requests-oauthlib==1.2.0
 requests==2.21.0
 rfc3986==1.3.2            # via oslo.config
 s3transfer==0.2.1         # via boto3
+scandir==1.10.0
 six==1.12.0               # via cryptography, debtcollector, django-extensions, keystoneauth1, metsrw, oslo.config, oslo.i18n, oslo.serialization, oslo.utils, pyopenssl, python-dateutil, python-keystoneclient, python-swiftclient, stevedore
 stevedore==1.30.1         # via keystoneauth1, oslo.config, python-keystoneclient
 sword2==0.2.1
