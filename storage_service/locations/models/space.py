@@ -16,6 +16,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils import six
 
 # Third party dependencies, alphabetical
+import scandir
 from django_extensions.db.fields import UUIDField
 
 # This project, alphabetical
@@ -797,26 +798,46 @@ class PosixMoveUnsupportedError(Exception):
     pass
 
 
+def _scandir_public(path):
+    """Generate all directory entries, excluding hidden files.
+    """
+    for entry in scandir.scandir(path):
+        if not entry.name.startswith("."):
+            yield entry
+
+
+def _scandir_files(path):
+    """Generate all files, descending into subdirs.
+    """
+    for entry in scandir.scandir(path):
+        if entry.is_dir():
+            for subentry in _scandir_files(entry.path):
+                yield subentry
+        else:
+            yield entry
+
+
 def path2browse_dict(path):
     """Given a path on disk, return a dict with keys for directories, entries
     and properties.
     """
-    properties = {}
-    # Sorted list of all entries in directory, excluding hidden files
-    entries = [name for name in os.listdir(path) if name[0] != "."]
-    entries = sorted(entries, key=lambda s: s.lower())
-    directories = []
     should_count = not utils.get_setting("object_counting_disabled", False)
-    for name in entries:
-        full_path = os.path.join(path, name)
-        properties[name] = {}
-        if not os.path.isdir(full_path):
-            properties[name]["size"] = os.path.getsize(full_path)
-            continue
-        if os.access(full_path, os.R_OK):
-            directories.append(name)
+
+    entries = []
+    directories = []
+    properties = {}
+
+    for entry in sorted(_scandir_public(path), key=lambda e: e.name.lower()):
+        entries.append(entry.name)
+        if not entry.is_dir():
+            properties[entry.name] = {"size": entry.stat().st_size}
+        elif os.access(entry.path, os.R_OK):
+            directories.append(entry.name)
             if should_count:
-                properties[name]["object count"] = count_objects_in_directory(full_path)
+                properties[entry.name] = {
+                    "object count": count_objects_in_directory(entry.path)
+                }
+
     return {"directories": directories, "entries": entries, "properties": properties}
 
 
@@ -824,10 +845,12 @@ def count_objects_in_directory(path):
     """
     Returns all the files in a directory, including children.
     """
-    total_files = 0
-    for root, dirs, files in os.walk(path):
-        total_files += len(files)
+    count = 0
+    for entry in _scandir_files(path):
+        count += 1
+
         # Limit the number of files counted to keep it from being too slow
-        if total_files > 5000:
+        if count >= 5000:
             return "5000+"
-    return total_files
+
+    return count
