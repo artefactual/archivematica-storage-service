@@ -809,8 +809,11 @@ def path2browse_dict(path):
     should_count = not utils.get_setting("object_counting_disabled", False)
     for name in entries:
         full_path = os.path.join(path, name)
-        properties[name] = {"size": os.path.getsize(full_path)}
-        if os.path.isdir(full_path) and os.access(full_path, os.R_OK):
+        properties[name] = {}
+        if not os.path.isdir(full_path):
+            properties[name]["size"] = os.path.getsize(full_path)
+            continue
+        if os.access(full_path, os.R_OK):
             directories.append(name)
             if should_count:
                 properties[name]["object count"] = count_objects_in_directory(full_path)
