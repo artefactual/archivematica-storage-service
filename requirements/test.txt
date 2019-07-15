@@ -51,7 +51,7 @@ keystoneauth1==3.14.0
 logutils==0.3.4.1
 git+https://github.com/seatme/django-longer-username.git@seatme#egg=longerusername
 lxml==3.7.3
-metsrw==0.3.10
+metsrw==0.3.11
 mock==3.0.5               # via pytest-mock, vcrpy
 monotonic==1.5
 more-itertools==5.0.0     # via pytest
