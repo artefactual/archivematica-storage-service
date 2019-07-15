@@ -6,6 +6,7 @@
 - [Environment variables](#environment-variables)
   - [Application-specific environment variables](#application-specific-environment-variables)
   - [Gunicorn-specific environment variables](#gunicorn-specific-environment-variables)
+  - [LDAP-specific environment variables](#ldap-specific-environment-variables)
 - [Logging configuration](#logging-configuration)
 
 ## Introduction
