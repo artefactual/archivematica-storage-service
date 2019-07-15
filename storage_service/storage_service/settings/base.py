@@ -380,9 +380,11 @@ if LDAP_AUTHENTICATION:
     )
     AUTH_LDAP_CACHE_GROUPS = is_true(environ.get("AUTH_LDAP_CACHE_GROUPS", "FALSE"))
     try:
-        AUTH_LDAP_GROUP_CACHE_TIMEOUT = int(environ.get("AUTH_LDAP_DENY_GROUP", ""))
+        AUTH_LDAP_GROUP_CACHE_TIMEOUT = int(
+            environ.get("AUTH_LDAP_GROUP_CACHE_TIMEOUT", "3600")
+        )
     except ValueError:
-        AUTH_LDAP_GROUP_CACHE_TIMEOUT = None
+        AUTH_LDAP_GROUP_CACHE_TIMEOUT = 3600
 
     AUTH_LDAP_START_TLS = is_true(environ.get("AUTH_LDAP_START_TLS", "TRUE"))
 
