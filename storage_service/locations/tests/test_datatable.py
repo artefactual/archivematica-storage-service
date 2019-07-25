@@ -1,9 +1,16 @@
 # -*- coding: utf-8 -*-
 """Tests for the datatable utilities."""
 
+import os
+import tempfile
+
 from django.test import TestCase
 
 from locations import datatable_utils
+from locations import models
+
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures", ""))
 
 
 class TestDataTable(TestCase):
@@ -107,6 +114,88 @@ class TestDataTable(TestCase):
         assert datatable.total_records == 7
         assert datatable.total_display_records == 7
         assert len(datatable.packages) == 7
+
+    def _create_replicas(self, uuid):
+        test_location = models.Location.objects.get(
+            uuid="615103f0-0ee0-4a12-ba17-43192d1143ea"
+        )
+        test_location.relative_path = FIXTURES_DIR[1:]
+        test_location.save()
+        models.Location.objects.filter(purpose="SS").update(
+            relative_path=FIXTURES_DIR[1:]
+        )
+        tmp_dir = tempfile.mkdtemp()
+        space_dir = tempfile.mkdtemp(dir=tmp_dir, prefix="space")
+        replication_dir = tempfile.mkdtemp(dir=tmp_dir, prefix="replication")
+        replication_dir2 = tempfile.mkdtemp(dir=tmp_dir, prefix="replication")
+        aip = models.Package.objects.get(uuid=uuid)
+        aip.current_location.space.staging_path = space_dir
+        aip.current_location.space.save()
+        aip.current_location.replicators.create(
+            space=aip.current_location.space,
+            relative_path=replication_dir,
+            purpose=models.Location.REPLICATOR,
+        )
+        aip.current_location.replicators.create(
+            space=aip.current_location.space,
+            relative_path=replication_dir2,
+            purpose=models.Location.REPLICATOR,
+        )
+        aip.create_replicas()
+        assert aip.replicas.count() == 2
+        return [replica.uuid for replica in aip.replicas.all()]
+
+    def test_search_replica_of(self):
+        package_uuid = "0d4e739b-bf60-4b87-bc20-67a379b28cea"
+        replicas_uuids = self._create_replicas(package_uuid)
+        datatable = datatable_utils.DataTable(
+            {
+                "sSearch": package_uuid,
+                "iDisplayStart": 0,
+                "iDisplayLength": 10,
+                "sEcho": "1",
+            }
+        )
+        expected_params = {
+            "search": package_uuid,
+            "display_start": 0,
+            "display_length": 10,
+            "sorting_column": {},
+            "echo": 1,
+        }
+        # searching for the original package uuid should return its replicas too
+        expected_packages_uuids = sorted([package_uuid] + replicas_uuids)
+        assert datatable.params == expected_params
+        assert datatable.total_records == 9
+        assert datatable.total_display_records == 3
+        assert len(datatable.packages) == 3
+        assert sorted([p.uuid for p in datatable.packages]) == expected_packages_uuids
+
+    def test_reverse_search_replica_of(self):
+        package_uuid = "0d4e739b-bf60-4b87-bc20-67a379b28cea"
+        replicas_uuids = self._create_replicas(package_uuid)
+        datatable = datatable_utils.DataTable(
+            {
+                "sSearch": replicas_uuids[0],
+                "iDisplayStart": 0,
+                "iDisplayLength": 10,
+                "sEcho": "1",
+            }
+        )
+        expected_params = {
+            "search": replicas_uuids[0],
+            "display_start": 0,
+            "display_length": 10,
+            "sorting_column": {},
+            "echo": 1,
+        }
+        # searching for the replica uuid should return its original package too
+        expected_packages_uuids = sorted([package_uuid, replicas_uuids[0]])
+        assert datatable.params == expected_params
+        assert datatable.total_records == 9
+        assert datatable.total_display_records == 2
+        assert len(datatable.packages) == 2
+        assert sorted([p.uuid for p in datatable.packages]) == expected_packages_uuids
 
     def test_sorting_uuid(self):
         datatable = datatable_utils.DataTable(

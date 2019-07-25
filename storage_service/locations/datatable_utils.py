@@ -43,8 +43,10 @@ class DataTable(object):
                 | Q(current_path__icontains=search_as_path)
                 | Q(package_type__icontains=search)
                 | Q(status__icontains=search)
+                | Q(replicas__uuid__icontains=search)
+                | Q(replicated_package__uuid__icontains=search)
             )
-        queryset = Package.objects.filter(search_filter)
+        queryset = Package.objects.filter(search_filter).distinct()
         self.total_display_records = queryset.count()
         self.packages = self.get_packages(queryset)
 
