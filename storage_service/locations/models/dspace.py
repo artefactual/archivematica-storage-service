@@ -23,7 +23,10 @@ from django.utils.translation import ugettext_lazy as _
 # Third party dependencies, alphabetical
 from lxml import etree
 import requests
-import sword2
+try:
+    import sword2
+except ImportError:
+    pass
 import jsonfield
 
 # This project, alphabetical

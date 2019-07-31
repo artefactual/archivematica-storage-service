@@ -16,7 +16,10 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
-import sword2
+try:
+    import sword2
+except ImportError:
+    pass
 
 # This project, alphabetical
 from common import utils
