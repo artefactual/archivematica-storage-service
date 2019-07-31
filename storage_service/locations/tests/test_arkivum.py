@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import os
 import requests
 import shutil
@@ -7,6 +8,7 @@ from django.test import TestCase
 
 from locations import models
 from . import TempDirMixin
+from six.moves import range
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))

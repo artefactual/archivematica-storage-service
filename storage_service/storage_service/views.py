@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django.utils.translation import get_language
 from django.utils import timezone
 from django.views.decorators.cache import cache_page

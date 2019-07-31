@@ -10,7 +10,7 @@ import logging
 import os
 import subprocess
 import traceback
-import urllib
+import six.moves.urllib.request, six.moves.urllib.parse, six.moves.urllib.error
 
 # Core Django, alphabetical
 from django.db import models
@@ -394,7 +394,7 @@ class DSpaceREST(models.Model):
         for root, __, files in scandir.walk(source_path):
             for name in files:
                 bitstream_url = "{}/bitstreams?name={}".format(
-                    base_url, urllib.quote(name.encode("utf-8"))
+                    base_url, six.moves.urllib.parse.quote(name.encode("utf-8"))
                 )
                 try:
                     with open(os.path.join(root, name), "rb") as content:
@@ -462,7 +462,7 @@ class DSpaceREST(models.Model):
         bitstream_url = "{base_url}/items/{uuid}/bitstreams?name={name}".format(
             base_url=self._get_base_url(self.ds_rest_url),
             uuid=ds_item["uuid"],
-            name=urllib.quote(os.path.basename(source_path).encode("utf-8")),
+            name=six.moves.urllib.parse.quote(os.path.basename(source_path).encode("utf-8")),
         )
         try:
             with open(source_path, "rb") as content:

@@ -45,6 +45,7 @@ from .location import Location
 from .space import Space, PosixMoveUnsupportedError
 from .event import Callback, CallbackError, File
 from .fixity_log import FixityLog
+from six.moves import range
 
 __all__ = ("Package",)
 

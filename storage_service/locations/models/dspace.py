@@ -13,8 +13,8 @@ import os
 import re
 import shutil
 import subprocess
-import urlparse
-import urllib
+import six.moves.urllib.parse
+import six.moves.urllib.request, six.moves.urllib.parse, six.moves.urllib.error
 
 # Core Django, alphabetical
 from django.db import models
@@ -359,7 +359,7 @@ class DSpace(models.Model):
                 # 'Content-MD5': str(md5sum),
                 "Content-Length": str(os.path.getsize(upload_path)),
                 "Content-Disposition": "attachment; filename=%s"
-                % urllib.quote(os.path.basename(upload_path)),
+                % six.moves.urllib.parse.quote(os.path.basename(upload_path)),
             }
             requests.post(
                 entry_receipt.edit_media,
@@ -436,8 +436,8 @@ class DSpace(models.Model):
             return
 
         # Set bitstream permissions for bitstreams attached to handle
-        parsed_url = urlparse.urlparse(self.sd_iri)
-        dspace_url = urlparse.urlunparse(
+        parsed_url = six.moves.urllib.parse.urlparse(self.sd_iri)
+        dspace_url = six.moves.urllib.parse.urlunparse(
             (parsed_url.scheme, parsed_url.netloc, "", "", "", "")
         )
         # Log in to get DSpace REST API token
