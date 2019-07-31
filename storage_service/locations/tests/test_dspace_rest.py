@@ -2,6 +2,7 @@
 """Tests for the DSpace REST space."""
 
 from __future__ import print_function
+from __future__ import absolute_import
 from collections import namedtuple
 import json
 import os

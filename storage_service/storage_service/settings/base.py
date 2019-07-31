@@ -2,6 +2,7 @@
 
 """Common settings and globals."""
 
+from __future__ import absolute_import
 import json
 import logging
 import logging.config

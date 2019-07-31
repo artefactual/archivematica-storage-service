@@ -1,8 +1,10 @@
+from __future__ import absolute_import
 import base64
 
 import locations.api.resources as resources
 
 from tastypie import fields
+from six.moves import map
 
 
 class PipelineResource(resources.PipelineResource):
@@ -13,8 +15,8 @@ class PipelineResource(resources.PipelineResource):
 class SpaceResource(resources.SpaceResource):
     def get_objects(self, space, path):
         objects = space.browse(path)
-        objects["entries"] = map(base64.b64encode, objects["entries"])
-        objects["directories"] = map(base64.b64encode, objects["directories"])
+        objects["entries"] = list(map(base64.b64encode, objects["entries"]))
+        objects["directories"] = list(map(base64.b64encode, objects["directories"]))
 
         return objects
 
@@ -29,8 +31,8 @@ class LocationResource(resources.LocationResource):
 
     def get_objects(self, space, path):
         objects = space.browse(path)
-        objects["entries"] = map(base64.b64encode, objects["entries"])
-        objects["directories"] = map(base64.b64encode, objects["directories"])
+        objects["entries"] = list(map(base64.b64encode, objects["entries"]))
+        objects["directories"] = list(map(base64.b64encode, objects["directories"]))
         objects["properties"] = {
             base64.b64encode(k): v for k, v in objects.get("properties", {}).items()
         }

@@ -6,7 +6,7 @@ import logging
 from lxml import etree
 import os
 import requests
-import urllib
+import six.moves.urllib.request, six.moves.urllib.parse, six.moves.urllib.error
 
 # Core Django, alphabetical
 from django.conf import settings
@@ -352,7 +352,7 @@ class Arkivum(models.Model):
                     + "/"
                     + path
                 )
-                url_path = urllib.quote_plus(url_path, safe="/")
+                url_path = six.moves.urllib.parse.quote_plus(url_path, safe="/")
                 url = "https://" + self.host + "/api/2/files/fileInfo/" + url_path
                 LOGGER.info("URL: %s", url)
                 try:

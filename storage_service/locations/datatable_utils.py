@@ -8,6 +8,7 @@ The request and response details are documented in:
 http://legacy.datatables.net/usage/server-side
 """
 
+from __future__ import absolute_import
 import os
 
 from django.db.models import Q

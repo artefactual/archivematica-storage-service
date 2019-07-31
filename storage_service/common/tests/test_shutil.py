@@ -1,5 +1,6 @@
 """Extracted from Python's ``Lib/test/test_shutil.py``."""
 
+from __future__ import absolute_import
 import collections
 import contextlib
 import os
@@ -60,7 +61,7 @@ class EnvironmentVarGuard(collections.MutableMapping):
             del self._environ[envvar]
 
     def keys(self):
-        return self._environ.keys()
+        return list(self._environ.keys())
 
     def __iter__(self):
         return iter(self._environ)

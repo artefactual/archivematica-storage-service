@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import json
 import logging
 import os
@@ -35,6 +36,7 @@ from .models import (
 from . import datatable_utils
 from . import forms
 from .constants import PROTOCOL
+from six.moves import map
 
 LOGGER = logging.getLogger(__name__)
 
@@ -572,7 +574,7 @@ def space_list(request):
         }
         space.child = child_dict
 
-    map(add_child, spaces)
+    list(map(add_child, spaces))
     return render(request, "locations/space_list.html", locals())
 
 

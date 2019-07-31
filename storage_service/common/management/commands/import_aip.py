@@ -47,6 +47,7 @@ via a pipeline? Should this be fixed by the import command?::
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from __future__ import absolute_import
 import glob
 import logging
 import os
@@ -65,6 +66,7 @@ from django.utils.six.moves import input
 from administration.models import Settings
 from common import premis, utils
 from locations import models
+from six.moves import input
 
 
 # Suppress the logging from models/package.py
@@ -351,7 +353,7 @@ def check_if_aip_already_exists(aip_uuid):
             " want to import this AIP anyway (and destroy the existing one),"
             ' then enter "y" or "yes": '.format(aip_uuid)
         )
-        user_response = input(prompt)
+        user_response = eval(input(prompt))
         if user_response.lower() not in ("y", "yes"):
             raise ImportAIPException("Aborting importation of an already existing AIP")
 

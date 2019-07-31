@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import ast
 from collections import namedtuple
 import datetime
@@ -18,6 +19,7 @@ from django.utils import six
 
 from administration import models
 from storage_service import __version__ as ss_version
+from six.moves import range
 
 LOGGER = logging.getLogger(__name__)
 
@@ -383,7 +385,7 @@ def get_compress_command(compression, extract_path, basename, full_path):
             _("Algorithm %(algorithm)s not implemented") % {"algorithm": compression}
         )
 
-    command = list(filter(None, command))
+    command = list([_f for _f in command if _f])
     return (command, compressed_filename)
 
 
