@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
                 ("datetime_reported", models.DateTimeField(auto_now=True)),
                 (
                     "package",
-                    models.ForeignKey(to="locations.Package", to_field=b"uuid"),
+                    models.ForeignKey(to="locations.Package", to_field="uuid"),
                 ),
             ],
             options={"verbose_name": "Fixity Log"},

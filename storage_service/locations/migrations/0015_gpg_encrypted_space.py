@@ -49,7 +49,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="gpg",
             name="space",
-            field=models.OneToOneField(to="locations.Space", to_field=b"uuid"),
+            field=models.OneToOneField(to="locations.Space", to_field="uuid"),
         ),
         migrations.AddField(
             model_name="gpg",
