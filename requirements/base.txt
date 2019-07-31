@@ -26,7 +26,7 @@ docutils==0.14            # via botocore
 enum34==1.1.6             # via cryptography, oslo.config
 funcsigs==1.0.2           # via debtcollector, oslo.utils
 future==0.17.1            # via metsrw
-futures==3.2.0
+futures==3.2.0 ; python_version == "2.7"
 gevent==1.3.6
 greenlet==0.4.15          # via gevent
 gunicorn==19.9.0

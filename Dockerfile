@@ -1,4 +1,4 @@
-FROM python:2.7-stretch
+FROM python:3.5-stretch
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV DJANGO_SETTINGS_MODULE storage_service.settings.production
