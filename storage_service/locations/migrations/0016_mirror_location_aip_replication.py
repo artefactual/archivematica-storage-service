@@ -46,7 +46,7 @@ class Migration(migrations.Migration):
             name="replicated_package",
             field=models.ForeignKey(
                 related_name="replicas",
-                to_field=b"uuid",
+                to_field="uuid",
                 blank=True,
                 to="locations.Package",
                 null=True,

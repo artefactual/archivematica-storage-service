@@ -153,6 +153,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="dspacerest",
             name="space",
-            field=models.OneToOneField(to="locations.Space", to_field=b"uuid"),
+            field=models.OneToOneField(to="locations.Space", to_field="uuid"),
         ),
     ]

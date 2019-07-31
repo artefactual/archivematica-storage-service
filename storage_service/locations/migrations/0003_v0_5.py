@@ -115,7 +115,7 @@ class Migration(migrations.Migration):
                         help_text=b"Name of the Space within DuraCloud", max_length=64
                     ),
                 ),
-                ("space", models.OneToOneField(to="locations.Space", to_field=b"uuid")),
+                ("space", models.OneToOneField(to="locations.Space", to_field="uuid")),
             ],
             options={"verbose_name": "DuraCloud"},
             bases=(models.Model,),
@@ -153,7 +153,7 @@ class Migration(migrations.Migration):
                         max_length=256,
                     ),
                 ),
-                ("space", models.OneToOneField(to="locations.Space", to_field=b"uuid")),
+                ("space", models.OneToOneField(to="locations.Space", to_field="uuid")),
             ],
             options={"verbose_name": "FEDORA"},
             bases=(models.Model,),
@@ -218,7 +218,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "package",
-                    models.ForeignKey(to="locations.Package", to_field=b"uuid"),
+                    models.ForeignKey(to="locations.Package", to_field="uuid"),
                 ),
             ],
             options={"verbose_name": "Package Download Task"},
@@ -266,7 +266,7 @@ class Migration(migrations.Migration):
                     models.ForeignKey(
                         related_name="download_file_set",
                         to="locations.PackageDownloadTask",
-                        to_field=b"uuid",
+                        to_field="uuid",
                     ),
                 ),
             ],
@@ -346,7 +346,7 @@ class Migration(migrations.Migration):
             model_name="package",
             name="origin_pipeline",
             field=models.ForeignKey(
-                to_field=b"uuid", blank=True, to="locations.Pipeline", null=True
+                to_field="uuid", blank=True, to="locations.Pipeline", null=True
             ),
             preserve_default=True,
         ),
