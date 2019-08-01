@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from __future__ import unicode_literals
 import base64
 import json
 import os
@@ -25,8 +26,8 @@ class TestSpaceAPI(TestCase):
         user = User.objects.get(username="test")
         user.set_password("test")
         self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
-            "test:test"
-        )
+            b"test:test"
+        ).decode("utf8")
 
     def test_requires_auth(self):
         del self.client.defaults["HTTP_AUTHORIZATION"]
@@ -49,7 +50,7 @@ class TestSpaceAPI(TestCase):
         response = self.client.post(
             "/api/v2/space/", data=json.dumps(data), content_type="application/json"
         )
-        response_data = json.loads(response.content)
+        response_data = json.loads(response.content.decode("utf8"))
         assert response.status_code == 201
 
         protocol_model = models.S3.objects.get(space_id=response_data["uuid"])
@@ -64,8 +65,8 @@ class TestLocationAPI(TestCase):
         user = User.objects.get(username="test")
         user.set_password("test")
         self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
-            "test:test"
-        )
+            b"test:test"
+        ).decode("utf8")
 
     def test_requires_auth(self):
         del self.client.defaults["HTTP_AUTHORIZATION"]
@@ -90,7 +91,7 @@ class TestLocationAPI(TestCase):
         assert response.status_code == 201
 
         # Verify content
-        body = json.loads(response.content)
+        body = json.loads(response.content.decode("utf8"))
         assert body["description"] == data["description"]
         assert body["purpose"] == data["purpose"]
         assert body["path"] == "{}{}".format(space.path, data["relative_path"])
@@ -135,7 +136,7 @@ class TestLocationAPI(TestCase):
             data=json.dumps(new_default_ts_location),
             content_type="application/json",
         )
-        body = json.loads(response.content)
+        body = json.loads(response.content.decode("utf8"))
 
         response = _get_default_ts()
         assert response.status_code == 302
@@ -154,7 +155,7 @@ class TestLocationAPI(TestCase):
         )
         # Verify error
         assert response.status_code == 404
-        assert "not a link to a valid Location" in response.content
+        assert "not a link to a valid Location" in response.content.decode("utf8")
 
     def test_cant_move_to_non_existant_locations(self):
         data = {
@@ -188,7 +189,7 @@ class TestLocationAPI(TestCase):
         )
         # Verify error
         assert response.status_code == 404
-        assert "not a link to a valid Location" in response.content
+        assert "not a link to a valid Location" in response.content.decode("utf8")
 
     def test_cant_move_to_disabled_locations(self):
         # Set posting to location disabled
@@ -243,8 +244,8 @@ class TestPackageAPI(TempDirMixin, TestCase):
         user = User.objects.get(username="test")
         user.set_password("test")
         self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
-            "test:test"
-        )
+            b"test:test"
+        ).decode("utf8")
 
     def test_requires_auth(self):
         del self.client.defaults["HTTP_AUTHORIZATION"]
@@ -264,7 +265,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         response = self.client.get("/api/v2/file/metadata/", {"relative_path": path})
         assert response.status_code == 200
         assert response["content-type"] == "application/json"
-        body = json.loads(response.content)
+        body = json.loads(response.content.decode("utf8"))
         assert body[0]["relative_path"] == path
         assert body[0]["fileuuid"] == "86bfde11-e2a1-4ee7-b98d-9556b5f05198"
 
@@ -282,7 +283,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         )
         assert response.status_code == 200
         assert response["content-type"] == "application/json"
-        body = json.loads(response.content)
+        body = json.loads(response.content.decode("utf8"))
         assert body["success"] is True
         assert len(body["files"]) == 1
         assert body["files"][0]["name"] == "test_sip/objects/file.txt"
@@ -378,6 +379,10 @@ class TestPackageAPI(TempDirMixin, TestCase):
             response["content-disposition"] == 'attachment; filename="working_bag.zip"'
         )
 
+    def _decode_response_content(self, response):
+        result = b"".join(response.streaming_content)  # Convert to one string
+        return result.decode("utf8")
+
     def test_download_uncompressed_package(self):
         """ It should tar a package before downloading. """
         response = self.client.get(
@@ -388,7 +393,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         assert (
             response["content-disposition"] == 'attachment; filename="working_bag.tar"'
         )
-        content = "".join(response.streaming_content)  # Convert to one string
+        content = self._decode_response_content(response)
         assert "bag-info.txt" in content
         assert "bagit.txt" in content
         assert "manifest-md5.txt" in content
@@ -406,7 +411,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         assert (
             response["content-disposition"] == 'attachment; filename="working_bag.tar"'
         )
-        content = "".join(response.streaming_content)  # Convert to one string
+        content = self._decode_response_content(response)
         assert "bag-info.txt" in content
         assert "bagit.txt" in content
         assert "manifest-md5.txt" in content
@@ -432,7 +437,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
             "/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/download/"
         )
         assert response.status_code == 202
-        j = json.loads(response.content)
+        j = json.loads(response.content.decode("utf8"))
         assert j["error"] is False
         assert (
             j["message"]
@@ -450,7 +455,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
             "/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/download/"
         )
         assert response.status_code == 502
-        j = json.loads(response.content)
+        j = json.loads(response.content.decode("utf8"))
         assert j["error"] is True
         assert "Error" in j["message"] and "Arkivum" in j["message"]
 
@@ -460,7 +465,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
             "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/extract_file/"
         )
         assert response.status_code == 400
-        assert "relative_path_to_file" in response.content
+        assert "relative_path_to_file" in response.content.decode("utf8")
 
     def test_download_file_from_compressed(self):
         """ It should extract and return the file. """
@@ -471,7 +476,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         assert response.status_code == 200
         assert response["content-type"] == "text/plain"
         assert response["content-disposition"] == 'attachment; filename="test.txt"'
-        content = "".join(response.streaming_content)  # Convert to one string
+        content = self._decode_response_content(response)
         assert content == "test"
 
     def test_download_file_from_uncompressed(self):
@@ -483,7 +488,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         assert response.status_code == 200
         assert response["content-type"] == "text/plain"
         assert response["content-disposition"] == 'attachment; filename="test.txt"'
-        content = "".join(response.streaming_content)  # Convert to one string
+        content = self._decode_response_content(response)
         assert content == "test"
 
     @vcr.use_cassette(
@@ -498,7 +503,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
             data={"relative_path_to_file": "working_bag/data/test.txt"},
         )
         assert response.status_code == 202
-        j = json.loads(response.content)
+        j = json.loads(response.content.decode("utf8"))
         assert j["error"] is False
         assert (
             j["message"]
@@ -517,7 +522,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
             data={"relative_path_to_file": "working_bag/data/test.txt"},
         )
         assert response.status_code == 502
-        j = json.loads(response.content)
+        j = json.loads(response.content.decode("utf8"))
         assert j["error"] is True
         assert "Error" in j["message"] and "Arkivum" in j["message"]
 
@@ -544,8 +549,8 @@ class TestPipelineAPI(TestCase):
         user = User.objects.get(username="test")
         user.set_password("test")
         self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
-            "test:test"
-        )
+            b"test:test"
+        ).decode("utf8")
 
     def test_pipeline_create(self):
         data = {

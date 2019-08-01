@@ -3,6 +3,7 @@
 
 # stdlib, alphabetical
 from __future__ import absolute_import
+from __future__ import unicode_literals
 import json
 import logging
 import os
@@ -1740,7 +1741,7 @@ class PackageResource(ModelResource):
         """
 
         try:
-            files_list = json.load(request)
+            files_list = json.loads(request.read().decode("utf8"))
         except ValueError:
             response = {
                 "success": False,
