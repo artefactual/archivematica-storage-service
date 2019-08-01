@@ -374,7 +374,7 @@ class Package(models.Model):
             #       all released versions; make sure to use a patched version
             #       for this to work.
             command = ["lsar", "-ja", full_path]
-            output = subprocess.check_output(command)
+            output = subprocess.check_output(command).decode("utf8")
             output = json.loads(output)
             directories = [
                 d["XADFileName"]
@@ -1555,7 +1555,7 @@ class Package(models.Model):
             if relative_path:
                 command.append(relative_path)
             LOGGER.info("Extracting file with: %s to %s", command, output_path)
-            rc = subprocess.check_output(command)
+            rc = subprocess.check_output(command).decode("utf8")
             if "No files extracted" in rc:
                 raise StorageException(_("Extraction error"))
         else:
@@ -1899,7 +1899,7 @@ class Package(models.Model):
         except bagit.BagValidationError as failure:
             LOGGER.error("bagit.BagValidationError on %s:\n%s", path, failure.message)
             try:
-                LOGGER.debug(subprocess.check_output(["tree", "-a", "--du", path]))
+                LOGGER.debug(subprocess.check_output(["tree", "-a", "--du", path]).decode("utf8"))
             except (OSError, ValueError, subprocess.CalledProcessError):
                 pass
             success = False
@@ -2807,7 +2807,7 @@ def _extract_rein_aip(internal_location, rein_aip_internal_path):
         # Get output path
         command = ["lsar", "-ja", rein_aip_internal_path]
         try:
-            output = subprocess.check_output(command)
+            output = subprocess.check_output(command).decode("utf8")
             j = json.loads(output)
             bname = sorted(
                 [
