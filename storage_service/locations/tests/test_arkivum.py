@@ -57,7 +57,7 @@ class TestArkivum(TempDirMixin, TestCase):
         self.arkivum_dir = self.tmpdir / "arkivum"
         (self.arkivum_dir / "aips").mkdir()
         (self.arkivum_dir / "ts").mkdir()
-        (self.arkivum_dir / "test.txt").open("ab").write(u"test.txt contents")
+        (self.arkivum_dir / "test.txt").open("ab").write(b"test.txt contents")
         self.arkivum_dir = str(self.arkivum_dir)
 
     def test_has_required_attributes(self):
