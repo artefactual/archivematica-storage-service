@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from __future__ import unicode_literals
 import ast
 from collections import namedtuple
 import datetime
@@ -425,6 +426,18 @@ def get_tool_info_command(compression):
     return tool_info_command
 
 
+def get_7z_version():
+    return [
+        line
+        for line in subprocess.check_output("7z").splitlines()
+        if b"Version" in line
+    ][0].decode("utf8")
+
+
+def get_tar_version():
+    return subprocess.check_output(["tar", "--version"]).splitlines()[0].decode("utf8")
+
+
 def get_compression_event_detail(compression):
     """Return details of compression
 
@@ -433,17 +446,13 @@ def get_compression_event_detail(compression):
     """
     if compression in (COMPRESSION_7Z_BZIP, COMPRESSION_7Z_LZMA, COMPRESSION_7Z_COPY):
         try:
-            version = [
-                line
-                for line in subprocess.check_output("7z").splitlines()
-                if "Version" in line
-            ][0]
+            version = get_7z_version()
             event_detail = 'program="7z"; version="{}"'.format(version)
         except (subprocess.CalledProcessError, Exception):
             event_detail = 'program="7z"'
     elif compression in (COMPRESSION_TAR_BZIP2, COMPRESSION_TAR, COMPRESSION_TAR_GZIP):
         try:
-            version = subprocess.check_output(["tar", "--version"]).splitlines()[0]
+            version = get_tar_version()
             event_detail = 'program="tar"; version="{}"'.format(version)
         except (subprocess.CalledProcessError, Exception):
             event_detail = 'program="tar"'
@@ -481,9 +490,7 @@ def get_compression_transforms(aip, compression, transform_order):
                 "type": DECOMPRESS_TRANSFORM_TYPE,
             }
         )
-        version = [
-            x for x in subprocess.check_output("7z").splitlines() if "Version" in x
-        ][0]
+        version = get_7z_version()
         extension = COMPRESS_EXTENSION_7Z
         program_name = "7-Zip"
 
@@ -505,7 +512,7 @@ def get_compression_transforms(aip, compression, transform_order):
                 "type": DECOMPRESS_TRANSFORM_TYPE,
             }
         )
-        version = subprocess.check_output(["tar", "--version"]).splitlines()[0]
+        version = get_tar_version()
         extension = COMPRESS_EXTENSION_BZIP2
         program_name = "tar"
 
@@ -525,7 +532,7 @@ def get_compression_transforms(aip, compression, transform_order):
                 "type": DECOMPRESS_TRANSFORM_TYPE,
             }
         )
-        version = subprocess.check_output(["tar", "--version"]).splitlines()[0]
+        version = get_tar_version()
         extension = COMPRESS_EXTENSION_GZIP
         program_name = "tar"
 
