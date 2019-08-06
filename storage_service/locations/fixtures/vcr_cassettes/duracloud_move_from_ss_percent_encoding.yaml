@@ -1,14 +1,11 @@
 interactions:
 - request:
-    body: !!python/object:StringIO.StringIO
-      buf: 'bad #name file
-
-        '
-      buflist: []
-      closed: false
-      len: 15
-      pos: 0
-      softspace: 0
+    body: !!python/object/new:_io.BytesIO
+      state: !!python/tuple
+      - !!binary |
+        LmVuY29kZSgiYmFzZTY0IikK
+      - 0
+      - null
     headers:
       Accept: ['*/*']
       Accept-Encoding: ['gzip, deflate']

@@ -121,7 +121,7 @@ class Duracloud(models.Model):
                     # There is exactly one .dura-manifest for chunked files
                     # Return the original filename when we find a manifest file
                     if p.endswith(self.MANIFEST_SUFFIX):
-                        yield p[:-duramanifest_len]
+                        yield utils.coerce_str(p[:-duramanifest_len])
                         continue
                     # File chunks skipped - manifest returns original filename
                     if re.search(durachunk_regex, p):
@@ -158,7 +158,7 @@ class Duracloud(models.Model):
         # Handle paths one at a time to deal with lots of files
         paths = self._get_files_list(path, show_split_files=False)
         for p in paths:
-            path_parts = p.replace(path, "", 1).split("/")
+            path_parts = p.decode("utf8").replace(path, "", 1).split("/")
             dirname = path_parts[0]
             if not dirname:
                 continue
@@ -247,7 +247,7 @@ class Duracloud(models.Model):
                     # Download
                     chunk_url = self.duraspace_url + six.moves.urllib.parse.quote(chunk)
                     LOGGER.debug("Chunk URL: %s", chunk_url)
-                    chunk_path = chunk_url.replace(url, download_path)
+                    chunk_path = chunk_url.replace(url, download_path.decode("utf8"))
                     LOGGER.debug("Chunk path: %s", chunk_path)
                     self._download_file(chunk_url, chunk_path, size, md5)
                     # Append to output
@@ -304,13 +304,13 @@ class Duracloud(models.Model):
             # filesystem, but do not character-match in Duracloud.
             # Normalize dest_path as well so replace continues to work
             find_regex = r"/[\.\*]$"
-            src_path = re.sub(find_regex, "/", src_path)
-            dest_path = re.sub(find_regex, "/", dest_path)
+            src_path = re.sub(find_regex, "/", src_path.decode("utf8"))
+            dest_path = re.sub(find_regex, "/", dest_path.decode("utf8"))
             LOGGER.debug("Modified paths: src: %s dest: %s", src_path, dest_path)
             to_get = self._get_files_list(src_path, show_split_files=False)
             for entry in to_get:
                 url = self.duraspace_url + six.moves.urllib.parse.quote(entry)
-                dest = entry.replace(src_path, dest_path, 1)
+                dest = entry.decode("utf8").replace(src_path, dest_path, 1)
                 self._download_file(url, dest)
 
     def _process_chunk(self, f, chunk_path):
@@ -318,7 +318,7 @@ class Duracloud(models.Model):
 
         with open(chunk_path, "w") as fchunk:
             while bytes_read < self.CHUNK_SIZE:
-                data = f.read(self.BUFFER_SIZE)
+                data = f.read(self.BUFFER_SIZE).decode("utf8")
                 fchunk.write(data)
 
                 length = len(data)
@@ -379,7 +379,7 @@ class Duracloud(models.Model):
                 while not file_complete:
                     # Setup chunk info
                     chunk_suffix = ".dura-chunk-" + str(i).zfill(4)
-                    chunk_path = upload_file + chunk_suffix
+                    chunk_path = upload_file.decode("utf8") + chunk_suffix
                     LOGGER.debug("Chunk path: %s", chunk_path)
                     chunk_url = url + chunk_suffix
                     LOGGER.debug("Chunk URL: %s", chunk_url)
@@ -474,7 +474,7 @@ class Duracloud(models.Model):
         destination_path = utils.coerce_str(destination_path)
         if os.path.isdir(source_path):
             # Both source and destination paths should end with /
-            destination_path = os.path.join(destination_path, "")
+            destination_path = os.path.join(destination_path, b"")
             # Duracloud does not accept folders, so upload each file individually
             for path, dirs, files in scandir.walk(source_path):
                 for basename in files:
