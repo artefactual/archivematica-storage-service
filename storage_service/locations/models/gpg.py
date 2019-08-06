@@ -197,7 +197,7 @@ class GPG(models.Model):
         if isinstance(path, six.text_type):
             path = path.encode("utf8")
         # Encrypted space only stores files, so strip trailing /.
-        path = path.rstrip("/")
+        path = path.decode("utf8").rstrip("/")
         # Path may not exist if its a sub-path of an encrypted dir. Here we
         # look for a path ancestor that does exist.
         encr_path = _get_encrypted_path(path)
