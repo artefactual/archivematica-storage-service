@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from __future__ import unicode_literals
 
 # stdlib, alphabetical
 import logging
@@ -404,7 +405,7 @@ class Duracloud(models.Model):
                     etree.SubElement(chunk_e, "md5").text = checksum.hexdigest()
                     # Upload chunk
                     # Check if chunk exists already
-                    if resume and chunkid in chunklist:
+                    if resume and chunkid.encode("utf8") in chunklist:
                         LOGGER.info(
                             "%s already in Duracloud, skipping upload", chunk_path
                         )
@@ -414,13 +415,13 @@ class Duracloud(models.Model):
                     os.remove(chunk_path)
                     i += 1
             # Write .dura-manifest
-            manifest_path = upload_file + self.MANIFEST_SUFFIX
+            manifest_path = upload_file.decode("utf8") + self.MANIFEST_SUFFIX
             manifest_url = url + self.MANIFEST_SUFFIX
             with open(manifest_path, "w") as f:
                 f.write(
                     etree.tostring(
                         root, pretty_print=True, xml_declaration=True, encoding="UTF-8"
-                    )
+                    ).decode("utf8")
                 )
             # Upload .dura-manifest
             self._upload_chunk(manifest_url, manifest_path)
