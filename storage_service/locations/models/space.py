@@ -120,7 +120,7 @@ def validate_space_path(path):
 #     def test_move_to_ss(self):
 #         pass
 
-
+@six.python_2_unicode_compatible
 class Space(models.Model):
     """ Common storage space information.
 
@@ -209,8 +209,8 @@ class Space(models.Model):
         verbose_name = _("Space")
         app_label = "locations"
 
-    def __unicode__(self):
-        return u"{uuid}: {path} ({access_protocol})".format(
+    def __str__(self):
+        return six.text_type("{uuid}: {path} ({access_protocol}").format(
             uuid=self.uuid,
             access_protocol=self.get_access_protocol_display(),
             path=self.path,

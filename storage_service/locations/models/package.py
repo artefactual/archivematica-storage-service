@@ -25,6 +25,7 @@ from django.utils.translation import ugettext_lazy as _
 import bagit
 import jsonfield
 from django_extensions.db.fields import UUIDField
+from django.utils import six
 import metsrw
 from metsrw.plugins import premisrw
 import requests
@@ -47,6 +48,7 @@ __all__ = ("Package",)
 LOGGER = logging.getLogger(__name__)
 
 
+@six.python_2_unicode_compatible
 class Package(models.Model):
     """ A package stored in a specific location. """
 
@@ -166,7 +168,7 @@ class Package(models.Model):
         self.local_path_location = None
         self.origin_location = None
 
-    def __unicode__(self):
+    def __str__(self):
         return u"{uuid}: {path}".format(uuid=self.uuid, path=self.full_path)
         # return "File: {}".format(self.uuid)
 
@@ -2686,7 +2688,7 @@ class Package(models.Model):
 
         # Write out pointer file again
         with open(self.full_pointer_file_path, "w") as f:
-            f.write(mets.tostring())
+            f.write(mets.tostring().decode("utf8"))
 
     # SWORD-related methods
     def has_been_submitted_for_processing(self):
