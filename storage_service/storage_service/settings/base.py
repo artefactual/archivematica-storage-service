@@ -414,4 +414,5 @@ GNUPG_HOME_PATH = environ.get('SS_GNUPG_HOME_PATH', None)
 # This setting is honored in:
 # - locations.models.pipeline
 # - locations.models.dspace
+# - locations.models.arkivum
 INSECURE_SKIP_VERIFY = is_true(environ.get('SS_INSECURE_SKIP_VERIFY', ''))
