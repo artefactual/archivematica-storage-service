@@ -31,10 +31,7 @@ from .package import Package
 
 LOGGER = logging.getLogger(__name__)
 
-if settings.DEBUG:
-    VERIFY = False
-else:
-    VERIFY = True
+VERIFY = not settings.INSECURE_SKIP_VERIFY
 
 
 class Arkivum(models.Model):
