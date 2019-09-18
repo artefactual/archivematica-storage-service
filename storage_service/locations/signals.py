@@ -6,10 +6,12 @@ import sys
 
 from django.dispatch import receiver, Signal
 from django.contrib.auth.models import User
+from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.db.models import signals
 from django.utils.translation import ugettext as _
 from tastypie.models import create_api_key
+from prometheus_client import Counter
 
 LOGGER = logging.getLogger(__name__)
 
@@ -117,3 +119,26 @@ def _create_api_key(sender, *args, **kwargs):
 
 
 signals.post_save.connect(_create_api_key, sender=User)
+
+
+if settings.PROMETHEUS_ENABLED:
+    # Count saves and deletes via Prometheus.
+    # This is a bit of a flawed way to do it (it doesn't include bulk create,
+    # update, etc), but is a good starting point.
+    # django-prometheus provides these counters via a model mixin, but signals
+    # are less invasive.
+
+    model_save_count = Counter(
+        "django_model_save_total", "Total model save calls", ["model"]
+    )
+    model_delete_count = Counter(
+        "django_model_delete_total", "Total model delete calls", ["model"]
+    )
+
+    @receiver(signals.post_save)
+    def increment_model_save_count(sender, **kwargs):
+        model_save_count.labels(model=sender.__name__).inc()
+
+    @receiver(signals.post_delete)
+    def increment_model_delete_count(sender, **kwargs):
+        model_delete_count.labels(model=sender.__name__).inc()
