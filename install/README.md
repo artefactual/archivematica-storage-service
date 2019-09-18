@@ -2,12 +2,14 @@
 
 ## Table of contents
 
-- [Introduction](#introduction)
-- [Environment variables](#environment-variables)
-  - [Application-specific environment variables](#application-specific-environment-variables)
-  - [Gunicorn-specific environment variables](#gunicorn-specific-environment-variables)
-  - [LDAP-specific environment variables](#ldap-specific-environment-variables)
-- [Logging configuration](#logging-configuration)
+- [Storage Service Configuration](#storage-service-configuration)
+  - [Table of contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Environment variables](#environment-variables)
+    - [Application-specific environment variables](#application-specific-environment-variables)
+    - [Gunicorn-specific environment variables](#gunicorn-specific-environment-variables)
+    - [LDAP-specific environment variables](#ldap-specific-environment-variables)
+  - [Logging configuration](#logging-configuration)
 
 ## Introduction
 
@@ -79,6 +81,11 @@ of these settings or provide values to mandatory fields.
 
 - **`SS_INSECURE_SKIP_VERIFY`**:
     - **Description:** skip the SSL certificate verification process. This setting should not be used in production environments.
+    - **Type:** `boolean`
+    - **Default:** `false`
+
+- **`SS_PROMETHEUS_ENABLED`**:
+    - **Description:** enable metrics export for collection by Prometheus.
     - **Type:** `boolean`
     - **Default:** `false`
 
