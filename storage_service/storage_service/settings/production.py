@@ -54,8 +54,11 @@ EMAIL_PORT = environ.get("EMAIL_PORT", 587)
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#email-subject-prefix
 EMAIL_SUBJECT_PREFIX = "[Archivematica Storage Service] "
 
+# See: https://docs.djangoproject.com/en/dev/ref/settings/#default-from-email
+DEFAULT_FROM_EMAIL = environ.get("DEFAULT_FROM_EMAIL", "webmaster@localhost")
+
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#email-use-tls
-EMAIL_USE_TLS = True
+EMAIL_USE_TLS = is_true(environ.get("EMAIL_USE_TLS", "True"))
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#server-email
 SERVER_EMAIL = EMAIL_HOST_USER

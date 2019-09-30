@@ -129,6 +129,16 @@ This is the current list of strings supported:
     - **Type:** `int`
     - **Default:** `587`
 
+- **`DEFAULT_FROM_EMAIL`**
+    - **Description:** https://docs.djangoproject.com/en/dev/ref/settings/#default-from-email
+    - **Type:** `string`
+    - **Default:** `webmaster@localhost`
+
+- **`EMAIL_USE_TLS`**
+    - **Description:** https://docs.djangoproject.com/en/dev/ref/settings/#email-use-tls
+    - **Type:** `boolean`
+    - **Default:** `true`
+
 ### Gunicorn-specific environment variables
 
 - **`SS_GUNICORN_USER`**:
