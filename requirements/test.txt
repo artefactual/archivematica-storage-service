@@ -52,7 +52,7 @@ keystoneauth1==3.14.0
 logutils==0.3.4.1
 git+https://github.com/seatme/django-longer-username.git@seatme#egg=longerusername
 lxml==3.7.3
-metsrw==0.3.11
+metsrw==0.3.13
 mock==3.0.5               # via pytest-mock, vcrpy
 monotonic==1.5
 more-itertools==5.0.0     # via pytest
@@ -114,6 +114,3 @@ virtualenv==16.6.0        # via tox
 wcwidth==0.1.7            # via prompt-toolkit
 whitenoise==3.3.0
 wrapt==1.11.1
-
-# The following packages are considered to be unsafe in a requirements file:
-# setuptools==41.0.1        # via ipdb, ipython, pytest, tox
