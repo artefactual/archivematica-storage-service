@@ -411,7 +411,7 @@ class Arkivum(models.Model):
                 ) % {"item": item, "package_id": package_info.get("id")}
 
                 django.core.mail.send_mail(
-                    from_email="archivematica-storage-service@localhost",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=get_user_model()
                     .objects.filter(is_superuser=True, is_active=True)
                     .distinct()
