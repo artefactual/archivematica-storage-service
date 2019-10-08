@@ -122,6 +122,15 @@ class Command(BaseCommand):
             default=DEFAULT_UNIX_OWNER,
         )
 
+        parser.add_argument(
+            "--tmp-dir",
+            help="Temporary directory for processing, passed as dir parameter"
+            " to tempfile.mkdtemp(), e.g,'/var/archivematica/sharedDirectory/tmp'."
+            " Default: None ",
+            default=None,
+            required=False,
+        )
+
     def handle(self, *args, **options):
         print(header("Attempting to import the AIP at {}.".format(options["aip_path"])))
         try:
@@ -132,6 +141,7 @@ class Command(BaseCommand):
                 options["compression_algorithm"],
                 options["pipeline"],
                 options["unix_owner"],
+                options["tmp_dir"],
             )
         except ImportAIPException as err:
             print(fail(err))
@@ -395,9 +405,10 @@ def import_aip(
     compression_algorithm,
     adoptive_pipeline_uuid,
     unix_owner,
+    tmp_dir,
 ):
     confirm_aip_exists(aip_path)
-    temp_dir = tempfile.mkdtemp()
+    temp_dir = tempfile.mkdtemp(dir=tmp_dir)
     aip_path = decompress(aip_path, decompress_source, temp_dir)
     validate(aip_path)
     aip_mets_path = get_aip_mets_path(aip_path)
