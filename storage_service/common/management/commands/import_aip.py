@@ -121,7 +121,13 @@ class Command(BaseCommand):
             " imported AIP. Default: {}".format(DEFAULT_UNIX_OWNER),
             default=DEFAULT_UNIX_OWNER,
         )
-
+        parser.add_argument(
+            "--force",
+            help="Do not check if AIP uuid already exists in the Storage"
+            " Service. If so, will overwrite the existing AIP without prompt.",
+            action="store_true",
+            default=False,
+        )
         parser.add_argument(
             "--tmp-dir",
             help="Temporary directory for processing, passed as dir parameter"
@@ -141,6 +147,7 @@ class Command(BaseCommand):
                 options["compression_algorithm"],
                 options["pipeline"],
                 options["unix_owner"],
+                options["force"],
                 options["tmp_dir"],
             )
         except ImportAIPException as err:
@@ -405,6 +412,7 @@ def import_aip(
     compression_algorithm,
     adoptive_pipeline_uuid,
     unix_owner,
+    force,
     tmp_dir,
 ):
     confirm_aip_exists(aip_path)
@@ -413,7 +421,8 @@ def import_aip(
     validate(aip_path)
     aip_mets_path = get_aip_mets_path(aip_path)
     aip_uuid = get_aip_uuid(aip_mets_path)
-    check_if_aip_already_exists(aip_uuid)
+    if not force:
+        check_if_aip_already_exists(aip_uuid)
     local_as_location, final_as_location = get_aip_storage_locations(
         aip_storage_location_uuid
     )
