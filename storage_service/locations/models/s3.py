@@ -100,10 +100,16 @@ class S3(models.Model):
             if error_code != "NoSuchBucket":
                 raise StorageException(err)
             LOGGER.info("Creating S3 bucket '%s'", self._bucket_name())
-            self.client.create_bucket(
-                Bucket=self._bucket_name(),
-                CreateBucketConfiguration={"LocationConstraint": self.region},
-            )
+            # LocationConstraint cannot be specified if it us-east-1 because it is the default, see: https://github.com/boto/boto3/issues/125
+            if self.region == 'us-east-1':
+                self.client.create_bucket(
+                    Bucket=self._bucket_name()
+                )
+            else:
+                self.client.create_bucket(
+                    Bucket=self._bucket_name(),
+                    CreateBucketConfiguration={"LocationConstraint": self.region},
+                )
 
     def _bucket_name(self):
         return self.space_id
