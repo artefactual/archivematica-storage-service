@@ -361,6 +361,7 @@ def test_move_from_storage_service(
     mocker.patch("os.remove")
     mocker.patch("__builtin__.open")
     mocker.patch("os.listdir", return_value=[AIP_METS_FILENAME])
+    mocker.patch("scandir.walk", return_value=[("", [], [AIP_METS_FILENAME])])
 
     # Patch ``requests.post``
     def mock_requests_post(*args, **kwargs):
@@ -468,8 +469,6 @@ def test_move_from_storage_service(
     if package.package_type == Package.DIP:
         # No METS extraction happens with DIP, therefore no removal needed
         os.remove.assert_not_called()
-        # Note: os.walk underlyingly calls os.listdir, so for the DIP case,
-        # os.listdir may be called several times
         os.listdir.assert_called_with(package_source_path)
         assert actual_bitstream_args == (DS_REST_DIP_DEPO_URL,)
         if as_credentials_set:

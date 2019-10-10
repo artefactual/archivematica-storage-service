@@ -20,6 +20,7 @@ from django.utils.translation import ugettext_lazy as _
 # Third party dependencies, alphabetical
 from lxml import etree
 import requests
+import scandir
 from requests import RequestException
 
 # This project, alphabetical
@@ -390,7 +391,7 @@ class DSpaceREST(models.Model):
         base_url = "{}/items/{}".format(
             self._get_base_url(self.ds_rest_url), ds_item["uuid"]
         )
-        for root, __, files in os.walk(source_path):
+        for root, __, files in scandir.walk(source_path):
             for name in files:
                 bitstream_url = "{}/bitstreams?name={}".format(
                     base_url, urllib.quote(name.encode("utf-8"))
