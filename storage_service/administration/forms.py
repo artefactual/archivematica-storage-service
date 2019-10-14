@@ -222,9 +222,31 @@ class UserChangeForm(auth.forms.UserChangeForm):
     """ Modifys an existing user.  Inherits from django's UserChangeForm. """
 
     def __init__(self, *args, **kwargs):
+        current_user = kwargs.pop("current_user", None)
+        self.user_being_edited = kwargs["instance"]
+        self.superusers = auth.get_user_model().objects.filter(is_superuser=True)
         super(UserChangeForm, self).__init__(*args, **kwargs)
         self.fields["is_superuser"].label = _("Administrator?")
+        if not (current_user and current_user.is_superuser):
+            # If current user is not super, do not permit editing of that.
+            del self.fields["is_superuser"]
+        elif self.superusers.count() == 1 and current_user == self.user_being_edited:
+            # Provide some indication that this is undesirable.
+            self.fields["is_superuser"].widget.attrs["readonly"] = True
         del self.fields["password"]
+
+    def clean(self):
+        """Validate the form to protect against potential user errors."""
+        if self.superusers.count() > 1:
+            return self.cleaned_data
+        try:
+            # Protect field from being reverted if only one superuser.
+            if self.user_being_edited.is_superuser:
+                self.cleaned_data["is_superuser"] = True
+        except KeyError:
+            # Field isn't being modified, nothing to do.
+            pass
+        return self.cleaned_data
 
     class Meta:
         model = auth.get_user_model()

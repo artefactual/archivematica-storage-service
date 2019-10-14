@@ -80,7 +80,9 @@ def user_edit(request, id):
 
     action = _("Edit User")
     edit_user = get_object_or_404(get_user_model(), id=id)
-    user_form = settings_forms.UserChangeForm(request.POST or None, instance=edit_user)
+    user_form = settings_forms.UserChangeForm(
+        request.POST or None, instance=edit_user, current_user=request.user
+    )
     password_form = SetPasswordForm(data=request.POST or None, user=edit_user)
     if "user" in request.POST and user_form.is_valid():
         user_form.save()
