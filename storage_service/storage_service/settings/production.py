@@ -24,6 +24,10 @@ else:
             "SS_DB_HOST"
         ),  # Set to empty string forr localhost. Not used with sqlite3.
         "PORT": "",  # Set to empty string for default. Not used with sqlite3.
+        "OPTIONS": {
+            # https://docs.djangoproject.com/en/1.8/ref/databases/#database-is-locked-errors
+            "timeout": 30
+        },
     }
 # ######## END DATABASE CONFIGURATION
 
