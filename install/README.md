@@ -147,12 +147,14 @@ This is the current list of strings supported:
     - **Default:** `127.0.0.1:8001`
 
 - **`SS_GUNICORN_WORKERS`**:
-    - **Description:** number of gunicorn worker processes to run. See [WORKERS](http://docs.gunicorn.org/en/stable/settings.html#workers). If `SS_GUNICORN_WORKER_CLASS` is set to `gevent`, then `SS_BAG_VALIDATION_NO_PROCESSES` **must** be set to `1`. Otherwise reingest will fail at bagit validate. See [#708](https://github.com/artefactual/archivematica/issues/708).
-    - **Type:** `integer`
-    - **Default:** `1`
+    - **Description:** Number of gunicorn worker processes to run.  Note that if Archivematica
+    is running on the same system, a lower number of workers than Gunicorn recommends should be
+    used. See [WORKERS](http://docs.gunicorn.org/en/stable/settings.html#workers) and [How Many Workers?](https://docs.gunicorn.org/en/stable/design.html#how-many-workers) for more details. 
+   - **Type:** `integer`
+    - **Default:** `3`
 
 - **`SS_GUNICORN_WORKER_CLASS`**:
-    - **Description:** the type of worker processes to run. See [WORKER-CLASS](http://docs.gunicorn.org/en/stable/settings.html#worker-class).
+    - **Description:** the type of worker processes to run. See [WORKER-CLASS](http://docs.gunicorn.org/en/stable/settings.html#worker-class). If `SS_GUNICORN_WORKER_CLASS` is set to `gevent`, then `SS_BAG_VALIDATION_NO_PROCESSES` **must** be set to `1`. Otherwise reingest will fail at bagit validate. See [#708](https://github.com/artefactual/archivematica/issues/708).
     - **Type:** `string`
     - **Default:** `gevent`
 
