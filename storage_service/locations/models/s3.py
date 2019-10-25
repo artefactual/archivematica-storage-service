@@ -101,10 +101,8 @@ class S3(models.Model):
                 raise StorageException(err)
             LOGGER.info("Creating S3 bucket '%s'", self._bucket_name())
             # LocationConstraint cannot be specified if it us-east-1 because it is the default, see: https://github.com/boto/boto3/issues/125
-            if self.region == 'us-east-1':
-                self.client.create_bucket(
-                    Bucket=self._bucket_name()
-                )
+            if self.region == "us-east-1":
+                self.client.create_bucket(Bucket=self._bucket_name())
             else:
                 self.client.create_bucket(
                     Bucket=self._bucket_name(),
