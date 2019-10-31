@@ -46,7 +46,7 @@ class S3(models.Model):
         verbose_name = _("S3")
         app_label = "locations"
 
-    ALLOWED_LOCATION_PURPOSE = [Location.AIP_STORAGE]
+    ALLOWED_LOCATION_PURPOSE = [Location.AIP_STORAGE, Location.REPLICATOR]
 
     def __init__(self, *args, **kwargs):
         super(S3, self).__init__(*args, **kwargs)
