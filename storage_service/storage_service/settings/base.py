@@ -522,6 +522,50 @@ if CAS_AUTHENTICATION:
 
 ######### END CAS CONFIGURATION #########
 
+OIDC_AUTHENTICATION = is_true(environ.get("SS_OIDC_AUTHENTICATION", ""))
+if OIDC_AUTHENTICATION:
+    ALLOW_USER_EDITS = False
+
+    AUTHENTICATION_BACKENDS += ["common.backends.CustomOIDCBackend"]
+    LOGIN_EXEMPT_URLS.append(r"^oidc")
+    INSTALLED_APPS += ["mozilla_django_oidc"]
+
+    # AUTH_SERVER = 'https://login.microsoftonline.com/common/v2.0/'
+    OIDC_RP_CLIENT_ID = environ.get("OIDC_RP_CLIENT_ID", "")
+    OIDC_RP_CLIENT_SECRET = environ.get("OIDC_RP_CLIENT_SECRET", "")
+
+    OIDC_OP_AUTHORIZATION_ENDPOINT = ""
+    OIDC_OP_TOKEN_ENDPOINT = ""
+    OIDC_OP_USER_ENDPOINT = ""
+    OIDC_OP_JWKS_ENDPOINT = ""
+
+    AZURE_TENANT_ID = environ.get("AZURE_TENANT_ID", "")
+    if AZURE_TENANT_ID:
+        OIDC_OP_AUTHORIZATION_ENDPOINT = (
+            "https://login.microsoftonline.com/%s/oauth2/v2.0/authorize"
+            % AZURE_TENANT_ID
+        )
+        OIDC_OP_TOKEN_ENDPOINT = (
+            "https://login.microsoftonline.com/%s/oauth2/v2.0/token" % AZURE_TENANT_ID
+        )
+        OIDC_OP_USER_ENDPOINT = (
+            "https://login.microsoftonline.com/%s/openid/userinfo" % AZURE_TENANT_ID
+        )
+        OIDC_OP_JWKS_ENDPOINT = (
+            "https://login.microsoftonline.com/%s/discovery/v2.0/keys" % AZURE_TENANT_ID
+        )
+
+    OIDC_RP_SIGN_ALGO = environ.get("OIDC_RP_SIGN_ALGO", "HS256")
+
+    # Username is email address
+    OIDC_USERNAME_ALGO = lambda email: email
+
+    # map attributes from access token
+    OIDC_ACCESS_ATTRIBUTE_MAP = {"given_name": "first_name", "family_name": "last_name"}
+
+    # map attributes from id token
+    OIDC_ID_ATTRIBUTE_MAP = {"email": "email"}
+
 # WARNING: if Gunicorn is being used to serve the Storage Service and its
 # worker class is set to `gevent`, then BagIt validation must use 1 process.
 # Otherwise, calls to `validate` will hang because of the incompatibility
