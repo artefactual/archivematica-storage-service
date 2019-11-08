@@ -74,7 +74,9 @@ class Package(models.Model):
         Location, to_field="uuid", related_name="+", null=True, blank=True
     )
     pointer_file_path = models.TextField(null=True, blank=True)
-    size = models.IntegerField(default=0, help_text=_("Size in bytes of the package"))
+    size = models.BigIntegerField(
+        default=0, help_text=_("Size in bytes of the package")
+    )
     encryption_key_fingerprint = models.CharField(
         max_length=512,
         blank=True,
