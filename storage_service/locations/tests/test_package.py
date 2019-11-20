@@ -328,12 +328,28 @@ class TestPackage(TestCase):
         assert os.path.join(output_path, "manifest-md5.txt")
 
     def test_run_post_store_callbacks_aip(self):
-        uuid = "0d4e739b-bf60-4b87-bc20-67a379b28cea"
+        uuid = "473a9398-0024-4804-81da-38946040c8af"
         aip = models.Package.objects.get(uuid=uuid)
         with mock.patch("locations.models.Callback.execute") as mocked_execute:
             aip.run_post_store_callbacks()
             # Only `post_store_aip` callbacks are executed
             assert mocked_execute.call_count == 1
+            # Placeholders replaced in URI and body
+            url = "http://consumer.com/api/v1/aip/%s/" % uuid
+            body = '{"name": "tar_gz_package", "uuid": "%s"}' % uuid
+            mocked_execute.assert_called_with(url, body)
+
+    def test_run_post_store_callbacks_aip_tricky_name(self):
+        uuid = "708f7a1d-dda4-46c7-9b3e-99e188eeb04c"
+        aip = models.Package.objects.get(uuid=uuid)
+        with mock.patch("locations.models.Callback.execute") as mocked_execute:
+            aip.run_post_store_callbacks()
+            # Only `post_store_aip` callbacks are executed
+            assert mocked_execute.call_count == 1
+            # Placeholders replaced in URI and body
+            url = "http://consumer.com/api/v1/aip/%s/" % uuid
+            body = '{"name": "a.bz2.tricky.7z.package", "uuid": "%s"}' % uuid
+            mocked_execute.assert_called_with(url, body)
 
     def test_run_post_store_callbacks_aic(self):
         uuid = "0d4e739b-bf60-4b87-bc20-67a379b28cea"
