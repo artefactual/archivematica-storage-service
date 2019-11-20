@@ -53,6 +53,7 @@ oslo.config==6.9.0        # via python-keystoneclient
 oslo.i18n==3.23.1         # via oslo.config, oslo.utils, python-keystoneclient
 oslo.serialization==2.29.1  # via python-keystoneclient
 oslo.utils==3.41.0        # via oslo.serialization, python-keystoneclient
+pathlib2==2.3.5
 pbr==5.2.0                # via debtcollector, keystoneauth1, os-service-types, oslo.i18n, oslo.serialization, oslo.utils, positional, python-keystoneclient, stevedore
 positional==1.2.1         # via python-keystoneclient
 pyasn1-modules==0.2.5     # via python-ldap

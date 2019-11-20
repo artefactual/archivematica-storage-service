@@ -15,7 +15,7 @@
 },
 {
   "fields": {
-    "body": "",
+    "body": "{\"name\": \"<package_name>\", \"uuid\": \"<package_uuid>\"}",
     "expected_status": 200,
     "uuid": "24eb7980-27de-4729-927a-ac91f726469d",
     "enabled": true,

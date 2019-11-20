@@ -16,6 +16,11 @@ import subprocess
 import tempfile
 from uuid import uuid4
 
+try:
+    from pathlib import Path
+except ImportError:
+    from pathlib2 import Path
+
 # Core Django, alphabetical
 from django.conf import settings
 from django.db import models
@@ -189,6 +194,21 @@ class Package(models.Model):
         return os.path.join(
             self.pointer_file_location.full_path, self.pointer_file_path
         )
+
+    @property
+    def name(self):
+        """Return name of package with UUID and extensions removed.
+
+        For AIPs created directly from a transfer, this will be
+        equivalent to the post-sanitization Transfer name.
+        """
+        path = Path(self.current_path)
+        name, chars_to_remove = path.name, 37
+        for suffix in reversed(path.suffixes):
+            if suffix not in utils.PACKAGE_EXTENSIONS:
+                break
+            chars_to_remove += len(suffix)
+        return name[:-chars_to_remove]
 
     def is_encrypted(self, local_path):
         """Determines whether or not the package at ``local_path`` is
@@ -1426,6 +1446,22 @@ class Package(models.Model):
         for replicator_loc in replicator_locs:
             self.replicate(replicator_loc)
 
+    def _replace_callback_placeholders(self, uri, body):
+        """Replace post store callback placeholders with values.
+
+        Currently, this method replaces the following placeholders:
+        - <package_uuid>: Replaced with package UUID
+        - <package_name>: Replaced with package name, with trailing UUID
+        removed. For AIPs created directly from a transfer, this will be
+        equivalent to the post-sanitization Transfer name.
+        """
+        return [
+            item.replace("<package_uuid>", self.uuid).replace(
+                "<package_name>", self.name
+            )
+            for item in (uri, body)
+        ]
+
     def run_post_store_callbacks(self):
         """Checks if post store callbacks exist and executes them.
 
@@ -1450,8 +1486,7 @@ class Package(models.Model):
         if self.package_type == Package.DIP:
             callbacks = Callback.objects.filter(event="post_store_dip", enabled=True)
         for callback in callbacks:
-            uri = callback.uri.replace("<package_uuid>", self.uuid)
-            body = callback.body.replace("<package_uuid>", self.uuid)
+            uri, body = self._replace_callback_placeholders(callback.uri, callback.body)
             try:
                 LOGGER.info("Executing %s callback: %s", callback.event, uri)
                 callback.execute(uri, body)

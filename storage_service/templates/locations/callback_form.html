@@ -16,10 +16,17 @@
   </p>
   <p>
     <strong>{% trans "Post-store AIP, Post-store AIC and Post-store DIP" %}:</strong>
-    {% blocktrans with placeholder="<em>&lt;package_uuid&gt;</em>" trimmed %}
     Occur after an AIP, AIC or DIP has been stored and they cause the execution of a
-    single request for the package. If the placeholder {{ placeholder }} is found
-    in the callback URL or body, it will be replaced by the AIP, AIC or DIP UUID.
+    single request for the package.
+    {% blocktrans with placeholder="<em>&lt;package_uuid&gt;</em>" trimmed %}
+    If the placeholder {{ placeholder }} is found in the callback URL or body,
+    it will be replaced by the AIP, AIC or DIP UUID.
+    {% endblocktrans %}
+    {% blocktrans with placeholder="<em>&lt;package_name&gt;</em>" trimmed %}
+    If the placeholder {{ placeholder }} is found in the callback URL or body,
+    it will be replaced by the AIP, AIC or DIP name, with the trailing UUID
+    removed. For AIPs created directly from a transfer, this will be equivalent
+    to the post-sanitization Transfer name.
     {% endblocktrans %}
   </p>
 </div>

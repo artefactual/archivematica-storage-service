@@ -133,6 +133,40 @@
     }
 },
 {
+    "pk": 8,
+    "model": "locations.package",
+    "fields": {
+        "uuid": "473a9398-0024-4804-81da-38946040c8af",
+        "description": "Small gzipped tar package",
+        "origin_pipeline": null,
+        "current_location": "615103f0-0ee0-4a12-ba17-43192d1143ea",
+        "current_path": "/dev/null/tar_gz_package-473a9398-0024-4804-81da-38946040c8af.tar.gz",
+        "pointer_file_location": "",
+        "pointer_file_path": "",
+        "size": 0,
+        "package_type": "AIP",
+        "status": "Uploaded",
+        "misc_attributes": "{}"
+    }
+},
+{
+    "pk": 9,
+    "model": "locations.package",
+    "fields": {
+        "uuid": "708f7a1d-dda4-46c7-9b3e-99e188eeb04c",
+        "description": "Small 7z package with tricky filename",
+        "origin_pipeline": null,
+        "current_location": "615103f0-0ee0-4a12-ba17-43192d1143ea",
+        "current_path": "/dev/null/a.bz2.tricky.7z.package-473a9398-0024-4804-81da-38946040c8af.7z",
+        "pointer_file_location": "",
+        "pointer_file_path": "",
+        "size": 0,
+        "package_type": "AIP",
+        "status": "Uploaded",
+        "misc_attributes": "{}"
+    }
+},
+{
     "pk": 1,
     "model": "locations.file",
     "fields": {
