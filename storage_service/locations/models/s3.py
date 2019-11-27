@@ -201,15 +201,15 @@ class S3(models.Model):
         bucket = self.resource.Bucket(self.bucket_name)
 
         # strip leading slash on src_path
-        src_path = src_path.lstrip("/")
+        src_path = src_path.lstrip("/").rstrip(".")
 
         objects = self.resource.Bucket(self.bucket_name).objects.filter(Prefix=src_path)
 
         for objectSummary in objects:
             dest_file = objectSummary.key.replace(src_path, dest_path, 1)
             self.space.create_local_directory(dest_file)
-
-            bucket.download_file(objectSummary.key, dest_file)
+            if not os.path.isdir(dest_file):
+                bucket.download_file(objectSummary.key, dest_file)
 
     def move_from_storage_service(self, src_path, dest_path, package=None):
         self._ensure_bucket_exists()
