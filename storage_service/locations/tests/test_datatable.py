@@ -228,3 +228,23 @@ class TestDataTable(TestCase):
             "e0a41934-c1d7-45ba-9a95-a7531c063ed1",
         ]
         assert [package.uuid for package in datatable.packages] == expected_uuids
+
+    def test_packages_are_filtered_by_location(self):
+        # count all packages with no filtering
+        datatable = datatable_utils.DataTable(
+            {"iDisplayStart": 0, "iDisplayLength": 10, "sEcho": "1"}
+        )
+        assert datatable.total_records == 9
+        aip_storage_location = models.Location.objects.get(
+            uuid="615103f0-0ee0-4a12-ba17-43192d1143ea"
+        )
+        # count packages only from that location
+        datatable = datatable_utils.DataTable(
+            {
+                "iDisplayStart": 0,
+                "iDisplayLength": 10,
+                "sEcho": "1",
+                "location-uuid": aip_storage_location.uuid,
+            }
+        )
+        assert datatable.total_records == 6

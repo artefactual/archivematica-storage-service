@@ -1,5 +1,7 @@
 $(document).ready(function() {
-  var uri = $("#user-data-packages").data("uri") || "/";
+  var $userDataEl = $("#user-data-packages");
+  var uri = $userDataEl.data("uri") || "/";
+  var location = $userDataEl.data("location-uuid");
   var dataTableOptions = {
     // List of language strings from https://datatables.net/reference/option/language
     oLanguage: {
@@ -36,6 +38,12 @@ $(document).ready(function() {
   packagesDataTableOptions["bServerSide"] = true;
   packagesDataTableOptions["bProcessing"] = true;
   packagesDataTableOptions["sAjaxSource"] = uri + "packages_ajax";
+  if (typeof(location) === "string" && location.length) {
+    packagesDataTableOptions["fnServerParams"] = function(data) {
+      // this will get to the request.GET query dict
+      data.push({"name": "location-uuid", "value": location});
+    };
+  }
   var columns = [];
   // for each column create a function that replaces the
   // table cell content with the HTML returned by the server

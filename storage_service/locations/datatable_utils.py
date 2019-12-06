@@ -25,10 +25,13 @@ class DataTable(object):
     DEFAULT_DISPLAY_LENGTH = 10
 
     def __init__(self, query_dict):
-        self.total_records = Package.objects.count()
+        search_filter = Q()
+        location_uuid = query_dict.get("location-uuid")
+        if location_uuid:
+            search_filter = Q(current_location=location_uuid)
+        self.total_records = Package.objects.filter(search_filter).count()
         self.params = self.parse_datatable_parameters(query_dict)
         self.echo = self.params["echo"]
-        search_filter = Q()
         if self.params["search"]:
             search = self.params["search"]
             # remove any leading slashes so we can search in relative paths
