@@ -1237,7 +1237,7 @@ class Package(models.Model):
             for relationship in old_premis_object.findall("relationship")
         ]
         new_relationships.append(replication_relationship)
-        new_premis_meta = premisrw.PREMIS_META.copy()
+        new_premis_meta = premis.PREMIS_META.copy()
         new_premis_meta["xsi:type"] = old_premis_object.attributes.get(
             "xsi_type", "premis:file"
         )
@@ -1291,6 +1291,7 @@ class Package(models.Model):
             creating_application_version=old_premis_object.creating_application_version,
             date_created_by_application=old_premis_object.date_created_by_application,
             relationship=old_premis_object.relationship,
+            premis_version=premis.PREMIS_META["version"],
             # New attributes:
             inhibitors=new_inhibitors,
             composition_level=new_composition_level,
