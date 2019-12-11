@@ -40,7 +40,7 @@ keystoneauth1==3.18.0     # via python-keystoneclient
 logutils==0.3.4.1
 git+https://github.com/seatme/django-longer-username.git@seatme#egg=longerusername
 lxml==3.7.3
-metsrw==0.3.13
+metsrw==0.3.14
 monotonic==1.5            # via oslo.utils
 msgpack==0.6.2            # via oslo.serialization
 mysqlclient==1.4.6        # via agentarchives
