@@ -1688,6 +1688,11 @@ class PackageResource(ModelResource):
                 user_email=request_info["user_email"],
                 store_data=package.status,
             )
+
+            # Update package status
+            package.status = event_status
+            package.save()
+
             request_event.save()
             response = {
                 "message": _("%(event_type)s request created successfully.")
