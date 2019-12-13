@@ -74,12 +74,16 @@ class TestPackage(TestCase):
         )
 
         # It returns a "success" message when the package was deleted
-        # successfully.
+        # successfully and updates its status
         models.Package.objects.filter(uuid=self.package.uuid).update(
             package_type=models.Package.DIP
         )
         response = self.client.post(url, follow=True)
         verify_redirect_message(response, "Package deleted successfully!")
+        assert (
+            models.Package.objects.get(uuid=self.package.uuid).status
+            == models.Package.DELETED
+        )
 
         # It returns an "error" message when the package could not be deleted
         # and the underlying code raised an exception.

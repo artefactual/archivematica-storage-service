@@ -2005,6 +2005,7 @@ class Package(models.Model):
                 os.path.dirname(self.pointer_file_path),
                 base=self.pointer_file_location.full_path,
             )
+        self.status = self.DELETED
         self.save()
         return True, error
 

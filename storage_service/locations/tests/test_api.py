@@ -521,6 +521,44 @@ class TestPackageAPI(TempDirMixin, TestCase):
         assert j["error"] is True
         assert "Error" in j["message"] and "Arkivum" in j["message"]
 
+    def _create_aip(self):
+        space = models.Space.objects.create()
+        location = models.Location.objects.create(space=space)
+        aip = models.Package.objects.create(
+            current_location=location, package_type=models.Package.AIP
+        )
+        return aip.uuid
+
+    def _test_request_view_updates_package_status(self, view_name, expected_status):
+        # Create a pipeline and an AIP
+        pipeline = models.Pipeline.objects.create()
+        aip_uuid = self._create_aip()
+        # Call the request view
+        self.client.post(
+            "/api/v2/file/{}/{}/".format(aip_uuid, view_name),
+            data=json.dumps(
+                {
+                    "event_reason": "Some justification",
+                    "pipeline": pipeline.uuid,
+                    "user_email": "test@example.com",
+                    "user_id": User.objects.get(username="test").id,
+                }
+            ),
+            content_type="application/json",
+        )
+        # Verify its status was updated
+        assert models.Package.objects.get(uuid=aip_uuid).status == expected_status
+
+    def test_delete_aip_request_updates_package_status(self):
+        self._test_request_view_updates_package_status(
+            "delete_aip", models.Package.DEL_REQ
+        )
+
+    def test_recover_aip_request_updates_package_status(self):
+        self._test_request_view_updates_package_status(
+            "recover_aip", models.Package.RECOVER_REQ
+        )
+
 
 class TestSwordAPI(TestCase):
     def test_removes_forward_slash_parse_fedora_mets(self):
