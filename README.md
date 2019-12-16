@@ -16,8 +16,8 @@ See the [LICENSE](LICENSE) file for details.
 
 ## Installation
 
-* [Production installation](https://www.archivematica.org/docs/latest/admin-manual/installation/installation/)
-* [Development installation](https://wiki.archivematica.org/Getting_started#Installation)
+* [Production installation](https://www.archivematica.org/docs/latest/admin-manual/installation-setup/installation/installation/#installation)
+* [Development installation](https://github.com/artefactual-labs/am/tree/master/compose)
 
 
 ## Resources
