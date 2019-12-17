@@ -809,12 +809,15 @@ def _scandir_public(path):
 def _scandir_files(path):
     """Generate all files, descending into subdirs.
     """
-    for entry in scandir.scandir(path):
-        if entry.is_dir():
-            for subentry in _scandir_files(entry.path):
-                yield subentry
-        else:
-            yield entry
+    try:
+        for entry in scandir.scandir(path):
+            if entry.is_dir():
+                for subentry in _scandir_files(entry.path):
+                    yield subentry
+            else:
+                yield entry
+    except OSError:
+        raise StopIteration()
 
 
 def path2browse_dict(path):
