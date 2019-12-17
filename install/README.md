@@ -328,6 +328,21 @@ This is the current list of strings supported:
     - **Type:** `string`
     - **Default:** ``
 
+### AWS-specific environment variables
+
+    These variables can be set to allow AWS authentication for S3 storage spaces as an alternative
+	to providing these details via the user interface. See [AWS CLI Environment Variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html) for details.
+
+- **`AWS_ACCESS_KEY_ID`**:
+    - **Description:** Access key for AWS authentication
+    - **Type:** `string`
+    - **Default:** ``
+
+- **`AWS_SECRET_ACCESS_KEY`**:
+    - **Description:** Secret key associated with the access key
+    - **Type:** `string`
+    - **Default:** ``
+
 ## Logging configuration
 
 Storage Service 0.10.0 and earlier releases are configured by default to log to
