@@ -202,6 +202,7 @@ class S3(models.Model):
 
         # strip leading slash on src_path
         src_path = src_path.lstrip("/").rstrip(".")
+        dest_path = dest_path.rstrip(".")
 
         objects = self.resource.Bucket(self.bucket_name).objects.filter(Prefix=src_path)
 
