@@ -88,6 +88,6 @@ sphinx==1.2b1
 stevedore==1.31.0
 sword2==0.2.1
 transifex-client==0.12.2
-urllib3==1.24.3
+urllib3==1.25.7
 whitenoise==3.3.0
 wrapt==1.11.2
