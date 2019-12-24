@@ -78,6 +78,6 @@ scandir==1.10.0
 six==1.13.0               # via cryptography, debtcollector, django-extensions, keystoneauth1, metsrw, oslo.config, oslo.i18n, oslo.serialization, oslo.utils, pathlib2, pyopenssl, python-dateutil, python-keystoneclient, python-swiftclient, stevedore
 stevedore==1.31.0         # via keystoneauth1, oslo.config, python-keystoneclient
 sword2==0.2.1
-urllib3==1.25.7           # via botocore, requests
+urllib3==1.25.6           # via botocore, requests
 whitenoise==3.3.0
 wrapt==1.11.2             # via debtcollector, positional
