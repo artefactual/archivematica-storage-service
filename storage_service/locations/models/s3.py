@@ -120,9 +120,9 @@ class S3(models.Model):
             LOGGER.info("Creating S3 bucket '%s'", self.bucket_name)
             # LocationConstraint cannot be specified if it us-east-1 because it is the default, see: https://github.com/boto/boto3/issues/125
             if self.region.lower() == "us-east-1":
-                self.client.create_bucket(Bucket=self.bucket_name)
+                self.resource.create_bucket(Bucket=self.bucket_name)
             else:
-                self.client.create_bucket(
+                self.resource.create_bucket(
                     Bucket=self.bucket_name,
                     CreateBucketConfiguration={"LocationConstraint": self.region},
                 )
