@@ -15,13 +15,17 @@ THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
 
 
-@mock_s3
 class TestS3Storage(TestCase):
 
     fixtures = ["base.json", "s3.json"]
 
     def setUp(self):
+        self.mock = mock_s3()
+        self.mock.start()
         self.s3_object = models.S3.objects.get(id=1)
+
+    def tearDown(self):
+        self.mock.stop()
 
     def test_bucket_name(self):
         assert self.s3_object.bucket_name == "test-bucket"
