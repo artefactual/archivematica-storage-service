@@ -2648,11 +2648,15 @@ class Package(models.Model):
             # Update pointer file
             mets = metsrw.METSDocument.fromfile(self.full_pointer_file_path)
             aip = mets.get_file(type="Archival Information Package")
-            # Add compression event (if compressed)
+            # Create a new compression event
             event_detail = utils.get_compression_event_detail(compression)
             compression_event = premis.create_premis_aip_compression_event(
                 event_detail, ""
             )
+            # Since a new event has been created based on the new compression
+            # mechanism we reset the old decompression transforms
+            self._filter_and_remove_decompression_transforms(aip)
+            # Add the new compression event
             aip.add_premis_event(compression_event)
             self._update_pointer_file(compression, mets, path=updated_aip_path)
         elif was_compressed:
@@ -2664,6 +2668,23 @@ class Package(models.Model):
     # ==========================================================================
     # END Private methods for ``finish_reingest``
     # ==========================================================================
+
+    def _get_transform_file_type(self, transform_file):
+        """Get the type of a transform file entry.
+
+        Keys are converted to uppercase by metsrw.FSEntry.__init__
+        but they are handled in lowercase in other modules here in the
+        Storage Service.
+        """
+        return transform_file.get("TYPE") or transform_file.get("type")
+
+    def _filter_and_remove_decompression_transforms(self, aip):
+        aip.transform_files = [
+            transform_file
+            for transform_file in aip.transform_files
+            if self._get_transform_file_type(transform_file)
+            != utils.DECOMPRESS_TRANSFORM_TYPE
+        ]
 
     def _update_pointer_file(self, compression, mets, path=None):
         """Update the AIP's pointer file at the end of re-ingest."""
@@ -2687,7 +2708,10 @@ class Package(models.Model):
             checksum = utils.generate_checksum(path, "sha512")
 
         transform_types = set(
-            [transform.get("type") for transform in aip.transform_files]
+            [
+                self._get_transform_file_type(transform_file)
+                for transform_file in aip.transform_files
+            ]
         )
         if "decryption" in transform_types:
             transform_order = 2  # encryption is a prior transformation
