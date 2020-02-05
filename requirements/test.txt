@@ -72,7 +72,7 @@ logutils==0.3.4.1
 git+https://github.com/seatme/django-longer-username.git@seatme#egg=longerusername
 lxml==3.7.3
 markupsafe==1.1.1         # via jinja2
-git+https://github.com/artefactual-labs/mets-reader-writer.git@6e84511ece705118b3a373ce5ad4af67e12e94e7#egg=metsrw
+metsrw==0.3.15
 mock==3.0.5               # via moto, pytest-mock, responses, vcrpy
 monotonic==1.5
 more-itertools==5.0.0     # via pytest, zipp
