@@ -2655,7 +2655,7 @@ class Package(models.Model):
             )
             # Since a new event has been created based on the new compression
             # mechanism we reset the old decompression transforms
-            self._remove_decompression_transforms(aip)
+            self._filter_and_remove_decompression_transforms(aip)
             # Add the new compression event
             aip.add_premis_event(compression_event)
             self._update_pointer_file(compression, mets, path=updated_aip_path)
@@ -2678,7 +2678,7 @@ class Package(models.Model):
         """
         return transform_file.get("TYPE") or transform_file.get("type")
 
-    def _remove_decompression_transforms(self, aip):
+    def _filter_and_remove_decompression_transforms(self, aip):
         aip.transform_files = [
             transform_file
             for transform_file in aip.transform_files
