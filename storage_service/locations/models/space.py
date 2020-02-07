@@ -121,6 +121,7 @@ def validate_space_path(path):
 #     def test_move_to_ss(self):
 #         pass
 
+
 @six.python_2_unicode_compatible
 class Space(models.Model):
     """ Common storage space information.

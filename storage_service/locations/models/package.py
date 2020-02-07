@@ -1901,7 +1901,9 @@ class Package(models.Model):
         except bagit.BagValidationError as failure:
             LOGGER.error("bagit.BagValidationError on %s:\n%s", path, failure.message)
             try:
-                LOGGER.debug(subprocess.check_output(["tree", "-a", "--du", path]).decode("utf8"))
+                LOGGER.debug(
+                    subprocess.check_output(["tree", "-a", "--du", path]).decode("utf8")
+                )
             except (OSError, ValueError, subprocess.CalledProcessError):
                 pass
             success = False

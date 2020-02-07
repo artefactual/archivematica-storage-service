@@ -34,7 +34,8 @@ class LocationResource(resources.LocationResource):
         objects["entries"] = list(map(base64.b64encode, objects["entries"]))
         objects["directories"] = list(map(base64.b64encode, objects["directories"]))
         objects["properties"] = {
-            base64.b64encode(k).decode("utf8"): v for k, v in objects.get("properties", {}).items()
+            base64.b64encode(k).decode("utf8"): v
+            for k, v in objects.get("properties", {}).items()
         }
         return objects
 

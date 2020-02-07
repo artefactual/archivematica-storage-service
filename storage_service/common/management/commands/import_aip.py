@@ -62,7 +62,6 @@ import bagit
 import scandir
 from django.core.management.base import BaseCommand
 from django.db.utils import IntegrityError
-from django.utils.six.moves import input
 
 from administration.models import Settings
 from common import premis, utils

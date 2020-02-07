@@ -6,7 +6,9 @@ import logging
 from lxml import etree
 import os
 import requests
-import six.moves.urllib.request, six.moves.urllib.parse, six.moves.urllib.error
+import six.moves.urllib.request
+import six.moves.urllib.parse
+import six.moves.urllib.error
 
 # Core Django, alphabetical
 from django.conf import settings

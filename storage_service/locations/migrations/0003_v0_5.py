@@ -216,10 +216,7 @@ class Migration(migrations.Migration):
                     "download_completion_time",
                     models.DateTimeField(default=None, null=True, blank=True),
                 ),
-                (
-                    "package",
-                    models.ForeignKey(to="locations.Package", to_field="uuid"),
-                ),
+                ("package", models.ForeignKey(to="locations.Package", to_field="uuid")),
             ],
             options={"verbose_name": "Package Download Task"},
             bases=(models.Model,),
