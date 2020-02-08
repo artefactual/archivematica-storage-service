@@ -295,7 +295,7 @@ class Migration(migrations.Migration):
                         blank=True,
                         help_text=b"Identifier for the Archivematica pipeline",
                         unique=True,
-                        verbose_name="uuid",
+                        verbose_name="UUID",
                     ),
                 ),
                 (
