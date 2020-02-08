@@ -370,7 +370,7 @@ def check_if_aip_already_exists(aip_uuid):
             " want to import this AIP anyway (and destroy the existing one),"
             ' then enter "y" or "yes": '.format(aip_uuid)
         )
-        user_response = eval(input(prompt))
+        user_response = input(prompt)
         if user_response.lower() not in ("y", "yes"):
             raise ImportAIPException("Aborting importation of an already existing AIP")
 
