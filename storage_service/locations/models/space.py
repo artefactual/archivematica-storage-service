@@ -740,8 +740,8 @@ class Space(models.Model):
             if assume_rsync_daemon:
                 env["RSYNC_PASSWORD"] = rsync_password
             output = subprocess.check_output(command, env=env)
-        except Exception as e:
-            LOGGER.warning("rsync list failed: %s", e, exc_info=True)
+        except Exception as error:
+            LOGGER.warning("rsync list failed: %s", error, exc_info=True)
             entries = []
             directories = []
         else:
