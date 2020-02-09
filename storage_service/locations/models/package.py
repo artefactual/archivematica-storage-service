@@ -2717,7 +2717,7 @@ class Package(models.Model):
             transform_order = 2  # encryption is a prior transformation
         else:
             transform_order = 1
-        version, extension, program_name = utils.get_compression_transforms(
+        version, extension, program_name = utils.set_compression_transforms(
             aip, compression, transform_order
         )
         transform_count = len(aip.transform_files)
