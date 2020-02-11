@@ -474,16 +474,18 @@ def get_compression_event_detail(compression):
     return event_detail
 
 
-def get_compression_transforms(aip, compression, transform_order):
-    """Return command for compressing the package
+def set_compression_transforms(aip, compression, transform_order):
+    """Set transform files based on the compression mechanism.
 
+    Return information for compressing the package
+
+    :param aip: metsrw FSEntry representing the AIP
     :param compression: one of the constants in ``COMPRESSION_ALGORITHMS``.
-    :param extract_path: target path for the compressed file
-    :param basename: base name of the file (without extension)
-    :param full_path: Path of source files
-    :returns: (command, compressed_filename) where
-        `command` is the compression command (as a list of strings)
-        `compressed_filename` is the full path to the compressed file
+    :param transform_order: initial order for the transforms
+    :returns: (version, extension, program_name) where
+        `version` is the version of the program to compress the AIP
+        `extension` is the file extension of the compressed AIP
+        `program_name` is the name of the program to compress the AIP
     """
     if compression in (COMPRESSION_7Z_BZIP, COMPRESSION_7Z_LZMA, COMPRESSION_7Z_COPY):
         if compression == COMPRESSION_7Z_BZIP:

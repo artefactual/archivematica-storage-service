@@ -2653,16 +2653,9 @@ class Package(models.Model):
             # Update pointer file
             mets = metsrw.METSDocument.fromfile(self.full_pointer_file_path)
             aip = mets.get_file(type="Archival Information Package")
-            # Create a new compression event
-            event_detail = utils.get_compression_event_detail(compression)
-            compression_event = premis.create_premis_aip_compression_event(
-                event_detail, ""
-            )
-            # Since a new event has been created based on the new compression
-            # mechanism we reset the old decompression transforms
+            # Reset existing decompression transforms before setting new ones
+            # based on the current compression mechanism
             self._filter_and_remove_decompression_transforms(aip)
-            # Add the new compression event
-            aip.add_premis_event(compression_event)
             self._update_pointer_file(compression, mets, path=updated_aip_path)
         elif was_compressed:
             # AIP used to be compressed, but is no longer so delete pointer file
@@ -2722,7 +2715,7 @@ class Package(models.Model):
             transform_order = 2  # encryption is a prior transformation
         else:
             transform_order = 1
-        version, extension, program_name = utils.get_compression_transforms(
+        version, extension, program_name = utils.set_compression_transforms(
             aip, compression, transform_order
         )
         transform_count = len(aip.transform_files)

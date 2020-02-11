@@ -257,7 +257,7 @@ def test_get_format_info(compression, version, extension, program_name, transfor
     consistent.
     """
     fsentry = FSEntry()
-    vers, ext, prog_name = utils.get_compression_transforms(fsentry, compression, 1)
+    vers, ext, prog_name = utils.set_compression_transforms(fsentry, compression, 1)
     assert version in vers
     assert ext == extension
     assert program_name in prog_name
