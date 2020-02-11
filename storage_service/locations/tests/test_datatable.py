@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Tests for the datatable utilities."""
 
+from __future__ import absolute_import
 import os
 import tempfile
 

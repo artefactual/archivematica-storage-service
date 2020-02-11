@@ -196,27 +196,25 @@ interactions:
       x-dura-meta-space-created: ['2014-11-06T22:27:13']
     status: {code: 200, message: OK}
 - request:
-    body: !!python/object:StringIO.StringIO
-      buf: 'ro sed leo. Maecenas venenatis, ante sed malesuada semper, tellus nisl
-        scelerisque est, at fringilla mi odio et massa. Sed rhoncus augue eget mauris
-        gravida malesuada nec vitae sapien. Sed eget lectus mattis, pharetra metus
-        nec, laoreet est. Aliquam blandit enim lacus, id venenatis tortor ornare vitae.
-        Ut quis dignissim felis, sit amet eleifend ipsum. Donec in pharetra ligula.
-        Maecenas vitae ipsum non lorem convallis egestas. Sed nisl neque, accumsan
-        at diam quis, aliquet varius eros. Ut rutrum lorem sed tincidunt suscipit.
-        Sed tempor tristique ipsum, nec sodales sapien ornare ut. Cras neque metus,
-        sodales non lacus sit amet, maximus egestas augue. Cras sed sem orci.
-
-
-        Duis ultricies faucibus metus, at ultrices neque gravida a. Ut ex erat, semper
-        egestas volutpat ac, rutrum non posuere.
-
-'
-      buflist: []
-      closed: false
-      len: 797
-      pos: 0
-      softspace: 0
+    body: !!python/object/new:_io.BytesIO
+      state: !!python/tuple
+      - !!binary |
+        cm8gc2VkIGxlby4gTWFlY2VuYXMgdmVuZW5hdGlzLCBhbnRlIHNlZCBtYWxlc3VhZGEgc2VtcGVy
+        LCB0ZWxsdXMgbmlzbApzY2VsZXJpc3F1ZSBlc3QsIGF0IGZyaW5naWxsYSBtaSBvZGlvIGV0IG1h
+        c3NhLiBTZWQgcmhvbmN1cyBhdWd1ZSBlZ2V0IG1hdXJpcwpncmF2aWRhIG1hbGVzdWFkYSBuZWMg
+        dml0YWUgc2FwaWVuLiBTZWQgZWdldCBsZWN0dXMgbWF0dGlzLCBwaGFyZXRyYSBtZXR1cwpuZWMs
+        IGxhb3JlZXQgZXN0LiBBbGlxdWFtIGJsYW5kaXQgZW5pbSBsYWN1cywgaWQgdmVuZW5hdGlzIHRv
+        cnRvciBvcm5hcmUgdml0YWUuClV0IHF1aXMgZGlnbmlzc2ltIGZlbGlzLCBzaXQgYW1ldCBlbGVp
+        ZmVuZCBpcHN1bS4gRG9uZWMgaW4gcGhhcmV0cmEgbGlndWxhLgpNYWVjZW5hcyB2aXRhZSBpcHN1
+        bSBub24gbG9yZW0gY29udmFsbGlzIGVnZXN0YXMuIFNlZCBuaXNsIG5lcXVlLCBhY2N1bXNhbgph
+        dCBkaWFtIHF1aXMsIGFsaXF1ZXQgdmFyaXVzIGVyb3MuIFV0IHJ1dHJ1bSBsb3JlbSBzZWQgdGlu
+        Y2lkdW50IHN1c2NpcGl0LgpTZWQgdGVtcG9yIHRyaXN0aXF1ZSBpcHN1bSwgbmVjIHNvZGFsZXMg
+        c2FwaWVuIG9ybmFyZSB1dC4gQ3JhcyBuZXF1ZSBtZXR1cywKc29kYWxlcyBub24gbGFjdXMgc2l0
+        IGFtZXQsIG1heGltdXMgZWdlc3RhcyBhdWd1ZS4gQ3JhcyBzZWQgc2VtIG9yY2kuCgoKRHVpcyB1
+        bHRyaWNpZXMgZmF1Y2lidXMgbWV0dXMsIGF0IHVsdHJpY2VzIG5lcXVlIGdyYXZpZGEgYS4gVXQg
+        ZXggZXJhdCwgc2VtcGVyCmVnZXN0YXMgdm9sdXRwYXQgYWMsIHJ1dHJ1bSBub24gcG9zdWVyZS4K
+      - 0
+      - null
     headers:
       Accept: ['*/*']
       Accept-Encoding: ['gzip, deflate']
@@ -244,21 +242,25 @@ interactions:
       vary: [Accept-Encoding]
     status: {code: 201, message: Created}
 - request:
-    body: !!python/object:StringIO.StringIO
-      buf: "<?xml version='1.0' encoding='UTF-8'?>\n<dur:chunksManifest xmlns:dur=\"duracloud.org\">\n
-        \ <header schemaVersion=\"0.2\">\n    <sourceContent contentId=\"chunked/chunked_image.txt\">\n
-        \     <mimetype>application/octet-stream</mimetype>\n      <byteSize>11037</byteSize>\n
-        \     <md5>e7aba5d09b490b9f91c65867754ae190</md5>\n    </sourceContent>\n
-        \ </header>\n  <chunks>\n    <chunk chunkId=\"chunked/chunked_image.txt.dura-chunk-0000\">\n
-        \     <byteSize>10240</byteSize>\n      <md5>2147aa269812cac6204ad66ec953ccfe</md5>\n
-        \   </chunk>\n    <chunk chunkId=\"chunked/chunked_image.txt.dura-chunk-0001\">\n
-        \     <byteSize>797</byteSize>\n      <md5>aa9d2932a31f4b81cbfd1bcdb2c75020</md5>\n
-        \   </chunk>\n  </chunks>\n</dur:chunksManifest>\n"
-      buflist: []
-      closed: false
-      len: 706
-      pos: 0
-      softspace: 0
+    body: !!python/object/new:_io.BytesIO
+      state: !!python/tuple
+      - !!binary |
+        PD94bWwgdmVyc2lvbj0nMS4wJyBlbmNvZGluZz0nVVRGLTgnPz5cbjxkdXI6Y2h1bmtzTWFuaWZl
+        c3QgeG1sbnM6ZHVyPVwiZHVyYWNsb3VkLm9yZ1wiPlxuClwgPGhlYWRlciBzY2hlbWFWZXJzaW9u
+        PVwiMC4yXCI+XG4gICAgPHNvdXJjZUNvbnRlbnQgY29udGVudElkPVwiY2h1bmtlZC9jaHVua2Vk
+        CiNpbWFnZS50eHRcIj5cbiAgICAgIDxtaW1ldHlwZT5hcHBsaWNhdGlvbi9vY3RldC1zdHJlYW08
+        L21pbWV0eXBlPlxuICAgICAgPGJ5dGVTaXplPjExMDM3PC9ieXRlU2l6ZT5cbgpcICAgICA8bWQ1
+        PmU3YWJhNWQwOWI0OTBiOWY5MWM2NTg2Nzc1NGFlMTkwPC9tZDU+XG4gICAgPC9zb3VyY2VDb250
+        ZW50PlxuClwgPC9oZWFkZXI+XG4gIDxjaHVua3M+XG4gICAgPGNodW5rIGNodW5rSWQ9XCJjaHVu
+        a2VkL2NodW5rZWQgI2ltYWdlLnR4dC5kdXJhLWNodW5rLTAwMDBcIj5cbgpcICAgICA8Ynl0ZVNp
+        emU+MTAyNDA8L2J5dGVTaXplPlxuICAgICAgPG1kNT4yMTQ3YWEyNjk4MTJjYWM2MjA0YWQ2NmVj
+        OTUzY2NmZTwvbWQ1PlxuClwgICA8L2NodW5rPlxuICAgIDxjaHVuayBjaHVua0lkPVwiY2h1bmtl
+        ZC9jaHVua2VkICNpbWFnZS50eHQuZHVyYS1jaHVuay0wMDAxXCI+XG4KXCAgICAgPGJ5dGVTaXpl
+        Pjc5NzwvYnl0ZVNpemU+XG4gICAgICA8bWQ1PmFhOWQyOTMyYTMxZjRiODFjYmZkMWJjZGIyYzc1
+        MDIwPC9tZDU+XG4KXCAgIDwvY2h1bms+XG4gIDwvY2h1bmtzPlxuPC9kdXI6Y2h1bmtzTWFuaWZl
+        c3Q+XG4K
+      - 0
+      - null
     headers:
       Accept: ['*/*']
       Accept-Encoding: ['gzip, deflate']

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from __future__ import absolute_import
 from django.db import models, migrations
 import django_extensions.db.fields
 
@@ -47,7 +48,7 @@ class Migration(migrations.Migration):
                         blank=True,
                     ),
                 ),
-                ("space", models.OneToOneField(to="locations.Space", to_field=b"uuid")),
+                ("space", models.OneToOneField(to="locations.Space", to_field="uuid")),
             ],
             options={"verbose_name": "Arkivum"},
             bases=(models.Model,),
@@ -108,7 +109,7 @@ class Migration(migrations.Migration):
                         blank=True,
                     ),
                 ),
-                ("space", models.OneToOneField(to="locations.Space", to_field=b"uuid")),
+                ("space", models.OneToOneField(to="locations.Space", to_field="uuid")),
             ],
             options={"verbose_name": "Swift"},
             bases=(models.Model,),

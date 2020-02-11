@@ -47,6 +47,7 @@ via a pipeline? Should this be fixed by the import command?::
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from __future__ import absolute_import
 import glob
 import logging
 import os
@@ -61,11 +62,11 @@ import bagit
 import scandir
 from django.core.management.base import BaseCommand
 from django.db.utils import IntegrityError
-from django.utils.six.moves import input
 
 from administration.models import Settings
 from common import premis, utils
 from locations import models
+from six.moves import input
 
 
 # Suppress the logging from models/package.py

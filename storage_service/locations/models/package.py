@@ -30,6 +30,7 @@ from django.utils.translation import ugettext_lazy as _
 import bagit
 import jsonfield
 from django_extensions.db.fields import UUIDField
+from django.utils import six
 import metsrw
 from metsrw.plugins import premisrw
 import requests
@@ -45,6 +46,7 @@ from .location import Location
 from .space import Space, PosixMoveUnsupportedError
 from .event import Callback, CallbackError, File
 from .fixity_log import FixityLog
+from six.moves import range
 
 __all__ = ("Package",)
 
@@ -52,6 +54,7 @@ __all__ = ("Package",)
 LOGGER = logging.getLogger(__name__)
 
 
+@six.python_2_unicode_compatible
 class Package(models.Model):
     """ A package stored in a specific location. """
 
@@ -173,7 +176,7 @@ class Package(models.Model):
         self.local_path_location = None
         self.origin_location = None
 
-    def __unicode__(self):
+    def __str__(self):
         return u"{uuid}: {path}".format(uuid=self.uuid, path=self.full_path)
         # return "File: {}".format(self.uuid)
 
@@ -373,7 +376,7 @@ class Package(models.Model):
             #       all released versions; make sure to use a patched version
             #       for this to work.
             command = ["lsar", "-ja", full_path]
-            output = subprocess.check_output(command)
+            output = subprocess.check_output(command).decode("utf8")
             output = json.loads(output)
             directories = [
                 d["XADFileName"]
@@ -1554,7 +1557,7 @@ class Package(models.Model):
             if relative_path:
                 command.append(relative_path)
             LOGGER.info("Extracting file with: %s to %s", command, output_path)
-            rc = subprocess.check_output(command)
+            rc = subprocess.check_output(command).decode("utf8")
             if "No files extracted" in rc:
                 raise StorageException(_("Extraction error"))
         else:
@@ -1898,7 +1901,9 @@ class Package(models.Model):
         except bagit.BagValidationError as failure:
             LOGGER.error("bagit.BagValidationError on %s:\n%s", path, failure.message)
             try:
-                LOGGER.debug(subprocess.check_output(["tree", "-a", "--du", path]))
+                LOGGER.debug(
+                    subprocess.check_output(["tree", "-a", "--du", path]).decode("utf8")
+                )
             except (OSError, ValueError, subprocess.CalledProcessError):
                 pass
             success = False
@@ -2749,7 +2754,7 @@ class Package(models.Model):
 
         # Write out pointer file again
         with open(self.full_pointer_file_path, "w") as f:
-            f.write(mets.tostring())
+            f.write(mets.tostring().decode("utf8"))
 
     # SWORD-related methods
     def has_been_submitted_for_processing(self):
@@ -2806,7 +2811,7 @@ def _extract_rein_aip(internal_location, rein_aip_internal_path):
         # Get output path
         command = ["lsar", "-ja", rein_aip_internal_path]
         try:
-            output = subprocess.check_output(command)
+            output = subprocess.check_output(command).decode("utf8")
             j = json.loads(output)
             bname = sorted(
                 [

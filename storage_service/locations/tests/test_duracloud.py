@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from lxml import etree
 import os
 import shutil
@@ -308,6 +309,7 @@ class TestDuracloud(TempDirMixin, TestCase):
         shutil.copy(os.path.join(FIXTURES_DIR, "chunk_file.txt"), str(self.tmpdir))
         file_path = str(self.tmpdir / "chunk_file.txt")
         self.ds_object.CHUNK_SIZE = 10 * 1024  # Set testing chunk size
+        self.ds_object.BUFFER_SIZE = 1
         # Upload
         self.ds_object.move_from_storage_service(
             file_path, "chunked/chunked #image.txt"
@@ -398,6 +400,7 @@ class TestDuracloud(TempDirMixin, TestCase):
         shutil.copy(os.path.join(FIXTURES_DIR, "chunk_file.txt"), str(self.tmpdir))
         file_path = str(self.tmpdir / "chunk_file.txt")
         self.ds_object.CHUNK_SIZE = 10 * 1024  # Set testing chunk size
+        self.ds_object.BUFFER_SIZE = 1
         requests.put(
             "https://"
             + self.ds_object.host

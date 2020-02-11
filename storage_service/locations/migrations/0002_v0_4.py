@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from __future__ import absolute_import
 from django.db import models, migrations
 import jsonfield.fields
 import locations.models
@@ -83,7 +84,7 @@ class Migration(migrations.Migration):
                         verbose_name=b"Keep local copy?",
                     ),
                 ),
-                ("space", models.OneToOneField(to="locations.Space", to_field=b"uuid")),
+                ("space", models.OneToOneField(to="locations.Space", to_field="uuid")),
             ],
             options={},
             bases=(models.Model,),

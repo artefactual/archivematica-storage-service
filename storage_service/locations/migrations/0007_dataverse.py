@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from __future__ import absolute_import
 from django.db import models, migrations
 
 
@@ -56,7 +57,7 @@ class Migration(migrations.Migration):
                         max_length=256,
                     ),
                 ),
-                ("space", models.OneToOneField(to="locations.Space", to_field=b"uuid")),
+                ("space", models.OneToOneField(to="locations.Space", to_field="uuid")),
             ],
             options={"verbose_name": "Dataverse"},
             bases=(models.Model,),

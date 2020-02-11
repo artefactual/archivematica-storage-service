@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from __future__ import absolute_import
 from django.db import migrations, models
 
 
@@ -79,6 +80,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="s3",
             name="space",
-            field=models.OneToOneField(to="locations.Space", to_field=b"uuid"),
+            field=models.OneToOneField(to="locations.Space", to_field="uuid"),
         ),
     ]

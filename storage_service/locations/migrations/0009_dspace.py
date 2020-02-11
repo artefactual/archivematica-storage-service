@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from __future__ import absolute_import
 from django.db import models, migrations
 
 
@@ -41,7 +42,7 @@ class Migration(migrations.Migration):
                         help_text=b"DSpace password to authenticate with", max_length=64
                     ),
                 ),
-                ("space", models.OneToOneField(to="locations.Space", to_field=b"uuid")),
+                ("space", models.OneToOneField(to="locations.Space", to_field="uuid")),
             ],
             options={"verbose_name": "DSpace via SWORD2 API"},
             bases=(models.Model,),

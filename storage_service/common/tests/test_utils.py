@@ -1,5 +1,7 @@
-from StringIO import StringIO
+from __future__ import absolute_import
+from __future__ import unicode_literals
 
+from six import StringIO
 import mock
 import pytest
 
@@ -159,7 +161,8 @@ def test_get_tool_info_command(compression, command):
 def test_get_compression_event_detail(
     mock_subprocess, compression, cmd_output, expected_detail
 ):
-    mock_subprocess.return_value = cmd_output
+    # subprocess.check_output returns bytes in python3
+    mock_subprocess.return_value = cmd_output.encode("utf8")
     detail = utils.get_compression_event_detail(compression)
 
     assert (

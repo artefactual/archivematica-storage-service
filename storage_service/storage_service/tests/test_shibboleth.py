@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import pytest
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings

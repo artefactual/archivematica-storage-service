@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import os
 import requests
 import shutil
@@ -7,6 +8,7 @@ from django.test import TestCase
 
 from locations import models
 from . import TempDirMixin
+from six.moves import range
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
@@ -55,7 +57,7 @@ class TestArkivum(TempDirMixin, TestCase):
         self.arkivum_dir = self.tmpdir / "arkivum"
         (self.arkivum_dir / "aips").mkdir()
         (self.arkivum_dir / "ts").mkdir()
-        (self.arkivum_dir / "test.txt").open("ab").write(u"test.txt contents")
+        (self.arkivum_dir / "test.txt").open("ab").write(b"test.txt contents")
         self.arkivum_dir = str(self.arkivum_dir)
 
     def test_has_required_attributes(self):

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from __future__ import absolute_import
 from django.db import models, migrations
 import locations.models
 from django.conf import settings
@@ -161,7 +162,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "location",
-                    models.ForeignKey(to="locations.Location", to_field=b"uuid"),
+                    models.ForeignKey(to="locations.Location", to_field="uuid"),
                 ),
             ],
             options={"verbose_name": "Location associated with a Pipeline"},
@@ -261,7 +262,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "current_location",
-                    models.ForeignKey(to="locations.Location", to_field=b"uuid"),
+                    models.ForeignKey(to="locations.Location", to_field="uuid"),
                 ),
             ],
             options={"verbose_name": "Package"},
@@ -294,7 +295,7 @@ class Migration(migrations.Migration):
                         blank=True,
                         help_text=b"Identifier for the Archivematica pipeline",
                         unique=True,
-                        verbose_name=b"UUID",
+                        verbose_name="UUID",
                     ),
                 ),
                 (
@@ -426,13 +427,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="pipelinelocalfs",
             name="space",
-            field=models.OneToOneField(to="locations.Space", to_field=b"uuid"),
+            field=models.OneToOneField(to="locations.Space", to_field="uuid"),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name="package",
             name="origin_pipeline",
-            field=models.ForeignKey(to="locations.Pipeline", to_field=b"uuid"),
+            field=models.ForeignKey(to="locations.Pipeline", to_field="uuid"),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -440,7 +441,7 @@ class Migration(migrations.Migration):
             name="pointer_file_location",
             field=models.ForeignKey(
                 related_name="+",
-                to_field=b"uuid",
+                to_field="uuid",
                 blank=True,
                 to="locations.Location",
                 null=True,
@@ -450,13 +451,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="nfs",
             name="space",
-            field=models.OneToOneField(to="locations.Space", to_field=b"uuid"),
+            field=models.OneToOneField(to="locations.Space", to_field="uuid"),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name="locationpipeline",
             name="pipeline",
-            field=models.ForeignKey(to="locations.Pipeline", to_field=b"uuid"),
+            field=models.ForeignKey(to="locations.Pipeline", to_field="uuid"),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -474,25 +475,25 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="location",
             name="space",
-            field=models.ForeignKey(to="locations.Space", to_field=b"uuid"),
+            field=models.ForeignKey(to="locations.Space", to_field="uuid"),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name="localfilesystem",
             name="space",
-            field=models.OneToOneField(to="locations.Space", to_field=b"uuid"),
+            field=models.OneToOneField(to="locations.Space", to_field="uuid"),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name="event",
             name="package",
-            field=models.ForeignKey(to="locations.Package", to_field=b"uuid"),
+            field=models.ForeignKey(to="locations.Package", to_field="uuid"),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name="event",
             name="pipeline",
-            field=models.ForeignKey(to="locations.Pipeline", to_field=b"uuid"),
+            field=models.ForeignKey(to="locations.Pipeline", to_field="uuid"),
             preserve_default=True,
         ),
     ]

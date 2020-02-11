@@ -7,6 +7,7 @@ import logging
 from django.conf import settings
 from django.core import validators
 from django.db import models
+from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
@@ -28,6 +29,7 @@ __all__ = ("Pipeline",)
 LOGGER = logging.getLogger(__name__)
 
 
+@six.python_2_unicode_compatible
 class Pipeline(URLMixin, models.Model):
     """ Information about Archivematica instances using the storage service. """
 
@@ -92,8 +94,8 @@ class Pipeline(URLMixin, models.Model):
     objects = models.Manager()
     active = Enabled()
 
-    def __unicode__(self):
-        return u"{description} ({uuid})".format(
+    def __str__(self):
+        return "{description} ({uuid})".format(
             uuid=self.uuid, description=self.description
         )
 

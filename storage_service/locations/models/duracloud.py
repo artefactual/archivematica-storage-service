@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from __future__ import unicode_literals
 
 # stdlib, alphabetical
 import logging
@@ -6,7 +7,9 @@ from lxml import etree
 import os
 import re
 import shutil
-import urllib
+import six.moves.urllib.request
+import six.moves.urllib.parse
+import six.moves.urllib.error
 
 # Core Django, alphabetical
 from django.db import models
@@ -121,7 +124,7 @@ class Duracloud(models.Model):
                     # There is exactly one .dura-manifest for chunked files
                     # Return the original filename when we find a manifest file
                     if p.endswith(self.MANIFEST_SUFFIX):
-                        yield p[:-duramanifest_len]
+                        yield utils.coerce_str(p[:-duramanifest_len])
                         continue
                     # File chunks skipped - manifest returns original filename
                     if re.search(durachunk_regex, p):
@@ -158,7 +161,7 @@ class Duracloud(models.Model):
         # Handle paths one at a time to deal with lots of files
         paths = self._get_files_list(path, show_split_files=False)
         for p in paths:
-            path_parts = p.replace(path, "", 1).split("/")
+            path_parts = p.decode("utf8").replace(path, "", 1).split("/")
             dirname = path_parts[0]
             if not dirname:
                 continue
@@ -183,7 +186,7 @@ class Duracloud(models.Model):
     def delete_path(self, delete_path):
         # BUG If delete_path is a folder but provided without a trailing /, will delete a file with the same name.
         # Files
-        url = self.duraspace_url + urllib.quote(delete_path)
+        url = self.duraspace_url + six.moves.urllib.parse.quote(delete_path)
         LOGGER.debug("URL: %s", url)
         response = self.session.delete(url)
         LOGGER.debug("Response: %s", response)
@@ -205,7 +208,7 @@ class Duracloud(models.Model):
             # Do not support globbing for delete - do not want to accidentally
             # delete something
             for d in to_delete:
-                url = self.duraspace_url + urllib.quote(d)
+                url = self.duraspace_url + six.moves.urllib.parse.quote(d)
                 response = self.session.delete(url)
 
     def _download_file(self, url, download_path, expected_size=0, checksum=None):
@@ -245,9 +248,9 @@ class Duracloud(models.Model):
                     size = int(e.findtext("byteSize"))
                     md5 = e.findtext("md5")
                     # Download
-                    chunk_url = self.duraspace_url + urllib.quote(chunk)
+                    chunk_url = self.duraspace_url + six.moves.urllib.parse.quote(chunk)
                     LOGGER.debug("Chunk URL: %s", chunk_url)
-                    chunk_path = chunk_url.replace(url, download_path)
+                    chunk_path = chunk_url.replace(url, download_path.decode("utf8"))
                     LOGGER.debug("Chunk path: %s", chunk_path)
                     self._download_file(chunk_url, chunk_path, size, md5)
                     # Append to output
@@ -295,7 +298,7 @@ class Duracloud(models.Model):
         src_path = utils.coerce_str(src_path)
         dest_path = utils.coerce_str(dest_path)
         # Try to fetch if it's a file
-        url = self.duraspace_url + urllib.quote(src_path)
+        url = self.duraspace_url + six.moves.urllib.parse.quote(src_path)
         success = self._download_file(url, dest_path)
         if not success:
             LOGGER.debug("%s not found, trying as folder", src_path)
@@ -304,13 +307,13 @@ class Duracloud(models.Model):
             # filesystem, but do not character-match in Duracloud.
             # Normalize dest_path as well so replace continues to work
             find_regex = r"/[\.\*]$"
-            src_path = re.sub(find_regex, "/", src_path)
-            dest_path = re.sub(find_regex, "/", dest_path)
+            src_path = re.sub(find_regex, "/", src_path.decode("utf8"))
+            dest_path = re.sub(find_regex, "/", dest_path.decode("utf8"))
             LOGGER.debug("Modified paths: src: %s dest: %s", src_path, dest_path)
             to_get = self._get_files_list(src_path, show_split_files=False)
             for entry in to_get:
-                url = self.duraspace_url + urllib.quote(entry)
-                dest = entry.replace(src_path, dest_path, 1)
+                url = self.duraspace_url + six.moves.urllib.parse.quote(entry)
+                dest = entry.decode("utf8").replace(src_path, dest_path, 1)
                 self._download_file(url, dest)
 
     def _process_chunk(self, f, chunk_path):
@@ -318,7 +321,7 @@ class Duracloud(models.Model):
 
         with open(chunk_path, "w") as fchunk:
             while bytes_read < self.CHUNK_SIZE:
-                data = f.read(self.BUFFER_SIZE)
+                data = f.read(self.BUFFER_SIZE).decode("utf8")
                 fchunk.write(data)
 
                 length = len(data)
@@ -353,7 +356,7 @@ class Duracloud(models.Model):
             #     <md5>9497f70a1a17943ddfcbed567538900d</md5>
             #   </sourceContent>
             # </header>
-            relative_path = urllib.unquote(
+            relative_path = six.moves.urllib.parse.unquote(
                 url.replace(self.duraspace_url, "", 1)
             ).lstrip("/")
             LOGGER.debug("File name: %s", relative_path)
@@ -379,7 +382,7 @@ class Duracloud(models.Model):
                 while not file_complete:
                     # Setup chunk info
                     chunk_suffix = ".dura-chunk-" + str(i).zfill(4)
-                    chunk_path = upload_file + chunk_suffix
+                    chunk_path = upload_file.decode("utf8") + chunk_suffix
                     LOGGER.debug("Chunk path: %s", chunk_path)
                     chunk_url = url + chunk_suffix
                     LOGGER.debug("Chunk URL: %s", chunk_url)
@@ -404,7 +407,7 @@ class Duracloud(models.Model):
                     etree.SubElement(chunk_e, "md5").text = checksum.hexdigest()
                     # Upload chunk
                     # Check if chunk exists already
-                    if resume and chunkid in chunklist:
+                    if resume and chunkid.encode("utf8") in chunklist:
                         LOGGER.info(
                             "%s already in Duracloud, skipping upload", chunk_path
                         )
@@ -414,13 +417,13 @@ class Duracloud(models.Model):
                     os.remove(chunk_path)
                     i += 1
             # Write .dura-manifest
-            manifest_path = upload_file + self.MANIFEST_SUFFIX
+            manifest_path = upload_file.decode("utf8") + self.MANIFEST_SUFFIX
             manifest_url = url + self.MANIFEST_SUFFIX
             with open(manifest_path, "w") as f:
                 f.write(
                     etree.tostring(
                         root, pretty_print=True, xml_declaration=True, encoding="UTF-8"
-                    )
+                    ).decode("utf8")
                 )
             # Upload .dura-manifest
             self._upload_chunk(manifest_url, manifest_path)
@@ -474,16 +477,16 @@ class Duracloud(models.Model):
         destination_path = utils.coerce_str(destination_path)
         if os.path.isdir(source_path):
             # Both source and destination paths should end with /
-            destination_path = os.path.join(destination_path, "")
+            destination_path = os.path.join(destination_path, b"")
             # Duracloud does not accept folders, so upload each file individually
             for path, dirs, files in scandir.walk(source_path):
                 for basename in files:
                     entry = os.path.join(path, basename)
                     dest = entry.replace(source_path, destination_path, 1)
-                    url = self.duraspace_url + urllib.quote(dest)
+                    url = self.duraspace_url + six.moves.urllib.parse.quote(dest)
                     self._upload_file(url, entry, resume=resume)
         elif os.path.isfile(source_path):
-            url = self.duraspace_url + urllib.quote(destination_path)
+            url = self.duraspace_url + six.moves.urllib.parse.quote(destination_path)
             self._upload_file(url, source_path, resume=resume)
         elif not os.path.exists(source_path):
             raise StorageException(

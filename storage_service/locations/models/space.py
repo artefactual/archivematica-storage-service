@@ -1,4 +1,5 @@
 # stdlib, alphabetical
+from __future__ import absolute_import
 import datetime
 import errno
 import logging
@@ -121,6 +122,7 @@ def validate_space_path(path):
 #         pass
 
 
+@six.python_2_unicode_compatible
 class Space(models.Model):
     """ Common storage space information.
 
@@ -209,8 +211,8 @@ class Space(models.Model):
         verbose_name = _("Space")
         app_label = "locations"
 
-    def __unicode__(self):
-        return u"{uuid}: {path} ({access_protocol})".format(
+    def __str__(self):
+        return six.text_type("{uuid}: {path} ({access_protocol}").format(
             uuid=self.uuid,
             access_protocol=self.get_access_protocol_display(),
             path=self.path,
@@ -738,8 +740,8 @@ class Space(models.Model):
             if assume_rsync_daemon:
                 env["RSYNC_PASSWORD"] = rsync_password
             output = subprocess.check_output(command, env=env)
-        except Exception as e:
-            LOGGER.warning("rsync list failed: %s", e, exc_info=True)
+        except Exception as error:
+            LOGGER.warning("rsync list failed: %s", error, exc_info=True)
             entries = []
             directories = []
         else:

@@ -48,10 +48,16 @@ interactions:
       x-distribution: [Ubuntu]
     status: {code: 200, message: OK}
 - request:
-    body: !!python/object:swiftclient.utils.LengthWrapper
-      _length: 10
-      _readable: !!python/object:__builtin__.file {}
-      _remaining: 0
+    body: !!python/object/new:swiftclient.utils.LengthWrapper
+      state:
+        _length: 10
+        _readable: !!python/object/new:io.BytesIO
+          state: !!python/tuple
+          - !!binary |
+            ""
+          - 0
+          - null
+        _remaining: 0
     headers:
       Accept: ['*/*']
       Accept-Encoding: ['gzip, deflate']

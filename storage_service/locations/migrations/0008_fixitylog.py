@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from __future__ import absolute_import
 from django.db import models, migrations
 
 
@@ -24,10 +25,7 @@ class Migration(migrations.Migration):
                 ("success", models.BooleanField(default=False)),
                 ("error_details", models.TextField(null=True)),
                 ("datetime_reported", models.DateTimeField(auto_now=True)),
-                (
-                    "package",
-                    models.ForeignKey(to="locations.Package", to_field=b"uuid"),
-                ),
+                ("package", models.ForeignKey(to="locations.Package", to_field="uuid")),
             ],
             options={"verbose_name": "Fixity Log"},
             bases=(models.Model,),

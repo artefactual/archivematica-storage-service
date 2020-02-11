@@ -1,14 +1,11 @@
 interactions:
 - request:
-    body: !!python/object:StringIO.StringIO
-      buf: 'test file
-
-        '
-      buflist: []
-      closed: false
-      len: 10
-      pos: 0
-      softspace: 0
+    body: !!python/object/new:_io.BytesIO
+      state: !!python/tuple
+      - !!binary |
+        dGVzdCBmaWxlCg==
+      - 0
+      - null
     headers:
       Accept: ['*/*']
       Accept-Encoding: ['gzip, deflate']
@@ -37,15 +34,12 @@ interactions:
       vary: [Accept-Encoding]
     status: {code: 201, message: Created}
 - request:
-    body: !!python/object:StringIO.StringIO
-      buf: 'test file2
-
-        '
-      buflist: []
-      closed: false
-      len: 11
-      pos: 0
-      softspace: 0
+    body: !!python/object/new:_io.BytesIO
+      state: !!python/tuple
+      - !!binary |
+        dGVzdCBmaWxlMgo=
+      - 0
+      - null
     headers:
       Accept: ['*/*']
       Accept-Encoding: ['gzip, deflate']

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from __future__ import absolute_import
 from django.db import migrations, models
 
 
@@ -37,8 +38,8 @@ class Migration(migrations.Migration):
                         verbose_name="Was there an exception?",
                     ),
                 ),
-                ("_result", models.BinaryField(null=True, db_column=b"result")),
-                ("_error", models.BinaryField(null=True, db_column=b"error")),
+                ("_result", models.BinaryField(null=True, db_column="result")),
+                ("_error", models.BinaryField(null=True, db_column="error")),
                 ("created_time", models.DateTimeField(auto_now_add=True)),
                 ("updated_time", models.DateTimeField(auto_now=True)),
                 ("completed_time", models.DateTimeField(null=True)),

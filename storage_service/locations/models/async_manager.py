@@ -10,6 +10,7 @@
 # with the tasks we're responsible for.  And when expiring old entries from the
 # database, it doesn't matter if another AsyncManager does our job for us.
 
+from __future__ import absolute_import
 import datetime
 import logging
 import threading
@@ -17,7 +18,7 @@ import time
 
 from django.utils import timezone
 
-from async import Async  # noqa
+from .async import Async  # noqa
 
 LOGGER = logging.getLogger(__name__)
 
