@@ -610,7 +610,7 @@ class Package(models.Model):
         # Copy replicandum AIP from its source location to the SS
         src_space.move_to_storage_service(
             source_path=os.path.join(
-                replicandum_location.relative_path, replicandum_path
+                replicandum_location.relative_path, replicandum_path, ""
             ),
             destination_path=replica_package.current_path,
             destination_space=dest_space,

@@ -11,6 +11,7 @@ from django.contrib.messages import get_messages
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 
+from common import utils
 from locations import models
 
 import bagit
@@ -388,6 +389,30 @@ class TestPackage(TestCase):
             body = '{"download_url": "http://ss.com/api/v2/file/%s/download/"}' % uuid
             mocked_execute.assert_called_with(url, body)
 
+    @staticmethod
+    def _test_bagit_structure(replica, replication_dir):
+        """Ensure the replicated bagit structure remains."""
+        bag_contents = [
+            "tagmanifest-md5.txt",
+            "bagit.txt",
+            "manifest-md5.txt",
+            "bag-info.txt",
+            os.path.join("data", "test.txt"),
+        ]
+        expected_bag_path = os.path.join(
+            replication_dir, utils.uuid_to_path(replica.uuid), "working_bag"
+        )
+        expected_bagit_structure = [
+            os.path.join(expected_bag_path, bag_path) for bag_path in bag_contents
+        ]
+        for subdir, _, files in os.walk(replica.current_location.full_path):
+            for file_ in files:
+                file_path = os.path.join(subdir, file_)
+                if file_path not in expected_bagit_structure:
+                    pytest.fail(
+                        "Unexpected file in Bagit structure: {}".format(file_path)
+                    )
+
     def test_replicate_aip(self):
         space_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="space")
         replication_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="replication")
@@ -401,13 +426,12 @@ class TestPackage(TestCase):
         )
 
         aip.create_replicas()
-
         assert aip.replicas.count() == 1
-
         replica = aip.replicas.first()
         assert replica is not None
         assert replica.origin_pipeline == aip.origin_pipeline
         assert replica.replicas.count() == 0
+        self._test_bagit_structure(aip.replicas.first(), replication_dir)
 
     def test_replicate_aip_twice(self):
         space_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="space")
@@ -430,8 +454,13 @@ class TestPackage(TestCase):
         aip.create_replicas()
 
         assert aip.replicas.count() == 2
-        for replica in aip.replicas.all():
-            assert replica.replicas.count() == 0
+        assert aip.replicas.first() != aip.replicas.last()
+
+        assert aip.replicas.first().replicas.count() == 0
+        assert aip.replicas.last().replicas.count() == 0
+
+        self._test_bagit_structure(aip.replicas.first(), replication_dir)
+        self._test_bagit_structure(aip.replicas.last(), replication_dir2)
 
     @mock.patch("locations.models.gpg._gpg_encrypt")
     def test_replicate_aip_gpg_encrypted(self, mock_encrypt):
@@ -460,6 +489,7 @@ class TestPackage(TestCase):
 
         assert replica is not None
         assert mock_encrypt.call_args_list == [mock.call(replica.full_path, u"")]
+        self._test_bagit_structure(replica, replication_dir)
 
 
 class TestTransferPackage(TestCase):
