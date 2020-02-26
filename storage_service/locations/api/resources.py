@@ -909,6 +909,17 @@ class PackageResource(ModelResource):
         bundle.data["encrypted"] = encrypted
         return bundle
 
+    def dehydrate_size(self, bundle):
+        """Ensure that ``size`` is serialized as an integer.
+
+        This is needed because Tastypie doesn't know how to dehydrate
+        ``BigIntegerField`` (see django-tastypie/django-tastypie#299).
+        """
+        try:
+            return int(bundle.data["size"])
+        except (ValueError, TypeError, KeyError):
+            return 0
+
     def hydrate_current_location(self, bundle):
         """Customize unserialization of current_location.
 
