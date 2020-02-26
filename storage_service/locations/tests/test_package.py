@@ -48,6 +48,16 @@ class TestPackage(TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp_dir)
 
+    def test_model_delete_from_storage(self):
+        package = models.Package.objects.get(
+            uuid="88deec53-c7dc-4828-865c-7356386e9399"
+        )
+        with mock.patch("locations.models.Space.delete_path") as mocked_delete:
+            package.delete_from_storage()
+            assert mocked_delete.called
+            assert package.current_location.used == -package.size
+            assert package.current_location.space.used == -package.size
+
     def test_view_package_delete(self):
         self.client.login(username="test", password="test")
         url = reverse("package_delete", args=["00000000-0000-0000-0000-000000000000"])

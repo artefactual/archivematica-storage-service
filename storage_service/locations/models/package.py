@@ -1980,11 +1980,14 @@ class Package(models.Model):
         Returns (True, None) on success, and (False, error_msg) on failure.
         """
         error = None
+        location = self.current_location
+        space = location.space
+
         # LOCKSS must notify LOM before deleting
-        if self.current_location.space.access_protocol == Space.LOM:
+        if space.access_protocol == Space.LOM:
             # Notify LOM that files will be deleted
             if "num_files" in self.misc_attributes:
-                lom = self.current_location.space.get_child_space()
+                lom = space.get_child_space()
                 lom.update_service_document()
                 delete_lom_ids = [
                     lom._download_url(self.uuid, idx + 1)
@@ -1992,7 +1995,7 @@ class Package(models.Model):
                 ]
                 error = lom._delete_update_lom(self, delete_lom_ids)
         try:
-            self.current_location.space.delete_path(self.full_path)
+            space.delete_path(self.full_path)
         except (StorageException, NotImplementedError, ValueError) as err:
             return False, err
         # If deleted correctly, remove pointer file, and the UUID quad
@@ -2014,6 +2017,14 @@ class Package(models.Model):
             )
         self.status = self.DELETED
         self.save()
+
+        # Remove size from location and space used values. Like the initial
+        # checks and updates, this is not considering race conditions.
+        space.used -= self.size
+        space.save()
+        location.used -= self.size
+        location.save()
+
         return True, error
 
     # REINGEST
