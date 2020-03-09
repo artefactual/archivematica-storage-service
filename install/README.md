@@ -59,6 +59,11 @@ of these settings or provide values to mandatory fields.
     - **Type:** `string`
     - :red_circle: **Mandatory!**
 
+- **`TIME_ZONE`**:
+    - **Description:** application time zone. See [TIME_ZONE](https://docs.djangoproject.com/en/1.8/ref/settings/#time-zone) for more details.
+    - **Type:** `string`
+    - **Default:** `"America/Los_Angeles"`
+
 - **`SECRET_KEY`**:
     - **Description:** a secret key used for cryptographic signing. See [SECRET_KEY](https://docs.djangoproject.com/en/1.8/ref/settings/#secret-key) for more details.
     - **Type:** `string`
