@@ -16,14 +16,16 @@ class DefaultLocationWidget(forms.MultiWidget):
     """ Widget for entering required information to create a new location. """
 
     def __init__(self, *args, **kwargs):
-        choices = [(s.uuid, str(s)) for s in Space.objects.all()]
         widgets = [
-            forms.Select(choices=choices, *args, **kwargs),  # space_id
+            forms.Select(choices=[], *args, **kwargs),  # space_id
             forms.TextInput(*args, **kwargs),  # relative_path
             forms.TextInput(*args, **kwargs),  # description
             forms.TextInput(*args, **kwargs),  # quota
         ]
         super(DefaultLocationWidget, self).__init__(widgets=widgets, *args, **kwargs)
+
+    def set_space_id_choices(self, choices):
+        self.widgets[0].choices += choices
 
     def decompress(self, value):
         """ Splits initial data to a list for each sub-widget. """
@@ -52,8 +54,7 @@ class DefaultLocationField(forms.MultiValueField):
     """ Field for entering required information to create a new location. """
 
     def __init__(self, *args, **kwargs):
-        choices = [(s.uuid, str(s)) for s in Space.objects.all()]
-        space_id = forms.ChoiceField(choices=choices, *args, **kwargs)
+        space_id = forms.ChoiceField(choices=[], *args, **kwargs)
         relative_path = forms.CharField(*args, **kwargs)
         description = forms.CharField(*args, **kwargs)
         quota = forms.IntegerField(min_value=0, *args, **kwargs)
@@ -62,6 +63,10 @@ class DefaultLocationField(forms.MultiValueField):
         super(DefaultLocationField, self).__init__(
             fields=fields, widget=widget, *args, **kwargs
         )
+
+    def set_space_id_choices(self, choices):
+        self.fields["space_id"].choices += choices
+        self.widget.set_space_id_choices(choices)
 
     def compress(self, data_list):
         """ Takes widget data and compresses to one data structure. """
@@ -167,6 +172,11 @@ class DefaultLocationsForm(SettingsForm):
             (l.uuid, l.get_description())
             for l in Location.active.filter(purpose=Location.AIP_RECOVERY)
         ] + [("new", _("Create new location for each pipeline"))]
+        space_id_choices = [(s.uuid, str(s)) for s in Space.objects.all()]
+        for field_name in self.fields:
+            field = self.fields[field_name]
+            if isinstance(field, DefaultLocationField):
+                field.set_space_id_choices(space_id_choices)
 
     def clean(self):
         cleaned_data = super(DefaultLocationsForm, self).clean()
