@@ -73,7 +73,7 @@ class TestPackage(TestCase):
 
         def verify_redirect_message(response, message):
             assert response.status_code == 200
-            assert response.redirect_chain == [("http://testserver/packages/", 302)]
+            assert response.redirect_chain == [("/packages/", 302)]
             messages = list(get_messages(response.wsgi_request))
             assert len(messages) == 1
             assert str(messages[0]) == message
