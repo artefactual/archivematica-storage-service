@@ -38,5 +38,5 @@ LOGGING = {
 
 # Disable whitenoise
 STATICFILES_STORAGE = None
-if MIDDLEWARE_CLASSES[0] == "whitenoise.middleware.WhiteNoiseMiddleware":
-    del MIDDLEWARE_CLASSES[0]
+if MIDDLEWARE[0] == "whitenoise.middleware.WhiteNoiseMiddleware":
+    del MIDDLEWARE[0]
