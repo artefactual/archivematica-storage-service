@@ -18,7 +18,11 @@ urlpatterns = [
     url(r"^admin/", include(admin.site.urls)),
     url(r"^", include(locations.urls)),
     url(r"^administration/", include(administration.urls)),
-    url(r"^login/$", django.contrib.auth.views.login, {"template_name": "login.html"}),
+    url(
+        r"^login/$",
+        django.contrib.auth.views.LoginView.as_view(template_name="login.html"),
+        name="login",
+    ),
     url(r"^logout/$", django.contrib.auth.views.logout_then_login, name="logout"),
     url(r"^api/", include(locations.api.urls)),
     url(
