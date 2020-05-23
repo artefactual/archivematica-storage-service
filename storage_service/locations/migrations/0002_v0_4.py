@@ -84,7 +84,12 @@ class Migration(migrations.Migration):
                         verbose_name=b"Keep local copy?",
                     ),
                 ),
-                ("space", models.OneToOneField(to="locations.Space", to_field="uuid")),
+                (
+                    "space",
+                    models.OneToOneField(
+                        to="locations.Space", to_field="uuid", on_delete=models.CASCADE
+                    ),
+                ),
             ],
             options={},
             bases=(models.Model,),

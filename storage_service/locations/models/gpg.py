@@ -62,7 +62,7 @@ class GPG(models.Model):
     # encrypted.
     encrypted_space = True
 
-    space = models.OneToOneField("Space", to_field="uuid")
+    space = models.OneToOneField("Space", to_field="uuid", on_delete=models.CASCADE)
 
     # The ``key`` attribute of a GPG "space" is the fingerprint (string) of an
     # existing GPG private key that this SS has access to. Note that GPG keys

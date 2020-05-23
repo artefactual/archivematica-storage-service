@@ -48,7 +48,12 @@ class Migration(migrations.Migration):
                         blank=True,
                     ),
                 ),
-                ("space", models.OneToOneField(to="locations.Space", to_field="uuid")),
+                (
+                    "space",
+                    models.OneToOneField(
+                        to="locations.Space", to_field="uuid", on_delete=models.CASCADE
+                    ),
+                ),
             ],
             options={"verbose_name": "Arkivum"},
             bases=(models.Model,),
@@ -109,7 +114,12 @@ class Migration(migrations.Migration):
                         blank=True,
                     ),
                 ),
-                ("space", models.OneToOneField(to="locations.Space", to_field="uuid")),
+                (
+                    "space",
+                    models.OneToOneField(
+                        to="locations.Space", to_field="uuid", on_delete=models.CASCADE
+                    ),
+                ),
             ],
             options={"verbose_name": "Swift"},
             bases=(models.Model,),
@@ -138,7 +148,9 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="file",
             name="package",
-            field=models.ForeignKey(to="locations.Package", null=True),
+            field=models.ForeignKey(
+                to="locations.Package", null=True, on_delete=models.CASCADE
+            ),
             preserve_default=True,
         ),
         migrations.AddField(

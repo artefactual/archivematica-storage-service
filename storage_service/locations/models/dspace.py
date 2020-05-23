@@ -40,7 +40,7 @@ LOGGER = logging.getLogger(__name__)
 class DSpace(models.Model):
     """Integration with DSpace using the SWORD2 protocol."""
 
-    space = models.OneToOneField("Space", to_field="uuid")
+    space = models.OneToOneField("Space", to_field="uuid", on_delete=models.CASCADE)
     sd_iri = models.URLField(
         max_length=256,
         verbose_name=_("Service Document IRI"),

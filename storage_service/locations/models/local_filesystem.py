@@ -19,7 +19,7 @@ from .location import Location
 class LocalFilesystem(models.Model):
     """ Spaces found in the local filesystem of the storage service."""
 
-    space = models.OneToOneField("Space", to_field="uuid")
+    space = models.OneToOneField("Space", to_field="uuid", on_delete=models.CASCADE)
 
     class Meta:
         verbose_name = _("Local Filesystem")

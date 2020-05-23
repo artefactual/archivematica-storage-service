@@ -31,7 +31,7 @@ LOGGER = logging.getLogger(__name__)
 class Lockssomatic(models.Model):
     """ Spaces that store their contents in LOCKSS, via LOCKSS-o-matic. """
 
-    space = models.OneToOneField("Space", to_field="uuid")
+    space = models.OneToOneField("Space", to_field="uuid", on_delete=models.CASCADE)
 
     # staging location is Space.path
     au_size = models.BigIntegerField(

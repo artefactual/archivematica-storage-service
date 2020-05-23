@@ -59,7 +59,7 @@ class DSpaceRESTException(Exception):
 class DSpaceREST(models.Model):
     """Integration with DSpace using the REST API."""
 
-    space = models.OneToOneField("Space", to_field="uuid")
+    space = models.OneToOneField("Space", to_field="uuid", on_delete=models.CASCADE)
     ds_rest_url = models.URLField(
         max_length=256,
         verbose_name=_("REST URL"),

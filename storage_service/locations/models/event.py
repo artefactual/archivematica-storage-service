@@ -30,13 +30,13 @@ class Event(models.Model):
     Eg. delete AIP can be requested by a pipeline, but needs storage
     administrator approval.  Who made the request and why is also stored. """
 
-    package = models.ForeignKey("Package", to_field="uuid")
+    package = models.ForeignKey("Package", to_field="uuid", on_delete=models.CASCADE)
     DELETE = "DELETE"
     RECOVER = "RECOVER"
     EVENT_TYPE_CHOICES = ((DELETE, _("delete")), (RECOVER, _("recover")))
     event_type = models.CharField(max_length=8, choices=EVENT_TYPE_CHOICES)
     event_reason = models.TextField()
-    pipeline = models.ForeignKey("Pipeline", to_field="uuid")
+    pipeline = models.ForeignKey("Pipeline", to_field="uuid", on_delete=models.CASCADE)
     user_id = models.PositiveIntegerField()
     user_email = models.EmailField(max_length=254)
     SUBMITTED = "SUBMIT"
@@ -49,7 +49,9 @@ class Event(models.Model):
     )
     status = models.CharField(max_length=8, choices=EVENT_STATUS_CHOICES)
     status_reason = models.TextField(null=True, blank=True)
-    admin_id = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True)
+    admin_id = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.CASCADE
+    )
     status_time = models.DateTimeField(auto_now=True)
     store_data = models.TextField(null=True, blank=True, editable=False)
 
@@ -183,7 +185,7 @@ class File(models.Model):
     uuid = UUIDField(
         editable=False, unique=True, version=4, help_text=_("Unique identifier")
     )
-    package = models.ForeignKey("Package", null=True)
+    package = models.ForeignKey("Package", null=True, on_delete=models.CASCADE)
     name = models.TextField(max_length=1000)
     source_id = models.TextField(max_length=128)
     source_package = models.TextField(

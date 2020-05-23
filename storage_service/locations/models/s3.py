@@ -40,7 +40,7 @@ def boto_exception(fn):
 
 
 class S3(models.Model):
-    space = models.OneToOneField("Space", to_field="uuid")
+    space = models.OneToOneField("Space", to_field="uuid", on_delete=models.CASCADE)
     access_key_id = models.CharField(
         max_length=64, blank=True, verbose_name=_("Access Key ID to authenticate")
     )

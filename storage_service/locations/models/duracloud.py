@@ -30,7 +30,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Duracloud(models.Model):
-    space = models.OneToOneField("Space", to_field="uuid")
+    space = models.OneToOneField("Space", to_field="uuid", on_delete=models.CASCADE)
     host = models.CharField(
         max_length=256,
         verbose_name=_("Host"),

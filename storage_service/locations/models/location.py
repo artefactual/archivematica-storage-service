@@ -29,7 +29,7 @@ class Location(models.Model):
     uuid = UUIDField(
         editable=False, unique=True, version=4, help_text=_("Unique identifier")
     )
-    space = models.ForeignKey("Space", to_field="uuid")
+    space = models.ForeignKey("Space", to_field="uuid", on_delete=models.CASCADE)
 
     # Sorted by display name
     AIP_RECOVERY = "AR"
@@ -203,8 +203,8 @@ def set_default_location_post_save(
 
 
 class LocationPipeline(models.Model):
-    location = models.ForeignKey("Location", to_field="uuid")
-    pipeline = models.ForeignKey("Pipeline", to_field="uuid")
+    location = models.ForeignKey("Location", to_field="uuid", on_delete=models.CASCADE)
+    pipeline = models.ForeignKey("Pipeline", to_field="uuid", on_delete=models.CASCADE)
 
     class Meta:
         verbose_name = _("Location associated with a Pipeline")
