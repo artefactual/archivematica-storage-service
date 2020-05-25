@@ -5,7 +5,6 @@ import os
 import requests
 
 from django.contrib import auth, messages
-from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.http import HttpResponse
 from django.forms.models import model_to_dict
@@ -13,6 +12,7 @@ from django.middleware.csrf import get_token
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template import RequestContext
 from django.template.loader import get_template
+from django.urls import reverse
 from django.utils.translation import ugettext as _
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods

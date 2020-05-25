@@ -8,8 +8,8 @@ import vcr
 import mock
 
 from django.contrib.messages import get_messages
-from django.core.urlresolvers import reverse
 from django.test import TestCase
+from django.urls import reverse
 
 from common import utils
 from locations import models
