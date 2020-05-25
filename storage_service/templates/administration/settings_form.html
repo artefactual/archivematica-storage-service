@@ -6,7 +6,7 @@
 {% block content %}
 
 <div class='settings'>
-    <form action="{% url 'settings_edit' %}" method="post">
+    <form action="{% url 'administration:settings_edit' %}" method="post">
       {% csrf_token %}
       {{ common_form.as_p }}
 

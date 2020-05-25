@@ -25,9 +25,9 @@
     <dt>{% trans "Enabled" %}</dt> <dd>{{ callback.enabled|yesno:_("Enabled,Disabled")}}</dd>
     <dt>{% trans "Actions" %}</dt> <dd>
       <ul>
-        <li><a href="{% url 'callback_edit' callback.uuid %}">{% trans "Edit" %}</a></li>
-        <li><a href="{% url 'callback_switch_enabled' callback.uuid %}?next={{ request.path }}">{{ callback.enabled|yesno:_("Disable,Enable") }}</a></li>
-        <li><a href="{% url 'callback_delete' callback.uuid %}">{% trans "Delete" %}</a></li>
+        <li><a href="{% url 'locations:callback_edit' callback.uuid %}">{% trans "Edit" %}</a></li>
+        <li><a href="{% url 'locations:callback_switch_enabled' callback.uuid %}?next={{ request.path }}">{{ callback.enabled|yesno:_("Disable,Enable") }}</a></li>
+        <li><a href="{% url 'locations:callback_delete' callback.uuid %}">{% trans "Delete" %}</a></li>
       </ul>
     </dd>
   </dl>

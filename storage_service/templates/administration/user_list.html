@@ -6,7 +6,7 @@
 {% block content %}
 
   {% if user.is_superuser and allow_user_edits %}
-    <p><a href="{% url 'user_create' %}">{% trans "Create New User" %}</a></p>
+    <p><a href="{% url 'administration:user_create' %}">{% trans "Create New User" %}</a></p>
   {% endif %}
   <table class="datatable">
     <thead>
@@ -29,9 +29,9 @@
         <td>
           {% if user.is_superuser or user.id == user_display.id %}
             {% if allow_user_edits %}
-              <a class="btn btn-primary edit small" href="{% url 'user_edit' user_display.id %}">{% trans "Edit" %}</a>
+              <a class="btn btn-primary edit small" href="{% url 'administration:user_edit' user_display.id %}">{% trans "Edit" %}</a>
             {% else %}
-              <a class="btn btn-primary edit small" href="{% url 'user_detail' user_display.id %}">{% trans "View" %}</a>
+              <a class="btn btn-primary edit small" href="{% url 'administration:user_detail' user_display.id %}">{% trans "View" %}</a>
             {% endif %}
           {% endif %}
         </td>

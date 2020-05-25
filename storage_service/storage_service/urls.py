@@ -15,7 +15,7 @@ from storage_service import views
 urlpatterns = [
     url(r"^$", TemplateView.as_view(template_name="index.html")),
     # Uncomment the next line to enable the admin:
-    url(r"^admin/", include(admin.site.urls)),
+    url(r"^admin/", admin.site.urls),
     url(r"^", include(locations.urls)),
     url(r"^administration/", include(administration.urls)),
     url(
@@ -31,7 +31,7 @@ urlpatterns = [
         {"domain": "djangojs"},
         name="javascript-catalog",
     ),
-    url(r"^i18n/", include("django.conf.urls.i18n", namespace="i18n")),
+    url(r"^i18n/", include(("django.conf.urls.i18n", "i18n"), namespace="i18n")),
 ]
 
 

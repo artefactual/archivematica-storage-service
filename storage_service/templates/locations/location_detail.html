@@ -7,7 +7,7 @@
 
 <div class='location'>
   <dl>
-    <dt>{% trans "Space" %}</dt> <dd><a href="{% url 'space_detail' location.space.uuid %}">{{ location.space }}</a></dd>
+    <dt>{% trans "Space" %}</dt> <dd><a href="{% url 'locations:space_detail' location.space.uuid %}">{{ location.space }}</a></dd>
     <dt>{% trans "Purpose" %}</dt> <dd>{{ location.get_purpose_display }}</dd>
     <dt>{% trans "Description" %}</dt> <dd>{{ location.description }}</dd>
     <dt>{% trans "Full Path" %}</dt> <dd>{{ location.full_path }}</dd>
@@ -24,7 +24,7 @@
           {% if master_locations %}
             <ul>
               {% for master in master_locations %}
-                <li><a href="{% url 'location_detail' master.uuid %}">{{ master }}</a></li>
+                <li><a href="{% url 'locations:location_detail' master.uuid %}">{{ master }}</a></li>
               {% endfor %}
             </ul>
           {% else %}
@@ -40,7 +40,7 @@
           {% if replicator_locations %}
             <ul>
               {% for replicator in replicator_locations %}
-                <li><a href="{% url 'location_detail' replicator.uuid %}">{{ replicator }}</a></li>
+                <li><a href="{% url 'locations:location_detail' replicator.uuid %}">{{ replicator }}</a></li>
               {% endfor %}
             </ul>
           {% else %}
@@ -54,9 +54,9 @@
     <dt>{% trans "Actions" %}</dt>
       <dd>
         <ul>
-          <li><a href="{% url 'location_edit' location.space.uuid location.uuid %}">{% trans "Edit Location" %}</a></li>
-          <li><a href="{% url 'location_switch_enabled' location.uuid %}?next={{ request.path }}">{{ location.enabled|yesno:_("Disable,Enable") }}</a></li>
-          <li><a href="{% url 'location_delete' location.uuid %}">{% trans "Delete Location" %}</a></li>
+          <li><a href="{% url 'locations:location_edit' location.space.uuid location.uuid %}">{% trans "Edit Location" %}</a></li>
+          <li><a href="{% url 'locations:location_switch_enabled' location.uuid %}?next={{ request.path }}">{{ location.enabled|yesno:_("Disable,Enable") }}</a></li>
+          <li><a href="{% url 'locations:location_delete' location.uuid %}">{% trans "Delete Location" %}</a></li>
         </ul>
       </dd>
   </dl>

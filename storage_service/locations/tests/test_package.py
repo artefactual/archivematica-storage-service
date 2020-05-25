@@ -61,7 +61,9 @@ class TestPackage(TestCase):
 
     def test_view_package_delete(self):
         self.client.login(username="test", password="test")
-        url = reverse("package_delete", args=["00000000-0000-0000-0000-000000000000"])
+        url = reverse(
+            "locations:package_delete", args=["00000000-0000-0000-0000-000000000000"]
+        )
 
         # It does only accept POST, i.e. GET returns a 405
         response = self.client.get(url, follow=True)
@@ -79,7 +81,7 @@ class TestPackage(TestCase):
             assert str(messages[0]) == message
 
         # It returns an "error" message when the package type is not allowed.
-        url = reverse("package_delete", args=[self.package.uuid])
+        url = reverse("locations:package_delete", args=[self.package.uuid])
         response = self.client.post(url, follow=True)
         verify_redirect_message(
             response, "Package of type Transfer cannot be deleted directly"

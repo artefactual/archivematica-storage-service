@@ -4,6 +4,7 @@ from locations import views
 
 UUID = r"\w{8}-\w{4}-\w{4}-\w{4}-\w{12}"
 
+app_name = "locations"
 urlpatterns = [
     # Sorted by alphabetized categories
     # Locations

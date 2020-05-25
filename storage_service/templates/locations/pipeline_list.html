@@ -7,7 +7,7 @@
 
 {% include 'snippets/pipeline_description.html' %}
 
-<p><a href="{% url 'pipeline_create' %}">{% trans "Create new pipeline" %}</a></p>
+<p><a href="{% url 'locations:pipeline_create' %}">{% trans "Create new pipeline" %}</a></p>
 
 {% if pipelines %}
   {% include "snippets/pipelines_table.html" %}
