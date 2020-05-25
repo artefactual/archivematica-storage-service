@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+
 from django import forms
 from django.contrib import auth
 from django.utils.translation import ugettext_lazy as _
@@ -14,6 +15,8 @@ from six.moves import zip
 
 class DefaultLocationWidget(forms.MultiWidget):
     """ Widget for entering required information to create a new location. """
+
+    template_name = "administration/location_widget.html"
 
     def __init__(self, *args, **kwargs):
         widgets = [
@@ -39,15 +42,11 @@ class DefaultLocationWidget(forms.MultiWidget):
         except (KeyError, TypeError):
             return []
 
-    def format_output(self, rendered_widgets):
+    def get_context(self, *args, **kwargs):
         labels = (_("Space"), _("Relative Path"), _("Description"), _("Quota"))
-
-        html = "".join(
-            "<p>{}: {}</p>".format(label, widget)
-            for label, widget in zip(labels, rendered_widgets)
-        )
-
-        return html
+        result = super(DefaultLocationWidget, self).get_context(*args, **kwargs)
+        result["labeled_widgets"] = zip(labels, result["widget"]["subwidgets"])
+        return result
 
 
 class DefaultLocationField(forms.MultiValueField):
@@ -65,7 +64,7 @@ class DefaultLocationField(forms.MultiValueField):
         )
 
     def set_space_id_choices(self, choices):
-        self.fields["space_id"].choices += choices
+        self.fields[0].choices += choices
         self.widget.set_space_id_choices(choices)
 
     def compress(self, data_list):
@@ -114,6 +113,10 @@ class CommonSettingsForm(SettingsForm):
 
 class DefaultLocationsForm(SettingsForm):
     """ Configures default locations associated with a new pipeline. """
+
+    # This allows to look for the custom template of the DefaultLocationWidget
+    # in the DIRS paths of the default templates backend (see settings.TEMPLATES)
+    default_renderer = forms.renderers.TemplatesSetting
 
     default_transfer_source = forms.MultipleChoiceField(
         choices=[],

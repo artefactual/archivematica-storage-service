@@ -1,0 +1,7 @@
+{% spaceless %}
+  {% for label, widget in labeled_widgets %}
+    <p>
+      {{ label }}: {% include widget.template_name %}
+    </p>
+  {% endfor %}
+{% endspaceless %}

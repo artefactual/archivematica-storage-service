@@ -223,6 +223,7 @@ DJANGO_APPS = [
     # Admin panel and documentation:
     "django.contrib.admin",
     # 'django.contrib.admindocs',
+    "django.forms",
 ]
 
 THIRD_PARTY_APPS = [
