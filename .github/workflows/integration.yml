@@ -1,7 +1,10 @@
 name: Integration
 on:
-- push
-- pull_request
+  pull_request:
+  push:
+    branches:
+    - qa/**
+    - stable/**
 jobs:
   integration:
     runs-on: ubuntu-18.04
