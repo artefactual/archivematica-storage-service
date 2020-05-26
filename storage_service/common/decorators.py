@@ -5,8 +5,7 @@ try:
 except ImportError:
     from django.utils.functional import wraps
 
-from django.shortcuts import render_to_response
-from django.template import RequestContext
+from django.shortcuts import render
 
 
 # Requires confirmation from a prompt page before executing a request
@@ -24,7 +23,7 @@ def confirm_required(template_name, context_creator, key="__confirm__"):
     Example:
         def remove_file_context(request, id):
             file = get_object_or_404(Attachment, id=id)
-            return RequestContext(request, {'file': file})
+            return {'file': file}
 
         @confirm_required('remove_file_confirm.html', remove_file_context)
         def remove_file_view(request, id):
@@ -48,11 +47,9 @@ def confirm_required(template_name, context_creator, key="__confirm__"):
                 return func(request, *args, **kwargs)
             else:
                 context = (
-                    context_creator
-                    and context_creator(request, *args, **kwargs)
-                    or RequestContext(request)
+                    context_creator and context_creator(request, *args, **kwargs) or {}
                 )
-                return render_to_response(template_name, context)
+                return render(request, template_name, context)
 
         return wraps(func)(inner)
 

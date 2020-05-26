@@ -10,7 +10,6 @@ from django.http import Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils.translation import get_language, ugettext as _
-from django.template import RequestContext
 from tastypie.models import ApiKey
 
 from common import utils
@@ -332,13 +331,12 @@ def key_delete_context(request, key_fingerprint):
             )
     default_cancel = reverse("administration:key_list")
     cancel_url = request.GET.get("next", default_cancel)
-    context_dict = {
+    return {
         "header": header,
         "dependent_objects": dependent_objects,
         "prompt": prompt,
         "cancel_url": cancel_url,
     }
-    return RequestContext(request, context_dict)
 
 
 @decorators.confirm_required("administration/key_delete.html", key_delete_context)

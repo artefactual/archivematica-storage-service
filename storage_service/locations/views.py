@@ -10,7 +10,6 @@ from django.http import HttpResponse
 from django.forms.models import model_to_dict
 from django.middleware.csrf import get_token
 from django.shortcuts import render, redirect, get_object_or_404
-from django.template import RequestContext
 from django.template.loader import get_template
 from django.urls import reverse
 from django.utils.translation import ugettext as _
@@ -479,10 +478,9 @@ def location_switch_enabled(request, location_uuid):
 
 
 def location_delete_context(request, location_uuid):
-    context_dict = get_delete_context_dict(
+    return get_delete_context_dict(
         request, Location, location_uuid, reverse("locations:location_list")
     )
-    return RequestContext(request, context_dict)
 
 
 @decorators.confirm_required("locations/delete.html", location_delete_context)
@@ -546,10 +544,9 @@ def pipeline_switch_enabled(request, uuid):
 
 
 def pipeline_delete_context(request, uuid):
-    context_dict = get_delete_context_dict(
+    return get_delete_context_dict(
         request, Pipeline, uuid, reverse("locations:pipeline_list")
     )
-    return RequestContext(request, context_dict)
 
 
 @decorators.confirm_required("locations/delete.html", pipeline_delete_context)
@@ -681,10 +678,9 @@ def ajax_space_create_protocol_form(request):
 
 
 def space_delete_context(request, uuid):
-    context_dict = get_delete_context_dict(
+    return get_delete_context_dict(
         request, Space, uuid, reverse("locations:space_list")
     )
-    return RequestContext(request, context_dict)
 
 
 @decorators.confirm_required("locations/delete.html", space_delete_context)
