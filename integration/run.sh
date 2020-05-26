@@ -8,4 +8,4 @@ env COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build minio arch
 
 docker-compose run --rm archivematica-storage-service
 
-docker-compose down
+docker-compose down --volumes

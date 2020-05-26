@@ -20,7 +20,7 @@ import scandir
 import pytest
 
 from metsrw.plugins import premisrw
-from locations.models import Location, Space
+from locations.models import Location, Package, Space
 
 try:
     from pathlib import Path
@@ -279,7 +279,7 @@ class StorageScenario(object):
             {
                 "relative_path": "aips",
                 "staging_path": "",
-                "purpose": "RP",
+                "purpose": Location.REPLICATOR,
                 "space": space["resource_uri"],
                 "pipeline": ["/api/v2/pipeline/{}/".format(self.PIPELINE_UUID)],
             }
@@ -289,7 +289,7 @@ class StorageScenario(object):
 
         # 3. Install replicator (not possible via API).
         resp = self.client.get_locations(
-            {"pipeline_uuid": self.PIPELINE_UUID, "purpose": "AS"}
+            {"pipeline_uuid": self.PIPELINE_UUID, "purpose": Location.AIP_STORAGE}
         )
         as_location = json.loads(resp.content)["objects"][0]
         rp_location = Location.objects.get(uuid=rp_location["uuid"])
@@ -312,12 +312,15 @@ class StorageScenario(object):
 
     def store_aip(self):
         resp = self.client.get_locations(
-            {"pipeline_uuid": self.PIPELINE_UUID, "purpose": "CP"}
+            {
+                "pipeline_uuid": self.PIPELINE_UUID,
+                "purpose": Location.CURRENTLY_PROCESSING,
+            }
         )
         cp_location = json.loads(resp.content)["objects"][0]
 
         resp = self.client.get_locations(
-            {"pipeline_uuid": self.PIPELINE_UUID, "purpose": "AS"}
+            {"pipeline_uuid": self.PIPELINE_UUID, "purpose": Location.AIP_STORAGE}
         )
         as_location = json.loads(resp.content)["objects"][0]
 
@@ -330,7 +333,7 @@ class StorageScenario(object):
                 "current_location": as_location["resource_uri"],
                 "current_path": self.pkg.name,
                 "size": get_size(str(self.pkg)),
-                "package_type": "AIP",
+                "package_type": Package.AIP,
                 "aip_subtype": "Archival Information Package",
                 "origin_pipeline": "/api/v2/pipeline/{}/".format(self.PIPELINE_UUID),
                 "events": [self.get_compression_event()],
