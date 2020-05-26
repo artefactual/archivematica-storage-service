@@ -1,0 +1,19 @@
+name: Integration
+on:
+- push
+- pull_request
+jobs:
+  integration:
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Check out source code
+      uses: actions/checkout@v2
+    - name: Run tests
+      run: |
+        docker-compose run --rm archivematica-storage-service
+        docker-compose down --volumes
+      shell: bash
+      working-directory: integration
+      env:
+        COMPOSE_DOCKER_CLI_BUILD: 1
+        DOCKER_BUILDKIT: 1
