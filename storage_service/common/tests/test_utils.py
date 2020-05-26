@@ -262,3 +262,31 @@ def test_get_format_info(compression, version, extension, program_name, transfor
     assert ext == extension
     assert program_name in prog_name
     assert fsentry.transform_files == transform
+
+
+@pytest.mark.parametrize(
+    "package_path,is_file",
+    [
+        (
+            "8ac0/d76b/b01e/47b1/8ca8/0fe8/0edb/e7b9/repl2-8ac0d76b-b01e-47b1-8ca8-0fe80edbe7b9.7z",
+            True,
+        ),
+        (
+            "cee5/a604/93d8/4253/a666/2f73/a19c/f835/repl13-cee5a604-93d8-4253-a666-2f73a19cf835.tar.gz",
+            True,
+        ),
+        (
+            "0eb3/ae66/2e7c/4982/bc85/23aa/697a/7dec/repl12-0eb3ae66-2e7c-4982-bc85-23aa697a7dec",
+            False,
+        ),
+        (
+            "ab9c/d802/7c7b/4377/8742/4685/d09b/6d75/repl11-ab9cd802-7c7b-4377-8742-4685d09b6d75.tar.bz2",
+            True,
+        ),
+    ],
+)
+def test_package_is_file(package_path, is_file):
+    """Ensure that we return is_file accurately for the types of path we will
+    see in the storage service.
+    """
+    assert utils.package_is_file(package_path) == is_file

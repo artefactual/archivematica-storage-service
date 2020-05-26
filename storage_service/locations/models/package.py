@@ -574,9 +574,11 @@ class Package(models.Model):
         replicandum_location = self.current_location
         replicandum_path = self.current_path
         replicandum_uuid = self.uuid
+        replicandum_is_file = utils.package_is_file(replicandum_path)
         LOGGER.info(
-            "Replicating package %s to replicator location %s",
+            "Replicating package %s (type is file: %s), to replicator location %s",
             replicandum_uuid,
+            replicandum_is_file,
             replicator_location.uuid,
         )
 
@@ -585,9 +587,9 @@ class Package(models.Model):
 
         # Remove the /uuid/path from the replica's current_path and replace the
         # old UUID in the basename with the new UUID.
-        replica_package.current_path = os.path.basename(
-            replicandum_path.rstrip("/")
-        ).replace(replicandum_uuid, replica_package.uuid, 1)
+        replica_package.current_path = os.path.basename(replicandum_path).replace(
+            replicandum_uuid, replica_package.uuid, 1
+        )
         replica_package.current_location = replicator_location
 
         # Check if enough space on the space and location
@@ -604,14 +606,21 @@ class Package(models.Model):
         replica_destination_path = os.path.join(
             replica_package.current_location.relative_path, replica_package.current_path
         )
+
+        if not replicandum_is_file:
+            # Ensure directory paths are terminated by a trailing slash.
+            replica_destination_path = os.path.join(replica_destination_path, "")
+
         replica_package.status = Package.PENDING
         replica_package.save()
 
         # Copy replicandum AIP from its source location to the SS
+        src_path = os.path.join(replicandum_location.relative_path, replicandum_path)
+        if not replicandum_is_file:
+            # Ensure directory paths are terminated by a trailing slash.
+            src_path = os.path.join(src_path, "")
         src_space.move_to_storage_service(
-            source_path=os.path.join(
-                replicandum_location.relative_path, replicandum_path, ""
-            ),
+            source_path=src_path,
             destination_path=replica_package.current_path,
             destination_space=dest_space,
         )

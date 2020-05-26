@@ -413,6 +413,31 @@ class TestPackage(TestCase):
                         "Unexpected file in Bagit structure: {}".format(file_path)
                     )
 
+    def test_replicate_aip_when_file(self):
+        space_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="space")
+        replication_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="replication")
+        aip = models.Package.objects.get(uuid="88deec53-c7dc-4828-865c-7356386e9399")
+        aip.current_location.space.staging_path = space_dir
+        aip.current_location.space.save()
+        aip.current_location.replicators.create(
+            space=aip.current_location.space,
+            relative_path=replication_dir,
+            purpose=models.Location.REPLICATOR,
+        )
+        aip.create_replicas()
+        assert aip.replicas.count() == 1
+        replica = aip.replicas.first()
+        assert replica is not None
+        assert replica.origin_pipeline == aip.origin_pipeline
+        assert replica.replicas.count() == 0
+        package_name = "working_bag.7z"
+        dest_dir = os.path.join(replication_dir, utils.uuid_to_path(replica.uuid))
+        repl_file_path = os.path.join(
+            replication_dir, utils.uuid_to_path(replica.uuid), package_name
+        )
+        assert package_name in os.listdir(dest_dir)
+        assert os.path.isfile(repl_file_path)
+
     def test_replicate_aip(self):
         space_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="space")
         replication_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="replication")
@@ -488,7 +513,9 @@ class TestPackage(TestCase):
         replica = aip.replicas.first()
 
         assert replica is not None
-        assert mock_encrypt.call_args_list == [mock.call(replica.full_path, u"")]
+        assert mock_encrypt.call_args_list == [
+            mock.call(os.path.join(replica.full_path, ""), u"")
+        ]
         self._test_bagit_structure(replica, replication_dir)
 
 
