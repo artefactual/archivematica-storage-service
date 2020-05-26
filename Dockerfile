@@ -45,6 +45,7 @@ RUN set -ex \
 		/src/storage_service/assets \
 		/src/storage_service/locations/fixtures \
 		/var/archivematica/storage_service \
+		/var/archivematica/sharedDirectory \
 	' \
 	&& mkdir -p $internalDirs \
 	&& chown -R archivematica:archivematica $internalDirs
