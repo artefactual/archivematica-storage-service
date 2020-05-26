@@ -141,7 +141,7 @@ class TestLocationAPI(TestCase):
 
         response = _get_default_ts()
         assert response.status_code == 302
-        assert response.url == "http://testserver/api/v2/location/%s/" % (body["uuid"],)
+        assert response.url == "/api/v2/location/%s/" % (body["uuid"],)
 
     def test_cant_move_from_non_existant_locations(self):
         data = {

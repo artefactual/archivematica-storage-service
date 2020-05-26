@@ -57,7 +57,12 @@ class Migration(migrations.Migration):
                         max_length=256,
                     ),
                 ),
-                ("space", models.OneToOneField(to="locations.Space", to_field="uuid")),
+                (
+                    "space",
+                    models.OneToOneField(
+                        to="locations.Space", to_field="uuid", on_delete=models.CASCADE
+                    ),
+                ),
             ],
             options={"verbose_name": "Dataverse"},
             bases=(models.Model,),

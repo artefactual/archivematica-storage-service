@@ -5,14 +5,13 @@ import os
 import requests
 
 from django.contrib import auth, messages
-from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.http import HttpResponse
 from django.forms.models import model_to_dict
 from django.middleware.csrf import get_token
 from django.shortcuts import render, redirect, get_object_or_404
-from django.template import RequestContext
 from django.template.loader import get_template
+from django.urls import reverse
 from django.utils.translation import ugettext as _
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -157,7 +156,7 @@ def aip_recover_request(request):
     config.execution_fail_message = _("AIP restore failed")
     config.execution_logic = execution_logic
 
-    return _handle_package_request(request, config, "aip_recover_request")
+    return _handle_package_request(request, config, "locations:aip_recover_request")
 
 
 @require_http_methods(["POST"])
@@ -168,7 +167,7 @@ def package_delete(request, uuid):
     ``PACKAGE_TYPE_CAN_DELETE_DIRECTLY``.
     """
     package = get_object_or_404(Package, uuid=uuid)
-    package_list_url = reverse("package_list")
+    package_list_url = reverse("locations:package_list")
 
     def respond(tag, message):
         try:
@@ -213,7 +212,7 @@ def package_delete_request(request):
     config.execution_fail_message = _("Package was not deleted from disk correctly")
     config.execution_logic = execution_logic
 
-    return _handle_package_request(request, config, "package_delete_request")
+    return _handle_package_request(request, config, "locations:package_delete_request")
 
 
 def _handle_package_request(request, config, view_name):
@@ -372,12 +371,12 @@ def package_update_status(request, uuid):
     if error:
         messages.warning(request, error)
 
-    next_url = request.GET.get("next", reverse("package_list"))
+    next_url = request.GET.get("next", reverse("locations:package_list"))
     return redirect(next_url)
 
 
 def aip_reingest(request, package_uuid):
-    next_url = request.GET.get("next", reverse("package_list"))
+    next_url = request.GET.get("next", reverse("locations:package_list"))
     try:
         package = Package.objects.get(uuid=package_uuid)
     except Package.DoesNotExist:
@@ -446,7 +445,7 @@ def location_edit(request, space_uuid, location_uuid=None):
         messages.success(request, _("Location saved."))
         # TODO make this return to the originating page
         # http://stackoverflow.com/questions/4203417/django-how-do-i-redirect-to-page-where-form-originated
-        return redirect("location_detail", location.uuid)
+        return redirect("locations:location_detail", location.uuid)
     return render(request, "locations/location_form.html", locals())
 
 
@@ -462,7 +461,7 @@ def location_detail(request, location_uuid):
         messages.warning(
             request, _("Location %(uuid)s does not exist.") % {"uuid": location_uuid}
         )
-        return redirect("location_list")
+        return redirect("locations:location_list")
     pipelines = Pipeline.objects.filter(location=location)
     package_count = Package.objects.filter(current_location=location).count()
     return render(request, "locations/location_detail.html", locals())
@@ -472,22 +471,23 @@ def location_switch_enabled(request, location_uuid):
     location = get_object_or_404(Location, uuid=location_uuid)
     location.enabled = not location.enabled
     location.save()
-    next_url = request.GET.get("next", reverse("location_detail", args=[location.uuid]))
+    next_url = request.GET.get(
+        "next", reverse("locations:location_detail", args=[location.uuid])
+    )
     return redirect(next_url)
 
 
 def location_delete_context(request, location_uuid):
-    context_dict = get_delete_context_dict(
-        request, Location, location_uuid, reverse("location_list")
+    return get_delete_context_dict(
+        request, Location, location_uuid, reverse("locations:location_list")
     )
-    return RequestContext(request, context_dict)
 
 
 @decorators.confirm_required("locations/delete.html", location_delete_context)
 def location_delete(request, location_uuid):
     location = get_object_or_404(Location, uuid=location_uuid)
     location.delete()
-    next_url = request.GET.get("next", reverse("location_list"))
+    next_url = request.GET.get("next", reverse("locations:location_list"))
     return redirect(next_url)
 
 
@@ -510,7 +510,7 @@ def pipeline_edit(request, uuid=None):
             pipeline = form.save()
             pipeline.save(form.cleaned_data["create_default_locations"])
             messages.success(request, _("Pipeline saved."))
-            return redirect("pipeline_list")
+            return redirect("locations:pipeline_list")
     else:
         form = forms.PipelineForm(instance=pipeline, initial=initial)
     return render(request, "locations/pipeline_form.html", locals())
@@ -528,7 +528,7 @@ def pipeline_detail(request, uuid):
         messages.warning(
             request, _("Pipeline %(uuid)s does not exist.") % {"uuid": uuid}
         )
-        return redirect("pipeline_list")
+        return redirect("locations:pipeline_list")
     locations = Location.objects.filter(pipeline=pipeline)
     return render(request, "locations/pipeline_detail.html", locals())
 
@@ -537,22 +537,23 @@ def pipeline_switch_enabled(request, uuid):
     pipeline = get_object_or_404(Pipeline, uuid=uuid)
     pipeline.enabled = not pipeline.enabled
     pipeline.save()
-    next_url = request.GET.get("next", reverse("pipeline_detail", args=[pipeline.uuid]))
+    next_url = request.GET.get(
+        "next", reverse("locations:pipeline_detail", args=[pipeline.uuid])
+    )
     return redirect(next_url)
 
 
 def pipeline_delete_context(request, uuid):
-    context_dict = get_delete_context_dict(
-        request, Pipeline, uuid, reverse("pipeline_list")
+    return get_delete_context_dict(
+        request, Pipeline, uuid, reverse("locations:pipeline_list")
     )
-    return RequestContext(request, context_dict)
 
 
 @decorators.confirm_required("locations/delete.html", pipeline_delete_context)
 def pipeline_delete(request, uuid):
     pipeline = get_object_or_404(Pipeline, uuid=uuid)
     pipeline.delete()
-    next_url = request.GET.get("next", reverse("pipeline_list"))
+    next_url = request.GET.get("next", reverse("locations:pipeline_list"))
     return redirect(next_url)
 
 
@@ -583,7 +584,7 @@ def space_detail(request, uuid):
         space = Space.objects.get(uuid=uuid)
     except Space.DoesNotExist:
         messages.warning(request, _("Space %(uuid)s does not exist.") % {"uuid": uuid})
-        return redirect("space_list")
+        return redirect("locations:space_list")
     child = space.get_child_space()
 
     child_dict_raw = model_to_dict(
@@ -627,7 +628,7 @@ def space_create(request):
                 protocol_obj.space = space
                 protocol_obj.save()
                 messages.success(request, _("Space saved."))
-                return redirect("space_detail", space.uuid)
+                return redirect("locations:space_detail", space.uuid)
         else:
             # We need to return the protocol_form so that protocol_form errors
             # are displayed, and so the form doesn't mysterious disappear
@@ -654,7 +655,7 @@ def space_edit(request, uuid):
         space_form.save()
         protocol_form.save()
         messages.success(request, _("Space saved."))
-        return redirect("space_detail", space.uuid)
+        return redirect("locations:space_detail", space.uuid)
     return render(request, "locations/space_edit.html", locals())
 
 
@@ -677,15 +678,16 @@ def ajax_space_create_protocol_form(request):
 
 
 def space_delete_context(request, uuid):
-    context_dict = get_delete_context_dict(request, Space, uuid, reverse("space_list"))
-    return RequestContext(request, context_dict)
+    return get_delete_context_dict(
+        request, Space, uuid, reverse("locations:space_list")
+    )
 
 
 @decorators.confirm_required("locations/delete.html", space_delete_context)
 def space_delete(request, uuid):
     space = get_object_or_404(Space, uuid=uuid)
     space.delete()
-    next_url = request.GET.get("next", reverse("space_list"))
+    next_url = request.GET.get("next", reverse("locations:space_list"))
     return redirect(next_url)
 
 
@@ -699,7 +701,7 @@ def callback_detail(request, uuid):
         messages.warning(
             request, _("Callback %(uuid)s does not exist.") % {"uuid": uuid}
         )
-        return redirect("callback_list")
+        return redirect("locations:callback_list")
     return render(request, "locations/callback_detail.html", locals())
 
 
@@ -707,7 +709,9 @@ def callback_switch_enabled(request, uuid):
     callback = get_object_or_404(Callback, uuid=uuid)
     callback.enabled = not callback.enabled
     callback.save()
-    next_url = request.GET.get("next", reverse("callback_detail", args=[callback.uuid]))
+    next_url = request.GET.get(
+        "next", reverse("locations:callback_detail", args=[callback.uuid])
+    )
     return redirect(next_url)
 
 
@@ -728,12 +732,12 @@ def callback_edit(request, uuid=None):
     if form.is_valid():
         callback = form.save()
         messages.success(request, _("Callback saved."))
-        return redirect("callback_detail", callback.uuid)
+        return redirect("locations:callback_detail", callback.uuid)
     return render(request, "locations/callback_form.html", locals())
 
 
 def callback_delete(request, uuid):
     callback = get_object_or_404(Callback, uuid=uuid)
     callback.delete()
-    next_url = request.GET.get("next", reverse("callback_list"))
+    next_url = request.GET.get("next", reverse("locations:callback_list"))
     return redirect(next_url)

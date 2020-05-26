@@ -11,10 +11,10 @@
     <tbody>
     {% for pipeline in pipelines %}
       <tr>
-        <td><a href="{% url 'pipeline_detail' pipeline.uuid %}">{{ pipeline.uuid }}</a></td>
+        <td><a href="{% url 'locations:pipeline_detail' pipeline.uuid %}">{{ pipeline.uuid }}</a></td>
         <td>{{ pipeline.description }}</td>
         <td>{{ pipeline.enabled|yesno:_("Enabled,Disabled") }}</td>
-        <td><a href="{% url 'pipeline_edit' pipeline.uuid %}">{% trans "Edit" %}</a> | <a href="{% url 'pipeline_switch_enabled' pipeline.uuid %}?next={{ request.path }}">{{ pipeline.enabled|yesno:_("Disable,Enable") }}</a> | <a href="{% url 'pipeline_delete' pipeline.uuid %}?next={{ request.path }}">{% trans "Delete" %}</a></td>
+        <td><a href="{% url 'locations:pipeline_edit' pipeline.uuid %}">{% trans "Edit" %}</a> | <a href="{% url 'locations:pipeline_switch_enabled' pipeline.uuid %}?next={{ request.path }}">{{ pipeline.enabled|yesno:_("Disable,Enable") }}</a> | <a href="{% url 'locations:pipeline_delete' pipeline.uuid %}?next={{ request.path }}">{% trans "Delete" %}</a></td>
       </tr>
     {% endfor %}
     </tbody>

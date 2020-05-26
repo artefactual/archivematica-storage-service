@@ -27,7 +27,7 @@
                 {% if master_locations %}
                   of
                   {% for master in master_locations %}
-                    <a href="{% url 'location_detail' master.uuid %}">{{ master.uuid }}</a></li>
+                    <a href="{% url 'locations:location_detail' master.uuid %}">{{ master.uuid }}</a></li>
                   {% endfor %}
                 {% endif %}
             {% endwith %}
@@ -36,22 +36,22 @@
         {% if not no_pipeline %}
           <td>
           {% for p in loc.pipeline.all %}
-            <a href="{% url 'pipeline_detail' p.uuid %}">{{ p.description }}</a>,
+            <a href="{% url 'locations:pipeline_detail' p.uuid %}">{{ p.description }}</a>,
           {% empty %}
           <p>{% trans "No pipelines" %}</p>
           {% endfor %}
           </td>
         {% endif %}
         <td>{{ loc.full_path }}</td>
-        <td><a href="{% url 'location_detail' loc.uuid %}">{{ loc.description|default:"None" }}</a></td>
+        <td><a href="{% url 'locations:location_detail' loc.uuid %}">{{ loc.description|default:"None" }}</a></td>
         {% if not no_space %}
-          <td><a href="{% url 'space_detail' loc.space.uuid %}">{{ loc.space.uuid|truncatechars:11 }}</a></td>
+          <td><a href="{% url 'locations:space_detail' loc.space.uuid %}">{{ loc.space.uuid|truncatechars:11 }}</a></td>
         {% endif %}
         <td>{{ loc.uuid }}</td>
         <td>{{ loc.used }}B / {{ loc.quota|default:_("unlimited") }}</td>
         <td>{{ loc.enabled|yesno:_("Enabled,Disabled") }}</td>
         <td>{{ loc.default|yesno:_("Yes,No") }}</td>
-        <td><a href="{% url 'location_edit' loc.space.uuid loc.uuid %}">{% trans "Edit" %}</a> | <a href="{% url 'location_switch_enabled' loc.uuid %}?next={{ request.path }}">{{ loc.enabled|yesno:_("Disable,Enable") }}</a> | <a href="{% url 'location_delete' loc.uuid %}?next={{ request.path }}">{% trans "Delete" %}</a></td>
+        <td><a href="{% url 'locations:location_edit' loc.space.uuid loc.uuid %}">{% trans "Edit" %}</a> | <a href="{% url 'locations:location_switch_enabled' loc.uuid %}?next={{ request.path }}">{{ loc.enabled|yesno:_("Disable,Enable") }}</a> | <a href="{% url 'locations:location_delete' loc.uuid %}?next={{ request.path }}">{% trans "Delete" %}</a></td>
       </tr>
     {% endfor %}
     </tbody>

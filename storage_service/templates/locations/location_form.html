@@ -12,9 +12,9 @@
 
 <div class='space'>
     {% if location %}
-    <form action="{% url 'location_edit' space.uuid location.uuid %}" method="post">
+    <form action="{% url 'locations:location_edit' space.uuid location.uuid %}" method="post">
     {% else %}
-    <form action="{% url 'location_create' space.uuid %}" method="post">
+    <form action="{% url 'locations:location_create' space.uuid %}" method="post">
     {% endif %}
       {% csrf_token %}
         <p>{% trans "Space" %}: {{ space }}</p>
@@ -44,7 +44,7 @@
         'id_relative_path',
         'id_relative_path_browse',
         'directory_picker',
-        '{% url "browse" "v2" "space" space.uuid %}'
+        "{% url 'browse' 'v2' 'space' space.uuid %}"
       );
 
       // Hide the "Replicators" field when the location being created is not an

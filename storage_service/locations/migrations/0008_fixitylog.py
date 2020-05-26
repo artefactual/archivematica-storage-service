@@ -25,7 +25,14 @@ class Migration(migrations.Migration):
                 ("success", models.BooleanField(default=False)),
                 ("error_details", models.TextField(null=True)),
                 ("datetime_reported", models.DateTimeField(auto_now=True)),
-                ("package", models.ForeignKey(to="locations.Package", to_field="uuid")),
+                (
+                    "package",
+                    models.ForeignKey(
+                        to="locations.Package",
+                        to_field="uuid",
+                        on_delete=models.CASCADE,
+                    ),
+                ),
             ],
             options={"verbose_name": "Fixity Log"},
             bases=(models.Model,),

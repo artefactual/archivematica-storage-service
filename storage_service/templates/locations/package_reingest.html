@@ -6,7 +6,7 @@
 {% block content %}
 
   <div class="form-control">
-    <form action="{% url 'aip_reingest' package.uuid %}" method="post">
+    <form action="{% url 'locations:aip_reingest' package.uuid %}" method="post">
       {% csrf_token %}
       <p><label>{% trans "Package" %}: {{ package.uuid }}</label> </p>
       {{ form }}

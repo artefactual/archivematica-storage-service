@@ -184,7 +184,7 @@ AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
 
 # ######### MIDDLEWARE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#middleware-classes
-MIDDLEWARE_CLASSES = [
+MIDDLEWARE = [
     # 'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -223,6 +223,7 @@ DJANGO_APPS = [
     # Admin panel and documentation:
     "django.contrib.admin",
     # 'django.contrib.admindocs',
+    "django.forms",
 ]
 
 THIRD_PARTY_APPS = [
@@ -455,11 +456,8 @@ if SHIBBOLETH_AUTHENTICATION:
     AUTHENTICATION_BACKENDS += ["shibboleth.backends.ShibbolethRemoteUserBackend"]
 
     # Insert Shibboleth after the authentication middleware
-    MIDDLEWARE_CLASSES.insert(
-        MIDDLEWARE_CLASSES.index(
-            "django.contrib.auth.middleware.AuthenticationMiddleware"
-        )
-        + 1,
+    MIDDLEWARE.insert(
+        MIDDLEWARE.index("django.contrib.auth.middleware.AuthenticationMiddleware") + 1,
         "common.middleware.CustomShibbolethRemoteUserMiddleware",
     )
 
@@ -489,9 +487,9 @@ INSECURE_SKIP_VERIFY = is_true(environ.get("SS_INSECURE_SKIP_VERIFY", ""))
 
 PROMETHEUS_ENABLED = is_true(environ.get("SS_PROMETHEUS_ENABLED", ""))
 if PROMETHEUS_ENABLED:
-    MIDDLEWARE_CLASSES = (
+    MIDDLEWARE = (
         ["django_prometheus.middleware.PrometheusBeforeMiddleware"]
-        + MIDDLEWARE_CLASSES
+        + MIDDLEWARE
         + ["django_prometheus.middleware.PrometheusAfterMiddleware"]
     )
     INSTALLED_APPS = INSTALLED_APPS + ["django_prometheus"]

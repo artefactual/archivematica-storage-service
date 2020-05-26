@@ -8,9 +8,9 @@ import shutil
 import traceback
 
 # Core Django, alphabetical
-from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import ugettext as _
 from django.utils import six

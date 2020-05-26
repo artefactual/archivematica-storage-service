@@ -50,7 +50,10 @@ class Migration(migrations.Migration):
                 (
                     "admin_id",
                     models.ForeignKey(
-                        blank=True, to=settings.AUTH_USER_MODEL, null=True
+                        blank=True,
+                        to=settings.AUTH_USER_MODEL,
+                        null=True,
+                        on_delete=models.CASCADE,
                     ),
                 ),
             ],
@@ -162,7 +165,11 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "location",
-                    models.ForeignKey(to="locations.Location", to_field="uuid"),
+                    models.ForeignKey(
+                        to="locations.Location",
+                        to_field="uuid",
+                        on_delete=models.CASCADE,
+                    ),
                 ),
             ],
             options={"verbose_name": "Location associated with a Pipeline"},
@@ -262,7 +269,11 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "current_location",
-                    models.ForeignKey(to="locations.Location", to_field="uuid"),
+                    models.ForeignKey(
+                        to="locations.Location",
+                        to_field="uuid",
+                        on_delete=models.CASCADE,
+                    ),
                 ),
             ],
             options={"verbose_name": "Package"},
@@ -427,13 +438,17 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="pipelinelocalfs",
             name="space",
-            field=models.OneToOneField(to="locations.Space", to_field="uuid"),
+            field=models.OneToOneField(
+                to="locations.Space", to_field="uuid", on_delete=models.CASCADE
+            ),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name="package",
             name="origin_pipeline",
-            field=models.ForeignKey(to="locations.Pipeline", to_field="uuid"),
+            field=models.ForeignKey(
+                to="locations.Pipeline", to_field="uuid", on_delete=models.CASCADE
+            ),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -445,19 +460,24 @@ class Migration(migrations.Migration):
                 blank=True,
                 to="locations.Location",
                 null=True,
+                on_delete=models.CASCADE,
             ),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name="nfs",
             name="space",
-            field=models.OneToOneField(to="locations.Space", to_field="uuid"),
+            field=models.OneToOneField(
+                to="locations.Space", to_field="uuid", on_delete=models.CASCADE
+            ),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name="locationpipeline",
             name="pipeline",
-            field=models.ForeignKey(to="locations.Pipeline", to_field="uuid"),
+            field=models.ForeignKey(
+                to="locations.Pipeline", to_field="uuid", on_delete=models.CASCADE
+            ),
             preserve_default=True,
         ),
         migrations.AddField(
@@ -475,25 +495,33 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="location",
             name="space",
-            field=models.ForeignKey(to="locations.Space", to_field="uuid"),
+            field=models.ForeignKey(
+                to="locations.Space", to_field="uuid", on_delete=models.CASCADE
+            ),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name="localfilesystem",
             name="space",
-            field=models.OneToOneField(to="locations.Space", to_field="uuid"),
+            field=models.OneToOneField(
+                to="locations.Space", to_field="uuid", on_delete=models.CASCADE
+            ),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name="event",
             name="package",
-            field=models.ForeignKey(to="locations.Package", to_field="uuid"),
+            field=models.ForeignKey(
+                to="locations.Package", to_field="uuid", on_delete=models.CASCADE
+            ),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name="event",
             name="pipeline",
-            field=models.ForeignKey(to="locations.Pipeline", to_field="uuid"),
+            field=models.ForeignKey(
+                to="locations.Pipeline", to_field="uuid", on_delete=models.CASCADE
+            ),
             preserve_default=True,
         ),
     ]

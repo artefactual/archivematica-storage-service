@@ -113,7 +113,7 @@ def startup(scope="function"):
     From the list above, CURRENTLY_PROCESSING is missing but that's later added
     when a pipeline is registered.
     """
-    from storage_service.urls import startup
+    from common.startup import startup
 
     startup()  # TODO: get rid of this!
 

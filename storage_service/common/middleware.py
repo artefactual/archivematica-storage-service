@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from django.conf import settings
 from django.http import HttpResponseRedirect
+from django.utils.deprecation import MiddlewareMixin
 from django.utils.http import urlquote
 from re import compile
 from shibboleth.middleware import ShibbolethRemoteUserMiddleware
@@ -15,7 +16,7 @@ if hasattr(settings, "LOGIN_EXEMPT_URLS"):
     EXEMPT_URLS += [compile(expr) for expr in settings.LOGIN_EXEMPT_URLS]
 
 
-class LoginRequiredMiddleware(object):
+class LoginRequiredMiddleware(MiddlewareMixin):
     """
     Middleware that requires a user to be authenticated to view any page other
     than LOGIN_URL. Exemptions to this requirement can optionally be specified
@@ -31,11 +32,11 @@ class LoginRequiredMiddleware(object):
             request, "user"
         ), "The Login Required middleware\
  requires authentication middleware to be installed. Edit your\
- MIDDLEWARE_CLASSES setting to insert\
+ MIDDLEWARE setting to insert\
  'django.contrib.auth.middlware.AuthenticationMiddleware'. If that doesn't\
  work, ensure your TEMPLATES setting includes\
  'django.core.context_processors.auth'."
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             path = request.path_info.lstrip("/")
             if not any(m.match(path) for m in EXEMPT_URLS):
                 fullURL = "{}?next={}".format(
@@ -70,7 +71,7 @@ class CustomShibbolethRemoteUserMiddleware(ShibbolethRemoteUserMiddleware):
         user.save()
 
 
-class ForceDefaultLanguageMiddleware(object):
+class ForceDefaultLanguageMiddleware(MiddlewareMixin):
     """
     Ignore Accept-Language HTTP headers
 

@@ -69,12 +69,19 @@ class Package(models.Model):
         help_text=_("Human-readable description."),
     )
     origin_pipeline = models.ForeignKey(
-        "Pipeline", to_field="uuid", null=True, blank=True
+        "Pipeline", to_field="uuid", null=True, blank=True, on_delete=models.CASCADE
     )
-    current_location = models.ForeignKey(Location, to_field="uuid")
+    current_location = models.ForeignKey(
+        Location, to_field="uuid", on_delete=models.CASCADE
+    )
     current_path = models.TextField()
     pointer_file_location = models.ForeignKey(
-        Location, to_field="uuid", related_name="+", null=True, blank=True
+        Location,
+        to_field="uuid",
+        related_name="+",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
     )
     pointer_file_path = models.TextField(null=True, blank=True)
     size = models.BigIntegerField(
@@ -91,7 +98,12 @@ class Package(models.Model):
         ),
     )
     replicated_package = models.ForeignKey(
-        "Package", to_field="uuid", null=True, blank=True, related_name="replicas"
+        "Package",
+        to_field="uuid",
+        null=True,
+        blank=True,
+        related_name="replicas",
+        on_delete=models.CASCADE,
     )
 
     AIP = "AIP"

@@ -6,11 +6,10 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import SetPasswordForm
-from django.core.urlresolvers import reverse
 from django.http import Http404
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.utils.translation import get_language, ugettext as _
-from django.template import RequestContext
 from tastypie.models import ApiKey
 
 from common import utils
@@ -41,7 +40,7 @@ def settings_edit(request):
         common_form.save()
         default_location_form.save()
         messages.success(request, _("Setting saved."))
-        return redirect("settings_edit")
+        return redirect("administration:settings_edit")
     return render(request, "administration/settings_form.html", locals())
 
 
@@ -77,7 +76,7 @@ def user_edit(request, id):
         request.user.is_superuser or str(request.user.id) == id
     )
     if not edit_allowed:
-        return redirect("user_list")
+        return redirect("administration:user_list")
 
     action = _("Edit User")
     edit_user = get_object_or_404(get_user_model(), id=id)
@@ -88,21 +87,21 @@ def user_edit(request, id):
     if "user" in request.POST and user_form.is_valid():
         user_form.save()
         messages.success(request, _("User information saved."))
-        return redirect("user_list")
+        return redirect("administration:user_list")
     elif "password" in request.POST and password_form.is_valid():
         password_form.save()
         api_key = ApiKey.objects.get(user=edit_user)
         api_key.key = api_key.generate_key()
         api_key.save()
         messages.success(request, _("Password changed."))
-        return redirect("user_list")
+        return redirect("administration:user_list")
     return render(request, "administration/user_form.html", locals())
 
 
 def user_create(request):
     create_allowed = settings.ALLOW_USER_EDITS and request.user.is_superuser
     if not create_allowed:
-        return redirect("user_list")
+        return redirect("administration:user_list")
 
     action = _("Create User")
     user_form = settings_forms.UserCreationForm(request.POST or None)
@@ -113,7 +112,7 @@ def user_create(request):
             _("New user %(username)s created.")
             % {"username": user_form.cleaned_data["username"]},
         )
-        return redirect("user_list")
+        return redirect("administration:user_list")
     return render(request, "administration/user_form.html", locals())
 
 
@@ -121,7 +120,7 @@ def user_detail(request, id):
     # Only a superuser or the user themselves can view their full details
     view_allowed = request.user.is_superuser or str(request.user.id) == id
     if not view_allowed:
-        return redirect("user_list")
+        return redirect("administration:user_list")
 
     display_user = get_object_or_404(get_user_model(), id=id)
 
@@ -198,7 +197,7 @@ def key_create(request):
                 ),
             )
             LOGGER.debug('created new GPG key for "%s"', cd["name_real"])
-            return redirect("key_list")
+            return redirect("administration:key_list")
         else:
             messages.warning(
                 request,
@@ -264,7 +263,7 @@ def key_import(request):
                 request,
                 _("New key %(fingerprint)s created." % {"fingerprint": fingerprint}),
             )
-            return redirect("key_list")
+            return redirect("administration:key_list")
     explanation = _(
         "Import an existing GPG key. Paste here the ASCII armor of the GPG"
         " private key, which you can get by running <code>gpg --armor"
@@ -330,15 +329,14 @@ def key_delete_context(request, key_fingerprint):
                 "Are you sure you want to delete GPG key"
                 " %(fingerprint)s?" % {"fingerprint": key_fingerprint}
             )
-    default_cancel = reverse("key_list")
+    default_cancel = reverse("administration:key_list")
     cancel_url = request.GET.get("next", default_cancel)
-    context_dict = {
+    return {
         "header": header,
         "dependent_objects": dependent_objects,
         "prompt": prompt,
         "cancel_url": cancel_url,
     }
-    return RequestContext(request, context_dict)
 
 
 @decorators.confirm_required("administration/key_delete.html", key_delete_context)
@@ -368,5 +366,5 @@ def key_delete(request, key_fingerprint):
                 % {"fingerprint": key_fingerprint}
             ),
         )
-    next_url = request.GET.get("next", reverse("key_list"))
+    next_url = request.GET.get("next", reverse("administration:key_list"))
     return redirect(next_url)

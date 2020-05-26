@@ -8,8 +8,8 @@
 {% include 'snippets/package_description.html' %}
 
 <p>
-  <a href="{% url 'aip_recover_request' %}">{% trans "View recovery requests" %}</a>
-  | <a href="{% url 'package_delete_request' %}">{% trans "View delete requests" %}</a>
+  <a href="{% url 'locations:aip_recover_request' %}">{% trans "View recovery requests" %}</a>
+  | <a href="{% url 'locations:package_delete_request' %}">{% trans "View delete requests" %}</a>
 </p>
 
 {% if package_count %}

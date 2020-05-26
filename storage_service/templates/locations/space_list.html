@@ -7,7 +7,7 @@
 
 {% include 'snippets/space_description.html' %}
 
-<p><a href="{% url 'space_create' %}">{% trans "Create new space" %}</a></p>
+<p><a href="{% url 'locations:space_create' %}">{% trans "Create new space" %}</a></p>
 
 {% for s in spaces %}
     <div class='space'>
@@ -21,10 +21,10 @@
             <dt>{% trans "Actions" %}</dt>
               <dd>
                 <ul>
-                  <li><a href="{% url 'space_detail' s.uuid %}">{% trans "View Details and Locations" %}</a></li>
-                  <li><a href="{% url 'space_edit' s.uuid %}">{% trans "Edit Space" %}</a></li>
-                  <li><a href="{% url 'location_create' s.uuid %}">{% trans "Create Location here" %}</a></li>
-                  <li><a href="{% url 'space_delete' s.uuid %}?next={{ request.path }}">{% trans "Delete Space" %}</a></li>
+                  <li><a href="{% url 'locations:space_detail' s.uuid %}">{% trans "View Details and Locations" %}</a></li>
+                  <li><a href="{% url 'locations:space_edit' s.uuid %}">{% trans "Edit Space" %}</a></li>
+                  <li><a href="{% url 'locations:location_create' s.uuid %}">{% trans "Create Location here" %}</a></li>
+                  <li><a href="{% url 'locations:space_delete' s.uuid %}?next={{ request.path }}">{% trans "Delete Space" %}</a></li>
                 </ul>
               </dd>
         </dl>

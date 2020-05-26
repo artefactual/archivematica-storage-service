@@ -11,8 +11,8 @@ import shutil
 import subprocess
 
 # Core Django, alphabetical
-from django.core.urlresolvers import reverse
 from django.db import models
+from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
@@ -31,7 +31,7 @@ LOGGER = logging.getLogger(__name__)
 class Lockssomatic(models.Model):
     """ Spaces that store their contents in LOCKSS, via LOCKSS-o-matic. """
 
-    space = models.OneToOneField("Space", to_field="uuid")
+    space = models.OneToOneField("Space", to_field="uuid", on_delete=models.CASCADE)
 
     # staging location is Space.path
     au_size = models.BigIntegerField(

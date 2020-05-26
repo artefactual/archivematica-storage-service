@@ -14,9 +14,9 @@
     <dt>{% trans "Enabled" %}</dt> <dd>{{ pipeline.enabled|yesno:_("Enabled,Disabled") }}</dd>
     <dt>{% trans "Actions" %}</dt> <dd>
       <ul>
-        <li><a href="{% url 'pipeline_edit' pipeline.uuid %}">{% trans "Edit" %}</a></li>
-        <li><a href="{% url 'pipeline_switch_enabled' pipeline.uuid %}?next={{ request.path }}">{{ pipeline.enabled|yesno:_("Disable,Enable") }}</a></li>
-        <li><a href="{% url 'pipeline_delete' pipeline.uuid %}">{% trans "Delete" %}</a></li>
+        <li><a href="{% url 'locations:pipeline_edit' pipeline.uuid %}">{% trans "Edit" %}</a></li>
+        <li><a href="{% url 'locations:pipeline_switch_enabled' pipeline.uuid %}?next={{ request.path }}">{{ pipeline.enabled|yesno:_("Disable,Enable") }}</a></li>
+        <li><a href="{% url 'locations:pipeline_delete' pipeline.uuid %}">{% trans "Delete" %}</a></li>
       </ul>
     </dd>
   </dl>
@@ -28,7 +28,7 @@
   {% include "snippets/locations_table.html" with no_pipeline=True %}
 {% else %}
   <p>
-  {% url 'space_list' as space_list_url %}
+  {% url 'locations:space_list' as space_list_url %}
   {% blocktrans %}No locations currently exist. Please create one from the <a href="{{ space_list_url }}">spaces</a> page.{% endblocktrans %}
   </p>
 {% endif %}

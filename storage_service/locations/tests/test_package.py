@@ -8,8 +8,8 @@ import vcr
 import mock
 
 from django.contrib.messages import get_messages
-from django.core.urlresolvers import reverse
 from django.test import TestCase
+from django.urls import reverse
 
 from common import utils
 from locations import models
@@ -61,7 +61,9 @@ class TestPackage(TestCase):
 
     def test_view_package_delete(self):
         self.client.login(username="test", password="test")
-        url = reverse("package_delete", args=["00000000-0000-0000-0000-000000000000"])
+        url = reverse(
+            "locations:package_delete", args=["00000000-0000-0000-0000-000000000000"]
+        )
 
         # It does only accept POST, i.e. GET returns a 405
         response = self.client.get(url, follow=True)
@@ -73,13 +75,13 @@ class TestPackage(TestCase):
 
         def verify_redirect_message(response, message):
             assert response.status_code == 200
-            assert response.redirect_chain == [("http://testserver/packages/", 302)]
+            assert response.redirect_chain == [("/packages/", 302)]
             messages = list(get_messages(response.wsgi_request))
             assert len(messages) == 1
             assert str(messages[0]) == message
 
         # It returns an "error" message when the package type is not allowed.
-        url = reverse("package_delete", args=[self.package.uuid])
+        url = reverse("locations:package_delete", args=[self.package.uuid])
         response = self.client.post(url, follow=True)
         verify_redirect_message(
             response, "Package of type Transfer cannot be deleted directly"

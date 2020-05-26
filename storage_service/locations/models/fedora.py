@@ -18,7 +18,7 @@ from .location import Location
 class Fedora(models.Model):
     """ Accepts deposits from FEDORA via a SWORD2 server. """
 
-    space = models.OneToOneField("Space", to_field="uuid")
+    space = models.OneToOneField("Space", to_field="uuid", on_delete=models.CASCADE)
 
     # Authentication related attributes
     fedora_user = models.CharField(
@@ -60,7 +60,7 @@ class PackageDownloadTask(models.Model):
     uuid = UUIDField(
         editable=False, unique=True, version=4, help_text=_("Unique identifier")
     )
-    package = models.ForeignKey("Package", to_field="uuid")
+    package = models.ForeignKey("Package", to_field="uuid", on_delete=models.CASCADE)
 
     downloads_attempted = models.IntegerField(default=0)
     downloads_completed = models.IntegerField(default=0)
@@ -113,7 +113,10 @@ class PackageDownloadTaskFile(models.Model):
         editable=False, unique=True, version=4, help_text=_("Unique identifier")
     )
     task = models.ForeignKey(
-        "PackageDownloadTask", to_field="uuid", related_name="download_file_set"
+        "PackageDownloadTask",
+        to_field="uuid",
+        related_name="download_file_set",
+        on_delete=models.CASCADE,
     )
 
     filename = models.CharField(max_length=256)

@@ -25,7 +25,7 @@ from .urlmixin import URLMixin  # noqa: E40
 
 
 class Dataverse(URLMixin, models.Model):
-    space = models.OneToOneField("Space", to_field="uuid")
+    space = models.OneToOneField("Space", to_field="uuid", on_delete=models.CASCADE)
 
     host = models.CharField(
         max_length=256,

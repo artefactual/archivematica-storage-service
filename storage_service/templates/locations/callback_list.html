@@ -7,7 +7,7 @@
 
 {% include 'snippets/callback_description.html' %}
 
-<p><a href="{% url 'callback_create' %}">{% trans "Create new callback" %}</a></p>
+<p><a href="{% url 'locations:callback_create' %}">{% trans "Create new callback" %}</a></p>
 
 {% if callbacks %}
   {% include "snippets/callbacks_table.html" %}

@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+
 from django import forms
 from django.contrib import auth
 from django.utils.translation import ugettext_lazy as _
@@ -15,15 +16,19 @@ from six.moves import zip
 class DefaultLocationWidget(forms.MultiWidget):
     """ Widget for entering required information to create a new location. """
 
+    template_name = "administration/location_widget.html"
+
     def __init__(self, *args, **kwargs):
-        choices = [(s.uuid, str(s)) for s in Space.objects.all()]
         widgets = [
-            forms.Select(choices=choices, *args, **kwargs),  # space_id
+            forms.Select(choices=[], *args, **kwargs),  # space_id
             forms.TextInput(*args, **kwargs),  # relative_path
             forms.TextInput(*args, **kwargs),  # description
             forms.TextInput(*args, **kwargs),  # quota
         ]
         super(DefaultLocationWidget, self).__init__(widgets=widgets, *args, **kwargs)
+
+    def set_space_id_choices(self, choices):
+        self.widgets[0].choices += choices
 
     def decompress(self, value):
         """ Splits initial data to a list for each sub-widget. """
@@ -37,23 +42,18 @@ class DefaultLocationWidget(forms.MultiWidget):
         except (KeyError, TypeError):
             return []
 
-    def format_output(self, rendered_widgets):
+    def get_context(self, *args, **kwargs):
         labels = (_("Space"), _("Relative Path"), _("Description"), _("Quota"))
-
-        html = "".join(
-            "<p>{}: {}</p>".format(label, widget)
-            for label, widget in zip(labels, rendered_widgets)
-        )
-
-        return html
+        result = super(DefaultLocationWidget, self).get_context(*args, **kwargs)
+        result["labeled_widgets"] = zip(labels, result["widget"]["subwidgets"])
+        return result
 
 
 class DefaultLocationField(forms.MultiValueField):
     """ Field for entering required information to create a new location. """
 
     def __init__(self, *args, **kwargs):
-        choices = [(s.uuid, str(s)) for s in Space.objects.all()]
-        space_id = forms.ChoiceField(choices=choices, *args, **kwargs)
+        space_id = forms.ChoiceField(choices=[], *args, **kwargs)
         relative_path = forms.CharField(*args, **kwargs)
         description = forms.CharField(*args, **kwargs)
         quota = forms.IntegerField(min_value=0, *args, **kwargs)
@@ -62,6 +62,10 @@ class DefaultLocationField(forms.MultiValueField):
         super(DefaultLocationField, self).__init__(
             fields=fields, widget=widget, *args, **kwargs
         )
+
+    def set_space_id_choices(self, choices):
+        self.fields[0].choices += choices
+        self.widget.set_space_id_choices(choices)
 
     def compress(self, data_list):
         """ Takes widget data and compresses to one data structure. """
@@ -109,6 +113,10 @@ class CommonSettingsForm(SettingsForm):
 
 class DefaultLocationsForm(SettingsForm):
     """ Configures default locations associated with a new pipeline. """
+
+    # This allows to look for the custom template of the DefaultLocationWidget
+    # in the DIRS paths of the default templates backend (see settings.TEMPLATES)
+    default_renderer = forms.renderers.TemplatesSetting
 
     default_transfer_source = forms.MultipleChoiceField(
         choices=[],
@@ -167,6 +175,11 @@ class DefaultLocationsForm(SettingsForm):
             (l.uuid, l.get_description())
             for l in Location.active.filter(purpose=Location.AIP_RECOVERY)
         ] + [("new", _("Create new location for each pipeline"))]
+        space_id_choices = [(s.uuid, str(s)) for s in Space.objects.all()]
+        for field_name in self.fields:
+            field = self.fields[field_name]
+            if isinstance(field, DefaultLocationField):
+                field.set_space_id_choices(space_id_choices)
 
     def clean(self):
         cleaned_data = super(DefaultLocationsForm, self).clean()

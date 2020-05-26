@@ -3,7 +3,7 @@
         <td>{{ package.uuid }}</td>
         <td>
           {% if package.origin_pipeline %}
-          <a href="{% url 'pipeline_detail' package.origin_pipeline.uuid %}">{{ package.origin_pipeline }}</a>
+          <a href="{% url 'locations:pipeline_detail' package.origin_pipeline.uuid %}">{{ package.origin_pipeline }}</a>
           {% else %}
           {% trans "None" %}
           {% endif %}
@@ -27,14 +27,14 @@
         <td>
           {{ package.get_status_display }}
           {% if package.status != 'DELETED' and package.status != 'FAIL'%}
-          (<a href="{% url 'package_update_status' package.uuid %}?next={{ redirect_path }}">{% trans "Update Status" %}</a>)
+          (<a href="{% url 'locations:package_update_status' package.uuid %}?next={{ redirect_path }}">{% trans "Update Status" %}</a>)
           {% endif %}
         </td>
         <td>
           {{ package.latest_fixity_check_datetime|default_if_none:"" }}
         </td>
         <td>
-          <a href="{% url 'package_fixity' package.uuid %}">{{ package.latest_fixity_check_result|yesno:_("Success,Failed,") }}</a>
+          <a href="{% url 'locations:package_fixity' package.uuid %}">{{ package.latest_fixity_check_result|yesno:_("Success,Failed,") }}</a>
         </td>
         <td>
           {% if package.pointer_file_location %}
@@ -46,7 +46,7 @@
 
           <!-- Replicas should not be re-ingestible -->
           {% if package.package_type in 'AIP AIC' and not package.replicated_package %}
-            <a href="{% url 'aip_reingest' package.uuid %}?next={{ redirect_path }}">{% trans "Re-ingest" %}</a> |
+            <a href="{% url 'locations:aip_reingest' package.uuid %}?next={{ redirect_path }}">{% trans "Re-ingest" %}</a> |
           {% endif %}
 
           {% if package.package_type in package.PACKAGE_TYPE_CAN_DELETE %}
@@ -58,7 +58,7 @@
           {% endif %}
 
           {% if package.package_type in package.PACKAGE_TYPE_CAN_DELETE_DIRECTLY and package.status != package.DELETED %}
-            <form method="POST" class="submit-confirm" action="{% url 'package_delete' package.uuid %}">
+            <form method="POST" class="submit-confirm" action="{% url 'locations:package_delete' package.uuid %}">
               {% csrf_token %}
               <button class="link" type="submit">{% trans "Delete" %}</button>
               <div class="confirm-modal modal hide fade" tabindex="-1" role="dialog">

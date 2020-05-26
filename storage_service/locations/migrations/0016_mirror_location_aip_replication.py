@@ -50,6 +50,7 @@ class Migration(migrations.Migration):
                 blank=True,
                 to="locations.Package",
                 null=True,
+                on_delete=models.CASCADE,
             ),
         ),
     ]

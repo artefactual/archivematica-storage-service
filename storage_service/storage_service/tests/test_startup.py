@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from django.test import TestCase
 
+from common.startup import startup
 from locations import models
 
 
@@ -11,7 +12,6 @@ class TestStartup(TestCase):
 
     def setUp(self):
         # Importing from urls must happen after TestCase has instantiated
-        from urls import startup
 
         self.startup = startup
         # startup is run on import, so delete anything that was already created

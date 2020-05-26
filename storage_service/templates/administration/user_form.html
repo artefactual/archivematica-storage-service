@@ -7,9 +7,9 @@
 
 <div class='user'>
     {% if edit_user %}
-    <form action="{% url 'user_edit' edit_user.id %}" method="post">
+    <form action="{% url 'administration:user_edit' edit_user.id %}" method="post">
     {% else %}
-    <form action="{% url 'user_create' %}" method="post">
+    <form action="{% url 'administration:user_create' %}" method="post">
     {% endif %}
       {% csrf_token %}
       {{ user_form.as_p }}
@@ -17,7 +17,7 @@
     </form>
 
     {% if edit_user %}
-    <form action="{% url 'user_edit' edit_user.id %}" method="post">
+    <form action="{% url 'administration:user_edit' edit_user.id %}" method="post">
       {% csrf_token %}
       {{ password_form.as_p }}
       <p>{% trans "Note: if you change your password, your API key will also be changed to a new, randomly generated one." %}</p>

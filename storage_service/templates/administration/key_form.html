@@ -6,9 +6,9 @@
 <div class='key'>
   <p>{{ explanation | safe }}</p>
   {% if action_ == "Create Key" %}
-    <form action="{% url 'key_create' %}" method="post" onsubmit="key.disabled = true; return true;">
+    <form action="{% url 'administration:key_create' %}" method="post" onsubmit="key.disabled = true; return true;">
   {% else %}
-    <form action="{% url 'key_import' %}" method="post" onsubmit="key.disabled = true; return true;">
+    <form action="{% url 'administration:key_import' %}" method="post" onsubmit="key.disabled = true; return true;">
   {% endif %}
       {% csrf_token %}
       {{ key_form.as_p }}

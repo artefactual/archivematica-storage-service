@@ -27,7 +27,7 @@ class PipelineLocalFS(models.Model):
 
     Use case: currently processing locations. """
 
-    space = models.OneToOneField("Space", to_field="uuid")
+    space = models.OneToOneField("Space", to_field="uuid", on_delete=models.CASCADE)
 
     remote_user = models.CharField(
         max_length=64,

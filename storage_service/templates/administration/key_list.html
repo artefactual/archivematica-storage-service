@@ -5,9 +5,9 @@
 
 {% block content %}
 
-  <p><a href="{% url 'key_create' %}">{% trans "Create New Key" %}</a>
+  <p><a href="{% url 'administration:key_create' %}">{% trans "Create New Key" %}</a>
      &nbsp;|&nbsp;
-     <a href="{% url 'key_import' %}">{% trans "Import Existing Key" %}</a></p>
+     <a href="{% url 'administration:key_import' %}">{% trans "Import Existing Key" %}</a></p>
   <table class="datatable">
     <thead>
       <tr>
@@ -18,10 +18,10 @@
     </thead>
     {% for key_display in keys %}
       <tr>
-        <td><a href="{% url 'key_detail' key_display.fingerprint %}"
+        <td><a href="{% url 'administration:key_detail' key_display.fingerprint %}"
                >{{ key_display.uids|join:", " }}</a></td>
         <td>{{ key_display.fingerprint }}</td>
-        <td><a href="{% url 'key_delete' key_display.fingerprint %}?next={{ request.path }}">{% trans "Delete" %}</a></td>
+        <td><a href="{% url 'administration:key_delete' key_display.fingerprint %}?next={{ request.path }}">{% trans "Delete" %}</a></td>
       </tr>
     {% endfor %}
   </table>

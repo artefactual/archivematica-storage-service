@@ -3,6 +3,7 @@ from django.conf.urls import url
 
 from administration import views
 
+app_name = "administration"
 urlpatterns = [
     # Sorted by alphabetized categories
     url(r"^$", views.settings_edit, name="settings_edit"),

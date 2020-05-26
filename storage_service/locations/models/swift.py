@@ -23,7 +23,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Swift(models.Model):
-    space = models.OneToOneField("Space", to_field="uuid")
+    space = models.OneToOneField("Space", to_field="uuid", on_delete=models.CASCADE)
     auth_url = models.CharField(
         max_length=256,
         verbose_name=_("Auth URL"),

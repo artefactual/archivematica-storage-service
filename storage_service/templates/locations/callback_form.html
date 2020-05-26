@@ -33,9 +33,9 @@
 
 <div class="callback">
   {% if callback %}
-  <form action="{% url 'callback_edit' callback.uuid %}" method="post">
+  <form action="{% url 'locations:callback_edit' callback.uuid %}" method="post">
   {% else %}
-  <form action="{% url 'callback_create' %}" method="post">
+  <form action="{% url 'locations:callback_create' %}" method="post">
   {% endif %}
   {% csrf_token %}
     {{ form.as_p }}

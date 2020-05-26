@@ -19,7 +19,7 @@ from .location import Location
 class NFS(models.Model):
     """ Spaces accessed over NFS. """
 
-    space = models.OneToOneField("Space", to_field="uuid")
+    space = models.OneToOneField("Space", to_field="uuid", on_delete=models.CASCADE)
 
     # Space.path is the local path
     remote_name = models.CharField(

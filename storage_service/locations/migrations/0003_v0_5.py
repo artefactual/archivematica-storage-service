@@ -115,7 +115,12 @@ class Migration(migrations.Migration):
                         help_text=b"Name of the Space within DuraCloud", max_length=64
                     ),
                 ),
-                ("space", models.OneToOneField(to="locations.Space", to_field="uuid")),
+                (
+                    "space",
+                    models.OneToOneField(
+                        to="locations.Space", to_field="uuid", on_delete=models.CASCADE
+                    ),
+                ),
             ],
             options={"verbose_name": "DuraCloud"},
             bases=(models.Model,),
@@ -153,7 +158,12 @@ class Migration(migrations.Migration):
                         max_length=256,
                     ),
                 ),
-                ("space", models.OneToOneField(to="locations.Space", to_field="uuid")),
+                (
+                    "space",
+                    models.OneToOneField(
+                        to="locations.Space", to_field="uuid", on_delete=models.CASCADE
+                    ),
+                ),
             ],
             options={"verbose_name": "FEDORA"},
             bases=(models.Model,),
@@ -216,7 +226,14 @@ class Migration(migrations.Migration):
                     "download_completion_time",
                     models.DateTimeField(default=None, null=True, blank=True),
                 ),
-                ("package", models.ForeignKey(to="locations.Package", to_field="uuid")),
+                (
+                    "package",
+                    models.ForeignKey(
+                        to="locations.Package",
+                        to_field="uuid",
+                        on_delete=models.CASCADE,
+                    ),
+                ),
             ],
             options={"verbose_name": "Package Download Task"},
             bases=(models.Model,),
@@ -264,6 +281,7 @@ class Migration(migrations.Migration):
                         related_name="download_file_set",
                         to="locations.PackageDownloadTask",
                         to_field="uuid",
+                        on_delete=models.CASCADE,
                     ),
                 ),
             ],
@@ -343,7 +361,11 @@ class Migration(migrations.Migration):
             model_name="package",
             name="origin_pipeline",
             field=models.ForeignKey(
-                to_field="uuid", blank=True, to="locations.Pipeline", null=True
+                to_field="uuid",
+                blank=True,
+                to="locations.Pipeline",
+                null=True,
+                on_delete=models.CASCADE,
             ),
             preserve_default=True,
         ),

@@ -18,9 +18,9 @@ import six.moves.urllib.error
 from django.conf import settings
 from django.conf.urls import url
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
-from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.forms.models import model_to_dict
+from django.urls import reverse
 from django.utils.translation import ugettext as _
 from django.utils import six
 

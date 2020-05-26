@@ -7,8 +7,8 @@ import sys
 from django.dispatch import receiver, Signal
 from django.contrib.auth.models import User
 from django.conf import settings
-from django.core.urlresolvers import reverse
 from django.db.models import signals
+from django.urls import reverse
 from django.utils.translation import ugettext as _
 from tastypie.models import create_api_key
 from prometheus_client import Counter
