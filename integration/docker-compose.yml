@@ -1,0 +1,32 @@
+version: "3"
+
+services:
+
+  archivematica-storage-service:
+    build:
+      context: "../"
+      dockerfile: "Dockerfile"
+    entrypoint: ""
+    working_dir: "/src"
+    command: ["pytest", "-p", "no:cacheprovider", "-vv", "integration"]
+    environment:
+      FORWARDED_ALLOW_IPS: "*"
+      SS_GUNICORN_ACCESSLOG: "/dev/null"
+      DJANGO_SETTINGS_MODULE: "storage_service.settings.test"
+      SS_GNUPG_HOME_PATH: "/var/archivematica/storage_service/.gnupg"
+      SS_DB_URL: "sqlite:///tmp/ss.db"
+    volumes:
+      - "../:/src"
+    links:
+      - "minio"
+
+  minio:
+    image: "minio/minio:RELEASE.2020-05-08T02-40-49Z"
+    command: "server /data"
+    environment:
+      MINIO_ACCESS_KEY: "minio"
+      MINIO_SECRET_KEY: "minio123"
+      MINIO_REGION_NAME: "planet-earth"
+      MINIO_BROWSER: "off"
+    expose:
+      - "9000"

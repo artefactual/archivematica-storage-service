@@ -1,0 +1,7 @@
+IDCommand: Identify using Siegfried 1.8.0
+IDCommand UUID: 9402ad69-f045-4d0a-8042-9c990645910a
+IDTool: Siegfried
+IDTool UUID: 454df69d-5cc0-49fc-93e4-6fbb6ac659e7
+File: (c0ae91a4-00b6-4605-927e-41f900efe10a) /var/archivematica/sharedDirectory/watchedDirectories/workFlowDecisions/selectFormatIDToolTransfer/20200513060703-2a721449-c9b5-4ef1-a257-5f4826ba5dfa/objects/hello.txt
+Command output: x-fmt/111
+/var/archivematica/sharedDirectory/watchedDirectories/workFlowDecisions/selectFormatIDToolTransfer/20200513060703-2a721449-c9b5-4ef1-a257-5f4826ba5dfa/objects/hello.txt identified as a Generic TXT

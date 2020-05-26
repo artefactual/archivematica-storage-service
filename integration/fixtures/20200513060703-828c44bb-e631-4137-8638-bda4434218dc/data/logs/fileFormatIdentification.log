@@ -1,0 +1,6 @@
+IDCommand: Identify using Siegfried 1.8.0
+IDCommand UUID: 9402ad69-f045-4d0a-8042-9c990645910a
+IDTool: Siegfried
+IDTool UUID: 454df69d-5cc0-49fc-93e4-6fbb6ac659e7
+File: (c0ae91a4-00b6-4605-927e-41f900efe10a) /var/archivematica/sharedDirectory/watchedDirectories/workFlowDecisions/selectFormatIDToolIngest/20200513060703-828c44bb-e631-4137-8638-bda4434218dc/objects/hello.txt
+This file has already been identified, and re-identification is disabled. Skipping.
