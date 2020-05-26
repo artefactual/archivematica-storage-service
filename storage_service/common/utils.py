@@ -632,3 +632,14 @@ def recalculate_size(rein_aip_internal_path):
     else:
         size = os.path.getsize(rein_aip_internal_path)
     return size
+
+
+def package_is_file(path):
+    """Rudimentary test to identify whether a path describes that of a file,
+    or a directory. As paths are usually abstract, i.e. stored in the database,
+    we can't (usually) simply test whether the object is a file on disk.
+    """
+    for ext in PACKAGE_EXTENSIONS:
+        if path.endswith(ext):
+            return True
+    return False

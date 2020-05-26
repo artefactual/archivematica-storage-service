@@ -18,10 +18,12 @@ import re
 import scandir
 
 # This project, alphabetical
+from common import utils
 
 # This module, alphabetical
 from . import StorageException
 from .location import Location
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -207,6 +209,11 @@ class S3(models.Model):
         # strip leading slash on src_path
         src_path = src_path.lstrip("/").rstrip(".")
         dest_path = dest_path.rstrip(".")
+
+        # Directories need to have trailing slashes to ensure they are created
+        # on the staging path.
+        if not utils.package_is_file(dest_path):
+            dest_path = os.path.join(dest_path, "")
 
         objects = self.resource.Bucket(self.bucket_name).objects.filter(Prefix=src_path)
 
