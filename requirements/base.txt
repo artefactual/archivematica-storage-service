@@ -11,19 +11,20 @@ boto3==1.9.174            # via -r base.in
 botocore==1.12.253        # via -r base.in, boto3, s3transfer
 brotli==0.5.2             # via -r base.in
 certifi==2020.6.20        # via requests
-cffi==1.14.0              # via cryptography
+cffi==1.14.1              # via cryptography
 chardet==3.0.4            # via requests
 configparser==4.0.2       # via importlib-metadata
 contextlib2==0.6.0.post1  # via importlib-metadata, importlib-resources, zipp
-cryptography==2.9.2       # via pyopenssl
+cryptography==3.0         # via pyopenssl
 debtcollector==1.22.0     # via oslo.config, oslo.utils, python-keystoneclient
 defusedxml==0.5.0         # via -r base.in
 django-auth-ldap==1.3.0   # via -r base.in
+django-cas-ng==3.6.0      # via -r base.in
 django-extensions==1.7.9  # via -r base.in
 django-prometheus==1.0.15  # via -r base.in
 git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git@67d270c65c201606fb86d548493d4b3fd8cc7a76#egg=django-shibboleth-remoteuser  # via -r base.in
 django-tastypie==0.14.3   # via -r base.in
-django==1.11.29           # via -r base.in, django-auth-ldap, jsonfield
+django==1.11.29           # via -r base.in, django-auth-ldap, django-cas-ng, jsonfield
 docutils==0.15.2          # via botocore
 enum34==1.1.10            # via cryptography, oslo.config
 funcsigs==1.0.2           # via debtcollector, oslo.utils
@@ -43,7 +44,7 @@ jsonfield==2.0.1          # via -r base.in
 keystoneauth1==4.0.1      # via python-keystoneclient
 logutils==0.3.4.1         # via -r base.in
 git+https://github.com/seatme/django-longer-username.git@seatme#egg=longerusername  # via -r base.in
-lxml==3.7.3               # via -r base.in, metsrw
+lxml==3.7.3               # via -r base.in, metsrw, python-cas
 metsrw==0.3.15            # via -r base.in
 monotonic==1.5            # via oslo.utils
 msgpack==1.0.0            # via oslo.serialization
@@ -66,6 +67,7 @@ pyasn1==0.4.8             # via pyasn1-modules, python-ldap
 pycparser==2.20           # via cffi
 pyopenssl==19.1.0         # via ndg-httpsclient
 pyparsing==2.4.7          # via oslo.utils
+python-cas==1.5.0         # via django-cas-ng
 python-dateutil==2.8.1    # via botocore, django-tastypie
 python-gnupg==0.4.0       # via -r base.in
 python-keystoneclient==3.10.0  # via -r base.in
@@ -75,15 +77,15 @@ python-swiftclient==3.3.0  # via -r base.in
 pytz==2020.1              # via babel, django, oslo.serialization, oslo.utils
 pyyaml==5.3.1             # via oslo.config, oslo.serialization
 requests-oauthlib==1.2.0  # via -r base.in
-requests==2.21.0          # via -r base.in, agentarchives, keystoneauth1, oslo.config, python-keystoneclient, python-swiftclient, requests-oauthlib
+requests==2.21.0          # via -r base.in, agentarchives, keystoneauth1, oslo.config, python-cas, python-keystoneclient, python-swiftclient, requests-oauthlib
 rfc3986==1.4.0            # via oslo.config
 s3transfer==0.2.1         # via boto3
 scandir==1.10.0           # via -r base.in, pathlib2
 singledispatch==3.4.0.3   # via importlib-resources
-six==1.15.0               # via cryptography, debtcollector, django-extensions, keystoneauth1, metsrw, oslo.config, oslo.i18n, oslo.serialization, oslo.utils, pathlib2, pyopenssl, python-dateutil, python-keystoneclient, python-swiftclient, singledispatch, stevedore
+six==1.15.0               # via cryptography, debtcollector, django-extensions, keystoneauth1, metsrw, oslo.config, oslo.i18n, oslo.serialization, oslo.utils, pathlib2, pyopenssl, python-cas, python-dateutil, python-keystoneclient, python-swiftclient, singledispatch, stevedore
 stevedore==1.32.0         # via keystoneauth1, oslo.config, python-keystoneclient
 sword2==0.2.1             # via -r base.in
-typing==3.7.4.2           # via importlib-resources
+typing==3.7.4.3           # via importlib-resources
 urllib3==1.24.3           # via botocore, requests
 whitenoise==3.3.0         # via -r base.in
 wrapt==1.12.1             # via debtcollector, positional

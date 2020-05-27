@@ -18,12 +18,6 @@ urlpatterns = [
     url(r"^admin/", admin.site.urls),
     url(r"^", include(locations.urls)),
     url(r"^administration/", include(administration.urls)),
-    url(
-        r"^login/$",
-        django.contrib.auth.views.LoginView.as_view(template_name="login.html"),
-        name="login",
-    ),
-    url(r"^logout/$", django.contrib.auth.views.logout_then_login, name="logout"),
     url(r"^api/", include(locations.api.urls)),
     url(
         r"^jsi18n/$",
@@ -34,6 +28,22 @@ urlpatterns = [
     url(r"^i18n/", include(("django.conf.urls.i18n", "i18n"), namespace="i18n")),
 ]
 
+if "django_cas_ng" in settings.INSTALLED_APPS:
+    import django_cas_ng.views
+
+    urlpatterns += [
+        url(r"login/$", django_cas_ng.views.LoginView.as_view(), name="login"),
+        url(r"logout/$", django_cas_ng.views.LogoutView.as_view(), name="logout"),
+    ]
+else:
+    urlpatterns += [
+        url(
+            r"^login/$",
+            django.contrib.auth.views.LoginView.as_view(template_name="login.html"),
+            name="login",
+        ),
+        url(r"^logout/$", django.contrib.auth.views.logout_then_login, name="logout"),
+    ]
 
 if "shibboleth" in settings.INSTALLED_APPS:
     # Simulate a shibboleth urls module (so our custom Shibboleth logout view

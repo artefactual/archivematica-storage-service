@@ -9,6 +9,7 @@
     - [Application-specific environment variables](#application-specific-environment-variables)
     - [Gunicorn-specific environment variables](#gunicorn-specific-environment-variables)
     - [LDAP-specific environment variables](#ldap-specific-environment-variables)
+    - [CAS-specific environment variables](#cas-specific-environment-variables)
   - [Logging configuration](#logging-configuration)
 
 ## Introduction
@@ -71,6 +72,11 @@ of these settings or provide values to mandatory fields.
 
 - **`SS_SHIBBOLETH_AUTHENTICATION`**:
     - **Description:** enables the Shibboleth authentication system. Other settings related to Shibboleth cannot be defined via environment variables at the moment, please edit [storage_service.settings.base](../storage_service/storage_service/settings/base.py) manually.
+    - **Type:** `boolean`
+    - **Default:** `false`
+
+- **`SS_CAS_AUTHENTICATION`**:
+    - **Description:** enables the CAS (Central Authentication Service) authentication system.
     - **Type:** `boolean`
     - **Default:** `false`
 
@@ -213,8 +219,7 @@ This is the current list of strings supported:
 
 ### LDAP-specific environment variables
 
-    These variables specify the behaviour of LDAP authentication. If `SS_LDAP_AUTHENTICATION` is false,
-    none of the other ones are used.
+These variables specify the behaviour of LDAP authentication. If `SS_LDAP_AUTHENTICATION` is false, none of the other ones are used.
 
 - **`SS_LDAP_AUTHENTICATION`**:
     - **Description:** Enables user authentication via LDAP.
@@ -343,10 +348,48 @@ This is the current list of strings supported:
     - **Type:** `string`
     - **Default:** ``
 
+### CAS-specific environment variables
+
+These variables specify the behaviour of CAS authentication. If `SS_CAS_AUTHENTICATION` is false, none of the other ones are used.
+
+- **`AUTH_CAS_SERVER_URL`**:
+    - **Description:** Address of the CAS server to authenticate against. Defaults to CAS demo server.
+    - **Type:** `string`
+    - **Default:** `https://django-cas-ng-demo-server.herokuapp.com/cas/`
+
+- **`AUTH_CAS_PROTOCOL_VERSION`**:
+    - **Description:** Version of CAS protocol to use. Allowed values are "1", "2", "3", or "CAS_2_SAML_1_0".
+    - **Type:** `string`
+    - **Default:** `3`
+
+- **`AUTH_CAS_CHECK_ADMIN_ATTRIBUTES`**:
+    - **Description:** Determines if we check user attributes returned by CAS server to determine if user is an administrator.
+    - **Type:** `boolean`
+    - **Default:** `false`
+
+- **`AUTH_CAS_ADMIN_ATTRIBUTE`**:
+    - **Description:** Name of attribute to check for administrator status, if `CAS_CHECK_ADMIN_ATTRIBUTES` is True.
+    - **Type:** `string`
+    - **Default:** `None`
+
+- **`AUTH_CAS_ADMIN_ATTRIBUTE_VALUE`**:
+    - **Description:** Value in `CAS_ADMIN_ATTRIBUTE` that indicates user is an administrator, if `CAS_CHECK_ADMIN_ATTRIBUTES` is True.
+    - **Type:** `string`
+    - **Default:** `None`
+
+- **`AUTH_CAS_AUTOCONFIGURE_EMAIL`**:
+    - **Description:** Determines if we auto-configure an email address for new users by following the rule username@domain.
+    - **Type:** `boolean`
+    - **Default:** `false`
+
+- **`AUTH_CAS_EMAIL_DOMAIN`**:
+    - **Description:** Domain to use for auto-configured email addresses, if `AUTH_CAS_AUTOCONFIGURE_EMAIL` is True.
+    - **Type:** `string`
+    - **Default:** `None`
+
 ### AWS-specific environment variables
 
-    These variables can be set to allow AWS authentication for S3 storage spaces as an alternative
-	to providing these details via the user interface. See [AWS CLI Environment Variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html) for details.
+These variables can be set to allow AWS authentication for S3 storage spaces as an alternative to providing these details via the user interface. See [AWS CLI Environment Variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html) for details.
 
 - **`AWS_ACCESS_KEY_ID`**:
     - **Description:** Access key for AWS authentication

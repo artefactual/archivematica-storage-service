@@ -465,6 +465,63 @@ if SHIBBOLETH_AUTHENTICATION:
 
     ALLOW_USER_EDITS = False
 
+######### CAS CONFIGURATION #########
+CAS_AUTHENTICATION = is_true(environ.get("SS_CAS_AUTHENTICATION", ""))
+if CAS_AUTHENTICATION:
+    # CAS circumvents the Storage Service login screen and prevents
+    # usage of other authentication methods, so we raise an exception
+    # if a single sign-on option other than CAS is enabled.
+    if SHIBBOLETH_AUTHENTICATION or LDAP_AUTHENTICATION:
+        raise ImproperlyConfigured(
+            "CAS authentication is not supported in tandem with other single "
+            "sign-on methods. Please disable other Archivematica SSO settings "
+            "(e.g. Shibboleth, LDAP) before proceeding."
+        )
+
+    # We default to a live demo CAS server to facilitate QA and
+    # regression testing. The following credentials can be used to
+    # authenticate:
+    # Username: admin
+    # Password: django-cas-ng
+    CAS_DEMO_SERVER_URL = "https://django-cas-ng-demo-server.herokuapp.com/cas/"
+    CAS_SERVER_URL = environ.get("AUTH_CAS_SERVER_URL", CAS_DEMO_SERVER_URL)
+
+    ALLOWED_CAS_VERSION_VALUES = ("1", "2", "3", "CAS_2_SAML_1_0")
+
+    CAS_VERSION = environ.get("AUTH_CAS_PROTOCOL_VERSION", "3")
+    if CAS_VERSION not in ALLOWED_CAS_VERSION_VALUES:
+        raise ImproperlyConfigured(
+            (
+                "Unexpected value for AUTH_CAS_PROTOCOL_VERSION: {}. "
+                "Supported values: '1', '2', '3', or 'CAS_2_SAML_1_0'."
+            ).format(CAS_VERSION)
+        )
+
+    CAS_CHECK_ADMIN_ATTRIBUTES = environ.get("AUTH_CAS_CHECK_ADMIN_ATTRIBUTES", False)
+    CAS_ADMIN_ATTRIBUTE = environ.get("AUTH_CAS_ADMIN_ATTRIBUTE", None)
+    CAS_ADMIN_ATTRIBUTE_VALUE = environ.get("AUTH_CAS_ADMIN_ATTRIBUTE_VALUE", None)
+
+    CAS_AUTOCONFIGURE_EMAIL = environ.get("AUTH_CAS_AUTOCONFIGURE_EMAIL", False)
+    CAS_EMAIL_DOMAIN = environ.get("AUTH_CAS_EMAIL_DOMAIN", None)
+
+    CAS_LOGIN_MSG = None
+    CAS_LOGIN_URL_NAME = "login"
+    CAS_LOGOUT_URL_NAME = "logout"
+
+    AUTHENTICATION_BACKENDS += ["common.backends.CustomCASBackend"]
+
+    # Insert CAS after the authentication middleware
+    MIDDLEWARE.insert(
+        MIDDLEWARE.index("django.contrib.auth.middleware.AuthenticationMiddleware") + 1,
+        "django_cas_ng.middleware.CASMiddleware",
+    )
+
+    INSTALLED_APPS += ["django_cas_ng"]
+
+    ALLOW_USER_EDITS = False
+
+######### END CAS CONFIGURATION #########
+
 # WARNING: if Gunicorn is being used to serve the Storage Service and its
 # worker class is set to `gevent`, then BagIt validation must use 1 process.
 # Otherwise, calls to `validate` will hang because of the incompatibility
