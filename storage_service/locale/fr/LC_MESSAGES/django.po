@@ -3,27 +3,28 @@
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 # 
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2018-10-24 09:08-0700\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Natalie Vielfaure <Natalie.Vielfaure@umanitoba.ca>, 2018\n"
-"Language-Team: French (https://www.transifex.com/artefactual/teams/1506/fr/)\n"
+"PO-Revision-Date: 2023-05-12 19:20+0000\n"
+"Last-Translator: Christophe-Grodecki <chgrodecki@bluewin.ch>\n"
+"Language-Team: French <https://translations.artefactual.com/projects/"
+"archivematica-test/storage-service-django-components/fr/>\n"
+"Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: fr\n"
-"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: Weblate 4.17\n"
 
 #: administration/forms.py:37 locations/models/space.py:185
 #: templates/locations/location_detail.html:10
 #: templates/locations/location_form.html:20
 #: templates/snippets/locations_table.html:12
 msgid "Space"
-msgstr ""
+msgstr "Espace"
 
 #: administration/forms.py:37 locations/models/location.py:65
 #: templates/locations/location_detail.html:14
@@ -580,15 +581,15 @@ msgstr ""
 
 #: locations/forms.py:354
 msgid "Metadata re-ingest"
-msgstr ""
+msgstr "Réacquisition de métadonnées"
 
 #: locations/forms.py:355
 msgid "Partial re-ingest"
-msgstr ""
+msgstr "Réacquisition partielle"
 
 #: locations/forms.py:356
 msgid "Full re-ingest"
-msgstr ""
+msgstr "Réacquisition intégrale"
 
 #: locations/forms.py:359 locations/models/location.py:62
 #: templates/locations/package_request.html:17
@@ -1680,7 +1681,7 @@ msgstr ""
 #: templates/snippets/packages_table.html:5
 #: templates/snippets/pipelines_table.html:5
 msgid "UUID"
-msgstr ""
+msgstr "UUID"
 
 #: locations/models/pipeline.py:33
 msgid "Identifier for the Archivematica pipeline"
