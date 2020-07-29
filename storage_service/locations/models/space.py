@@ -51,7 +51,7 @@ def validate_space_path(path):
 #   Add entry to protocol
 #    'model' is the model object
 #    'form' is the ModelForm for creating the space
-#    'fields' is a whitelist of fields to display to the user
+#    'fields' is a allowlist of fields to display to the user
 #  locations/migrations/####_<spacename>.py
 #   Run `manage.py makemigrations locations` to create a migration.
 #   Rename the migration after the feature. Eg. 0005_auto_20160331_1337.py -> 0005_dspace.py
