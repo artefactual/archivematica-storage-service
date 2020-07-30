@@ -49,7 +49,7 @@ git+https://github.com/seatme/django-longer-username.git@seatme#egg=longeruserna
 lxml==3.7.3               # via -r base.txt, metsrw, python-cas
 metsrw==0.3.15            # via -r base.txt
 monotonic==1.5            # via -r base.txt, oslo.utils
-mozilla-django-oidc==1.0.0  # via -r base.txt
+mozilla-django-oidc==1.2.3  # via -r base.txt
 msgpack==1.0.0            # via -r base.txt, oslo.serialization
 mysqlclient==1.4.6        # via -r base.txt, agentarchives
 ndg-httpsclient==0.4.2    # via -r base.txt
@@ -86,7 +86,7 @@ rfc3986==1.4.0            # via -r base.txt, oslo.config
 s3transfer==0.2.1         # via -r base.txt, boto3
 scandir==1.10.0           # via -r base.txt, pathlib2
 singledispatch==3.4.0.3   # via -r base.txt, importlib-resources
-six==1.15.0               # via -r base.txt, cryptography, debtcollector, django-extensions, josepy, keystoneauth1, metsrw, oslo.config, oslo.i18n, oslo.serialization, oslo.utils, pathlib2, pyopenssl, python-cas, python-dateutil, python-keystoneclient, python-swiftclient, singledispatch, stevedore
+six==1.15.0               # via -r base.txt, cryptography, debtcollector, django-extensions, josepy, keystoneauth1, metsrw, mozilla-django-oidc, oslo.config, oslo.i18n, oslo.serialization, oslo.utils, pathlib2, pyopenssl, python-cas, python-dateutil, python-keystoneclient, python-swiftclient, singledispatch, stevedore
 stevedore==1.32.0         # via -r base.txt, keystoneauth1, oslo.config, python-keystoneclient
 sword2==0.2.1             # via -r base.txt
 typing==3.7.4.3           # via -r base.txt, importlib-resources
