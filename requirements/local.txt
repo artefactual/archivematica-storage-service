@@ -13,7 +13,6 @@ brotli==0.5.2             # via -r base.txt
 certifi==2020.6.20        # via -r base.txt, requests
 cffi==1.14.1              # via -r base.txt, cryptography
 chardet==3.0.4            # via -r base.txt, requests
-click==7.1.2              # via pip-tools
 configparser==4.0.2       # via -r base.txt, importlib-metadata
 contextlib2==0.6.0.post1  # via -r base.txt, importlib-metadata, importlib-resources, zipp
 cryptography==3.0         # via -r base.txt, josepy, mozilla-django-oidc, pyopenssl
@@ -67,7 +66,6 @@ oslo.serialization==2.29.2  # via -r base.txt, python-keystoneclient
 oslo.utils==3.42.1        # via -r base.txt, oslo.serialization, python-keystoneclient
 pathlib2==2.3.5 ; python_version < "3.0"  # via -r base.txt, importlib-metadata, importlib-resources
 pbr==5.4.5                # via -r base.txt, debtcollector, keystoneauth1, os-service-types, oslo.i18n, oslo.serialization, oslo.utils, positional, python-keystoneclient, stevedore
-pip-tools==5.1.2          # via -r local.in
 positional==1.2.1         # via -r base.txt, python-keystoneclient
 prometheus-client==0.7.1  # via -r base.txt, django-prometheus
 psycopg2==2.7.1           # via -r local.in
@@ -93,7 +91,7 @@ rfc3986==1.4.0            # via -r base.txt, oslo.config
 s3transfer==0.2.1         # via -r base.txt, boto3
 scandir==1.10.0           # via -r base.txt, pathlib2
 singledispatch==3.4.0.3   # via -r base.txt, importlib-resources
-six==1.15.0               # via -r base.txt, cryptography, debtcollector, django-extensions, josepy, keystoneauth1, metsrw, mozilla-django-oidc, oslo.config, oslo.i18n, oslo.serialization, oslo.utils, pathlib2, pip-tools, pyopenssl, python-cas, python-dateutil, python-keystoneclient, python-swiftclient, singledispatch, stevedore, transifex-client
+six==1.15.0               # via -r base.txt, cryptography, debtcollector, django-extensions, josepy, keystoneauth1, metsrw, mozilla-django-oidc, oslo.config, oslo.i18n, oslo.serialization, oslo.utils, pathlib2, pyopenssl, python-cas, python-dateutil, python-keystoneclient, python-swiftclient, singledispatch, stevedore, transifex-client
 sphinx==1.2b1             # via -r local.in
 stevedore==1.32.0         # via -r base.txt, keystoneauth1, oslo.config, python-keystoneclient
 sword2==0.2.1             # via -r base.txt
@@ -103,6 +101,3 @@ urllib3==1.24.3           # via -r base.txt, botocore, requests, transifex-clien
 whitenoise==3.3.0         # via -r base.txt
 wrapt==1.12.1             # via -r base.txt, debtcollector, positional
 zipp==1.2.0               # via -r base.txt, importlib-metadata, importlib-resources
-
-# The following packages are considered to be unsafe in a requirements file:
-# pip

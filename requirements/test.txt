@@ -23,7 +23,7 @@ botocore==1.12.253        # via -r base.txt, aws-xray-sdk, boto3, moto, s3transf
 brotli==0.5.2             # via -r base.txt
 certifi==2020.6.20        # via -r base.txt, requests
 cffi==1.14.1              # via -r base.txt, cryptography
-cfn-lint==0.34.0          # via moto
+cfn-lint==0.34.1          # via moto
 chardet==3.0.4            # via -r base.txt, requests
 click==7.1.2              # via pip-tools
 configparser==4.0.2       # via -r base.txt, importlib-metadata
@@ -44,7 +44,7 @@ django-tastypie==0.14.3   # via -r base.txt
 django==1.11.29           # via -r base.txt, django-auth-ldap, django-cas-ng, jsonfield, mozilla-django-oidc
 docker==4.2.2             # via moto
 docutils==0.15.2          # via -r base.txt, botocore
-ecdsa==0.15               # via python-jose
+ecdsa==0.14.1             # via python-jose
 enum34==1.1.10            # via -r base.txt, aws-sam-translator, aws-xray-sdk, cryptography, oslo.config, traitlets
 filelock==3.0.12          # via tox, virtualenv
 funcsigs==1.0.2           # via -r base.txt, debtcollector, mock, oslo.utils, pytest
@@ -101,7 +101,7 @@ pathlib2==2.3.5 ; python_version < "3.0"  # via -r base.txt, cfn-lint, importlib
 pbr==5.4.5                # via -r base.txt, debtcollector, keystoneauth1, os-service-types, oslo.i18n, oslo.serialization, oslo.utils, positional, python-keystoneclient, stevedore
 pexpect==4.8.0            # via ipython
 pickleshare==0.7.5        # via ipython
-pip-tools==3.7.0          # via -r test.in
+pip-tools==5.1.2          # via -r test.in
 pluggy==0.13.1            # via pytest, tox
 positional==1.2.1         # via -r base.txt, python-keystoneclient
 prometheus-client==0.7.1  # via -r base.txt, django-prometheus
@@ -122,7 +122,7 @@ pytest==3.8.0             # via -r test.in, pytest-cov, pytest-django, pytest-mo
 python-cas==1.5.0         # via -r base.txt, django-cas-ng
 python-dateutil==2.8.1    # via -r base.txt, botocore, django-tastypie, moto
 python-gnupg==0.4.0       # via -r base.txt
-python-jose==3.1.0        # via moto
+python-jose==3.2.0        # via moto
 python-keystoneclient==3.10.0  # via -r base.txt
 python-ldap==3.2.0        # via -r base.txt, django-auth-ldap
 python-mimeparse==1.6.0   # via -r base.txt, django-tastypie
@@ -147,7 +147,7 @@ traitlets==4.3.3          # via ipython
 typing==3.7.4.3           # via -r base.txt, importlib-resources
 urllib3==1.24.3           # via -r base.txt, botocore, requests
 vcrpy==3.0.0              # via -r test.in
-virtualenv==20.0.28       # via tox
+virtualenv==20.0.30       # via tox
 wcwidth==0.2.5            # via prompt-toolkit
 websocket-client==0.57.0  # via docker
 werkzeug==1.0.1           # via moto
@@ -157,4 +157,5 @@ xmltodict==0.12.0         # via moto
 zipp==1.2.0               # via -r base.txt, importlib-metadata, importlib-resources
 
 # The following packages are considered to be unsafe in a requirements file:
+# pip
 # setuptools
