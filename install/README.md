@@ -389,8 +389,9 @@ These variables specify the behaviour of CAS authentication. If `SS_CAS_AUTHENTI
 
 ### OIDC-specific environment variables
 
-    These variables specify the behaviour of OpenID Connect (OIDC) authentication.
-	If `SS_OIDC_AUTHENTICATION` is false, none of the other ones are used.
+**OIDC support is experimental, please share your feedback!**
+
+These variables specify the behaviour of OpenID Connect (OIDC) authentication. If `SS_OIDC_AUTHENTICATION` is false, none of the other ones are used.
 
 - **`SS_OIDC_AUTHENTICATION`**:
     - **Description:** Enables user authentication via OIDC.
