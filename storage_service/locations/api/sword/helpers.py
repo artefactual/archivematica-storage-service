@@ -387,7 +387,7 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
             "message": _(
                 "Request to pipeline %(uuid)s transfer approval API "
                 "failed: check credentials and REST API IP "
-                "whitelist."
+                "allowlist."
             )
             % {"uuid": pipeline.uuid},
         }

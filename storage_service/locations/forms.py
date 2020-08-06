@@ -293,16 +293,16 @@ class LocationForm(forms.ModelForm):
         space_protocol = kwargs.get("space_protocol")
         del kwargs["space_protocol"]
         super(LocationForm, self).__init__(*args, **kwargs)
-        # Disable purposes that aren't in the Space's whitelist
+        # Disable purposes that aren't in the Space's allowlist
         all_ = set(x[0] for x in models.Location.PURPOSE_CHOICES)
         if space_protocol in [x[0] for x in models.Space.ACCESS_PROTOCOL_CHOICES]:
             from .constants import PROTOCOL
 
-            self.whitelist = PROTOCOL[space_protocol]["model"].ALLOWED_LOCATION_PURPOSE
+            self.allowlist = PROTOCOL[space_protocol]["model"].ALLOWED_LOCATION_PURPOSE
         else:
-            self.whitelist = all_
-        blacklist = all_ - set(self.whitelist)
-        self.fields["purpose"].widget.disabled_choices = blacklist
+            self.allowlist = all_
+        denylist = all_ - set(self.allowlist)
+        self.fields["purpose"].widget.disabled_choices = denylist
         # A possible replicator for a Location is any RP-purposed location
         # other than the current one.
         replicator_choices = models.Location.objects.filter(
@@ -381,7 +381,7 @@ class LocationForm(forms.ModelForm):
     def clean_purpose(self):
         # Server-side enforcement of what Location purposes are allowed
         data = self.cleaned_data["purpose"]
-        if data not in self.whitelist:
+        if data not in self.allowlist:
             raise django.core.exceptions.ValidationError(_("Invalid purpose"))
         return data
 

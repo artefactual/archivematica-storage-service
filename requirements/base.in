@@ -42,3 +42,6 @@ django-auth-ldap==1.3.0
 
 # CAS authentication
 django-cas-ng==3.6.0
+
+# Required for OpenID Connect authentication
+mozilla-django-oidc

@@ -15,7 +15,7 @@ cffi==1.14.1              # via -r base.txt, cryptography
 chardet==3.0.4            # via -r base.txt, requests
 configparser==4.0.2       # via -r base.txt, importlib-metadata
 contextlib2==0.6.0.post1  # via -r base.txt, importlib-metadata, importlib-resources, zipp
-cryptography==3.0         # via -r base.txt, pyopenssl
+cryptography==3.0         # via -r base.txt, josepy, mozilla-django-oidc, pyopenssl
 debtcollector==1.22.0     # via -r base.txt, oslo.config, oslo.utils, python-keystoneclient
 defusedxml==0.5.0         # via -r base.txt
 dj-database-url==0.4.2    # via -r local.in
@@ -25,7 +25,7 @@ django-extensions==1.7.9  # via -r base.txt
 django-prometheus==1.0.15  # via -r base.txt
 git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git@67d270c65c201606fb86d548493d4b3fd8cc7a76#egg=django-shibboleth-remoteuser  # via -r base.txt
 django-tastypie==0.14.3   # via -r base.txt
-django==1.11.29           # via -r base.txt, django-auth-ldap, django-cas-ng, jsonfield
+django==1.11.29           # via -r base.txt, django-auth-ldap, django-cas-ng, jsonfield, mozilla-django-oidc
 docutils==0.15.2          # via -r base.txt, botocore, sphinx
 enum34==1.1.10            # via -r base.txt, cryptography, oslo.config
 funcsigs==1.0.2           # via -r base.txt, debtcollector, oslo.utils
@@ -43,6 +43,7 @@ ipython==1.1.0            # via -r local.in
 iso8601==0.1.12           # via -r base.txt, keystoneauth1, oslo.utils
 jinja2==2.11.2            # via sphinx
 jmespath==0.10.0          # via -r base.txt, boto3, botocore
+josepy==1.3.0             # via -r base.txt, mozilla-django-oidc
 jsonfield==2.0.1          # via -r base.txt
 keystoneauth1==4.0.1      # via -r base.txt, python-keystoneclient
 logutils==0.3.4.1         # via -r base.txt
@@ -51,6 +52,7 @@ lxml==3.7.3               # via -r base.txt, metsrw, python-cas
 markupsafe==1.1.1         # via jinja2
 metsrw==0.3.15            # via -r base.txt
 monotonic==1.5            # via -r base.txt, oslo.utils
+mozilla-django-oidc==1.2.3  # via -r base.txt
 msgpack==1.0.0            # via -r base.txt, oslo.serialization
 mysqlclient==1.4.6        # via -r base.txt, agentarchives
 ndg-httpsclient==0.4.2    # via -r base.txt
@@ -71,7 +73,7 @@ pyasn1-modules==0.2.8     # via -r base.txt, python-ldap
 pyasn1==0.4.8             # via -r base.txt, pyasn1-modules, python-ldap
 pycparser==2.20           # via -r base.txt, cffi
 pygments==2.5.2           # via sphinx
-pyopenssl==19.1.0         # via -r base.txt, ndg-httpsclient
+pyopenssl==19.1.0         # via -r base.txt, josepy, ndg-httpsclient
 pyparsing==2.4.7          # via -r base.txt, oslo.utils
 python-cas==1.5.0         # via -r base.txt, django-cas-ng
 python-dateutil==2.8.1    # via -r base.txt, botocore, django-tastypie
@@ -82,13 +84,14 @@ python-mimeparse==1.6.0   # via -r base.txt, django-tastypie
 python-swiftclient==3.3.0  # via -r base.txt
 pytz==2020.1              # via -r base.txt, babel, django, oslo.serialization, oslo.utils
 pyyaml==5.3.1             # via -r base.txt, oslo.config, oslo.serialization
+readline==6.2.4.1         # via ipython
 requests-oauthlib==1.2.0  # via -r base.txt
-requests==2.21.0          # via -r base.txt, agentarchives, keystoneauth1, oslo.config, python-cas, python-keystoneclient, python-swiftclient, requests-oauthlib
+requests==2.21.0          # via -r base.txt, agentarchives, keystoneauth1, mozilla-django-oidc, oslo.config, python-cas, python-keystoneclient, python-swiftclient, requests-oauthlib
 rfc3986==1.4.0            # via -r base.txt, oslo.config
 s3transfer==0.2.1         # via -r base.txt, boto3
 scandir==1.10.0           # via -r base.txt, pathlib2
 singledispatch==3.4.0.3   # via -r base.txt, importlib-resources
-six==1.15.0               # via -r base.txt, cryptography, debtcollector, django-extensions, keystoneauth1, metsrw, oslo.config, oslo.i18n, oslo.serialization, oslo.utils, pathlib2, pyopenssl, python-cas, python-dateutil, python-keystoneclient, python-swiftclient, singledispatch, stevedore, transifex-client
+six==1.15.0               # via -r base.txt, cryptography, debtcollector, django-extensions, josepy, keystoneauth1, metsrw, mozilla-django-oidc, oslo.config, oslo.i18n, oslo.serialization, oslo.utils, pathlib2, pyopenssl, python-cas, python-dateutil, python-keystoneclient, python-swiftclient, singledispatch, stevedore, transifex-client
 sphinx==1.2b1             # via -r local.in
 stevedore==1.32.0         # via -r base.txt, keystoneauth1, oslo.config, python-keystoneclient
 sword2==0.2.1             # via -r base.txt
