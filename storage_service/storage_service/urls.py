@@ -26,6 +26,7 @@ urlpatterns = [
         name="javascript-catalog",
     ),
     url(r"^i18n/", include(("django.conf.urls.i18n", "i18n"), namespace="i18n")),
+    url(r"^oidc/", include("mozilla_django_oidc.urls")),
 ]
 
 if "django_cas_ng" in settings.INSTALLED_APPS:
