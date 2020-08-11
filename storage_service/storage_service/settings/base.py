@@ -227,10 +227,7 @@ DJANGO_APPS = [
     "django.forms",
 ]
 
-THIRD_PARTY_APPS = [
-    "tastypie",  # REST framework
-    "longerusername",  # Longer (> 30 characters) username
-]
+THIRD_PARTY_APPS = ["tastypie"]  # REST framework
 
 # Apps specific for this project go here.
 LOCAL_APPS = ["administration", "common", "locations"]
