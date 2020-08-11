@@ -7,32 +7,24 @@
 agentarchives==0.6.0      # via -r base.txt
 appdirs==1.4.4            # via virtualenv
 atomicwrites==1.4.0       # via pytest
-attrs==19.3.0             # via jsonschema, pytest
-aws-sam-translator==1.25.0  # via cfn-lint
-aws-xray-sdk==2.6.0       # via moto
+attrs==19.3.0             # via pytest
 babel==2.8.0              # via -r base.txt, oslo.i18n
 backports.functools-lru-cache==1.6.1  # via wcwidth
 backports.shutil-get-terminal-size==1.0.0  # via ipython
-backports.ssl-match-hostname==3.7.0.1  # via docker
-backports.tempfile==1.0   # via moto
-backports.weakref==1.0.post1  # via backports.tempfile
 bagit==1.7.0              # via -r base.txt
-boto3==1.9.174            # via -r base.txt, aws-sam-translator, moto
-boto==2.49.0              # via moto
-botocore==1.12.253        # via -r base.txt, aws-xray-sdk, boto3, moto, s3transfer
+boto3==1.9.174            # via -r base.txt
+botocore==1.12.253        # via -r base.txt, boto3, s3transfer
 brotli==0.5.2             # via -r base.txt
 certifi==2020.6.20        # via -r base.txt, requests
 cffi==1.14.1              # via -r base.txt, cryptography
-cfn-lint==0.34.1          # via moto
 chardet==3.0.4            # via -r base.txt, requests
 click==7.1.2              # via pip-tools
 configparser==4.0.2       # via -r base.txt, importlib-metadata
 contextlib2==0.6.0.post1  # via -r base.txt, importlib-metadata, importlib-resources, vcrpy, zipp
-cookies==2.2.1            # via responses
 coverage==4.2             # via -r test.in, pytest-cov
-cryptography==3.0         # via -r base.txt, josepy, moto, mozilla-django-oidc, pyopenssl
+cryptography==3.0         # via -r base.txt, josepy, mozilla-django-oidc, pyopenssl
 debtcollector==1.22.0     # via -r base.txt, oslo.config, oslo.utils, python-keystoneclient
-decorator==4.4.2          # via ipython, networkx, traitlets
+decorator==4.4.2          # via ipython, traitlets
 defusedxml==0.5.0         # via -r base.txt
 distlib==0.3.1            # via virtualenv
 django-auth-ldap==1.3.0   # via -r base.txt
@@ -42,54 +34,41 @@ django-prometheus==1.0.15  # via -r base.txt
 git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git@67d270c65c201606fb86d548493d4b3fd8cc7a76#egg=django-shibboleth-remoteuser  # via -r base.txt
 django-tastypie==0.14.3   # via -r base.txt
 django==1.11.29           # via -r base.txt, django-auth-ldap, django-cas-ng, jsonfield, mozilla-django-oidc
-docker==4.2.2             # via moto
 docutils==0.15.2          # via -r base.txt, botocore
-ecdsa==0.14.1             # via python-jose
-enum34==1.1.10            # via -r base.txt, aws-sam-translator, aws-xray-sdk, cryptography, oslo.config, traitlets
+enum34==1.1.10            # via -r base.txt, cryptography, oslo.config, traitlets
 filelock==3.0.12          # via tox, virtualenv
 funcsigs==1.0.2           # via -r base.txt, debtcollector, mock, oslo.utils, pytest
-functools32==3.2.3.post2 ; python_version < "3.0"  # via -r test.in, jsonschema
-future==0.18.2            # via -r base.txt, aws-xray-sdk, metsrw
+functools32==3.2.3.post2 ; python_version < "3.0"  # via -r test.in
+future==0.18.2            # via -r base.txt, metsrw
 futures==3.3.0 ; python_version < "3.0"  # via -r base.txt, python-swiftclient, s3transfer
 gevent==1.3.6             # via -r base.txt
 greenlet==0.4.16          # via -r base.txt, gevent
 gunicorn==19.9.0          # via -r base.txt
 httplib2==0.18.1          # via -r base.txt, sword2
-idna==2.8                 # via -r base.txt, moto, requests
-importlib-metadata==1.7.0  # via -r base.txt, importlib-resources, jsonpickle, jsonschema, pluggy, tox, virtualenv
-importlib-resources==1.5.0  # via -r base.txt, cfn-lint, netaddr, virtualenv
-ipaddress==1.0.23         # via -r base.txt, cryptography, docker
+idna==2.8                 # via -r base.txt, requests
+importlib-metadata==1.7.0  # via -r base.txt, importlib-resources, pluggy, tox, virtualenv
+importlib-resources==1.5.0  # via -r base.txt, netaddr, virtualenv
+ipaddress==1.0.23         # via -r base.txt, cryptography
 ipdb==0.13.3              # via -r test.in
 ipython-genutils==0.2.0   # via traitlets
 ipython==5.10.0           # via ipdb
 iso8601==0.1.12           # via -r base.txt, keystoneauth1, oslo.utils
-jinja2==2.11.2            # via moto
 jmespath==0.10.0          # via -r base.txt, boto3, botocore
 josepy==1.3.0             # via -r base.txt, mozilla-django-oidc
-jsondiff==1.1.2           # via moto
 jsonfield==2.0.1          # via -r base.txt
-jsonpatch==1.26           # via cfn-lint
-jsonpickle==1.4.1         # via aws-xray-sdk
-jsonpointer==2.0          # via jsonpatch
-jsonschema==3.2.0         # via aws-sam-translator, cfn-lint
-junit-xml==1.9            # via cfn-lint
 keystoneauth1==4.0.1      # via -r base.txt, python-keystoneclient
 logutils==0.3.4.1         # via -r base.txt
-git+https://github.com/seatme/django-longer-username.git@seatme#egg=longerusername  # via -r base.txt
 lxml==3.7.3               # via -r base.txt, metsrw, python-cas
-markupsafe==1.1.1         # via jinja2
 metsrw==0.3.15            # via -r base.txt
-mock==3.0.5               # via moto, pytest-mock, responses, vcrpy
+mock==3.0.5               # via pytest-mock, vcrpy
 monotonic==1.5            # via -r base.txt, oslo.utils
 more-itertools==5.0.0     # via pytest
-moto==1.3.8               # via -r test.in
 mozilla-django-oidc==1.2.3  # via -r base.txt
 msgpack==1.0.0            # via -r base.txt, oslo.serialization
 mysqlclient==1.4.6        # via -r base.txt, agentarchives
 ndg-httpsclient==0.4.2    # via -r base.txt
 netaddr==0.8.0            # via -r base.txt, oslo.config, oslo.utils
 netifaces==0.10.9         # via -r base.txt, oslo.utils
-networkx==2.2             # via cfn-lint
 oauthlib==3.1.0           # via -r base.txt, requests-oauthlib
 os-service-types==1.7.0   # via -r base.txt, keystoneauth1
 oslo.config==7.0.0        # via -r base.txt, python-keystoneclient
@@ -97,7 +76,7 @@ oslo.i18n==3.25.1         # via -r base.txt, oslo.config, oslo.utils, python-key
 oslo.serialization==2.29.2  # via -r base.txt, python-keystoneclient
 oslo.utils==3.42.1        # via -r base.txt, oslo.serialization, python-keystoneclient
 packaging==20.4           # via tox
-pathlib2==2.3.5 ; python_version < "3.0"  # via -r base.txt, cfn-lint, importlib-metadata, importlib-resources, ipython, pickleshare, pytest, pytest-django, virtualenv
+pathlib2==2.3.5 ; python_version < "3.0"  # via -r base.txt, importlib-metadata, importlib-resources, ipython, pickleshare, pytest, pytest-django, virtualenv
 pbr==5.4.5                # via -r base.txt, debtcollector, keystoneauth1, os-service-types, oslo.i18n, oslo.serialization, oslo.utils, positional, python-keystoneclient, stevedore
 pexpect==4.8.0            # via ipython
 pickleshare==0.7.5        # via ipython
@@ -109,51 +88,44 @@ prompt-toolkit==1.0.18    # via ipython
 ptyprocess==0.6.0         # via pexpect
 py==1.9.0                 # via pytest, tox
 pyasn1-modules==0.2.8     # via -r base.txt, python-ldap
-pyasn1==0.4.8             # via -r base.txt, pyasn1-modules, python-jose, python-ldap, rsa
+pyasn1==0.4.8             # via -r base.txt, pyasn1-modules, python-ldap
 pycparser==2.20           # via -r base.txt, cffi
 pygments==2.5.2           # via ipython
 pyopenssl==19.1.0         # via -r base.txt, josepy, ndg-httpsclient
 pyparsing==2.4.7          # via -r base.txt, oslo.utils, packaging
-pyrsistent==0.16.0        # via jsonschema
 pytest-cov==2.4.0         # via -r test.in
 pytest-django==3.9.0      # via -r test.in
 pytest-mock==1.13.0       # via -r test.in
 pytest==3.8.0             # via -r test.in, pytest-cov, pytest-django, pytest-mock
 python-cas==1.5.0         # via -r base.txt, django-cas-ng
-python-dateutil==2.8.1    # via -r base.txt, botocore, django-tastypie, moto
+python-dateutil==2.8.1    # via -r base.txt, botocore, django-tastypie
 python-gnupg==0.4.0       # via -r base.txt
-python-jose==3.2.0        # via moto
 python-keystoneclient==3.10.0  # via -r base.txt
 python-ldap==3.2.0        # via -r base.txt, django-auth-ldap
 python-mimeparse==1.6.0   # via -r base.txt, django-tastypie
 python-swiftclient==3.3.0  # via -r base.txt
-pytz==2020.1              # via -r base.txt, babel, django, moto, oslo.serialization, oslo.utils
-pyyaml==5.3.1             # via -r base.txt, cfn-lint, moto, oslo.config, oslo.serialization, vcrpy
+pytz==2020.1              # via -r base.txt, babel, django, oslo.serialization, oslo.utils
+pyyaml==5.3.1             # via -r base.txt, oslo.config, oslo.serialization, vcrpy
 requests-oauthlib==1.2.0  # via -r base.txt
-requests==2.21.0          # via -r base.txt, agentarchives, docker, keystoneauth1, moto, mozilla-django-oidc, oslo.config, python-cas, python-keystoneclient, python-swiftclient, requests-oauthlib, responses
-responses==0.10.15        # via moto
+requests==2.21.0          # via -r base.txt, agentarchives, keystoneauth1, mozilla-django-oidc, oslo.config, python-cas, python-keystoneclient, python-swiftclient, requests-oauthlib
 rfc3986==1.4.0            # via -r base.txt, oslo.config
-rsa==4.5                  # via python-jose
 s3transfer==0.2.1         # via -r base.txt, boto3
 scandir==1.10.0           # via -r base.txt, pathlib2
 simplegeneric==0.8.1      # via ipython
 singledispatch==3.4.0.3   # via -r base.txt, importlib-resources
-six==1.15.0               # via -r base.txt, aws-sam-translator, cfn-lint, cryptography, debtcollector, django-extensions, docker, ecdsa, josepy, jsonschema, junit-xml, keystoneauth1, metsrw, mock, more-itertools, moto, mozilla-django-oidc, oslo.config, oslo.i18n, oslo.serialization, oslo.utils, packaging, pathlib2, pip-tools, prompt-toolkit, pyopenssl, pyrsistent, pytest, python-cas, python-dateutil, python-jose, python-keystoneclient, python-swiftclient, responses, singledispatch, stevedore, tox, traitlets, vcrpy, virtualenv, websocket-client
+six==1.15.0               # via -r base.txt, cryptography, debtcollector, django-extensions, josepy, keystoneauth1, metsrw, mock, more-itertools, mozilla-django-oidc, oslo.config, oslo.i18n, oslo.serialization, oslo.utils, packaging, pathlib2, pip-tools, prompt-toolkit, pyopenssl, pytest, python-cas, python-dateutil, python-keystoneclient, python-swiftclient, singledispatch, stevedore, tox, traitlets, vcrpy, virtualenv
 stevedore==1.32.0         # via -r base.txt, keystoneauth1, oslo.config, python-keystoneclient
 sword2==0.2.1             # via -r base.txt
 toml==0.10.1              # via tox
-tox==3.18.1               # via -r test.in
+tox==3.19.0               # via -r test.in
 traitlets==4.3.3          # via ipython
 typing==3.7.4.3           # via -r base.txt, importlib-resources
 urllib3==1.24.3           # via -r base.txt, botocore, requests
 vcrpy==3.0.0              # via -r test.in
 virtualenv==20.0.30       # via tox
 wcwidth==0.2.5            # via prompt-toolkit
-websocket-client==0.57.0  # via docker
-werkzeug==1.0.1           # via moto
 whitenoise==3.3.0         # via -r base.txt
-wrapt==1.12.1             # via -r base.txt, aws-xray-sdk, debtcollector, positional, vcrpy
-xmltodict==0.12.0         # via moto
+wrapt==1.12.1             # via -r base.txt, debtcollector, positional, vcrpy
 zipp==1.2.0               # via -r base.txt, importlib-metadata, importlib-resources
 
 # The following packages are considered to be unsafe in a requirements file:
