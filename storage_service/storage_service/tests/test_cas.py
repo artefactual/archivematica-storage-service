@@ -13,7 +13,7 @@ except ImportError:
     from unittest import mock
 
 from common.backends import CustomCASBackend
-from storage_service.signals import _cas_user_is_administrator
+from common.signals import _cas_user_is_administrator
 
 TEST_CAS_USER = "casuser"
 TEST_CAS_ADMIN_ATTRIBUTE = "usertype"

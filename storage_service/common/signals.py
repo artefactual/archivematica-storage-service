@@ -62,6 +62,8 @@ def cas_user_authenticated_callback(sender, **kwargs):
     if not settings.CAS_CHECK_ADMIN_ATTRIBUTES:
         return
 
+    LOGGER.debug("cas_user_authenticated signal received")
+
     username = kwargs.get("user")
     attributes = kwargs.get("attributes")
 
