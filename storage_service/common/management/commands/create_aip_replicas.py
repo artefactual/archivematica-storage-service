@@ -1,0 +1,158 @@
+# -*- coding: utf-8 -*-
+"""(Re)create replicas in an AIP store
+
+When called with the -d/--delete argument, this command will attempt to
+delete existing replicas of AIPs in the specified AIP Store location
+prior to creating new replicas.
+
+If an AIP Store location is not specified with the --location argument,
+the task will create replicas for all AIPs in the default AIP Storage
+location.
+
+Execution example:
+./manage.py create_aip_replicas --location <UUID>
+"""
+from __future__ import absolute_import, print_function
+import logging
+
+from django.core.management.base import CommandError
+from django.db import transaction
+
+from administration.models import Settings
+from common.management.commands import StorageServiceCommand
+from locations.models.package import Package
+
+# Suppress the logging from models/package.py.
+logging.config.dictConfig({"version": 1, "disable_existing_loggers": True})
+
+
+class ReplicaDeleteException(Exception):
+    pass
+
+
+def get_replica_count(aip_uuid):
+    """Return number of replicas for given AIP
+
+    :param aip_uuid: AIP UUID
+
+    :returns: Number of replicas (int)
+    """
+    return Package.objects.filter(replicated_package=aip_uuid).count()
+
+
+class Command(StorageServiceCommand):
+
+    help = __doc__
+
+    def add_arguments(self, parser):
+        """Entry point to add custom arguments"""
+        parser.add_argument(
+            "-d",
+            "--delete",
+            action="store_true",
+            help="Delete existing replicas in AIP Store location"
+            " prior to creating new replicas.",
+        )
+        parser.add_argument(
+            "--location",
+            help="UUID for AIP Storage location to create replicas",
+            default=None,
+        )
+
+    def handle(self, *args, **options):
+        delete_existing_replicas = False
+        if options["delete"]:
+            delete_existing_replicas = True
+
+        # Determine AIP storage location for which we'll be creating
+        # replicas. Use default AIP Store if user did not supply a UUID.
+        aip_store_uuid = options["location"]
+        if aip_store_uuid is None:
+            try:
+                default_aip_store = Settings.objects.get(name="default_AS_location")
+                aip_store_uuid = default_aip_store.value
+            except Settings.DoesNotExist:
+                raise CommandError("No AIP Store location specified or set as default.")
+
+        aips = Package.objects.filter(
+            current_location=aip_store_uuid,
+            package_type=Package.AIP,
+            replicated_package=None,
+        ).all()
+        if not aips:
+            raise CommandError(
+                "No AIPs to replicate in location {}".format(aip_store_uuid)
+            )
+
+        aips_count = len(aips)
+        success_count = 0
+        deleted_count = 0
+
+        self.info("AIPs to replicate: {}".format(aips_count))
+
+        for aip in aips:
+            if delete_existing_replicas:
+                self.info("Deleting existing replicas of AIP {}".format(aip.uuid))
+                aip_deleted_replicas_count = self._delete_replicas(aip.uuid)
+                deleted_count += aip_deleted_replicas_count
+
+            replicas_initial_count = get_replica_count(aip.uuid)
+
+            self.info("Creating new replicas for AIP {}".format(aip.uuid))
+            aip.create_replicas()
+
+            # Validate that new replicas were created.
+            replicas_count = get_replica_count(aip.uuid)
+            if not replicas_count > replicas_initial_count:
+                self.error("Replicas not created for AIP {}".format(aip.uuid))
+                continue
+
+            self.info("AIP {} successfully replicated".format(aip.uuid))
+            success_count += 1
+
+        self.success(
+            "Replica creation complete. {} existing replicas deleted. "
+            "New replicas created for {} of {} AIPs in location.".format(
+                deleted_count, success_count, aips_count
+            )
+        )
+
+    def _delete_replicas(self, aip_uuid):
+        """Delete all existing replicas of an AIP
+
+        :param aip_uuid: UUID of AIP whose replicas we are deleting.
+
+        :returns: Number of replicas deleted (int)
+        """
+        deleted_count = 0
+        existing_replicas = Package.objects.filter(
+            replicated_package=aip_uuid, status=Package.UPLOADED
+        ).all()
+        for replica in existing_replicas:
+            try:
+                self._delete_replica(replica)
+                deleted_count += 1
+            except ReplicaDeleteException as err:
+                self.error(
+                    "Unable to delete existing replica {} of AIP {}: {}".format(
+                        replica.uuid, aip_uuid, err
+                    )
+                )
+        return deleted_count
+
+    def _delete_replica(self, replica):
+        """Delete replica from filesystem and database
+
+        :param replica: Package object of replicated AIP to delete.
+        """
+        # Delete from filesystem.
+        fs_deletion = replica.delete_from_storage()
+        fs_deletion_success = fs_deletion[0]
+        if not fs_deletion_success:
+            error_msg = fs_deletion[1]
+            raise ReplicaDeleteException(error_msg)
+        # Change Package status to deleted.
+        with transaction.atomic():
+            Package.objects.select_for_update().get(id=replica.id)
+            replica.status = Package.DELETED
+            replica.save()
