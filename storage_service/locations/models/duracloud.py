@@ -319,9 +319,9 @@ class Duracloud(models.Model):
     def _process_chunk(self, f, chunk_path):
         bytes_read = 0
 
-        with open(chunk_path, "w") as fchunk:
+        with open(chunk_path, "wb") as fchunk:
             while bytes_read < self.CHUNK_SIZE:
-                data = f.read(self.BUFFER_SIZE).decode("utf8")
+                data = f.read(self.BUFFER_SIZE)
                 fchunk.write(data)
 
                 length = len(data)
