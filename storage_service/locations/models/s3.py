@@ -27,6 +27,9 @@ from .location import Location
 
 LOGGER = logging.getLogger(__name__)
 
+# https://boto3.amazonaws.com/v1/documentation/api/latest/reference/core/boto3.html#boto3.set_stream_logger
+boto3.set_stream_logger(name="boto3", level="DEBUG")
+
 
 def boto_exception(fn):
     @wraps(fn)
