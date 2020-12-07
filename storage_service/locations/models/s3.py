@@ -8,6 +8,7 @@ import pprint
 from functools import wraps
 
 # Core Django, alphabetical
+from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
@@ -26,6 +27,13 @@ from .location import Location
 
 
 LOGGER = logging.getLogger(__name__)
+
+if settings.S3_DEBUG:
+    # Log all debug messages from S3. See the site configuration script
+    # for more information about why this should not be run in
+    # production unless the data protection ramifications are completely
+    # understood and accepted.
+    boto3.set_stream_logger(name="", level="DEBUG")
 
 
 def boto_exception(fn):
