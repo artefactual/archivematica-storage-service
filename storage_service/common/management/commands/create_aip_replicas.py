@@ -16,7 +16,6 @@ from __future__ import absolute_import, print_function
 import logging
 
 from django.core.management.base import CommandError
-from django.db import transaction
 
 from administration.models import Settings
 from common.management.commands import StorageServiceCommand
@@ -37,7 +36,9 @@ def get_replica_count(aip_uuid):
 
     :returns: Number of replicas (int)
     """
-    return Package.objects.filter(replicated_package=aip_uuid).count()
+    return Package.objects.filter(
+        replicated_package=aip_uuid, status=Package.UPLOADED
+    ).count()
 
 
 class Command(StorageServiceCommand):
@@ -78,6 +79,7 @@ class Command(StorageServiceCommand):
             current_location=aip_store_uuid,
             package_type=Package.AIP,
             replicated_package=None,
+            status=Package.UPLOADED,
         ).all()
         if not aips:
             raise CommandError(
@@ -141,18 +143,15 @@ class Command(StorageServiceCommand):
         return deleted_count
 
     def _delete_replica(self, replica):
-        """Delete replica from filesystem and database
+        """Delete replica from filesystem and update Package status
+
+        If filesystem deletion is successful, the replica's status will be
+        set to Package.DELETED by `replica.delete_from_storage()`.
 
         :param replica: Package object of replicated AIP to delete.
         """
-        # Delete from filesystem.
         fs_deletion = replica.delete_from_storage()
         fs_deletion_success = fs_deletion[0]
         if not fs_deletion_success:
             error_msg = fs_deletion[1]
             raise ReplicaDeleteException(error_msg)
-        # Change Package status to deleted.
-        with transaction.atomic():
-            Package.objects.select_for_update().get(id=replica.id)
-            replica.status = Package.DELETED
-            replica.save()
