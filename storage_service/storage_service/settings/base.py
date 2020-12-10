@@ -13,20 +13,13 @@ from sys import path
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import ugettext_lazy as _
 
+from storage_service.settings.helpers import get_env_variable, is_true
+
 try:
     import ldap
     from django_auth_ldap import config as ldap_config
 except ImportError:
     ldap, ldap_config = None, None
-
-
-def get_env_variable(var_name):
-    """ Get the environment variable or return exception """
-    try:
-        return environ[var_name]
-    except KeyError:
-        error_msg = "Set the %s environment variable" % var_name
-        raise ImproperlyConfigured(error_msg)
 
 
 # ######## PATH CONFIGURATION
@@ -179,8 +172,10 @@ TEMPLATES = [
 
 # ######### AUTHENTICATION CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#authentication-backends
-
 AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
+
+from .components.auth import *
+
 # ######### END AUTHENTICATION CONFIGURATION
 
 # ######### MIDDLEWARE CONFIGURATION
@@ -314,10 +309,6 @@ WSGI_APPLICATION = "%s.wsgi.application" % SITE_NAME
 # ######## END WSGI CONFIGURATION
 
 ALLOW_USER_EDITS = True
-
-
-def is_true(env_str):
-    return env_str.lower() in ["true", "yes", "on", "1"]
 
 
 ######### LDAP CONFIGURATION #########

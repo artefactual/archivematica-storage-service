@@ -61,6 +61,11 @@ CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"
 # )
 # ########## END TOOLBAR CONFIGURATION
 
+# ######## AUTHENTICATION CONFIGURATION
+# Disable password validation in local development environment.
+AUTH_PASSWORD_VALIDATORS = []
+# ######## END AUTHENTICATION CONFIGURATION
+
 ######### LDAP CONFIGURATION #########
 if LDAP_AUTHENTICATION and DEBUG:
     # Don't validate certs if debug is on

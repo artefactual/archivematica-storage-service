@@ -43,6 +43,8 @@ form ul {
 form li {
   list-style-type: none;
   padding-left: 0px;
+  font-size: 14px;
+  line-height: 20px;
 }
 
 .btn {
