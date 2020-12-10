@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-10-24 09:08-0700\n"
+"POT-Creation-Date: 2021-01-11 16:23-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,183 +18,189 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: administration/forms.py:37 locations/models/space.py:185
+#: administration/forms.py:46 locations/models/space.py:211
 #: templates/locations/location_detail.html:10
 #: templates/locations/location_form.html:20
 #: templates/snippets/locations_table.html:12
 msgid "Space"
 msgstr ""
 
-#: administration/forms.py:37 locations/models/location.py:65
+#: administration/forms.py:46 locations/models/location.py:75
 #: templates/locations/location_detail.html:14
 msgid "Relative Path"
 msgstr ""
 
-#: administration/forms.py:37 locations/models/location.py:68
-#: locations/models/pipeline.py:40 templates/locations/location_detail.html:12
+#: administration/forms.py:46 locations/models/location.py:81
+#: locations/models/pipeline.py:57 templates/locations/location_detail.html:12
 #: templates/locations/pipeline_detail.html:11
 #: templates/snippets/locations_table.html:10
-#: templates/snippets/packages_table.html:6
 #: templates/snippets/pipelines_table.html:6
 msgid "Description"
 msgstr ""
 
-#: administration/forms.py:37 locations/models/location.py:71
+#: administration/forms.py:46 locations/models/location.py:90
 msgid "Quota"
 msgstr ""
 
-#: administration/forms.py:85
+#: administration/forms.py:98
 msgid "Pipelines are disabled upon creation?"
 msgstr ""
 
-#: administration/forms.py:87
+#: administration/forms.py:101
 msgid "Object counting in spaces is disabled?"
 msgstr ""
 
-#: administration/forms.py:89
+#: administration/forms.py:104
 msgid "Recovery request: URL to notify"
 msgstr ""
 
-#: administration/forms.py:91
+#: administration/forms.py:107
 msgid "Recovery request notification: Username (optional)"
 msgstr ""
 
-#: administration/forms.py:93
+#: administration/forms.py:110
 msgid "Recovery request notification: Password (optional)"
 msgstr ""
 
-#: administration/forms.py:101
+#: administration/forms.py:124
 msgid "Default transfer source locations for new pipelines:"
 msgstr ""
 
-#: administration/forms.py:104
+#: administration/forms.py:127
 msgid "New Transfer Source:"
 msgstr ""
 
-#: administration/forms.py:108
+#: administration/forms.py:132
 msgid "Default AIP storage locations for new pipelines"
 msgstr ""
 
-#: administration/forms.py:111
+#: administration/forms.py:134
 msgid "New AIP Storage:"
 msgstr ""
 
-#: administration/forms.py:115
+#: administration/forms.py:138
 msgid "Default DIP storage locations for new pipelines"
 msgstr ""
 
-#: administration/forms.py:118
+#: administration/forms.py:140
 msgid "New DIP Storage:"
 msgstr ""
 
-#: administration/forms.py:122
+#: administration/forms.py:144
 msgid "Default transfer backlog locations for new pipelines:"
 msgstr ""
 
-#: administration/forms.py:125
+#: administration/forms.py:146
 msgid "New Transfer Backlog:"
 msgstr ""
 
-#: administration/forms.py:129
+#: administration/forms.py:150
 msgid "Default AIP recovery locations for new pipelines:"
 msgstr ""
 
-#: administration/forms.py:132
+#: administration/forms.py:152
 msgid "New AIP Recovery:"
 msgstr ""
 
-#: administration/forms.py:141 administration/forms.py:145
-#: administration/forms.py:149 administration/forms.py:153
-#: administration/forms.py:157
+#: administration/forms.py:161 administration/forms.py:165
+#: administration/forms.py:169 administration/forms.py:173
+#: administration/forms.py:177
 msgid "Create new location for each pipeline"
 msgstr ""
 
-#: administration/forms.py:165 administration/forms.py:171
-#: administration/forms.py:177
+#: administration/forms.py:190 administration/forms.py:196
+#: administration/forms.py:202
 msgid "Relative path is required"
 msgstr ""
 
-#: administration/forms.py:167 administration/forms.py:173
-#: administration/forms.py:179
+#: administration/forms.py:192 administration/forms.py:198
+#: administration/forms.py:204
 msgid "Relative path cannot start with /"
 msgstr ""
 
-#: administration/forms.py:193 administration/forms.py:205
+#: administration/forms.py:220 administration/forms.py:244
 msgid "Administrator?"
 msgstr ""
 
-#: administration/forms.py:217 templates/administration/user_detail.html:13
+#: administration/forms.py:276 templates/administration/user_detail.html:13
 #: templates/administration/user_list.html:15
 msgid "Name"
 msgstr ""
 
-#: administration/forms.py:218
+#: administration/forms.py:277
 msgid "Email"
 msgstr ""
 
-#: administration/views.py:39
+#: administration/validators.py:19
+msgid ""
+"Your password must contain at least 3 of: uppercase characters, lowercase "
+"characters, numbers, and special characters (symbols or non-alphanumeric "
+"Unicode characters)."
+msgstr ""
+
+#: administration/views.py:42
 msgid "Setting saved."
 msgstr ""
 
-#: administration/views.py:75
+#: administration/views.py:81
 msgid "Edit User"
 msgstr ""
 
-#: administration/views.py:81
+#: administration/views.py:89
 msgid "User information saved."
 msgstr ""
 
-#: administration/views.py:88
+#: administration/views.py:96
 msgid "Password changed."
 msgstr ""
 
-#: administration/views.py:98
+#: administration/views.py:106
 msgid "Create User"
 msgstr ""
 
-#: administration/views.py:102
+#: administration/views.py:112
 #, python-format
 msgid "New user %(username)s created."
 msgstr ""
 
-#: administration/views.py:156 administration/views.py:250
-#: administration/views.py:296
+#: administration/views.py:173 administration/views.py:292
+#: administration/views.py:348
 #, python-format
 msgid "GPG key with fingerprint %(fingerprint)s does not exist."
 msgstr ""
 
-#: administration/views.py:175 administration/views.py:229
+#: administration/views.py:195 administration/views.py:264
 #, python-format
 msgid "New key %(fingerprint)s created."
 msgstr ""
 
-#: administration/views.py:182
+#: administration/views.py:205
 #, python-format
 msgid ""
 "Failed to create key with real name '%(name_real)s' and email "
 "'%(name_email)s'."
 msgstr ""
 
-#: administration/views.py:187
+#: administration/views.py:211
 #, python-format
 msgid ""
 "Generate a new GPG key. The key will not have a passphrase. It will be a key "
 "of type %(key_type)s and length %(key_length)s."
 msgstr ""
 
-#: administration/views.py:219
+#: administration/views.py:249
 msgid ""
 "Import failed. Sorry, we were unable to create a key with the supplied ASCII "
 "armor"
 msgstr ""
 
-#: administration/views.py:224
+#: administration/views.py:257
 msgid ""
 "Import failed. The GPG key provided requires a passphrase. GPG keys with "
 "passphrases cannot be imported"
 msgstr ""
 
-#: administration/views.py:233
+#: administration/views.py:268
 msgid ""
 "Import an existing GPG key. Paste here the ASCII armor of the GPG private "
 "key, which you can get by running <code>gpg --armor --export-secret-keys</"
@@ -204,875 +210,948 @@ msgid ""
 "not have a passphrase."
 msgstr ""
 
-#: administration/views.py:252
+#: administration/views.py:297
 #, python-format
 msgid "Confirm deleting GPG key %(uids)s (%(fingerprint)s)"
 msgstr ""
 
-#: administration/views.py:260
+#: administration/views.py:306
 #, python-format
 msgid ""
 "GPG key %(fingerprint)s cannot be deleted because at least one GPG Space is "
 "using it for encryption."
 msgstr ""
 
-#: administration/views.py:272
+#: administration/views.py:321
 #, python-format
 msgid ""
 "GPG key %(fingerprint)s cannot be deleted because at least one package (AIP, "
 "transfer) needs it in order to be decrypted."
 msgstr ""
 
-#: administration/views.py:277
+#: administration/views.py:329
 #, python-format
 msgid "Are you sure you want to delete GPG key %(fingerprint)s?"
 msgstr ""
 
-#: administration/views.py:302
+#: administration/views.py:357
 #, python-format
 msgid "GPG key %(fingerprint)s successfully deleted."
 msgstr ""
 
-#: administration/views.py:307
+#: administration/views.py:365
 #, python-format
 msgid "Failed to delete GPG key %(fingerprint)s."
 msgstr ""
 
-#: common/gpgutils.py:28
+#: common/gpgutils.py:31
 msgid "Archivematica Storage Service GPG Key"
 msgstr ""
 
-#: common/utils.py:122
+#: common/utils.py:164
 msgid "File not found"
 msgstr ""
 
-#: locations/api/resources.py:77
+#: common/utils.py:395 common/utils.py:432
+#, python-format
+msgid "Algorithm %(algorithm)s not implemented"
+msgstr ""
+
+#: common/utils.py:472
+msgid "Unknown compression"
+msgstr ""
+
+#: locations/api/resources.py:104
 #, python-format
 msgid "Resource with UUID %(uuid)s does not exist"
 msgstr ""
 
-#: locations/api/resources.py:79
+#: locations/api/resources.py:109
 msgid "More than one resource is found at this URI."
 msgstr ""
 
-#: locations/api/resources.py:92
+#: locations/api/resources.py:130
 #, python-format
 msgid "All of these fields must be provided: %(fields)s"
 msgstr ""
 
-#: locations/api/resources.py:211 locations/api/resources.py:278
+#: locations/api/resources.py:271 locations/api/resources.py:379
 msgid "This method should be accessed via a versioned subclass"
 msgstr ""
 
-#: locations/api/resources.py:446
+#: locations/api/resources.py:554
 #, python-format
 msgid "The URL provided '%(url)s' was not a link to a valid Location."
 msgstr ""
 
-#: locations/api/resources.py:472 locations/api/resources.py:498
+#: locations/api/resources.py:584 locations/api/resources.py:615
 msgid "Files moved successfully"
 msgstr ""
 
-#: locations/api/resources.py:509
+#: locations/api/resources.py:629
 msgid "This is not a SWORD server space."
 msgstr ""
 
-#: locations/api/resources.py:748
+#: locations/api/resources.py:1084
 msgid "A model instance matching the provided arguments could not be found."
 msgstr ""
 
-#: locations/api/resources.py:801
+#: locations/api/resources.py:1150
 #, python-format
 msgid "PATCH only allowed on %(fields)s"
 msgstr ""
 
-#: locations/api/resources.py:815
+#: locations/api/resources.py:1167
 msgid "Deletes not allowed on this package type."
 msgstr ""
 
-#: locations/api/resources.py:830
+#: locations/api/resources.py:1188
 msgid "A deletion request already exists for this AIP."
 msgstr ""
 
-#: locations/api/resources.py:846
+#: locations/api/resources.py:1205
 msgid "Recovery not allowed on this package type."
 msgstr ""
 
-#: locations/api/resources.py:867
+#: locations/api/resources.py:1230
 msgid "All of these fields must be provided: relative_path_to_file"
 msgstr ""
 
-#: locations/api/resources.py:894 locations/api/resources.py:930
+#: locations/api/resources.py:1263 locations/api/resources.py:1328
 msgid ""
 "File is not locally available.  Contact your storage administrator to fetch "
 "it."
 msgstr ""
 
-#: locations/api/resources.py:897 locations/api/resources.py:933
+#: locations/api/resources.py:1275 locations/api/resources.py:1340
 msgid "Error checking if file in Arkivum in locally available."
 msgstr ""
 
-#: locations/api/resources.py:903
+#: locations/api/resources.py:1289
 #, python-format
 msgid "Requested file, %(filename)s, not found in AIP"
 msgstr ""
 
-#: locations/api/resources.py:909
+#: locations/api/resources.py:1301
 #, python-format
 msgid "Unable to extract package of type: %(typename)s"
 msgstr ""
 
-#: locations/api/resources.py:949
+#: locations/api/resources.py:1363
 #, python-format
 msgid "Resource with UUID %(uuid)s does not have a pointer file"
 msgstr ""
 
-#: locations/api/resources.py:1034
+#: locations/api/resources.py:1460
 #, python-format
 msgid "Failed to POST %(count)d responses to callback URI"
 msgstr ""
 
-#: locations/api/resources.py:1050
+#: locations/api/resources.py:1478
 msgid "This package is not a transfer."
 msgstr ""
 
-#: locations/api/resources.py:1052
+#: locations/api/resources.py:1487
 msgid "This package is not in transfer backlog."
 msgstr ""
 
-#: locations/api/resources.py:1057
+#: locations/api/resources.py:1505
 msgid "An error occurred while reindexing the Transfer."
 msgstr ""
 
-#: locations/api/resources.py:1059
+#: locations/api/resources.py:1514
 #, python-format
 msgid "Files indexed: %(count)d"
 msgstr ""
 
-#: locations/api/resources.py:1070
+#: locations/api/resources.py:1530
 #, python-format
 msgid "Pipeline UUID %(uuid)s failed to return a pipeline"
 msgstr ""
 
-#: locations/api/resources.py:1087 locations/api/resources.py:1097
-#: locations/api/resources.py:1107
+#: locations/api/resources.py:1558
+#, python-format
+msgid "The file must be in an %s state to be moved. Current state: %s"
+msgstr ""
+
+#: locations/api/resources.py:1570
+msgid "All of these fields must be provided: location_uuid"
+msgstr ""
+
+#: locations/api/resources.py:1579
+#, python-format
+msgid "Location UUID %(uuid)s                 failed to return a location"
+msgstr ""
+
+#: locations/api/resources.py:1592
+msgid "New location must be different to the current location"
+msgstr ""
+
+#: locations/api/resources.py:1603
+#, python-format
+msgid "New location must have the same purpose as the current location - %s"
+msgstr ""
+
+#: locations/api/resources.py:1621
+#, python-format
+msgid "The package must be in an %s state to be moved. Current state: %s"
+msgstr ""
+
+#: locations/api/resources.py:1633
+msgid "Package moved successfully"
+msgstr ""
+
+#: locations/api/resources.py:1651 locations/api/resources.py:1661
+#: locations/api/resources.py:1671
 msgid "This is not a SWORD deposit location."
 msgstr ""
 
-#: locations/api/resources.py:1130
+#: locations/api/resources.py:1713
 #, python-format
 msgid "%(event_type)s request created successfully."
 msgstr ""
 
-#: locations/api/resources.py:1137
+#: locations/api/resources.py:1722
 #, python-format
 msgid "A %(event_type)s request already exists for this AIP."
 msgstr ""
 
-#: locations/api/resources.py:1179
+#: locations/api/resources.py:1766
 msgid "No JSON object could be decoded from POST body."
 msgstr ""
 
-#: locations/api/resources.py:1187
+#: locations/api/resources.py:1775
 msgid "JSON request must contain a list of objects."
 msgstr ""
 
-#: locations/api/resources.py:1214
+#: locations/api/resources.py:1801
 #, python-format
 msgid "File object was missing key: %(key)s"
 msgstr ""
 
-#: locations/api/resources.py:1226
+#: locations/api/resources.py:1815
 #, python-format
 msgid "%(count)d files created in package %(uuid)s"
 msgstr ""
 
-#: locations/api/resources.py:1305
+#: locations/api/resources.py:1903
 msgid "No supported query properties found!"
 msgstr ""
 
-#: locations/api/sword/helpers.py:200
+#: locations/api/sword/helpers.py:212
 msgid "Incorrect checksum"
 msgstr ""
 
-#: locations/api/sword/helpers.py:269
+#: locations/api/sword/helpers.py:284
 msgid "Deposit empty, or not done downloading."
 msgstr ""
 
-#: locations/api/sword/helpers.py:278
+#: locations/api/sword/helpers.py:292
 msgid "No Pipeline associated with this collection"
 msgstr ""
 
-#: locations/api/sword/helpers.py:319
+#: locations/api/sword/helpers.py:335
 #, python-format
 msgid "Pipeline properties %(properties)s not set."
 msgstr ""
 
-#: locations/api/sword/helpers.py:364
+#: locations/api/sword/helpers.py:388
 #, python-format
 msgid ""
 "Request to pipeline %(uuid)s transfer approval API failed: check credentials "
-"and REST API IP whitelist."
+"and REST API IP allowlist."
 msgstr ""
 
-#: locations/api/sword/views.py:78
+#: locations/api/sword/views.py:90
 #, python-format
 msgid "Collection %(uuid)s does not exist."
 msgstr ""
 
-#: locations/api/sword/views.py:127
+#: locations/api/sword/views.py:158
 msgid "No deposit name found in XML."
 msgstr ""
 
-#: locations/api/sword/views.py:129
+#: locations/api/sword/views.py:165
 #, python-format
 msgid "Collection path (%(path)s) does not exist: contact an administrator."
 msgstr ""
 
-#: locations/api/sword/views.py:139
+#: locations/api/sword/views.py:186
 msgid "Could not create deposit: contact an administrator."
 msgstr ""
 
-#: locations/api/sword/views.py:152 locations/api/sword/views.py:367
-#: locations/api/sword/views.py:466
+#: locations/api/sword/views.py:204 locations/api/sword/views.py:493
+#: locations/api/sword/views.py:634
 msgid "Error parsing XML."
 msgstr ""
 
-#: locations/api/sword/views.py:158
+#: locations/api/sword/views.py:217
 msgid "relative_path_to_files is set, but source_location is not."
 msgstr ""
 
-#: locations/api/sword/views.py:160
+#: locations/api/sword/views.py:225
 msgid "source_location is set, but relative_path_to_files is not."
 msgstr ""
 
-#: locations/api/sword/views.py:168
+#: locations/api/sword/views.py:244
 msgid "A request body must be sent when creating a deposit."
 msgstr ""
 
-#: locations/api/sword/views.py:170
+#: locations/api/sword/views.py:251
 msgid ""
 "The In-Progress header must be set to either true or false when creating a "
 "deposit."
 msgstr ""
 
-#: locations/api/sword/views.py:172
+#: locations/api/sword/views.py:258
 msgid "This endpoint only responds to the GET and POST HTTP methods."
 msgstr ""
 
-#: locations/api/sword/views.py:187
+#: locations/api/sword/views.py:277
 msgid "source_location, relative_path_to_files or the location were empty"
 msgstr ""
 
-#: locations/api/sword/views.py:259
+#: locations/api/sword/views.py:365
 msgid ""
 "If using CHECKSUM attribute, CHECKSUMTYPE attribute value must be set to MD5 "
 "in XML"
 msgstr ""
 
-#: locations/api/sword/views.py:333 locations/api/sword/views.py:435
-#: locations/api/sword/views.py:516
+#: locations/api/sword/views.py:447 locations/api/sword/views.py:590
+#: locations/api/sword/views.py:705
 #, python-format
 msgid "Deposit location %(uuid)s does not exist."
 msgstr ""
 
-#: locations/api/sword/views.py:336 locations/api/sword/views.py:438
+#: locations/api/sword/views.py:452 locations/api/sword/views.py:595
 msgid "This deposit has already been submitted for processing."
 msgstr ""
 
-#: locations/api/sword/views.py:388 locations/api/sword/views.py:502
+#: locations/api/sword/views.py:522 locations/api/sword/views.py:686
 msgid ""
 "This endpoint only responds to the GET, POST, PUT, and DELETE HTTP methods."
 msgstr ""
 
-#: locations/api/sword/views.py:403
+#: locations/api/sword/views.py:548
 msgid "Downloading not yet complete or errors were encountered."
 msgstr ""
 
-#: locations/api/sword/views.py:405
+#: locations/api/sword/views.py:555
 msgid ""
 "The In-Progress header must be set to false when starting deposit processing."
 msgstr ""
 
-#: locations/api/sword/views.py:468
+#: locations/api/sword/views.py:638
 msgid "No METS body content sent."
 msgstr ""
 
-#: locations/api/sword/views.py:487
+#: locations/api/sword/views.py:663
 #, python-format
 msgid "The path to this file (%(path)s) does not exist."
 msgstr ""
 
-#: locations/api/sword/views.py:521
+#: locations/api/sword/views.py:711
 #, python-format
 msgid "Deposit initiation: %(status)s"
 msgstr ""
 
-#: locations/api/sword/views.py:548
+#: locations/api/sword/views.py:746
 msgid "This endpoint only responds to the GET HTTP method."
 msgstr ""
 
-#: locations/api/sword/views.py:574
+#: locations/api/sword/views.py:776
 msgid "File does not exist."
 msgstr ""
 
-#: locations/api/sword/views.py:578
+#: locations/api/sword/views.py:782
 msgid "File already exists."
 msgstr ""
 
-#: locations/api/sword/views.py:586
+#: locations/api/sword/views.py:790
 msgid "No filename found in Content-disposition header."
 msgstr ""
 
-#: locations/api/sword/views.py:588
+#: locations/api/sword/views.py:794
 msgid "Content-disposition must be set in request header."
 msgstr ""
 
-#: locations/api/sword/views.py:604
+#: locations/api/sword/views.py:817
 #, python-format
 msgid ""
 "MD5 checksum of uploaded file (%(uploaded_md5sum)s) does not match checksum "
 "provided in header (%(header_md5sum)s)."
 msgstr ""
 
-#: locations/forms.py:67
+#: locations/forms.py:73
 msgid "Default Locations:"
 msgstr ""
 
-#: locations/forms.py:68
+#: locations/forms.py:74
 msgid "Enabled if default locations should be created for this pipeline"
 msgstr ""
 
-#: locations/forms.py:122
-msgid "Integration with Dataverse is currently a beta feature"
-msgstr ""
-
-#: locations/forms.py:153
+#: locations/forms.py:173
 msgid ""
 "The ArchivesSpace fields are optional. Leaving any of these fields blank "
 "will prevent ArchivesSpace linking requests from being sent, unless the "
 "metadata is included in the packages METS file in a dmdSec."
 msgstr ""
 
-#: locations/forms.py:231
+#: locations/forms.py:270
 msgid "Set as global default location for its purpose"
 msgstr ""
 
-#: locations/forms.py:286
+#: locations/forms.py:332
 msgid ""
 "Path to location, relative to the storage space's path. Optional. Filter "
 "Dataverse by matches and/or Dataverse subtree."
 msgstr ""
 
-#: locations/forms.py:299
+#: locations/forms.py:346
 msgid "Only AIP storage locations can have replicators"
 msgstr ""
 
-#: locations/forms.py:321
+#: locations/forms.py:375
 #, python-format
 msgid "Pipeline(s) %(pipelines)s already have an AIP recovery location."
 msgstr ""
 
-#: locations/forms.py:328
+#: locations/forms.py:385
 msgid "Invalid purpose"
 msgstr ""
 
-#: locations/forms.py:354
+#: locations/forms.py:455
+msgid "Headers (key/value)"
+msgstr ""
+
+#: locations/forms.py:521
 msgid "Metadata re-ingest"
 msgstr ""
 
-#: locations/forms.py:355
+#: locations/forms.py:522
 msgid "Partial re-ingest"
 msgstr ""
 
-#: locations/forms.py:356
+#: locations/forms.py:523
 msgid "Full re-ingest"
 msgstr ""
 
-#: locations/forms.py:359 locations/models/location.py:62
+#: locations/forms.py:527 locations/models/location.py:71
 #: templates/locations/package_request.html:17
 #: templates/locations/package_request.html:59
 #: templates/snippets/locations_table.html:7
 msgid "Pipeline"
 msgstr ""
 
-#: locations/forms.py:360
+#: locations/forms.py:530
 msgid "Reingest type"
 msgstr ""
 
-#: locations/forms.py:362
+#: locations/forms.py:535
 msgid "Processing config"
 msgstr ""
 
-#: locations/forms.py:363
+#: locations/forms.py:536
 msgid "Optional: The processing config is only used with full re-ingest"
 msgstr ""
 
-#: locations/models/arkivum.py:40 locations/models/dataverse.py:32
-#: locations/models/duracloud.py:30
+#: locations/models/arkivum.py:45 locations/models/dataverse.py:32
+#: locations/models/duracloud.py:36
 msgid "Host"
 msgstr ""
 
-#: locations/models/arkivum.py:41
+#: locations/models/arkivum.py:47
 msgid "Hostname of the Arkivum web instance. Eg. arkivum.example.com:8443"
 msgstr ""
 
-#: locations/models/arkivum.py:44 locations/models/pipeline_local.py:32
+#: locations/models/arkivum.py:55 locations/models/pipeline_local.py:34
 msgid "Remote user"
 msgstr ""
 
-#: locations/models/arkivum.py:45
+#: locations/models/arkivum.py:57
 msgid ""
 "Optional: Username on the remote machine accessible via passwordless ssh."
 msgstr ""
 
-#: locations/models/arkivum.py:47 locations/models/nfs.py:24
-#: locations/models/pipeline.py:44 locations/models/pipeline_local.py:35
+#: locations/models/arkivum.py:64 locations/models/nfs.py:27
+#: locations/models/pipeline.py:65 locations/models/pipeline_local.py:39
 #: templates/locations/pipeline_detail.html:12
 msgid "Remote name"
 msgstr ""
 
-#: locations/models/arkivum.py:48
+#: locations/models/arkivum.py:65
 msgid "Optional: Name or IP of the remote machine."
 msgstr ""
 
-#: locations/models/arkivum.py:51 locations/models/space.py:147
+#: locations/models/arkivum.py:69 locations/models/space.py:154
 msgid "Arkivum"
 msgstr ""
 
-#: locations/models/arkivum.py:142
+#: locations/models/arkivum.py:175
 #, python-format
 msgid "Error in connection for POST to %(url)s"
 msgstr ""
 
-#: locations/models/arkivum.py:147
+#: locations/models/arkivum.py:186
 #, python-format
 msgid "Unable to notify Arkivum of %(package)s"
 msgstr ""
 
-#: locations/models/arkivum.py:153
+#: locations/models/arkivum.py:193
 #, python-format
 msgid "Could not get request ID from Arkivum's response %(response)s"
 msgstr ""
 
-#: locations/models/arkivum.py:172
+#: locations/models/arkivum.py:213
 msgid "Unable to contact Arkivum"
 msgstr ""
 
-#: locations/models/arkivum.py:186
+#: locations/models/arkivum.py:237
 msgid "Error fetching package status"
 msgstr ""
 
-#: locations/models/arkivum.py:191 locations/models/arkivum.py:224
+#: locations/models/arkivum.py:244 locations/models/arkivum.py:287
 #, python-format
 msgid "Response from Arkivum server was %(response)s"
 msgstr ""
 
-#: locations/models/arkivum.py:198
+#: locations/models/arkivum.py:253
 msgid "JSON could not be parsed from package info"
 msgstr ""
 
-#: locations/models/arkivum.py:219
+#: locations/models/arkivum.py:280
 msgid "Error fetching file info"
 msgstr ""
 
-#: locations/models/arkivum.py:231
+#: locations/models/arkivum.py:296
 msgid "JSON could not be parsed from file info"
 msgstr ""
 
-#: locations/models/arkivum.py:259
+#: locations/models/arkivum.py:326
 msgid "Replication status: "
 msgstr ""
 
-#: locations/models/arkivum.py:319
+#: locations/models/arkivum.py:403
 #, python-format
 msgid "File %(path)s in package %(package)s"
 msgstr ""
 
-#: locations/models/arkivum.py:321
+#: locations/models/arkivum.py:408
 #, python-format
 msgid "Package %(package)s"
 msgstr ""
 
-#: locations/models/arkivum.py:322
+#: locations/models/arkivum.py:410
 #, python-format
 msgid ""
 "%(item)s with Arkivum ID of %(package_id)s has been requested but is not "
 "available in the Arkivum cache."
 msgstr ""
 
-#: locations/models/arkivum.py:327
+#: locations/models/arkivum.py:419
 msgid "Arkivum file not locally available"
 msgstr ""
 
-#: locations/models/arkivum.py:359
+#: locations/models/arkivum.py:453
 msgid "Arkivum fixity check in progress"
 msgstr ""
 
-#: locations/models/arkivum.py:362
+#: locations/models/arkivum.py:456
 msgid "invalid bag"
 msgstr ""
 
-#: locations/models/async.py:20
+#: locations/models/async.py:22
 msgid "Completed"
 msgstr ""
 
-#: locations/models/async.py:21
+#: locations/models/async.py:23
 msgid "True if this task has finished."
 msgstr ""
 
-#: locations/models/async.py:24
+#: locations/models/async.py:28
 msgid "Was there an exception?"
 msgstr ""
 
-#: locations/models/async.py:25
+#: locations/models/async.py:29
 msgid "True if this task threw an exception."
 msgstr ""
 
-#: locations/models/async.py:55
+#: locations/models/async.py:63
 msgid "Async"
 msgstr ""
 
-#: locations/models/dataverse.py:34
+#: locations/models/dataverse.py:33
 msgid "Hostname of the Dataverse instance. Eg. apitest.dataverse.org"
 msgstr ""
 
-#: locations/models/dataverse.py:39 locations/models/pipeline.py:52
+#: locations/models/dataverse.py:37 locations/models/pipeline.py:81
 #: templates/administration/user_detail.html:18
 #: templates/administration/user_form.html:30
 msgid "API key"
 msgstr ""
 
-#: locations/models/dataverse.py:41
+#: locations/models/dataverse.py:39
 msgid ""
 "API key for Dataverse instance. Eg. b84d6b87-7b1e-4a30-a374-87191dbbbe2d"
 msgstr ""
 
-#: locations/models/dataverse.py:47
+#: locations/models/dataverse.py:45
 msgid "Agent name"
 msgstr ""
 
-#: locations/models/dataverse.py:48
+#: locations/models/dataverse.py:46
 msgid "Agent name for premis:agentName in Archivematica"
 msgstr ""
 
-#: locations/models/dataverse.py:52
+#: locations/models/dataverse.py:50
 msgid "Agent type"
 msgstr ""
 
-#: locations/models/dataverse.py:53
+#: locations/models/dataverse.py:51
 msgid "Agent type for premis:agentType in Archivematica"
 msgstr ""
 
-#: locations/models/dataverse.py:57
+#: locations/models/dataverse.py:55
 msgid "Agent identifier"
 msgstr ""
 
-#: locations/models/dataverse.py:59
+#: locations/models/dataverse.py:57
 msgid "URI agent identifier for premis:agentIdentifierValue in Archivematica"
 msgstr ""
 
-#: locations/models/dataverse.py:66 locations/models/space.py:148
+#: locations/models/dataverse.py:63 locations/models/space.py:155
 msgid "Dataverse"
 msgstr ""
 
-#: locations/models/dataverse.py:148 locations/models/dataverse.py:194
+#: locations/models/dataverse.py:146 locations/models/dataverse.py:184
 #, python-format
 msgid "Unable to fetch datasets from %(url)s"
 msgstr ""
 
-#: locations/models/dataverse.py:156 locations/models/dataverse.py:202
+#: locations/models/dataverse.py:154 locations/models/dataverse.py:192
 #, python-format
 msgid "Unable to parse JSON from response to %(url)s"
 msgstr ""
 
-#: locations/models/dataverse.py:225
+#: locations/models/dataverse.py:209
 #, python-format
 msgid "Invalid value for src_path: %(value)s. Must be a numeric entity_id"
 msgstr ""
 
-#: locations/models/dataverse.py:237
+#: locations/models/dataverse.py:221
 #, python-format
 msgid "Unable to fetch dataset %(path)s from %(url)s"
 msgstr ""
 
-#: locations/models/dataverse.py:245
+#: locations/models/dataverse.py:228
 #, python-format
 msgid "Unable parse JSON from response to %s"
 msgstr ""
 
-#: locations/models/dspace.py:40 locations/models/lockssomatic.py:37
+#: locations/models/dspace.py:46 locations/models/lockssomatic.py:45
 msgid "Service Document IRI"
 msgstr ""
 
-#: locations/models/dspace.py:41
+#: locations/models/dspace.py:48
 msgid ""
 "URL of the service document. E.g. http://demo.dspace.org/swordv2/"
 "servicedocument"
 msgstr ""
 
-#: locations/models/dspace.py:42 locations/models/dspace_rest.py:67
-#: locations/models/duracloud.py:32
-#: templates/locations/package_request.html:18
+#: locations/models/dspace.py:53 locations/models/dspace_rest.py:71
+#: locations/models/duracloud.py:41 templates/locations/package_request.html:18
 #: templates/locations/package_request.html:60
 msgid "User"
 msgstr ""
 
-#: locations/models/dspace.py:42 locations/models/dspace_rest.py:68
+#: locations/models/dspace.py:54 locations/models/dspace_rest.py:72
 msgid "DSpace username to authenticate as"
 msgstr ""
 
-#: locations/models/dspace.py:43 locations/models/dspace_rest.py:72
-#: locations/models/duracloud.py:33 locations/models/swift.py:36
+#: locations/models/dspace.py:58 locations/models/dspace_rest.py:77
+#: locations/models/duracloud.py:46 locations/models/swift.py:46
 msgid "Password"
 msgstr ""
 
-#: locations/models/dspace.py:43 locations/models/dspace_rest.py:73
+#: locations/models/dspace.py:59 locations/models/dspace_rest.py:78
 msgid "DSpace password to authenticate with"
 msgstr ""
 
-#: locations/models/dspace.py:46
+#: locations/models/dspace.py:65
 msgid "Restricted metadata policy"
 msgstr ""
 
-#: locations/models/dspace.py:48
+#: locations/models/dspace.py:67
 msgid ""
 "Policy for restricted access metadata policy. Must be specified as a list of "
 "objects in JSON. This will override existing policies. Example: [{\"action\":"
 "\"READ\",\"groupId\":\"5\",\"rpType\":\"TYPE_CUSTOM\"}]"
 msgstr ""
 
-#: locations/models/dspace.py:59
+#: locations/models/dspace.py:81
 msgid "Archive format"
 msgstr ""
 
-#: locations/models/dspace.py:64 locations/models/space.py:150
+#: locations/models/dspace.py:87 locations/models/space.py:157
 msgid "DSpace via SWORD2 API"
 msgstr ""
 
-#: locations/models/dspace.py:93
+#: locations/models/dspace.py:114
 msgid "Dspace does not implement browse"
 msgstr ""
 
-#: locations/models/dspace.py:96
+#: locations/models/dspace.py:117
 msgid "DSpace does not implement deletion"
 msgstr ""
 
-#: locations/models/dspace.py:100
+#: locations/models/dspace.py:121
 msgid "DSpace does not implement fetching packages"
 msgstr ""
 
-#: locations/models/dspace.py:249
+#: locations/models/dspace.py:318
 msgid "Storing in DSpace does not support uncompressed AIPs"
 msgstr ""
 
-#: locations/models/dspace_rest.py:62
+#: locations/models/dspace_rest.py:65
 msgid "REST URL"
 msgstr ""
 
-#: locations/models/dspace_rest.py:63
+#: locations/models/dspace_rest.py:66
 msgid "URL of the REST API. E.g. http://demo.dspace.org/rest"
 msgstr ""
 
-#: locations/models/dspace_rest.py:77
+#: locations/models/dspace_rest.py:83
 msgid "Default DSpace DIP collection id"
 msgstr ""
 
-#: locations/models/dspace_rest.py:78
+#: locations/models/dspace_rest.py:85
 msgid "UUID of default DSpace collection for the DIP to be deposited to"
 msgstr ""
 
-#: locations/models/dspace_rest.py:83
+#: locations/models/dspace_rest.py:91
 msgid "Default DSpace AIP collection id"
 msgstr ""
 
-#: locations/models/dspace_rest.py:84
+#: locations/models/dspace_rest.py:93
 msgid "UUID of default DSpace collection for the AIP to be deposited to"
 msgstr ""
 
-#: locations/models/dspace_rest.py:90
+#: locations/models/dspace_rest.py:100
 msgid "ArchivesSpace URL"
 msgstr ""
 
-#: locations/models/dspace_rest.py:91
+#: locations/models/dspace_rest.py:102
 msgid ""
 "URL of ArchivesSpace server. E.g. http://sandbox.archivesspace.org:8089/ "
 "(default port 8089 if omitted)"
 msgstr ""
 
-#: locations/models/dspace_rest.py:98
+#: locations/models/dspace_rest.py:111
 msgid "ArchivesSpace user"
 msgstr ""
 
-#: locations/models/dspace_rest.py:99
+#: locations/models/dspace_rest.py:112
 msgid "ArchivesSpace username to authenticate as"
 msgstr ""
 
-#: locations/models/dspace_rest.py:104
+#: locations/models/dspace_rest.py:118
 msgid "ArchivesSpace password"
 msgstr ""
 
-#: locations/models/dspace_rest.py:105
+#: locations/models/dspace_rest.py:119
 msgid "ArchivesSpace password to authenticate with"
 msgstr ""
 
-#: locations/models/dspace_rest.py:110
+#: locations/models/dspace_rest.py:125
 msgid "Default ArchivesSpace repository"
 msgstr ""
 
-#: locations/models/dspace_rest.py:111
+#: locations/models/dspace_rest.py:126
 msgid "Identifier of the default ArchivesSpace repository"
 msgstr ""
 
-#: locations/models/dspace_rest.py:116
+#: locations/models/dspace_rest.py:132
 msgid "Default ArchivesSpace archival object"
 msgstr ""
 
-#: locations/models/dspace_rest.py:117
+#: locations/models/dspace_rest.py:133
 msgid "Identifier of the default ArchivesSpace archival object"
 msgstr ""
 
-#: locations/models/dspace_rest.py:120
+#: locations/models/dspace_rest.py:139
 msgid "Verify SSL certificates?"
 msgstr ""
 
-#: locations/models/dspace_rest.py:121
+#: locations/models/dspace_rest.py:140
 msgid "If checked, HTTPS requests will verify the SSL certificates"
 msgstr ""
 
-#: locations/models/dspace_rest.py:126
+#: locations/models/dspace_rest.py:146
 msgid "Send AIP to Tivoli Storage Manager?"
 msgstr ""
 
-#: locations/models/dspace_rest.py:127
+#: locations/models/dspace_rest.py:148
 msgid ""
 "If checked, will attempt to send the AIP to the Tivoli Storage Manager using "
 "command-line client dsmc, which must be installed manually"
 msgstr ""
 
-#: locations/models/dspace_rest.py:132 locations/models/space.py:151
+#: locations/models/dspace_rest.py:155 locations/models/space.py:158
 msgid "DSpace via REST API"
 msgstr ""
 
-#: locations/models/duracloud.py:31
+#: locations/models/duracloud.py:37
 msgid "Hostname of the DuraCloud instance. Eg. trial.duracloud.org"
 msgstr ""
 
-#: locations/models/duracloud.py:32
+#: locations/models/duracloud.py:42
 msgid "Username to authenticate as"
 msgstr ""
 
-#: locations/models/duracloud.py:33 locations/models/swift.py:37
+#: locations/models/duracloud.py:47 locations/models/swift.py:47
 msgid "Password to authenticate with"
 msgstr ""
 
-#: locations/models/duracloud.py:34
+#: locations/models/duracloud.py:51
 msgid "Duraspace"
 msgstr ""
 
-#: locations/models/duracloud.py:34
+#: locations/models/duracloud.py:52
 msgid "Name of the Space within DuraCloud"
 msgstr ""
 
-#: locations/models/duracloud.py:37 locations/models/space.py:149
+#: locations/models/duracloud.py:56 locations/models/space.py:156
 msgid "DuraCloud"
 msgstr ""
 
-#: locations/models/duracloud.py:80 locations/models/duracloud.py:110
+#: locations/models/duracloud.py:108 locations/models/duracloud.py:140
 #, python-format
 msgid "Unable to get list of files in %(prefix)s"
 msgstr ""
 
-#: locations/models/duracloud.py:235
+#: locations/models/duracloud.py:275
 #, python-format
 msgid ""
 "File %(path)s does not match expected size of %(expected_size)s bytes, but "
 "was actually %(actual_size)s bytes"
 msgstr ""
 
-#: locations/models/duracloud.py:282
+#: locations/models/duracloud.py:330
 msgid "End of file reached"
 msgstr ""
 
-#: locations/models/duracloud.py:405
+#: locations/models/duracloud.py:469
 #, python-format
 msgid "Unable to store %(filename)s"
 msgstr ""
 
-#: locations/models/duracloud.py:425
+#: locations/models/duracloud.py:493
 #, python-format
 msgid "%(path)s does not exist."
 msgstr ""
 
-#: locations/models/duracloud.py:427
+#: locations/models/duracloud.py:497
 #, python-format
 msgid "%(path)s is not a file or directory."
 msgstr ""
 
-#: locations/models/event.py:33
+#: locations/models/event.py:36
 msgid "delete"
 msgstr ""
 
-#: locations/models/event.py:34
+#: locations/models/event.py:36
 msgid "recover"
 msgstr ""
 
-#: locations/models/event.py:45 templates/locations/package_request.html:19
+#: locations/models/event.py:46 templates/locations/package_request.html:19
 msgid "Submitted"
 msgstr ""
 
-#: locations/models/event.py:46
+#: locations/models/event.py:47
 msgid "Approved"
 msgstr ""
 
-#: locations/models/event.py:47
+#: locations/models/event.py:48
 msgid "Rejected"
 msgstr ""
 
-#: locations/models/event.py:56 locations/models/event.py:89
-#: templates/locations/callback_detail.html:11
+#: locations/models/event.py:59 locations/models/event.py:104
+#: templates/locations/callback_detail.html:10
 #: templates/snippets/callbacks_table.html:5
 msgid "Event"
 msgstr ""
 
-#: locations/models/event.py:60
+#: locations/models/event.py:63
 #, python-format
 msgid "%(event_status)s request to %(event_type)s %(package)s"
 msgstr ""
 
-#: locations/models/event.py:86 templates/locations/callback_detail.html:10
+#: locations/models/event.py:79 templates/locations/callback_form.html:10
+msgid "Post-store AIP (source files)"
+msgstr ""
+
+#: locations/models/event.py:80
+msgid "Post-store AIP"
+msgstr ""
+
+#: locations/models/event.py:81
+msgid "Post-store AIC"
+msgstr ""
+
+#: locations/models/event.py:82
+msgid "Post-store DIP"
+msgstr ""
+
+#: locations/models/event.py:98 templates/locations/callback_detail.html:11
 #: templates/snippets/callbacks_table.html:6
 msgid "URI"
 msgstr ""
 
-#: locations/models/event.py:87
+#: locations/models/event.py:99
 msgid "URL to contact upon callback execution."
 msgstr ""
 
-#: locations/models/event.py:90
+#: locations/models/event.py:105
 msgid "Type of event when this callback should be executed."
 msgstr ""
 
-#: locations/models/event.py:92 templates/snippets/callbacks_table.html:7
+#: locations/models/event.py:110 templates/snippets/callbacks_table.html:7
 msgid "Method"
 msgstr ""
 
-#: locations/models/event.py:93
+#: locations/models/event.py:111
 msgid "HTTP request method to use in connecting to the URL."
 msgstr ""
 
-#: locations/models/event.py:95
+#: locations/models/event.py:116 templates/locations/callback_detail.html:23
+msgid "Body"
+msgstr ""
+
+#: locations/models/event.py:118
+msgid ""
+"Body content for each request. Set the 'Content-type' header accordingly."
+msgstr ""
+
+#: locations/models/event.py:124 templates/locations/callback_detail.html:13
+msgid "Headers"
+msgstr ""
+
+#: locations/models/event.py:125
+msgid "Headers for each request."
+msgstr ""
+
+#: locations/models/event.py:129
 msgid "Expected Status"
 msgstr ""
 
-#: locations/models/event.py:96
+#: locations/models/event.py:131
 msgid ""
 "Expected HTTP response from the server, used to validate the callback "
 "response."
 msgstr ""
 
-#: locations/models/event.py:98 locations/models/location.py:77
-#: locations/models/pipeline.py:55 templates/locations/callback_detail.html:14
+#: locations/models/event.py:136 locations/models/location.py:98
+#: locations/models/pipeline.py:86 templates/locations/callback_detail.html:25
 #: templates/locations/location_detail.html:16
 #: templates/locations/pipeline_detail.html:14
 #: templates/snippets/callbacks_table.html:10
@@ -1081,111 +1160,111 @@ msgstr ""
 msgid "Enabled"
 msgstr ""
 
-#: locations/models/event.py:99
+#: locations/models/event.py:137
 msgid "Enabled if this callback should be executed."
 msgstr ""
 
-#: locations/models/event.py:102
+#: locations/models/event.py:141
 msgid "Callback"
 msgstr ""
 
-#: locations/models/event.py:135 locations/models/fedora.py:55
-#: locations/models/fedora.py:103 locations/models/location.py:29
-#: locations/models/package.py:49 locations/models/space.py:127
+#: locations/models/event.py:186 locations/models/fedora.py:61
+#: locations/models/fedora.py:113 locations/models/location.py:30
+#: locations/models/package.py:62 locations/models/space.py:133
 msgid "Unique identifier"
 msgstr ""
 
-#: locations/models/event.py:140
+#: locations/models/event.py:192
 msgid "Unique identifier of originating unit"
 msgstr ""
 
-#: locations/models/event.py:145
+#: locations/models/event.py:198
 msgid "Accession ID of originating transfer"
 msgstr ""
 
-#: locations/models/event.py:147
+#: locations/models/event.py:205
 msgid "Unique identifier of originating Archivematica dashboard"
 msgstr ""
 
-#: locations/models/event.py:150 templates/locations/package_request.html:14
+#: locations/models/event.py:209 templates/locations/package_request.html:14
 #: templates/locations/package_request.html:56
 msgid "File"
 msgstr ""
 
-#: locations/models/fedora.py:23
+#: locations/models/fedora.py:26
 msgid "Fedora user"
 msgstr ""
 
-#: locations/models/fedora.py:24
+#: locations/models/fedora.py:27
 msgid "Fedora user name (for SWORD functionality)"
 msgstr ""
 
-#: locations/models/fedora.py:26
+#: locations/models/fedora.py:31
 msgid "Fedora password"
 msgstr ""
 
-#: locations/models/fedora.py:27
+#: locations/models/fedora.py:32
 msgid "Fedora password (for SWORD functionality)"
 msgstr ""
 
-#: locations/models/fedora.py:29
+#: locations/models/fedora.py:36
 msgid "Fedora name"
 msgstr ""
 
-#: locations/models/fedora.py:30
+#: locations/models/fedora.py:37
 msgid "Name or IP of the remote Fedora machine."
 msgstr ""
 
-#: locations/models/fedora.py:33
+#: locations/models/fedora.py:41
 msgid "FEDORA"
 msgstr ""
 
-#: locations/models/fedora.py:63
+#: locations/models/fedora.py:70
 msgid "Package Download Task"
 msgstr ""
 
-#: locations/models/fedora.py:67
+#: locations/models/fedora.py:74
 #, python-format
 msgid "PackageDownloadTask ID: %(uuid)s for %(package)s"
 msgstr ""
 
-#: locations/models/fedora.py:110
+#: locations/models/fedora.py:126
 msgid "True if file downloaded successfully."
 msgstr ""
 
-#: locations/models/fedora.py:112
+#: locations/models/fedora.py:129
 msgid "True if file failed to download."
 msgstr ""
 
-#: locations/models/fedora.py:115
+#: locations/models/fedora.py:133
 msgid "Package Download Task File"
 msgstr ""
 
-#: locations/models/fedora.py:119
+#: locations/models/fedora.py:137
 #, python-format
 msgid "Download %(filename)s from %(url)s (%(status)s"
 msgstr ""
 
-#: locations/models/fixity_log.py:23
+#: locations/models/fixity_log.py:24
 msgid "Fixity Log"
 msgstr ""
 
-#: locations/models/fixity_log.py:27
+#: locations/models/fixity_log.py:28
 #, python-format
 msgid "Fixity check of %(package)s"
 msgstr ""
 
-#: locations/models/gpg.py:76
+#: locations/models/gpg.py:73
 msgid "GnuPG Private Key"
 msgstr ""
 
-#: locations/models/gpg.py:77
+#: locations/models/gpg.py:75
 msgid ""
 "The GnuPG private key that will be able to decrypt packages stored in this "
 "space."
 msgstr ""
 
-#: locations/models/gpg.py:81 locations/models/space.py:153
+#: locations/models/gpg.py:81 locations/models/space.py:160
 msgid "GPG encryption on Local Filesystem"
 msgstr ""
 
@@ -1193,478 +1272,459 @@ msgstr ""
 msgid "locations"
 msgstr ""
 
-#: locations/models/gpg.py:114
+#: locations/models/gpg.py:113
 #, python-format
 msgid ""
 "Unable to move %(src_path)s; this file/dir does not exist; nor is it in an "
 "encrypted directory."
 msgstr ""
 
-#: locations/models/gpg.py:123
+#: locations/models/gpg.py:124
 #, python-format
 msgid ""
 "Unable to move %(src_path)s; this file/dir does not exist, not even in "
 "encrypted directory %(encr_path)s."
 msgstr ""
 
-#: locations/models/gpg.py:143
+#: locations/models/gpg.py:146
 msgid "GPG spaces can only contain packages"
 msgstr ""
 
-#: locations/models/gpg.py:246
+#: locations/models/gpg.py:257
 #, python-format
 msgid "An error occured when attempting to encrypt %(path)s"
 msgstr ""
 
-#: locations/models/gpg.py:292
+#: locations/models/gpg.py:296
 #, python-format
 msgid "Failed to create a tarfile at %(tarpath)s for dir at %(path)s"
 msgstr ""
 
-#: locations/models/gpg.py:326
+#: locations/models/gpg.py:333
 #, python-format
 msgid "Failed to extract %(tarpath)s to a directory at the same location."
 msgstr ""
 
-#: locations/models/gpg.py:399
+#: locations/models/gpg.py:375
 #, python-format
 msgid "Cannot decrypt file at %(path)s; no such file."
 msgstr ""
 
-#: locations/models/gpg.py:410
+#: locations/models/gpg.py:386
 #, python-format
 msgid "Failed to decrypt %(path)s. Reason: %(reason)s"
 msgstr ""
 
-#: locations/models/local_filesystem.py:23 locations/models/space.py:154
+#: locations/models/local_filesystem.py:25 locations/models/space.py:161
 msgid "Local Filesystem"
 msgstr ""
 
-#: locations/models/location.py:45
+#: locations/models/location.py:50
 msgid "AIP Recovery"
 msgstr ""
 
-#: locations/models/location.py:46
+#: locations/models/location.py:51
 msgid "AIP Storage"
 msgstr ""
 
-#: locations/models/location.py:47
+#: locations/models/location.py:52
 msgid "Currently Processing"
 msgstr ""
 
-#: locations/models/location.py:48
+#: locations/models/location.py:53
 msgid "DIP Storage"
 msgstr ""
 
-#: locations/models/location.py:49
+#: locations/models/location.py:54
 msgid "FEDORA Deposits"
 msgstr ""
 
-#: locations/models/location.py:51
+#: locations/models/location.py:56
 msgid "Storage Service Internal Processing"
 msgstr ""
 
-#: locations/models/location.py:52
+#: locations/models/location.py:57
 msgid "Transfer Backlog"
 msgstr ""
 
-#: locations/models/location.py:53
+#: locations/models/location.py:58
 msgid "Transfer Source"
 msgstr ""
 
-#: locations/models/location.py:54
+#: locations/models/location.py:59
 msgid "Replicator"
 msgstr ""
 
-#: locations/models/location.py:58 templates/locations/location_detail.html:11
+#: locations/models/location.py:64 templates/locations/location_detail.html:11
 #: templates/snippets/locations_table.html:5
 msgid "Purpose"
 msgstr ""
 
-#: locations/models/location.py:59
+#: locations/models/location.py:65
 msgid "Purpose of the space.  Eg. AIP storage, Transfer source"
 msgstr ""
 
-#: locations/models/location.py:63
+#: locations/models/location.py:72
 msgid "UUID of the Archivematica instance using this location."
 msgstr ""
 
-#: locations/models/location.py:66
+#: locations/models/location.py:76
 msgid "Path to location, relative to the storage space's path."
 msgstr ""
 
-#: locations/models/location.py:69 locations/models/package.py:52
+#: locations/models/location.py:84 locations/models/package.py:69
 msgid "Human-readable description."
 msgstr ""
 
-#: locations/models/location.py:72
+#: locations/models/location.py:91
 msgid "Size, in bytes (optional)"
 msgstr ""
 
-#: locations/models/location.py:74 locations/models/space.py:169
+#: locations/models/location.py:94 locations/models/space.py:182
 msgid "Used"
 msgstr ""
 
-#: locations/models/location.py:75
+#: locations/models/location.py:94
 msgid "Amount used, in bytes."
 msgstr ""
 
-#: locations/models/location.py:78
+#: locations/models/location.py:99
 msgid "True if space can be accessed."
 msgstr ""
 
-#: locations/models/location.py:83
+#: locations/models/location.py:105
 msgid "Replicators"
 msgstr ""
 
-#: locations/models/location.py:84
+#: locations/models/location.py:107
 msgid ""
 "Other locations that will be used to create replicas of the packages stored "
 "in this location"
 msgstr ""
 
-#: locations/models/location.py:88
+#: locations/models/location.py:113
 msgid "Location"
 msgstr ""
 
-#: locations/models/location.py:101
+#: locations/models/location.py:126
 #, python-format
 msgid "%(uuid)s: %(path)s (%(purpose)s)"
 msgstr ""
 
-#: locations/models/location.py:174
+#: locations/models/location.py:210
 msgid "Location associated with a Pipeline"
 msgstr ""
 
-#: locations/models/location.py:178
+#: locations/models/location.py:214
 #, python-format
 msgid "%(location)s is associated with %(pipeline)s"
 msgstr ""
 
-#: locations/models/lockssomatic.py:35
+#: locations/models/lockssomatic.py:38
 msgid "AU Size"
 msgstr ""
 
-#: locations/models/lockssomatic.py:36
+#: locations/models/lockssomatic.py:41
 msgid "Size in bytes of an Allocation Unit"
 msgstr ""
 
-#: locations/models/lockssomatic.py:38
+#: locations/models/lockssomatic.py:47
 msgid ""
 "URL of LOCKSS-o-matic service document IRI, eg. http://lockssomatic.example."
 "org/api/sword/2.0/sd-iri"
 msgstr ""
 
-#: locations/models/lockssomatic.py:39
+#: locations/models/lockssomatic.py:54
 msgid "Collection IRI"
 msgstr ""
 
-#: locations/models/lockssomatic.py:40
+#: locations/models/lockssomatic.py:56
 msgid ""
 "URL to post the packages to, eg. http://lockssomatic.example.org/api/"
 "sword/2.0/col-iri/12"
 msgstr ""
 
-#: locations/models/lockssomatic.py:42
+#: locations/models/lockssomatic.py:61
 msgid "Content Provider ID"
 msgstr ""
 
-#: locations/models/lockssomatic.py:43
+#: locations/models/lockssomatic.py:62
 msgid "On-Behalf-Of value when communicating with LOCKSS-o-matic"
 msgstr ""
 
-#: locations/models/lockssomatic.py:44
+#: locations/models/lockssomatic.py:65
 msgid "Externally available domain"
 msgstr ""
 
-#: locations/models/lockssomatic.py:45
+#: locations/models/lockssomatic.py:67
 msgid ""
 "Base URL for this server that LOCKSS will be able to access.  Probably the "
 "URL for the home page of the Storage Service."
 msgstr ""
 
-#: locations/models/lockssomatic.py:46
+#: locations/models/lockssomatic.py:74
 msgid "Checksum type"
 msgstr ""
 
-#: locations/models/lockssomatic.py:46
+#: locations/models/lockssomatic.py:76
 msgid ""
 "Checksum type to send to LOCKSS-o-matic for verification.  Eg. md5, sha1, "
 "sha256"
 msgstr ""
 
-#: locations/models/lockssomatic.py:47
+#: locations/models/lockssomatic.py:82
 msgid "Keep local copy?"
 msgstr ""
 
-#: locations/models/lockssomatic.py:48
+#: locations/models/lockssomatic.py:84
 msgid ""
 "If checked, keep a local copy even after the AIP is stored in the LOCKSS "
 "network."
 msgstr ""
 
-#: locations/models/lockssomatic.py:51 locations/models/space.py:155
+#: locations/models/lockssomatic.py:89 locations/models/space.py:162
 msgid "LOCKSS-o-matic"
 msgstr ""
 
-#: locations/models/lockssomatic.py:133
+#: locations/models/lockssomatic.py:181
 msgid "Unable to contact Lockss-o-matic"
 msgstr ""
 
-#: locations/models/lockssomatic.py:136
+#: locations/models/lockssomatic.py:184
 msgid "Error contacting LOCKSS-o-matic."
 msgstr ""
 
-#: locations/models/lockssomatic.py:143
+#: locations/models/lockssomatic.py:194
 msgid "Error polling LOCKSS-o-matic for SWORD statement."
 msgstr ""
 
-#: locations/models/lockssomatic.py:155
+#: locations/models/lockssomatic.py:209
 msgid "LOCKSS servers not in agreement"
 msgstr ""
 
-#: locations/models/lockssomatic.py:238
+#: locations/models/lockssomatic.py:316
 msgid ""
 "Lockss-o-matic is updating the config to stop harvesting.  Please try again "
 "to delete local files."
 msgstr ""
 
-#: locations/models/lockssomatic.py:240
+#: locations/models/lockssomatic.py:319
 #, python-format
 msgid "Package %(uuid)s is not found in LOCKSS"
 msgstr ""
 
-#: locations/models/lockssomatic.py:242
+#: locations/models/lockssomatic.py:324
 msgid ""
 "There are files in the LOCKSS Archival Unit (AU) that do not have "
 "'recrawl=false'."
 msgstr ""
 
-#: locations/models/lockssomatic.py:243
+#: locations/models/lockssomatic.py:327
 #, python-format
 msgid "Error %(error)s when requesting LOCKSS stop harvesting deleted files."
 msgstr ""
 
-#: locations/models/lockssomatic.py:281
+#: locations/models/lockssomatic.py:372
 msgid "AIP deleted from local storage"
 msgstr ""
 
-#: locations/models/lockssomatic.py:388
+#: locations/models/lockssomatic.py:516
 msgid "Error: getting tool info; probably GNU tar"
 msgstr ""
 
-#: locations/models/nfs.py:25
+#: locations/models/nfs.py:28
 msgid "Name of the NFS server."
 msgstr ""
 
-#: locations/models/nfs.py:27
+#: locations/models/nfs.py:31
 msgid "Remote path"
 msgstr ""
 
-#: locations/models/nfs.py:28
+#: locations/models/nfs.py:32
 msgid "Path on the NFS server to the export."
 msgstr ""
 
-#: locations/models/nfs.py:30 templates/administration/base.html:11
+#: locations/models/nfs.py:37 templates/administration/base.html:11
 #: templates/administration/version.html:11
 msgid "Version"
 msgstr ""
 
-#: locations/models/nfs.py:31
+#: locations/models/nfs.py:39
 msgid ""
 "Type of the filesystem, i.e. nfs, or nfs4.         Should match a command in "
 "`mount`."
 msgstr ""
 
-#: locations/models/nfs.py:35
+#: locations/models/nfs.py:45
 msgid "Manually mounted"
 msgstr ""
 
-#: locations/models/nfs.py:39
+#: locations/models/nfs.py:49
 msgid "Network File System (NFS)"
 msgstr ""
 
-#: locations/models/package.py:61
+#: locations/models/package.py:88
 msgid "Size in bytes of the package"
 msgstr ""
 
-#: locations/models/package.py:64
+#: locations/models/package.py:96
 msgid ""
 "The fingerprint of the GPG key used to encrypt the package, if applicable"
 msgstr ""
 
-#: locations/models/package.py:82
+#: locations/models/package.py:121
 msgid "Transfer"
 msgstr ""
 
-#: locations/models/package.py:83
+#: locations/models/package.py:122
 msgid "Single File"
 msgstr ""
 
-#: locations/models/package.py:84
+#: locations/models/package.py:123
 msgid "FEDORA Deposit"
 msgstr ""
 
-#: locations/models/package.py:101
+#: locations/models/package.py:141
 msgid "Upload Pending"
 msgstr ""
 
-#: locations/models/package.py:102
+#: locations/models/package.py:142
 msgid "Staged on Storage Service"
 msgstr ""
 
-#: locations/models/package.py:103
+#: locations/models/package.py:143
 msgid "Uploaded"
 msgstr ""
 
-#: locations/models/package.py:104 locations/models/space.py:178
+#: locations/models/package.py:144 locations/models/space.py:199
 msgid "Verified"
 msgstr ""
 
-#: locations/models/package.py:105
+#: locations/models/package.py:145
 msgid "Failed"
 msgstr ""
 
-#: locations/models/package.py:106
+#: locations/models/package.py:146
 msgid "Delete requested"
 msgstr ""
 
-#: locations/models/package.py:107
+#: locations/models/package.py:147
 msgid "Deleted"
 msgstr ""
 
-#: locations/models/package.py:108
+#: locations/models/package.py:148
 msgid "Deposit Finalized"
 msgstr ""
 
-#: locations/models/package.py:112
+#: locations/models/package.py:154
 msgid "Status of the package in the storage service."
 msgstr ""
 
-#: locations/models/package.py:117
+#: locations/models/package.py:162
 msgid "For storing flexible, often Space-specific, attributes"
 msgstr ""
 
-#: locations/models/package.py:137
-#: templates/locations/package_reingest.html:11
+#: locations/models/package.py:180 templates/locations/package_reingest.html:11
 msgid "Package"
 msgstr ""
 
-#: locations/models/package.py:187
+#: locations/models/package.py:252
 #, python-format
 msgid "Package %(uuid)s (located at %(path)s) does not exist"
 msgstr ""
 
-#: locations/models/package.py:190
+#: locations/models/package.py:258
 #, python-format
 msgid "%(path)s is neither a file nor a directory"
 msgstr ""
 
-#: locations/models/package.py:213
+#: locations/models/package.py:288
 msgid "Cannot return a download path for an uncompressed package"
 msgstr ""
 
-#: locations/models/package.py:302
+#: locations/models/package.py:377
 msgid ""
 "This method currently only retrieves base directories for locally-available "
 "AIPs."
 msgstr ""
 
-#: locations/models/package.py:329
+#: locations/models/package.py:414
 #, python-format
 msgid ""
 "Not enough space for AIP on storage device %(space)s; Used: %(used)s; Size: "
 "%(size)s; AIP size: %(aip_size)s"
 msgstr ""
 
-#: locations/models/package.py:332
+#: locations/models/package.py:429
 #, python-format
 msgid ""
 "AIP too big for quota on %(location)s; Used: %(used)s; Quota: %(quota)s; AIP "
 "size: %(aip_size)s"
 msgstr ""
 
-#: locations/models/package.py:1353
+#: locations/models/package.py:1548
 msgid "Error determining basename during extraction"
 msgstr ""
 
-#: locations/models/package.py:1388
+#: locations/models/package.py:1583
 msgid "Extraction error"
 msgstr ""
 
-#: locations/models/package.py:1426
+#: locations/models/package.py:1625
 #, python-format
 msgid "Algorithm %(algorithm)s not in %(algorithms)s"
 msgstr ""
 
-#: locations/models/package.py:1467
-#, python-format
-msgid "Algorithm %(algorithm)s not implemented"
-msgstr ""
-
-#: locations/models/package.py:1508
-#, python-format
-msgid "No METS found at location: %(path)s"
-msgstr ""
-
-#: locations/models/package.py:1516
-msgid "<mets> element not found in METS file!"
-msgstr ""
-
-#: locations/models/package.py:1523
+#: locations/models/package.py:1712
 msgid "<mets> element did not have an OBJID attribute!"
 msgstr ""
 
-#: locations/models/package.py:1527
+#: locations/models/package.py:1716
 msgid "<metsHdr> element not found in METS file!"
 msgstr ""
 
-#: locations/models/package.py:1532
+#: locations/models/package.py:1722
 msgid "<metsHdr> element did not have a CREATEDATE attribute!"
 msgstr ""
 
-#: locations/models/package.py:1539
+#: locations/models/package.py:1737
 msgid "No <agent> element found!"
 msgstr ""
 
-#: locations/models/package.py:1684
+#: locations/models/package.py:1892
 msgid "Unable to scan; package is not a bag (AIP or AIC)"
 msgstr ""
 
-#: locations/models/package.py:1700
+#: locations/models/package.py:1912
 msgid "Error extracting file"
 msgstr ""
 
-#: locations/models/package.py:1851
-#, python-brace-format
-msgid "This AIP is already being reingested on {pipeline}"
+#: locations/models/package.py:2086
+#, python-format
+msgid "This AIP is already being reingested on %(pipeline)s"
 msgstr ""
 
-#: locations/models/package.py:1925
+#: locations/models/package.py:2182
 #, python-format
 msgid "No currently processing Location is associated with pipeline %(uuid)s"
 msgstr ""
 
-#: locations/models/package.py:1956
+#: locations/models/package.py:2215
 #, python-format
 msgid "Error in approve reingest API. %(error)s"
 msgstr ""
 
-#: locations/models/package.py:1967
+#: locations/models/package.py:2228
 #, python-format
 msgid "Package %(uuid)s sent to pipeline %(pipeline)s for re-ingest"
 msgstr ""
 
-#: locations/models/package.py:2176
+#: locations/models/package.py:2490
 #, python-format
 msgid "%(uuid)s did not match the pipeline this AIP was reingested on."
 msgstr ""
 
-#: locations/models/package.py:2358
-msgid "Unknown compression"
-msgstr ""
-
-#: locations/models/package.py:2707
+#: locations/models/package.py:2982
 #, python-format
 msgid ""
 "Failed to extract compression details for AIP %(aip_uuid)s. This AIP needs a "
@@ -1673,7 +1733,7 @@ msgid ""
 "create one."
 msgstr ""
 
-#: locations/models/pipeline.py:32 templates/locations/pipeline_detail.html:10
+#: locations/models/pipeline.py:40 templates/locations/pipeline_detail.html:10
 #: templates/snippets/callbacks_table.html:9
 #: templates/snippets/locations_table.html:14
 #: templates/snippets/packages_table.html:5
@@ -1681,275 +1741,288 @@ msgstr ""
 msgid "UUID"
 msgstr ""
 
-#: locations/models/pipeline.py:33
+#: locations/models/pipeline.py:41
 msgid "Identifier for the Archivematica pipeline"
 msgstr ""
 
-#: locations/models/pipeline.py:36
+#: locations/models/pipeline.py:46
 msgid ""
 "Needs to be format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx where x is a "
 "hexadecimal digit."
 msgstr ""
 
-#: locations/models/pipeline.py:37
+#: locations/models/pipeline.py:48
 msgid "Invalid UUID"
 msgstr ""
 
-#: locations/models/pipeline.py:41
+#: locations/models/pipeline.py:58
 msgid "Human readable description of the Archivematica instance."
 msgstr ""
 
-#: locations/models/pipeline.py:45
-msgid "Host or IP address of the pipeline server for making API calls."
+#: locations/models/pipeline.py:66
+msgid "Base URL of the pipeline server for making API calls."
 msgstr ""
 
-#: locations/models/pipeline.py:48
+#: locations/models/pipeline.py:73
 msgid "API username"
 msgstr ""
 
-#: locations/models/pipeline.py:49
+#: locations/models/pipeline.py:74
 msgid "Username to use when making API calls to the pipeline."
 msgstr ""
 
-#: locations/models/pipeline.py:53
+#: locations/models/pipeline.py:82
 msgid "API key to use when making API calls to the pipeline."
 msgstr ""
 
-#: locations/models/pipeline.py:56
+#: locations/models/pipeline.py:87
 msgid "Enabled if this pipeline is able to access the storage service."
 msgstr ""
 
-#: locations/models/pipeline.py:177 locations/models/pipeline.py:194
+#: locations/models/pipeline.py:225 locations/models/pipeline.py:259
 #, python-format
 msgid ""
 "Pipeline %(pipeline)s returned an unexpected status code: %(status_code)s"
 msgstr ""
 
-#: locations/models/pipeline.py:179
+#: locations/models/pipeline.py:231
 #, python-format
 msgid "Pipeline %(pipeline)s: empty processing configuration (%(name)s)."
 msgstr ""
 
-#: locations/models/pipeline.py:192
+#: locations/models/pipeline.py:248
 #, python-format
 msgid ""
 "Pipeline %(pipeline)s returned an unexpected status code: %(status_code)s "
 "(%(error)s)"
 msgstr ""
 
-#: locations/models/pipeline.py:205
+#: locations/models/pipeline.py:274
 #, python-format
 msgid ""
 "Pipeline %(pipeline)s could not approve the transfer: %(status_code)s "
 "(%(text)s)"
 msgstr ""
 
-#: locations/models/pipeline.py:218
+#: locations/models/pipeline.py:288
 #, python-format
 msgid ""
 "Pipeline %(pipeline)s could not list unapproved transfers: %(status_code)s "
 "(%(text)s)"
 msgstr ""
 
-#: locations/models/pipeline_local.py:33
+#: locations/models/pipeline_local.py:35
 msgid "Username on the remote machine accessible via ssh"
 msgstr ""
 
-#: locations/models/pipeline_local.py:36
+#: locations/models/pipeline_local.py:40
 msgid "Name or IP of the remote machine."
 msgstr ""
 
-#: locations/models/pipeline_local.py:40
+#: locations/models/pipeline_local.py:46
 msgid "Assume remote host serving files with rsync daemon"
 msgstr ""
 
-#: locations/models/pipeline_local.py:41
+#: locations/models/pipeline_local.py:48
 msgid ""
 "If checked, will use rsync daemon-style commands instead of the default "
 "rsync with remote shell transport"
 msgstr ""
 
-#: locations/models/pipeline_local.py:45
+#: locations/models/pipeline_local.py:59
 msgid "Pipeline Local FS"
 msgstr ""
 
-#: locations/models/s3.py:26
-msgid "S3 Endpoint URL"
-msgstr ""
-
-#: locations/models/s3.py:27
-msgid "S3 Endpoint URL. Eg. https://s3.amazonaws.com"
-msgstr ""
-
-#: locations/models/s3.py:29
+#: locations/models/s3.py:45
 msgid "Access Key ID to authenticate"
 msgstr ""
 
-#: locations/models/s3.py:31
+#: locations/models/s3.py:50
 msgid "Secret Access Key to authenticate with"
 msgstr ""
 
-#: locations/models/s3.py:33 locations/models/swift.py:43
+#: locations/models/s3.py:54
+msgid "S3 Endpoint URL"
+msgstr ""
+
+#: locations/models/s3.py:55
+msgid "S3 Endpoint URL. Eg. https://s3.amazonaws.com"
+msgstr ""
+
+#: locations/models/s3.py:59 locations/models/swift.py:63
 msgid "Region"
 msgstr ""
 
-#: locations/models/s3.py:34
+#: locations/models/s3.py:60
 msgid "Region in S3. Eg. us-east-2"
 msgstr ""
 
-#: locations/models/s3.py:37 locations/models/space.py:159
+#: locations/models/s3.py:64
+msgid "S3 Bucket"
+msgstr ""
+
+#: locations/models/s3.py:66
+msgid "S3 Bucket Name"
+msgstr ""
+
+#: locations/models/s3.py:70 locations/models/space.py:166
 msgid "S3"
 msgstr ""
 
-#: locations/models/s3.py:173 locations/models/swift.py:206
+#: locations/models/s3.py:255 locations/models/swift.py:243
 #, python-format
 msgid "%(path)s is neither a file nor a directory, may not exist"
 msgstr ""
 
-#: locations/models/space.py:34
+#: locations/models/space.py:37
 msgid "Path must begin with a /"
 msgstr ""
 
-#: locations/models/space.py:152
+#: locations/models/space.py:159
 msgid "FEDORA via SWORD2"
 msgstr ""
 
-#: locations/models/space.py:156
+#: locations/models/space.py:163
 msgid "NFS"
 msgstr ""
 
-#: locations/models/space.py:157
+#: locations/models/space.py:164
 msgid "Pipeline Local Filesystem"
 msgstr ""
 
-#: locations/models/space.py:158 locations/models/swift.py:47
+#: locations/models/space.py:165 locations/models/swift.py:68
 msgid "Swift"
 msgstr ""
 
-#: locations/models/space.py:163
+#: locations/models/space.py:171
 msgid "Access protocol"
 msgstr ""
 
-#: locations/models/space.py:164
+#: locations/models/space.py:172
 msgid "How the space can be accessed."
 msgstr ""
 
-#: locations/models/space.py:166 templates/snippets/packages_table.html:9
+#: locations/models/space.py:178 templates/snippets/packages_table.html:8
 msgid "Size"
 msgstr ""
 
-#: locations/models/space.py:167
+#: locations/models/space.py:179
 msgid "Size in bytes (optional)"
 msgstr ""
 
-#: locations/models/space.py:170
+#: locations/models/space.py:182
 msgid "Amount used in bytes"
 msgstr ""
 
-#: locations/models/space.py:172 templates/locations/space_list.html:16
+#: locations/models/space.py:187 templates/locations/space_list.html:16
 #: templates/snippets/locations_table.html:9
 msgid "Path"
 msgstr ""
 
-#: locations/models/space.py:173
+#: locations/models/space.py:188
 msgid "Absolute path to the space on the storage service machine."
 msgstr ""
 
-#: locations/models/space.py:175
+#: locations/models/space.py:192
 msgid "Staging path"
 msgstr ""
 
-#: locations/models/space.py:176
+#: locations/models/space.py:194
 msgid ""
 "Absolute path to a staging area.  Must be UNIX filesystem compatible, "
 "preferably on the same filesystem as the path."
 msgstr ""
 
-#: locations/models/space.py:179
+#: locations/models/space.py:200
 msgid "Whether or not the space has been verified to be accessible."
 msgstr ""
 
-#: locations/models/space.py:181
+#: locations/models/space.py:206
 msgid "Last verified"
 msgstr ""
 
-#: locations/models/space.py:182
+#: locations/models/space.py:207
 msgid "Time this location was last verified to be accessible."
 msgstr ""
 
-#: locations/models/space.py:199
+#: locations/models/space.py:225
 msgid "Path is required"
 msgstr ""
 
-#: locations/models/space.py:264
+#: locations/models/space.py:292
 #, python-format
 msgid "%(delete_path)s is not within %(path)s"
 msgstr ""
 
-#: locations/models/space.py:326 locations/models/space.py:386
-#: locations/models/space.py:433
+#: locations/models/space.py:366 locations/models/space.py:434
+#: locations/models/space.py:492
 #, python-format
 msgid "%(protocol)s space has not implemented %(method)s"
 msgstr ""
 
-#: locations/models/space.py:447
+#: locations/models/space.py:509
 #, python-format
 msgid "Space %(protocol)s does not implement check_package_fixity"
 msgstr ""
 
-#: locations/models/swift.py:26
-msgid "Auth URL"
-msgstr ""
-
-#: locations/models/swift.py:27
-msgid "URL to authenticate against"
+#: locations/models/space.py:520
+#, python-format
+msgid "Space %(protocol)s does not implement isfile"
 msgstr ""
 
 #: locations/models/swift.py:29
-msgid "Auth version"
+msgid "Auth URL"
 msgstr ""
 
 #: locations/models/swift.py:30
+msgid "URL to authenticate against"
+msgstr ""
+
+#: locations/models/swift.py:35
+msgid "Auth version"
+msgstr ""
+
+#: locations/models/swift.py:36
 msgid "OpenStack auth version"
 msgstr ""
 
-#: locations/models/swift.py:32 templates/administration/user_detail.html:11
+#: locations/models/swift.py:40 templates/administration/user_detail.html:11
 #: templates/administration/user_list.html:14
 msgid "Username"
 msgstr ""
 
-#: locations/models/swift.py:33
+#: locations/models/swift.py:41
 msgid "Username to authenticate as. E.g. http://example.com:5000/v2.0/"
 msgstr ""
 
-#: locations/models/swift.py:38
+#: locations/models/swift.py:49
 msgid "Container"
 msgstr ""
 
-#: locations/models/swift.py:40
+#: locations/models/swift.py:54
 msgid "Tenant"
 msgstr ""
 
-#: locations/models/swift.py:41
+#: locations/models/swift.py:56
 msgid ""
 "The tenant/account name, required when connecting to an auth 2.0 system."
 msgstr ""
 
-#: locations/models/swift.py:44
+#: locations/models/swift.py:64
 msgid "Optional: Region in Swift"
 msgstr ""
 
-#: locations/models/swift.py:148
+#: locations/models/swift.py:178
 #, python-format
 msgid "ETag %(remote_path)s for %(etag)s does not match %(checksum)s"
 msgstr ""
 
-#: locations/signals.py:32
+#: locations/signals.py:35
 #, python-format
 msgid "Deletion request for package %(uuid)s"
 msgstr ""
 
-#: locations/signals.py:33
+#: locations/signals.py:38
 #, python-format
 msgid ""
 "A package deletion request was received:\n"
@@ -1959,17 +2032,17 @@ msgid ""
 "Package location: %(location)s"
 msgstr ""
 
-#: locations/signals.py:42
+#: locations/signals.py:54
 #, python-format
 msgid "To approve this deletion request, visit: %(url)s"
 msgstr ""
 
-#: locations/signals.py:60
+#: locations/signals.py:77
 #, python-format
 msgid "Fixity check failed for package %(uuid)s"
 msgstr ""
 
-#: locations/signals.py:61
+#: locations/signals.py:80
 #, python-format
 msgid ""
 "\n"
@@ -1980,179 +2053,182 @@ msgid ""
 "%(report)s\n"
 msgstr ""
 
-#: locations/views.py:32
+#: locations/views.py:49
 #, python-format
 msgid "Confirm deleting %(item)s"
 msgstr ""
 
-#: locations/views.py:35
+#: locations/views.py:53
 #, python-format
 msgid ""
 "%(item)s cannot be deleted until the following items are also deleted or "
 "unassociated."
 msgstr ""
 
-#: locations/views.py:37
+#: locations/views.py:56
 #, python-brace-format
 msgid "Are you sure you want to delete {item}?"
 msgstr ""
 
-#: locations/views.py:85
+#: locations/views.py:144
 #, python-format
 msgid "error accessing restore files at %(path)s"
 msgstr ""
 
-#: locations/views.py:93
+#: locations/views.py:154
 msgid "AIP restore rejected."
 msgstr ""
 
-#: locations/views.py:94
+#: locations/views.py:155
 msgid "AIP restored."
 msgstr ""
 
-#: locations/views.py:95
+#: locations/views.py:156
 msgid "AIP restore failed"
 msgstr ""
 
-#: locations/views.py:108
+#: locations/views.py:184
+#, python-format
+msgid "Package of type %(type)s cannot be deleted directly"
+msgstr ""
+
+#: locations/views.py:189
+msgid ""
+"Package deletion failed. Please contact an administrator or see logs for "
+"details."
+msgstr ""
+
+#: locations/views.py:200
+msgid "Package deleted successfully!"
+msgstr ""
+
+#: locations/views.py:210
 msgid "Request rejected, package still stored."
 msgstr ""
 
-#: locations/views.py:109
+#: locations/views.py:211
 msgid "Package deleted successfully."
 msgstr ""
 
-#: locations/views.py:110
+#: locations/views.py:212
 msgid "Package was not deleted from disk correctly"
 msgstr ""
 
-#: locations/views.py:146
+#: locations/views.py:254
 msgid "Please contact an administrator or see logs for details."
 msgstr ""
 
-#: locations/views.py:152
+#: locations/views.py:267
 #, python-format
 msgid "Request approved: %(message)s"
 msgstr ""
 
-#: locations/views.py:225
+#: locations/views.py:356
 #, python-format
 msgid "Error getting status for package %(uuid)s"
 msgstr ""
 
-#: locations/views.py:229
+#: locations/views.py:362
 #, python-format
 msgid "Status for package %(package)s is now %(status)s'."
 msgstr ""
 
-#: locations/views.py:231
+#: locations/views.py:368
 #, python-format
 msgid "Status for package %(uuid)s has not changed."
 msgstr ""
 
-#: locations/views.py:245
+#: locations/views.py:385
 #, python-format
 msgid "Package with UUID %(uuid)s does not exist."
 msgstr ""
 
-#: locations/views.py:248
+#: locations/views.py:391
 #, python-format
 msgid "Package %(uuid)s is a replica and replicas cannot be re-ingested."
 msgstr ""
 
-#: locations/views.py:257
+#: locations/views.py:402
 msgid "An unknown error occurred"
 msgstr ""
 
-#: locations/views.py:272 templates/locations/location_detail.html:57
+#: locations/views.py:418 templates/locations/location_detail.html:57
 msgid "Edit Location"
 msgstr ""
 
-#: locations/views.py:275
+#: locations/views.py:421
 msgid "Create Location"
 msgstr ""
 
-#: locations/views.py:300
+#: locations/views.py:445
 msgid "Location saved."
 msgstr ""
 
-#: locations/views.py:316
+#: locations/views.py:462
 #, python-format
 msgid "Location %(uuid)s does not exist."
 msgstr ""
 
-#: locations/views.py:349
+#: locations/views.py:499
 msgid "Edit Pipeline"
 msgstr ""
 
-#: locations/views.py:353
+#: locations/views.py:503
 msgid "Create Pipeline"
 msgstr ""
 
-#: locations/views.py:362
+#: locations/views.py:512
 msgid "Pipeline saved."
 msgstr ""
 
-#: locations/views.py:378
+#: locations/views.py:529
 #, python-format
 msgid "Pipeline %(uuid)s does not exist."
 msgstr ""
 
-#: locations/views.py:428
+#: locations/views.py:586
 #, python-format
 msgid "Space %(uuid)s does not exist."
 msgstr ""
 
-#: locations/views.py:468 locations/views.py:491
+#: locations/views.py:630 locations/views.py:657
 msgid "Space saved."
 msgstr ""
 
-#: locations/views.py:533
+#: locations/views.py:702
 #, python-format
 msgid "Callback %(uuid)s does not exist."
 msgstr ""
 
-#: locations/views.py:553
+#: locations/views.py:725
 msgid "Edit Callback"
 msgstr ""
 
-#: locations/views.py:556
+#: locations/views.py:728
 msgid "Create Callback"
 msgstr ""
 
-#: locations/views.py:562
+#: locations/views.py:734
 msgid "Callback saved."
 msgstr ""
 
-#: storage_service/settings/base.py:90
+#: storage_service/settings/base.py:86
 msgid "English"
 msgstr ""
 
-#: storage_service/settings/base.py:91
+#: storage_service/settings/base.py:87
 msgid "French"
 msgstr ""
 
-#: storage_service/settings/base.py:92
+#: storage_service/settings/base.py:88
 msgid "Spanish"
 msgstr ""
 
-#: storage_service/settings/base.py:93
-msgid "Japanese"
-msgstr ""
-
-#: storage_service/settings/base.py:94
-msgid "Portuguese"
-msgstr ""
-
-#: storage_service/settings/base.py:95
+#: storage_service/settings/base.py:89
 msgid "Brazilian Portuguese"
 msgstr ""
 
-#: storage_service/settings/base.py:96
-msgid "Swedish"
-msgstr ""
-
-#: templates/404.html:4 templates/404.html.py:6
+#: templates/404.html:4 templates/404.html:6
 msgid "Page Not found"
 msgstr ""
 
@@ -2189,18 +2265,19 @@ msgstr ""
 #: templates/administration/key_delete.html:14
 #: templates/administration/key_detail.html:23
 #: templates/administration/key_list.html:24
-#: templates/locations/callback_detail.html:19
+#: templates/locations/callback_detail.html:30
 #: templates/locations/delete.html:24
 #: templates/locations/pipeline_detail.html:19
 #: templates/snippets/callbacks_table.html:23
 #: templates/snippets/locations_table.html:54
+#: templates/snippets/package_row.html:63
+#: templates/snippets/package_row.html:78
 #: templates/snippets/pipelines_table.html:17
 msgid "Delete"
 msgstr ""
 
 #: templates/administration/key_delete.html:16
-#: templates/locations/delete.html:26
-#: templates/locations/location_form.html:77
+#: templates/locations/delete.html:26 templates/locations/location_form.html:77
 #: templates/locations/package_reingest.html:15
 msgid "Cancel"
 msgstr ""
@@ -2233,13 +2310,13 @@ msgstr ""
 
 #: templates/administration/key_detail.html:20
 #: templates/administration/key_list.html:16
-#: templates/locations/callback_detail.html:15
+#: templates/locations/callback_detail.html:26
 #: templates/locations/location_detail.html:54
 #: templates/locations/pipeline_detail.html:15
 #: templates/locations/space_list.html:21
 #: templates/snippets/callbacks_table.html:11
 #: templates/snippets/locations_table.html:18
-#: templates/snippets/packages_table.html:17
+#: templates/snippets/packages_table.html:14
 msgid "Actions"
 msgstr ""
 
@@ -2328,7 +2405,7 @@ msgid "True,False"
 msgstr ""
 
 #: templates/administration/user_list.html:32
-#: templates/locations/callback_detail.html:17
+#: templates/locations/callback_detail.html:28
 #: templates/locations/pipeline_detail.html:17
 #: templates/snippets/callbacks_table.html:23
 #: templates/snippets/locations_table.html:54
@@ -2349,8 +2426,8 @@ msgstr ""
 msgid "Git commit"
 msgstr ""
 
-#: templates/base.html:9 templates/base.html.py:47 templates/base.html:69
-#: templates/index.html:4
+#: templates/base.html:9 templates/base.html:47 templates/base.html:70
+#: templates/fluid.html:9 templates/index.html:4
 msgid "Archivematica Storage Service"
 msgstr ""
 
@@ -2400,11 +2477,11 @@ msgstr ""
 msgid "HTTP Method"
 msgstr ""
 
-#: templates/locations/callback_detail.html:13
+#: templates/locations/callback_detail.html:24
 msgid "Expected status"
 msgstr ""
 
-#: templates/locations/callback_detail.html:14
+#: templates/locations/callback_detail.html:25
 #: templates/locations/location_detail.html:16
 #: templates/locations/pipeline_detail.html:14
 #: templates/snippets/callbacks_table.html:22
@@ -2413,13 +2490,45 @@ msgstr ""
 msgid "Enabled,Disabled"
 msgstr ""
 
-#: templates/locations/callback_detail.html:18
+#: templates/locations/callback_detail.html:29
 #: templates/locations/location_detail.html:58
 #: templates/locations/pipeline_detail.html:18
 #: templates/snippets/callbacks_table.html:23
 #: templates/snippets/locations_table.html:54
 #: templates/snippets/pipelines_table.html:17
 msgid "Disable,Enable"
+msgstr ""
+
+#: templates/locations/callback_form.html:8
+msgid "Those actions are determined by the following events:"
+msgstr ""
+
+#: templates/locations/callback_form.html:11
+#, python-format
+msgid ""
+"Occurs after an AIP has been stored and it causes the execution of a request "
+"for each source file of the AIP. If the placeholder %(placeholder)s is found "
+"in the callback URL or body, it will be replaced by the source file UUID."
+msgstr ""
+
+#: templates/locations/callback_form.html:18
+msgid "Post-store AIP, Post-store AIC and Post-store DIP"
+msgstr ""
+
+#: templates/locations/callback_form.html:21
+#, python-format
+msgid ""
+"If the placeholder %(placeholder)s is found in the callback URL or body, it "
+"will be replaced by the AIP, AIC or DIP UUID."
+msgstr ""
+
+#: templates/locations/callback_form.html:25
+#, python-format
+msgid ""
+"If the placeholder %(placeholder)s is found in the callback URL or body, it "
+"will be replaced by the AIP, AIC or DIP name, with the trailing UUID "
+"removed. For AIPs created directly from a transfer, this will be equivalent "
+"to the post-sanitization Transfer name."
 msgstr ""
 
 #: templates/locations/callback_list.html:4
@@ -2534,7 +2643,7 @@ msgid "Reingest Package"
 msgstr ""
 
 #: templates/locations/package_reingest.html:14
-#: templates/snippets/packages_table.html:77
+#: templates/snippets/package_row.html:49
 msgid "Re-ingest"
 msgstr ""
 
@@ -2545,7 +2654,7 @@ msgstr ""
 
 #: templates/locations/package_request.html:15
 #: templates/locations/package_request.html:57
-#: templates/snippets/packages_table.html:10
+#: templates/snippets/packages_table.html:9
 msgid "Type"
 msgstr ""
 
@@ -2644,8 +2753,7 @@ msgstr ""
 msgid "Edit Space"
 msgstr ""
 
-#: templates/locations/space_form.html:4
-#: templates/locations/space_form.html:12
+#: templates/locations/space_form.html:4 templates/locations/space_form.html:12
 msgid "Create Space"
 msgstr ""
 
@@ -2733,59 +2841,73 @@ msgid ""
 "by the storage service."
 msgstr ""
 
-#: templates/snippets/packages_table.html:7
-msgid "Originating Pipeline"
-msgstr ""
-
-#: templates/snippets/packages_table.html:8
-msgid "Current Location"
-msgstr ""
-
-#: templates/snippets/packages_table.html:11
-msgid "Replicas"
-msgstr ""
-
-#: templates/snippets/packages_table.html:12
-msgid "Is Replica Of"
-msgstr ""
-
-#: templates/snippets/packages_table.html:13
-#: templates/snippets/packages_table.html:56
-msgid "Pointer File"
-msgstr ""
-
-#: templates/snippets/packages_table.html:14
-msgid "Status"
-msgstr ""
-
-#: templates/snippets/packages_table.html:15
-msgid "Fixity Date"
-msgstr ""
-
-#: templates/snippets/packages_table.html:16
-msgid "Fixity Status"
-msgstr ""
-
-#: templates/snippets/packages_table.html:24
-#: templates/snippets/packages_table.html:29
-#: templates/snippets/packages_table.html:58
+#: templates/snippets/package_row.html:8
 msgid "None"
 msgstr ""
 
-#: templates/snippets/packages_table.html:64
+#: templates/snippets/package_row.html:30
 msgid "Update Status"
 msgstr ""
 
-#: templates/snippets/packages_table.html:71
+#: templates/snippets/package_row.html:37
 msgid "Success,Failed,"
 msgstr ""
 
-#: templates/snippets/packages_table.html:74
+#: templates/snippets/package_row.html:41
+msgid "Pointer File"
+msgstr ""
+
+#: templates/snippets/package_row.html:44
 msgid "Download"
 msgstr ""
 
-#: templates/snippets/packages_table.html:83
+#: templates/snippets/package_row.html:57
 msgid "Request Deletion"
+msgstr ""
+
+#: templates/snippets/package_row.html:67
+msgid "Delete package"
+msgstr ""
+
+#: templates/snippets/package_row.html:71
+#, python-format
+msgid ""
+"\n"
+"                      Are you sure you want to delete this package "
+"(%(type)s) with UUID <strong>%(uuid)s</strong>?\n"
+"                    "
+msgstr ""
+
+#: templates/snippets/package_row.html:77
+msgid "Close"
+msgstr ""
+
+#: templates/snippets/packages_table.html:6
+msgid "Originating Pipeline"
+msgstr ""
+
+#: templates/snippets/packages_table.html:7
+msgid "Current Location"
+msgstr ""
+
+#: templates/snippets/packages_table.html:10
+msgid "Replica Of"
+msgstr ""
+
+#: templates/snippets/packages_table.html:11
+msgid "Status"
+msgstr ""
+
+#: templates/snippets/packages_table.html:12
+msgid "Fixity Date"
+msgstr ""
+
+#: templates/snippets/packages_table.html:13
+msgid "Fixity Status"
+msgstr ""
+
+#: templates/snippets/packages_table.html:19
+msgid "Loading data from server"
 msgstr ""
 
 #: templates/snippets/pipeline_description.html:2

@@ -70,6 +70,26 @@ of these settings or provide values to mandatory fields.
     - **Type:** `string`
     - :red_circle: **Mandatory!**
 
+- **`SS_AUTH_PASSWORD_MINIMUM_LENGTH`**:
+    - **Description:** sets minimum length for user passwords.
+    - **Type:** `integer`
+    - **Default:** `8`
+
+- **`SS_AUTH_PASSWORD_DISABLE_COMMON_VALIDATION`**:
+    - **Description:** disables password validation that prevents users from using passwords that occur in a list of common passwords.
+    - **Type:** `boolean`
+    - **Default:** `false`
+
+- **`SS_AUTH_PASSWORD_DISABLE_USER_ATTRIBUTE_SIMILARITY_VALIDATION`**:
+    - **Description:** disables password validation that prevents users from using passwords that are too similar to their username and other user attributes.
+    - **Type:** `boolean`
+    - **Default:** `false`
+
+- **`SS_AUTH_PASSWORD_DISABLE_COMPLEXITY_VALIDATION`**:
+    - **Description:** disables password validation that checks that passwords contain at least three of: lower-case characters, upper-case characters, numbers, special characters.
+    - **Type:** `boolean`
+    - **Default:** `false`
+
 - **`SS_SHIBBOLETH_AUTHENTICATION`**:
     - **Description:** enables the Shibboleth authentication system. Other settings related to Shibboleth cannot be defined via environment variables at the moment, please edit [storage_service.settings.base](../storage_service/storage_service/settings/base.py) manually.
     - **Type:** `boolean`
