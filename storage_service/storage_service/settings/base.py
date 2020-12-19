@@ -94,6 +94,7 @@ LANGUAGES = [
     ("fr", _("French")),
     ("es", _("Spanish")),
     ("pt-br", _("Brazilian Portuguese")),
+    ("no", _("Norwegian)),
 ]
 # ######## END LOCALE CONFIGURATION
 
