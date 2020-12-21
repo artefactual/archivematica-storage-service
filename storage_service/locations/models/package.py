@@ -146,9 +146,11 @@ class Package(models.Model):
         (DEL_REQ, _("Delete requested")),
         (DELETED, _("Deleted")),
         (FINALIZED, _("Deposit Finalized")),
+        (MOVING, _("Moving")),
+        (RECOVER_REQ, _("Recover requested")),
     )
     status = models.CharField(
-        max_length=8,
+        max_length=11,
         choices=STATUS_CHOICES,
         default=FAIL,
         help_text=_("Status of the package in the storage service."),
