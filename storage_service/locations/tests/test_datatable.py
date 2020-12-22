@@ -13,24 +13,28 @@ from locations import models
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures", ""))
 
+# There are 12 total packages in package.json.
+TOTAL_FIXTURE_PACKAGES = 12
+
 
 class TestDataTable(TestCase):
 
     fixtures = ["base.json", "package.json"]
 
     def test_initialization(self):
+        DISPLAY_LEN = 10
         datatable = datatable_utils.DataTable({})
         expected_params = {
             "search": "",
             "display_start": 0,
-            "display_length": 10,
+            "display_length": DISPLAY_LEN,
             "sorting_column": {},
             "echo": -1,
         }
         assert datatable.params == expected_params
-        assert datatable.total_records == 9
-        assert datatable.total_display_records == 9
-        assert len(datatable.packages) == 9
+        assert datatable.total_records == TOTAL_FIXTURE_PACKAGES
+        assert datatable.total_display_records == TOTAL_FIXTURE_PACKAGES
+        assert len(datatable.packages) == DISPLAY_LEN
 
     def test_search_description(self):
         datatable = datatable_utils.DataTable(
@@ -49,7 +53,7 @@ class TestDataTable(TestCase):
             "echo": 1,
         }
         assert datatable.params == expected_params
-        assert datatable.total_records == 9
+        assert datatable.total_records == TOTAL_FIXTURE_PACKAGES
         assert datatable.total_display_records == 1
         assert len(datatable.packages) == 1
 
@@ -70,7 +74,7 @@ class TestDataTable(TestCase):
             "echo": 1,
         }
         assert datatable.params == expected_params
-        assert datatable.total_records == 9
+        assert datatable.total_records == TOTAL_FIXTURE_PACKAGES
         assert datatable.total_display_records == 3
         assert len(datatable.packages) == 3
 
@@ -91,30 +95,31 @@ class TestDataTable(TestCase):
             "echo": 1,
         }
         assert datatable.params == expected_params
-        assert datatable.total_records == 9
+        assert datatable.total_records == TOTAL_FIXTURE_PACKAGES
         assert datatable.total_display_records == 3
         assert len(datatable.packages) == 3
 
     def test_search_status(self):
+        DISPLAY_LEN = 10
         datatable = datatable_utils.DataTable(
             {
                 "sSearch": "Uploaded",
                 "iDisplayStart": 0,
-                "iDisplayLength": 10,
+                "iDisplayLength": DISPLAY_LEN,
                 "sEcho": "1",
             }
         )
         expected_params = {
             "search": "Uploaded",
             "display_start": 0,
-            "display_length": 10,
+            "display_length": DISPLAY_LEN,
             "sorting_column": {},
             "echo": 1,
         }
         assert datatable.params == expected_params
-        assert datatable.total_records == 9
-        assert datatable.total_display_records == 9
-        assert len(datatable.packages) == 9
+        assert datatable.total_records == TOTAL_FIXTURE_PACKAGES
+        assert datatable.total_display_records == TOTAL_FIXTURE_PACKAGES
+        assert len(datatable.packages) == DISPLAY_LEN
 
     def _create_replicas(self, uuid):
         test_location = models.Location.objects.get(
@@ -147,8 +152,11 @@ class TestDataTable(TestCase):
         return [replica.uuid for replica in aip.replicas.all()]
 
     def test_search_replica_of(self):
-        package_uuid = "0d4e739b-bf60-4b87-bc20-67a379b28cea"
-        replicas_uuids = self._create_replicas(package_uuid)
+        package_uuid = "f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04"
+        replicas_uuids = [
+            "2f62b030-c3f4-4ac1-950f-fe47d0ddcd14",
+            "577f74bd-a283-49e0-b4e2-f8abb81d2566",
+        ]
         datatable = datatable_utils.DataTable(
             {
                 "sSearch": package_uuid,
@@ -167,14 +175,17 @@ class TestDataTable(TestCase):
         # searching for the original package uuid should return its replicas too
         expected_packages_uuids = sorted([package_uuid] + replicas_uuids)
         assert datatable.params == expected_params
-        assert datatable.total_records == 11
-        assert datatable.total_display_records == 3
-        assert len(datatable.packages) == 3
+        assert datatable.total_records == TOTAL_FIXTURE_PACKAGES
+        assert datatable.total_display_records == len(expected_packages_uuids)
+        assert len(datatable.packages) == len(expected_packages_uuids)
         assert sorted([p.uuid for p in datatable.packages]) == expected_packages_uuids
 
     def test_reverse_search_replica_of(self):
-        package_uuid = "0d4e739b-bf60-4b87-bc20-67a379b28cea"
-        replicas_uuids = self._create_replicas(package_uuid)
+        package_uuid = "f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04"
+        replicas_uuids = [
+            "2f62b030-c3f4-4ac1-950f-fe47d0ddcd14",
+            "577f74bd-a283-49e0-b4e2-f8abb81d2566",
+        ]
         datatable = datatable_utils.DataTable(
             {
                 "sSearch": replicas_uuids[0],
@@ -193,9 +204,9 @@ class TestDataTable(TestCase):
         # searching for the replica uuid should return its original package too
         expected_packages_uuids = sorted([package_uuid, replicas_uuids[0]])
         assert datatable.params == expected_params
-        assert datatable.total_records == 11
-        assert datatable.total_display_records == 2
-        assert len(datatable.packages) == 2
+        assert datatable.total_records == TOTAL_FIXTURE_PACKAGES
+        assert datatable.total_display_records == len(expected_packages_uuids)
+        assert len(datatable.packages) == len(expected_packages_uuids)
         assert sorted([p.uuid for p in datatable.packages]) == expected_packages_uuids
 
     def test_sorting_uuid(self):
@@ -219,14 +230,15 @@ class TestDataTable(TestCase):
         assert datatable.params == expected_params
         expected_uuids = [
             "0d4e739b-bf60-4b87-bc20-67a379b28cea",
+            "2f62b030-c3f4-4ac1-950f-fe47d0ddcd14",
             "473a9398-0024-4804-81da-38946040c8af",
+            "577f74bd-a283-49e0-b4e2-f8abb81d2566",
             "6aebdb24-1b6b-41ab-b4a3-df9a73726a34",
             "708f7a1d-dda4-46c7-9b3e-99e188eeb04c",
             "79245866-ca80-4f84-b904-a02b3e0ab621",
             "88deec53-c7dc-4828-865c-7356386e9399",
             "9f260047-a9b7-4a75-bb6a-e8d94c83edd2",
             "a59033c2-7fa7-41e2-9209-136f07174692",
-            "e0a41934-c1d7-45ba-9a95-a7531c063ed1",
         ]
         assert [package.uuid for package in datatable.packages] == expected_uuids
 
@@ -235,7 +247,8 @@ class TestDataTable(TestCase):
         datatable = datatable_utils.DataTable(
             {"iDisplayStart": 0, "iDisplayLength": 10, "sEcho": "1"}
         )
-        assert datatable.total_records == 9
+        assert datatable.total_records == TOTAL_FIXTURE_PACKAGES
+        TOTAL_RECORDS_IN_LOCATION = 9
         aip_storage_location = models.Location.objects.get(
             uuid="615103f0-0ee0-4a12-ba17-43192d1143ea"
         )
@@ -248,4 +261,4 @@ class TestDataTable(TestCase):
                 "location-uuid": aip_storage_location.uuid,
             }
         )
-        assert datatable.total_records == 6
+        assert datatable.total_records == TOTAL_RECORDS_IN_LOCATION

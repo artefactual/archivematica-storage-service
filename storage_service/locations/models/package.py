@@ -1457,21 +1457,16 @@ class Package(models.Model):
     def create_replicas(self):
         """Create replicas of this AIP in any replicator locations.
 
-        Note: in a future iteration, this should be done asynchronously by put
-        requests to replicate this package on the "Package Replication Queue";
-        workers will read from this queue and replicate the package to
-        different locations asynchronously, e.g.,::
+        Existing replicas must be discovered and then deleted so that
+        they can then be updated, e.g. through Archivematica's reingest
+        capability.
 
-            >>> job = {'package': self.uuid, 'location': replicator_loc.uuid}
-            >>> RMQ_CHANNEL.basic_publish(
-                exchange='',
-                routing_key=PACKAGE_REPLICATION_QUEUE,
-                body=json.dumps(job).encode('utf8'),
-                properties=pika.BasicProperties(
-                    delivery_mode = 2,  # make message persistent
-                )
-            )
+        If this is the first iteration of an AIP then delete replicas
+        will be called and no replicas will be found to be deleted.
+
+        Once the clean-up work is done, new replicas are then minted.
         """
+        self._delete_replicas()
         replicator_locs = self.current_location.replicators.all()
         for replicator_loc in replicator_locs:
             self.replicate(replicator_loc)
@@ -1998,55 +1993,108 @@ class Package(models.Model):
             )
         return report, response
 
+    @staticmethod
+    def _if_lockss_notify(space, uuid, attributes):
+        """Notify lOM that files will be deleted."""
+        if not space.access_protocol == Space.LOM:
+            return
+        NUM_FILES = "num_files"
+        if NUM_FILES not in attributes:
+            return
+        lom = space.get_child_space()
+        lom.update_service_document()
+        delete_lom_ids = [
+            lom._download_url(uuid, idx + 1) for idx in range(attributes[NUM_FILES])
+        ]
+        return lom._delete_update_lom(delete_lom_ids)
+
+    @staticmethod
+    def _delete_pointer_file(
+        uuid, pointer_path, pointer_file_path, pointer_file_location
+    ):
+        """Delete pointer file and UUID quad directories."""
+        if not pointer_path:
+            return
+        try:
+            os.remove(pointer_path)
+        except OSError:
+            LOGGER.info(
+                "Error deleting pointer file %s for package %s",
+                pointer_path,
+                uuid,
+                exc_info=True,
+            )
+        utils.removedirs(
+            os.path.dirname(pointer_file_path), base=pointer_file_location.full_path
+        )
+
+    @staticmethod
+    def _update_storage_size(space, location, size):
+        """Remove size from location and space used values. Like the
+        initial checks and updates, this is not considering race
+        conditions.
+        """
+        space.used -= size
+        space.save()
+        location.used -= size
+        location.save()
+
+    def _find_replicas(self, status=UPLOADED):
+        """Find replicas associated with a given package.
+
+        :param status: Storage status within the storage service to aid
+            with filtering. (const string)
+        :returns: Replicas QuerySet object limited to only the replicas
+            which have the given status.
+        """
+        return Package.objects.filter(replicated_package=self.uuid, status=status).all()
+
+    def _delete_replicas(self):
+        """Finalize the deletion of a package by deleting its replicas
+        as well.
+        """
+        for replica in self._find_replicas():
+            _, replica_error = replica.delete_from_storage()
+            if replica_error:
+                LOGGER.error(
+                    "Could not delete replica: '%s' with error: '%s' please delete it manually",
+                    replica.uuid,
+                    replica_error,
+                )
+
     def delete_from_storage(self):
         """ Deletes the package from filesystem and updates metadata.
         Returns (True, None) on success, and (False, error_msg) on failure.
         """
+        LOGGER.debug(
+            "Deleting Package: '%s' from the storage service, replica: '%s'",
+            self.uuid,
+            True if self.replicated_package else False,
+        )
+
         error = None
         location = self.current_location
         space = location.space
 
-        # LOCKSS must notify LOM before deleting
-        if space.access_protocol == Space.LOM:
-            # Notify LOM that files will be deleted
-            if "num_files" in self.misc_attributes:
-                lom = space.get_child_space()
-                lom.update_service_document()
-                delete_lom_ids = [
-                    lom._download_url(self.uuid, idx + 1)
-                    for idx in range(self.misc_attributes["num_files"])
-                ]
-                error = lom._delete_update_lom(self, delete_lom_ids)
+        error = self._if_lockss_notify(space, self.uuid, self.misc_attributes)
+
         try:
             space.delete_path(self.full_path)
         except (StorageException, NotImplementedError, ValueError) as err:
             return False, err
-        # If deleted correctly, remove pointer file, and the UUID quad
-        # directories if they're empty.
-        pointer_path = self.full_pointer_file_path
-        if pointer_path:
-            try:
-                os.remove(pointer_path)
-            except OSError:
-                LOGGER.info(
-                    "Error deleting pointer file %s for package %s",
-                    pointer_path,
-                    self.uuid,
-                    exc_info=True,
-                )
-            utils.removedirs(
-                os.path.dirname(self.pointer_file_path),
-                base=self.pointer_file_location.full_path,
-            )
+
+        self._delete_pointer_file(
+            self.uuid,
+            self.full_pointer_file_path,
+            self.pointer_file_path,
+            self.pointer_file_location,
+        )
+
         self.status = self.DELETED
         self.save()
 
-        # Remove size from location and space used values. Like the initial
-        # checks and updates, this is not considering race conditions.
-        space.used -= self.size
-        space.save()
-        location.used -= self.size
-        location.save()
+        self._update_storage_size(space, location, self.size)
+        self._delete_replicas()
 
         return True, error
 
@@ -2253,18 +2301,19 @@ class Package(models.Model):
         call by making it more like the re-ingested AIP at
         ``reingest_location/path``.
 
-        1. Fetch the reingested AIP from the origin_location.
-        2. Replace this AIP's METS file with the reingested AIP's mets file.
-        3. Copy the new (reingested) metadata directory over the old
-           (current) one.
-        4. Copies preservation derivatives from reingested AIP to current AIP.
-           New files will be added, updated files will be overwritten.
-        5. Recreate the bagit manifest.
-        6. Compress the AIP according to what was selected during reingest in
-           Archivematica.
-        7. Create a pointer file if AM has not done so.
-        8. Store the AIP in the reingest_location.
-        9. Update the pointer file.
+        1.  Fetch the reingested AIP from the origin_location.
+        2.  Replace this AIP's METS file with the reingested AIP's mets file.
+        3.  Copy the new (reingested) metadata directory over the old
+            (current) one.
+        4.  Copies preservation derivatives from reingested AIP to current AIP.
+            New files will be added, updated files will be overwritten.
+        5.  Recreate the bagit manifest.
+        6.  Compress the AIP according to what was selected during reingest in
+            Archivematica.
+        7.  Create a pointer file if AM has not done so.
+        8.  Store the AIP in the reingest_location.
+        9.  Create or update replicas if they need to be made.
+        10. Update the pointer file.
 
         :param Location origin_location: Location the newly re-ingested AIP was
             procesed on.
@@ -2467,7 +2516,10 @@ class Package(models.Model):
                 )
                 write_pointer_file(revised_pointer_file, self.full_pointer_file_path)
 
-        # 9. Update the pointer file.
+        # 9. Create or update replicas if they need to be made.
+        self.create_replicas()
+
+        # 10. Update the pointer file.
         self._process_pointer_file_for_reingest(
             to_be_compressed, was_compressed, compression, updated_aip_path
         )

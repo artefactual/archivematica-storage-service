@@ -1,7 +1,7 @@
 [
 {
-    "pk": 1, 
-    "model": "locations.arkivum", 
+    "pk": 1,
+    "model": "locations.arkivum",
     "fields": {
         "space": "6fb34c82-4222-425e-b0ea-30acfd31f52e",
         "host": "localhost:8443",
@@ -10,30 +10,30 @@
     }
 },
 {
-    "pk": 2, 
-    "model": "locations.space", 
+    "pk": 2,
+    "model": "locations.space",
     "fields": {
-        "last_verified": null, 
-        "used": 0, 
-        "verified": false, 
-        "uuid": "6fb34c82-4222-425e-b0ea-30acfd31f52e", 
-        "access_protocol": "ARKIVUM", 
-        "staging_path": "/var/archivematica/storage_service/", 
-        "path": "/mnt/arkivum", 
+        "last_verified": null,
+        "used": 0,
+        "verified": false,
+        "uuid": "6fb34c82-4222-425e-b0ea-30acfd31f52e",
+        "access_protocol": "ARKIVUM",
+        "staging_path": "/var/archivematica/storage_service/",
+        "path": "/mnt/arkivum",
         "size": null
     }
 },
 {
     "pk": 10,
-    "model": "locations.location", 
+    "model": "locations.location",
     "fields": {
-        "used": 0, 
-        "description": "Arkivum AS", 
-        "space": "6fb34c82-4222-425e-b0ea-30acfd31f52e", 
-        "enabled": true, 
-        "quota": null, 
+        "used": 0,
+        "description": "Arkivum AS",
+        "space": "6fb34c82-4222-425e-b0ea-30acfd31f52e",
+        "enabled": true,
+        "quota": null,
         "relative_path": "",
-        "purpose": "AS", 
+        "purpose": "AS",
         "uuid": "d9d7db26-f7a1-40aa-9db1-806b4d3a61cd"
     }
 },
@@ -50,7 +50,7 @@
     }
 },
 {
-    "pk": 10,
+    "pk": 98,
     "model": "locations.package",
     "fields": {
         "status": "STAGING",
@@ -66,7 +66,7 @@
     }
 },
 {
-    "pk": 11,
+    "pk": 99,
     "model": "locations.package",
     "fields": {
         "status": "STAGING",

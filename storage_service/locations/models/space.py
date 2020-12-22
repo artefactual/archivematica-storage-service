@@ -782,9 +782,14 @@ class Space(models.Model):
         LOGGER.debug("directories: %s", directories)
         return {"directories": directories, "entries": entries}
 
-    def _delete_path_local(self, delete_path):
-        """
-        Deletes `delete_path` in this space, assuming it is locally accessible.
+    @staticmethod
+    def _del_package(delete_path):
+        """Delete the package whether it is a file or directory at the
+        leaf of the branch, i.e. the last directory or file at the end
+        of the absolute given path.
+
+        :param delete_path: absolute path to an Archivematica package
+            (path-string)
         """
         try:
             if os.path.isfile(delete_path):
@@ -794,6 +799,46 @@ class Space(models.Model):
         except (os.error, shutil.Error):
             LOGGER.warning("Error deleting package %s", delete_path, exc_info=True)
             raise
+
+    @staticmethod
+    def _retrieve_dirs_to_delete(delete_path):
+        """Given an absolute path to an Archivematica AIP (file or
+        uncompressed directory), retrieve the base and relative
+        directories that contain it.
+
+        :param delete_path: absolute path to an Archivematica package
+            (path-string)
+        :return: quad_directory_structure (path-string), base_dir
+            (path-string) (tuple)
+        """
+        UUID_MASK = os.path.join(
+            "1111", "1111", "1111", "1111", "1111", "1111", "1111", "1111"
+        )
+        absolute_path_to_aip = os.path.split(delete_path)[0]
+        base_dir = absolute_path_to_aip[: -len(UUID_MASK)]
+        quad_dir_structure = absolute_path_to_aip.split(base_dir)[1]
+        return quad_dir_structure, base_dir
+
+    def _delete_quad_dir_structure(self, delete_path):
+        """Given an absolute path to a package which is expected to have
+        been deleted, split the object to then enable deletion of the
+        quad-directory structure that the package used to sit within.
+
+        :param delete_path: absolute path to an Archivematica package
+            (path-string)
+        """
+        quad_dir, base_dir = self._retrieve_dirs_to_delete(delete_path)
+        utils.removedirs(quad_dir, base=base_dir)
+
+    def _delete_path_local(self, delete_path):
+        """
+        Deletes `delete_path` in this space, assuming it is locally accessible.
+        """
+        if not os.path.exists(delete_path):
+            LOGGER.debug("Attempted to delete '%s' but path does not exist")
+            return
+        self._del_package(delete_path)
+        self._delete_quad_dir_structure(delete_path)
 
 
 # Thrown when posix_move is handed a non POSIX space

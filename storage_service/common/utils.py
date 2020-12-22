@@ -584,7 +584,13 @@ def removedirs(relative_path, base=None):
     """ Removes leaf directory of relative_path and all empty directories in
     relative_path, but nothing from base.
 
-    Cribbed from the implementation of os.removedirs. """
+    Cribbed from the implementation of os.removedirs.
+
+    :param relative_path: quad-dir structure,
+        e.g. aa9a/f3b1/32ae/4f3e/8841/0539/568c/43f2 (path-string)
+    :param base: root location of quad-dir structure,
+        e.g. /var/archivematica/storage_service (path-string, (optional))
+    """
     if not base:
         return os.removedirs(relative_path)
     try:
