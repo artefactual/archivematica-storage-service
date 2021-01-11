@@ -1,0 +1,119 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2020-08-28 07:24-0700\n"
+"PO-Revision-Date: 2020-10-19 21:12+0200\n"
+"Language: nb\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"X-Generator: Poedit 2.4.1\n"
+
+#: static/js/directory_picker.js:44
+msgid "Select"
+msgstr "Velg"
+
+#: static/js/directory_picker.js:45
+msgid "Select directory"
+msgstr "Velg mappe"
+
+#: static/js/directory_picker.js:46
+msgid "Add"
+msgstr "Legg til"
+
+#: static/js/directory_picker.js:68
+msgid "De-select directory"
+msgstr "Avvelg mappen"
+
+#: static/js/directory_picker.js:69
+msgid "Are you sure you want to de-select this?"
+msgstr "Er du sikker på at du vil avvelge denne?"
+
+#: static/js/directory_picker.js:124
+msgid "OK"
+msgstr "Ok"
+
+#: static/js/directory_picker.js:142
+msgid "Yes"
+msgstr "Ja"
+
+#: static/js/directory_picker.js:149
+msgid "Cancel"
+msgstr "Avbryt"
+
+#: static/js/project.js:9
+msgid "No data available in table"
+msgstr "Ingen data tilgjengelig i tabellen"
+
+#: static/js/project.js:10
+msgid "Showing _START_ to _END_ of _TOTAL_ entries"
+msgstr "Viser _START_ til _END_ av _TOTAL_ oppføringer"
+
+#: static/js/project.js:11
+msgid "Showing 0 to 0 of 0 entries"
+msgstr "Viser 0 til 0 av 0 oppføringer"
+
+#: static/js/project.js:12
+msgid "(filtered from _MAX_ total entries)"
+msgstr "(filtrert fra _MAX_ totale oppføringer)"
+
+#: static/js/project.js:15
+msgid "Show _MENU_ entries"
+msgstr "Vis _MENU_ oppføringer"
+
+#: static/js/project.js:16
+msgid "Loading..."
+msgstr "Laster..."
+
+#: static/js/project.js:17
+msgid "Processing..."
+msgstr "Behandler..."
+
+#: static/js/project.js:18
+msgid "Search:"
+msgstr "Søk:"
+
+#: static/js/project.js:19
+msgid "No matching records found"
+msgstr "Ingen samsvarende elementer funnet"
+
+#: static/js/project.js:21
+msgid "First"
+msgstr "Første"
+
+#: static/js/project.js:22
+msgid "Last"
+msgstr "Siste"
+
+#: static/js/project.js:23
+msgid "Next"
+msgstr "Neste"
+
+#: static/js/project.js:24
+msgid "Previous"
+msgstr "Forrige"
+
+#: static/js/project.js:27
+msgid ": activate to sort column ascending"
+msgstr ": aktiver for å sortere kolonne stigende"
+
+#: static/js/project.js:28
+msgid ": activate to sort column descending"
+msgstr ": aktiver for å sortere kolonne synkende"
+
+#: static/js/project.js:127
+msgid "Delete"
+msgstr "Slett"
+
+#: static/js/project.js:132
+msgid "Add header"
+msgstr "Legg til tittel"
