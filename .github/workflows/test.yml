@@ -6,7 +6,6 @@ on:
     branches:
       - "qa/**"
       - "stable/**"
-      - "dev/issue-952-use-mysql"
 jobs:
   test:
     name: "Test ${{ matrix.name }}"
