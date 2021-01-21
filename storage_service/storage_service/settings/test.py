@@ -11,7 +11,8 @@ from .base import *
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": ":memory:",
+        "NAME": "archivematica-test.db",
+        "TEST": {"NAME": "archivematica-test.db"},
         "USER": "",
         "PASSWORD": "",
         "HOST": "",
