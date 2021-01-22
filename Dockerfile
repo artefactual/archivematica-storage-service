@@ -1,7 +1,7 @@
 FROM python:2.7-stretch
 
 ENV DEBIAN_FRONTEND noninteractive
-ENV DJANGO_SETTINGS_MODULE storage_service.settings.production
+ENV DJANGO_SETTINGS_MODULE storage_service.settings.local
 ENV PYTHONUNBUFFERED 1
 ENV PYTHONPATH /src/storage_service
 ENV SS_GUNICORN_BIND 0.0.0.0:8000
@@ -50,13 +50,17 @@ RUN set -ex \
 	&& mkdir -p $internalDirs \
 	&& chown -R archivematica:archivematica $internalDirs
 
+WORKDIR /src/storage_service
+
 USER archivematica
 
-RUN env \
-	DJANGO_SETTINGS_MODULE=storage_service.settings.local \
-	SS_DB_URL=mysql://ne:ver@min/d \
-		/src/storage_service/manage.py collectstatic --noinput --clear
+RUN set -ex \
+	&& export SS_DB_URL=mysql://ne:ver@min/d \
+	&& ./manage.py collectstatic --noinput --clear \
+	&& ./manage.py compilemessages
+
+ENV DJANGO_SETTINGS_MODULE storage_service.settings.production
 
 EXPOSE 8000
-WORKDIR /src/storage_service
+
 ENTRYPOINT /usr/local/bin/gunicorn --config=/etc/archivematica/storage-service.gunicorn-config.py storage_service.wsgi:application
