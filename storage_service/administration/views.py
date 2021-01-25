@@ -95,6 +95,12 @@ def user_edit(request, id):
         api_key.save()
         messages.success(request, _("Password changed."))
         return redirect("administration:user_list")
+    elif "password":
+        # Ensure user form information still displays after an invalid
+        # password change attempt.
+        user_form = settings_forms.UserChangeForm(
+            instance=edit_user, current_user=request.user
+        )
     return render(request, "administration/user_form.html", locals())
 
 
