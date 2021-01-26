@@ -87,19 +87,21 @@ class S3(models.Model):
     @property
     def resource(self):
         if not hasattr(self, "_resource"):
+            config = botocore.config.Config(
+                connect_timeout=settings.S3_TIMEOUTS, read_timeout=settings.S3_TIMEOUTS
+            )
             boto_args = {
                 "service_name": "s3",
                 "endpoint_url": self.endpoint_url,
                 "region_name": self.region,
+                "config": config,
             }
             if self.access_key_id and self.secret_access_key:
                 boto_args.update(
                     aws_access_key_id=self.access_key_id,
                     aws_secret_access_key=self.secret_access_key,
                 )
-
             self._resource = boto3.resource(**boto_args)
-
         return self._resource
 
     @boto_exception

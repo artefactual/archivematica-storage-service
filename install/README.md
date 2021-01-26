@@ -99,6 +99,11 @@ of these settings or provide values to mandatory fields.
     - **Type:** `boolean`
     - **Default:** `false`
 
+- **`SS_S3_TIMEOUTS`**:
+    - **Description:** read and connect timeouts for S3 matching your implementation's recommended defaults.
+    - **Type:** `integer`
+    - **Default:** `900`
+
 The configuration of the database is also declared via environment variables. Storage Service looks up the `SS_DB_URL` environment string. If defined, its value is expected to follow the form described in the [dj-database-url docs](https://github.com/kennethreitz/dj-database-url#url-schema), e.g.: `mysql://username:password@192.168.1.20:3306/storage_service`. If undefined, Storage Service defaults to the `django.db.backends.sqlite3` [engine](https://docs.djangoproject.com/en/1.8/ref/settings/#engine) and expects the following environment variables to be defined:
 
 - **`SS_DB_NAME`**:
