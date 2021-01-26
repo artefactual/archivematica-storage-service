@@ -197,6 +197,10 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+AUDIT_LOG_MIDDLEWARE = is_true(environ.get("SS_AUDIT_LOG_MIDDLEWARE", "false"))
+if AUDIT_LOG_MIDDLEWARE:
+    MIDDLEWARE.append("common.middleware.AuditLogMiddleware")
 # ######## END MIDDLEWARE CONFIGURATION
 
 

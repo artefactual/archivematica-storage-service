@@ -16,6 +16,19 @@ if hasattr(settings, "LOGIN_EXEMPT_URLS"):
     EXEMPT_URLS += [compile(expr) for expr in settings.LOGIN_EXEMPT_URLS]
 
 
+class AuditLogMiddleware(object):
+    """Add X-Username header with authenticated user to responses."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        if request.user.is_authenticated:
+            response["X-Username"] = request.user.get_username()
+        return response
+
+
 class LoginRequiredMiddleware(MiddlewareMixin):
     """
     Middleware that requires a user to be authenticated to view any page other
