@@ -13,6 +13,9 @@ from sys import path
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import ugettext_lazy as _
 
+# S3 adapter configuration.
+from .components.s3 import *
+
 from storage_service.settings.helpers import get_env_variable, is_true
 
 try:
@@ -290,6 +293,8 @@ LOGGING = {
         "common": {"level": "DEBUG"},
         "locations": {"level": "DEBUG"},
         "sword2": {"level": "INFO"},
+        "boto3": {"level": "INFO"},
+        "botocore": {"level": "INFO"},
     },
     "root": {"handlers": ["console"], "level": "WARNING"},
 }

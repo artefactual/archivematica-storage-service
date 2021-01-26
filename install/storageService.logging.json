@@ -70,7 +70,9 @@
     },
     "sword2": {
       "level": "INFO"
-    }
+    },
+    "boto3": {"level": "INFO"},
+    "botocore": {"level": "INFO"}
   },
   "root": {
     "handlers": [
