@@ -70,12 +70,12 @@ pyopenssl==20.0.1         # via josepy, ndg-httpsclient
 pyparsing==2.4.7          # via oslo.utils
 python-cas==1.5.0         # via django-cas-ng
 python-dateutil==2.8.1    # via botocore, django-tastypie
-python-gnupg==0.4.0       # via -r base.in
+python-gnupg==0.4.6       # via -r base.in
 python-keystoneclient==3.10.0  # via -r base.in
 python-ldap==3.2.0        # via -r base.in, django-auth-ldap
 python-mimeparse==1.6.0   # via django-tastypie
 python-swiftclient==3.3.0  # via -r base.in
-pytz==2020.5              # via babel, django, oslo.serialization, oslo.utils
+pytz==2021.1              # via babel, django, oslo.serialization, oslo.utils
 pyyaml==5.4.1             # via oslo.config, oslo.serialization
 requests-oauthlib==1.2.0  # via -r base.in
 requests==2.21.0          # via -r base.in, agentarchives, keystoneauth1, mozilla-django-oidc, oslo.config, python-cas, python-keystoneclient, python-swiftclient, requests-oauthlib

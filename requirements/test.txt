@@ -75,7 +75,7 @@ oslo.config==7.0.0        # via -r base.txt, python-keystoneclient
 oslo.i18n==3.25.1         # via -r base.txt, oslo.config, oslo.utils, python-keystoneclient
 oslo.serialization==2.29.2  # via -r base.txt, python-keystoneclient
 oslo.utils==3.42.1        # via -r base.txt, oslo.serialization, python-keystoneclient
-packaging==20.8           # via tox
+packaging==20.9           # via tox
 pathlib2==2.3.5 ; python_version < "3.0"  # via -r base.txt, importlib-metadata, importlib-resources, ipython, pickleshare, pytest, pytest-django, virtualenv
 pbr==5.5.1                # via -r base.txt, debtcollector, keystoneauth1, os-service-types, oslo.i18n, oslo.serialization, oslo.utils, positional, python-keystoneclient, stevedore
 pexpect==4.8.0            # via ipython
@@ -99,12 +99,12 @@ pytest-mock==1.13.0       # via -r test.in
 pytest==3.8.0             # via -r test.in, pytest-cov, pytest-django, pytest-mock
 python-cas==1.5.0         # via -r base.txt, django-cas-ng
 python-dateutil==2.8.1    # via -r base.txt, botocore, django-tastypie
-python-gnupg==0.4.0       # via -r base.txt
+python-gnupg==0.4.6       # via -r base.txt
 python-keystoneclient==3.10.0  # via -r base.txt
 python-ldap==3.2.0        # via -r base.txt, django-auth-ldap
 python-mimeparse==1.6.0   # via -r base.txt, django-tastypie
 python-swiftclient==3.3.0  # via -r base.txt
-pytz==2020.5              # via -r base.txt, babel, django, oslo.serialization, oslo.utils
+pytz==2021.1              # via -r base.txt, babel, django, oslo.serialization, oslo.utils
 pyyaml==5.4.1             # via -r base.txt, oslo.config, oslo.serialization, vcrpy
 requests-oauthlib==1.2.0  # via -r base.txt
 requests==2.21.0          # via -r base.txt, agentarchives, keystoneauth1, mozilla-django-oidc, oslo.config, python-cas, python-keystoneclient, python-swiftclient, requests-oauthlib
@@ -122,7 +122,7 @@ traitlets==4.3.3          # via ipython
 typing==3.7.4.3           # via -r base.txt, importlib-resources
 urllib3==1.24.3           # via -r base.txt, botocore, requests
 vcrpy==3.0.0              # via -r test.in
-virtualenv==20.4.0        # via tox
+virtualenv==20.4.2        # via tox
 wcwidth==0.2.5            # via prompt-toolkit
 whitenoise==3.3.0         # via -r base.txt
 wrapt==1.12.1             # via -r base.txt, debtcollector, positional, vcrpy
