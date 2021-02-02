@@ -14,6 +14,8 @@ From the docs at time of writing: https://boto3.amazonaws.com/v1/documentation/a
     sensitive data this should not be used in production.
 
 """
+from __future__ import absolute_import
+
 from os import environ
 
 from storage_service.settings.helpers import is_true
