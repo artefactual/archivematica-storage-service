@@ -8,8 +8,9 @@ services:
       dockerfile: "Dockerfile"
     entrypoint: ""
     working_dir: "/src"
-    command: ["./integration/wait-for-it.sh", "mysql:3306", "--timeout=30", "--", "pytest", "-p", "no:cacheprovider", "-vv", ".", "integration"]
+    command: ["./integration/wait-for-it.sh", "mysql:3306", "--timeout=30", "--", "pytest", "storage_service", "integration"]
     environment:
+      PYTEST_ADDOPTS: ${PYTEST_ADDOPTS:-}
       FORWARDED_ALLOW_IPS: "*"
       SS_GUNICORN_ACCESSLOG: "/dev/null"
       DJANGO_SETTINGS_MODULE: "storage_service.settings.testmysql"
