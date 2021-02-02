@@ -54,6 +54,7 @@ jobs:
       - name: "Run tox"
         env:
           TOXENV: ${{ matrix.toxenv }}
+          PYTEST_ADDOPTS: -vv
         run: |
           tox
   integration:
@@ -70,6 +71,7 @@ jobs:
         env:
           COMPOSE_DOCKER_CLI_BUILD: 1
           DOCKER_BUILDKIT: 1
+          PYTEST_ADDOPTS: -vv
   linting:
     name: "Lint"
     runs-on: "ubuntu-18.04"
