@@ -14,9 +14,9 @@ from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import ugettext_lazy as _
 
 # S3 adapter configuration.
-from .components.s3 import *
+# from .components.s3 import *
 
-from storage_service.settings.helpers import get_env_variable, is_true
+# from storage_service.settings.helpers import get_env_variable, is_true
 
 try:
     import ldap
@@ -501,3 +501,37 @@ if PROMETHEUS_ENABLED:
     )
     INSTALLED_APPS = INSTALLED_APPS + ["django_prometheus"]
     LOGIN_EXEMPT_URLS = LOGIN_EXEMPT_URLS + (r"^metrics$",)
+
+# Helpers workaround.
+
+from django.core.exceptions import ImproperlyConfigured
+
+
+def get_env_variable(var_name):
+    """ Get the environment variable or return exception """
+    try:
+        return environ[var_name]
+    except KeyError:
+        error_msg = "Set the %s environment variable" % var_name
+        raise ImproperlyConfigured(error_msg)
+
+
+def is_true(env_str):
+    return env_str.lower() in ["true", "yes", "on", "1"]
+
+
+# S3 workaround.
+
+# Turn on all debug messages from boto3 including the full wire-trace.
+# There isn't greater granularity because the amount of information
+S3_DEBUG = False
+if is_true(environ.get("SS_S3_DEBUG", "false")):
+    S3_DEBUG = True
+
+# Read and connect timeouts for S3. Ideally these will match the
+# defaults recommended by your S3 implementation
+S3_TIMEOUTS = 900
+try:
+    S3_TIMEOUTS = int(environ.get("SS_S3_TIMEOUTS", S3_TIMEOUTS))
+except ValueError:
+    pass
