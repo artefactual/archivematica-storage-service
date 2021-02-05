@@ -22,6 +22,7 @@
    { "name": "libffi-dev", "state": "latest"},
    { "name": "libssl-dev", "state": "latest"},
    { "name": "gcc", "state": "latest"},
+   { "name": "gettext", "state": "latest"},
    { "name": "gnupg", "state": "latest"},
    { "name": "rng-tools", "state": "latest"},
    { "name": "libsasl2-dev", "state": "latest"},
