@@ -59,9 +59,10 @@ class Duracloud(models.Model):
     ALLOWED_LOCATION_PURPOSE = [
         Location.AIP_RECOVERY,
         Location.AIP_STORAGE,
-        Location.DIP_STORAGE,
-        Location.TRANSFER_SOURCE,
         Location.BACKLOG,
+        Location.DIP_STORAGE,
+        Location.REPLICATOR,
+        Location.TRANSFER_SOURCE,
     ]
 
     MANIFEST_SUFFIX = ".dura-manifest"
