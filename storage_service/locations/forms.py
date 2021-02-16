@@ -7,7 +7,6 @@ from django import forms
 import django.utils
 import django.core.exceptions
 from django.db.models import Count
-from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
 from common import gpgutils
@@ -41,26 +40,11 @@ class DisableableSelectWidget(forms.Select):
         super(DisableableSelectWidget, self).__init__(attrs, choices)
         self.disabled_choices = list(disabled_choices)
 
-    def render_option(self, selected_choices, option_value, option_label):
-        option_value = django.utils.encoding.force_text(option_value)
-        if option_value in selected_choices:
-            selected_html = mark_safe(' selected="selected"')
-            if not self.allow_multiple_selected:
-                # Only allow for a single selection.
-                selected_choices.remove(option_value)
-        else:
-            selected_html = ""
-        if option_value in self.disabled_choices:
-            disabled_html = mark_safe(' disabled="disabled"')
-        else:
-            disabled_html = ""
-        return django.utils.html.format_html(
-            '<option value="{0}"{1}{2}>{3}</option>',
-            option_value,
-            selected_html,
-            disabled_html,
-            django.utils.encoding.force_text(option_label),
-        )
+    def create_option(self, *args, **kwargs):
+        result = super(DisableableSelectWidget, self).create_option(*args, **kwargs)
+        if result["value"] in self.disabled_choices:
+            result["attrs"].setdefault("disabled", "disabled")
+        return result
 
 
 # FORMS
