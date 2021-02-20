@@ -25,10 +25,10 @@ class CallbackError(StorageException):
 
 
 class Event(models.Model):
-    """ Stores requests to modify packages that need admin approval.
+    """Stores requests to modify packages that need admin approval.
 
     Eg. delete AIP can be requested by a pipeline, but needs storage
-    administrator approval.  Who made the request and why is also stored. """
+    administrator approval.  Who made the request and why is also stored."""
 
     package = models.ForeignKey("Package", to_field="uuid", on_delete=models.CASCADE)
     DELETE = "DELETE"

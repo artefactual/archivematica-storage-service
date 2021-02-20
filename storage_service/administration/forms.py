@@ -158,24 +158,24 @@ class DefaultLocationsForm(SettingsForm):
         # Dynamic choices done in init, because did not update consistently in
         # field definition
         self.fields["default_transfer_source"].choices = [
-            (l.uuid, l.get_description())
-            for l in Location.active.filter(purpose=Location.TRANSFER_SOURCE)
+            (loc.uuid, loc.get_description())
+            for loc in Location.active.filter(purpose=Location.TRANSFER_SOURCE)
         ] + [("new", _("Create new location for each pipeline"))]
         self.fields["default_aip_storage"].choices = [
-            (l.uuid, l.get_description())
-            for l in Location.active.filter(purpose=Location.AIP_STORAGE)
+            (loc.uuid, loc.get_description())
+            for loc in Location.active.filter(purpose=Location.AIP_STORAGE)
         ] + [("new", _("Create new location for each pipeline"))]
         self.fields["default_dip_storage"].choices = [
-            (l.uuid, l.get_description())
-            for l in Location.active.filter(purpose=Location.DIP_STORAGE)
+            (loc.uuid, loc.get_description())
+            for loc in Location.active.filter(purpose=Location.DIP_STORAGE)
         ] + [("new", _("Create new location for each pipeline"))]
         self.fields["default_backlog"].choices = [
-            (l.uuid, l.get_description())
-            for l in Location.active.filter(purpose=Location.BACKLOG)
+            (loc.uuid, loc.get_description())
+            for loc in Location.active.filter(purpose=Location.BACKLOG)
         ] + [("new", _("Create new location for each pipeline"))]
         self.fields["default_recovery"].choices = [
-            (l.uuid, l.get_description())
-            for l in Location.active.filter(purpose=Location.AIP_RECOVERY)
+            (loc.uuid, loc.get_description())
+            for loc in Location.active.filter(purpose=Location.AIP_RECOVERY)
         ] + [("new", _("Create new location for each pipeline"))]
         space_id_choices = [(s.uuid, str(s)) for s in Space.objects.all()]
         for field_name in self.fields:

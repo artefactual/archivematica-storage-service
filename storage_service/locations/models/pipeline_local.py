@@ -23,9 +23,9 @@ LOGGER = logging.getLogger(__name__)
 
 
 class PipelineLocalFS(models.Model):
-    """ Spaces local to the creating machine, but not to the storage service.
+    """Spaces local to the creating machine, but not to the storage service.
 
-    Use case: currently processing locations. """
+    Use case: currently processing locations."""
 
     space = models.OneToOneField("Space", to_field="uuid", on_delete=models.CASCADE)
 

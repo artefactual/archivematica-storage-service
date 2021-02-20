@@ -166,8 +166,10 @@ class Dataverse(URLMixin, models.Model):
         """Return all files in the dataset with ``entity_id``
         ``dataset_identifier`` (conforming to ``browse`` protocol).
         """
-        files_in_dataset_path = "/api/v1/datasets/{dataset_identifier}/versions/:latest".format(
-            dataset_identifier=dataset_identifier
+        files_in_dataset_path = (
+            "/api/v1/datasets/{dataset_identifier}/versions/:latest".format(
+                dataset_identifier=dataset_identifier
+            )
         )
         url = self._generate_dataverse_url(slug=files_in_dataset_path)
         params = {"key": self.api_key, "sort": "name", "order": "asc"}

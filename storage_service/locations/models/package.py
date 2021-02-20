@@ -197,16 +197,16 @@ class Package(models.Model):
     # Attributes
     @property
     def full_path(self):
-        """ Return the full path of the package's current location.
+        """Return the full path of the package's current location.
 
-        Includes the space, location, and package paths joined. """
+        Includes the space, location, and package paths joined."""
         return os.path.normpath(
             os.path.join(self.current_location.full_path, self.current_path)
         )
 
     @property
     def full_pointer_file_path(self):
-        """ Return the full path of the AIP's pointer file, None if not an AIP.
+        """Return the full path of the AIP's pointer file, None if not an AIP.
 
         Includes the space, location and package paths joined."""
         if not self.pointer_file_location:
@@ -494,7 +494,7 @@ class Package(models.Model):
         self._update_existing_ptr_loc_info()
 
     def recover_aip(self, origin_location, origin_path):
-        """ Recovers an AIP using files at a given location.
+        """Recovers an AIP using files at a given location.
 
         Creates a temporary package associated with recovery AIP files within
         a space. Does fixity check on recovery AIP package. Makes backup of
@@ -709,8 +709,10 @@ class Package(models.Model):
             # ``premisrw.PREMISObject``. As a result, the following is required:
             replica_pointer_file = replica_package.get_pointer_instance()
             if replica_pointer_file:
-                revised_replica_pointer_file = replica_package.create_new_pointer_file_given_storage_effects(
-                    replica_pointer_file, replica_storage_effects
+                revised_replica_pointer_file = (
+                    replica_package.create_new_pointer_file_given_storage_effects(
+                        replica_pointer_file, replica_storage_effects
+                    )
                 )
                 write_pointer_file(
                     revised_replica_pointer_file, replica_package.full_pointer_file_path
@@ -820,8 +822,10 @@ class Package(models.Model):
         if storage_effects:
             pointer_file = self.get_pointer_instance()
             if pointer_file:
-                revised_pointer_file = self.create_new_pointer_file_given_storage_effects(
-                    pointer_file, storage_effects
+                revised_pointer_file = (
+                    self.create_new_pointer_file_given_storage_effects(
+                        pointer_file, storage_effects
+                    )
                 )
                 write_pointer_file(revised_pointer_file, self.full_pointer_file_path)
         self.create_replicas()
@@ -1054,9 +1058,11 @@ class Package(models.Model):
         """
         checksum_algorithm = Package.DEFAULT_CHECKSUM_ALGORITHM
         premis_events = [premisrw.PREMISEvent(data=event) for event in premis_events]
-        __, compression_program_version, archive_tool = _get_compression_details_from_premis_events(
-            premis_events, self.uuid
-        )
+        (
+            __,
+            compression_program_version,
+            archive_tool,
+        ) = _get_compression_details_from_premis_events(premis_events, self.uuid)
         __, extension = os.path.splitext(self.current_path)
         premis_object = premis.create_aip_premis_object(
             self.uuid,
@@ -1191,9 +1197,11 @@ class Package(models.Model):
 
         # 3. Construct the pointer file and return it
         replica_premis_creation_agents = [premis.SS_AGENT]
-        __, compression_program_version, archive_tool = (
-            master_compression_event.compression_details
-        )
+        (
+            __,
+            compression_program_version,
+            archive_tool,
+        ) = master_compression_event.compression_details
         replica_premis_relationships = [
             premis.create_replication_derivation_relationship(
                 master_aip_uuid, replication_event_uuid
@@ -1406,8 +1414,10 @@ class Package(models.Model):
         encryption_event = _find_encryption_event(premis_events)
         if encryption_event:
             transform_files.append(encryption_event.get_decryption_transform_file())
-        compression_transform_files = compression_event.get_decompression_transform_files(
-            offset=len(transform_files)
+        compression_transform_files = (
+            compression_event.get_decompression_transform_files(
+                offset=len(transform_files)
+            )
         )
         for tf in compression_transform_files:
             transform_files.append(tf)
@@ -1852,7 +1862,7 @@ class Package(models.Model):
         self.save()
 
     def check_fixity(self, force_local=False, delete_after=True):
-        """ Scans the package to verify its checksums.
+        """Scans the package to verify its checksums.
 
         This will check if the Space can run a fixity and use that. If not, it will run fixity locally.
         This is implemented using bagit-python module, using the checksums from the
@@ -1892,9 +1902,12 @@ class Package(models.Model):
 
         if not force_local:
             try:
-                success, failures, message, timestamp = self.current_location.space.check_package_fixity(
-                    self
-                )
+                (
+                    success,
+                    failures,
+                    message,
+                    timestamp,
+                ) = self.current_location.space.check_package_fixity(self)
             except NotImplementedError:
                 pass
             else:
@@ -2063,7 +2076,7 @@ class Package(models.Model):
                 )
 
     def delete_from_storage(self):
-        """ Deletes the package from filesystem and updates metadata.
+        """Deletes the package from filesystem and updates metadata.
         Returns (True, None) on success, and (False, error_msg) on failure.
         """
         LOGGER.debug(
@@ -2439,7 +2452,11 @@ class Package(models.Model):
                 if was_compressed:
                     os.remove(rein_pointer_dst_full_path)
             else:
-                compression_algorithm, __, archive_tool = _get_compression_details_from_premis_events(
+                (
+                    compression_algorithm,
+                    __,
+                    archive_tool,
+                ) = _get_compression_details_from_premis_events(
                     premis_events, self.uuid
                 )
                 try:
@@ -2470,7 +2487,10 @@ class Package(models.Model):
         #    to it and to its parent directory. At this point ``updated_aip``
         #    points to the same location as ``old_aip`` but the new var name
         #    indicates the update via reingest.
-        updated_aip_path, updated_aip_parent_path = self._compress_and_clean_for_reingest(
+        (
+            updated_aip_path,
+            updated_aip_parent_path,
+        ) = self._compress_and_clean_for_reingest(
             to_be_compressed,
             was_compressed,
             compression,
@@ -2511,8 +2531,10 @@ class Package(models.Model):
         if storage_effects:
             pointer_file = self.get_pointer_instance()
             if pointer_file:
-                revised_pointer_file = self.create_new_pointer_file_given_storage_effects(
-                    pointer_file, storage_effects
+                revised_pointer_file = (
+                    self.create_new_pointer_file_given_storage_effects(
+                        pointer_file, storage_effects
+                    )
                 )
                 write_pointer_file(revised_pointer_file, self.full_pointer_file_path)
 

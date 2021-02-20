@@ -55,8 +55,7 @@ def add_agents_to_event_as_list(event, agents):
 def create_replication_event(
     original_package_uuid, replica_package_uuid, event_uuid=None, agents=None
 ):
-    """Return a PREMISEvent for replication of an AIP.
-    """
+    """Return a PREMISEvent for replication of an AIP."""
     outcome_detail_note = (
         "Replicated Archival Information Package (AIP) {} by creating"
         " replica {}.".format(original_package_uuid, replica_package_uuid)
@@ -176,8 +175,7 @@ def create_replication_validation_event(
     fixity_report=None,
     agents=None,
 ):
-    """Return a PREMISEvent for validation of AIP replication.
-    """
+    """Return a PREMISEvent for validation of AIP replication."""
     success = checksum_report["success"]
     if fixity_report:
         success = fixity_report["success"] and success

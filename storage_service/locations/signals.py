@@ -33,20 +33,17 @@ def _notify_administrators(subject, message):
 @receiver(deletion_request, dispatch_uid="deletion_request")
 def report_deletion_request(sender, **kwargs):
     subject = _("Deletion request for package %(uuid)s") % {"uuid": kwargs["uuid"]}
-    message = (
-        _(
-            """A package deletion request was received:
+    message = _(
+        """A package deletion request was received:
 
 Pipeline UUID: %(pipeline)s
 Package UUID: %(uuid)s
 Package location: %(location)s"""
-        )
-        % {
-            "pipeline": kwargs["pipeline"],
-            "uuid": kwargs["uuid"],
-            "location": kwargs["location"],
-        }
-    )
+    ) % {
+        "pipeline": kwargs["pipeline"],
+        "uuid": kwargs["uuid"],
+        "location": kwargs["location"],
+    }
 
     # The URL may not be configured in the site; if it isn't,
     # don't try to tell the user the URL to approve/deny the request.
@@ -75,21 +72,18 @@ def report_failed_fixity_check(sender, **kwargs):
     _log_report(kwargs["uuid"], False, report_data["message"])
 
     subject = _("Fixity check failed for package %(uuid)s") % {"uuid": kwargs["uuid"]}
-    message = (
-        _(
-            """
+    message = _(
+        """
 A fixity check failed for the package with UUID %(uuid)s. This package is currently stored at: %(location)s
 
 Full failure report (in JSON format):
 %(report)s
 """
-        )
-        % {
-            "uuid": kwargs["uuid"],
-            "location": kwargs["location"],
-            "report": kwargs["report"],
-        }
-    )
+    ) % {
+        "uuid": kwargs["uuid"],
+        "location": kwargs["location"],
+        "report": kwargs["report"],
+    }
 
     _notify_administrators(subject, message)
 
