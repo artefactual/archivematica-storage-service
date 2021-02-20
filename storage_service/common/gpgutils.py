@@ -19,6 +19,11 @@ from django.apps import apps
 from django.conf import settings
 from django.utils.translation import ugettext as _
 
+try:
+    from pathlib import Path
+except ImportError:
+    from pathlib2 import Path
+
 from .which import which
 
 
@@ -53,9 +58,10 @@ class GPG(object):
 
     def __call__(self):
         if not self._gpg:
+            gnupghome = self._get_gnupg_home_path()
+            self._ensure_gnupg_home_exists(gnupghome)
             self._gpg = gnupg.GPG(
-                gnupghome=self._get_gnupg_home_path(),
-                gpgbinary=self._get_gnupg_bin_path(),
+                gnupghome=gnupghome, gpgbinary=self._get_gnupg_bin_path()
             )
         return self._gpg
 
@@ -78,6 +84,11 @@ class GPG(object):
             "GnuPG binary not found in the system path."
             " Preferred binary names: %s" % self.PREFERRED_GNUPG_BINARIES
         )
+
+    @staticmethod
+    def _ensure_gnupg_home_exists(gnupghome):
+        """Ensure that GnuPG's home directory exists."""
+        Path(gnupghome).mkdir(mode=0o700, parents=False, exist_ok=True)
 
 
 gpg = GPG()
