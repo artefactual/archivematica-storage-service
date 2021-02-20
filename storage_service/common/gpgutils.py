@@ -198,7 +198,11 @@ def encryption_works(fingerprint):
     if decrypted_data.ok:
         return ENCR_WORKS
     else:
-        if decrypted_data.status == "need passphrase":
+        # python-gnupg stopped reporting "need passphrase".
+        if (
+            decrypted_data.status == "need passphrase"
+            or u"NEED_PASSPHRASE" in decrypted_data.stderr
+        ):
             return PASSPHRASED
         return ENCR_FAILS
 
