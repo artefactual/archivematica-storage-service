@@ -139,10 +139,10 @@ def test_move_to_storage_service(
         with pytest.raises(gpg.GPGException) as excinfo:
             gpg_space.move_to_storage_service(src_path, dst_path, None)
         if not encr_path:
-            assert "Unable to move {}; this file/dir does not exist;" " nor is it in an encrypted directory.".format(
-                src_path
-            ) == str(
-                excinfo.value
+            assert (
+                "Unable to move {}; this file/dir does not exist;"
+                " nor is it in an encrypted directory.".format(src_path)
+                == str(excinfo.value)
             )
         if not src_exists2:
             assert (

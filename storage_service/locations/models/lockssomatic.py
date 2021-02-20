@@ -394,7 +394,7 @@ class Lockssomatic(models.Model):
         return None
 
     def update_service_document(self):
-        """ Fetch the service document from self.sd_iri and updates based on that.
+        """Fetch the service document from self.sd_iri and updates based on that.
 
         Updates AU size and collection IRI.
 
@@ -620,7 +620,7 @@ class Lockssomatic(models.Model):
         return download_url
 
     def _create_resource(self, package, output_files):
-        """ Given a package, create an Atom resource entry to send to LOCKSS.
+        """Given a package, create an Atom resource entry to send to LOCKSS.
 
         Parses metadata for the Atom entry from the METS file, uses
         LOCKSS-o-matic-specific tags to describe size and checksums.

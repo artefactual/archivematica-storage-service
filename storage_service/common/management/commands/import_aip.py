@@ -384,9 +384,11 @@ def compress(aip_model_inst, compression_algorithm):
     """
     if not compression_algorithm:
         return
-    compressed_aip_path, compressed_aip_parent_path, details = aip_model_inst.compress_package(
-        compression_algorithm, detailed_output=True
-    )
+    (
+        compressed_aip_path,
+        compressed_aip_parent_path,
+        details,
+    ) = aip_model_inst.compress_package(compression_algorithm, detailed_output=True)
     compressed_aip_fname = os.path.basename(compressed_aip_path)
     aip_current_dir = os.path.dirname(aip_model_inst.current_path)
     shutil.rmtree(aip_model_inst.full_path)

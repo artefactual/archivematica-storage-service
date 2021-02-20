@@ -124,7 +124,7 @@ def validate_space_path(path):
 
 @six.python_2_unicode_compatible
 class Space(models.Model):
-    """ Common storage space information.
+    """Common storage space information.
 
     Knows what protocol to use to access a storage space, but all protocol
     specific information is in children classes with ForeignKeys to Space."""
@@ -331,7 +331,7 @@ class Space(models.Model):
     def move_to_storage_service(
         self, source_path, destination_path, destination_space, *args, **kwargs
     ):
-        """ Move source_path to destination_path in the staging area of destination_space.
+        """Move source_path to destination_path in the staging area of destination_space.
 
         If source_path is not an absolute path, it is assumed to be relative to
         Space.path.
@@ -407,7 +407,7 @@ class Space(models.Model):
         return staging_path, destination_path
 
     def move_from_storage_service(self, source_path, destination_path, *args, **kwargs):
-        """ Move source_path in this Space's staging area to destination_path in this Space.
+        """Move source_path in this Space's staging area to destination_path in this Space.
 
         That is, moves self.staging_path/source_path to self.path/destination_path.
 
@@ -531,7 +531,7 @@ class Space(models.Model):
         assume_rsync_daemon=False,
         rsync_password=None,
     ):
-        """ Moves a file from source to destination.
+        """Moves a file from source to destination.
 
         By default, uses rsync to move files.
         All directories leading to destination must exist; Space.create_local_directory may be useful.
@@ -847,16 +847,14 @@ class PosixMoveUnsupportedError(Exception):
 
 
 def _scandir_public(path):
-    """Generate all directory entries, excluding hidden files.
-    """
+    """Generate all directory entries, excluding hidden files."""
     for entry in scandir.scandir(path):
         if not entry.name.startswith("."):
             yield entry
 
 
 def _scandir_files(path):
-    """Generate all files, descending into subdirs.
-    """
+    """Generate all files, descending into subdirs."""
     try:
         for entry in scandir.scandir(path):
             if entry.is_dir():

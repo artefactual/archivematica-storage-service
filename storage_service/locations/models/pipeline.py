@@ -106,7 +106,7 @@ class Pipeline(URLMixin, models.Model):
             self.create_default_locations(shared_path)
 
     def create_default_locations(self, shared_path=None):
-        """ Creates default locations for a pipeline based on config.
+        """Creates default locations for a pipeline based on config.
 
         Creates a local filesystem Space and currently processing location in
         it.  If a shared_path is provided, currently processing location is at

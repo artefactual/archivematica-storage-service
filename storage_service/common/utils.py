@@ -111,10 +111,10 @@ def get_setting(setting, default=None):
 
 
 def set_setting(setting, value=None):
-    """ Sets 'setting' to 'value' in models.Settings.
+    """Sets 'setting' to 'value' in models.Settings.
 
     'value' must be an object that can be recreated by calling literal_eval on
-    its string representation.  Strings are automatically esacped. """
+    its string representation.  Strings are automatically esacped."""
     # Since we call literal_eval on settings when we extract them, we need to
     # put quotes around strings so they remain strings
     if isinstance(value, six.string_types):
@@ -570,9 +570,9 @@ def generate_checksum(file_path, checksum_type="md5"):
 
 
 def uuid_to_path(uuid):
-    """ Converts a UUID into a path.
+    """Converts a UUID into a path.
 
-    Every 4 alphanumeric characters of the UUID become a folder name. """
+    Every 4 alphanumeric characters of the UUID become a folder name."""
     uuid = uuid.replace("-", "")
     path = [uuid[i : i + 4] for i in range(0, len(uuid), 4)]
     path = os.path.join(*path)
@@ -581,7 +581,7 @@ def uuid_to_path(uuid):
 
 
 def removedirs(relative_path, base=None):
-    """ Removes leaf directory of relative_path and all empty directories in
+    """Removes leaf directory of relative_path and all empty directories in
     relative_path, but nothing from base.
 
     Cribbed from the implementation of os.removedirs.
@@ -609,7 +609,7 @@ def removedirs(relative_path, base=None):
 
 
 def coerce_str(string):
-    """ Return string as a str, not a unicode, encoded in utf-8.
+    """Return string as a str, not a unicode, encoded in utf-8.
 
     :param basestring string: String to convert
     :return: string converted to str, encoded in utf-8 if needed.

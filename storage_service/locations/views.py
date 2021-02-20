@@ -237,8 +237,10 @@ def _handle_package_request(request, config, view_name):
                     # Request is rejected so the package status set back to
                     # what it was stored as previously.
                     event.package.status = event.store_data
-                    notification_message = _handle_package_request_remote_result_notification(
-                        config, event, False
+                    notification_message = (
+                        _handle_package_request_remote_result_notification(
+                            config, event, False
+                        )
                     )
                     if notification_message:
                         config.reject_message += " " + notification_message
@@ -254,8 +256,10 @@ def _handle_package_request(request, config, view_name):
                                 "Please contact an administrator or see logs for details."
                             ),
                         )
-                        notification_message = _handle_package_request_remote_result_notification(
-                            config, event, False
+                        notification_message = (
+                            _handle_package_request_remote_result_notification(
+                                config, event, False
+                            )
                         )
                         if notification_message:
                             error_message += " " + notification_message
@@ -267,8 +271,10 @@ def _handle_package_request(request, config, view_name):
                         approval_message = _("Request approved: %(message)s") % {
                             "message": config.execution_success_message
                         }
-                        notification_message = _handle_package_request_remote_result_notification(
-                            config, event, True
+                        notification_message = (
+                            _handle_package_request_remote_result_notification(
+                                config, event, True
+                            )
                         )
                         if notification_message:
                             approval_message += " " + notification_message

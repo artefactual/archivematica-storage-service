@@ -273,7 +273,7 @@ class SpaceResource(ModelResource):
 
     @_custom_endpoint(expected_methods=["get"])
     def browse(self, request, bundle, **kwargs):
-        """ Returns all of the entries in a space, optionally at a subpath.
+        """Returns all of the entries in a space, optionally at a subpath.
 
         Returns a dict with
             {'entries': [list of entries in the directory],
@@ -281,7 +281,7 @@ class SpaceResource(ModelResource):
         Directories is a subset of entries, all are just the name.
 
         If a path=<path> parameter is provided, will look in that path inside
-        the Space. """
+        the Space."""
 
         space = bundle.obj
         path = request.GET.get("path", "")
@@ -431,7 +431,7 @@ class LocationResource(ModelResource):
 
     @_custom_endpoint(expected_methods=["get"])
     def browse(self, request, bundle, **kwargs):
-        """ Returns all of the entries in a location, optionally at a subpath.
+        """Returns all of the entries in a location, optionally at a subpath.
 
         Returns a dict with
             {'entries': [list of entries in the directory],
@@ -439,7 +439,7 @@ class LocationResource(ModelResource):
         Directories is a subset of entries, all are just the name.
 
         If a path=<path> parameter is provided, will look in that path inside
-        the Location. """
+        the Location."""
 
         location = bundle.obj
         path = request.GET.get("path", "")
@@ -600,7 +600,7 @@ class LocationResource(ModelResource):
         return self._handle_location_file_move(move_files, request, *args, **kwargs)
 
     def post_detail(self, request, *args, **kwargs):
-        """ Moves files to this Location.
+        """Moves files to this Location.
 
         See _handle_location_file_move for a description of the expected request
         format.
@@ -632,7 +632,7 @@ class LocationResource(ModelResource):
 
 
 class PackageResource(ModelResource):
-    """ Resource for managing Packages.
+    """Resource for managing Packages.
 
     List (api/v1/file/) supports:
     GET: List of files

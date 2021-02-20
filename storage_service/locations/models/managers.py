@@ -3,10 +3,10 @@ from django.db import models
 
 
 class Enabled(models.Manager):
-    """ Manager to only return enabled objects.
+    """Manager to only return enabled objects.
 
     Filters by disable=False if it exists, or enabled=True if it exists, or
-    returns all items if neither is found.  """
+    returns all items if neither is found."""
 
     def get_queryset(self):
         try:

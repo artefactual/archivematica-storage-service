@@ -568,7 +568,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
 
 class TestSwordAPI(TestCase):
     def test_removes_forward_slash_parse_fedora_mets(self):
-        """ It should remove forward slashes in the deposit name and all
+        """It should remove forward slashes in the deposit name and all
         filenames extracted from a Fedora METS file.
         """
         fedora_mets_path = os.path.join(FIXTURES_DIR, "fedora_mets_slash.xml")
