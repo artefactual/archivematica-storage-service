@@ -20,7 +20,7 @@
         <td>{{ callback.expected_status }}</td>
         <td>{{ callback.uuid }}</td>
         <td>{{ callback.enabled|yesno:_("Enabled,Disabled") }}</td>
-        <td><a href="{% url 'callback_edit' callback.uuid %}">{% trans "Edit" %}</a> | <a href="{% url 'callback_switch_enabled' callback.uuid %}?next={{ request.path }}">{{ callback.enabled|yesno:_("Disable,Enable") }}</a> | <a href="{% url 'callback_delete' callback.uuid %}?next={{ request.path }}">{% trans "Delete" %}</a></td>
+        <td><a href="{% url 'locations:callback_edit' callback.uuid %}">{% trans "Edit" %}</a> | <a href="{% url 'locations:callback_switch_enabled' callback.uuid %}?next={{ request.path }}">{{ callback.enabled|yesno:_("Disable,Enable") }}</a> | <a href="{% url 'locations:callback_delete' callback.uuid %}?next={{ request.path }}">{% trans "Delete" %}</a></td>
       </tr>
     {% endfor %}
     </tbody>
