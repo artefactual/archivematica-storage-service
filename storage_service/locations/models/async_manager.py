@@ -15,10 +15,12 @@ import datetime
 import logging
 import threading
 import time
+import traceback
 
 from django.utils import timezone
 
 from .async import Async  # noqa
+from .. import metrics
 
 LOGGER = logging.getLogger(__name__)
 
@@ -54,7 +56,8 @@ class AsyncManager(object):
     def _watchdog():
         while True:
             try:
-                AsyncManager._watchdog_loop()
+                with metrics.watchdog_loop_timer():
+                    AsyncManager._watchdog_loop()
             except Exception as e:
                 LOGGER.warning("Failure in watchdog thread: %s", e)
 
@@ -97,6 +100,7 @@ class AsyncManager(object):
 
             for task in completed_tasks:
                 AsyncManager.running_tasks.remove(task)
+                metrics.async_manager_running_tasks.dec()
 
                 try:
                     async_task = Async.objects.get(id=task.async_id)
@@ -118,10 +122,6 @@ class AsyncManager(object):
                         "Watchdog attempted to update Async object %d but couldn't find it!"
                         % (task.async_id)
                     )
-
-            LOGGER.debug(
-                "Watchdog sees %d tasks running" % (len(AsyncManager.running_tasks))
-            )
 
     @staticmethod
     def _wrap_task(task, task_fn):
@@ -165,6 +165,7 @@ class AsyncManager(object):
 
         with AsyncManager.lock:
             AsyncManager.running_tasks.append(task)
+            metrics.async_manager_running_tasks.inc()
 
         return async_task
 
