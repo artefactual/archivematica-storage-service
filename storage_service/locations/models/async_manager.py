@@ -59,7 +59,7 @@ class AsyncManager(object):
                 with metrics.watchdog_loop_timer():
                     AsyncManager._watchdog_loop()
             except Exception as e:
-                LOGGER.warning("Failure in watchdog thread: %s", e)
+                LOGGER.warning("Failure in watchdog thread: %s", e, exc_info=True)
 
             time.sleep(WATCHDOG_POLL_SECONDS)
 
