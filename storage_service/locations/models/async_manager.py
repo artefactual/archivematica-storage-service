@@ -127,6 +127,11 @@ class AsyncManager(object):
     def _wrap_task(task, task_fn):
         """Run a function, capturing its output/errors in `task`"""
 
+        # Share stack of the caller with the task thread, excluding this func.
+        stack = traceback.extract_stack()[:-2]
+        message = "Caller's traceback (most recent call last):\n"
+        message += "".join(traceback.format_list(stack))
+
         def wrapper(*args, **kwargs):
             value = error = None
 
@@ -134,7 +139,7 @@ class AsyncManager(object):
                 value = task_fn(*args, **kwargs)
             except Exception as e:
                 error = e
-                LOGGER.exception("Task threw an error: " + str(e))
+                LOGGER.exception("Task threw an error: " + str(e) + "\n" + message)
 
             if error:
                 task.was_error = True
