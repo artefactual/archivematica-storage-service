@@ -108,4 +108,5 @@ PROTOCOL = {
             "bucket",
         ],
     },
+    models.Space.TAR: {"model": models.TAR, "form": forms.TARForm, "fields": []},
 }

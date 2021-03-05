@@ -42,3 +42,4 @@ from .nfs import NFS
 from .pipeline_local import PipelineLocalFS
 from .swift import Swift
 from .s3 import S3
+from .tape_archive import TAR

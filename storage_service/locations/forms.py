@@ -249,6 +249,12 @@ class S3Form(forms.ModelForm):
         )
 
 
+class TARForm(forms.ModelForm):
+    class Meta:
+        model = models.TAR
+        fields = ()
+
+
 class LocationForm(forms.ModelForm):
     default = forms.BooleanField(
         required=False, label=_("Set as global default location for its purpose")
