@@ -265,6 +265,12 @@ class S3Form(forms.ModelForm):
         )
 
 
+class OfflineReplicaStagingForm(forms.ModelForm):
+    class Meta:
+        model = models.OfflineReplicaStaging
+        fields = ()
+
+
 class LocationForm(forms.ModelForm):
     default = forms.BooleanField(
         required=False, label=_("Set as global default location for its purpose")

@@ -1,0 +1,54 @@
+[
+{
+    "pk": 1,
+    "model": "locations.offlinereplicastaging",
+    "fields": {
+        "space": "eb4348c7-5ec9-432d-b451-93214860aae2"
+    }
+},
+{
+    "pk": 2,
+    "model": "locations.space",
+    "fields": {
+        "last_verified": null,
+        "used": 0,
+        "verified": false,
+        "uuid": "eb4348c7-5ec9-432d-b451-93214860aae2",
+        "access_protocol": "REPLICA",
+        "staging_path": "/var/archivematica/storage_service/",
+        "path": "/archivematica",
+        "size": null
+    }
+},
+{
+    "pk": 8,
+    "model": "locations.location",
+    "fields": {
+        "used": 0,
+        "description": "offline replica staging",
+        "space": "eb4348c7-5ec9-432d-b451-93214860aae2",
+        "enabled": true,
+        "quota": null,
+        "relative_path": "offlinestaging",
+        "purpose": "RP",
+        "uuid": "ac3dc2d0-8422-4067-bb25-dd3cc1c54c2c"
+    }
+},
+{
+    "pk": 1,
+    "model": "locations.package",
+    "fields": {
+        "uuid": "216a6d25-d705-4d00-86c3-02f51c66a0c0",
+        "description": null,
+        "origin_pipeline": null,
+        "current_location": "ac3dc2d0-8422-4067-bb25-dd3cc1c54c2c",
+        "current_path": "locations/fixtures/small_compressed_bag.zip",
+        "pointer_file_location": "",
+        "pointer_file_path": "",
+        "size": 0,
+        "package_type": "AIP",
+        "status": "Uploaded",
+        "misc_attributes": {}
+    }
+}
+]

@@ -674,6 +674,74 @@ class TestPackage(TestCase):
         ]
         self._test_bagit_structure(replica, replication_dir)
 
+    def test_replicate_aip_offline_staging_uncompressed(self):
+        """Ensure that a replica is created and stored correctly as a tarball."""
+        space_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="space")
+        replication_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="replication")
+        staging_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="offline")
+        replica_space = models.Space.objects.create(
+            access_protocol=models.Space.OFFLINE_REPLICA_STAGING,
+            path="/",
+            staging_path=staging_dir,
+        )
+        models.OfflineReplicaStaging.objects.create(space=replica_space)
+
+        aip = models.Package.objects.get(uuid="0d4e739b-bf60-4b87-bc20-67a379b28cea")
+        aip.current_location.space.staging_path = space_dir
+        aip.current_location.space.save()
+
+        aip.current_location.replicators.create(
+            space=replica_space,
+            relative_path=replication_dir,
+            purpose=models.Location.REPLICATOR,
+        )
+
+        assert aip.replicas.count() == 0
+
+        aip.create_replicas()
+        replica = aip.replicas.first()
+
+        assert aip.replicas.count() == 1
+        assert replica is not None
+        expected_replica_path = os.path.join(
+            replication_dir, utils.uuid_to_path(replica.uuid), "working_bag.tar"
+        )
+        assert os.path.exists(expected_replica_path)
+
+    def test_replicate_aip_offline_staging_compressed(self):
+        """Ensure that a replica is created and stored correctly as-is."""
+        space_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="space")
+        replication_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="replication")
+        staging_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="offline")
+        replica_space = models.Space.objects.create(
+            access_protocol=models.Space.OFFLINE_REPLICA_STAGING,
+            path="/",
+            staging_path=staging_dir,
+        )
+        models.OfflineReplicaStaging.objects.create(space=replica_space)
+
+        aip = models.Package.objects.get(uuid="88deec53-c7dc-4828-865c-7356386e9399")
+        aip.current_location.space.staging_path = space_dir
+        aip.current_location.space.save()
+
+        aip.current_location.replicators.create(
+            space=replica_space,
+            relative_path=replication_dir,
+            purpose=models.Location.REPLICATOR,
+        )
+
+        assert aip.replicas.count() == 0
+
+        aip.create_replicas()
+        replica = aip.replicas.first()
+
+        assert aip.replicas.count() == 1
+        assert replica is not None
+        expected_replica_path = os.path.join(
+            replication_dir, utils.uuid_to_path(replica.uuid), "working_bag.7z"
+        )
+        assert os.path.exists(expected_replica_path)
+
     def test_deletion_and_creation_of_replicas_compressed(self):
         """Ensure that when it is requested a replica be created, then
         existing replicas are checked for and deleted if necessary, e.g.

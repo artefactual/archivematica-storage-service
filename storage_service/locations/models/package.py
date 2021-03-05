@@ -241,6 +241,16 @@ class Package(models.Model):
         is_file = os.path.isfile(local_path)
         return space_is_encr and is_file
 
+    def is_packaged(self, local_path):
+        """Determines whether or not the package at ``local_path`` is
+        packaged.
+        """
+        space_is_packaged = getattr(
+            self.current_location.space.get_child_space(), "packaged_space", False
+        )
+        is_file = os.path.isfile(local_path)
+        return space_is_packaged and is_file
+
     @property
     def is_compressed(self):
         """ Determines whether or not the package is a compressed file. """
@@ -327,9 +337,15 @@ class Package(models.Model):
 
         :returns: Local path to this package.
         """
+
         local_path = self.get_local_path()
-        if local_path and not self.is_encrypted(local_path):
+        if (
+            local_path
+            and not self.is_encrypted(local_path)
+            and not self.is_packaged(local_path)
+        ):
             return local_path
+
         # Not locally accessible, so copy to SS internal temp dir
         ss_internal = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
         temp_dir = tempfile.mkdtemp(dir=ss_internal.full_path)

@@ -11,6 +11,7 @@ import mimetypes
 import os
 import shutil
 import subprocess
+import tarfile
 import uuid
 
 import scandir
@@ -76,7 +77,9 @@ COMPRESS_EXTENSIONS = (
     COMPRESS_EXTENSION_GZIP,
 )
 
-PACKAGE_EXTENSIONS = (".tar",) + COMPRESS_EXTENSIONS
+TAR_EXTENSION = ".tar"
+
+PACKAGE_EXTENSIONS = (TAR_EXTENSION,) + COMPRESS_EXTENSIONS
 
 COMPRESS_PROGRAM_7Z = "7-Zip"
 COMPRESS_PROGRAM_TAR = "tar"
@@ -348,7 +351,7 @@ def get_compress_command(compression, extract_path, basename, full_path):
         `compressed_filename` is the full path to the compressed file
     """
     if compression in (COMPRESSION_TAR, COMPRESSION_TAR_BZIP2, COMPRESSION_TAR_GZIP):
-        compressed_filename = os.path.join(extract_path, basename + ".tar")
+        compressed_filename = os.path.join(extract_path, basename + TAR_EXTENSION)
         relative_path = os.path.dirname(full_path)
         algo = ""
         if compression == COMPRESSION_TAR_BZIP2:
@@ -551,6 +554,77 @@ def set_compression_transforms(aip, compression, transform_order):
         raise ValueError("Unknown compression algorithm")
 
     return version, extension, program_name
+
+
+# ########### TAR Packaging ############
+
+
+class TARException(Exception):
+    pass
+
+
+def create_tar(path, extension=False):
+    """Create a tarfile from the directory at ``path`` and overwrite
+    ``path`` with that tarfile.
+
+    :param path: Path to directory or file to tar (str)
+    :param extension: Flag indicating whether to add .tar extension (bool)
+    """
+    path = path.rstrip("/")
+    tarpath = "{}{}".format(path, TAR_EXTENSION)
+    changedir = os.path.dirname(tarpath)
+    source = os.path.basename(path)
+    cmd = ["tar", "-C", changedir, "-cf", tarpath, source]
+    LOGGER.info(
+        "creating archive of %s at %s, relative to %s", source, tarpath, changedir
+    )
+    fail_msg = "Failed to create a tarfile at {tarpath} for dir at {path}".format(
+        tarpath=tarpath, path=path
+    )
+    try:
+        subprocess.check_output(cmd)
+    except (OSError, subprocess.CalledProcessError):
+        raise TARException(fail_msg)
+
+    # Providing the TAR is successfully created then remove the original.
+    if os.path.isfile(tarpath) and tarfile.is_tarfile(tarpath):
+        try:
+            shutil.rmtree(path)
+        except OSError:
+            # Remove a file-path as We're likely packaging a file, e.g. 7z.
+            os.remove(path)
+        if not extension:
+            os.rename(tarpath, path)
+    else:
+        raise TARException(fail_msg)
+
+    if not tarfile.is_tarfile(tarpath if extension else path):
+        raise TARException(fail_msg)
+
+    if os.path.exists(path if extension else tarpath):
+        raise TARException(fail_msg)
+
+
+def extract_tar(tarpath):
+    """Extract tarfile at ``path`` to a directory at ``path``.
+
+    :param tarpath: Path to tarfile to extract (str)
+    """
+    newtarpath = tarpath
+    newtarpath = "{}{}".format(tarpath, TAR_EXTENSION)
+    os.rename(tarpath, newtarpath)
+    changedir = os.path.dirname(newtarpath)
+    cmd = ["tar", "-xf", newtarpath, "-C", changedir]
+    try:
+        subprocess.check_output(cmd)
+    except (OSError, subprocess.CalledProcessError) as err:
+        fail_msg = _(
+            "Failed to extract %(tarpath)s: %(error)s"
+            % {"tarpath": tarpath, "error": err}
+        )
+        os.rename(newtarpath, tarpath)
+        raise TARException(fail_msg)
+    os.remove(newtarpath)
 
 
 # ########### OTHER ############

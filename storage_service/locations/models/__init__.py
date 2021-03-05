@@ -40,5 +40,6 @@ from .local_filesystem import LocalFilesystem
 from .lockssomatic import Lockssomatic
 from .nfs import NFS
 from .pipeline_local import PipelineLocalFS
+from .replica_staging import OfflineReplicaStaging
 from .swift import Swift
 from .s3 import S3
