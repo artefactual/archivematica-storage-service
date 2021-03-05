@@ -74,6 +74,11 @@ PROTOCOL = {
         "form": forms.NFSForm,
         "fields": ["manually_mounted", "remote_name", "remote_path", "version"],
     },
+    models.Space.OFFLINE_REPLICA_STAGING: {
+        "model": models.OfflineReplicaStaging,
+        "form": forms.OfflineReplicaStagingForm,
+        "fields": [],
+    },
     models.Space.PIPELINE_LOCAL_FS: {
         "model": models.PipelineLocalFS,
         "form": forms.PipelineLocalFSForm,

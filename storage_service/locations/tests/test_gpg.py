@@ -5,15 +5,13 @@ from __future__ import print_function
 from __future__ import absolute_import
 from collections import namedtuple
 import os
-import shutil
-import subprocess
 import tarfile
 
 from django.test import TestCase
 from metsrw.plugins import premisrw
 import pytest
 
-from common import gpgutils
+from common import gpgutils, utils
 from locations.models import gpg, Package, space
 
 
@@ -330,8 +328,8 @@ def test__gpg_encrypt(mocker, path, isdir, encr_path_is_file, encrypt_ret, expec
     mocker.patch.object(os.path, "isdir", return_value=isdir)
     mocker.patch.object(os, "remove")
     mocker.patch.object(os, "rename")
-    mocker.patch.object(gpg, "_create_tar")
-    mocker.patch.object(gpg, "_extract_tar")
+    mocker.patch.object(utils, "create_tar")
+    mocker.patch.object(utils, "extract_tar")
     mocker.patch.object(
         gpgutils, "gpg_encrypt_file", return_value=(encr_path, encrypt_ret)
     )
@@ -341,7 +339,7 @@ def test__gpg_encrypt(mocker, path, isdir, encr_path_is_file, encrypt_ret, expec
         os.remove.assert_called_once_with(path)
         os.rename.assert_called_once_with(encr_path, path)
         assert ret == (path, encrypt_ret)
-        assert not gpg._extract_tar.called
+        assert not utils.extract_tar.called
     else:
         with pytest.raises(gpg.GPGException) as excinfo:
             gpg._gpg_encrypt(path, SOME_FINGERPRINT)
@@ -349,11 +347,11 @@ def test__gpg_encrypt(mocker, path, isdir, encr_path_is_file, encrypt_ret, expec
             excinfo.value
         )
         if isdir:
-            gpg._extract_tar.assert_called_once_with(path)
+            utils.extract_tar.assert_called_once_with(path)
     os.path.isdir.assert_called_once_with(path)
     os.path.isfile.assert_called_once_with(encr_path)
     if isdir:
-        gpg._create_tar.assert_called_once_with(path)
+        utils.create_tar.assert_called_once_with(path)
 
 
 def test__get_encrypted_path(monkeypatch):
@@ -401,7 +399,7 @@ def test__gpg_decrypt(
     mocker.patch("os.rename")
     mocker.patch.object(tarfile, "is_tarfile", return_value=True)
     mocker.patch.object(gpgutils, "gpg_decrypt_file", return_value=decrypt_ret)
-    mocker.patch.object(gpg, "_extract_tar")
+    mocker.patch.object(utils, "extract_tar")
 
     def isfilemock(path_):
         if path_ == path:
@@ -416,7 +414,7 @@ def test__gpg_decrypt(
         os.remove.assert_called_once_with(path)
         os.rename.assert_called_once_with(decr_path, path)
         tarfile.is_tarfile.assert_called_once_with(path)
-        gpg._extract_tar.assert_called_once_with(path)
+        utils.extract_tar.assert_called_once_with(path)
         assert ret == path
     else:
         with pytest.raises(gpg.GPGException) as excinfo:
@@ -432,7 +430,7 @@ def test__gpg_decrypt(
         assert not os.remove.called
         assert not os.rename.called
         assert not tarfile.is_tarfile.called
-        assert not gpg._extract_tar.called
+        assert not utils.extract_tar.called
     if isfile:
         gpgutils.gpg_decrypt_file.assert_called_once_with(path, decr_path)
     else:
@@ -441,96 +439,6 @@ def test__gpg_decrypt(
 
 def test__parse_gpg_version():
     assert GPG_VERSION == gpg._parse_gpg_version(RAW_GPG_VERSION)
-
-
-@pytest.mark.parametrize(
-    "path, will_be_dir, sp_raises, expected",
-    [
-        ExTarCase(path="/a/b/c", isdir=True, raises=False, expected="success"),
-        ExTarCase(path="/a/b/d", isdir=False, raises=False, expected="fail"),
-        ExTarCase(path="/a/b/c", isdir=True, raises=True, expected="fail"),
-    ],
-)
-def test__extract_tar(mocker, path, will_be_dir, sp_raises, expected):
-    if sp_raises:
-        mocker.patch.object(subprocess, "check_output", side_effect=OSError("gotcha!"))
-    else:
-        mocker.patch.object(subprocess, "check_output")
-    mocker.patch.object(os, "rename")
-    mocker.patch.object(os, "remove")
-    if will_be_dir:
-        mocker.patch.object(os.path, "isdir", return_value=True)
-    else:
-        mocker.patch.object(os.path, "isdir", return_value=False)
-    tarpath_ext = "{}.tar".format(path)
-    dirname = os.path.dirname(tarpath_ext)
-    if expected == "success":
-        ret = gpg._extract_tar(path)
-        assert ret is None
-        os.remove.assert_called_once_with(tarpath_ext)
-    else:
-        with pytest.raises(gpg.GPGException) as excinfo:
-            ret = gpg._extract_tar(path)
-        assert "Failed to extract {} to a directory at the same" " location.".format(
-            path
-        ) == str(excinfo.value)
-        os.rename.assert_any_call(tarpath_ext, path)
-        assert not os.remove.called
-    os.rename.assert_any_call(path, tarpath_ext)
-    subprocess.check_output.assert_called_once_with(
-        ["tar", "-xf", tarpath_ext, "-C", dirname]
-    )
-
-
-@pytest.mark.parametrize(
-    "path, will_be_file, will_be_tar, sp_raises, expected",
-    [
-        CrTarCase(
-            path="/a/b/c", isfile=True, istar=True, raises=False, expected="success"
-        ),
-        CrTarCase(
-            path="/a/b/c/", isfile=True, istar=True, raises=False, expected="success"
-        ),
-        CrTarCase(
-            path="/a/b/c", isfile=True, istar=False, raises=False, expected="fail"
-        ),
-        CrTarCase(
-            path="/a/b/c", isfile=False, istar=True, raises=False, expected="fail"
-        ),
-        CrTarCase(
-            path="/a/b/c", isfile=False, istar=False, raises=True, expected="fail"
-        ),
-    ],
-)
-def test__create_tar(mocker, path, will_be_file, will_be_tar, sp_raises, expected):
-    if sp_raises:
-        mocker.patch.object(subprocess, "check_output", side_effect=OSError("gotcha!"))
-    else:
-        mocker.patch.object(subprocess, "check_output")
-    mocker.patch.object(os.path, "isfile", return_value=will_be_file)
-    mocker.patch.object(tarfile, "is_tarfile", return_value=will_be_tar)
-    mocker.patch.object(os, "rename")
-    mocker.patch.object(shutil, "rmtree")
-    fixed_path = path.rstrip("/")
-    tarpath = "{}.tar".format(fixed_path)
-    if expected == "success":
-        ret = gpg._create_tar(path)
-        shutil.rmtree.assert_called_once_with(fixed_path)
-        os.rename.assert_called_once_with(tarpath, fixed_path)
-        tarfile.is_tarfile.assert_any_call(fixed_path)
-        assert ret is None
-    else:
-        with pytest.raises(gpg.GPGException) as excinfo:
-            ret = gpg._create_tar(path)
-        assert "Failed to create a tarfile at {} for dir at {}".format(
-            tarpath, fixed_path
-        ) == str(excinfo.value)
-        assert not shutil.rmtree.called
-        assert not os.rename.called
-    if not sp_raises:
-        os.path.isfile.assert_called_once_with(tarpath)
-        if will_be_file:
-            tarfile.is_tarfile.assert_any_call(tarpath)
 
 
 class TestGPG(TestCase):
