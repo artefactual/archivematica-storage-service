@@ -334,6 +334,25 @@ class TestPackageDataTable(TestCase):
         )
         assert datatable.total_records == TOTAL_RECORDS_IN_LOCATION
 
+    def test_packages_are_filtered_by_location_and_description(self):
+        aip_storage_location = models.Location.objects.get(
+            uuid="615103f0-0ee0-4a12-ba17-43192d1143ea"
+        )
+        # count packages only from that location
+        datatable = datatable_utils.PackageDataTable(
+            {
+                "sSearch": "broken bag",
+                "iDisplayStart": 0,
+                "iDisplayLength": 10,
+                "sEcho": "1",
+                "location-uuid": aip_storage_location.uuid,
+            }
+        )
+        assert len(datatable.records) == 1
+        package = datatable.records[0]
+        assert package.current_path == "broken_bag"
+        assert package.description == "Broken bag"
+
 
 class TestFixityLogDataTable(TestCase):
 
@@ -359,6 +378,27 @@ class TestFixityLogDataTable(TestCase):
             }
         )
         assert datatable.total_records == TOTAL_RECORDS_IN_PACKAGE
+
+    def test_fixity_logs_are_filtered_by_package_and_error_details(self):
+        package = models.Package.objects.get(
+            uuid="e0a41934-c1d7-45ba-9a95-a7531c063ed1"
+        )
+        # count fixity logs only from that package
+        datatable = datatable_utils.FixityLogDataTable(
+            {
+                "sSearch": "FAILED",
+                "iDisplayStart": 0,
+                "iDisplayLength": 10,
+                "sEcho": "1",
+                "package-uuid": package.uuid,
+            }
+        )
+        assert len(datatable.records) == 2
+        expected_errors = [
+            "Checksum failed.",
+            "Other thing failed.",
+        ]
+        assert [log.error_details for log in datatable.records] == expected_errors
 
     def test_search_error_details(self):
         datatable = datatable_utils.FixityLogDataTable(

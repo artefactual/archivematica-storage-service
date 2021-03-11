@@ -60,7 +60,7 @@ class PackageDataTable(object):
             search = self.params["search"]
             # remove any leading slashes so we can search in relative paths
             search_as_path = search.lstrip(os.path.sep)
-            search_filter |= (
+            search_filter &= (
                 Q(uuid__icontains=search)
                 | Q(description__icontains=search)
                 | Q(origin_pipeline__uuid__icontains=search)
@@ -191,7 +191,7 @@ class FixityLogDataTable(PackageDataTable):
         self.echo = self.params["echo"]
         if self.params["search"]:
             search = self.params["search"]
-            search_filter |= Q(error_details__icontains=search)
+            search_filter &= Q(error_details__icontains=search)
         queryset = self.model.objects.filter(search_filter).distinct()
         self.total_display_records = queryset.count()
         self.records = self.get_records(queryset)
