@@ -80,10 +80,10 @@ def package_list(request):
 
 
 def package_list_ajax(request):
-    datatable = datatable_utils.DataTable(request.GET)
+    datatable = datatable_utils.PackageDataTable(request.GET)
     data = []
     csrf_token = get_token(request)
-    for package in datatable.packages:
+    for package in datatable.records:
         data.append(
             get_template("snippets/package_row.html")
             .render(
