@@ -48,6 +48,26 @@ var setPackagesDataTable = function (options) {
   );
 };
 
+var setFixityLogsDataTable = function (options) {
+  var $userDataEl = $("#user-data-packages");
+  var uri = $userDataEl.data("uri") || "/";
+  var package_uuid = $userDataEl.data("package-uuid");
+  var filter;
+  if (typeof package_uuid === "string" && package_uuid.length) {
+    // this will get to the request.GET query dict
+    // as package-uuid=<location>
+    filter = { name: "package-uuid", value: package_uuid };
+  }
+  $(".fixity-logs-datatable").dataTable(
+    getAjaxDataTableOptions(
+      options,
+      uri + "fixity_ajax",
+      $(".fixity-logs-datatable thead th"),
+      filter
+    )
+  );
+};
+
 var setDataTables = function () {
   var dataTableOptions = {
     // List of language strings from https://datatables.net/reference/option/language
@@ -78,6 +98,7 @@ var setDataTables = function () {
   };
   $(".datatable").dataTable(dataTableOptions);
   setPackagesDataTable(dataTableOptions);
+  setFixityLogsDataTable(dataTableOptions);
 };
 
 $(document).ready(function () {

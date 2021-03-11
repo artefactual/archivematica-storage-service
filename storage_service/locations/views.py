@@ -112,8 +112,38 @@ def package_fixity(request, package_uuid):
     log_entries = FixityLog.objects.filter(package__uuid=package_uuid).order_by(
         "-datetime_reported"
     )
-    context = {"log_entries": log_entries}
+    context = {
+        "log_entries": log_entries,
+        "uri": request.build_absolute_uri("/"),
+        "package_uuid": package_uuid,
+    }
     return render(request, "locations/fixity_results.html", context)
+
+
+def fixity_logs_ajax(request):
+    datatable = datatable_utils.FixityLogDataTable(request.GET)
+    data = []
+    for fixity_log in datatable.records:
+        data.append(
+            get_template("snippets/fixity_log_row.html")
+            .render(
+                {
+                    "entry": fixity_log,
+                }
+            )
+            .strip()
+        )
+    # these are the values that DataTables expects from the server
+    # see "Reply from the server" in http://legacy.datatables.net/usage/server-side
+    response = {
+        "iTotalRecords": datatable.total_records,
+        "iTotalDisplayRecords": datatable.total_display_records,
+        "sEcho": datatable.echo,
+        "aaData": data,
+    }
+    return HttpResponse(
+        status=200, content=json.dumps(response), content_type="application/json"
+    )
 
 
 class PackageRequestHandlerConfig(object):
