@@ -14,6 +14,7 @@ import os
 from django.db.models import Q
 from django.utils import timezone
 
+from .models import FixityLog
 from .models import Package
 
 
@@ -169,3 +170,28 @@ class PackageDataTable(object):
 
     def sort_by_fixity_status_key(self, package):
         return package.latest_fixity_check_result
+
+
+class FixityLogDataTable(PackageDataTable):
+
+    model = FixityLog
+
+    ORDER_BY_MAPPING = {
+        0: "datetime_reported",
+        1: "error_details",
+    }
+
+    def __init__(self, query_dict):
+        search_filter = Q()
+        package_uuid = query_dict.get("package-uuid")
+        if package_uuid:
+            search_filter = Q(package=package_uuid)
+        self.total_records = self.model.objects.filter(search_filter).count()
+        self.params = self.parse_datatable_parameters(query_dict)
+        self.echo = self.params["echo"]
+        if self.params["search"]:
+            search = self.params["search"]
+            search_filter |= Q(error_details__icontains=search)
+        queryset = self.model.objects.filter(search_filter).distinct()
+        self.total_display_records = queryset.count()
+        self.records = self.get_records(queryset)

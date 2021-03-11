@@ -16,6 +16,9 @@ FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures", ""))
 # There are 12 total packages in package.json.
 TOTAL_FIXTURE_PACKAGES = 12
 
+# There are 4 total fixity logs in fixity_log.json
+TOTAL_FIXTURE_FIXITY_LOGS = 4
+
 
 class TestPackageDataTable(TestCase):
 
@@ -330,3 +333,112 @@ class TestPackageDataTable(TestCase):
             }
         )
         assert datatable.total_records == TOTAL_RECORDS_IN_LOCATION
+
+
+class TestFixityLogDataTable(TestCase):
+
+    fixtures = ["base.json", "package.json", "fixity_log.json"]
+
+    def test_fixity_logs_are_filtered_by_package(self):
+        # count all fixity logs with no filtering
+        datatable = datatable_utils.FixityLogDataTable(
+            {"iDisplayStart": 0, "iDisplayLength": 10, "sEcho": "1"}
+        )
+        assert datatable.total_records == TOTAL_FIXTURE_FIXITY_LOGS
+        TOTAL_RECORDS_IN_PACKAGE = 3
+        package = models.Package.objects.get(
+            uuid="e0a41934-c1d7-45ba-9a95-a7531c063ed1"
+        )
+        # count fixity logs only from that package
+        datatable = datatable_utils.FixityLogDataTable(
+            {
+                "iDisplayStart": 0,
+                "iDisplayLength": 10,
+                "sEcho": "1",
+                "package-uuid": package.uuid,
+            }
+        )
+        assert datatable.total_records == TOTAL_RECORDS_IN_PACKAGE
+
+    def test_search_error_details(self):
+        datatable = datatable_utils.FixityLogDataTable(
+            {
+                "sSearch": "failed",
+                "iDisplayStart": 0,
+                "iDisplayLength": 20,
+                "sEcho": "1",
+            }
+        )
+        expected_params = {
+            "search": "failed",
+            "display_start": 0,
+            "display_length": 20,
+            "sorting_column": {},
+            "echo": 1,
+        }
+        assert datatable.params == expected_params
+        assert datatable.total_records == TOTAL_FIXTURE_FIXITY_LOGS
+        assert datatable.total_display_records == 2
+        assert len(datatable.records) == 2
+
+    def test_sorting_datetime_reported_ascending(self):
+        datatable = datatable_utils.FixityLogDataTable(
+            {
+                "iSortingCols": 1,
+                "iSortCol_0": 0,
+                "bSortable_0": "true",
+                "sSortDir_0": "asc",
+                "iDisplayStart": 0,
+                "iDisplayLength": 10,
+                "sEcho": "1",
+            }
+        )
+        expected_params = {
+            "search": "",
+            "display_start": 0,
+            "display_length": 10,
+            "sorting_column": {"index": 0, "direction": "asc"},
+            "echo": 1,
+        }
+        assert datatable.params == expected_params
+        expected_datetimes = [
+            "2015-12-15T03:00:05",
+            "2016-12-15T03:00:05",
+            "2017-12-15T03:00:05",
+            "2018-12-15T03:00:05",
+        ]
+        assert [
+            log.datetime_reported.strftime("%Y-%m-%dT%H:%M:%S")
+            for log in datatable.records
+        ] == expected_datetimes
+
+    def test_sorting_datetime_reported_descending(self):
+        datatable = datatable_utils.FixityLogDataTable(
+            {
+                "iSortingCols": 1,
+                "iSortCol_0": 0,
+                "bSortable_0": "true",
+                "sSortDir_0": "desc",
+                "iDisplayStart": 0,
+                "iDisplayLength": 10,
+                "sEcho": "1",
+            }
+        )
+        expected_params = {
+            "search": "",
+            "display_start": 0,
+            "display_length": 10,
+            "sorting_column": {"index": 0, "direction": "desc"},
+            "echo": 1,
+        }
+        assert datatable.params == expected_params
+        expected_datetimes = [
+            "2018-12-15T03:00:05",
+            "2017-12-15T03:00:05",
+            "2016-12-15T03:00:05",
+            "2015-12-15T03:00:05",
+        ]
+        assert [
+            log.datetime_reported.strftime("%Y-%m-%dT%H:%M:%S")
+            for log in datatable.records
+        ] == expected_datetimes
