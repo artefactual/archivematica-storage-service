@@ -58,9 +58,16 @@ var setFixityLogsDataTable = function (options) {
     // as package-uuid=<location>
     filter = { name: "package-uuid", value: package_uuid };
   }
+  // initially sort the table by date column, newest first
+  var customOptions = {
+    aaSorting: [[0, "desc"]],
+  };
+  for (var k in options) {
+    customOptions[k] = options[k];
+  }
   $(".fixity-logs-datatable").dataTable(
     getAjaxDataTableOptions(
-      options,
+      customOptions,
       uri + "fixity_ajax",
       $(".fixity-logs-datatable thead th"),
       filter
