@@ -17,5 +17,6 @@ repos:
     files: ^storage_service/static/js/(project|.*directory_picker|file-explorer).js
     args: [--fix]
     additional_dependencies:
-    - eslint-config-prettier
-    - eslint-plugin-prettier
+    - eslint@7.22.0
+    - eslint-config-prettier@8.1.0
+    - eslint-plugin-prettier@3.3.1
