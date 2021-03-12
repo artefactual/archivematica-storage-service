@@ -10,3 +10,11 @@ repos:
   hooks:
   - id: flake8
     language_version: python3
+- repo: https://github.com/pre-commit/mirrors-eslint
+  rev: 'v7.21.0'
+  hooks:
+  - id: eslint
+    files: ^storage_service/static/js/(project|.*directory_picker|file-explorer).js
+    additional_dependencies:
+    - eslint-config-prettier
+    - eslint-plugin-prettier
