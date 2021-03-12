@@ -15,6 +15,7 @@ repos:
   hooks:
   - id: eslint
     files: ^storage_service/static/js/(project|.*directory_picker|file-explorer).js
+    args: [--fix]
     additional_dependencies:
     - eslint-config-prettier
     - eslint-plugin-prettier
