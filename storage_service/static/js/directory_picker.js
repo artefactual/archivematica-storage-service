@@ -17,16 +17,16 @@ You should have received a copy of the GNU General Public License
 along with Archivematica.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// eslint-disable-next-line no-redeclare, no-unused-vars, no-undef
 var DirectoryPickerView = fileBrowser.FileExplorer.extend({
-
-  initialize: function() {
-    this.structure                  = {};
+  initialize: function () {
+    this.structure = {};
     this.options.closeDirsByDefault = true;
 
     // hide all files
-    this.options.entryDisplayFilter = function(entry) {
+    this.options.entryDisplayFilter = function (entry) {
       if (entry.children == undefined) {
-          return false;
+        return false;
       }
       return true;
     };
@@ -39,119 +39,116 @@ var DirectoryPickerView = fileBrowser.FileExplorer.extend({
     this.render();
 
     var self = this;
-    this.options.actionHandlers = this.options.actionHandlers || [ 
-      { 
-        name: gettext('Select'),
-        description: gettext('Select directory'),
-        iconHtml: gettext('Add'),
-        logic: function(result) { 
-          self.addDirectory(self, result.path); 
-        } 
-      } 
-    ]; 
+    this.options.actionHandlers = this.options.actionHandlers || [
+      {
+        name: gettext("Select"),
+        description: gettext("Select directory"),
+        iconHtml: gettext("Add"),
+        logic: function (result) {
+          self.addDirectory(self, result.path);
+        },
+      },
+    ];
   },
 
-  addDirectory: function(fileExplorer, path) {
+  addDirectory: function (fileExplorer, path) {
     var self = this;
-    $.post(
-      this.ajaxAddDirectoryUrl,
-      {path: path},
-      function(response) {
-        self.updateSelectedDirectories();
-      }
-    );
-  },
-
-  deleteSource: function(id) {
-    var self = this;
-    this.confirm(
-      gettext('De-select directory'),
-      gettext('Are you sure you want to de-select this?'),
-      function() {
-        $.post(
-          self.ajaxDeleteDirectoryUrl + id + '/',
-          {},
-          function(response) {
-            self.updateSelectedDirectories();
-          }
-        );
-      }
-    );
-  },
-
-  updateSelectedDirectories: function(cb) {
-    var self = this;
-    $.get(this.ajaxSelectedDirectoryUrl + '?' + new Date().getTime(), function(results) {
-      tableTemplate = _.template($('#template-source-directory-table').html());
-      rowTemplate   = _.template($('#template-source-directory-table-row').html());
-
-      $('#directories').empty();
-      $('#directories').off('click');
-
-      if (results['directories'].length) {
-        var rowHtml = '';
-
-        for(var index in results['directories']) {
-          rowHtml += rowTemplate({
-            id:   results.directories[index].uuid,
-            path: results.directories[index].path
-          });
-        }
-
-        $('#directories').append(tableTemplate({rows: rowHtml}));
-
-        $('#directories').on('click', 'a', function() {
-          var directoryId = $(this).attr('id').replace('directory_', '');
-          self.deleteSource(directoryId);
-        });
-      }
-
-      if (cb != undefined) {
-        cb();
-      }
+    $.post(this.ajaxAddDirectoryUrl, { path: path }, function () {
+      self.updateSelectedDirectories();
     });
   },
 
-  alert: function(title, message) {
-    $('<div class="task-dialog">' + message + '</div>')
-      .dialog({
-        title: title,
-        width: 200,
-        height: 200,
-        modal: true,
-        buttons: [
-          {
-            text: gettext('OK'),
-            click: function() {
-              $(this).dialog('close');
-            }
-          }
-        ]
-      });
+  deleteSource: function (id) {
+    var self = this;
+    this.confirm(
+      gettext("De-select directory"),
+      gettext("Are you sure you want to de-select this?"),
+      function () {
+        $.post(self.ajaxDeleteDirectoryUrl + id + "/", {}, function () {
+          self.updateSelectedDirectories();
+        });
+      }
+    );
   },
 
-  confirm: function(title, message, logic) {
-    $('<div class="task-dialog">' + message + '</div>')
-      .dialog({
-        title: title,
-        width: 200,
-        height: 200,
-        modal: true,
-        buttons: [
-          {
-            text: gettext('Yes'),
-            click: function() {
-              $(this).dialog('close');
-              logic();
-            }
-          },
-          {
-            text: gettext('Cancel'),
-            click: function() {
-              $(this).dialog('close');
-            }
+  updateSelectedDirectories: function (cb) {
+    var self = this;
+    $.get(
+      this.ajaxSelectedDirectoryUrl + "?" + new Date().getTime(),
+      function (results) {
+        var tableTemplate = _.template(
+            $("#template-source-directory-table").html()
+          ),
+          rowTemplate = _.template(
+            $("#template-source-directory-table-row").html()
+          );
+
+        $("#directories").empty();
+        $("#directories").off("click");
+
+        if (results["directories"].length) {
+          var rowHtml = "";
+
+          for (var index in results["directories"]) {
+            rowHtml += rowTemplate({
+              id: results.directories[index].uuid,
+              path: results.directories[index].path,
+            });
           }
-        ]
-      });
-  }
+
+          $("#directories").append(tableTemplate({ rows: rowHtml }));
+
+          $("#directories").on("click", "a", function () {
+            var directoryId = $(this).attr("id").replace("directory_", "");
+            self.deleteSource(directoryId);
+          });
+        }
+
+        if (cb != undefined) {
+          cb();
+        }
+      }
+    );
+  },
+
+  alert: function (title, message) {
+    $('<div class="task-dialog">' + message + "</div>").dialog({
+      title: title,
+      width: 200,
+      height: 200,
+      modal: true,
+      buttons: [
+        {
+          text: gettext("OK"),
+          click: function () {
+            $(this).dialog("close");
+          },
+        },
+      ],
+    });
+  },
+
+  confirm: function (title, message, logic) {
+    $('<div class="task-dialog">' + message + "</div>").dialog({
+      title: title,
+      width: 200,
+      height: 200,
+      modal: true,
+      buttons: [
+        {
+          text: gettext("Yes"),
+          click: function () {
+            $(this).dialog("close");
+            logic();
+          },
+        },
+        {
+          text: gettext("Cancel"),
+          click: function () {
+            $(this).dialog("close");
+          },
+        },
+      ],
+    });
+  },
 });
