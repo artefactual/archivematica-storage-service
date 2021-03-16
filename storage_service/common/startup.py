@@ -30,7 +30,7 @@ def startup():
         {
             "purpose": locations_models.Location.TRANSFER_SOURCE,
             "relative_path": "home",
-            "description": "",
+            "description": "Default transfer source",
             "default_setting": "default_transfer_source",
         },
         {
