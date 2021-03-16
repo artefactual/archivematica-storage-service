@@ -58,6 +58,7 @@ urlpatterns = [
         views.package_fixity,
         name="package_fixity",
     ),
+    url(r"^fixity_ajax/$", views.fixity_logs_ajax, name="fixity_logs_ajax"),
     # Pipelines
     url(r"^pipelines/$", views.pipeline_list, name="pipeline_list"),
     url(r"^pipelines/create/$", views.pipeline_edit, name="pipeline_create"),

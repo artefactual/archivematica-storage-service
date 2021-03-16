@@ -1,0 +1,17 @@
+{% load i18n %}
+  <table class="fixity-logs-datatable">
+    <thead>
+      <tr>
+        <th class="sortable">{% trans "Date" %}</th>
+        <th class="sortable">{% trans "Error" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td colspan="2" class="dataTables_empty">{% trans "Loading data from server" %}</td>
+      </tr>
+    </tbody>
+  </table>
+  <div id="user-data-packages" style="display: none;"
+       data-uri="{{ uri }}"
+       data-package-uuid="{{ package_uuid }}">

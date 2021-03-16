@@ -63,4 +63,4 @@ ENV DJANGO_SETTINGS_MODULE storage_service.settings.production
 
 EXPOSE 8000
 
-ENTRYPOINT /usr/local/bin/gunicorn --config=/etc/archivematica/storage-service.gunicorn-config.py storage_service.wsgi:application
+ENTRYPOINT ["/usr/local/bin/gunicorn", "--config=/etc/archivematica/storage-service.gunicorn-config.py", "storage_service.wsgi:application"]

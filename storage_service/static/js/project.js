@@ -1,7 +1,81 @@
-$(document).ready(function () {
+var getAjaxDataTableOptions = function (options, ajaxSource, headers, filter) {
+  var result = {};
+  for (var key in options) {
+    result[key] = options[key];
+  }
+  // enable server-side processing
+  result["bServerSide"] = true;
+  result["bProcessing"] = true;
+  result["sAjaxSource"] = ajaxSource;
+  if (undefined !== filter) {
+    result["fnServerParams"] = function (data) {
+      data.push(filter);
+    };
+  }
+  var columns = [];
+  // for each column create a function that replaces the
+  // table cell content with the HTML returned by the server
+  headers.each(function (i, header) {
+    columns.push({
+      mData: function (source) {
+        var $tr = $(Object.values(source).join(""));
+        return $tr.find("td").eq(i).html();
+      },
+      bSortable: $(header).hasClass("sortable"),
+    });
+  });
+  result["aoColumns"] = columns;
+  return result;
+};
+
+var setPackagesDataTable = function (options) {
   var $userDataEl = $("#user-data-packages");
   var uri = $userDataEl.data("uri") || "/";
   var location = $userDataEl.data("location-uuid");
+  var filter;
+  if (typeof location === "string" && location.length) {
+    // this will get to the request.GET query dict
+    // as location-uuid=<location>
+    filter = { name: "location-uuid", value: location };
+  }
+  $(".packages-datatable").dataTable(
+    getAjaxDataTableOptions(
+      options,
+      uri + "packages_ajax",
+      $(".packages-datatable thead th"),
+      filter
+    )
+  );
+};
+
+var setFixityLogsDataTable = function (options) {
+  var $userDataEl = $("#user-data-packages");
+  var uri = $userDataEl.data("uri") || "/";
+  var package_uuid = $userDataEl.data("package-uuid");
+  var filter;
+  if (typeof package_uuid === "string" && package_uuid.length) {
+    // this will get to the request.GET query dict
+    // as package-uuid=<location>
+    filter = { name: "package-uuid", value: package_uuid };
+  }
+  // initially sort the table by date column, newest first
+  var customOptions = {
+    aaSorting: [[0, "desc"]],
+  };
+  for (var key in options) {
+    customOptions[key] = options[key];
+  }
+  $(".fixity-logs-datatable").dataTable(
+    getAjaxDataTableOptions(
+      customOptions,
+      uri + "fixity_ajax",
+      $(".fixity-logs-datatable thead th"),
+      filter
+    )
+  );
+};
+
+var setDataTables = function () {
   var dataTableOptions = {
     // List of language strings from https://datatables.net/reference/option/language
     oLanguage: {
@@ -29,38 +103,13 @@ $(document).ready(function () {
       },
     },
   };
-  // separate options for packages table
-  var packagesDataTableOptions = {};
-  for (var k in dataTableOptions) {
-    packagesDataTableOptions[k] = dataTableOptions[k];
-  }
-  // enable server-side processing
-  packagesDataTableOptions["bServerSide"] = true;
-  packagesDataTableOptions["bProcessing"] = true;
-  packagesDataTableOptions["sAjaxSource"] = uri + "packages_ajax";
-  if (typeof location === "string" && location.length) {
-    packagesDataTableOptions["fnServerParams"] = function (data) {
-      // this will get to the request.GET query dict
-      data.push({ name: "location-uuid", value: location });
-    };
-  }
-  var columns = [];
-  // for each column create a function that replaces the
-  // table cell content with the HTML returned by the server
-  $(".packages-datatable thead th").each(function (i, header) {
-    columns.push({
-      mData: function (source) {
-        var $tr = $(Object.values(source).join(""));
-        return $tr.find("td").eq(i).html();
-      },
-      bSortable: $(header).hasClass("sortable"),
-    });
-  });
-  packagesDataTableOptions["aoColumns"] = columns;
-
   $(".datatable").dataTable(dataTableOptions);
-  $(".packages-datatable").dataTable(packagesDataTableOptions);
+  setPackagesDataTable(dataTableOptions);
+  setFixityLogsDataTable(dataTableOptions);
+};
 
+$(document).ready(function () {
+  setDataTables();
   $("body").on("click", "a.request-delete", function (event) {
     var self = $(event.target);
     var uuid = self.data("package-uuid");

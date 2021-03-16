@@ -14,30 +14,53 @@ import os
 from django.db.models import Q
 from django.utils import timezone
 
+from .models import FixityLog
 from .models import Package
 
 
-class DataTable(object):
+class PackageDataTable(object):
     """This class parses the parameters sent by the JS client code and
     builds a filtered and sorted list of `Package` objects.
     """
 
-    # number of rows to display on a single page when using pagination
+    # number of records to display on a single page when using pagination
     DEFAULT_DISPLAY_LENGTH = 10
+
+    model = Package
+
+    # the columns represented by these indexes can be sorted
+    # through the queryset using the order_by method
+    ORDER_BY_MAPPING = {
+        0: "uuid",
+        1: "origin_pipeline__description",
+        3: "size",
+        5: "replicated_package__uuid",
+    }
+
+    # these columns instead can't be sorted directly with the
+    # queryset so the queryset needs to be converted into a list
+    # and then sorted using helper methods
+    SORT_KEY_HELPERS_MAPPING = {
+        2: "sort_by_full_path_key",
+        4: "sort_by_package_type_key",
+        6: "sort_by_status_key",
+        7: "sort_by_fixity_date_key",
+        8: "sort_by_fixity_status_key",
+    }
 
     def __init__(self, query_dict):
         search_filter = Q()
         location_uuid = query_dict.get("location-uuid")
         if location_uuid:
             search_filter = Q(current_location=location_uuid)
-        self.total_records = Package.objects.filter(search_filter).count()
+        self.total_records = self.model.objects.filter(search_filter).count()
         self.params = self.parse_datatable_parameters(query_dict)
         self.echo = self.params["echo"]
         if self.params["search"]:
             search = self.params["search"]
             # remove any leading slashes so we can search in relative paths
             search_as_path = search.lstrip(os.path.sep)
-            search_filter |= (
+            search_filter &= (
                 Q(uuid__icontains=search)
                 | Q(description__icontains=search)
                 | Q(origin_pipeline__uuid__icontains=search)
@@ -50,9 +73,9 @@ class DataTable(object):
                 | Q(replicas__uuid__icontains=search)
                 | Q(replicated_package__uuid__icontains=search)
             )
-        queryset = Package.objects.filter(search_filter).distinct()
+        queryset = self.model.objects.filter(search_filter).distinct()
         self.total_display_records = queryset.count()
-        self.packages = self.get_packages(queryset)
+        self.records = self.get_records(queryset)
 
     def _get_int_parameter(self, query_dict, param, default=0):
         """Get an integer parameter from the request QueryDict.
@@ -110,37 +133,20 @@ class DataTable(object):
         sorting_column = self.params["sorting_column"]
         if not sorting_column or sorting_column.get("index") is None:
             return queryset
-        # the columns represented by these indexes can be sorted
-        # through the queryset using the order_by method
-        ORDER_BY_MAPPING = {
-            0: "uuid",
-            1: "origin_pipeline__description",
-            3: "size",
-            5: "replicated_package__uuid",
-        }
-        # these columns instead can't be sorted directly with the
-        # queryset so the queryset needs to be converted into a list
-        # and then sorted using helper methods
-        SORT_KEY_HELPERS_MAPPING = {
-            2: self.sort_by_full_path_key,
-            4: self.sort_by_package_type_key,
-            6: self.sort_by_status_key,
-            7: self.sort_by_fixity_date_key,
-            8: self.sort_by_fixity_status_key,
-        }
         sort_descending = sorting_column.get("direction") == "desc"
-        if sorting_column["index"] in ORDER_BY_MAPPING:
-            field = ORDER_BY_MAPPING[sorting_column["index"]]
+        if sorting_column["index"] in self.ORDER_BY_MAPPING:
+            field = self.ORDER_BY_MAPPING[sorting_column["index"]]
             if sort_descending:
                 field = "-{}".format(field)
             return queryset.order_by(field)
-        elif sorting_column["index"] in SORT_KEY_HELPERS_MAPPING:
-            key = SORT_KEY_HELPERS_MAPPING[sorting_column["index"]]
-            return sorted(list(queryset), key=key, reverse=sort_descending)
+        elif sorting_column["index"] in self.SORT_KEY_HELPERS_MAPPING:
+            sorting_method_name = self.SORT_KEY_HELPERS_MAPPING[sorting_column["index"]]
+            sorting_method = getattr(self, sorting_method_name)
+            return sorted(list(queryset), key=sorting_method, reverse=sort_descending)
         else:
             return queryset
 
-    def get_packages(self, queryset):
+    def get_records(self, queryset):
         result = self.sort(queryset)
         display_start = self.params["display_start"]
         display_length = self.params["display_length"]
@@ -164,3 +170,28 @@ class DataTable(object):
 
     def sort_by_fixity_status_key(self, package):
         return package.latest_fixity_check_result
+
+
+class FixityLogDataTable(PackageDataTable):
+
+    model = FixityLog
+
+    ORDER_BY_MAPPING = {
+        0: "datetime_reported",
+        1: "error_details",
+    }
+
+    def __init__(self, query_dict):
+        search_filter = Q()
+        package_uuid = query_dict.get("package-uuid")
+        if package_uuid:
+            search_filter = Q(package=package_uuid)
+        self.total_records = self.model.objects.filter(search_filter).count()
+        self.params = self.parse_datatable_parameters(query_dict)
+        self.echo = self.params["echo"]
+        if self.params["search"]:
+            search = self.params["search"]
+            search_filter &= Q(error_details__icontains=search)
+        queryset = self.model.objects.filter(search_filter).distinct()
+        self.total_display_records = queryset.count()
+        self.records = self.get_records(queryset)

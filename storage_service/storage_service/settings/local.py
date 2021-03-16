@@ -31,6 +31,7 @@ else:
 # DEBUG CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#debug
 DEBUG = True
+TEMPLATES[0]["OPTIONS"]["debug"] = True
 # ######## END DEBUG CONFIGURATION
 
 
