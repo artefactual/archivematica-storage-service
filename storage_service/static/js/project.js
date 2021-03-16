@@ -1,7 +1,7 @@
 var getAjaxDataTableOptions = function (options, ajaxSource, headers, filter) {
   var result = {};
-  for (var k in options) {
-    result[k] = options[k];
+  for (var key in options) {
+    result[key] = options[key];
   }
   // enable server-side processing
   result["bServerSide"] = true;
@@ -62,8 +62,8 @@ var setFixityLogsDataTable = function (options) {
   var customOptions = {
     aaSorting: [[0, "desc"]],
   };
-  for (var k in options) {
-    customOptions[k] = options[k];
+  for (var key in options) {
+    customOptions[key] = options[key];
   }
   $(".fixity-logs-datatable").dataTable(
     getAjaxDataTableOptions(
