@@ -2,20 +2,21 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-# 
+#
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-11-04 09:24-0700\n"
+"POT-Creation-Date: 2021-03-17 09:57-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: Marcelo Moro Brondani <mbrondani@inf.ufsm.br>, 2018\n"
-"Language-Team: Portuguese (Brazil) (https://www.transifex.com/artefactual/teams/1506/pt_BR/)\n"
+"Language-Team: Portuguese (Brazil) (https://www.transifex.com/artefactual/"
+"teams/1506/pt_BR/)\n"
+"Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: pt_BR\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #: static/js/directory_picker.js:44
@@ -30,82 +31,90 @@ msgstr "Selecione o diretório"
 msgid "Add"
 msgstr "Adicionar"
 
-#: static/js/directory_picker.js:68
+#: static/js/directory_picker.js:64
 msgid "De-select directory"
 msgstr "Deselecionar diretório"
 
-#: static/js/directory_picker.js:69
+#: static/js/directory_picker.js:65
 msgid "Are you sure you want to de-select this?"
 msgstr "Tem certeza de que deseja desmarcar isso?"
 
-#: static/js/directory_picker.js:124
+#: static/js/directory_picker.js:122
 msgid "OK"
 msgstr "Ok"
 
-#: static/js/directory_picker.js:142
+#: static/js/directory_picker.js:139
 msgid "Yes"
 msgstr "Sim"
 
-#: static/js/directory_picker.js:149
+#: static/js/directory_picker.js:146
 msgid "Cancel"
 msgstr "Cancelar"
 
-#: static/js/project.js:7
+#: static/js/project.js:83
 msgid "No data available in table"
 msgstr "Sem dados disponíveis na tabela"
 
-#: static/js/project.js:8
+#: static/js/project.js:84
 msgid "Showing _START_ to _END_ of _TOTAL_ entries"
 msgstr "Mostrando _START_ a _END_ de _TOTAL_ registros"
 
-#: static/js/project.js:9
+#: static/js/project.js:85
 msgid "Showing 0 to 0 of 0 entries"
 msgstr "Mostrando 0 a 0 de 0 registros"
 
-#: static/js/project.js:10
+#: static/js/project.js:86
 msgid "(filtered from _MAX_ total entries)"
 msgstr "(filtrado um total de _MAX_ registros)"
 
-#: static/js/project.js:13
+#: static/js/project.js:89
 msgid "Show _MENU_ entries"
 msgstr "Mostrar registros do _MENU_"
 
-#: static/js/project.js:14
+#: static/js/project.js:90
 msgid "Loading..."
 msgstr "Carregando..."
 
-#: static/js/project.js:15
+#: static/js/project.js:91
 msgid "Processing..."
 msgstr "Processando..."
 
-#: static/js/project.js:16
+#: static/js/project.js:92
 msgid "Search:"
 msgstr "Pesquisar"
 
-#: static/js/project.js:17
+#: static/js/project.js:93
 msgid "No matching records found"
 msgstr "Nenhum registro correspondente encontrado"
 
-#: static/js/project.js:19
+#: static/js/project.js:95
 msgid "First"
 msgstr "Primeiro"
 
-#: static/js/project.js:20
+#: static/js/project.js:96
 msgid "Last"
 msgstr "Último"
 
-#: static/js/project.js:21
+#: static/js/project.js:97
 msgid "Next"
 msgstr "Próximo"
 
-#: static/js/project.js:22
+#: static/js/project.js:98
 msgid "Previous"
 msgstr "Anterior"
 
-#: static/js/project.js:25
+#: static/js/project.js:101
 msgid ": activate to sort column ascending"
 msgstr ": ativar para classificar coluna ascendente"
 
-#: static/js/project.js:26
+#: static/js/project.js:102
 msgid ": activate to sort column descending"
 msgstr ": ativar para classificar coluna descendente"
+
+#: static/js/project.js:194
+msgid "Delete"
+msgstr ""
+
+#: static/js/project.js:205
+msgid "Add header"
+msgstr ""
