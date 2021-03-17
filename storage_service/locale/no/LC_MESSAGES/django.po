@@ -7,30 +7,30 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2020-08-28 07:15-0700\n"
+"POT-Creation-Date: 2021-03-17 09:57-0700\n"
 "PO-Revision-Date: 2020-10-19 21:12+0200\n"
+"Last-Translator: \n"
+"Language-Team: \n"
 "Language: nb\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"Last-Translator: \n"
-"Language-Team: \n"
 "X-Generator: Poedit 2.4.1\n"
 
-#: administration/forms.py:41 locations/models/space.py:211
+#: administration/forms.py:48 locations/models/space.py:211
 #: templates/locations/location_detail.html:10
 #: templates/locations/location_form.html:20
 #: templates/snippets/locations_table.html:12
 msgid "Space"
 msgstr "Rom"
 
-#: administration/forms.py:41 locations/models/location.py:75
+#: administration/forms.py:48 locations/models/location.py:75
 #: templates/locations/location_detail.html:14
 msgid "Relative Path"
 msgstr "Relativ sti"
 
-#: administration/forms.py:41 locations/models/location.py:81
+#: administration/forms.py:48 locations/models/location.py:81
 #: locations/models/pipeline.py:57 templates/locations/location_detail.html:12
 #: templates/locations/pipeline_detail.html:11
 #: templates/snippets/locations_table.html:10
@@ -38,136 +38,143 @@ msgstr "Relativ sti"
 msgid "Description"
 msgstr "Beskrivelse"
 
-#: administration/forms.py:41 locations/models/location.py:90
+#: administration/forms.py:48 locations/models/location.py:90
 msgid "Quota"
 msgstr "Kvote"
 
-#: administration/forms.py:94
+#: administration/forms.py:100
 msgid "Pipelines are disabled upon creation?"
 msgstr "Rør er deaktivert ved oppretting?"
 
-#: administration/forms.py:97
+#: administration/forms.py:103
 msgid "Object counting in spaces is disabled?"
 msgstr "Objekttelling i rom er deaktivert?"
 
-#: administration/forms.py:100
+#: administration/forms.py:106
 msgid "Recovery request: URL to notify"
 msgstr "Gjenopprettingsforespørsel: URL å varsle"
 
-#: administration/forms.py:103
+#: administration/forms.py:109
 msgid "Recovery request notification: Username (optional)"
 msgstr "Melding om gjenopprettingsforespørsel: Brukernavn (valgfritt)"
 
-#: administration/forms.py:106
+#: administration/forms.py:112
 msgid "Recovery request notification: Password (optional)"
 msgstr "Melding om gjenopprettingsforespørsel: Passord (valgfritt)"
 
-#: administration/forms.py:116
+#: administration/forms.py:126
 msgid "Default transfer source locations for new pipelines:"
 msgstr "Standard overføringskildeplasseringer for nye rør:"
 
-#: administration/forms.py:119
+#: administration/forms.py:129
 msgid "New Transfer Source:"
 msgstr "Ny overføringskilde:"
 
-#: administration/forms.py:124
+#: administration/forms.py:134
 msgid "Default AIP storage locations for new pipelines"
 msgstr "Standard AIP-lagringsplasseringer for nye rør"
 
-#: administration/forms.py:126
+#: administration/forms.py:136
 msgid "New AIP Storage:"
 msgstr "Ny API-lagring:"
 
-#: administration/forms.py:130
+#: administration/forms.py:140
 msgid "Default DIP storage locations for new pipelines"
 msgstr "Standard DIP-lagringsplasseringer for nye rør"
 
-#: administration/forms.py:132
+#: administration/forms.py:142
 msgid "New DIP Storage:"
 msgstr "Ny DIP-lagring:"
 
-#: administration/forms.py:136
+#: administration/forms.py:146
 msgid "Default transfer backlog locations for new pipelines:"
 msgstr "Standard overføringsfeilloggplasseringer for nye rør:"
 
-#: administration/forms.py:138
+#: administration/forms.py:148
 msgid "New Transfer Backlog:"
 msgstr "Ny overførings-feillogg:"
 
-#: administration/forms.py:142
+#: administration/forms.py:152
 msgid "Default AIP recovery locations for new pipelines:"
 msgstr "Standard AIP-gjenoppretingsplasseringer for nye rør:"
 
-#: administration/forms.py:144
+#: administration/forms.py:154
 msgid "New AIP Recovery:"
 msgstr "Ny AIP-gjenoppretting:"
 
-#: administration/forms.py:153 administration/forms.py:157
-#: administration/forms.py:161 administration/forms.py:165
-#: administration/forms.py:169
+#: administration/forms.py:163 administration/forms.py:167
+#: administration/forms.py:171 administration/forms.py:175
+#: administration/forms.py:179
 msgid "Create new location for each pipeline"
 msgstr "Opprett en ny plassering for hver rør"
 
-#: administration/forms.py:177 administration/forms.py:183
-#: administration/forms.py:189
+#: administration/forms.py:192 administration/forms.py:198
+#: administration/forms.py:204
 msgid "Relative path is required"
 msgstr "Relativ sti kreves"
 
-#: administration/forms.py:179 administration/forms.py:185
-#: administration/forms.py:191
+#: administration/forms.py:194 administration/forms.py:200
+#: administration/forms.py:206
 msgid "Relative path cannot start with /"
 msgstr "Relativ sti kan ikke starte med /"
 
-#: administration/forms.py:207 administration/forms.py:231
+#: administration/forms.py:222 administration/forms.py:267
 msgid "Administrator?"
 msgstr "Administrator?"
 
-#: administration/forms.py:263 templates/administration/user_detail.html:13
+#: administration/forms.py:299 templates/administration/user_detail.html:13
 #: templates/administration/user_list.html:15
 msgid "Name"
 msgstr "Navn"
 
-#: administration/forms.py:264
+#: administration/forms.py:300
 msgid "Email"
 msgstr "E-post"
 
-#: administration/views.py:43
+#: administration/validators.py:19
+msgid ""
+"Your password must contain at least 3 of: uppercase characters, lowercase "
+"characters, numbers, and special characters (symbols or non-alphanumeric "
+"Unicode characters)."
+msgstr ""
+
+#: administration/views.py:42
 msgid "Setting saved."
 msgstr "Innstillinger lagret."
 
-#: administration/views.py:82
+#: administration/views.py:81
 msgid "Edit User"
 msgstr "Rediger bruker"
 
-#: administration/views.py:90
+#: administration/views.py:89
 msgid "User information saved."
 msgstr "Brukerinformasjon lagret."
 
-#: administration/views.py:97
+#: administration/views.py:96
 msgid "Password changed."
 msgstr "Passord endret."
 
-#: administration/views.py:107
+#: administration/views.py:112
 msgid "Create User"
 msgstr "Opprett bruker"
 
-#: administration/views.py:113
+#: administration/views.py:118
 #, python-format
 msgid "New user %(username)s created."
 msgstr "Ny bruker %(username)s opprettet."
 
-#: administration/views.py:174 administration/views.py:293
-#: administration/views.py:350
+#: administration/views.py:179 administration/views.py:298
+#: administration/views.py:354
 #, python-format
 msgid "GPG key with fingerprint %(fingerprint)s does not exist."
 msgstr "GPG-nøkkel med fingeravtrykk %(fingerprint)s eksisterer ikke."
 
-#: administration/views.py:196 administration/views.py:265
+#: administration/views.py:201 administration/views.py:270
 #, python-format
 msgid "New key %(fingerprint)s created."
 msgstr "Ny nøkkel %(fingerprint)s opprettet."
 
-#: administration/views.py:206
+#: administration/views.py:211
 #, python-format
 msgid ""
 "Failed to create key with real name '%(name_real)s' and email "
@@ -176,7 +183,7 @@ msgstr ""
 "Kunne ikke opprette nøkkel med ekte navn '%(name_real)s' og e-post "
 "'%(name_email)s'."
 
-#: administration/views.py:212
+#: administration/views.py:217
 #, python-format
 msgid ""
 "Generate a new GPG key. The key will not have a passphrase. It will be a key "
@@ -185,7 +192,7 @@ msgstr ""
 "Generer en ny GPG-nøkkel. Nøkkelen vil ikke ha en passordfrase. Det vil være "
 "en nøkkel av typen %(key_type)s og length %(key_length)s."
 
-#: administration/views.py:250
+#: administration/views.py:255
 msgid ""
 "Import failed. Sorry, we were unable to create a key with the supplied ASCII "
 "armor"
@@ -193,7 +200,7 @@ msgstr ""
 "Import mislyktes. Beklager, vi klarte ikke å lage en nøkkel med det "
 "medfølgende ASCII-\"armor\""
 
-#: administration/views.py:258
+#: administration/views.py:263
 msgid ""
 "Import failed. The GPG key provided requires a passphrase. GPG keys with "
 "passphrases cannot be imported"
@@ -201,7 +208,7 @@ msgstr ""
 "Import mislyktes. Den oppgitte GPG-nøkkelen krever en passordfrase. GPG-"
 "nøkler med passordfraser kan ikke importeres"
 
-#: administration/views.py:269
+#: administration/views.py:274
 msgid ""
 "Import an existing GPG key. Paste here the ASCII armor of the GPG private "
 "key, which you can get by running <code>gpg --armor --export-secret-keys</"
@@ -217,12 +224,12 @@ msgstr ""
 "KEY BLOCK-----</code> og slutte med <code>-----END PGP PRIVATE KEY BLOCK-----"
 "</code> og den må ikke ha en passordfrase."
 
-#: administration/views.py:298
+#: administration/views.py:303
 #, python-format
 msgid "Confirm deleting GPG key %(uids)s (%(fingerprint)s)"
 msgstr "Bekreft sletting av GPG-nøkkel %(uids)s (%(fingerprint)s)"
 
-#: administration/views.py:307
+#: administration/views.py:312
 #, python-format
 msgid ""
 "GPG key %(fingerprint)s cannot be deleted because at least one GPG Space is "
@@ -231,7 +238,7 @@ msgstr ""
 "GPG-nøkkel %(fingerprint)s kan ikke slettes fordi minst ett GPG-rom bruker "
 "den til kryptering."
 
-#: administration/views.py:322
+#: administration/views.py:327
 #, python-format
 msgid ""
 "GPG key %(fingerprint)s cannot be deleted because at least one package (AIP, "
@@ -240,22 +247,22 @@ msgstr ""
 "GPG-nøkkel %(fingerprint)s kan ikke slettes fordi minst en pakke (AIP, "
 "overføring) trenger den for å dekrypteres."
 
-#: administration/views.py:330
+#: administration/views.py:335
 #, python-format
 msgid "Are you sure you want to delete GPG key %(fingerprint)s?"
 msgstr "Er du sikker på at du vil slette GPG-nøkkel %(fingerprint)s?"
 
-#: administration/views.py:359
+#: administration/views.py:363
 #, python-format
 msgid "GPG key %(fingerprint)s successfully deleted."
 msgstr "GPG-nøkkel %(fingerprint)s er slettet."
 
-#: administration/views.py:367
+#: administration/views.py:371
 #, python-format
 msgid "Failed to delete GPG key %(fingerprint)s."
 msgstr "Kunne ikke slette GPG-nøkkel %(fingerprint)s."
 
-#: common/gpgutils.py:31
+#: common/gpgutils.py:36
 msgid "Archivematica Storage Service GPG Key"
 msgstr "Archivematica lagringstjeneste GPG-nøkkel"
 
@@ -384,74 +391,80 @@ msgid "Pipeline UUID %(uuid)s failed to return a pipeline"
 msgstr "Rør-UUID %(uuid)s kunne ikke returnere et rør"
 
 #: locations/api/resources.py:1558
-#, python-format
-msgid "The file must be in an %s state to be moved. Current state: %s"
+#, fuzzy
+#| msgid "The file must be in an %s state to be moved. Current state: %s"
+msgid ""
+"The file must be in an %(expected_state) state to be moved. Current state: "
+"%(current_state)"
 msgstr ""
 "Filen må være i en %s-tilstand for å kunne flyttes. Nåværende tilstand: %s"
 
-#: locations/api/resources.py:1570
+#: locations/api/resources.py:1574
 msgid "All of these fields must be provided: location_uuid"
 msgstr "Alle disse feltene må oppgis: location_uuid"
 
-#: locations/api/resources.py:1579
+#: locations/api/resources.py:1583
 #, python-format
 msgid "Location UUID %(uuid)s                 failed to return a location"
 msgstr ""
 "Plasserings-UUID %(uuid)s                 kunne ikke returnere en plassering"
 
-#: locations/api/resources.py:1592
+#: locations/api/resources.py:1596
 msgid "New location must be different to the current location"
 msgstr "Ny plassering må være forskjellig fra nåværende plassering"
 
-#: locations/api/resources.py:1603
+#: locations/api/resources.py:1607
 #, python-format
 msgid "New location must have the same purpose as the current location - %s"
 msgstr "Ny plassering må ha samme formål som den nåværende plasseringen - %s"
 
-#: locations/api/resources.py:1621
-#, python-format
-msgid "The package must be in an %s state to be moved. Current state: %s"
+#: locations/api/resources.py:1625
+#, fuzzy
+#| msgid "The file must be in an %s state to be moved. Current state: %s"
+msgid ""
+"The package must be in an %(expected_state) state to be moved. Current "
+"state: %(current_state)"
 msgstr ""
-"Pakken må være i en %s-tilstand for å kunne flyttes. Nåværende tilstand: %s"
+"Filen må være i en %s-tilstand for å kunne flyttes. Nåværende tilstand: %s"
 
-#: locations/api/resources.py:1633
+#: locations/api/resources.py:1641
 msgid "Package moved successfully"
 msgstr "Flytting av pakke vellykket"
 
-#: locations/api/resources.py:1651 locations/api/resources.py:1661
-#: locations/api/resources.py:1671
+#: locations/api/resources.py:1659 locations/api/resources.py:1669
+#: locations/api/resources.py:1679
 msgid "This is not a SWORD deposit location."
 msgstr "Dette er ikke en SWORD-deposit-plassering."
 
-#: locations/api/resources.py:1713
+#: locations/api/resources.py:1721
 #, python-format
 msgid "%(event_type)s request created successfully."
 msgstr "%(event_type)s forespørsel opprettet."
 
-#: locations/api/resources.py:1722
+#: locations/api/resources.py:1730
 #, python-format
 msgid "A %(event_type)s request already exists for this AIP."
 msgstr "En %(event_type)s forespørsel eksisterer allerede for denne AIP-en."
 
-#: locations/api/resources.py:1766
+#: locations/api/resources.py:1774
 msgid "No JSON object could be decoded from POST body."
 msgstr "Ingen JSON-objekter kunne dekodes fra POST-hoveddelen."
 
-#: locations/api/resources.py:1775
+#: locations/api/resources.py:1783
 msgid "JSON request must contain a list of objects."
 msgstr "JSON-forespørsel må inneholde en liste over objekter."
 
-#: locations/api/resources.py:1801
+#: locations/api/resources.py:1809
 #, python-format
 msgid "File object was missing key: %(key)s"
 msgstr "Filobjektet manglet nøkkel: %(key)s"
 
-#: locations/api/resources.py:1815
+#: locations/api/resources.py:1823
 #, python-format
 msgid "%(count)d files created in package %(uuid)s"
 msgstr "%(count)d filer opprettet i pakke %(uuid)s"
 
-#: locations/api/resources.py:1903
+#: locations/api/resources.py:1911
 msgid "No supported query properties found!"
 msgstr "Fant ingen støttede søkeegenskaper!"
 
@@ -473,10 +486,13 @@ msgid "Pipeline properties %(properties)s not set."
 msgstr "Rør-egenskaper %(properties)s er ikke angitt."
 
 #: locations/api/sword/helpers.py:388
-#, python-format
+#, fuzzy, python-format
+#| msgid ""
+#| "Request to pipeline %(uuid)s transfer approval API failed: check "
+#| "credentials and REST API IP whitelist."
 msgid ""
 "Request to pipeline %(uuid)s transfer approval API failed: check credentials "
-"and REST API IP whitelist."
+"and REST API IP allowlist."
 msgstr ""
 "Forespørsel til rør %(uuid)s API for godkjenning av overføring mislyktes: "
 "sjekk legitimasjon og REST API IP-hviteliste."
@@ -613,15 +629,15 @@ msgstr ""
 "MD5-sjekksum for opplastet fil (%(uploaded_md5sum)s) samsvarer ikke med "
 "sjekksum som er gitt i filhode (%(header_md5sum)s)."
 
-#: locations/forms.py:73
+#: locations/forms.py:57
 msgid "Default Locations:"
 msgstr "Standardplasseringer:"
 
-#: locations/forms.py:74
+#: locations/forms.py:58
 msgid "Enabled if default locations should be created for this pipeline"
 msgstr "Aktivert hvis standardplasseringene bør opprettes for dette røret"
 
-#: locations/forms.py:173
+#: locations/forms.py:157
 msgid ""
 "The ArchivesSpace fields are optional. Leaving any of these fields blank "
 "will prevent ArchivesSpace linking requests from being sent, unless the "
@@ -631,11 +647,11 @@ msgstr ""
 "tomme, forhindres det at koblingsforespørsler fra ArchivesSpace sendes, med "
 "mindre metadataene er inkludert i pakkens METS-fil i en dmdSec."
 
-#: locations/forms.py:270
+#: locations/forms.py:254
 msgid "Set as global default location for its purpose"
 msgstr "Angi som global standardplassering for formålet"
 
-#: locations/forms.py:332
+#: locations/forms.py:316
 msgid ""
 "Path to location, relative to the storage space's path. Optional. Filter "
 "Dataverse by matches and/or Dataverse subtree."
@@ -643,51 +659,51 @@ msgstr ""
 "Sti til plassering, i forhold til lagringsplassens sti. Valgfri. Filtrer "
 "Dataverse etter like og/eller Dataverse undertre."
 
-#: locations/forms.py:346
+#: locations/forms.py:330
 msgid "Only AIP storage locations can have replicators"
 msgstr "Bare AIP-lagringssteder kan ha replikatorer"
 
-#: locations/forms.py:375
+#: locations/forms.py:359
 #, python-format
 msgid "Pipeline(s) %(pipelines)s already have an AIP recovery location."
 msgstr "Rør %(pipelines)s har allerede et AIP-gjenopprettingssted."
 
-#: locations/forms.py:385
+#: locations/forms.py:369
 msgid "Invalid purpose"
 msgstr "Ugyldig formål"
 
-#: locations/forms.py:455
+#: locations/forms.py:439
 msgid "Headers (key/value)"
 msgstr "Tittel (nøkkel/verdi)"
 
-#: locations/forms.py:521
+#: locations/forms.py:505
 msgid "Metadata re-ingest"
 msgstr "Metadata gjenopplasting"
 
-#: locations/forms.py:522
+#: locations/forms.py:506
 msgid "Partial re-ingest"
 msgstr "Delvis gjenopplasting"
 
-#: locations/forms.py:523
+#: locations/forms.py:507
 msgid "Full re-ingest"
 msgstr "Full gjenopplasting"
 
-#: locations/forms.py:527 locations/models/location.py:71
+#: locations/forms.py:511 locations/models/location.py:71
 #: templates/locations/package_request.html:17
 #: templates/locations/package_request.html:59
 #: templates/snippets/locations_table.html:7
 msgid "Pipeline"
 msgstr "Rør"
 
-#: locations/forms.py:530
+#: locations/forms.py:514
 msgid "Reingest type"
 msgstr "Gjenopplastingstype"
 
-#: locations/forms.py:535
+#: locations/forms.py:519
 msgid "Processing config"
 msgstr "Prosesseringskonfigurasjon"
 
-#: locations/forms.py:536
+#: locations/forms.py:520
 msgid "Optional: The processing config is only used with full re-ingest"
 msgstr ""
 "Valgfritt: Prosesseringskonfigurasjonen brukes bare med full gjenopplasting"
@@ -866,27 +882,27 @@ msgstr "URI-agentidentifikator for premis:agentIdentifierValue i Archivematica"
 msgid "Dataverse"
 msgstr "Dataverse"
 
-#: locations/models/dataverse.py:146 locations/models/dataverse.py:184
+#: locations/models/dataverse.py:146 locations/models/dataverse.py:186
 #, python-format
 msgid "Unable to fetch datasets from %(url)s"
 msgstr "Kan ikke hente datasett fra %(url)s"
 
-#: locations/models/dataverse.py:154 locations/models/dataverse.py:192
+#: locations/models/dataverse.py:154 locations/models/dataverse.py:194
 #, python-format
 msgid "Unable to parse JSON from response to %(url)s"
 msgstr "Kan ikke analysere JSON fra svar til %(url)s"
 
-#: locations/models/dataverse.py:209
+#: locations/models/dataverse.py:211
 #, python-format
 msgid "Invalid value for src_path: %(value)s. Must be a numeric entity_id"
 msgstr "Ugyldig verdi for src_path: %(value)s. Må være en numerisk enhet_id"
 
-#: locations/models/dataverse.py:221
+#: locations/models/dataverse.py:223
 #, python-format
 msgid "Unable to fetch dataset %(path)s from %(url)s"
 msgstr "Kan ikke hente datasettet %(path)s fra %(url)s"
 
-#: locations/models/dataverse.py:228
+#: locations/models/dataverse.py:230
 #, python-format
 msgid "Unable parse JSON from response to %s"
 msgstr "Kan ikke analysere JSON fra svar til %s"
@@ -1079,12 +1095,12 @@ msgstr "Navnet på rommet i DuraCloud"
 msgid "DuraCloud"
 msgstr "DuraCloud"
 
-#: locations/models/duracloud.py:108 locations/models/duracloud.py:140
+#: locations/models/duracloud.py:109 locations/models/duracloud.py:141
 #, python-format
 msgid "Unable to get list of files in %(prefix)s"
 msgstr "Kan ikke hente listen over filer i %(prefix)s"
 
-#: locations/models/duracloud.py:275
+#: locations/models/duracloud.py:276
 #, python-format
 msgid ""
 "File %(path)s does not match expected size of %(expected_size)s bytes, but "
@@ -1093,21 +1109,21 @@ msgstr ""
 "Fil %(path)s samsvarer ikke med forventet størrelse på %(expected_size)s "
 "byte, men var faktisk %(actual_size)s byte"
 
-#: locations/models/duracloud.py:330
+#: locations/models/duracloud.py:331
 msgid "End of file reached"
 msgstr "Slutten av filen nådd"
 
-#: locations/models/duracloud.py:469
+#: locations/models/duracloud.py:470
 #, python-format
 msgid "Unable to store %(filename)s"
 msgstr "Kan ikke lagre %(filename)s"
 
-#: locations/models/duracloud.py:493
+#: locations/models/duracloud.py:494
 #, python-format
 msgid "%(path)s does not exist."
 msgstr "%(path)s eksisterer ikke."
 
-#: locations/models/duracloud.py:497
+#: locations/models/duracloud.py:498
 #, python-format
 msgid "%(path)s is not a file or directory."
 msgstr "%(path)s er ikke en fil eller mappe."
@@ -1132,77 +1148,77 @@ msgstr "Godkjent"
 msgid "Rejected"
 msgstr "Avvist"
 
-#: locations/models/event.py:57 locations/models/event.py:102
+#: locations/models/event.py:59 locations/models/event.py:104
 #: templates/locations/callback_detail.html:10
 #: templates/snippets/callbacks_table.html:5
 msgid "Event"
 msgstr "Hendelse"
 
-#: locations/models/event.py:61
+#: locations/models/event.py:63
 #, python-format
 msgid "%(event_status)s request to %(event_type)s %(package)s"
 msgstr "%(event_status)s forespørsel til %(event_type)s %(package)s"
 
-#: locations/models/event.py:77 templates/locations/callback_form.html:10
+#: locations/models/event.py:79 templates/locations/callback_form.html:10
 msgid "Post-store AIP (source files)"
 msgstr "Post-store AIP (kildefiler)"
 
-#: locations/models/event.py:78
+#: locations/models/event.py:80
 msgid "Post-store AIP"
 msgstr "Post-store AIP"
 
-#: locations/models/event.py:79
+#: locations/models/event.py:81
 msgid "Post-store AIC"
 msgstr "Post-store AIC"
 
-#: locations/models/event.py:80
+#: locations/models/event.py:82
 msgid "Post-store DIP"
 msgstr "Post-store DIP"
 
-#: locations/models/event.py:96 templates/locations/callback_detail.html:11
+#: locations/models/event.py:98 templates/locations/callback_detail.html:11
 #: templates/snippets/callbacks_table.html:6
 msgid "URI"
 msgstr "URI"
 
-#: locations/models/event.py:97
+#: locations/models/event.py:99
 msgid "URL to contact upon callback execution."
 msgstr "URL å kontakte ved tilbakekall."
 
-#: locations/models/event.py:103
+#: locations/models/event.py:105
 msgid "Type of event when this callback should be executed."
 msgstr "Type hendelse når dette tilbakekallet skal utføres."
 
-#: locations/models/event.py:108 templates/snippets/callbacks_table.html:7
+#: locations/models/event.py:110 templates/snippets/callbacks_table.html:7
 msgid "Method"
 msgstr "Metode"
 
-#: locations/models/event.py:109
+#: locations/models/event.py:111
 msgid "HTTP request method to use in connecting to the URL."
 msgstr "HTTP-forespørselsmetode som skal brukes for å koble til URL-en."
 
-#: locations/models/event.py:114 templates/locations/callback_detail.html:23
+#: locations/models/event.py:116 templates/locations/callback_detail.html:23
 msgid "Body"
 msgstr "Hoveddel"
 
-#: locations/models/event.py:116
+#: locations/models/event.py:118
 msgid ""
 "Body content for each request. Set the 'Content-type' header accordingly."
 msgstr ""
 "Hoveddelssinnhold for hver forespørsel. Angi Content-type-linja deretter."
 
-#: locations/models/event.py:122 templates/locations/callback_detail.html:13
+#: locations/models/event.py:124 templates/locations/callback_detail.html:13
 msgid "Headers"
 msgstr "Hode"
 
-#: locations/models/event.py:123
+#: locations/models/event.py:125
 msgid "Headers for each request."
 msgstr "Hode for hver forespørsel."
 
-#: locations/models/event.py:127
+#: locations/models/event.py:129
 msgid "Expected Status"
 msgstr "Forventet status"
 
-#: locations/models/event.py:129
+#: locations/models/event.py:131
 msgid ""
 "Expected HTTP response from the server, used to validate the callback "
 "response."
@@ -1210,7 +1226,7 @@ msgstr ""
 "Forventet HTTP-respons fra serveren, brukes til å validere "
 "tilbakekallssvaret."
 
-#: locations/models/event.py:134 locations/models/location.py:98
+#: locations/models/event.py:136 locations/models/location.py:98
 #: locations/models/pipeline.py:86 templates/locations/callback_detail.html:25
 #: templates/locations/location_detail.html:16
 #: templates/locations/pipeline_detail.html:14
@@ -1220,33 +1236,33 @@ msgstr ""
 msgid "Enabled"
 msgstr "Aktivert"
 
-#: locations/models/event.py:135
+#: locations/models/event.py:137
 msgid "Enabled if this callback should be executed."
 msgstr "Aktivert hvis denne tilbakekallet skal utføres."
 
-#: locations/models/event.py:139
+#: locations/models/event.py:141
 msgid "Callback"
 msgstr "Tilbakekall"
 
-#: locations/models/event.py:184 locations/models/fedora.py:61
+#: locations/models/event.py:186 locations/models/fedora.py:61
 #: locations/models/fedora.py:113 locations/models/location.py:30
 #: locations/models/package.py:62 locations/models/space.py:133
 msgid "Unique identifier"
 msgstr "Unik identifikator"
 
-#: locations/models/event.py:190
+#: locations/models/event.py:192
 msgid "Unique identifier of originating unit"
 msgstr "Unik identifikator for opprinnelsesenheten"
 
-#: locations/models/event.py:196
+#: locations/models/event.py:198
 msgid "Accession ID of originating transfer"
 msgstr "Tilgangs-ID for opprinnelig overføring"
 
-#: locations/models/event.py:203
+#: locations/models/event.py:205
 msgid "Unique identifier of originating Archivematica dashboard"
 msgstr "Unik identifikator for det opprinnelige Archivematica dashbordet"
 
-#: locations/models/event.py:207 templates/locations/package_request.html:14
+#: locations/models/event.py:209 templates/locations/package_request.html:14
 #: templates/locations/package_request.html:56
 msgid "File"
 msgstr "Fil"
@@ -1288,19 +1304,19 @@ msgstr "Oppgave for nedlasting av pakke"
 msgid "PackageDownloadTask ID: %(uuid)s for %(package)s"
 msgstr "PackageDownloadTask ID: %(uuid)s for %(package)s"
 
-#: locations/models/fedora.py:123
+#: locations/models/fedora.py:126
 msgid "True if file downloaded successfully."
 msgstr "Sann hvis filen ble lastet ned."
 
-#: locations/models/fedora.py:126
+#: locations/models/fedora.py:129
 msgid "True if file failed to download."
 msgstr "Sann hvis filen ikke kunne lastes ned."
 
-#: locations/models/fedora.py:130
+#: locations/models/fedora.py:133
 msgid "Package Download Task File"
 msgstr "Pakkenedlastings-oppgavefil"
 
-#: locations/models/fedora.py:134
+#: locations/models/fedora.py:137
 #, python-format
 msgid "Download %(filename)s from %(url)s (%(status)s"
 msgstr "Last ned %(filename)s fra %(url) s (%(status)s"
@@ -1646,88 +1662,98 @@ msgstr "Manuelt montert"
 msgid "Network File System (NFS)"
 msgstr "Nettverksfilsystem (NFS)"
 
-#: locations/models/package.py:81
+#: locations/models/package.py:88
 msgid "Size in bytes of the package"
 msgstr "Størrelse på pakken, i byte"
 
-#: locations/models/package.py:89
+#: locations/models/package.py:96
 msgid ""
 "The fingerprint of the GPG key used to encrypt the package, if applicable"
 msgstr ""
 "Fingeravtrykket til GPG-nøkkelen som brukes til å kryptere pakken, hvis "
 "aktuelt"
 
-#: locations/models/package.py:109
+#: locations/models/package.py:121
 msgid "Transfer"
 msgstr "Overfør"
 
-#: locations/models/package.py:110
+#: locations/models/package.py:122
 msgid "Single File"
 msgstr "Enkelt fil"
 
-#: locations/models/package.py:111
+#: locations/models/package.py:123
 msgid "FEDORA Deposit"
 msgstr "FEDORA-innskudd"
 
-#: locations/models/package.py:129
+#: locations/models/package.py:141
 msgid "Upload Pending"
 msgstr "Opplasting venter"
 
-#: locations/models/package.py:130
+#: locations/models/package.py:142
 msgid "Staged on Storage Service"
 msgstr "Iscenesatt på lagringstjenesten"
 
-#: locations/models/package.py:131
+#: locations/models/package.py:143
 msgid "Uploaded"
 msgstr "Lastet opp"
 
-#: locations/models/package.py:132 locations/models/space.py:199
+#: locations/models/package.py:144 locations/models/space.py:199
 msgid "Verified"
 msgstr "Verifisert"
 
-#: locations/models/package.py:133
+#: locations/models/package.py:145
 msgid "Failed"
 msgstr "Mislyktes"
 
-#: locations/models/package.py:134
+#: locations/models/package.py:146
 msgid "Delete requested"
 msgstr "Sletting forespurt"
 
-#: locations/models/package.py:135
+#: locations/models/package.py:147
 msgid "Deleted"
 msgstr "Slettet"
 
-#: locations/models/package.py:136
+#: locations/models/package.py:148
 msgid "Deposit Finalized"
 msgstr "Innskudd ferdigstilt"
 
-#: locations/models/package.py:142
+#: locations/models/package.py:149
+msgid "Moving"
+msgstr ""
+
+#: locations/models/package.py:150
+#, fuzzy
+#| msgid "Delete requested"
+msgid "Recover requested"
+msgstr "Sletting forespurt"
+
+#: locations/models/package.py:156
 msgid "Status of the package in the storage service."
 msgstr "Pakkens status i lagringstjenesten."
 
-#: locations/models/package.py:150
+#: locations/models/package.py:164
 msgid "For storing flexible, often Space-specific, attributes"
 msgstr "For lagring av fleksible, ofte romspesifikke attributter"
 
-#: locations/models/package.py:168 templates/locations/package_reingest.html:11
+#: locations/models/package.py:182 templates/locations/package_reingest.html:11
 msgid "Package"
 msgstr "Pakke"
 
-#: locations/models/package.py:240
+#: locations/models/package.py:254
 #, python-format
 msgid "Package %(uuid)s (located at %(path)s) does not exist"
 msgstr "Pakke %(uuid)s (som ligger på %(path)s) eksisterer ikke"
 
-#: locations/models/package.py:246
+#: locations/models/package.py:260
 #, python-format
 msgid "%(path)s is neither a file nor a directory"
 msgstr "%(path)s er ikke en fil eller mappe"
 
-#: locations/models/package.py:276
+#: locations/models/package.py:290
 msgid "Cannot return a download path for an uncompressed package"
 msgstr "Kan ikke returnere en nedlastingssti for en ukomprimert pakke"
 
-#: locations/models/package.py:365
+#: locations/models/package.py:379
 msgid ""
 "This method currently only retrieves base directories for locally-available "
 "AIPs."
@@ -1735,7 +1761,7 @@ msgstr ""
 "Denne metoden henter for øyeblikket bare grunnmapper for lokalt "
 "tilgjengelige AIP-er."
 
-#: locations/models/package.py:402
+#: locations/models/package.py:416
 #, python-format
 msgid ""
 "Not enough space for AIP on storage device %(space)s; Used: %(used)s; Size: "
@@ -1744,7 +1770,7 @@ msgstr ""
 "Ikke nok lagringsplass til AIP-en på lagringsenhet %(space)s; Brukt: "
 "%(used)s; Størrelse: %(size) s; AIP-størrelse: %(aip_size)s"
 
-#: locations/models/package.py:417
+#: locations/models/package.py:431
 #, python-format
 msgid ""
 "AIP too big for quota on %(location)s; Used: %(used)s; Quota: %(quota)s; AIP "
@@ -1753,71 +1779,71 @@ msgstr ""
 "AIP-en er for stor for kvote på %(location)s; Brukt: %(used)s; Kvote: "
 "%(quota)s; AIP-størrelse: %(aip_size) s"
 
-#: locations/models/package.py:1527
+#: locations/models/package.py:1555
 msgid "Error determining basename during extraction"
 msgstr "Feil ved bestemmelse av grunnnavn under utpakking"
 
-#: locations/models/package.py:1562
+#: locations/models/package.py:1590
 msgid "Extraction error"
 msgstr "Uthentingsfeil"
 
-#: locations/models/package.py:1604
+#: locations/models/package.py:1632
 #, python-format
 msgid "Algorithm %(algorithm)s not in %(algorithms)s"
 msgstr "Algoritme %(algorithm)s ikke i %(algorithms)s"
 
-#: locations/models/package.py:1691
+#: locations/models/package.py:1719
 msgid "<mets> element did not have an OBJID attribute!"
 msgstr "<mets>-elementet hadde ikke en OBJID-attributt!"
 
-#: locations/models/package.py:1695
+#: locations/models/package.py:1723
 msgid "<metsHdr> element not found in METS file!"
 msgstr "<metsHdr>-elementet ikke funnet i METS-filen!"
 
-#: locations/models/package.py:1701
+#: locations/models/package.py:1729
 msgid "<metsHdr> element did not have a CREATEDATE attribute!"
 msgstr "<metsHdr>-elementet hadde ikke en CREATEDATE-attributt!"
 
-#: locations/models/package.py:1716
+#: locations/models/package.py:1744
 msgid "No <agent> element found!"
 msgstr "Ingen <agent>-element funnet!"
 
-#: locations/models/package.py:1871
+#: locations/models/package.py:1899
 msgid "Unable to scan; package is not a bag (AIP or AIC)"
 msgstr "Kunne ikke skanne; pakken er ikke en bag (AIP eller AIC)"
 
-#: locations/models/package.py:1891
+#: locations/models/package.py:1922
 msgid "Error extracting file"
 msgstr "Feil ved utpakking av fil"
 
-#: locations/models/package.py:2065
+#: locations/models/package.py:2149
 #, python-format
 msgid "This AIP is already being reingested on %(pipeline)s"
 msgstr "Denne AIP-en blir allerede gjenopplastet på %(pipeline)s"
 
-#: locations/models/package.py:2161
+#: locations/models/package.py:2245
 #, python-format
 msgid "No currently processing Location is associated with pipeline %(uuid)s"
 msgstr ""
 "Ingen posisjoner som prosesseres for øyeblikket er knyttet til rør %(uuid)s"
 
-#: locations/models/package.py:2194
+#: locations/models/package.py:2278
 #, python-format
 msgid "Error in approve reingest API. %(error)s"
 msgstr "Feil ved godkjenning av gjenopplasting av API. %(error)s"
 
-#: locations/models/package.py:2207
+#: locations/models/package.py:2291
 #, python-format
 msgid "Package %(uuid)s sent to pipeline %(pipeline)s for re-ingest"
 msgstr "Pakke %(uuid)s sendt til rør %(pipeline)s for gjenopplasting"
 
-#: locations/models/package.py:2469
+#: locations/models/package.py:2566
 #, python-format
 msgid "%(uuid)s did not match the pipeline this AIP was reingested on."
 msgstr ""
 "%(uuid)s stemte ikke overens med røret denne AIP-en ble gjenopplastet på."
 
-#: locations/models/package.py:2961
+#: locations/models/package.py:3058
 #, python-format
 msgid ""
 "Failed to extract compression details for AIP %(aip_uuid)s. This AIP needs a "
@@ -1940,43 +1966,43 @@ msgstr ""
 msgid "Pipeline Local FS"
 msgstr "Rør Local FS"
 
-#: locations/models/s3.py:43
+#: locations/models/s3.py:46
 msgid "Access Key ID to authenticate"
 msgstr "Tilgangsnøkkel-ID å autentisere med"
 
-#: locations/models/s3.py:48
+#: locations/models/s3.py:51
 msgid "Secret Access Key to authenticate with"
 msgstr "Hemmelig tilgangsnøkkel å autentisere med"
 
-#: locations/models/s3.py:52
+#: locations/models/s3.py:55
 msgid "S3 Endpoint URL"
 msgstr "S3-sluttpunkts-URL"
 
-#: locations/models/s3.py:53
+#: locations/models/s3.py:56
 msgid "S3 Endpoint URL. Eg. https://s3.amazonaws.com"
 msgstr "S3-sluttpunkts-URL. F.eks. https://s3.amazonaws.com"
 
-#: locations/models/s3.py:57 locations/models/swift.py:63
+#: locations/models/s3.py:60 locations/models/swift.py:63
 msgid "Region"
 msgstr "Region"
 
-#: locations/models/s3.py:58
+#: locations/models/s3.py:61
 msgid "Region in S3. Eg. us-east-2"
 msgstr "Region i S3. F.eks. us-east-2"
 
-#: locations/models/s3.py:62
+#: locations/models/s3.py:65
 msgid "S3 Bucket"
 msgstr "S3-bøtte"
 
-#: locations/models/s3.py:64
+#: locations/models/s3.py:67
 msgid "S3 Bucket Name"
 msgstr "S3-bøttenavn"
 
-#: locations/models/s3.py:68 locations/models/space.py:166
+#: locations/models/s3.py:71 locations/models/space.py:166
 msgid "S3"
 msgstr "S3"
 
-#: locations/models/s3.py:248 locations/models/swift.py:243
+#: locations/models/s3.py:258 locations/models/swift.py:243
 #, python-format
 msgid "%(path)s is neither a file nor a directory, may not exist"
 msgstr "%(path)s er verken en fil eller en mappe, eksisterer kanskje ikke"
@@ -2131,7 +2157,7 @@ msgstr "ETag %(remote_path)s for %(etag)s samsvarer ikke med %(checksum)s"
 msgid "Deletion request for package %(uuid)s"
 msgstr "Slettingsforespørsel for pakke %(uuid)s"
 
-#: locations/signals.py:38
+#: locations/signals.py:37
 #, python-format
 msgid ""
 "A package deletion request was received:\n"
@@ -2146,17 +2172,17 @@ msgstr ""
 "Pakke-UUID: %(uuid)s\n"
 "Pakkeplassering: %(location)s"
 
-#: locations/signals.py:54
+#: locations/signals.py:51
 #, python-format
 msgid "To approve this deletion request, visit: %(url)s"
 msgstr "For å godkjenne denne slettingsforespørselen, gå til: %(url)s"
 
-#: locations/signals.py:77
+#: locations/signals.py:74
 #, python-format
 msgid "Fixity check failed for package %(uuid)s"
 msgstr "Fiksjonskontroll mislyktes for pakke %(uuid)s"
 
-#: locations/signals.py:80
+#: locations/signals.py:76
 #, python-format
 msgid ""
 "\n"
@@ -2173,12 +2199,12 @@ msgstr ""
 "Full feilrapport (i JSON-format):\n"
 "%(report)s\n"
 
-#: locations/views.py:50
+#: locations/views.py:49
 #, python-format
 msgid "Confirm deleting %(item)s"
 msgstr "Bekreft sletting av %(item)s"
 
-#: locations/views.py:54
+#: locations/views.py:53
 #, python-format
 msgid ""
 "%(item)s cannot be deleted until the following items are also deleted or "
@@ -2187,34 +2213,34 @@ msgstr ""
 "%(item)s kan ikke slettes før følgende elementer også er slettet eller "
 "tilknytningen er fjernet."
 
-#: locations/views.py:57
+#: locations/views.py:56
 #, python-brace-format
 msgid "Are you sure you want to delete {item}?"
 msgstr "Er du sikker på at du vil slette {item}?"
 
-#: locations/views.py:145
+#: locations/views.py:174
 #, python-format
 msgid "error accessing restore files at %(path)s"
 msgstr "feil ved tilgang til gjenopprettingsfiler på %(path)s"
 
-#: locations/views.py:155
+#: locations/views.py:184
 msgid "AIP restore rejected."
 msgstr "AIP-gjenoppretting avvist."
 
-#: locations/views.py:156
+#: locations/views.py:185
 msgid "AIP restored."
 msgstr "AIP gjenopprettet."
 
-#: locations/views.py:157
+#: locations/views.py:186
 msgid "AIP restore failed"
 msgstr "AIP-gjenoppretting mislyktes"
 
-#: locations/views.py:185
+#: locations/views.py:214
 #, python-format
 msgid "Package of type %(type)s cannot be deleted directly"
 msgstr "Pakke av type %(type)s kan ikke slettes direkte"
 
-#: locations/views.py:190
+#: locations/views.py:219
 msgid ""
 "Package deletion failed. Please contact an administrator or see logs for "
 "details."
@@ -2222,137 +2248,141 @@ msgstr ""
 "Sletting av pakken mislyktes. Kontakt en administrator eller se logger for "
 "mer informasjon."
 
-#: locations/views.py:201
+#: locations/views.py:230
 msgid "Package deleted successfully!"
 msgstr "Pakke slettet!"
 
-#: locations/views.py:211
+#: locations/views.py:240
 msgid "Request rejected, package still stored."
 msgstr "Forespørsel avvist, pakken er fortsatt lagret."
 
-#: locations/views.py:212
+#: locations/views.py:241
 msgid "Package deleted successfully."
 msgstr "Pakken ble slettet."
 
-#: locations/views.py:213
+#: locations/views.py:242
 msgid "Package was not deleted from disk correctly"
 msgstr "Pakken ble ikke slettet riktig fra disken"
 
-#: locations/views.py:255
+#: locations/views.py:286
 msgid "Please contact an administrator or see logs for details."
 msgstr "Kontakt en administrator eller se logger for mer informasjon."
 
-#: locations/views.py:268
+#: locations/views.py:301
 #, python-format
 msgid "Request approved: %(message)s"
 msgstr "Forespørsel godkjent: %(message)s"
 
-#: locations/views.py:357
+#: locations/views.py:392
 #, python-format
 msgid "Error getting status for package %(uuid)s"
 msgstr "Feil ved henting av status for pakke %(uuid)s"
 
-#: locations/views.py:363
+#: locations/views.py:398
 #, python-format
 msgid "Status for package %(package)s is now %(status)s'."
 msgstr "Status for pakke %(package)s er nå %(status)s'."
 
-#: locations/views.py:369
+#: locations/views.py:404
 #, python-format
 msgid "Status for package %(uuid)s has not changed."
 msgstr "Status for pakke %(uuid)s er ikke endret."
 
-#: locations/views.py:386
+#: locations/views.py:421
 #, python-format
 msgid "Package with UUID %(uuid)s does not exist."
 msgstr "Pakke med UUID %(uuid)s eksisterer ikke."
 
-#: locations/views.py:392
+#: locations/views.py:427
 #, python-format
 msgid "Package %(uuid)s is a replica and replicas cannot be re-ingested."
 msgstr "Pakke %(uuid)s er en replika, og replikaer kan ikke gjenopplastes."
 
-#: locations/views.py:403
+#: locations/views.py:438
 msgid "An unknown error occurred"
 msgstr "An unknown error occurred"
 
-#: locations/views.py:419 templates/locations/location_detail.html:57
+#: locations/views.py:454 templates/locations/location_detail.html:57
 msgid "Edit Location"
 msgstr "Rediger plassering"
 
-#: locations/views.py:422
+#: locations/views.py:457
 msgid "Create Location"
 msgstr "Opprett plassering"
 
-#: locations/views.py:446
+#: locations/views.py:481
 msgid "Location saved."
 msgstr "Plassering lagret."
 
-#: locations/views.py:463
+#: locations/views.py:498
 #, python-format
 msgid "Location %(uuid)s does not exist."
 msgstr "Plassering %(uuid)s eksisterer ikke."
 
-#: locations/views.py:499
+#: locations/views.py:535
 msgid "Edit Pipeline"
 msgstr "Rediger rør"
 
-#: locations/views.py:503
+#: locations/views.py:539
 msgid "Create Pipeline"
 msgstr "Opprett rør"
 
-#: locations/views.py:512
+#: locations/views.py:548
 msgid "Pipeline saved."
 msgstr "Rør lagret."
 
-#: locations/views.py:529
+#: locations/views.py:565
 #, python-format
 msgid "Pipeline %(uuid)s does not exist."
 msgstr "Rør %(uuid)s eksisterer ikke."
 
-#: locations/views.py:585
+#: locations/views.py:622
 #, python-format
 msgid "Space %(uuid)s does not exist."
 msgstr "Rom %(uuid)s eksisterer ikke."
 
-#: locations/views.py:629 locations/views.py:656
+#: locations/views.py:666 locations/views.py:693
 msgid "Space saved."
 msgstr "Rom larget."
 
-#: locations/views.py:700
+#: locations/views.py:738
 #, python-format
 msgid "Callback %(uuid)s does not exist."
 msgstr "Tilbakekall %(uuid)s eksisterer ikke."
 
-#: locations/views.py:721
+#: locations/views.py:761
 msgid "Edit Callback"
 msgstr "Rediger tilbakekall"
 
-#: locations/views.py:724
+#: locations/views.py:764
 msgid "Create Callback"
 msgstr "Opprett tilbakekall"
 
-#: locations/views.py:730
+#: locations/views.py:770
 msgid "Callback saved."
 msgstr "Tilbakekall lagret."
 
-#: storage_service/settings/base.py:93
+#: storage_service/settings/base.py:89
 msgid "English"
 msgstr "Engelsk"
 
-#: storage_service/settings/base.py:94
+#: storage_service/settings/base.py:90
 msgid "French"
 msgstr "Fransk"
 
-#: storage_service/settings/base.py:95
+#: storage_service/settings/base.py:91
 msgid "Spanish"
 msgstr "Spansk"
 
-#: storage_service/settings/base.py:96
+#: storage_service/settings/base.py:92
 msgid "Brazilian Portuguese"
 msgstr "Brasiliansk portugisisk"
 
-#: templates/404.html:4 templates/404.html.py:6
+#: storage_service/settings/base.py:93
+msgid "Norwegian"
+msgstr ""
+
+#: templates/404.html:4 templates/404.html:6
 msgid "Page Not found"
 msgstr "Side ikke funnet"
 
@@ -2556,7 +2586,7 @@ msgstr "Om Archivematica lagringstjeneste"
 msgid "Git commit"
 msgstr "Git commit"
 
-#: templates/base.html:9 templates/base.html.py:47 templates/base.html.py:70
+#: templates/base.html:9 templates/base.html:47 templates/base.html:70
 #: templates/fluid.html:9 templates/index.html:4
 msgid "Archivematica Storage Service"
 msgstr "Archivematica lagringstjeneste"
@@ -2689,15 +2719,7 @@ msgstr "Ingen tilbakekall eksisterer for øyeblikket."
 msgid "Fixity Checks"
 msgstr "Fiksjonskontroller"
 
-#: templates/locations/fixity_results.html:12
-msgid "Date"
-msgstr "Dato"
-
-#: templates/locations/fixity_results.html:13
-msgid "Error"
-msgstr "Feil"
-
-#: templates/locations/fixity_results.html:26
+#: templates/locations/fixity_results.html:11
 msgid "No fixity checks found."
 msgstr "Ingen fiksjonskontroller funnet."
 
@@ -2970,6 +2992,19 @@ msgstr ""
 msgid "Expected response"
 msgstr "Expected response"
 
+#: templates/snippets/fixity_logs_table.html:5
+msgid "Date"
+msgstr "Dato"
+
+#: templates/snippets/fixity_logs_table.html:6
+msgid "Error"
+msgstr "Feil"
+
+#: templates/snippets/fixity_logs_table.html:11
+#: templates/snippets/packages_table.html:19
+msgid "Loading data from server"
+msgstr "Laster inn data fra serveren"
+
 #: templates/snippets/location_description.html:2
 msgid ""
 "Locations have a purpose, such as AIP storage or transfer source, and are "
@@ -3065,10 +3100,6 @@ msgstr "Fixity-dato"
 msgid "Fixity Status"
 msgstr "Fixity-status"
 
-#: templates/snippets/packages_table.html:19
-msgid "Loading data from server"
-msgstr "Laster inn data fra serveren"
-
 #: templates/snippets/pipeline_description.html:2
 msgid ""
 "Each pipeline is an Archivematica installation, and has a unique ID that "
@@ -3088,3 +3119,8 @@ msgstr ""
 "Rom inneholder plasseringer samt informasjon om hvordan du får tilgang til "
 "dem. All informasjon relatert til tilgangsprotokollen, som eksternt "
 "vertsnavn og eksportplassering, lagres i rommet."
+
+#~ msgid "The package must be in an %s state to be moved. Current state: %s"
+#~ msgstr ""
+#~ "Pakken må være i en %s-tilstand for å kunne flyttes. Nåværende tilstand: "
+#~ "%s"
