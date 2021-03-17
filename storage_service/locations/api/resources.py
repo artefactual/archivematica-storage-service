@@ -76,6 +76,36 @@ LOGGER = logging.getLogger(__name__)
 # See https://github.com/toastdriven/django-tastypie/issues/152 for details
 
 
+class CustomDjangoAuthorization(DjangoAuthorization):
+    """Custom class which gives non-administrative users read access.
+
+    This reverts a breaking change to user permissions introduced in
+    django-tastypie 0.13.2, which requires users to have "change"
+    permissions to read resource lists and details:
+    https://django-tastypie.readthedocs.io/en/latest/release_notes/v0.13.2.html
+    """
+
+    def read_list(self, object_list, bundle):
+        klass = self.base_checks(bundle.request, object_list.model)
+
+        if klass is False:
+            return []
+
+        # GET-style methods are always allowed.
+        return object_list
+
+    def read_detail(self, object_list, bundle):
+        klass = self.base_checks(bundle.request, bundle.obj.__class__)
+
+        if klass is False:
+            raise tastypie.exceptions.Unauthorized(
+                "You are not allowed to access that resource."
+            )
+
+        # GET-style methods are always allowed.
+        return True
+
+
 def _custom_endpoint(expected_methods=["get"], required_fields=[]):
     """
     Decorator for custom endpoints that handles boilerplate code.
@@ -155,7 +185,7 @@ class PipelineResource(ModelResource):
         authentication = MultiAuthentication(
             BasicAuthentication(), ApiKeyAuthentication(), SessionAuthentication()
         )
-        authorization = DjangoAuthorization()
+        authorization = CustomDjangoAuthorization()
         # validation = CleanedDataFormValidation(form_class=PipelineForm)
         resource_name = "pipeline"
 
@@ -191,7 +221,7 @@ class SpaceResource(ModelResource):
         authentication = MultiAuthentication(
             BasicAuthentication(), ApiKeyAuthentication(), SessionAuthentication()
         )
-        authorization = DjangoAuthorization()
+        authorization = CustomDjangoAuthorization()
         validation = CleanedDataFormValidation(form_class=SpaceForm)
         resource_name = "space"
 
@@ -303,7 +333,7 @@ class LocationResource(ModelResource):
         authentication = MultiAuthentication(
             BasicAuthentication(), ApiKeyAuthentication(), SessionAuthentication()
         )
-        authorization = DjangoAuthorization()
+        authorization = CustomDjangoAuthorization()
         # validation = CleanedDataFormValidation(form_class=LocationForm)
         resource_name = "location"
 
@@ -681,7 +711,7 @@ class PackageResource(ModelResource):
         authentication = MultiAuthentication(
             BasicAuthentication(), ApiKeyAuthentication(), SessionAuthentication()
         )
-        authorization = DjangoAuthorization()
+        authorization = CustomDjangoAuthorization()
         # validation = CleanedDataFormValidation(form_class=PackageForm)
         #
         # Note that this resource is exposed as 'file' to the API for
@@ -1940,7 +1970,7 @@ class AsyncResource(ModelResource):
         authentication = MultiAuthentication(
             BasicAuthentication(), ApiKeyAuthentication(), SessionAuthentication()
         )
-        authorization = DjangoAuthorization()
+        authorization = CustomDjangoAuthorization()
 
         fields = [
             "id",

@@ -36,6 +36,29 @@ class TestSpaceAPI(TestCase):
         )
         assert response.status_code == 401
 
+    def test_non_admins_can_read_list(self):
+        user = User.objects.get(username="nonadmin")
+        user.set_password("test")
+        self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
+            b"nonadmin:test"
+        ).decode("utf8")
+        response = self.client.get("/api/v2/space/")
+        assert response.status_code == 200
+        response_content = json.loads(response.content)
+        assert len(response_content["objects"]) != 0
+
+    def test_non_admins_can_read_detail(self):
+        user = User.objects.get(username="nonadmin")
+        user.set_password("test")
+        self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
+            b"nonadmin:test"
+        ).decode("utf8")
+        response = self.client.get(
+            "/api/v2/space/7d20c992-bc92-4f92-a794-7161ff2cc08b/"
+        )
+        assert response.status_code == 200
+        assert response.content
+
     def test_create_space(self):
         data = {
             "access_protocol": "S3",
@@ -75,6 +98,29 @@ class TestLocationAPI(TestCase):
             "/api/v2/location/213086c8-232e-4b9e-bb03-98fbc7a7966a/"
         )
         assert response.status_code == 401
+
+    def test_non_admins_can_read_list(self):
+        user = User.objects.get(username="nonadmin")
+        user.set_password("test")
+        self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
+            b"nonadmin:test"
+        ).decode("utf8")
+        response = self.client.get("/api/v2/location/")
+        assert response.status_code == 200
+        response_content = json.loads(response.content)
+        assert len(response_content["objects"]) != 0
+
+    def test_non_admins_can_read_detail(self):
+        user = User.objects.get(username="nonadmin")
+        user.set_password("test")
+        self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
+            b"nonadmin:test"
+        ).decode("utf8")
+        response = self.client.get(
+            "/api/v2/location/213086c8-232e-4b9e-bb03-98fbc7a7966a/"
+        )
+        assert response.status_code == 200
+        assert response.content
 
     def test_create_location(self):
         space = models.Space.objects.get(uuid="7d20c992-bc92-4f92-a794-7161ff2cc08b")
@@ -241,6 +287,9 @@ class TestPackageAPI(TempDirMixin, TestCase):
                 "arkivum_identifier": "2e75c8ad-cded-4f7e-8ac7-85627a116e39"
             }
         )
+        # Update origin_pipeline to avoid 400 response to GET requests.
+        pipeline = models.Pipeline.objects.first()
+        models.Package.objects.all().update(origin_pipeline=pipeline)
 
         user = User.objects.get(username="test")
         user.set_password("test")
@@ -260,6 +309,27 @@ class TestPackageAPI(TempDirMixin, TestCase):
         for url in urls:
             response = self.client.get(url)
             assert response.status_code == 401
+
+    def test_non_admins_can_read_list(self):
+        user = User.objects.get(username="nonadmin")
+        user.set_password("test")
+        self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
+            b"nonadmin:test"
+        ).decode("utf8")
+        response = self.client.get("/api/v2/file/")
+        assert response.status_code == 200
+        response_content = json.loads(response.content)
+        assert len(response_content["objects"]) != 0
+
+    def test_non_admins_can_read_detail(self):
+        user = User.objects.get(username="nonadmin")
+        user.set_password("test")
+        self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
+            b"nonadmin:test"
+        ).decode("utf8")
+        response = self.client.get("/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/")
+        assert response.status_code == 200
+        assert response.content
 
     def test_file_data_returns_metadata_given_relative_path(self):
         path = "test_sip/objects/file.txt"
@@ -590,6 +660,29 @@ class TestPipelineAPI(TestCase):
         self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
             b"test:test"
         ).decode("utf8")
+
+    def test_non_admins_can_read_list(self):
+        user = User.objects.get(username="nonadmin")
+        user.set_password("test")
+        self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
+            b"nonadmin:test"
+        ).decode("utf8")
+        response = self.client.get("/api/v2/pipeline/")
+        assert response.status_code == 200
+        response_content = json.loads(response.content)
+        assert len(response_content["objects"]) != 0
+
+    def test_non_admins_can_read_detail(self):
+        user = User.objects.get(username="nonadmin")
+        user.set_password("test")
+        self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
+            b"nonadmin:test"
+        ).decode("utf8")
+        response = self.client.get(
+            "/api/v2/pipeline/0cbf947a-1b19-4a01-a575-454078768fcd/"
+        )
+        assert response.status_code == 200
+        assert response.content
 
     def test_pipeline_create(self):
         data = {

@@ -27,6 +27,33 @@
     "pk": 1
 },
 {
+    "fields": {
+        "username": "nonadmin",
+        "first_name": "",
+        "last_name": "",
+        "is_active": true,
+        "is_superuser": false,
+        "is_staff": true,
+        "last_login": null,
+        "groups": [],
+        "user_permissions": [],
+        "password": "pbkdf2_sha256$20000$KtBsDJ1Efvp0$Hyvx9WvqBq2rNZX8DW1dpo8WdsEats9qc0U/NlK/Gq8=",
+        "email": "test2@test.com",
+        "date_joined": "2021-03-18T20:22:35.641Z"
+    },
+    "model": "auth.user",
+    "pk": 2
+},
+{
+    "fields": {
+        "user": 2,
+        "key": "test",
+        "created": "2021-03-18T20:22:35.818Z"
+    },
+    "model": "tastypie.apikey",
+    "pk": 2
+},
+{
     "pk": 1, 
     "model": "locations.space", 
     "fields": {
@@ -142,6 +169,15 @@
         "relative_path": "var/archivematica/sharedDirectory/", 
         "purpose": "CP", 
         "uuid": "213086c8-232e-4b9e-bb03-98fbc7a7966a"
+    }
+},
+{
+    "pk": 1, 
+    "model": "locations.pipeline", 
+    "fields": {
+        "uuid": "0cbf947a-1b19-4a01-a575-454078768fcd",
+        "description": "Test pipeline",
+        "remote_name": "https://test-am-dashboard"
     }
 }
 ]
