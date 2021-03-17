@@ -1555,9 +1555,13 @@ class PackageResource(ModelResource):
             response = {
                 "error": True,
                 "message": _(
-                    "The file must be in an %s state to be moved. "
-                    "Current state: %s" % (Package.UPLOADED, package.status)
-                ),
+                    "The file must be in an %(expected_state) state to be moved. "
+                    "Current state: %(current_state)"
+                )
+                % {
+                    "expected_state": Package.UPLOADED,
+                    "current_state": package.status,
+                },
             }
             return self.create_response(
                 request, response, response_class=http.HttpBadRequest
@@ -1618,9 +1622,13 @@ class PackageResource(ModelResource):
             response = {
                 "error": True,
                 "message": _(
-                    "The package must be in an %s state to be moved. "
-                    "Current state: %s" % (Package.UPLOADED, package.status)
-                ),
+                    "The package must be in an %(expected_state) state to be moved. "
+                    "Current state: %(current_state)"
+                )
+                % {
+                    "expected_state": Package.UPLOADED,
+                    "current_state": package.status,
+                },
             }
             return self.create_response(
                 request, response, response_class=http.HttpBadRequest
