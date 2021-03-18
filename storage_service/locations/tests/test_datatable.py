@@ -14,7 +14,7 @@ THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures", ""))
 
 # There are 12 total packages in package.json.
-TOTAL_FIXTURE_PACKAGES = 12
+TOTAL_FIXTURE_PACKAGES = 13
 
 # There are 4 total fixity logs in fixity_log.json
 TOTAL_FIXTURE_FIXITY_LOGS = 4
@@ -236,13 +236,13 @@ class TestPackageDataTable(TestCase):
             "0d4e739b-bf60-4b87-bc20-67a379b28cea",
             "2f62b030-c3f4-4ac1-950f-fe47d0ddcd14",
             "473a9398-0024-4804-81da-38946040c8af",
+            "4781e745-96bc-4b06-995c-ee59fddf856d",
             "577f74bd-a283-49e0-b4e2-f8abb81d2566",
             "6aebdb24-1b6b-41ab-b4a3-df9a73726a34",
             "708f7a1d-dda4-46c7-9b3e-99e188eeb04c",
             "79245866-ca80-4f84-b904-a02b3e0ab621",
             "88deec53-c7dc-4828-865c-7356386e9399",
             "9f260047-a9b7-4a75-bb6a-e8d94c83edd2",
-            "a59033c2-7fa7-41e2-9209-136f07174692",
         ]
         assert [package.uuid for package in datatable.records] == expected_uuids
 
@@ -276,7 +276,7 @@ class TestPackageDataTable(TestCase):
             "708f7a1d-dda4-46c7-9b3e-99e188eeb04c",
             "6aebdb24-1b6b-41ab-b4a3-df9a73726a34",
             "577f74bd-a283-49e0-b4e2-f8abb81d2566",
-            "473a9398-0024-4804-81da-38946040c8af",
+            "4781e745-96bc-4b06-995c-ee59fddf856d",
         ]
         assert [package.uuid for package in datatable.records] == expected_uuids
 
@@ -302,6 +302,7 @@ class TestPackageDataTable(TestCase):
         expected_paths = [
             "/2f62/b030/c3f4/4ac1/950f/fe47/d0dd/cd14/0f-2f62b030-c3f4-4ac1-950f-fe47d0ddcd14.7z",
             "/577f/74bd/a283/49e0/b4e2/f8ab/b81d/2566/0f-577f74bd-a283-49e0-b4e2-f8abb81d2566.7z",
+            "/aicsmall_aic-4781e745-96bc-4b06-995c-ee59fddf856d.7z",
             "/broken_bag",
             "/dev/null/a.bz2.tricky.7z.package-473a9398-0024-4804-81da-38946040c8af.7z",
             "/dev/null/empty-transfer-79245866-ca80-4f84-b904-a02b3e0ab621",
@@ -309,7 +310,6 @@ class TestPackageDataTable(TestCase):
             "/dev/null/tar_gz_package-473a9398-0024-4804-81da-38946040c8af.tar.gz",
             "/dev/null/transfer-with-one-file-a59033c2-7fa7-41e2-9209-136f07174692",
             "/f0df/dc4c/7ba1/4e3f/a972/f2c5/5d87/0d04/0f-f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04.7z",
-            "/working_bag",
         ]
         assert [package.full_path for package in datatable.records] == expected_paths
 
@@ -319,7 +319,7 @@ class TestPackageDataTable(TestCase):
             {"iDisplayStart": 0, "iDisplayLength": 10, "sEcho": "1"}
         )
         assert datatable.total_records == TOTAL_FIXTURE_PACKAGES
-        TOTAL_RECORDS_IN_LOCATION = 9
+        TOTAL_RECORDS_IN_LOCATION = 10
         aip_storage_location = models.Location.objects.get(
             uuid="615103f0-0ee0-4a12-ba17-43192d1143ea"
         )
