@@ -227,6 +227,25 @@
     }
 },
 {
+    "pk": 13,
+    "model": "locations.package",
+    "fields": {
+        "current_location": "615103f0-0ee0-4a12-ba17-43192d1143ea",
+        "current_path": "aicsmall_aic-4781e745-96bc-4b06-995c-ee59fddf856d.7z",
+        "description": "Small AIC",
+        "encryption_key_fingerprint": null,
+        "misc_attributes": "{}",
+        "origin_pipeline": null,
+        "package_type": "AIC",
+        "pointer_file_location": "",
+        "pointer_file_path": "pointer.4781e745-96bc-4b06-995c-ee59fddf856d.xml",
+        "related_packages": [],
+        "size": 2195,
+        "status": "UPLOADED",
+        "uuid": "4781e745-96bc-4b06-995c-ee59fddf856d"
+    }
+},
+{
     "pk": 1,
     "model": "locations.file",
     "fields": {

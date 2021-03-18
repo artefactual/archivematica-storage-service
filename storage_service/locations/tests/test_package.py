@@ -24,10 +24,10 @@ FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures", ""))
 # Fixture files are not cleanly separated, with potential for
 # enumeration of PKs across both:
 #
-#   * 12 Packages in package.json
+#   * 13 Packages in package.json
 #   * 2 packages in Arkivum.json
 #
-TOTAL_FIXTURE_PACKAGES = 14
+TOTAL_FIXTURE_PACKAGES = 15
 
 
 class TestPackage(TestCase):
@@ -598,6 +598,34 @@ class TestPackage(TestCase):
         assert replica.origin_pipeline == aip.origin_pipeline
         assert replica.replicas.count() == 0
         self._test_bagit_structure(aip.replicas.first(), replication_dir)
+
+    def test_replicate_aic(self):
+        """Ensure that replication works for AICs as well as AIPs."""
+        space_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="space")
+        replication_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="replication")
+        aic = models.Package.objects.get(uuid="4781e745-96bc-4b06-995c-ee59fddf856d")
+        aic.current_location.space.staging_path = space_dir
+        aic.current_location.space.save()
+        aic.current_location.replicators.create(
+            space=aic.current_location.space,
+            relative_path=replication_dir,
+            purpose=models.Location.REPLICATOR,
+        )
+        assert aic.replicas.count() == 0
+        with mock.patch.object(
+            models.Package,
+            "full_pointer_file_path",
+            os.path.join(
+                FIXTURES_DIR, "pointer.4781e745-96bc-4b06-995c-ee59fddf856d.xml"
+            ),
+        ):
+            aic.create_replicas()
+            assert aic.replicas.count() == 1
+            replica = aic.replicas.first()
+            assert replica is not None
+            assert replica.origin_pipeline == aic.origin_pipeline
+            assert replica.status == models.Package.UPLOADED
+            assert replica.replicas.count() == 0
 
     def test_replicate_aip_twice(self):
         """Ensure that multiple replicas can be created and its
