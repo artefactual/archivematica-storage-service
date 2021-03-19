@@ -220,7 +220,7 @@ class Package(models.Model):
         """Return name of package with UUID and extensions removed.
 
         For AIPs created directly from a transfer, this will be
-        equivalent to the post-sanitization Transfer name.
+        equivalent to the Transfer name after "filename change".
         """
         path = Path(self.current_path)
         name, chars_to_remove = path.name, 37
@@ -1488,7 +1488,7 @@ class Package(models.Model):
         - <package_uuid>: Replaced with package UUID
         - <package_name>: Replaced with package name, with trailing UUID
         removed. For AIPs created directly from a transfer, this will be
-        equivalent to the post-sanitization Transfer name.
+        equivalent to the Transfer name after "filename change".
         """
         return [
             item.replace("<package_uuid>", self.uuid).replace(
@@ -1753,18 +1753,20 @@ class Package(models.Model):
                 continue
             relative_path = f.path
             uuid = f.file_uuid
-            # If the filename has been sanitized, the path in the fileSec
-            # may be outdated; check for a cleanup event and use that,
-            # if present.
+            # If the filename has been changed ("filename change"), the path in
+            # the fileSec may be outdated; check for a cleanup event and use
+            # that, if present.
             for item in f.get_premis_events():
-                if item.event_type != "name cleanup":
+                if item.event_type not in ("name cleanup", "filename change"):
                     continue
                 event_note = item.event_outcome_detail_note
                 if not event_note:
                     continue
-                cleaned_up_name = re.match(r'.*cleaned up name="(.*)"$', event_note)
-                if cleaned_up_name:
-                    relative_path = cleaned_up_name.groups()[0].replace(
+                changed_name = re.match(
+                    r'.*(?:cleaned up|new) name="(.*)"$', event_note
+                )
+                if changed_name:
+                    relative_path = changed_name.groups()[0].replace(
                         "%transferDirectory%", "", 1
                     )
             path = [package_basename, relative_path]
