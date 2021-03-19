@@ -255,7 +255,8 @@ class TestPackage(TestCase):
         assert mets_data["dashboard_uuid"] == "23879cf0-a21a-40ee-bc50-357186746d15"
         assert mets_data["creation_date"] == "2015-02-21T01:55:08"
         assert len(mets_data["files"]) == 11
-        # This file's name was sanitized, so check to see if the correct name is used
+        # This file's name was changed ("filename change"), so check to see if
+        # the correct name is used.
         for item in mets_data["files"]:
             if item["file_uuid"] != "742f10b0-768a-4158-b255-94847a97c465":
                 continue
