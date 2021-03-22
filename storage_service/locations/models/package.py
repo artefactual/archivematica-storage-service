@@ -3004,9 +3004,6 @@ def _update_bag_payload_and_verify(old_aip_internal_path):
         bagit_file.write("BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n")
     bag = bagit.Bag(old_aip_internal_path)
     bag.save(manifests=True)
-    # Workaround for bug
-    # https://github.com/LibraryOfCongress/bagit-python/pull/63
-    bag = bagit.Bag(old_aip_internal_path)
     # Raises exception in case of problem
     bag.validate(processes=settings.BAG_VALIDATION_NO_PROCESSES)
 
