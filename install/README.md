@@ -150,6 +150,11 @@ environment variables - we are hoping to improve this soon (see
 settings hard-coded (see [storage_service.settings.production](../storage_service/storage_service/settings/production.py)).
 This is the current list of strings supported:
 
+- **`EMAIL_BACKEND`**:
+    - **Description:** https://docs.djangoproject.com/en/dev/ref/settings/#email-backend
+    - **Type:** `string`
+    - **Default:** `django.core.mail.backends.smtp.EmailBackend`
+
 - **`EMAIL_HOST`**
     - **Description:** https://docs.djangoproject.com/en/dev/ref/settings/#email-host
     - **Type:** `string`
@@ -169,6 +174,11 @@ This is the current list of strings supported:
     - **Description:** https://docs.djangoproject.com/en/dev/ref/settings/#email-port
     - **Type:** `int`
     - **Default:** `587`
+
+- **`EMAIL_SUBJECT_PREFIX`**
+    - **Description:** https://docs.djangoproject.com/en/dev/ref/settings/#email-subject-prefix
+    - **Type:** `string`
+    - **Default:** `[Archivematica Storage Service] `
 
 - **`DEFAULT_FROM_EMAIL`**
     - **Description:** https://docs.djangoproject.com/en/dev/ref/settings/#default-from-email

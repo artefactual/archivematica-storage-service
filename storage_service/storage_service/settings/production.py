@@ -37,7 +37,9 @@ ALLOWED_HOSTS = get_env_variable("DJANGO_ALLOWED_HOSTS").split(",")
 
 # ######## EMAIL CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#email-backend
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_BACKEND = environ.get(
+    "EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend"
+)
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#email-host
 EMAIL_HOST = environ.get("EMAIL_HOST", "smtp.gmail.com")
@@ -52,7 +54,9 @@ EMAIL_HOST_USER = environ.get("EMAIL_HOST_USER", "your_email@example.com")
 EMAIL_PORT = environ.get("EMAIL_PORT", 587)
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#email-subject-prefix
-EMAIL_SUBJECT_PREFIX = "[Archivematica Storage Service] "
+EMAIL_SUBJECT_PREFIX = environ.get(
+    "EMAIL_SUBJECT_PREFIX", "[Archivematica Storage Service] "
+)
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#default-from-email
 DEFAULT_FROM_EMAIL = environ.get("DEFAULT_FROM_EMAIL", "webmaster@localhost")
