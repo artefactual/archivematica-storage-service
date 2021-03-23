@@ -44,7 +44,7 @@ josepy==1.6.0             # via mozilla-django-oidc
 jsonfield==2.0.1          # via -r base.in
 keystoneauth1==4.0.1      # via python-keystoneclient
 logutils==0.3.4.1         # via -r base.in
-lxml==4.6.2               # via -r base.in, metsrw, python-cas
+lxml==4.6.3               # via -r base.in, metsrw, python-cas
 metsrw==0.3.16            # via -r base.in
 monotonic==1.5            # via oslo.utils
 mozilla-django-oidc==1.2.4  # via -r base.in

@@ -58,7 +58,7 @@ josepy==1.6.0             # via -r base.txt, mozilla-django-oidc
 jsonfield==2.0.1          # via -r base.txt
 keystoneauth1==4.0.1      # via -r base.txt, python-keystoneclient
 logutils==0.3.4.1         # via -r base.txt
-lxml==4.6.2               # via -r base.txt, metsrw, python-cas
+lxml==4.6.3               # via -r base.txt, metsrw, python-cas
 metsrw==0.3.16            # via -r base.txt
 mock==3.0.5               # via pytest-mock, vcrpy
 monotonic==1.5            # via -r base.txt, oslo.utils
@@ -96,7 +96,8 @@ pyparsing==2.4.7          # via -r base.txt, httplib2, oslo.utils, packaging
 pytest-cov==2.4.0         # via -r test.in
 pytest-django==3.10.0     # via -r test.in
 pytest-mock==1.13.0       # via -r test.in
-pytest==3.8.0             # via -r test.in, pytest-cov, pytest-django, pytest-mock
+pytest-randomly==1.2.3    # via -r test.in
+pytest==3.8.0             # via -r test.in, pytest-cov, pytest-django, pytest-mock, pytest-randomly
 python-cas==1.5.0         # via -r base.txt, django-cas-ng
 python-dateutil==2.8.1    # via -r base.txt, botocore, django-tastypie
 python-gnupg==0.4.7       # via -r base.txt
