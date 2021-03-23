@@ -612,13 +612,19 @@ class TestPackage(TestCase):
             purpose=models.Location.REPLICATOR,
         )
         assert aic.replicas.count() == 0
-        with mock.patch.object(
-            models.Package,
-            "full_pointer_file_path",
+
+        def create_temporary_pointer(path):
+            """Create temporary copy of pointer file at path."""
+            temp_path = os.path.join(self.tmp_dir, "temp_pointer.xml")
+            shutil.copy2(path, temp_path)
+            return temp_path
+
+        pointer = create_temporary_pointer(
             os.path.join(
                 FIXTURES_DIR, "pointer.4781e745-96bc-4b06-995c-ee59fddf856d.xml"
-            ),
-        ):
+            )
+        )
+        with mock.patch.object(models.Package, "full_pointer_file_path", pointer):
             aic.create_replicas()
             assert aic.replicas.count() == 1
             replica = aic.replicas.first()
