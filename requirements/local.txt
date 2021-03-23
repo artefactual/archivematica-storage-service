@@ -47,7 +47,7 @@ josepy==1.6.0             # via -r base.txt, mozilla-django-oidc
 jsonfield==2.0.1          # via -r base.txt
 keystoneauth1==4.0.1      # via -r base.txt, python-keystoneclient
 logutils==0.3.4.1         # via -r base.txt
-lxml==4.6.2               # via -r base.txt, metsrw, python-cas
+lxml==4.6.3               # via -r base.txt, metsrw, python-cas
 markupsafe==1.1.1         # via jinja2
 metsrw==0.3.16            # via -r base.txt
 monotonic==1.5            # via -r base.txt, oslo.utils
