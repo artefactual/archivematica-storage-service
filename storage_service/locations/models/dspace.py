@@ -341,7 +341,7 @@ class DSpace(models.Model):
         for upload_path in upload_paths:
             LOGGER.info("Add file %s to %s", upload_path, entry_receipt.edit_media)
             # Add file to DSpace item
-            with open(upload_path, "r") as f:
+            with open(upload_path, "rb") as f:
                 content = f.read()  # sword2 iterates over this twice
 
             # Note: This has problems because httplib2 tries all requests using basic auth without any auth and retries after getting a 401. This breaks with files over 2097152 bytes.

@@ -14,7 +14,7 @@ importlib_resources~=1.4
 jsonfield==2.0.1
 logutils==0.3.4.1
 lxml~=4.6
-metsrw==0.3.16
+metsrw==0.3.17
 ndg-httpsclient==0.4.2
 pathlib2==2.3.5; python_version < '3.0'
 python-gnupg~=0.4

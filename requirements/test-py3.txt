@@ -45,7 +45,7 @@ jsonfield==2.0.1          # via -r base-py3.txt
 keystoneauth1==4.3.1      # via -r base-py3.txt, python-keystoneclient
 logutils==0.3.4.1         # via -r base-py3.txt
 lxml==4.6.3               # via -r base-py3.txt, metsrw, python-cas, sword2
-metsrw==0.3.16            # via -r base-py3.txt
+metsrw==0.3.17            # via -r base-py3.txt
 mock==4.0.3               # via -r test-py3.in
 more-itertools==8.7.0     # via pytest
 mozilla-django-oidc==1.2.4  # via -r base-py3.txt

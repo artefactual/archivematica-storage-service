@@ -17,6 +17,10 @@ jobs:
             python-version: "2.7"
             toxenv: "py27"
             coverage: true
+          - name: "py36"
+            python-version: "3.6"
+            toxenv: "py36"
+            coverage: false
           - name: "py27-checkformigrations"
             python-version: "2.7"
             toxenv: "checkformigrations"
