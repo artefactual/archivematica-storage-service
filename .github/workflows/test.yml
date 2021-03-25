@@ -16,9 +16,11 @@ jobs:
           - name: "py27"
             python-version: "2.7"
             toxenv: "py27"
+            coverage: true
           - name: "py27-checkformigrations"
             python-version: "2.7"
             toxenv: "checkformigrations"
+            coverage: false
     steps:
       - name: "Check out repository"
         uses: "actions/checkout@v2"
@@ -52,11 +54,27 @@ jobs:
           python -m pip install --upgrade pip
           pip install tox
       - name: "Run tox"
+        if: "! matrix.coverage"
         env:
           TOXENV: ${{ matrix.toxenv }}
           PYTEST_ADDOPTS: -vv
         run: |
           tox
+      - name: "Run tox with coverage"
+        if: "matrix.coverage"
+        env:
+          TOXENV: ${{ matrix.toxenv }}
+          PYTEST_ADDOPTS: -vv --cov storage_service --cov-config=.coveragerc --cov-report xml:coverage.xml
+        run: |
+          tox
+      - name: "Upload coverage report"
+        if: matrix.coverage && github.repository == 'artefactual/archivematica-storage-service'
+        uses: "codecov/codecov-action@v1"
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: true
+          verbose: true
+          name: ${{ matrix.name }}
   integration:
     name: "Integration"
     runs-on: "ubuntu-18.04"
