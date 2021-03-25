@@ -7,6 +7,8 @@ import pytest
 from scandir import scandir
 import shutil
 
+import six
+
 from locations.models import Space
 from locations.models.space import path2browse_dict
 
@@ -264,7 +266,7 @@ def aipstore_compressed(tmpdir):
             aipstore_path, path[AIP_QUAD_PATH], path[COMPRESSED_PACKAGE_DIR]
         )
         with open(package_file, "wb") as package:
-            package.write(MAGIC)
+            package.write(six.ensure_binary(MAGIC))
         assert os.path.exists(package_file)
         assert os.path.isfile(package_file)
 
@@ -429,7 +431,7 @@ def aipstore_uncompressed(tmpdir):
         os.makedirs(path_to_write_to)
         some_file = os.path.join(aipstore_path, path, aip_name, some_file_name)
         with open(some_file, "wb") as _some_file:
-            _some_file.write(some_data)
+            _some_file.write(six.ensure_binary(some_data))
         assert os.path.exists(some_file)
 
     return aipstore

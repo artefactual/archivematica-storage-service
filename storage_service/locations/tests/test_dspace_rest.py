@@ -12,6 +12,7 @@ from uuid import uuid4
 from lxml import etree
 import pytest
 import requests
+import six
 
 import agentarchives
 from agentarchives import archivesspace
@@ -360,7 +361,10 @@ def test_move_from_storage_service(
     mocker.patch("subprocess.Popen", return_value=MockProcess(["fake-command"]))
     mocker.patch("lxml.etree.parse", return_value=etree.parse(package.fake_mets_file))
     mocker.patch("os.remove")
-    mocker.patch("__builtin__.open")
+    if six.PY3:
+        mocker.patch("builtins.open")
+    else:
+        mocker.patch("__builtin__.open")
     mocker.patch("os.listdir", return_value=[AIP_METS_FILENAME])
     mocker.patch("scandir.walk", return_value=[("", [], [AIP_METS_FILENAME])])
 
