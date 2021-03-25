@@ -38,7 +38,7 @@ jsonfield==2.0.1          # via -r base.in
 keystoneauth1==4.3.1      # via python-keystoneclient
 logutils==0.3.4.1         # via -r base.in
 lxml==4.6.3               # via -r base.in, metsrw, python-cas, sword2
-metsrw==0.3.16            # via -r base.in
+metsrw==0.3.17            # via -r base.in
 mozilla-django-oidc==1.2.4  # via -r base.in
 msgpack==1.0.2            # via oslo.serialization
 mysqlclient==1.4.6        # via agentarchives

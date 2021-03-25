@@ -54,7 +54,7 @@ jsonfield==2.0.1          # via -r base.txt
 keystoneauth1==4.0.1      # via -r base.txt, python-keystoneclient
 logutils==0.3.4.1         # via -r base.txt
 lxml==4.6.3               # via -r base.txt, metsrw, python-cas
-metsrw==0.3.16            # via -r base.txt
+metsrw==0.3.17            # via -r base.txt
 mock==3.0.5               # via -r test.in, pytest-mock, vcrpy
 monotonic==1.5            # via -r base.txt, oslo.utils
 more-itertools==5.0.0     # via pytest
