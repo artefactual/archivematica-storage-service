@@ -1,13 +1,15 @@
 [run]
 
 omit =
-	**/migrations/*
-	**/south_migrations/*
-	**/settings/*
-	**/wsgi.py
-	**/tests/*
-	**/manage.py
-	setup.py
+    **/migrations/*
+    **/south_migrations/*
+    **/management/commands/*
+    **/settings/*
+    **/wsgi.py
+    **/tests/*
+    **/wsgi.py
+    **/manage.py
+    setup.py
 
 source = .
 
