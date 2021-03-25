@@ -22,7 +22,8 @@ python-keystoneclient==3.10.0
 python-swiftclient==3.3.0
 requests==2.21.0
 requests-oauthlib==1.2.0
-sword2==0.2.1
+sword2==0.2.1; python_version < '3.0'
+git+https://github.com/swordapp/python-client-sword2.git@59db54c03e4498dd6b001ac4f3a4167aa2fb8987#egg=sword2; python_version > '3.0'
 whitenoise==3.3.0
 agentarchives==0.6.0
 git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git@67d270c65c201606fb86d548493d4b3fd8cc7a76#egg=django-shibboleth-remoteuser

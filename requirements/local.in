@@ -1,13 +1,7 @@
 # Local development dependencies go here
 -r base.txt
 
-ipython==1.1.0
-Sphinx==1.2b1
-
 # moving these db related dependencies out of base.txt as they are not needed
 # in all cases (i.e. test.txt doesn't need them, but local and production do)
 dj-database-url==0.4.2
 psycopg2==2.7.1
-
-# For managing translation strings on Transifex
-transifex-client==0.12.2
