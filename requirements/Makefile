@@ -1,23 +1,13 @@
-.PHONY: all check clean
+.PHONY: pip-compile
+pip-compile:  # Compile pip requirements
+	pip-compile --allow-unsafe --output-file base.txt base.in
+	pip-compile --allow-unsafe --output-file local.txt local.in
+	pip-compile --allow-unsafe --output-file production.txt production.in
+	pip-compile --allow-unsafe --output-file test.txt test.in
 
-upgrade_flag = #-U
-
-objects = $(wildcard *.in)
-outputs := $(objects:.in=.txt)
-
-all: $(outputs)
-
-%.txt: %.in
-	pip-compile -v $(upgrade_flag) --output-file $@ $<
-
-test.txt: base.txt
-
-local.txt: test.txt
-
-production.txt: base.txt
-
-check:
-	@which pip-compile > /dev/null
-
-clean: check
-	- rm *.txt
+.PHONY: pip-upgrade
+pip-upgrade:  # Upgrade pip requirements
+	pip-compile --allow-unsafe --upgrade --output-file base.txt base.in
+	pip-compile --allow-unsafe --upgrade --output-file local.txt local.in
+	pip-compile --allow-unsafe --upgrade --output-file production.txt production.in
+	pip-compile --allow-unsafe --upgrade --output-file test.txt test.in
