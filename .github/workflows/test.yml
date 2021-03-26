@@ -20,7 +20,7 @@ jobs:
           - name: "py36"
             python-version: "3.6"
             toxenv: "py36"
-            coverage: false
+            coverage: true
           - name: "py27-checkformigrations"
             python-version: "2.7"
             toxenv: "checkformigrations"
@@ -79,6 +79,7 @@ jobs:
           fail_ci_if_error: true
           verbose: true
           name: ${{ matrix.name }}
+          flags: ${{ matrix.name }}
   integration:
     name: "Integration"
     runs-on: "ubuntu-18.04"
