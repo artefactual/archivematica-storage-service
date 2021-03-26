@@ -1,4 +1,4 @@
-[![Travis CI](https://travis-ci.org/artefactual/archivematica-storage-service.svg?branch=qa/0.x)](https://travis-ci.org/artefactual/archivematica-storage-service)
+[![GitHub CI](https://github.com/artefactual/archivematica-storage-service/actions/workflows/test.yml/badge.svg)](https://github.com/artefactual/archivematica-storage-service/actions/workflows/test.yml)
 [![codecov](https://codecov.io/gh/artefactual/archivematica-storage-service/branch/qa/0.x/graph/badge.svg?token=z1VcHtK8iw)](https://codecov.io/gh/artefactual/archivematica-storage-service)
 
 # [Archivematica Storage Service](https://www.archivematica.org/)
