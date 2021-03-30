@@ -895,6 +895,55 @@ class TestPackage(TestCase):
         # Ensure data was copied as expected.
         assert os.path.getsize(new_replicated_file) == len(DATA_TO_ADD)
 
+    def test_clear_local_tempdirs(self):
+        """Ensure package's local tempdirs are deleted.
+
+        Tempdirs associated with other packages should be retained.
+        """
+        ss_internal = models.Location.active.get(
+            purpose=models.Location.STORAGE_SERVICE_INTERNAL
+        )
+        space_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="space")
+        ss_internal_dir = tempfile.mkdtemp(dir=space_dir, prefix="int")
+        ss_internal.space.path = space_dir
+        ss_internal.relative_path = os.path.basename(ss_internal_dir)
+
+        aip1 = models.Package.objects.get(uuid="0d4e739b-bf60-4b87-bc20-67a379b28cea")
+        aip2 = models.Package.objects.get(uuid="6aebdb24-1b6b-41ab-b4a3-df9a73726a34")
+
+        def mock_fetch_local_path(package):
+            tempdir = tempfile.mkdtemp(dir=ss_internal.full_path)
+            package.local_tempdirs.append(tempdir)
+            return tempdir
+
+        # Create temporary directories.
+        tempdir_to_delete = mock_fetch_local_path(aip1)
+        tempdir_to_retain = mock_fetch_local_path(aip2)
+        assert os.path.exists(tempdir_to_delete)
+        assert os.path.exists(tempdir_to_retain)
+        assert (
+            len(aip1.local_tempdirs) == 1
+            and aip1.local_tempdirs[0] == tempdir_to_delete
+        )
+        assert (
+            len(aip2.local_tempdirs) == 1
+            and aip2.local_tempdirs[0] == tempdir_to_retain
+        )
+
+        # Remove temporary directories for first AIP.
+        with mock.patch(
+            "locations.models.package._get_ss_internal_full_path",
+            return_value=ss_internal.full_path,
+        ):
+            aip1.clear_local_tempdirs()
+        assert not os.path.exists(tempdir_to_delete)
+        assert os.path.exists(tempdir_to_retain)
+        assert len(aip1.local_tempdirs) == 0
+        assert (
+            len(aip2.local_tempdirs) == 1
+            and aip2.local_tempdirs[0] == tempdir_to_retain
+        )
+
 
 class TestTransferPackage(TestCase):
     """Test integration of transfer reading and indexing.

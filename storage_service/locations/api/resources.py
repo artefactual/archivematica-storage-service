@@ -1381,6 +1381,7 @@ class PackageResource(ModelResource):
         except StorageException:
             full_path, temp_dir = package.compress_package(utils.COMPRESSION_TAR)
         response = utils.download_file_stream(full_path, temp_dir)
+        package.clear_local_tempdirs()
         return response
 
     @_custom_endpoint(expected_methods=["get"])
@@ -1410,6 +1411,7 @@ class PackageResource(ModelResource):
         report_json, report_dict = bundle.obj.get_fixity_check_report_send_signals(
             force_local=force_local
         )
+        bundle.obj.clear_local_tempdirs()
         return http.HttpResponse(report_json, content_type="application/json")
 
     @_custom_endpoint(expected_methods=["put"])
@@ -1570,6 +1572,7 @@ class PackageResource(ModelResource):
         response = bundle.obj.start_reingest(pipeline, reingest_type, processing_config)
         status_code = response.get("status_code", 500)
 
+        bundle.obj.clear_local_tempdirs()
         return self.create_response(request, response, status=status_code)
 
     @_custom_endpoint(expected_methods=["post"])

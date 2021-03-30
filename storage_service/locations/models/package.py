@@ -189,6 +189,7 @@ class Package(models.Model):
         self.local_path = None
         self.local_path_location = None
         self.origin_location = None
+        self.local_tempdirs = []
 
     def __str__(self):
         return u"{uuid}: {path}".format(uuid=self.uuid, path=self.full_path)
@@ -352,7 +353,26 @@ class Package(models.Model):
 
         self.local_path_location = ss_internal
         self.local_path = int_path
+        self.local_tempdirs.append(temp_dir)
         return self.local_path
+
+    def clear_local_tempdirs(self):
+        """Delete local tempdirs associated with this package."""
+        ss_internal_full_path = _get_ss_internal_full_path()
+        for tempdir in self.local_tempdirs:
+            if os.path.isdir(tempdir) and tempdir.startswith(ss_internal_full_path):
+                try:
+                    shutil.rmtree(tempdir)
+                    self.local_tempdirs.remove(tempdir)
+                    LOGGER.debug(
+                        "Deleted Storage Service internal tempdir: {}".format(tempdir)
+                    )
+                except OSError as err:
+                    LOGGER.debug(
+                        "Error deleting Storage Service internal tempdir: {}".format(
+                            err
+                        )
+                    )
 
     def get_base_directory(self):
         """
@@ -2939,6 +2959,11 @@ def _extract_rein_aip(internal_location, rein_aip_internal_path):
             rein_aip_internal_path = os.path.join(internal_location.full_path, bname)
     LOGGER.debug("Reingested AIP full path: %s", rein_aip_internal_path)
     return rein_aip_internal_path
+
+
+def _get_ss_internal_full_path():
+    ss_internal = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
+    return ss_internal.full_path
 
 
 def _replace_old_pres_ders_with_reingested(
