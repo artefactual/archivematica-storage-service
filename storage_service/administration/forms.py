@@ -217,6 +217,8 @@ class DefaultLocationsForm(SettingsForm):
 class UserCreationForm(auth.forms.UserCreationForm):
     """Creates a new user. Inherits from Django's UserCreationForm."""
 
+    email = forms.EmailField(required=True, help_text=_("Required."))
+
     def __init__(self, *args, **kwargs):
         super(UserCreationForm, self).__init__(*args, **kwargs)
         self.fields["is_superuser"].label = _("Administrator?")
