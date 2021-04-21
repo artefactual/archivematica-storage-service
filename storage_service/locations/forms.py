@@ -53,7 +53,7 @@ class DisableableSelectWidget(forms.Select):
 class PipelineForm(forms.ModelForm):
     create_default_locations = forms.BooleanField(
         required=False,
-        initial=True,
+        initial=False,
         label=_("Default Locations:"),
         help_text=_("Enabled if default locations should be created for this pipeline"),
     )
