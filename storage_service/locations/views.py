@@ -538,7 +538,10 @@ def pipeline_edit(request, uuid=None):
     else:
         action = _("Create Pipeline")
         pipeline = None
-        initial = {"enabled": not utils.get_setting("pipelines_disabled")}
+        initial = {
+            "create_default_locations": True,
+            "enabled": not utils.get_setting("pipelines_disabled"),
+        }
 
     if request.method == "POST":
         form = forms.PipelineForm(request.POST, instance=pipeline, initial=initial)
@@ -549,7 +552,15 @@ def pipeline_edit(request, uuid=None):
             return redirect("locations:pipeline_list")
     else:
         form = forms.PipelineForm(instance=pipeline, initial=initial)
-    return render(request, "locations/pipeline_form.html", locals())
+    return render(
+        request,
+        "locations/pipeline_form.html",
+        {
+            "action": action,
+            "form": form,
+            "pipeline": pipeline,
+        },
+    )
 
 
 def pipeline_list(request):

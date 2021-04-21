@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import os
 
 from django.test import TestCase
+from django.urls import reverse
 from django.utils.six.moves.urllib.parse import ParseResult, urlparse
 
 from locations import models
@@ -83,3 +84,88 @@ class TestPipeline(TestCase):
 
         assert result["message"] == "Approval successful."
         assert result["uuid"] == "090b7f5b-637b-400b-9014-3eb58986fe8f"
+
+
+class TestPipelineViews(TestCase):
+
+    fixtures = ["base.json", "pipelines.json"]
+
+    def setUp(self):
+        self.client.login(username="test", password="test")
+
+    def test_view_create_pipeline(self):
+        url = reverse("locations:pipeline_create")
+
+        resp = self.client.get(url, follow=True)
+        form = resp.context["form"]
+
+        assert resp.status_code == 200
+        assert form.initial["enabled"] is True
+        assert form.initial["create_default_locations"] is True
+
+    def test_view_create_pipeline_invalid_post(self):
+        url = reverse("locations:pipeline_create")
+
+        resp = self.client.post(url, follow=True, data={})
+        form = resp.context["form"]
+
+        assert form.is_valid() is False
+
+    def test_view_create_pipeline_post(self):
+        url = reverse("locations:pipeline_create")
+
+        resp = self.client.post(
+            url, follow=True, data={"uuid": "0d9d6be9-2751-4e81-b85f-fe4e51a1f789"}
+        )
+        messages = list(resp.context["messages"])
+
+        self.assertRedirects(resp, reverse("locations:pipeline_list"))
+        assert models.Pipeline.objects.filter(
+            uuid="0d9d6be9-2751-4e81-b85f-fe4e51a1f789"
+        ).exists()
+        assert str(messages[0]) == "Pipeline saved."
+
+    def test_view_edit_pipeline(self):
+        url = reverse(
+            "locations:pipeline_edit", args=["b25f6b71-3ebf-4fcc-823c-1feb0a2553dd"]
+        )
+
+        resp = self.client.get(url, follow=True)
+        form = resp.context["form"]
+
+        assert form.initial["enabled"] is True
+        assert "create_default_locations" not in form.initial
+
+    def test_view_edit_pipeline_invalid_post(self):
+        url = reverse(
+            "locations:pipeline_edit", args=["b25f6b71-3ebf-4fcc-823c-1feb0a2553dd"]
+        )
+
+        resp = self.client.post(url, follow=True, data={})
+        form = resp.context["form"]
+
+        assert form.is_valid() is False
+
+    def test_view_edit_pipeline_post(self):
+        url = reverse(
+            "locations:pipeline_edit", args=["b25f6b71-3ebf-4fcc-823c-1feb0a2553dd"]
+        )
+
+        resp = self.client.post(
+            url,
+            follow=True,
+            data={
+                "uuid": "b25f6b71-3ebf-4fcc-823c-1feb0a2553dd",
+                "description": "Pipeline 3ebf",
+            },
+        )
+        messages = list(resp.context["messages"])
+
+        self.assertRedirects(resp, reverse("locations:pipeline_list"))
+        assert (
+            models.Pipeline.objects.get(
+                uuid="b25f6b71-3ebf-4fcc-823c-1feb0a2553dd"
+            ).description
+            == "Pipeline 3ebf"
+        )
+        assert str(messages[0]) == "Pipeline saved."
