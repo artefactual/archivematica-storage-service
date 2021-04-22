@@ -77,7 +77,9 @@ COMPRESS_EXTENSIONS = (
     COMPRESS_EXTENSION_GZIP,
 )
 
-PACKAGE_EXTENSIONS = (".tar",) + COMPRESS_EXTENSIONS
+TAR_EXTENSION = ".tar"
+
+PACKAGE_EXTENSIONS = (TAR_EXTENSION,) + COMPRESS_EXTENSIONS
 
 COMPRESS_PROGRAM_7Z = "7-Zip"
 COMPRESS_PROGRAM_TAR = "tar"
@@ -349,7 +351,7 @@ def get_compress_command(compression, extract_path, basename, full_path):
         `compressed_filename` is the full path to the compressed file
     """
     if compression in (COMPRESSION_TAR, COMPRESSION_TAR_BZIP2, COMPRESSION_TAR_GZIP):
-        compressed_filename = os.path.join(extract_path, basename + ".tar")
+        compressed_filename = os.path.join(extract_path, basename + TAR_EXTENSION)
         relative_path = os.path.dirname(full_path)
         algo = ""
         if compression == COMPRESSION_TAR_BZIP2:
@@ -570,12 +572,15 @@ def _abort_create_tar(path, tarpath):
     raise TARException(fail_msg)
 
 
-def create_tar(path):
+def create_tar(path, extension=False):
     """Create a tarfile from the directory at ``path`` and overwrite
     ``path`` with that tarfile.
+
+    :param path: Path to directory or file to tar (str)
+    :param extension: Flag indicating whether to add .tar extension (bool)
     """
     path = path.rstrip("/")
-    tarpath = "{}.tar".format(path)
+    tarpath = "{}{}".format(path, TAR_EXTENSION)
     changedir = os.path.dirname(tarpath)
     source = os.path.basename(path)
     cmd = ["tar", "-C", changedir, "-cf", tarpath, source]
@@ -594,12 +599,18 @@ def create_tar(path):
         except OSError:
             # Remove a file-path as We're likely packaging a file, e.g. 7z.
             os.remove(path)
-        os.rename(tarpath, path)
+        if not extension:
+            os.rename(tarpath, path)
     else:
         _abort_create_tar(path, tarpath)
+
     try:
-        assert tarfile.is_tarfile(path)
-        assert not os.path.exists(tarpath)
+        if extension:
+            assert tarfile.is_tarfile(tarpath)
+            assert not os.path.exists(path)
+        else:
+            assert tarfile.is_tarfile(path)
+            assert not os.path.exists(tarpath)
     except AssertionError:
         _abort_create_tar(path, tarpath)
 
@@ -614,8 +625,12 @@ def _abort_extract_tar(tarpath, newtarpath, err):
 
 
 def extract_tar(tarpath):
-    """Extract tarfile at ``path`` to a directory at ``path``."""
-    newtarpath = "{}.tar".format(tarpath)
+    """Extract tarfile at ``path`` to a directory at ``path``.
+
+    :param tarpath: Path to tarfile to extract (str)
+    """
+    newtarpath = tarpath
+    newtarpath = "{}{}".format(tarpath, TAR_EXTENSION)
     os.rename(tarpath, newtarpath)
     changedir = os.path.dirname(newtarpath)
     cmd = ["tar", "-xf", newtarpath, "-C", changedir]
@@ -623,8 +638,6 @@ def extract_tar(tarpath):
         subprocess.check_output(cmd)
     except (OSError, subprocess.CalledProcessError) as err:
         _abort_extract_tar(tarpath, newtarpath, err)
-    # TODO: GPG treats this differently because it only ever expects to
-    # TAR a directory but we actually want to TAR file-types as well.
     os.remove(newtarpath)
 
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Migration to add a Tape Archive Space to the Storage Service."""
+"""Migration to add an Offline Replica Staging Space to the Storage Service."""
 
 from __future__ import absolute_import, unicode_literals
 
@@ -9,12 +9,12 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-    """Entry point for Tape Archive Space migration."""
+    """Entry point for OfflineReplicaStaging Space migration."""
 
-    dependencies = [("locations", "0026_update_package_status")]
+    dependencies = [("locations", "0027_update_default_transfer_source_description")]
     operations = [
         migrations.CreateModel(
-            name="TAR",
+            name="OfflineReplicaStaging",
             fields=[
                 (
                     "id",
@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
                 ),
             ],
             options={
-                "verbose_name": "Tape Archive (TAR) on Local Filesystem",
+                "verbose_name": "Write-Only Replica Staging on Local Filesystem",
             },
         ),
         migrations.AlterField(
@@ -46,9 +46,9 @@ class Migration(migrations.Migration):
                     (b"LOM", "LOCKSS-o-matic"),
                     (b"NFS", "NFS"),
                     (b"PIPE_FS", "Pipeline Local Filesystem"),
+                    (b"REPLICA", "Write-Only Replica Staging on Local Filesystem"),
                     (b"SWIFT", "Swift"),
                     (b"S3", "S3"),
-                    (b"TAR", "Tape Archive (TAR) on Local Filesystem"),
                 ],
                 help_text="How the space can be accessed.",
                 max_length=8,
@@ -56,7 +56,7 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AddField(
-            model_name="tar",
+            model_name="offlinereplicastaging",
             name="space",
             field=models.OneToOneField(
                 on_delete=django.db.models.deletion.CASCADE,

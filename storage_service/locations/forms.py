@@ -249,9 +249,9 @@ class S3Form(forms.ModelForm):
         )
 
 
-class TARForm(forms.ModelForm):
+class OfflineReplicaStagingForm(forms.ModelForm):
     class Meta:
-        model = models.TAR
+        model = models.OfflineReplicaStaging
         fields = ()
 
 
