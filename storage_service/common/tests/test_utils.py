@@ -1,5 +1,10 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
+from collections import namedtuple
+import os
+import shutil
+import subprocess
+import tarfile
 
 from six import StringIO
 import mock
@@ -17,6 +22,9 @@ PROG_VERS_TAR = "tar"
 # Specifically string types for the tuple we create.
 COMPRESS_ORDER_ONE = "1"
 COMPRESS_ORDER_TWO = "2"
+
+ExTarCase = namedtuple("ExTarCase", "path isdir raises expected")
+CrTarCase = namedtuple("CrTarCase", "path isfile istar raises expected")
 
 
 @pytest.mark.parametrize(
@@ -290,3 +298,91 @@ def test_package_is_file(package_path, is_file):
     see in the storage service.
     """
     assert utils.package_is_file(package_path) == is_file
+
+
+@pytest.mark.parametrize(
+    "path, will_be_dir, sp_raises, expected",
+    [
+        ExTarCase(path="/a/b/c", isdir=True, raises=False, expected="success"),
+        ExTarCase(path="/a/b/d", isdir=False, raises=True, expected="fail"),
+        ExTarCase(path="/a/b/c", isdir=True, raises=True, expected="fail"),
+    ],
+)
+def test_extract_tar(mocker, path, will_be_dir, sp_raises, expected):
+    if sp_raises:
+        mocker.patch.object(subprocess, "check_output", side_effect=OSError("gotcha!"))
+    else:
+        mocker.patch.object(subprocess, "check_output")
+    mocker.patch.object(os, "rename")
+    mocker.patch.object(os, "remove")
+    if will_be_dir:
+        mocker.patch.object(os.path, "isdir", return_value=True)
+    else:
+        mocker.patch.object(os.path, "isdir", return_value=False)
+    tarpath_ext = "{}.tar".format(path)
+    dirname = os.path.dirname(tarpath_ext)
+    if expected == "success":
+        ret = utils.extract_tar(path)
+        assert ret is None
+        os.remove.assert_called_once_with(tarpath_ext)
+    else:
+        with pytest.raises(utils.TARException) as excinfo:
+            ret = utils.extract_tar(path)
+        assert "Failed to extract {}: gotcha!".format(path) == str(excinfo.value)
+        os.rename.assert_any_call(tarpath_ext, path)
+        assert not os.remove.called
+    os.rename.assert_any_call(path, tarpath_ext)
+    subprocess.check_output.assert_called_once_with(
+        ["tar", "-xf", tarpath_ext, "-C", dirname]
+    )
+
+
+@pytest.mark.parametrize(
+    "path, will_be_file, will_be_tar, sp_raises, expected",
+    [
+        CrTarCase(
+            path="/a/b/c", isfile=True, istar=True, raises=False, expected="success"
+        ),
+        CrTarCase(
+            path="/a/b/c/", isfile=True, istar=True, raises=False, expected="success"
+        ),
+        CrTarCase(
+            path="/a/b/c", isfile=True, istar=False, raises=False, expected="fail"
+        ),
+        CrTarCase(
+            path="/a/b/c", isfile=False, istar=True, raises=False, expected="fail"
+        ),
+        CrTarCase(
+            path="/a/b/c", isfile=False, istar=False, raises=True, expected="fail"
+        ),
+    ],
+)
+def test_create_tar(mocker, path, will_be_file, will_be_tar, sp_raises, expected):
+    if sp_raises:
+        mocker.patch.object(subprocess, "check_output", side_effect=OSError("gotcha!"))
+    else:
+        mocker.patch.object(subprocess, "check_output")
+    mocker.patch.object(os.path, "isfile", return_value=will_be_file)
+    mocker.patch.object(tarfile, "is_tarfile", return_value=will_be_tar)
+    mocker.patch.object(os, "rename")
+    mocker.patch.object(shutil, "rmtree")
+    fixed_path = path.rstrip("/")
+    tarpath = "{}.tar".format(fixed_path)
+    if expected == "success":
+        ret = utils.create_tar(path)
+        shutil.rmtree.assert_called_once_with(fixed_path)
+        os.rename.assert_called_once_with(tarpath, fixed_path)
+        tarfile.is_tarfile.assert_any_call(fixed_path)
+        assert ret is None
+    else:
+        with pytest.raises(utils.TARException) as excinfo:
+            ret = utils.create_tar(path)
+        assert "Failed to create a tarfile at {} for dir at {}".format(
+            tarpath, fixed_path
+        ) == str(excinfo.value)
+        assert not shutil.rmtree.called
+        assert not os.rename.called
+    if not sp_raises:
+        os.path.isfile.assert_called_once_with(tarpath)
+        if will_be_file:
+            tarfile.is_tarfile.assert_any_call(tarpath)

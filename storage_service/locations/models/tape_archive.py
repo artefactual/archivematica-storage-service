@@ -4,12 +4,12 @@
 
 from __future__ import absolute_import
 
-
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
+from common import utils
+
 from .location import Location
-from .location_helpers.helpers import create_tar, extract_tar
 
 
 class TAR(models.Model):
@@ -31,12 +31,12 @@ class TAR(models.Model):
         """ Moves src_path to dest_space.staging_path/dest_path. """
         self.space.create_local_directory(dest_path)
         self.space.move_rsync(src_path, dest_path, try_mv_local=True)
-        extract_tar(dest_path)
+        utils.extract_tar(dest_path)
 
     def move_from_storage_service(self, src_path, dest_path, package=None):
         """ Moves self.staging_path/src_path to dest_path. """
         self.space.create_local_directory(dest_path)
         self.space.move_rsync(src_path, dest_path)
-        create_tar(dest_path)
+        utils.create_tar(dest_path)
         if package.should_have_pointer_file():
             """Update the pointer file to represent the TAR packaging."""

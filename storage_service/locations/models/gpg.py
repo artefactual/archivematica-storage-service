@@ -4,8 +4,6 @@ from __future__ import absolute_import
 import datetime
 import logging
 import os
-import shutil
-import subprocess
 import tarfile
 
 # Core Django, alphabetical
@@ -242,7 +240,7 @@ def _gpg_encrypt(path, key_fingerprint):
     """
     tar_created = False
     if os.path.isdir(path):
-        _create_tar(path)
+        utils.create_tar(path)
         tar_created = True
     encr_path, result = gpgutils.gpg_encrypt_file(path, key_fingerprint)
     if os.path.isfile(encr_path) and result.ok:
@@ -252,7 +250,7 @@ def _gpg_encrypt(path, key_fingerprint):
         return path, result
     else:
         if tar_created:
-            _extract_tar(path)
+            utils.extract_tar(path)
         fail_msg = _(
             "An error occured when attempting to encrypt" " %(path)s" % {"path": path}
         )
@@ -289,69 +287,6 @@ def _encr_path2key_fingerprint(encr_path):
         fail_msg = "Unable to find package matching encrypted path {}".format(encr_path)
         LOGGER.error(fail_msg)
         raise GPGException(fail_msg)
-
-
-def _abort_create_tar(path, tarpath):
-    fail_msg = _(
-        "Failed to create a tarfile at %(tarpath)s for dir at %(path)s"
-        % {"tarpath": tarpath, "path": path}
-    )
-    LOGGER.error(fail_msg)
-    raise GPGException(fail_msg)
-
-
-def _create_tar(path):
-    """Create a tarfile from the directory at ``path`` and overwrite ``path``
-    with that tarfile.
-    """
-    path = path.rstrip("/")
-    tarpath = "{}.tar".format(path)
-    changedir = os.path.dirname(tarpath)
-    source = os.path.basename(path)
-    cmd = ["tar", "-C", changedir, "-cf", tarpath, source]
-    LOGGER.info(
-        "creating archive of %s at %s, relative to %s", source, tarpath, changedir
-    )
-    try:
-        subprocess.check_output(cmd)
-    except (OSError, subprocess.CalledProcessError):
-        _abort_create_tar(path, tarpath)
-    if os.path.isfile(tarpath) and tarfile.is_tarfile(tarpath):
-        shutil.rmtree(path)
-        os.rename(tarpath, path)
-    else:
-        _abort_create_tar(path, tarpath)
-    try:
-        assert tarfile.is_tarfile(path)
-        assert not os.path.exists(tarpath)
-    except AssertionError:
-        _abort_create_tar(path, tarpath)
-
-
-def _abort_extract_tar(tarpath, newtarpath):
-    fail_msg = _(
-        "Failed to extract %(tarpath)s to a directory at the same"
-        " location." % {"tarpath": tarpath}
-    )
-    LOGGER.error(fail_msg)
-    os.rename(newtarpath, tarpath)
-    raise GPGException(fail_msg)
-
-
-def _extract_tar(tarpath):
-    """Extract tarfile at ``path`` to a directory at ``path``."""
-    newtarpath = "{}.tar".format(tarpath)
-    os.rename(tarpath, newtarpath)
-    changedir = os.path.dirname(newtarpath)
-    cmd = ["tar", "-xf", newtarpath, "-C", changedir]
-    try:
-        subprocess.check_output(cmd)
-    except (OSError, subprocess.CalledProcessError):
-        _abort_extract_tar(tarpath, newtarpath)
-    if os.path.isdir(tarpath):
-        os.remove(newtarpath)
-    else:
-        _abort_extract_tar(tarpath, newtarpath)
 
 
 def _parse_gpg_version(raw_gpg_version):
@@ -392,7 +327,7 @@ def _gpg_decrypt(path):
     # using an uncompressed AIP as input. We extract those here.
     if tarfile.is_tarfile(path) and os.path.splitext(path)[1] == "":
         LOGGER.info("%s is a tarfile so we are extracting it", path)
-        _extract_tar(path)
+        utils.extract_tar(path)
     return path
 
 
