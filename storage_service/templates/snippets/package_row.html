@@ -9,7 +9,7 @@
           {% endif %}
         </td>
         <td>
-          {% if package.status != package.DELETED %}
+          {% if package.status != package.DELETED and package.current_location.space.access_protocol != "REPLICA" %}
             <a href="{% url 'download_request' 'v2' 'file' package.uuid %}">{{ package.full_path }}</a>
           {% else %}
             <span>{{ package.full_path }}</span>
@@ -40,7 +40,7 @@
           {% if package.pointer_file_location %}
             <a href="{% url 'pointer_file_request' 'v2' 'file' package.uuid %}">{% trans "Pointer File" %}</a> |
           {% endif %}
-          {% if package.status != package.DELETED %}
+          {% if package.status != package.DELETED and package.current_location.space.access_protocol != "REPLICA" %}
             <a href="{% url 'download_request' 'v2' 'file' package.uuid %}">{% trans "Download" %}</a> |
           {% endif %}
 
@@ -49,7 +49,7 @@
             <a href="{% url 'locations:aip_reingest' package.uuid %}?next={{ redirect_path }}">{% trans "Re-ingest" %}</a> |
           {% endif %}
 
-          {% if package.package_type in package.PACKAGE_TYPE_CAN_DELETE %}
+          {% if package.package_type in package.PACKAGE_TYPE_CAN_DELETE and package.current_location.space.access_protocol != "REPLICA" %}
           <a href="#" class="request-delete"
              data-package-type="{{ package.package_type }}"
              data-package-uuid="{{ package.uuid }}"
