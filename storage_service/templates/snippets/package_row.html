@@ -9,7 +9,7 @@
           {% endif %}
         </td>
         <td>
-          {% if package.status != package.DELETED and package.current_location.space.access_protocol != "REPLICA" %}
+          {% if package.is_downloadable %}
             <a href="{% url 'download_request' 'v2' 'file' package.uuid %}">{{ package.full_path }}</a>
           {% else %}
             <span>{{ package.full_path }}</span>
@@ -38,26 +38,27 @@
         </td>
         <td>
           {% if package.pointer_file_location %}
-            <a href="{% url 'pointer_file_request' 'v2' 'file' package.uuid %}">{% trans "Pointer File" %}</a> |
+            <a href="{% url 'pointer_file_request' 'v2' 'file' package.uuid %}">{% trans "Pointer File" %}</a>
           {% endif %}
-          {% if package.status != package.DELETED and package.current_location.space.access_protocol != "REPLICA" %}
-            <a href="{% url 'download_request' 'v2' 'file' package.uuid %}">{% trans "Download" %}</a> |
+          {% if package.is_downloadable %}
+            {% if package.pointer_file_location %}| {% endif %}
+            <a href="{% url 'download_request' 'v2' 'file' package.uuid %}">{% trans "Download" %}</a>
           {% endif %}
 
           <!-- Replicas should not be re-ingestible -->
-          {% if package.package_type in 'AIP AIC' and not package.replicated_package %}
-            <a href="{% url 'locations:aip_reingest' package.uuid %}?next={{ redirect_path }}">{% trans "Re-ingest" %}</a> |
+          {% if package.is_reingestable %}
+            | <a href="{% url 'locations:aip_reingest' package.uuid %}?next={{ redirect_path }}">{% trans "Re-ingest" %}</a>
           {% endif %}
 
-          {% if package.package_type in package.PACKAGE_TYPE_CAN_DELETE and package.current_location.space.access_protocol != "REPLICA" %}
-          <a href="#" class="request-delete"
-             data-package-type="{{ package.package_type }}"
-             data-package-uuid="{{ package.uuid }}"
-             data-package-pipeline="{{ package.origin_pipeline.uuid }}"
-             >{% trans "Request Deletion" %}</a>
+          {% if package.is_deletable %}
+            | <a href="#" class="request-delete"
+               data-package-type="{{ package.package_type }}"
+               data-package-uuid="{{ package.uuid }}"
+               data-package-pipeline="{{ package.origin_pipeline.uuid }}"
+               >{% trans "Request Deletion" %}</a>
           {% endif %}
 
-          {% if package.package_type in package.PACKAGE_TYPE_CAN_DELETE_DIRECTLY and package.status != package.DELETED %}
+          {% if package.is_directly_deletable %}
             <form method="POST" class="submit-confirm" action="{% url 'locations:package_delete' package.uuid %}">
               {% csrf_token %}
               <button class="link" type="submit">{% trans "Delete" %}</button>

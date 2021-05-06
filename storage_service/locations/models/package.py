@@ -274,6 +274,43 @@ class Package(models.Model):
             raise StorageException(message)
 
     @property
+    def is_downloadable(self):
+        """Determines whether or not package is downloadable."""
+        space_is_offline_replica = (
+            self.current_location.space.access_protocol == Space.OFFLINE_REPLICA_STAGING
+        )
+        return self.status != self.DELETED and not space_is_offline_replica
+
+    @property
+    def is_deletable(self):
+        """Determines whether or not package is deletable."""
+        space_is_offline_replica = (
+            self.current_location.space.access_protocol == Space.OFFLINE_REPLICA_STAGING
+        )
+        return (
+            self.package_type in self.PACKAGE_TYPE_CAN_DELETE
+            and self.status != self.DELETED
+            and not space_is_offline_replica
+        )
+
+    @property
+    def is_directly_deletable(self):
+        """Determines whether or not package is directly deletable."""
+        return (
+            self.package_type in self.PACKAGE_TYPE_CAN_DELETE_DIRECTLY
+            and self.status != self.DELETED
+        )
+
+    @property
+    def is_reingestable(self):
+        """Determines whether or not package can be reingested."""
+        return (
+            self.package_type in self.PACKAGE_TYPE_CAN_REINGEST
+            and self.status != self.DELETED
+            and not self.replicated_package
+        )
+
+    @property
     def latest_fixity_check_datetime(self):
         latest_check = self._latest_fixity_check()
         return latest_check.datetime_reported if latest_check is not None else None

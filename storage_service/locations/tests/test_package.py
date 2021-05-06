@@ -1012,6 +1012,94 @@ class TestPackage(TestCase):
             and aip2.local_tempdirs[0] == tempdir_to_retain
         )
 
+    def test_is_downloadable(self):
+        """Test package.is_downloadable property."""
+        # Packages in OfflineReplicaSpace aren't downloadable.
+        self.package.status = models.Package.UPLOADED
+        self.package.current_location.space.access_protocol = (
+            models.Space.OFFLINE_REPLICA_STAGING
+        )
+        self.assertFalse(self.package.is_downloadable)
+
+        # Non-deleted packages in other Spaces are downloadable.
+        self.package.current_location.space.access_protocol = (
+            models.Space.PIPELINE_LOCAL_FS
+        )
+        self.assertTrue(self.package.is_downloadable)
+        self.package.current_location.space.access_protocol = models.Space.S3
+        self.assertTrue(self.package.is_downloadable)
+
+        # Deleted packages are not downloadable.
+        self.package.status = models.Package.DELETED
+        self.assertFalse(self.package.is_downloadable)
+
+    def test_is_deletable(self):
+        """Test package.is_deletable property."""
+        # Packages in OfflineReplicaSpace aren't deletable.
+        self.package.status = models.Package.UPLOADED
+        self.package.current_location.space.access_protocol = (
+            models.Space.OFFLINE_REPLICA_STAGING
+        )
+        self.package.package_type = models.Package.AIP
+        self.assertFalse(self.package.is_deletable)
+
+        # Packages in other Spaces are deletable.
+        self.package.current_location.space.access_protocol = (
+            models.Space.PIPELINE_LOCAL_FS
+        )
+        self.assertTrue(self.package.is_deletable)
+        self.package.current_location.space.access_protocol = models.Space.S3
+        self.assertTrue(self.package.is_deletable)
+
+        # Deleted packages aren't deletable.
+        self.package.status = models.Package.DELETED
+        self.assertFalse(self.package.is_deletable)
+
+        # Only AIPs, AICs, and Transfer are deletable.
+        self.package.status = models.Package.UPLOADED
+        self.package.package_type = models.Package.AIC
+        self.assertTrue(self.package.is_deletable)
+        self.package.package_type = models.Package.TRANSFER
+        self.assertTrue(self.package.is_deletable)
+        self.package.package_type = models.Package.SIP
+        self.assertFalse(self.package.is_deletable)
+
+    def test_is_directly_deletable(self):
+        """Test package.is_deletable property."""
+        # Only DIPs are directly deletable.
+        self.package.status = models.Package.UPLOADED
+        self.package.package_type = models.Package.DIP
+        self.assertTrue(self.package.is_directly_deletable)
+        self.package.package_type = models.Package.AIP
+        self.assertFalse(self.package.is_directly_deletable)
+
+        # Deleted packages aren't directly deletable.
+        self.package.status = models.Package.DELETED
+        self.assertFalse(self.package.is_directly_deletable)
+
+    def test_is_reingestable(self):
+        """Test package.is_reingestable property."""
+        # Only AIPs and AICs are reingestable.
+        self.package.status = models.Package.UPLOADED
+        self.package.package_type = models.Package.AIP
+        self.assertTrue(self.package.is_reingestable)
+        self.package.package_type = models.Package.AIC
+        self.assertTrue(self.package.is_reingestable)
+        self.package.package_type = models.Package.DIP
+        self.assertFalse(self.package.is_reingestable)
+
+        # Deleted packages aren't reingestable.
+        self.package.status = models.Package.DELETED
+        self.assertFalse(self.package.is_reingestable)
+
+        # Replicas aren't reingestable.
+        self.package.status = models.Package.UPLOADED
+        package_to_replicate = models.Package.objects.get(
+            uuid="88deec53-c7dc-4828-865c-7356386e9399"
+        )
+        self.package.replicated_package = package_to_replicate
+        self.assertFalse(self.package.is_reingestable)
+
 
 class TestTransferPackage(TestCase):
     """Test integration of transfer reading and indexing.
