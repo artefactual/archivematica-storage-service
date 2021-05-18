@@ -48,6 +48,11 @@ class Command(StorageServiceCommand):
     def add_arguments(self, parser):
         """Entry point to add custom arguments"""
         parser.add_argument(
+            "--aip-uuid",
+            help="UUID for specific AIP to create replicas of",
+            default=None,
+        )
+        parser.add_argument(
             "-d",
             "--delete",
             action="store_true",
@@ -55,9 +60,14 @@ class Command(StorageServiceCommand):
             " prior to creating new replicas.",
         )
         parser.add_argument(
-            "--location",
+            "--aip-store-location",
             help="UUID for AIP Storage location to create replicas",
             default=None,
+        )
+        parser.add_argument(
+            "--replicator-location",
+            help="UUID for Replicator location to create replicas"
+            " Defaults to all configured Replicators for AIP Store.",
         )
 
     def handle(self, *args, **options):
@@ -67,7 +77,7 @@ class Command(StorageServiceCommand):
 
         # Determine AIP storage location for which we'll be creating
         # replicas. Use default AIP Store if user did not supply a UUID.
-        aip_store_uuid = options["location"]
+        aip_store_uuid = options["aip_store_location"]
         if aip_store_uuid is None:
             try:
                 default_aip_store = Settings.objects.get(name="default_AS_location")
@@ -75,12 +85,17 @@ class Command(StorageServiceCommand):
             except Settings.DoesNotExist:
                 raise CommandError("No AIP Store location specified or set as default.")
 
+        aip_uuid = options["aip_uuid"]
+        replicator_uuid = options["replicator_location"]
+
         aips = Package.objects.filter(
             current_location=aip_store_uuid,
             package_type=Package.AIP,
             replicated_package=None,
             status=Package.UPLOADED,
         ).all()
+        if aip_uuid:
+            aips = aips.filter(uuid=aip_uuid)
         if not aips:
             raise CommandError(
                 "No AIPs to replicate in location {}".format(aip_store_uuid)
@@ -95,13 +110,15 @@ class Command(StorageServiceCommand):
         for aip in aips:
             if delete_existing_replicas:
                 self.info("Deleting existing replicas of AIP {}".format(aip.uuid))
-                aip_deleted_replicas_count = self._delete_replicas(aip.uuid)
+                aip_deleted_replicas_count = self._delete_replicas(
+                    aip.uuid, replicator_uuid
+                )
                 deleted_count += aip_deleted_replicas_count
 
             replicas_initial_count = get_replica_count(aip.uuid)
 
             self.info("Creating new replicas for AIP {}".format(aip.uuid))
-            aip.create_replicas()
+            aip.create_replicas(replicator_uuid=replicator_uuid, delete_replicas=False)
 
             # Validate that new replicas were created.
             replicas_count = get_replica_count(aip.uuid)
@@ -119,10 +136,12 @@ class Command(StorageServiceCommand):
             )
         )
 
-    def _delete_replicas(self, aip_uuid):
+    def _delete_replicas(self, aip_uuid, replicator_uuid):
         """Delete all existing replicas of an AIP
 
         :param aip_uuid: UUID of AIP whose replicas we are deleting.
+        :param replicator_uuid: UUID of Replicator in which to delete AIP
+            replicas.
 
         :returns: Number of replicas deleted (int)
         """
@@ -130,6 +149,10 @@ class Command(StorageServiceCommand):
         existing_replicas = Package.objects.filter(
             replicated_package=aip_uuid, status=Package.UPLOADED
         ).all()
+        if replicator_uuid:
+            existing_replicas = existing_replicas.filter(
+                current_location__uuid=replicator_uuid
+            )
         for replica in existing_replicas:
             try:
                 self._delete_replica(replica)

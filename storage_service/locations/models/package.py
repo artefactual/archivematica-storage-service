@@ -1500,7 +1500,7 @@ class Package(models.Model):
         LOGGER.info("Returning pointer file for: %s", self.uuid)
         return pointer_file
 
-    def create_replicas(self):
+    def create_replicas(self, replicator_uuid=None, delete_replicas=True):
         """Create replicas of this AIP in any replicator locations.
 
         Existing replicas must be discovered and then deleted so that
@@ -1511,9 +1511,17 @@ class Package(models.Model):
         will be called and no replicas will be found to be deleted.
 
         Once the clean-up work is done, new replicas are then minted.
+
+        :param replicator_uuid: UUID for Replicator location in which
+            replicas should be created (str)
+        :param delete_replicas: Flag for whether to delete existing
+            replicas before creating new ones (bool)
         """
-        self._delete_replicas()
+        if delete_replicas:
+            self._delete_replicas()
         replicator_locs = self.current_location.replicators.all()
+        if replicator_uuid:
+            replicator_locs = replicator_locs.filter(uuid=replicator_uuid)
         for replicator_loc in replicator_locs:
             self.replicate(replicator_loc)
 
