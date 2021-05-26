@@ -1,10 +1,14 @@
 from __future__ import absolute_import
 import base64
 
+import six
+from tastypie import fields
+
 import locations.api.resources as resources
 
-from tastypie import fields
-from six.moves import map
+
+def b64encode_string(data):
+    return base64.b64encode(six.ensure_binary(data)).decode("utf8")
 
 
 class PipelineResource(resources.PipelineResource):
@@ -15,8 +19,8 @@ class PipelineResource(resources.PipelineResource):
 class SpaceResource(resources.SpaceResource):
     def get_objects(self, space, path):
         objects = space.browse(path)
-        objects["entries"] = list(map(base64.b64encode, objects["entries"]))
-        objects["directories"] = list(map(base64.b64encode, objects["directories"]))
+        objects["entries"] = [b64encode_string(e) for e in objects["entries"]]
+        objects["directories"] = [b64encode_string(d) for d in objects["directories"]]
 
         return objects
 
@@ -27,15 +31,14 @@ class LocationResource(resources.LocationResource):
     pipeline = fields.ToManyField(PipelineResource, "pipeline")
 
     def decode_path(self, path):
-        return base64.b64decode(path)
+        return base64.b64decode(path).decode("utf8")
 
     def get_objects(self, space, path):
         objects = space.browse(path)
-        objects["entries"] = list(map(base64.b64encode, objects["entries"]))
-        objects["directories"] = list(map(base64.b64encode, objects["directories"]))
+        objects["entries"] = [b64encode_string(e) for e in objects["entries"]]
+        objects["directories"] = [b64encode_string(d) for d in objects["directories"]]
         objects["properties"] = {
-            base64.b64encode(k).decode("utf8"): v
-            for k, v in objects.get("properties", {}).items()
+            b64encode_string(k): v for k, v in objects.get("properties", {}).items()
         }
         return objects
 

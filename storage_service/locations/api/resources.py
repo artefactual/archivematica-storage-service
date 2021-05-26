@@ -22,10 +22,10 @@ from django.http import HttpResponseRedirect
 from django.forms.models import model_to_dict
 from django.urls import reverse
 from django.utils.translation import ugettext as _
-from django.utils import six
 
 # Third party dependencies, alphabetical
 import bagit
+import six
 from tastypie.authentication import (
     BasicAuthentication,
     ApiKeyAuthentication,
@@ -474,9 +474,7 @@ class LocationResource(ModelResource):
         location = bundle.obj
         path = request.GET.get("path", "")
         path = self.decode_path(path)
-        location_path = location.full_path
-        if isinstance(location_path, six.text_type):
-            location_path = location_path.encode("utf8")
+        location_path = six.ensure_str(location.full_path)
         if not path.startswith(location_path):
             path = os.path.join(location_path, path)
 

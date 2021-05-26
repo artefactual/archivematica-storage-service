@@ -1,39 +1,35 @@
-FROM python:2.7-stretch
+ARG TARGET=archivematica-storage-service
+ARG PYTHON_VERSION=python3
+
+FROM ubuntu:18.04 AS base
 
 ENV DEBIAN_FRONTEND noninteractive
-ENV DJANGO_SETTINGS_MODULE storage_service.settings.local
 ENV PYTHONUNBUFFERED 1
-ENV PYTHONPATH /src/storage_service
-ENV SS_GUNICORN_BIND 0.0.0.0:8000
-ENV SS_GUNICORN_CHDIR /src/storage_service
-ENV SS_GUNICORN_ACCESSLOG -
-ENV SS_GUNICORN_ERRORLOG -
-ENV FORWARDED_ALLOW_IPS *
 
 # OS dependencies
 RUN set -ex \
-	&& apt-get update -qq \
-	&& apt-get install -qq -y --no-install-recommends \
+	&& apt-get update \
+	&& apt-get install -y --no-install-recommends \
+		build-essential \
+		curl \
 		gettext \
+		git \
 		gnupg1 \
+		libldap2-dev \
+		libmysqlclient-dev \
+		libsasl2-dev \
+		locales \
+		locales-all \
 		p7zip-full \
 		rsync \
 		unar \
-		locales \
-		locales-all \
-		libldap2-dev \
-		libsasl2-dev \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Set the locale
+RUN locale-gen en_US.UTF-8
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
-
-ADD requirements/ /src/requirements/
-RUN pip install -q -r /src/requirements/production.txt -r /src/requirements/test.txt
-ADD ./ /src/
-ADD ./install/storage-service.gunicorn-config.py /etc/archivematica/storage-service.gunicorn-config.py
 
 RUN set -ex \
 	&& groupadd --gid 333 --system archivematica \
@@ -50,9 +46,59 @@ RUN set -ex \
 	&& mkdir -p $internalDirs \
 	&& chown -R archivematica:archivematica $internalDirs
 
+COPY requirements/ /src/requirements/
+COPY ./install/storage-service.gunicorn-config.py /etc/archivematica/storage-service.gunicorn-config.py
+
+# -----------------------------------------------------------------------------
+
+FROM base AS python2
+
+RUN set -ex \
+	&& apt-get update \
+	&& apt-get install -y --no-install-recommends \
+		python-dev \
+	&& rm -rf /var/lib/apt/lists/*
+
+RUN set -ex \
+	&& curl -s https://bootstrap.pypa.io/pip/2.7/get-pip.py | python2.7
+
+RUN pip2 install -q -r /src/requirements/production.txt -r /src/requirements/test.txt
+
+COPY ./ /src/
+
+# -----------------------------------------------------------------------------
+
+FROM base AS python3
+
+RUN set -ex \
+	&& apt-get update \
+	&& apt-get install -y --no-install-recommends \
+		python3-dev \
+	&& rm -rf /var/lib/apt/lists/*
+
+RUN set -ex \
+	&& curl -s https://bootstrap.pypa.io/get-pip.py | python3.6 \
+	&& update-alternatives --install /usr/bin/python python /usr/bin/python3 10
+
+RUN pip3 install -q -r /src/requirements/production-py3.txt -r /src/requirements/test-py3.txt
+
+COPY ./ /src/
+
+# -----------------------------------------------------------------------------
+
+FROM ${PYTHON_VERSION} AS archivematica-storage-service
+
 WORKDIR /src/storage_service
 
 USER archivematica
+
+ENV DJANGO_SETTINGS_MODULE storage_service.settings.local
+ENV PYTHONPATH /src/storage_service
+ENV SS_GUNICORN_BIND 0.0.0.0:8000
+ENV SS_GUNICORN_CHDIR /src/storage_service
+ENV SS_GUNICORN_ACCESSLOG -
+ENV SS_GUNICORN_ERRORLOG -
+ENV FORWARDED_ALLOW_IPS *
 
 RUN set -ex \
 	&& export SS_DB_URL=mysql://ne:ver@min/d \
