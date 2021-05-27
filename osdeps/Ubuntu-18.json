@@ -16,7 +16,7 @@
    { "name": "unar", "state": "latest"},
    { "name": "rsync", "state": "latest"},
    { "name": "p7zip-full", "state": "latest"},
-   { "name": "python-dev", "state": "latest"},
+   { "name": "python3.6-dev", "state": "latest"},
    { "name": "build-essential", "state": "latest"},
    { "name": "libmysqlclient-dev", "state": "latest"},
    { "name": "libxml2-dev", "state": "latest"},
