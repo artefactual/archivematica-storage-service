@@ -30,6 +30,11 @@ FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures", ""))
 TOTAL_FIXTURE_PACKAGES = 14
 
 
+def recursive_file_count(target_dir):
+    """Return count of files in directory based on recursive walk."""
+    return sum([len(files) for _, _, files in os.walk(target_dir)])
+
+
 class TestPackage(TestCase):
 
     fixtures = ["base.json", "package.json", "arkivum.json", "callback.json"]
@@ -690,6 +695,8 @@ class TestPackage(TestCase):
         aip.current_location.space.staging_path = space_dir
         aip.current_location.space.save()
 
+        staging_files_count_initial = recursive_file_count(staging_dir)
+
         aip.current_location.replicators.create(
             space=replica_space,
             relative_path=replication_dir,
@@ -707,6 +714,9 @@ class TestPackage(TestCase):
             replication_dir, utils.uuid_to_path(replica.uuid), "working_bag.tar"
         )
         assert os.path.exists(expected_replica_path)
+
+        # Ensure that tar file in staging is cleaned up properly.
+        assert staging_files_count_initial == recursive_file_count(staging_dir)
 
     def test_replicate_aip_offline_staging_compressed(self):
         """Ensure that a replica is created and stored correctly as-is."""
