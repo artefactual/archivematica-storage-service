@@ -64,5 +64,13 @@ class OfflineReplicaStaging(models.Model):
         package.current_path = tar_dest_path
         self.space.move_rsync(tar_src_path, tar_dest_path)
 
+        # Cleanup tar in staging directory
+        try:
+            os.remove(tar_src_path)
+        except OSError as err:
+            LOGGER.warning(
+                "Unable to delete staged replica {}: {}".format(tar_src_path, err)
+            )
+
         # Cleanup empty directory created by space.create_local_directory.
         os.rmdir(dest_path)
