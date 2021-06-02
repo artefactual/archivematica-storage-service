@@ -25,6 +25,11 @@ from django.utils.translation import ugettext as _
 
 # Third party dependencies, alphabetical
 import bagit
+
+try:
+    from pathlib import Path
+except ImportError:
+    from pathlib2 import Path
 import six
 from tastypie.authentication import (
     BasicAuthentication,
@@ -66,6 +71,15 @@ from locations import signals
 from ..models.async_manager import AsyncManager
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _is_relative_path(path1, path2):
+    """Ensure path2 is relative to path1"""
+    try:
+        Path(path2).resolve().relative_to(path1)
+        return True
+    except ValueError:
+        return False
 
 
 # FIXME ModelResources with ForeignKeys to another model don't work with
@@ -318,6 +332,11 @@ class SpaceResource(ModelResource):
         if not path.startswith(space.path):
             path = os.path.join(space.path, path)
 
+        if not _is_relative_path(space.path, path):
+            return http.HttpBadRequest(
+                _("The path parameter must be relative to the space path")
+            )
+
         objects = self.get_objects(space, path)
 
         return self.create_response(request, objects)
@@ -477,6 +496,11 @@ class LocationResource(ModelResource):
         location_path = six.ensure_str(location.full_path)
         if not path.startswith(location_path):
             path = os.path.join(location_path, path)
+
+        if not _is_relative_path(location_path, path):
+            return http.HttpBadRequest(
+                _("The path parameter must be relative to the location path")
+            )
 
         objects = self.get_objects(location.space, path)
 

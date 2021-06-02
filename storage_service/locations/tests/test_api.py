@@ -4,10 +4,12 @@ import base64
 import json
 import os
 import shutil
+import uuid
 import vcr
 
 from django.contrib.auth.models import User
 from django.test import TestCase
+from django.urls import reverse
 from django.utils.six.moves.urllib.parse import urlparse
 
 from locations import models
@@ -79,6 +81,25 @@ class TestSpaceAPI(TestCase):
 
         protocol_model = models.S3.objects.get(space_id=response_data["uuid"])
         assert protocol_model.endpoint_url == data["endpoint_url"]
+
+    def test_browse_doesnt_traverse_up(self):
+        space_uuid = str(uuid.uuid4())
+        models.Space.objects.create(
+            uuid=space_uuid,
+            path="/home/foo",
+        )
+        response = self.client.get(
+            reverse(
+                "browse",
+                kwargs={"api_name": "v2", "resource_name": "space", "uuid": space_uuid},
+            ),
+            {"path": "/home/foo/../../etc"},
+        )
+        assert response.status_code == 400
+        assert (
+            "The path parameter must be relative to the space path"
+            in response.content.decode("utf8")
+        )
 
 
 class TestLocationAPI(TestCase):
@@ -256,6 +277,34 @@ class TestLocationAPI(TestCase):
         )
         # Verify error
         assert response.status_code == 404
+
+    def test_browse_doesnt_traverse_up(self):
+        location_uuid = str(uuid.uuid4())
+        space = models.Space.objects.create(
+            uuid=str(uuid.uuid4()),
+            path="/home",
+        )
+        models.Location.objects.create(
+            uuid=location_uuid,
+            space=space,
+            relative_path="foo",
+        )
+        response = self.client.get(
+            reverse(
+                "browse",
+                kwargs={
+                    "api_name": "v2",
+                    "resource_name": "location",
+                    "uuid": location_uuid,
+                },
+            ),
+            {"path": base64.b64encode(b"/home")},
+        )
+        assert response.status_code == 400
+        assert (
+            "The path parameter must be relative to the location path"
+            in response.content.decode("utf8")
+        )
 
 
 class TestPackageAPI(TempDirMixin, TestCase):
