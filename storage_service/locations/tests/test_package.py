@@ -35,6 +35,11 @@ def recursive_file_count(target_dir):
     return sum([len(files) for _, _, files in os.walk(target_dir)])
 
 
+def recursive_dir_count(target_dir):
+    """Return count of dirs in directory based on recursive walk."""
+    return sum([len(dirs) for _, dirs, _ in os.walk(target_dir)])
+
+
 class TestPackage(TestCase):
 
     fixtures = ["base.json", "package.json", "arkivum.json", "callback.json"]
@@ -731,6 +736,7 @@ class TestPackage(TestCase):
         aip.current_location.space.save()
 
         staging_files_count_initial = recursive_file_count(staging_dir)
+        staging_dirs_count_initial = recursive_dir_count(staging_dir)
 
         aip.current_location.replicators.create(
             space=replica_space,
@@ -750,8 +756,9 @@ class TestPackage(TestCase):
         )
         assert os.path.exists(expected_replica_path)
 
-        # Ensure that tar file in staging is cleaned up properly.
+        # Ensure tar file and quad dirs in staging are cleaned up properly.
         assert staging_files_count_initial == recursive_file_count(staging_dir)
+        assert staging_dirs_count_initial == recursive_dir_count(staging_dir)
 
     def test_replicate_aip_offline_staging_compressed(self):
         """Ensure that a replica is created and stored correctly as-is."""
