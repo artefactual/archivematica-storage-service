@@ -1,12 +1,14 @@
 from __future__ import absolute_import
 
 # stdlib, alphabetical
+
 import logging
 import os
 
 # Core Django, alphabetical
 from django.dispatch import receiver
 from django.db import models
+from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
@@ -23,6 +25,7 @@ __all__ = ("Location", "LocationPipeline")
 LOGGER = logging.getLogger(__name__)
 
 
+@six.python_2_unicode_compatible
 class Location(models.Model):
     """ Stores information about a location. """
 
@@ -122,8 +125,8 @@ class Location(models.Model):
     # more details.
     _default = None
 
-    def __unicode__(self):
-        return _("%(uuid)s: %(path)s (%(purpose)s)") % {
+    def __str__(self):
+        return _(u"%(uuid)s: %(path)s (%(purpose)s)") % {
             "uuid": self.uuid,
             "purpose": self.get_purpose_display(),
             "path": self.relative_path,
@@ -202,6 +205,7 @@ def set_default_location_post_save(
         Settings.objects.filter(name=name, value=instance.uuid).delete()
 
 
+@six.python_2_unicode_compatible
 class LocationPipeline(models.Model):
     location = models.ForeignKey("Location", to_field="uuid", on_delete=models.CASCADE)
     pipeline = models.ForeignKey("Pipeline", to_field="uuid", on_delete=models.CASCADE)
@@ -210,8 +214,8 @@ class LocationPipeline(models.Model):
         verbose_name = _("Location associated with a Pipeline")
         app_label = "locations"
 
-    def __unicode__(self):
-        return _("%(location)s is associated with %(pipeline)s") % {
+    def __str__(self):
+        return _(u"%(location)s is associated with %(pipeline)s") % {
             "location": self.location,
             "pipeline": self.pipeline,
         }
