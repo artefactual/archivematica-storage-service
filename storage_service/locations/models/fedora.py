@@ -6,6 +6,7 @@ import os
 
 # Core Django, alphabetical
 from django.db import models
+from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
@@ -56,6 +57,7 @@ class Fedora(models.Model):
 
 
 # For SWORD asynchronous downloading support
+@six.python_2_unicode_compatible
 class PackageDownloadTask(models.Model):
     uuid = UUIDField(
         editable=False, unique=True, version=4, help_text=_("Unique identifier")
@@ -70,7 +72,7 @@ class PackageDownloadTask(models.Model):
         verbose_name = _("Package Download Task")
         app_label = "locations"
 
-    def __unicode__(self):
+    def __str__(self):
         return _(u"PackageDownloadTask ID: %(uuid)s for %(package)s") % {
             "uuid": self.uuid,
             "package": self.package,
@@ -108,6 +110,7 @@ class PackageDownloadTask(models.Model):
             return self.FAILED
 
 
+@six.python_2_unicode_compatible
 class PackageDownloadTaskFile(models.Model):
     uuid = UUIDField(
         editable=False, unique=True, version=4, help_text=_("Unique identifier")
@@ -133,7 +136,7 @@ class PackageDownloadTaskFile(models.Model):
         verbose_name = _("Package Download Task File")
         app_label = "locations"
 
-    def __unicode__(self):
+    def __str__(self):
         return _(u"Download %(filename)s from %(url)s (%(status)s") % {
             "filename": self.filename,
             "url": self.url,
