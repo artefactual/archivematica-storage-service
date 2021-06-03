@@ -21,9 +21,9 @@ jobs:
             python-version: "3.6"
             toxenv: "py36"
             coverage: true
-          - name: "py27-checkformigrations"
-            python-version: "2.7"
-            toxenv: "checkformigrations"
+          - name: "migrations"
+            python-version: "3.6"
+            toxenv: "migrations"
             coverage: false
     steps:
       - name: "Check out repository"
