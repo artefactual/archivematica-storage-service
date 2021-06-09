@@ -243,7 +243,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 # ######## LOGIN REQUIRED MIDDLEWARE CONFIGURATION
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
-LOGIN_EXEMPT_URLS = (r"^api/", r"^admin/", r"^Shibboleth.sso/", r"^login/")
+LOGIN_EXEMPT_URLS = (r"^api/", r"^admin/", r"^Shibboleth.sso/", r"^login/", r"^jsi18n/")
 # ######## END LOGIN REQUIRED MIDDLEWARE CONFIGURATION
 
 
