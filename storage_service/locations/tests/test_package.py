@@ -716,10 +716,9 @@ class TestPackage(TestCase):
 
         assert aip.replicas.count() == 1
         assert replica is not None
-        expected_replica_path = os.path.join(
-            replication_dir, utils.uuid_to_path(replica.uuid), "working_bag.tar"
-        )
+        expected_replica_path = os.path.join(replication_dir, "working_bag.tar")
         assert os.path.exists(expected_replica_path)
+        assert replica.current_path == expected_replica_path
 
         # Ensure tar file and quad dirs in staging are cleaned up properly.
         assert staging_files_count_initial == recursive_file_count(staging_dir)
@@ -754,10 +753,9 @@ class TestPackage(TestCase):
 
         assert aip.replicas.count() == 1
         assert replica is not None
-        expected_replica_path = os.path.join(
-            replication_dir, utils.uuid_to_path(replica.uuid), "working_bag.7z"
-        )
+        expected_replica_path = os.path.join(replication_dir, "working_bag.7z")
         assert os.path.exists(expected_replica_path)
+        assert replica.current_path == expected_replica_path
 
     def test_deletion_and_creation_of_replicas_compressed(self):
         """Ensure that when it is requested a replica be created, then

@@ -46,12 +46,21 @@ class OfflineReplicaStaging(models.Model):
             _("Write-Only Offline Staging does not implement fetching packages")
         )
 
-    def move_from_storage_service(self, src_path, dest_path, package=None):
-        """ Moves self.staging_path/src_path to dest_path."""
+    def move_from_storage_service(
+        self, src_path, dest_path, package=None, flat_output=True
+    ):
+        """Moves self.staging_path/src_path to dest_path.
+
+        If flat_output is True, store the replica directly in the Replicator
+        Location, rather than in quad directories.
+        """
+        if flat_output:
+            dest_path = utils.strip_quad_dirs_from_path(dest_path)
         self.space.create_local_directory(dest_path)
         if not package.is_packaged(src_path):
             return self._store_tar_replica(src_path, dest_path, package)
         self.space.move_rsync(src_path, dest_path)
+        package.current_path = dest_path
 
     def _store_tar_replica(self, src_path, dest_path, package):
         """Create and store TAR replica."""
