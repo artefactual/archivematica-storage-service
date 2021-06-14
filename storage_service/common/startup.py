@@ -6,6 +6,7 @@ import django.core.exceptions
 from django.db import connection
 
 from locations import models as locations_models
+from locations.models.async_manager import start_async_manager
 from common import utils
 
 
@@ -167,3 +168,5 @@ def populate_default_locations():
         ):
             utils.set_setting(loc_info["default_setting"], [new_loc.uuid])
             LOGGER.info("Set %s as %s", new_loc, loc_info["default_setting"])
+
+    start_async_manager()
