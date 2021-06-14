@@ -175,7 +175,8 @@ class AsyncManager(object):
         return async_task
 
 
-# Start our watchdog thread.
-AsyncManager.watchdog = threading.Thread(target=AsyncManager._watchdog)
-AsyncManager.watchdog.daemon = True
-AsyncManager.watchdog.start()
+def start_async_manager():
+    """Start our watchdog thread."""
+    AsyncManager.watchdog = threading.Thread(target=AsyncManager._watchdog)
+    AsyncManager.watchdog.daemon = True
+    AsyncManager.watchdog.start()
