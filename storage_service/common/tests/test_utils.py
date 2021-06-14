@@ -431,3 +431,34 @@ def test_create_tar(
             tarfile.is_tarfile.assert_any_call(tarpath)
         if extension:
             tarpath.endswith(utils.TAR_EXTENSION)
+
+
+@pytest.mark.parametrize(
+    "input_path, expected_path",
+    [
+        # Ensure UUID quad dirs are removed.
+        (
+            "/var/archivematica/sharedDirectory/www/offlineReplicas/d8a4/d502/30b7/4902/b545/9c87/8242/f96c/uncompressed-test-d8a4d502-30b7-4902-b545-9c878242f96c",
+            "/var/archivematica/sharedDirectory/www/offlineReplicas/uncompressed-test-d8a4d502-30b7-4902-b545-9c878242f96c/",
+        ),
+        (
+            "/var/archivematica/sharedDirectory/www/offlineReplicas/d8a4/d502/30b7/4902/b545/9c87/8242/f96c/uncompressed-test-d8a4d502-30b7-4902-b545-9c878242f96c/",
+            "/var/archivematica/sharedDirectory/www/offlineReplicas/uncompressed-test-d8a4d502-30b7-4902-b545-9c878242f96c/",
+        ),
+        (
+            "/var/archivematica/sharedDirectory/www/offlineReplicas/2965/2761/a5b2/4da9/9af8/ffb4/bc06/2439/compressed-replica-29652761-a5b2-4da9-9af8-ffb4bc062439.7z",
+            "/var/archivematica/sharedDirectory/www/offlineReplicas/compressed-replica-29652761-a5b2-4da9-9af8-ffb4bc062439.7z",
+        ),
+        # Ensure other directories are not removed.
+        (
+            "/var/archivematica/sharedDirectory/www/offlineReplicas/test-file.txt",
+            "/var/archivematica/sharedDirectory/www/offlineReplicas/test-file.txt",
+        ),
+        (
+            "/var/archivematica/sharedDirectory/www/offlineReplicas/test/package.tar.gz",
+            "/var/archivematica/sharedDirectory/www/offlineReplicas/test/package.tar.gz",
+        ),
+    ],
+)
+def test_strip_quad_dirs_from_path(input_path, expected_path):
+    assert utils.strip_quad_dirs_from_path(input_path) == expected_path

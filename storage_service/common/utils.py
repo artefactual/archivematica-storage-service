@@ -9,6 +9,7 @@ from lxml import etree
 from lxml.builder import ElementMaker
 import mimetypes
 import os
+import re
 import shutil
 import subprocess
 import tarfile
@@ -680,6 +681,26 @@ def removedirs(relative_path, base=None):
         except os.error:
             break
         head, tail = os.path.split(head)
+
+
+def strip_quad_dirs_from_path(dest_path):
+    """Return dest_path with UUID quad directories removed.
+
+    Ensure that paths to uncompressed packages terminate in a trailing slash.
+    """
+    UUID4_QUAD = re.compile(r"[0-9a-f]{4}\Z", re.I)
+    dest_path = dest_path.rstrip("/")
+    output_path, package_name = os.path.split(dest_path)
+    for quad_dir in range(8):
+        head, tail = os.path.split(output_path)
+        if not re.match(UUID4_QUAD, tail):
+            continue
+        output_path = head
+    output_path = os.path.join(output_path, package_name)
+    _, file_extension = os.path.splitext(output_path)
+    if not file_extension:
+        return os.path.join(output_path, "")
+    return output_path
 
 
 def coerce_str(string):
