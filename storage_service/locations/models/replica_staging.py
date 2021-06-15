@@ -59,8 +59,13 @@ class OfflineReplicaStaging(models.Model):
         self.space.create_local_directory(dest_path)
         if not package.is_packaged(src_path):
             return self._store_tar_replica(src_path, dest_path, package)
-        self.space.move_rsync(src_path, dest_path)
+        self.space.move_rsync(src_path, dest_path, try_mv_local=True)
         package.current_path = dest_path
+
+        staging_quad_dirs = os.path.relpath(
+            os.path.dirname(src_path), self.space.staging_path
+        )
+        utils.removedirs(staging_quad_dirs, base=self.space.staging_path)
 
     def _store_tar_replica(self, src_path, dest_path, package):
         """Create and store TAR replica."""
