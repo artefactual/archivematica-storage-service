@@ -4,6 +4,7 @@ boto3>=1.17.88,<1.18.0
 brotli==0.5.2  # Better compression library for WhiteNoise
 defusedxml==0.5.0
 Django>=1.11,<2
+django-csp==3.7.0
 django-extensions==1.7.9
 django-tastypie==0.14.3
 futures==3.3.0; python_version < '3.0'  # used by gunicorn's async workers

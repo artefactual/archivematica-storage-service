@@ -10,6 +10,9 @@
     - [Gunicorn-specific environment variables](#gunicorn-specific-environment-variables)
     - [LDAP-specific environment variables](#ldap-specific-environment-variables)
     - [CAS-specific environment variables](#cas-specific-environment-variables)
+    - [OIDC-specific environment variables](#oidc-specific-environment-variables)
+    - [AWS-specific environment variables](#aws-specific-environment-variables)
+    - [CSP-specific environment variables](#csp-specific-environment-variables)
   - [Logging configuration](#logging-configuration)
 
 ## Introduction
@@ -112,6 +115,11 @@ of these settings or provide values to mandatory fields.
 
 - **`SS_INSECURE_SKIP_VERIFY`**:
     - **Description:** skip the SSL certificate verification process. This setting should not be used in production environments.
+    - **Type:** `boolean`
+    - **Default:** `false`
+
+- **`SS_CSP_ENABLED`**:
+    - **Description:** **Experimental** support for [Control Security Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP) headers.
     - **Type:** `boolean`
     - **Default:** `false`
 
@@ -491,6 +499,17 @@ These variables can be set to allow AWS authentication for S3 storage spaces as 
     - **Description:** Secret key associated with the access key
     - **Type:** `string`
     - **Default:** `''`
+
+### CSP-specific environment variables
+
+**CSP support is experimental, please share your feedback!**
+
+These variables specify the behaviour of the Content Security Policy (CSP) headers. Only applicable if `SS_CSP_ENABLED` is set.
+
+- **`CSP_SETTINGS_FILE`**:
+    - **Description:** Path to a Python module with overrides of the [`django-csp` policy settings](https://django-csp.readthedocs.io/en/latest/configuration.html#policy-settings). An `ImproperlyConfigured` exception will be raised if the Python module cannot be imported.
+    - **Type:** `string`
+    - **Default:** ``
 
 ## Logging configuration
 
