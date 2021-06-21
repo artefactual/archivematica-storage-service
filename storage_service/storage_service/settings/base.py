@@ -12,6 +12,7 @@ from sys import path
 
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import ugettext_lazy as _
+import six
 
 # S3 adapter configuration.
 from .components.s3 import *
@@ -23,6 +24,17 @@ try:
     from django_auth_ldap import config as ldap_config
 except ImportError:
     ldap, ldap_config = None, None
+
+
+def _get_settings_from_file(path):
+    try:
+        result = {}
+        with open(path, "rb") as f:
+            code = compile(f.read(), path, "exec")
+            six.exec_(code, result, result)
+        return result
+    except Exception as err:
+        raise ImproperlyConfigured("{} could not be imported: {}".format(path, err))
 
 
 # ######## PATH CONFIGURATION
@@ -590,6 +602,16 @@ GNUPG_HOME_PATH = environ.get("SS_GNUPG_HOME_PATH", None)
 # - locations.models.dspace
 # - locations.models.arkivum
 INSECURE_SKIP_VERIFY = is_true(environ.get("SS_INSECURE_SKIP_VERIFY", ""))
+
+CSP_ENABLED = is_true(environ.get("SS_CSP_ENABLED", ""))
+if CSP_ENABLED:
+    MIDDLEWARE.insert(0, "csp.middleware.CSPMiddleware")
+
+    from .components.csp import *  # noqa
+
+    CSP_SETTINGS_FILE = environ.get("CSP_SETTINGS_FILE", "")
+    if CSP_SETTINGS_FILE:
+        globals().update(_get_settings_from_file(CSP_SETTINGS_FILE))
 
 PROMETHEUS_ENABLED = is_true(environ.get("SS_PROMETHEUS_ENABLED", ""))
 if PROMETHEUS_ENABLED:
