@@ -1,14 +1,63 @@
-import django.core.exceptions
 import errno
+import logging
 import os.path
+
+import django.core.exceptions
+from django.db import connection
+
 from locations import models as locations_models
 from common import utils
-import logging
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 def startup():
-    LOGGER = logging.getLogger(__name__)
     LOGGER.info("Running startup")
+
+    try:
+        with PopulateLock():
+            populate_default_locations()
+    except PopulateLockError:
+        LOGGER.warning("Another worker is initializing the database.")
+
+    start_async_manager()
+
+
+class PopulateLockError(Exception):
+    """MySQL lock is already held or an error occurred."""
+
+
+class PopulateLock(object):
+    """MySQL lock that gives up immediately on a held lock."""
+
+    def __init__(self):
+        self.name = "default_locations"
+        self.connection = connection
+        self.timeout = 0
+
+    def __enter__(self):
+        if self.connection.vendor == "mysql":
+            self.acquire()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.connection.vendor == "mysql":
+            self.release()
+
+    def acquire(self):
+        with self.connection.cursor() as cursor:
+            cursor.execute("SELECT GET_LOCK(%s, %s)", (self.name, self.timeout))
+            result = cursor.fetchone()[0]
+            if result != 1:
+                raise PopulateLockError("Error obtaining the lock or already acquried.")
+
+    def release(self):
+        with self.connection.cursor() as cursor:
+            cursor.execute("SELECT RELEASE_LOCK(%s)", (self.name,))
+
+
+def populate_default_locations():
+    """Create default local filesystem space and its locations."""
     try:
         space, space_created = locations_models.Space.objects.get_or_create(
             access_protocol=locations_models.Space.LOCAL_FILESYSTEM,
