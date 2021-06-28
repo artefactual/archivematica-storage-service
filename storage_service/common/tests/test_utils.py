@@ -451,12 +451,17 @@ def test_create_tar(
         ),
         # Ensure other directories are not removed.
         (
-            "/var/archivematica/sharedDirectory/www/offlineReplicas/test-file.txt",
-            "/var/archivematica/sharedDirectory/www/offlineReplicas/test-file.txt",
+            "/var/archivematica/sharedDirectory/www/offlineReplicas/test-file.tar",
+            "/var/archivematica/sharedDirectory/www/offlineReplicas/test-file.tar",
         ),
         (
             "/var/archivematica/sharedDirectory/www/offlineReplicas/test/package.tar.gz",
             "/var/archivematica/sharedDirectory/www/offlineReplicas/test/package.tar.gz",
+        ),
+        # Ensure directories terminate in slash, even if path contains dots.
+        (
+            "/var/archivematica/sharedDirectory/www/offlineReplicas/d8a4/d502/30b7/4902/b545/9c87/8242/f96c/uncompressed.test.1-d8a4d502-30b7-4902-b545-9c878242f96c",
+            "/var/archivematica/sharedDirectory/www/offlineReplicas/uncompressed.test.1-d8a4d502-30b7-4902-b545-9c878242f96c/",
         ),
     ],
 )

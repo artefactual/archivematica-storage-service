@@ -697,10 +697,10 @@ def strip_quad_dirs_from_path(dest_path):
             continue
         output_path = head
     output_path = os.path.join(output_path, package_name)
-    _, file_extension = os.path.splitext(output_path)
-    if not file_extension:
-        return os.path.join(output_path, "")
-    return output_path
+    for extension in PACKAGE_EXTENSIONS:
+        if output_path.endswith(extension):
+            return output_path
+    return os.path.join(output_path, "")
 
 
 def coerce_str(string):
