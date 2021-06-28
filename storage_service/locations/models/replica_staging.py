@@ -94,4 +94,11 @@ class OfflineReplicaStaging(models.Model):
         utils.removedirs(staging_quad_dirs, base=self.space.staging_path)
 
         # Cleanup empty directory created by space.create_local_directory.
-        os.rmdir(dest_path)
+        try:
+            os.rmdir(dest_path)
+        except OSError as err:
+            LOGGER.warning(
+                "Unable to cleanup expected temporary artefact {}: {}".format(
+                    dest_path, err
+                )
+            )
