@@ -666,7 +666,9 @@ class Space(models.Model):
         # Dir must end in a / for rsync to create it
         for directory in directories:
             path = os.path.join(os.path.dirname(directory), "")
-            path = "{}@{}:{}".format(user, host, utils.coerce_str(path))
+            if six.PY2:
+                path = utils.coerce_str(path)
+            path = "{}@{}:{}".format(user, host, path)
             cmd = [
                 "rsync",
                 "-vv",
