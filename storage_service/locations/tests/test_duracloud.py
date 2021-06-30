@@ -35,6 +35,15 @@ class TestDuracloud(TempDirMixin, TestCase):
         assert self.ds_object.password
         assert self.ds_object.duraspace
 
+    def test_generate_duracloud_request_includes_auth_headers(self):
+        request = self.ds_object.generate_duracloud_request(
+            "http://domain.tld:8000/tmp"
+        )
+
+        assert (
+            request.headers.get("Authorization") == "Basic dHJpYWx1c2VyMjYzOnNzNnVtZkho"
+        )
+
     @vcr.use_cassette(
         os.path.join(FIXTURES_DIR, "vcr_cassettes", "duracloud_browse.yaml")
     )
