@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 
 import os
+import subprocess
 
 import pytest
 from scandir import scandir
@@ -525,3 +526,91 @@ def test_delete_non_existant_path_local(tmpdir, aipstore_uncompressed):
         remaining_aip = os.path.join(aip_path, filename)
         remaining_aip = os.path.join(str(aipstore_uncompressed), remaining_aip)
         assert os.path.exists(remaining_aip)
+
+
+def test_move_rsync_command_decodes_paths(mocker):
+    popen = mocker.patch(
+        "subprocess.Popen",
+        return_value=mocker.Mock(
+            **{"communicate.return_value": ("command output", None), "returncode": 0}
+        ),
+    )
+    space = Space()
+    space.move_rsync("source_dir", "destination_dir")
+
+    popen.assert_called_once_with(
+        [
+            "rsync",
+            "-t",
+            "-O",
+            "--protect-args",
+            "-vv",
+            "--chmod=Fug+rw,o-rwx,Dug+rwx,o-rwx",
+            "-r",
+            "source_dir",
+            "destination_dir",
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+
+
+def test_create_rsync_directory_commands_decode_paths(tmp_path, mocker):
+    temp_dir = tmp_path / "tmp"
+    temp_dir.mkdir()
+    dest_dir = "/a/mock/path/"
+
+    check_call = mocker.patch("subprocess.check_call")
+    mocker.patch("tempfile.mkdtemp", return_value=str(temp_dir))
+
+    space = Space()
+    space.create_rsync_directory(dest_dir, "user", "host")
+
+    check_call.assert_has_calls(
+        [
+            mocker.call(
+                [
+                    "rsync",
+                    "-vv",
+                    "--protect-args",
+                    "--chmod=ug=rwx,o=rx",
+                    "--recursive",
+                    os.path.join(str(temp_dir), ""),
+                    "user@host:/",
+                ]
+            ),
+            mocker.call(
+                [
+                    "rsync",
+                    "-vv",
+                    "--protect-args",
+                    "--chmod=ug=rwx,o=rx",
+                    "--recursive",
+                    os.path.join(str(temp_dir), ""),
+                    "user@host:/a/",
+                ]
+            ),
+            mocker.call(
+                [
+                    "rsync",
+                    "-vv",
+                    "--protect-args",
+                    "--chmod=ug=rwx,o=rx",
+                    "--recursive",
+                    os.path.join(str(temp_dir), ""),
+                    "user@host:/a/mock/",
+                ]
+            ),
+            mocker.call(
+                [
+                    "rsync",
+                    "-vv",
+                    "--protect-args",
+                    "--chmod=ug=rwx,o=rx",
+                    "--recursive",
+                    os.path.join(str(temp_dir), ""),
+                    "user@host:/a/mock/path/",
+                ]
+            ),
+        ]
+    )

@@ -747,7 +747,7 @@ class Space(models.Model):
             entries = []
             directories = []
         else:
-            output = output.splitlines()
+            output = output.decode("utf-8").splitlines()
             # Output is lines in format:
             # <type><permissions>  <size>  <date> <time> <path>
             # Eg: drwxrws---          4,096 2015/03/02 17:05:20 tmp
