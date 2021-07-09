@@ -2,7 +2,6 @@
 -r base.txt
 
 coverage==4.2
-functools32; python_version < '3.0'
 mock
 pip-tools==5.4.0
 pytest-cov==2.4.0
