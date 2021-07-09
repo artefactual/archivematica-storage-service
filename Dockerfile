@@ -1,5 +1,4 @@
 ARG TARGET=archivematica-storage-service
-ARG PYTHON_VERSION=python3
 
 FROM ubuntu:18.04 AS base
 
@@ -20,6 +19,7 @@ RUN set -ex \
 		libsasl2-dev \
 		locales \
 		locales-all \
+		python3-dev \
 		p7zip-full \
 		rsync \
 		unar \
@@ -46,47 +46,19 @@ RUN set -ex \
 	&& mkdir -p $internalDirs \
 	&& chown -R archivematica:archivematica $internalDirs
 
-COPY requirements/ /src/requirements/
-COPY ./install/storage-service.gunicorn-config.py /etc/archivematica/storage-service.gunicorn-config.py
-
-# -----------------------------------------------------------------------------
-
-FROM base AS python2
-
-RUN set -ex \
-	&& apt-get update \
-	&& apt-get install -y --no-install-recommends \
-		python-dev \
-	&& rm -rf /var/lib/apt/lists/*
-
-RUN set -ex \
-	&& curl -s https://bootstrap.pypa.io/pip/2.7/get-pip.py | python2.7
-
-RUN pip2 install -q -r /src/requirements/production.txt -r /src/requirements/test.txt
-
-COPY ./ /src/
-
-# -----------------------------------------------------------------------------
-
-FROM base AS python3
-
-RUN set -ex \
-	&& apt-get update \
-	&& apt-get install -y --no-install-recommends \
-		python3-dev \
-	&& rm -rf /var/lib/apt/lists/*
-
 RUN set -ex \
 	&& curl -s https://bootstrap.pypa.io/get-pip.py | python3.6 \
 	&& update-alternatives --install /usr/bin/python python /usr/bin/python3 10
 
-RUN pip3 install -q -r /src/requirements/production-py3.txt -r /src/requirements/test-py3.txt
+COPY requirements/ /src/requirements/
+COPY ./install/storage-service.gunicorn-config.py /etc/archivematica/storage-service.gunicorn-config.py
+RUN pip3 install -q -r /src/requirements/production.txt -r /src/requirements/test.txt
 
 COPY ./ /src/
 
 # -----------------------------------------------------------------------------
 
-FROM ${PYTHON_VERSION} AS archivematica-storage-service
+FROM base AS archivematica-storage-service
 
 WORKDIR /src/storage_service
 
