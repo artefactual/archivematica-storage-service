@@ -865,7 +865,7 @@ def _scandir_files(path):
             else:
                 yield entry
     except OSError:
-        raise StopIteration()
+        return
 
 
 def path2browse_dict(path):

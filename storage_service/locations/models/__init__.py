@@ -17,7 +17,7 @@ class StorageException(Exception):
 
 # Common
 # May have multiple models, so import * and use __all__ in file.
-from .async import *
+from .asynchronous import *
 from .event import *
 from .location import *
 from .package import *

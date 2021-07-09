@@ -19,7 +19,7 @@ import traceback
 
 from django.utils import timezone
 
-from .async import Async  # noqa
+from .asynchronous import Async  # noqa
 from .. import metrics
 
 LOGGER = logging.getLogger(__name__)
