@@ -17,7 +17,6 @@ import scandir
 from django.core.exceptions import ObjectDoesNotExist
 from django import http
 from django.utils.translation import ugettext as _
-import six
 
 from administration import models
 from storage_service import __version__ as ss_version
@@ -708,7 +707,13 @@ def coerce_str(string):
     :param basestring string: String to convert
     :return: string converted to str, encoded in utf-8 if needed.
     """
-    return six.ensure_str(string)
+    if type(string) is str:
+        return string
+    elif isinstance(string, bytes):
+        return string.decode("utf8")
+    elif not isinstance(string, (str, bytes)):
+        raise TypeError("not expecting type '%s'" % type(string))
+    return string
 
 
 StorageEffects = namedtuple(

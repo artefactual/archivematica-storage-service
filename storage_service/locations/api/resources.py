@@ -26,7 +26,6 @@ try:
     from pathlib import Path
 except ImportError:
     from pathlib2 import Path
-import six
 from tastypie.authentication import (
     BasicAuthentication,
     ApiKeyAuthentication,
@@ -489,7 +488,7 @@ class LocationResource(ModelResource):
         location = bundle.obj
         path = request.GET.get("path", "")
         path = self.decode_path(path)
-        location_path = six.ensure_str(location.full_path)
+        location_path = location.full_path
         if not path.startswith(location_path):
             path = os.path.join(location_path, path)
 

@@ -1,13 +1,12 @@
 import base64
 
-import six
 from tastypie import fields
 
 import locations.api.resources as resources
 
 
 def b64encode_string(data):
-    return base64.b64encode(six.ensure_binary(data)).decode("utf8")
+    return base64.b64encode(data.encode("utf8")).decode("utf8")
 
 
 class PipelineResource(resources.PipelineResource):
