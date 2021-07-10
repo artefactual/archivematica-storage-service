@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-
-from __future__ import absolute_import
 from south.db import db
 from south.v2 import SchemaMigration
 
@@ -9,9 +6,9 @@ class Migration(SchemaMigration):
     def forwards(self, orm):
         # Adding model 'Arkivum'
         db.create_table(
-            u"locations_arkivum",
+            "locations_arkivum",
             (
-                (u"id", self.gf("django.db.models.fields.AutoField")(primary_key=True)),
+                ("id", self.gf("django.db.models.fields.AutoField")(primary_key=True)),
                 (
                     "space",
                     self.gf("django.db.models.fields.related.OneToOneField")(
@@ -37,12 +34,12 @@ class Migration(SchemaMigration):
 
     def backwards(self, orm):
         # Deleting model 'Arkivum'
-        db.delete_table(u"locations_arkivum")
+        db.delete_table("locations_arkivum")
 
     models = {
-        u"auth.group": {
+        "auth.group": {
             "Meta": {"object_name": "Group"},
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "name": (
                 "django.db.models.fields.CharField",
                 [],
@@ -52,13 +49,13 @@ class Migration(SchemaMigration):
                 "django.db.models.fields.related.ManyToManyField",
                 [],
                 {
-                    "to": u"orm['auth.Permission']",
+                    "to": "orm['auth.Permission']",
                     "symmetrical": "False",
                     "blank": "True",
                 },
             ),
         },
-        u"auth.permission": {
+        "auth.permission": {
             "Meta": {
                 "ordering": "(u'content_type__app_label', u'content_type__model', u'codename')",
                 "unique_together": "((u'content_type', u'codename'),)",
@@ -72,12 +69,12 @@ class Migration(SchemaMigration):
             "content_type": (
                 "django.db.models.fields.related.ForeignKey",
                 [],
-                {"to": u"orm['contenttypes.ContentType']"},
+                {"to": "orm['contenttypes.ContentType']"},
             ),
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "name": ("django.db.models.fields.CharField", [], {"max_length": "50"}),
         },
-        u"auth.user": {
+        "auth.user": {
             "Meta": {"object_name": "User"},
             "date_joined": (
                 "django.db.models.fields.DateTimeField",
@@ -97,9 +94,9 @@ class Migration(SchemaMigration):
             "groups": (
                 "django.db.models.fields.related.ManyToManyField",
                 [],
-                {"to": u"orm['auth.Group']", "symmetrical": "False", "blank": "True"},
+                {"to": "orm['auth.Group']", "symmetrical": "False", "blank": "True"},
             ),
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "is_active": (
                 "django.db.models.fields.BooleanField",
                 [],
@@ -134,7 +131,7 @@ class Migration(SchemaMigration):
                 "django.db.models.fields.related.ManyToManyField",
                 [],
                 {
-                    "to": u"orm['auth.Permission']",
+                    "to": "orm['auth.Permission']",
                     "symmetrical": "False",
                     "blank": "True",
                 },
@@ -145,7 +142,7 @@ class Migration(SchemaMigration):
                 {"unique": "True", "max_length": "30"},
             ),
         },
-        u"contenttypes.contenttype": {
+        "contenttypes.contenttype": {
             "Meta": {
                 "ordering": "('name',)",
                 "unique_together": "(('app_label', 'model'),)",
@@ -157,14 +154,14 @@ class Migration(SchemaMigration):
                 [],
                 {"max_length": "100"},
             ),
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "model": ("django.db.models.fields.CharField", [], {"max_length": "100"}),
             "name": ("django.db.models.fields.CharField", [], {"max_length": "100"}),
         },
         "locations.arkivum": {
             "Meta": {"object_name": "Arkivum"},
             "host": ("django.db.models.fields.CharField", [], {"max_length": "256"}),
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "remote_name": (
                 "django.db.models.fields.CharField",
                 [],
@@ -198,7 +195,7 @@ class Migration(SchemaMigration):
                 [],
                 {"default": "200"},
             ),
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "method": ("django.db.models.fields.CharField", [], {"max_length": "10"}),
             "uri": ("django.db.models.fields.CharField", [], {"max_length": "1024"}),
             "uuid": (
@@ -215,7 +212,7 @@ class Migration(SchemaMigration):
                 {"max_length": "64"},
             ),
             "host": ("django.db.models.fields.CharField", [], {"max_length": "256"}),
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "password": ("django.db.models.fields.CharField", [], {"max_length": "64"}),
             "space": (
                 "django.db.models.fields.related.OneToOneField",
@@ -233,7 +230,7 @@ class Migration(SchemaMigration):
             "admin_id": (
                 "django.db.models.fields.related.ForeignKey",
                 [],
-                {"to": u"orm['auth.User']", "null": "True", "blank": "True"},
+                {"to": "orm['auth.User']", "null": "True", "blank": "True"},
             ),
             "event_reason": ("django.db.models.fields.TextField", [], {}),
             "event_type": (
@@ -241,7 +238,7 @@ class Migration(SchemaMigration):
                 [],
                 {"max_length": "8"},
             ),
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "package": (
                 "django.db.models.fields.related.ForeignKey",
                 [],
@@ -292,7 +289,7 @@ class Migration(SchemaMigration):
                 [],
                 {"max_length": "64"},
             ),
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "space": (
                 "django.db.models.fields.related.OneToOneField",
                 [],
@@ -311,7 +308,7 @@ class Migration(SchemaMigration):
                 [],
                 {"max_length": "128"},
             ),
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "name": ("django.db.models.fields.TextField", [], {"max_length": "1000"}),
             "origin": (
                 "django.db.models.fields.CharField",
@@ -346,7 +343,7 @@ class Migration(SchemaMigration):
         },
         "locations.localfilesystem": {
             "Meta": {"object_name": "LocalFilesystem"},
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "space": (
                 "django.db.models.fields.related.OneToOneField",
                 [],
@@ -374,7 +371,7 @@ class Migration(SchemaMigration):
                 [],
                 {"default": "True"},
             ),
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "pipeline": (
                 "django.db.models.fields.related.ManyToManyField",
                 [],
@@ -407,7 +404,7 @@ class Migration(SchemaMigration):
         },
         "locations.locationpipeline": {
             "Meta": {"object_name": "LocationPipeline"},
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "location": (
                 "django.db.models.fields.related.ForeignKey",
                 [],
@@ -446,7 +443,7 @@ class Migration(SchemaMigration):
                 [],
                 {"max_length": "200"},
             ),
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "keep_local": (
                 "django.db.models.fields.BooleanField",
                 [],
@@ -465,7 +462,7 @@ class Migration(SchemaMigration):
         },
         "locations.nfs": {
             "Meta": {"object_name": "NFS"},
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "manually_mounted": (
                 "django.db.models.fields.BooleanField",
                 [],
@@ -510,7 +507,7 @@ class Migration(SchemaMigration):
                     "blank": "True",
                 },
             ),
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "misc_attributes": (
                 "jsonfield.fields.JSONField",
                 [],
@@ -576,7 +573,7 @@ class Migration(SchemaMigration):
                 [],
                 {"default": "0"},
             ),
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "package": (
                 "django.db.models.fields.related.ForeignKey",
                 [],
@@ -605,7 +602,7 @@ class Migration(SchemaMigration):
                 [],
                 {"max_length": "256"},
             ),
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "task": (
                 "django.db.models.fields.related.ForeignKey",
                 [],
@@ -659,7 +656,7 @@ class Migration(SchemaMigration):
                 [],
                 {"default": "True"},
             ),
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "remote_name": (
                 "django.db.models.fields.CharField",
                 [],
@@ -678,7 +675,7 @@ class Migration(SchemaMigration):
         },
         "locations.pipelinelocalfs": {
             "Meta": {"object_name": "PipelineLocalFS"},
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "remote_name": (
                 "django.db.models.fields.CharField",
                 [],
@@ -706,7 +703,7 @@ class Migration(SchemaMigration):
                 [],
                 {"max_length": "8"},
             ),
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "last_verified": (
                 "django.db.models.fields.DateTimeField",
                 [],
@@ -752,7 +749,7 @@ class Migration(SchemaMigration):
                 [],
                 {"max_length": "64"},
             ),
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "password": (
                 "django.db.models.fields.CharField",
                 [],

@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
 from collections import namedtuple
 import os
 import shutil
@@ -7,7 +5,7 @@ import subprocess
 import tarfile
 
 from six import StringIO
-import mock
+from unittest import mock
 import pytest
 
 from metsrw import FSEntry
@@ -87,7 +85,7 @@ def test_get_compress_command(compression, command):
     )
     assert (
         " ".join(cmd) == command
-    ), "Incorrect compression command: {0} returned for compression input {1}".format(
+    ), "Incorrect compression command: {} returned for compression input {}".format(
         cmd, compression
     )
 
@@ -125,7 +123,7 @@ def test_get_tool_info_command(compression, command):
     cmd = utils.get_tool_info_command(compression)
     assert (
         cmd == command
-    ), "Incorrect tool info: {0} returned for compression input {1}".format(
+    ), "Incorrect tool info: {} returned for compression input {}".format(
         cmd, compression
     )
 
@@ -175,7 +173,7 @@ def test_get_compression_event_detail(
 
     assert (
         detail == expected_detail
-    ), "Incorrect detail: {0} returned for compression input {1}".format(
+    ), "Incorrect detail: {} returned for compression input {}".format(
         detail, compression
     )
 
@@ -319,7 +317,7 @@ def test_extract_tar(mocker, path, will_be_dir, sp_raises, expected):
         mocker.patch.object(os.path, "isdir", return_value=True)
     else:
         mocker.patch.object(os.path, "isdir", return_value=False)
-    tarpath_ext = "{}.tar".format(path)
+    tarpath_ext = f"{path}.tar"
     dirname = os.path.dirname(tarpath_ext)
     if expected == "success":
         ret = utils.extract_tar(path)
@@ -328,7 +326,7 @@ def test_extract_tar(mocker, path, will_be_dir, sp_raises, expected):
     else:
         with pytest.raises(utils.TARException) as excinfo:
             ret = utils.extract_tar(path)
-        assert "Failed to extract {}: gotcha!".format(path) == str(excinfo.value)
+        assert f"Failed to extract {path}: gotcha!" == str(excinfo.value)
         os.rename.assert_any_call(tarpath_ext, path)
         assert not os.remove.called
     os.rename.assert_any_call(path, tarpath_ext)
@@ -410,7 +408,7 @@ def test_create_tar(
     mocker.patch.object(os, "rename")
     mocker.patch.object(shutil, "rmtree")
     fixed_path = path.rstrip("/")
-    tarpath = "{}.tar".format(fixed_path)
+    tarpath = f"{fixed_path}.tar"
     if expected == "success":
         ret = utils.create_tar(path)
         shutil.rmtree.assert_called_once_with(fixed_path)

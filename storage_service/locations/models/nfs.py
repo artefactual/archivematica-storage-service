@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 # stdlib, alphabetical
 import datetime
 import os
@@ -75,7 +73,7 @@ class NFS(models.Model):
 
     def save(self, *args, **kwargs):
         self.verify()
-        super(NFS, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def verify(self):
         """ Verify that the space is accessible to the storage service. """

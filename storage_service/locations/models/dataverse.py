@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 # stdlib, alphabetical
 from collections import OrderedDict
 import json
@@ -212,7 +210,7 @@ class Dataverse(URLMixin, models.Model):
             ) % {"value": src_path}
             raise StorageException(storage_err)
         # Fetch dataset info
-        datasets_url = "/api/datasets/{}".format(src_path)
+        datasets_url = f"/api/datasets/{src_path}"
         url = self._generate_dataverse_url(slug=datasets_url)
         params = {"key": self.api_key}
         LOGGER.debug("URL: %s, params: %s", url, params)
@@ -261,13 +259,13 @@ class Dataverse(URLMixin, models.Model):
                 download_path = os.path.join(
                     dest_path, file_entry["label"][:-4] + ".zip"
                 )
-                bundle_url = "/api/access/datafile/bundle/{}".format(entry_id)
+                bundle_url = f"/api/access/datafile/bundle/{entry_id}"
                 url = self._generate_dataverse_url(slug=bundle_url)
             else:
                 download_path = os.path.join(
                     dest_path, file_entry["dataFile"]["filename"]
                 )
-                datafile_url = "/api/access/datafile/{}".format(entry_id)
+                datafile_url = f"/api/access/datafile/{entry_id}"
                 url = self._generate_dataverse_url(slug=datafile_url)
             LOGGER.debug("URL: %s, params: %s", url, params)
             response = requests.get(url, params=params, stream=True)
@@ -306,7 +304,7 @@ class Dataverse(URLMixin, models.Model):
             # Log the error and return without extracting the bundle.
             # Archivematica may still be able to work with the data returned.
             LOGGER.info("Bundle '%s' error: %s", bundle_path, err)
-        except IOError as err:
+        except OSError as err:
             # Unlink has the potential to also raise an IOError so capture
             # that here.
             LOGGER.info("Issue deleting bundle zip from file system: %s", err)
@@ -324,5 +322,5 @@ class Dataverse(URLMixin, models.Model):
            url = "https://<host/api/access/datafile/<id>"
         ```
         """
-        url = "{}{}".format(self.host, slug)
+        url = f"{self.host}{slug}"
         return self.parse_and_fix_url(url, scheme="https").geturl()

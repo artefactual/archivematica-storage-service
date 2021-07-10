@@ -2,7 +2,6 @@
 
 """Common settings and globals."""
 
-from __future__ import absolute_import
 import json
 import logging
 import logging.config
@@ -31,10 +30,10 @@ def _get_settings_from_file(path):
         result = {}
         with open(path, "rb") as f:
             code = compile(f.read(), path, "exec")
-            six.exec_(code, result, result)
+            exec(code, result, result)
         return result
     except Exception as err:
-        raise ImproperlyConfigured("{} could not be imported: {}".format(path, err))
+        raise ImproperlyConfigured(f"{path} could not be imported: {err}")
 
 
 # ######## PATH CONFIGURATION
@@ -312,7 +311,7 @@ LOGGING = {
 }
 
 if isfile(LOGGING_CONFIG_FILE):
-    with open(LOGGING_CONFIG_FILE, "rt") as f:
+    with open(LOGGING_CONFIG_FILE) as f:
         LOGGING = logging.config.dictConfig(json.load(f))
 else:
     logging.config.dictConfig(LOGGING)

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from collections import OrderedDict
 import json
 import logging
@@ -37,11 +36,11 @@ class DisableableSelectWidget(forms.Select):
     # From https://djangosnippets.org/snippets/2743/
     # Updated for Django 1.5 Select widget
     def __init__(self, attrs=None, disabled_choices=(), choices=()):
-        super(DisableableSelectWidget, self).__init__(attrs, choices)
+        super().__init__(attrs, choices)
         self.disabled_choices = list(disabled_choices)
 
     def create_option(self, *args, **kwargs):
-        result = super(DisableableSelectWidget, self).create_option(*args, **kwargs)
+        result = super().create_option(*args, **kwargs)
         if result["value"] in self.disabled_choices:
             result["attrs"].setdefault("disabled", "disabled")
         return result
@@ -76,7 +75,7 @@ class SpaceForm(forms.ModelForm):
         fields = ("access_protocol", "size", "path", "staging_path")
 
     def __init__(self, *args, **kwargs):
-        super(SpaceForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         instance = getattr(self, "instance", None)
         self.filter_beta_protocols()
         if instance and instance.uuid:
@@ -150,7 +149,7 @@ class DSpaceRESTForm(forms.ModelForm):
         """Override in order to add an alert in the ArchivesSpace subsection
         of the form.
         """
-        content = super(DSpaceRESTForm, self).as_p()
+        content = super().as_p()
         needle = '<p><label for="id_protocol-as_url">'
         as_fields_alert = '<div class="alert">{}</div>\n{}'.format(
             _(
@@ -175,7 +174,7 @@ def get_gpg_key_choices():
 
 class GPGForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
-        super(GPGForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         system_key = gpgutils.get_default_gpg_key(gpgutils.get_gpg_key_list())
         self.fields["key"] = forms.ChoiceField(
             choices=get_gpg_key_choices(), initial=system_key["fingerprint"]
@@ -282,9 +281,9 @@ class LocationForm(forms.ModelForm):
         """
         space_protocol = kwargs.get("space_protocol")
         del kwargs["space_protocol"]
-        super(LocationForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         # Disable purposes that aren't in the Space's allowlist
-        all_ = set(x[0] for x in models.Location.PURPOSE_CHOICES)
+        all_ = {x[0] for x in models.Location.PURPOSE_CHOICES}
         if space_protocol in [x[0] for x in models.Space.ACCESS_PROTOCOL_CHOICES]:
             from .constants import PROTOCOL
 
@@ -326,7 +325,7 @@ class LocationForm(forms.ModelForm):
             self.fields["relative_path"].help_text = dv_help_text
 
     def clean(self):
-        cleaned_data = super(LocationForm, self).clean()
+        cleaned_data = super().clean()
         purpose = cleaned_data.get("purpose")
 
         # Only AIP Storage AS-purposed locations can have replicators
@@ -377,7 +376,7 @@ class LocationForm(forms.ModelForm):
 
     def save(self, commit=True):
         self.instance.default = self.cleaned_data["default"]
-        return super(LocationForm, self).save(commit=commit)
+        return super().save(commit=commit)
 
 
 class ConfirmEventForm(forms.ModelForm):
@@ -386,7 +385,7 @@ class ConfirmEventForm(forms.ModelForm):
         fields = ("status_reason",)
 
     def __init__(self, *args, **kwargs):
-        super(ConfirmEventForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["status_reason"].required = True
 
 
@@ -395,7 +394,7 @@ class HeaderWidget(forms.MultiWidget):
 
     def __init__(self, *args, **kwargs):
         widgets = (forms.TextInput(), forms.TextInput())
-        super(HeaderWidget, self).__init__(widgets, *args, **kwargs)
+        super().__init__(widgets, *args, **kwargs)
 
     def decompress(self, value):
         return value or [None, None]
@@ -408,7 +407,7 @@ class HeaderField(forms.fields.MultiValueField):
 
     def __init__(self, *args, **kwargs):
         fields = (forms.fields.CharField(), forms.fields.CharField())
-        super(HeaderField, self).__init__(fields, *args, **kwargs)
+        super().__init__(fields, *args, **kwargs)
 
     def compress(self, data_list):
         return data_list or [None, None]
@@ -424,7 +423,7 @@ class CallbackForm(forms.ModelForm):
 
         Adds extra fields for Callback headers and reorders form fields.
         """
-        super(CallbackForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         # Save field order to include the headers after the method field
         field_order = ["event", "uri", "method"]
         # Add fields for existing headers
@@ -469,7 +468,7 @@ class CallbackForm(forms.ModelForm):
         Checks the key and value for each header multi-field to create an OrderedDict
         that is dumped as a string to be added to the intance's `headers` text field.
         """
-        cleaned_data = super(CallbackForm, self).clean()
+        cleaned_data = super().clean()
         headers = OrderedDict()
         counter = 0
         field_name = "header_%s" % counter
@@ -499,7 +498,7 @@ class CallbackForm(forms.ModelForm):
 
     def save(self, commit=True):
         """Adds the formatted headers to the instance before save."""
-        callback = super(CallbackForm, self).save(commit=False)
+        callback = super().save(commit=False)
         callback.headers = self.cleaned_data["headers"]
         if commit:
             callback.save()

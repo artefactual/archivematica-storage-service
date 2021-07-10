@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import os
 import shutil
 
@@ -19,7 +18,7 @@ class TestDSpace(TempDirMixin, TestCase):
     fixtures = ["base.json", "dspace.json"]
 
     def setUp(self):
-        super(TestDSpace, self).setUp()
+        super().setUp()
         self.dspace_object = models.DSpace.objects.get(id=1)
 
     def test_has_required_attributes(self):
@@ -107,7 +106,7 @@ class TestDSpace(TempDirMixin, TestCase):
     )
     def test_move_from_ss(self):
         # Create test.txt
-        (self.tmpdir / "test.txt").open("w").write(u"test file\n")
+        (self.tmpdir / "test.txt").open("w").write("test file\n")
         package = models.Package.objects.get(
             uuid="1056123d-8a16-49c2-ac51-8e5fa367d8b5"
         )

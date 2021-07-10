@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
 """Tests for the GPG encrypted space."""
 
-from __future__ import print_function
-from __future__ import absolute_import
 from collections import namedtuple
 import os
 import tarfile
@@ -32,7 +29,7 @@ TEST_AGENTS = [
                 ("agent_identifier_type", "preservation system"),
                 (
                     "agent_identifier_value",
-                    "Archivematica-Storage-Service-{}".format(SS_VERSION),
+                    f"Archivematica-Storage-Service-{SS_VERSION}",
                 ),
             ),
             ("agent_name", "Archivematica Storage Service"),
@@ -67,7 +64,7 @@ ENCRYPT_RET_FAIL = DECRYPT_RET_FAIL = FakeGPGRet(
 )
 
 
-class MockPackage(object):
+class MockPackage:
     def __init__(self, **kwargs):
         self.encryption_key_fingerprint = kwargs.get("fingerprint", SOME_FINGERPRINT)
         self._should_have_pointer_file = kwargs.get("should_have_pointer", True)
@@ -324,7 +321,7 @@ def test_browse(mocker, path, encr_path, exists_after_decrypt, expect):
     ],
 )
 def test__gpg_encrypt(mocker, path, isdir, encr_path_is_file, encrypt_ret, expected):
-    encr_path = "{}.gpg".format(path)
+    encr_path = f"{path}.gpg"
     mocker.patch.object(os.path, "isdir", return_value=isdir)
     mocker.patch.object(os, "remove")
     mocker.patch.object(os, "rename")
@@ -343,7 +340,7 @@ def test__gpg_encrypt(mocker, path, isdir, encr_path_is_file, encrypt_ret, expec
     else:
         with pytest.raises(gpg.GPGException) as excinfo:
             gpg._gpg_encrypt(path, SOME_FINGERPRINT)
-        assert "An error occured when attempting to encrypt {}".format(path) == str(
+        assert f"An error occured when attempting to encrypt {path}" == str(
             excinfo.value
         )
         if isdir:
@@ -408,7 +405,7 @@ def test__gpg_decrypt(
 
     mocker.patch.object(os.path, "isfile", side_effect=isfilemock)
     assert not gpgutils.gpg_decrypt_file.called
-    decr_path = "{}.decrypted".format(path)
+    decr_path = f"{path}.decrypted"
     if expected == "success":
         ret = gpg._gpg_decrypt(path)
         os.remove.assert_called_once_with(path)
@@ -424,9 +421,7 @@ def test__gpg_decrypt(
                 path, DECRYPT_RET_FAIL_STATUS
             ) == str(excinfo.value)
         else:
-            assert "Cannot decrypt file at {}; no such file.".format(path) == str(
-                excinfo.value
-            )
+            assert f"Cannot decrypt file at {path}; no such file." == str(excinfo.value)
         assert not os.remove.called
         assert not os.rename.called
         assert not tarfile.is_tarfile.called
@@ -457,13 +452,13 @@ class TestGPG(TestCase):
         encr_path = exp_curr_path
         assert gpg._encr_path2key_fingerprint(encr_path) == EXP_FINGERPRINT
 
-        encr_path = "/abs/path/to/{}".format(exp_curr_path)
+        encr_path = f"/abs/path/to/{exp_curr_path}"
         assert gpg._encr_path2key_fingerprint(encr_path) == EXP_FINGERPRINT
 
-        encr_path = "{}/data/objects/somefile.jpg".format(exp_curr_path)
+        encr_path = f"{exp_curr_path}/data/objects/somefile.jpg"
         assert gpg._encr_path2key_fingerprint(encr_path) == EXP_FINGERPRINT
 
-        encr_path = "/abs/path/to/{}/data/objects/somefile.jpg".format(exp_curr_path)
+        encr_path = f"/abs/path/to/{exp_curr_path}/data/objects/somefile.jpg"
         assert gpg._encr_path2key_fingerprint(encr_path) == EXP_FINGERPRINT
 
         with pytest.raises(gpg.GPGException) as excinfo:

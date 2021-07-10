@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import json
 import logging
 import os
@@ -35,7 +34,6 @@ from .models import (
 from . import datatable_utils
 from . import forms
 from .constants import PROTOCOL
-from six.moves import map
 
 LOGGER = logging.getLogger(__name__)
 
@@ -146,7 +144,7 @@ def fixity_logs_ajax(request):
     )
 
 
-class PackageRequestHandlerConfig(object):
+class PackageRequestHandlerConfig:
     event_type = ""  # Event type being handled
     approved_status = ""  # Event status, if approved
     reject_message = ""  # Message returned if not approved
@@ -329,8 +327,8 @@ def _handle_package_request_remote_result_notification(config, event, success):
     response_message = None
 
     # Setting name is determined using event type
-    setting_prefix = "{}_request_notification".format(config.event_type.lower())
-    request_notification_url = utils.get_setting("{}_url".format(setting_prefix))
+    setting_prefix = f"{config.event_type.lower()}_request_notification"
+    request_notification_url = utils.get_setting(f"{setting_prefix}_url")
 
     # If notification is configured, attempt
     if request_notification_url is not None:
@@ -345,17 +343,17 @@ def _handle_package_request_remote_result_notification(config, event, success):
         payload = json.dumps(
             {
                 "event_id": event.id,
-                "message": "{}: {}".format(status_to_report, event.status_reason),
+                "message": f"{status_to_report}: {event.status_reason}",
                 "success": success,
             }
         )
 
         # Specify basic authentication, if configured
         request_notification_auth_username = utils.get_setting(
-            "{}_auth_username".format(setting_prefix)
+            f"{setting_prefix}_auth_username"
         )
         request_notification_auth_password = utils.get_setting(
-            "{}_auth_password".format(setting_prefix)
+            f"{setting_prefix}_auth_password"
         )
 
         if request_notification_auth_username is not None:

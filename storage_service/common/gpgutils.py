@@ -8,7 +8,6 @@ manage (i.e., list, created, import, delete) GPG keys.
 
 """
 
-from __future__ import absolute_import
 
 # stdlib, alphabetical
 import logging
@@ -47,7 +46,7 @@ class GPGBinaryPathError(Exception):
     """Raised when the GnuPG binary could not be found in the system path."""
 
 
-class GPG(object):
+class GPG:
 
     # List of binaries in order of preference. In distros like Ubuntu 18.04,
     # GnuPG v1 is only available via ``gpg1`` (package ``gnupg1``).
@@ -201,7 +200,7 @@ def encryption_works(fingerprint):
         # python-gnupg stopped reporting "need passphrase".
         if (
             decrypted_data.status == "need passphrase"
-            or u"NEED_PASSPHRASE" in decrypted_data.stderr
+            or "NEED_PASSPHRASE" in decrypted_data.stderr
         ):
             return PASSPHRASED
         return ENCR_FAILS

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import os
 
 from django.test import TestCase
@@ -7,7 +6,7 @@ from django.utils.six.moves.urllib.parse import ParseResult, urlparse
 
 from locations import models
 
-import mock
+from unittest import mock
 import vcr
 
 

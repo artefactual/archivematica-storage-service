@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
-
 # stdlib, alphabetical
 import logging
 from lxml import etree
@@ -77,7 +74,7 @@ class Duracloud(models.Model):
     BUFFER_SIZE = 10 ** 6
 
     def __init__(self, *args, **kwargs):
-        super(Duracloud, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._session = None
 
     @property

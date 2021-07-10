@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
 import logging
 import os
 
@@ -86,9 +84,7 @@ class OfflineReplicaStaging(models.Model):
         try:
             os.remove(tar_src_path)
         except OSError as err:
-            LOGGER.warning(
-                "Unable to delete staged replica {}: {}".format(tar_src_path, err)
-            )
+            LOGGER.warning(f"Unable to delete staged replica {tar_src_path}: {err}")
 
         # Cleanup quaddirs in staging directory.
         utils.removedirs(staging_quad_dirs, base=self.space.staging_path)

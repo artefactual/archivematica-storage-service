@@ -2,7 +2,6 @@
 
 """Development settings and globals."""
 
-from __future__ import absolute_import
 
 import dj_database_url
 

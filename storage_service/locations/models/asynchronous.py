@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 # stdlib, alphabetical
 import logging
 
@@ -14,7 +12,6 @@ __all__ = ("Async",)
 LOGGER = logging.getLogger(__name__)
 
 
-@six.python_2_unicode_compatible
 class Async(models.Model):
     """ Stores information about currently running asynchronous tasks. """
 
@@ -65,4 +62,4 @@ class Async(models.Model):
         app_label = "locations"
 
     def __str__(self):
-        return u"{}".format(self.id)
+        return f"{self.id}"

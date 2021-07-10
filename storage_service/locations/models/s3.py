@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
-
 # stdlib, alphabetical
 import logging
 import os
@@ -202,7 +199,7 @@ class S3(models.Model):
             LOGGER.debug("S3 response when attempting to delete:")
             LOGGER.debug(pprint.pformat(resp))
         if not items:
-            err_str = "No packages found in S3 at: {}".format(delete_path)
+            err_str = f"No packages found in S3 at: {delete_path}"
             LOGGER.warning(err_str)
             raise StorageException(err_str)
 

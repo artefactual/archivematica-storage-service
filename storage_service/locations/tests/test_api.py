@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
 import base64
 import json
 import os
@@ -208,7 +206,7 @@ class TestLocationAPI(TestCase):
 
         response = _get_default_ts()
         assert response.status_code == 302
-        assert response.url == "/api/v2/location/%s/" % (body["uuid"],)
+        assert response.url == "/api/v2/location/{}/".format(body["uuid"])
 
     def test_cant_move_from_non_existant_locations(self):
         data = {
@@ -312,7 +310,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
     fixtures = ["base.json", "package.json", "arkivum.json"]
 
     def setUp(self):
-        super(TestPackageAPI, self).setUp()
+        super().setUp()
         ss_internal = self.tmpdir / "ss-internal"
         ss_internal.mkdir()
         self.test_location = models.Location.objects.get(
@@ -660,7 +658,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         aip_uuid = self._create_aip()
         # Call the request view
         self.client.post(
-            "/api/v2/file/{}/{}/".format(aip_uuid, view_name),
+            f"/api/v2/file/{aip_uuid}/{view_name}/",
             data=json.dumps(
                 {
                     "event_reason": "Some justification",

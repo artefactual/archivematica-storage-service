@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django.conf import settings
 from django.conf.urls import include, url
 from django.contrib import admin
@@ -50,7 +49,7 @@ if "shibboleth" in settings.INSTALLED_APPS:
     # Simulate a shibboleth urls module (so our custom Shibboleth logout view
     # matches the same namespaced URL name as the standard logout view from
     # the shibboleth lib)
-    class ShibbolethURLs(object):
+    class ShibbolethURLs:
         urlpatterns = [
             url(r"^logout/$", views.CustomShibbolethLogoutView.as_view(), name="logout")
         ]

@@ -2,8 +2,6 @@
 # are based on. They shouldn't be directly used with Api objects.
 
 # stdlib, alphabetical
-from __future__ import absolute_import
-from __future__ import unicode_literals
 import json
 import logging
 import os
@@ -217,7 +215,7 @@ class PipelineResource(ModelResource):
         return bundle
 
     def obj_create(self, bundle, **kwargs):
-        bundle = super(PipelineResource, self).obj_create(bundle, **kwargs)
+        bundle = super().obj_create(bundle, **kwargs)
         bundle.obj.enabled = not utils.get_setting("pipelines_disabled", False)
         create_default_locations = bundle.data.get("create_default_locations", False)
         # Try to guess Pipeline's IP if remote_name is undefined
@@ -282,7 +280,7 @@ class SpaceResource(ModelResource):
 
     def dehydrate(self, bundle):
         """ Add protocol specific fields to an entry. """
-        bundle = super(SpaceResource, self).dehydrate(bundle)
+        bundle = super().dehydrate(bundle)
         access_protocol = bundle.obj.access_protocol
         model = PROTOCOL[access_protocol]["model"]
 
@@ -305,7 +303,7 @@ class SpaceResource(ModelResource):
         access_protocol = bundle.data["access_protocol"]
         keep_fields = PROTOCOL[access_protocol]["fields"]
         fields_dict = {key: bundle.data[key] for key in keep_fields}
-        bundle = super(SpaceResource, self).obj_create(bundle, **kwargs)
+        bundle = super().obj_create(bundle, **kwargs)
         model = PROTOCOL[access_protocol]["model"]
         obj = model.objects.create(space=bundle.obj, **fields_dict)
         obj.save()
@@ -476,7 +474,7 @@ class LocationResource(ModelResource):
             # This is going to result in calling the `default` attribute setter
             # in the underlying model (Location).
             kwargs["default"] = bundle.data["default"]
-        return super(LocationResource, self).obj_create(bundle, **kwargs)
+        return super().obj_create(bundle, **kwargs)
 
     @_custom_endpoint(expected_methods=["get"])
     def browse(self, request, bundle, **kwargs):
@@ -998,7 +996,7 @@ class PackageResource(ModelResource):
             )
             return bundle
         try:
-            name = "default_{}_location".format(purpose)
+            name = f"default_{purpose}_location"
             uuid = Settings.objects.get(name=name).value
         except (Settings.DoesNotExist, KeyError):
             LOGGER.debug(
@@ -1078,7 +1076,7 @@ class PackageResource(ModelResource):
                 data=dict_strip_unicode_keys(deserialized), request=request
             )
 
-            bundle = super(PackageResource, self).obj_create(bundle, **kwargs)
+            bundle = super().obj_create(bundle, **kwargs)
 
             def task():
                 self._store_bundle(bundle)
@@ -1110,7 +1108,7 @@ class PackageResource(ModelResource):
         Create a new Package model instance. Called when a POST request is
         made to api/v2/file/.
         """
-        bundle = super(PackageResource, self).obj_create(bundle, **kwargs)
+        bundle = super().obj_create(bundle, **kwargs)
         self._store_bundle(bundle)
         return bundle
 
@@ -1202,9 +1200,7 @@ class PackageResource(ModelResource):
                 _("PATCH only allowed on %(fields)s")
                 % {"fields": ", ".join(self._meta.allowed_patch_fields)}
             )
-        return super(PackageResource, self).update_in_place(
-            request, original_bundle, new_data
-        )
+        return super().update_in_place(request, original_bundle, new_data)
 
     @_custom_endpoint(
         expected_methods=["post"],
@@ -1443,7 +1439,7 @@ class PackageResource(ModelResource):
         PUT /api/v1/file/<uuid>/compress/
         """
         return http.HttpResponse(
-            {"response": "You want to compress package {}".format(bundle.obj.uuid)},
+            {"response": f"You want to compress package {bundle.obj.uuid}"},
             content_type="application/json",
         )
 

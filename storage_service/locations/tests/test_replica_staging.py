@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import os
 import tempfile
 
@@ -17,7 +16,7 @@ class TestOfflineReplicaStaging(TempDirMixin, TestCase):
     fixtures = ["base.json", "replica_staging.json"]
 
     def setUp(self):
-        super(TestOfflineReplicaStaging, self).setUp()
+        super().setUp()
         self.replica = models.Package.objects.get(id=1)
         self.replica.current_location.space.staging_path = str(self.tmpdir)
         self.replica.current_location.space.save()

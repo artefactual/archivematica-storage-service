@@ -1,9 +1,7 @@
 # stdlib, alphabetical
 
 # Core Django, alphabetical
-from __future__ import absolute_import
 from django.db import models
-from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
@@ -13,7 +11,6 @@ from django.utils.translation import ugettext_lazy as _
 # This module, alphabetical
 
 
-@six.python_2_unicode_compatible
 class FixityLog(models.Model):
     """ Stores fixity check success/failure and error details """
 
@@ -27,4 +24,4 @@ class FixityLog(models.Model):
         app_label = "locations"
 
     def __str__(self):
-        return _(u"Fixity check of %(package)s") % {"package": self.package}
+        return _("Fixity check of %(package)s") % {"package": self.package}

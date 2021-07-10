@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-
-from __future__ import absolute_import
 from south.v2 import DataMigration
 
 
@@ -15,9 +12,9 @@ class Migration(DataMigration):
         "Write your backwards methods here."
 
     models = {
-        u"administration.settings": {
+        "administration.settings": {
             "Meta": {"object_name": "Settings"},
-            u"id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
+            "id": ("django.db.models.fields.AutoField", [], {"primary_key": "True"}),
             "name": (
                 "django.db.models.fields.CharField",
                 [],

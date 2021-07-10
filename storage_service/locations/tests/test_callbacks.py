@@ -1,9 +1,8 @@
-from __future__ import absolute_import
 import uuid
 
 from django.contrib.auth.models import User
 from django.test import TestCase
-import mock
+from unittest import mock
 
 
 def mock_uuid():
@@ -13,7 +12,7 @@ def mock_uuid():
 class TestCallbacksViews(TestCase):
     @classmethod
     def setUpClass(cls):
-        super(TestCallbacksViews, cls).setUpClass()
+        super().setUpClass()
         User.objects.create_user(
             username="admin", password="admin", email="admin@example.com"
         )

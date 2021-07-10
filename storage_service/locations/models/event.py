@@ -1,12 +1,10 @@
 # stdlib, alphabetical
-from __future__ import absolute_import
 from collections import OrderedDict
 import json
 
 # Core Django, alphabetical
 from django.conf import settings
 from django.db import models
-from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
@@ -25,7 +23,6 @@ class CallbackError(StorageException):
     pass
 
 
-@six.python_2_unicode_compatible
 class Event(models.Model):
     """Stores requests to modify packages that need admin approval.
 
@@ -62,7 +59,7 @@ class Event(models.Model):
         app_label = "locations"
 
     def __str__(self):
-        return _(u"%(event_status)s request to %(event_type)s %(package)s") % {
+        return _("%(event_status)s request to %(event_type)s %(package)s") % {
             "event_status": self.get_status_display(),
             "event_type": self.get_event_type_display(),
             "package": self.package,

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django.test import TestCase
 
 from common.startup import startup

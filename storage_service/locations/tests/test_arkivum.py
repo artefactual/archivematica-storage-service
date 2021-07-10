@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import os
 import requests
 import shutil
@@ -8,7 +7,6 @@ from django.test import TestCase
 
 from locations import models
 from . import TempDirMixin
-from six.moves import range
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
@@ -16,7 +14,7 @@ FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
 
 def get_pkg_uuid_path(package_uuid):
     tmp = package_uuid.replace("-", "")
-    return os.path.join(*[tmp[i : i + 4] for i in range(0, len(tmp), 4)])
+    return os.path.join(*(tmp[i : i + 4] for i in range(0, len(tmp), 4)))
 
 
 class TestArkivum(TempDirMixin, TestCase):
@@ -24,7 +22,7 @@ class TestArkivum(TempDirMixin, TestCase):
     fixtures = ["base.json", "arkivum.json"]
 
     def setUp(self):
-        super(TestArkivum, self).setUp()
+        super().setUp()
         self.arkivum_object = models.Arkivum.objects.first()
         self.arkivum_object.space.path = str(self.tmpdir)
         self.arkivum_object.space.staging_path = str(self.tmpdir)
@@ -70,10 +68,8 @@ class TestArkivum(TempDirMixin, TestCase):
     def test_browse(self):
         response = self.arkivum_object.browse(self.arkivum_dir)
         assert response
-        assert set(response["directories"]) == set(["aips", "ts", "storage_service"])
-        assert set(response["entries"]) == set(
-            ["aips", "test.txt", "ts", "storage_service"]
-        )
+        assert set(response["directories"]) == {"aips", "ts", "storage_service"}
+        assert set(response["entries"]) == {"aips", "test.txt", "ts", "storage_service"}
         assert response["properties"]["test.txt"]["size"] == 17
         assert response["properties"]["aips"]["object count"] == 0
         assert response["properties"]["ts"]["object count"] == 0

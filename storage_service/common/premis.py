@@ -1,7 +1,6 @@
 """
 PREMIS metadata generation.
 """
-from __future__ import absolute_import, unicode_literals
 
 import uuid
 
@@ -22,7 +21,7 @@ SS_AGENT = metsrw.plugins.premisrw.PREMISAgent(
             ("agent_identifier_type", "preservation system"),
             (
                 "agent_identifier_value",
-                "Archivematica-Storage-Service-{}".format(ss_version),
+                f"Archivematica-Storage-Service-{ss_version}",
             ),
         ),
         ("agent_name", "Archivematica Storage Service"),
@@ -318,7 +317,7 @@ def create_aip_premis_object(
 
 def create_encryption_event(encr_result, key_fingerprint, gpg_version):
     """Return a PREMIS:EVENT for the encryption event."""
-    detail = "program=GPG; version={}; key={}".format(gpg_version, key_fingerprint)
+    detail = f"program=GPG; version={gpg_version}; key={key_fingerprint}"
     outcome_detail_note = 'Status="{}"; Standard Error="{}"'.format(
         encr_result.status.replace('"', r"\""),
         encr_result.stderr.replace('"', r"\"").strip(),

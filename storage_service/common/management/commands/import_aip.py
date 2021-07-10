@@ -44,10 +44,7 @@ via a pipeline? Should this be fixed by the import command?::
 
 """
 
-from __future__ import print_function
-from __future__ import unicode_literals
 
-from __future__ import absolute_import
 import glob
 import logging
 import os
@@ -66,7 +63,6 @@ from django.db.utils import IntegrityError
 from administration.models import Settings
 from common import premis, utils
 from locations import models
-from six.moves import input
 
 
 # Suppress the logging from models/package.py
@@ -161,7 +157,7 @@ class ImportAIPException(Exception):
 
 
 def ansi_format(start_sym, string):
-    return "{}{}{}".format(start_sym, string, ANSI_ENDC)
+    return f"{start_sym}{string}{ANSI_ENDC}"
 
 
 def header(string):
@@ -188,10 +184,10 @@ def tree(path):
     for root, _, files in scandir.walk(path):
         level = root.replace(path, "").count(os.sep)
         indent = " " * 4 * (level)
-        print(header("{}{}/".format(indent, os.path.basename(root))))
+        print(header(f"{indent}{os.path.basename(root)}/"))
         subindent = " " * 4 * (level + 1)
         for f in files:
-            print(okgreen("{}{}".format(subindent, f)))
+            print(okgreen(f"{subindent}{f}"))
 
 
 def decompress(aip_path, decompress_source, temp_dir):
@@ -204,7 +200,7 @@ def _decompress(aip_path, temp_dir):
     is_tar_gz = aip_path.endswith(".tar.gz")
     is_7z = aip_path.endswith(".7z")
     if not (is_tar_gz or is_7z):
-        raise ImportAIPException("Unable to decompress the AIP at {}".format(aip_path))
+        raise ImportAIPException(f"Unable to decompress the AIP at {aip_path}")
     if is_tar_gz:
         return _decompress_tar_gz(aip_path, temp_dir)
     if is_7z:
@@ -219,23 +215,23 @@ def _decompress_tar_gz(aip_path, temp_dir):
 
 
 def _decompress_7z(aip_path, temp_dir):
-    cmd = shlex.split("7z x {} -o{}".format(aip_path, temp_dir))
+    cmd = shlex.split(f"7z x {aip_path} -o{temp_dir}")
     subprocess.check_output(cmd)
     return os.path.join(temp_dir, os.listdir(temp_dir)[0])
 
 
 def confirm_aip_exists(aip_path):
     if not os.path.exists(aip_path):
-        raise ImportAIPException("There is nothing at {}".format(aip_path))
+        raise ImportAIPException(f"There is nothing at {aip_path}")
 
 
 def validate(aip_path):
-    error_msg = "The AIP at {} is not a valid Bag; aborting.".format(aip_path)
+    error_msg = f"The AIP at {aip_path} is not a valid Bag; aborting."
     try:
         bag = bagit.Bag(aip_path)
     except bagit.BagError:
         if is_compressed(aip_path):
-            error_msg = "{} Try passing the --decompress-source flag.".format(error_msg)
+            error_msg = f"{error_msg} Try passing the --decompress-source flag."
         raise ImportAIPException(error_msg)
     else:
         if not bag.is_valid():
@@ -245,7 +241,7 @@ def validate(aip_path):
 def get_aip_mets_path(aip_path):
     aip_mets_path = glob.glob(os.path.join(aip_path, "data", "METS*xml"))
     if not aip_mets_path:
-        raise ImportAIPException("Unable to find a METS file in {}.".format(aip_path))
+        raise ImportAIPException(f"Unable to find a METS file in {aip_path}.")
     return aip_mets_path[0]
 
 
@@ -337,7 +333,7 @@ def copy_rsync(source, destination):
     p.communicate()
     if p.returncode != 0:
         raise ImportAIPException(
-            "Unable to move the AIP from {} to {}.".format(source, destination)
+            f"Unable to move the AIP from {source} to {destination}."
         )
 
 
@@ -347,10 +343,10 @@ def get_pipeline(adoptive_pipeline_uuid):
             return models.Pipeline.objects.get(uuid=adoptive_pipeline_uuid)
         except models.Pipeline.DoesNotExist:
             raise ImportAIPException(
-                "There is no pipeline with uuid {}".format(adoptive_pipeline_uuid)
+                f"There is no pipeline with uuid {adoptive_pipeline_uuid}"
             )
     ret = models.Pipeline.objects.first()
-    print(okgreen("Pipeline: {}".format(ret.uuid)))
+    print(okgreen(f"Pipeline: {ret.uuid}"))
     return ret
 
 
@@ -468,4 +464,4 @@ def import_aip(
             )
         )
     )
-    print(okgreen("Successfully imported AIP {}.".format(aip_uuid)))
+    print(okgreen(f"Successfully imported AIP {aip_uuid}."))

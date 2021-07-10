@@ -1,12 +1,9 @@
-from __future__ import absolute_import
-
 # stdlib, alphabetical
 import datetime
 import os
 
 # Core Django, alphabetical
 from django.db import models
-from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
@@ -46,7 +43,7 @@ class Fedora(models.Model):
 
     def save(self, *args, **kwargs):
         self.verify()
-        super(Fedora, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def verify(self):
         """ Verify that the space is accessible to the storage service. """
@@ -57,7 +54,6 @@ class Fedora(models.Model):
 
 
 # For SWORD asynchronous downloading support
-@six.python_2_unicode_compatible
 class PackageDownloadTask(models.Model):
     uuid = UUIDField(
         editable=False, unique=True, version=4, help_text=_("Unique identifier")
@@ -73,7 +69,7 @@ class PackageDownloadTask(models.Model):
         app_label = "locations"
 
     def __str__(self):
-        return _(u"PackageDownloadTask ID: %(uuid)s for %(package)s") % {
+        return _("PackageDownloadTask ID: %(uuid)s for %(package)s") % {
             "uuid": self.uuid,
             "package": self.package,
         }
@@ -110,7 +106,6 @@ class PackageDownloadTask(models.Model):
             return self.FAILED
 
 
-@six.python_2_unicode_compatible
 class PackageDownloadTaskFile(models.Model):
     uuid = UUIDField(
         editable=False, unique=True, version=4, help_text=_("Unique identifier")
@@ -137,7 +132,7 @@ class PackageDownloadTaskFile(models.Model):
         app_label = "locations"
 
     def __str__(self):
-        return _(u"Download %(filename)s from %(url)s (%(status)s") % {
+        return _("Download %(filename)s from %(url)s (%(status)s") % {
             "filename": self.filename,
             "url": self.url,
             "status": self.downloading_status(),

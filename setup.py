@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-# -*- coding: utf-8 -*-
 
 # Copyright (c) 2013 Artefactual Systems Inc. http://www.artefactual.com
 #
@@ -19,7 +18,6 @@
 # along with archivematica-storage-service.  If not,
 # see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
 import codecs
 import os
 import re
@@ -45,7 +43,7 @@ setup(
     name="archivematica-storage-service",
     packages=["storage_service"],
     version=find_version("storage_service", "storage_service", "__init__.py"),
-    author=u"Artefactual Systems Inc",
+    author="Artefactual Systems Inc",
     author_email="info@artefactual.com",
     url="https://github.com/artefacutal/archivematica-storage-service",
     description="Django based webapp for managing storage in an Archivematica installation",

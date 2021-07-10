@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """(Re)create replicas in an AIP store
 
 When called with the -d/--delete argument, this command will attempt to
@@ -12,7 +11,6 @@ location.
 Execution example:
 ./manage.py create_aip_replicas --location <UUID>
 """
-from __future__ import absolute_import, print_function
 import logging
 
 from django.core.management.base import CommandError
@@ -97,19 +95,17 @@ class Command(StorageServiceCommand):
         if aip_uuid:
             aips = aips.filter(uuid=aip_uuid)
         if not aips:
-            raise CommandError(
-                "No AIPs to replicate in location {}".format(aip_store_uuid)
-            )
+            raise CommandError(f"No AIPs to replicate in location {aip_store_uuid}")
 
         aips_count = len(aips)
         success_count = 0
         deleted_count = 0
 
-        self.info("AIPs to replicate: {}".format(aips_count))
+        self.info(f"AIPs to replicate: {aips_count}")
 
         for aip in aips:
             if delete_existing_replicas:
-                self.info("Deleting existing replicas of AIP {}".format(aip.uuid))
+                self.info(f"Deleting existing replicas of AIP {aip.uuid}")
                 aip_deleted_replicas_count = self._delete_replicas(
                     aip.uuid, replicator_uuid
                 )
@@ -117,16 +113,16 @@ class Command(StorageServiceCommand):
 
             replicas_initial_count = get_replica_count(aip.uuid)
 
-            self.info("Creating new replicas for AIP {}".format(aip.uuid))
+            self.info(f"Creating new replicas for AIP {aip.uuid}")
             aip.create_replicas(replicator_uuid=replicator_uuid, delete_replicas=False)
 
             # Validate that new replicas were created.
             replicas_count = get_replica_count(aip.uuid)
             if not replicas_count > replicas_initial_count:
-                self.error("Replicas not created for AIP {}".format(aip.uuid))
+                self.error(f"Replicas not created for AIP {aip.uuid}")
                 continue
 
-            self.info("AIP {} successfully replicated".format(aip.uuid))
+            self.info(f"AIP {aip.uuid} successfully replicated")
             success_count += 1
 
         self.success(

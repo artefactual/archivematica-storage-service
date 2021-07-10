@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 # stdlib, alphabetical
 import logging
 
@@ -7,7 +5,6 @@ import logging
 from django.conf import settings
 from django.core import validators
 from django.db import models
-from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
@@ -29,7 +26,6 @@ __all__ = ("Pipeline",)
 LOGGER = logging.getLogger(__name__)
 
 
-@six.python_2_unicode_compatible
 class Pipeline(URLMixin, models.Model):
     """ Information about Archivematica instances using the storage service. """
 
@@ -101,7 +97,7 @@ class Pipeline(URLMixin, models.Model):
 
     def save(self, create_default_locations=False, shared_path=None, *args, **kwargs):
         """ Save pipeline and optionally create default locations. """
-        super(Pipeline, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
         if create_default_locations:
             self.create_default_locations(shared_path)
 
@@ -189,10 +185,8 @@ class Pipeline(URLMixin, models.Model):
 
     def _request_api(self, method, path, fields=None):
         api_url = self.parse_and_fix_url(self.remote_name)
-        api_url = api_url._replace(path="api/{}".format(path)).geturl()
-        headers = {
-            "Authorization": "ApiKey {}:{}".format(self.api_username, self.api_key)
-        }
+        api_url = api_url._replace(path=f"api/{path}").geturl()
+        headers = {"Authorization": f"ApiKey {self.api_username}:{self.api_key}"}
         LOGGER.debug("URL: %s; headers %s; data: %s", api_url, headers, fields)
         try:
             verify = not settings.INSECURE_SKIP_VERIFY
@@ -237,7 +231,7 @@ class Pipeline(URLMixin, models.Model):
         """
         Approve reingest in the pipeline.
         """
-        url = "{}/reingest".format(target)
+        url = f"{target}/reingest"
         fields = {"name": name, "uuid": uuid}
         resp = self._request_api("POST", url, fields=fields)
         if resp.status_code != requests.codes.ok:

@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
-
 import os
 import subprocess
 
@@ -19,7 +16,7 @@ def _restrict_access_to(restricted_path):
 
     def scandir_mock(path):
         if path == restricted_path:
-            raise OSError("Permission denied: '{}'".format(path))
+            raise OSError(f"Permission denied: '{path}'")
         return scandir(path)
 
     return scandir_mock

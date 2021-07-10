@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
-
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TestCase, RequestFactory
@@ -8,7 +5,7 @@ from django.test.client import Client
 import pytest
 
 try:
-    import mock
+    from unittest import mock
 except ImportError:
     from unittest import mock
 

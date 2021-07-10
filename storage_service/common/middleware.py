@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.utils.deprecation import MiddlewareMixin
@@ -16,7 +15,7 @@ if hasattr(settings, "LOGIN_EXEMPT_URLS"):
     EXEMPT_URLS += [compile(expr) for expr in settings.LOGIN_EXEMPT_URLS]
 
 
-class AuditLogMiddleware(object):
+class AuditLogMiddleware:
     """Add X-Username header with authenticated user to responses."""
 
     def __init__(self, get_response):

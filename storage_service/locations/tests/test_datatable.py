@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
 """Tests for the datatable utilities."""
 
-from __future__ import absolute_import
 import os
 import tempfile
 
@@ -181,7 +179,7 @@ class TestPackageDataTable(TestCase):
         assert datatable.total_records == TOTAL_FIXTURE_PACKAGES
         assert datatable.total_display_records == len(expected_packages_uuids)
         assert len(datatable.records) == len(expected_packages_uuids)
-        assert sorted([p.uuid for p in datatable.records]) == expected_packages_uuids
+        assert sorted(p.uuid for p in datatable.records) == expected_packages_uuids
 
     def test_reverse_search_replica_of(self):
         package_uuid = "f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04"
@@ -210,7 +208,7 @@ class TestPackageDataTable(TestCase):
         assert datatable.total_records == TOTAL_FIXTURE_PACKAGES
         assert datatable.total_display_records == len(expected_packages_uuids)
         assert len(datatable.records) == len(expected_packages_uuids)
-        assert sorted([p.uuid for p in datatable.records]) == expected_packages_uuids
+        assert sorted(p.uuid for p in datatable.records) == expected_packages_uuids
 
     def test_sorting_uuid_ascending(self):
         datatable = datatable_utils.PackageDataTable(

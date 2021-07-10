@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from django import forms
 from django.contrib import auth
 from django.contrib.auth.password_validation import validate_password
@@ -9,7 +7,6 @@ from django.utils.translation import ugettext_lazy as _
 from common import utils
 
 from locations.models import Location, Space
-from six.moves import zip
 
 
 # ######################## CUSTOM FIELDS/WIDGETS ##########################
@@ -27,7 +24,7 @@ class DefaultLocationWidget(forms.MultiWidget):
             forms.TextInput(*args, **kwargs),  # description
             forms.TextInput(*args, **kwargs),  # quota
         ]
-        super(DefaultLocationWidget, self).__init__(widgets=widgets, *args, **kwargs)
+        super().__init__(widgets=widgets, *args, **kwargs)
 
     def set_space_id_choices(self, choices):
         self.widgets[0].choices += choices
@@ -46,7 +43,7 @@ class DefaultLocationWidget(forms.MultiWidget):
 
     def get_context(self, *args, **kwargs):
         labels = (_("Space"), _("Relative Path"), _("Description"), _("Quota"))
-        result = super(DefaultLocationWidget, self).get_context(*args, **kwargs)
+        result = super().get_context(*args, **kwargs)
         result["labeled_widgets"] = zip(labels, result["widget"]["subwidgets"])
         return result
 
@@ -61,9 +58,7 @@ class DefaultLocationField(forms.MultiValueField):
         quota = forms.IntegerField(min_value=0, *args, **kwargs)
         fields = [space_id, relative_path, description, quota]
         widget = DefaultLocationWidget()
-        super(DefaultLocationField, self).__init__(
-            fields=fields, widget=widget, *args, **kwargs
-        )
+        super().__init__(fields=fields, widget=widget, *args, **kwargs)
 
     def set_space_id_choices(self, choices):
         self.fields[0].choices += choices
@@ -154,7 +149,7 @@ class DefaultLocationsForm(SettingsForm):
     new_recovery = DefaultLocationField(required=False, label=_("New AIP Recovery:"))
 
     def __init__(self, *args, **kwargs):
-        super(DefaultLocationsForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         # Dynamic choices done in init, because did not update consistently in
         # field definition
         self.fields["default_transfer_source"].choices = [
@@ -184,7 +179,7 @@ class DefaultLocationsForm(SettingsForm):
                 field.set_space_id_choices(space_id_choices)
 
     def clean(self):
-        cleaned_data = super(DefaultLocationsForm, self).clean()
+        cleaned_data = super().clean()
         # Check that if a field has 'new' it filled in the new location info
         if "new" in cleaned_data["default_transfer_source"]:
             location_data = cleaned_data.get("new_transfer_source")
@@ -207,7 +202,7 @@ class DefaultLocationsForm(SettingsForm):
         return cleaned_data
 
     def save(self, *args, **kwargs):
-        super(DefaultLocationsForm, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
         # do something with create_new if it exists
 
 
@@ -220,7 +215,7 @@ class UserCreationForm(auth.forms.UserCreationForm):
     email = forms.EmailField(required=True, help_text=_("Required."))
 
     def __init__(self, *args, **kwargs):
-        super(UserCreationForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["is_superuser"].label = _("Administrator?")
         self.fields["is_superuser"].initial = True
 
@@ -247,7 +242,7 @@ class UserCreationForm(auth.forms.UserCreationForm):
         return password2
 
     def _post_clean(self):
-        super(UserCreationForm, self)._post_clean()
+        super()._post_clean()
         # Validate the password after self.instance is updated with form data
         # by super().
         password = self.cleaned_data.get("password1")
@@ -265,7 +260,7 @@ class UserChangeForm(auth.forms.UserChangeForm):
         current_user = kwargs.pop("current_user", None)
         self.user_being_edited = kwargs["instance"]
         self.superusers = auth.get_user_model().objects.filter(is_superuser=True)
-        super(UserChangeForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["is_superuser"].label = _("Administrator?")
         if not (current_user and current_user.is_superuser):
             # If current user is not super, do not permit editing of that.

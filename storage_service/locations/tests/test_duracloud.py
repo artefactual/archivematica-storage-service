@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from lxml import etree
 import os
 import shutil
@@ -19,7 +18,7 @@ class TestDuracloud(TempDirMixin, TestCase):
     fixtures = ["base.json", "duracloud.json"]
 
     def setUp(self):
-        super(TestDuracloud, self).setUp()
+        super().setUp()
         self.ds_object = models.Duracloud.objects.first()
         self.auth = requests.auth.HTTPBasicAuth(
             self.ds_object.user, self.ds_object.password
@@ -215,7 +214,7 @@ class TestDuracloud(TempDirMixin, TestCase):
     def test_move_from_ss_file(self):
         # Create test.txt
         testfile = self.tmpdir / "test.txt"
-        testfile.open("w").write(u"test file\n")
+        testfile.open("w").write("test file\n")
         # Upload
         self.ds_object.move_from_storage_service(str(testfile), "test/test.txt")
         # Verify
@@ -244,8 +243,8 @@ class TestDuracloud(TempDirMixin, TestCase):
         # Create test folder
         testdir = self.tmpdir / "test"
         (testdir / "subfolder").mkdir(parents=True)
-        (testdir / "test.txt").open("w").write(u"test file\n")
-        (testdir / "subfolder" / "test2.txt").open("w").write(u"test file2\n")
+        (testdir / "test.txt").open("w").write("test file\n")
+        (testdir / "subfolder" / "test2.txt").open("w").write("test file2\n")
         # Upload
         self.ds_object.move_from_storage_service(str(testdir) + os.sep, "test/foo/")
         # Verify
@@ -289,7 +288,7 @@ class TestDuracloud(TempDirMixin, TestCase):
     def test_move_from_ss_percent_encoding(self):
         # Create bad #name.txt
         testfile = self.tmpdir / "bad #name.txt"
-        testfile.open("w").write(u"test file\n")
+        testfile.open("w").write("test file\n")
         # Upload
         self.ds_object.move_from_storage_service(str(testfile), "test/bad #name.txt")
         # Verify
@@ -531,7 +530,7 @@ class TestDuracloud(TempDirMixin, TestCase):
         self.ds_object.move_to_storage_service("test/test.txt", str(tmpfile), None)
         assert tmpdir.is_dir()
         assert tmpfile.is_file()
-        assert tmpfile.open().read() == u"test file\n"
+        assert tmpfile.open().read() == "test file\n"
 
     @vcr.use_cassette(
         os.path.join(FIXTURES_DIR, "vcr_cassettes", "duracloud_move_to_ss_folder.yaml")
@@ -546,11 +545,11 @@ class TestDuracloud(TempDirMixin, TestCase):
         assert (tmpdir / "test").is_dir()
         assert (tmpdir / "test" / "subfolder").is_dir()
         assert (tmpdir / "test" / "test.txt").is_file()
-        assert (tmpdir / "test" / "test.txt").open().read() == u"test file\n"
+        assert (tmpdir / "test" / "test.txt").open().read() == "test file\n"
         assert (tmpdir / "test" / "subfolder" / "test2.txt").is_file()
         assert (
             tmpdir / "test" / "subfolder" / "test2.txt"
-        ).open().read() == u"test file2\n"
+        ).open().read() == "test file2\n"
 
     @vcr.use_cassette(
         os.path.join(
@@ -567,11 +566,11 @@ class TestDuracloud(TempDirMixin, TestCase):
         assert (tmpdir / "test").is_dir()
         assert (tmpdir / "test" / "subfolder").is_dir()
         assert (tmpdir / "test" / "test.txt").is_file()
-        assert (tmpdir / "test" / "test.txt").open().read() == u"test file\n"
+        assert (tmpdir / "test" / "test.txt").open().read() == "test file\n"
         assert (tmpdir / "test" / "subfolder" / "test2.txt").is_file()
         assert (
             tmpdir / "test" / "subfolder" / "test2.txt"
-        ).open().read() == u"test file2\n"
+        ).open().read() == "test file2\n"
 
     @vcr.use_cassette(
         os.path.join(

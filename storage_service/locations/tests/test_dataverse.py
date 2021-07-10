@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
 from django.test import TestCase
 import os
 import vcr
@@ -16,7 +14,7 @@ class TestDataverse(TempDirMixin, TestCase):
     fixtures = ["base.json", "dataverse.json", "dataverse2.json"]
 
     def setUp(self):
-        super(TestDataverse, self).setUp()
+        super().setUp()
         self.dataverse = models.Dataverse.objects.all()[0]
         self.dataverse_location = models.Location.objects.get(
             space=self.dataverse.space
@@ -83,7 +81,7 @@ class TestDataverse(TempDirMixin, TestCase):
         assert resp["properties"]["581"]["verbose name"] == ("A sub-dataverse dataset")
 
         # Get all objects in dataset 1016
-        resp = dataverse.browse("{}/1016".format(location.relative_path))
+        resp = dataverse.browse(f"{location.relative_path}/1016")
         assert resp["directories"] == []
         assert len(resp["entries"]) == 55
         ivy_lea_sample = [

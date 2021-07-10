@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 # stdlib, alphabetical
 
 import logging
@@ -8,7 +6,6 @@ import os
 # Core Django, alphabetical
 from django.dispatch import receiver
 from django.db import models
-from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
@@ -25,7 +22,6 @@ __all__ = ("Location", "LocationPipeline")
 LOGGER = logging.getLogger(__name__)
 
 
-@six.python_2_unicode_compatible
 class Location(models.Model):
     """ Stores information about a location. """
 
@@ -126,7 +122,7 @@ class Location(models.Model):
     _default = None
 
     def __str__(self):
-        return _(u"%(uuid)s: %(path)s (%(purpose)s)") % {
+        return _("%(uuid)s: %(path)s (%(purpose)s)") % {
             "uuid": self.uuid,
             "purpose": self.get_purpose_display(),
             "path": self.relative_path,
@@ -149,7 +145,7 @@ class Location(models.Model):
         """ Looks up whether this location is the default one application-wise. """
         if self._default is None:
             try:
-                name = "default_{}_location".format(self.purpose)
+                name = f"default_{self.purpose}_location"
                 Settings.objects.get(name=name, value=self.uuid)
                 self._default = True
             except Settings.DoesNotExist:
@@ -171,7 +167,7 @@ class Location(models.Model):
 
 @receiver(models.signals.pre_delete, sender=Location)
 def unset_default_location(sender, instance, using, **kwargs):
-    name = "default_{}_location".format(instance.purpose)
+    name = f"default_{instance.purpose}_location"
     Settings.objects.filter(name=name, value=instance.uuid).delete()
 
 
@@ -190,7 +186,7 @@ def set_default_location_pre_save(
         return
     if old.purpose != instance.purpose:
         Settings.objects.filter(
-            name="default_{}_location".format(old.purpose), value=old.uuid
+            name=f"default_{old.purpose}_location", value=old.uuid
         ).delete()
 
 
@@ -198,14 +194,13 @@ def set_default_location_pre_save(
 def set_default_location_post_save(
     sender, instance, created, raw, using, update_fields, **kwargs
 ):
-    name = "default_{}_location".format(instance.purpose)
+    name = f"default_{instance.purpose}_location"
     if instance.default:
         Settings.objects.update_or_create(name=name, defaults={"value": instance.uuid})
     else:
         Settings.objects.filter(name=name, value=instance.uuid).delete()
 
 
-@six.python_2_unicode_compatible
 class LocationPipeline(models.Model):
     location = models.ForeignKey("Location", to_field="uuid", on_delete=models.CASCADE)
     pipeline = models.ForeignKey("Pipeline", to_field="uuid", on_delete=models.CASCADE)
@@ -215,7 +210,7 @@ class LocationPipeline(models.Model):
         app_label = "locations"
 
     def __str__(self):
-        return _(u"%(location)s is associated with %(pipeline)s") % {
+        return _("%(location)s is associated with %(pipeline)s") % {
             "location": self.location,
             "pipeline": self.pipeline,
         }

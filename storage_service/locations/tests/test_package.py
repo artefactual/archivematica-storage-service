@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import datetime
 import os
 import pytest
@@ -7,7 +6,7 @@ import tempfile
 import time
 import vcr
 
-import mock
+from unittest import mock
 
 from django.contrib.messages import get_messages
 from django.test import TestCase
@@ -32,12 +31,12 @@ TOTAL_FIXTURE_PACKAGES = 15
 
 def recursive_file_count(target_dir):
     """Return count of files in directory based on recursive walk."""
-    return sum([len(files) for _, _, files in os.walk(target_dir)])
+    return sum(len(files) for _, _, files in os.walk(target_dir))
 
 
 def recursive_dir_count(target_dir):
     """Return count of dirs in directory based on recursive walk."""
-    return sum([len(dirs) for _, dirs, _ in os.walk(target_dir)])
+    return sum(len(dirs) for _, dirs, _ in os.walk(target_dir))
 
 
 class TestPackage(TestCase):
@@ -715,7 +714,7 @@ class TestPackage(TestCase):
         assert aip.replicas.count() == 1
         assert replica is not None
         assert mock_encrypt.call_args_list == [
-            mock.call(os.path.join(replica.full_path, ""), u"")
+            mock.call(os.path.join(replica.full_path, ""), "")
         ]
         self._test_bagit_structure(replica, replication_dir)
 

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 import logging
 import subprocess
 
@@ -267,7 +266,7 @@ def key_import(request):
         else:
             messages.success(
                 request,
-                _("New key %(fingerprint)s created." % {"fingerprint": fingerprint}),
+                _(f"New key {fingerprint} created."),
             )
             return redirect("administration:key_list")
     explanation = _(

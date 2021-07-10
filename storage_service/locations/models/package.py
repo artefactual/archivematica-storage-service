@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
-
 # stdlib, alphabetical
 from collections import namedtuple
 import codecs
@@ -30,7 +27,6 @@ from django.utils.translation import ugettext_lazy as _
 import bagit
 import jsonfield
 from django_extensions.db.fields import UUIDField
-from django.utils import six
 import metsrw
 from metsrw.plugins import premisrw
 import requests
@@ -46,7 +42,6 @@ from .location import Location
 from .space import Space, PosixMoveUnsupportedError
 from .event import Callback, CallbackError, File
 from .fixity_log import FixityLog
-from six.moves import range
 
 __all__ = ("Package",)
 
@@ -54,7 +49,6 @@ __all__ = ("Package",)
 LOGGER = logging.getLogger(__name__)
 
 
-@six.python_2_unicode_compatible
 class Package(models.Model):
     """ A package stored in a specific location. """
 
@@ -183,7 +177,7 @@ class Package(models.Model):
         app_label = "locations"
 
     def __init__(self, *args, **kwargs):
-        super(Package, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # Temporary attributes to track path on locally accessible filesystem
         self.local_path = None
@@ -192,7 +186,7 @@ class Package(models.Model):
         self.local_tempdirs = []
 
     def __str__(self):
-        return u"{uuid}: {path}".format(uuid=self.uuid, path=self.full_path)
+        return f"{self.uuid}: {self.full_path}"
         # return "File: {}".format(self.uuid)
 
     # Attributes
@@ -376,9 +370,7 @@ class Package(models.Model):
                 try:
                     shutil.rmtree(tempdir)
                     self.local_tempdirs.remove(tempdir)
-                    LOGGER.debug(
-                        "Deleted Storage Service internal tempdir: {}".format(tempdir)
-                    )
+                    LOGGER.debug(f"Deleted Storage Service internal tempdir: {tempdir}")
                 except OSError as err:
                     LOGGER.debug(
                         "Error deleting Storage Service internal tempdir: {}".format(
@@ -841,7 +833,7 @@ class Package(models.Model):
         periodically saved to the db.
         """
         LOGGER.info("store_aip called in Package class of SS")
-        LOGGER.info("store_aip got origin_path {}".format(origin_path))
+        LOGGER.info(f"store_aip got origin_path {origin_path}")
         v = self._store_aip_to_pending(origin_location, origin_path)
         storage_effects, checksum = self._store_aip_to_uploaded(v, related_package_uuid)
         self._store_aip_ensure_pointer_file(
@@ -911,9 +903,7 @@ class Package(models.Model):
             self.pointer_file_location = Location.active.get(
                 purpose=Location.STORAGE_SERVICE_INTERNAL
             )
-            self.pointer_file_path = os.path.join(
-                uuid_path, "pointer.{}.xml".format(self.uuid)
-            )
+            self.pointer_file_path = os.path.join(uuid_path, f"pointer.{self.uuid}.xml")
             pointer_file_src = os.path.join(
                 self.origin_location.relative_path,
                 os.path.dirname(self.origin_path),
@@ -1209,7 +1199,7 @@ class Package(models.Model):
             purpose=Location.STORAGE_SERVICE_INTERNAL
         )
         replica_package.pointer_file_path = os.path.join(
-            uuid_path, "pointer.{}.xml".format(replica_package.uuid)
+            uuid_path, f"pointer.{replica_package.uuid}.xml"
         )
         master_aip_uuid = self.uuid
 
@@ -1381,7 +1371,7 @@ class Package(models.Model):
         will validate against XML's xs:NCNAME limitations set by the METS
         standard
         """
-        return "file-{}".format(os.path.splitext(os.path.basename(aip_path))[0])
+        return f"file-{os.path.splitext(os.path.basename(aip_path))[0]}"
 
     def create_pointer_file(
         self,
@@ -1694,7 +1684,7 @@ class Package(models.Model):
             rc = p.returncode
             LOGGER.debug("Compress package RC: %s", rc)
 
-            script_path = "/tmp/{}".format(str(uuid4()))
+            script_path = f"/tmp/{str(uuid4())}"
             file_ = os.open(script_path, os.O_WRONLY | os.O_CREAT, 0o770)
             os.write(file_, tool_info_command)
             os.close(file_)
@@ -2265,7 +2255,7 @@ class Package(models.Model):
                         processing_config,
                         config_path,
                     )
-                except IOError:
+                except OSError:
                     LOGGER.exception(
                         "Reingest: processing configuration %s could not be written",
                         processing_config,
@@ -2488,9 +2478,7 @@ class Package(models.Model):
                 # If updating, rather than creating a new pointer file, delete
                 # this pointer file. TODO: this is maybe not a good idea and
                 # might be what is messing with encrypted re-ingest...
-                LOGGER.info(
-                    'Extracted compression "{}" from pointer file'.format(compression)
-                )
+                LOGGER.info(f'Extracted compression "{compression}" from pointer file')
                 if was_compressed:
                     os.remove(rein_pointer_dst_full_path)
             else:
@@ -2660,7 +2648,7 @@ class Package(models.Model):
         # If reingesting a previously compressed AIP, make a temporary
         # "reingest" pointer (otherwise make a normal one)
         if was_compressed:
-            reingest_pointer_name = "pointer.{}.reingest.xml".format(self.uuid)
+            reingest_pointer_name = f"pointer.{self.uuid}.reingest.xml"
             reingest_pointer_dst = os.path.join(
                 internal_location.relative_path, reingest_pointer_name
             )
@@ -2668,7 +2656,7 @@ class Package(models.Model):
                 internal_location.full_path, reingest_pointer_name
             )
         else:
-            reingest_pointer_name = "pointer.{}.xml".format(self.uuid)
+            reingest_pointer_name = f"pointer.{self.uuid}.xml"
             uuid_path = utils.uuid_to_path(self.uuid)
             reingest_pointer_dst = os.path.join(
                 internal_location.relative_path, uuid_path, reingest_pointer_name
@@ -2694,7 +2682,7 @@ class Package(models.Model):
         """Overwrite this package's METS file with that of the reingested
         package.
         """
-        mets_name = "METS.{}.xml".format(self.uuid)
+        mets_name = f"METS.{self.uuid}.xml"
         rein_aip_mets_path = os.path.join(rein_aip_internal_path, "data", mets_name)
         old_aip_mets_path = os.path.join(old_aip_internal_path, "data", mets_name)
         LOGGER.info(
@@ -2855,12 +2843,10 @@ class Package(models.Model):
             # what AM uses
             checksum = utils.generate_checksum(path, "sha512")
 
-        transform_types = set(
-            [
-                self._get_transform_file_type(transform_file)
-                for transform_file in aip.transform_files
-            ]
-        )
+        transform_types = {
+            self._get_transform_file_type(transform_file)
+            for transform_file in aip.transform_files
+        }
         if "decryption" in transform_types:
             transform_order = 2  # encryption is a prior transformation
         else:
@@ -2925,7 +2911,7 @@ def _get_decompr_cmd(compression, extract_path, full_path):
         utils.COMPRESSION_7Z_LZMA,
         utils.COMPRESSION_7Z_COPY,
     ):
-        return ["7z", "x", "-bd", "-y", "-o{0}".format(extract_path), full_path]
+        return ["7z", "x", "-bd", "-y", f"-o{extract_path}", full_path]
     elif compression == utils.COMPRESSION_TAR_BZIP2:
         return ["/bin/tar", "xvjf", full_path, "-C", extract_path]
     elif compression == utils.COMPRESSION_TAR_GZIP:
@@ -2957,11 +2943,11 @@ def _extract_rein_aip(internal_location, rein_aip_internal_path):
             output = subprocess.check_output(command).decode("utf8")
             j = json.loads(output)
             bname = sorted(
-                [
+                (
                     d["XADFileName"]
                     for d in j["lsarContents"]
                     if d.get("XADIsDirectory", False)
-                ],
+                ),
                 key=len,
             )[0]
         except (subprocess.CalledProcessError, ValueError):

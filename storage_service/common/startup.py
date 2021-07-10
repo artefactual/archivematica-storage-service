@@ -29,7 +29,7 @@ class PopulateLockError(Exception):
     """MySQL lock is already held or an error occurred."""
 
 
-class PopulateLock(object):
+class PopulateLock:
     """MySQL lock that gives up immediately on a held lock."""
 
     def __init__(self):

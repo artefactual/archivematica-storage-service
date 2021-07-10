@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 # stdlib, alphabetical
 import datetime
 import logging
@@ -10,7 +8,6 @@ import tarfile
 from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from django.utils import six
 
 # Third party dependencies, alphabetical
 
@@ -192,7 +189,7 @@ class GPG(models.Model):
         filesystem. Based on ``Space.browse_local`` but has to deal with paths
         within encrypted directories (which are tarfiles).
         """
-        if isinstance(path, six.text_type):
+        if isinstance(path, str):
             path = path.encode("utf8")
         # Encrypted space only stores files, so strip trailing /.
         path = path.decode("utf8").rstrip("/")
@@ -284,7 +281,7 @@ def _encr_path2key_fingerprint(encr_path):
     try:
         return matches[0].encryption_key_fingerprint
     except IndexError:
-        fail_msg = "Unable to find package matching encrypted path {}".format(encr_path)
+        fail_msg = f"Unable to find package matching encrypted path {encr_path}"
         LOGGER.error(fail_msg)
         raise GPGException(fail_msg)
 
@@ -307,7 +304,7 @@ def _gpg_decrypt(path):
     encrypted file.
     """
     if not os.path.isfile(path):
-        fail_msg = _("Cannot decrypt file at %(path)s; no such file." % {"path": path})
+        fail_msg = _(f"Cannot decrypt file at {path}; no such file.")
         LOGGER.error(fail_msg)
         raise GPGException(fail_msg)
     decr_path = path + ".decrypted"

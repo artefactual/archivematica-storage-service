@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 # stdlib, alphabetical
 import logging
 import os
@@ -76,7 +74,7 @@ class Swift(models.Model):
     ]
 
     def __init__(self, *args, **kwargs):
-        super(Swift, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._connection = None
 
     @property

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 
@@ -6,7 +5,7 @@ from django.test import TestCase, override_settings
 class TestLanguageSwitching(TestCase):
     @classmethod
     def setUpClass(cls):
-        super(TestLanguageSwitching, cls).setUpClass()
+        super().setUpClass()
         User.objects.create_user(
             username="admin", password="admin", email="admin@example.com"
         )

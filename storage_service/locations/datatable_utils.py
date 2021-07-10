@@ -8,7 +8,6 @@ The request and response details are documented in:
 http://legacy.datatables.net/usage/server-side
 """
 
-from __future__ import absolute_import
 import os
 
 from django.db.models import Q
@@ -18,7 +17,7 @@ from .models import FixityLog
 from .models import Package
 
 
-class PackageDataTable(object):
+class PackageDataTable:
     """This class parses the parameters sent by the JS client code and
     builds a filtered and sorted list of `Package` objects.
     """
@@ -102,8 +101,7 @@ class PackageDataTable(object):
             )
             if sorting_column_index is not None:
                 is_sortable = (
-                    query_dict.get("bSortable_{}".format(sorting_column_index))
-                    == "true"
+                    query_dict.get(f"bSortable_{sorting_column_index}") == "true"
                 )
                 if is_sortable:
                     sort_direction = query_dict.get("sSortDir_0", "asc")
@@ -137,7 +135,7 @@ class PackageDataTable(object):
         if sorting_column["index"] in self.ORDER_BY_MAPPING:
             field = self.ORDER_BY_MAPPING[sorting_column["index"]]
             if sort_descending:
-                field = "-{}".format(field)
+                field = f"-{field}"
             return queryset.order_by(field)
         elif sorting_column["index"] in self.SORT_KEY_HELPERS_MAPPING:
             sorting_method_name = self.SORT_KEY_HELPERS_MAPPING[sorting_column["index"]]

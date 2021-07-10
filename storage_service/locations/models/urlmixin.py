@@ -1,8 +1,7 @@
-from __future__ import absolute_import
 from django.utils.six.moves.urllib.parse import urlparse
 
 
-class URLMixin(object):
+class URLMixin:
     def parse_and_fix_url(self, remote_name, scheme="http"):
         """Returns a ParseResult object based on the remote_name field.
 

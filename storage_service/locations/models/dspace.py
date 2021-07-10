@@ -4,7 +4,6 @@ Integration with DSpace, using SWORD2 as the protocol.
 Space path can be left empty, and the Location path should be the collection's
 IRI.
 """
-from __future__ import absolute_import
 
 # stdlib, alphabetical
 import logging

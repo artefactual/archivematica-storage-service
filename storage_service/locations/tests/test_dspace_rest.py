@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
 """Tests for the DSpace REST space."""
 
-from __future__ import print_function
-from __future__ import absolute_import
 from collections import namedtuple
 import json
 import os
@@ -12,7 +9,6 @@ from uuid import uuid4
 from lxml import etree
 import pytest
 import requests
-import six
 
 import agentarchives
 from agentarchives import archivesspace
@@ -40,17 +36,17 @@ DFLT_DSPACE_AIP_COLLECTION = "aaaaaaaa-99b1-4130-8337-7733409d39b8"
 DFLT_DSPACE_DIP_COLLECTION = DFLT_DSPACE_AIP_COLLECTION
 
 DS_URL = "https://test.digitalpreservation.is.ed.ac.uk:443"
-DS_HANDLE_URL = "{}/handle".format(DS_URL)
-DS_REST_URL = "{}/rest".format(DS_URL)
-DS_REST_LOGIN_URL = "{}/login".format(DS_REST_URL)
-DS_REST_LOGOUT_URL = "{}/logout".format(DS_REST_URL)
-DS_REST_ITEM_CREATE_URL_TMPLT = "{}/collections/".format(DS_REST_URL) + "{}/items"
+DS_HANDLE_URL = f"{DS_URL}/handle"
+DS_REST_URL = f"{DS_URL}/rest"
+DS_REST_LOGIN_URL = f"{DS_REST_URL}/login"
+DS_REST_LOGOUT_URL = f"{DS_REST_URL}/logout"
+DS_REST_ITEM_CREATE_URL_TMPLT = f"{DS_REST_URL}/collections/" + "{}/items"
 DS_EMAIL = "fakeemail@example.com"
 DS_PASSWORD = "abc123!!!"
 
 AS_URL_NO_PORT = "http://aspace2.test.archivematica.org"
 AS_PORT = 8089
-AS_URL = "{}:{}".format(AS_URL_NO_PORT, AS_PORT)
+AS_URL = f"{AS_URL_NO_PORT}:{AS_PORT}"
 AS_USER = "someuser"
 AS_PASSWORD = "xyz321???"
 AS_REPOSITORY = "3"
@@ -58,34 +54,34 @@ AS_REPOSITORY = "3"
 PACKAGE_UUID = str(uuid4())
 DS_ITEM_UUID = str(uuid4())
 DS_ITEM_HANDLE = "monkeypants"
-DS_ITEM_HANDLE_URL = "{}/{}".format(DS_HANDLE_URL, DS_ITEM_HANDLE)
+DS_ITEM_HANDLE_URL = f"{DS_HANDLE_URL}/{DS_ITEM_HANDLE}"
 
 VERIFY_SSL = False
 UPLOAD_TO_TSM = True
 AS_ARCHIVAL_OBJECT = "425"
 COOKIE = "74364D1D0214772B31D8EA7174F2945A"
-HEADER_SET_COOKIE_DFLT = "JSESSIONID={};path=/rest;Secure;HttpOnly".format(COOKIE)
+HEADER_SET_COOKIE_DFLT = f"JSESSIONID={COOKIE};path=/rest;Secure;HttpOnly"
 COOKIES = {"JSESSIONID": COOKIE}
 DS_POST_JSON_RESP_DFLT = {"uuid": DS_ITEM_UUID, "handle": DS_ITEM_HANDLE}
 JSON_HEADERS = {"Content-Type": "application/json", "Accept": "application/json"}
 SOURCE_PATH = "/a/b/c/"
 AIP_NAME_ORIG = "myaip"
-AIP_NAME = "{}-{}".format(AIP_NAME_ORIG, PACKAGE_UUID)
-AIP_FILENAME = "{}.7z".format(AIP_NAME)
-AIP_SOURCE_PATH = "{}{}.7z".format(SOURCE_PATH, AIP_NAME)
+AIP_NAME = f"{AIP_NAME_ORIG}-{PACKAGE_UUID}"
+AIP_FILENAME = f"{AIP_NAME}.7z"
+AIP_SOURCE_PATH = f"{SOURCE_PATH}{AIP_NAME}.7z"
 AIP_SOURCE_PATH_DIR = os.path.dirname(AIP_SOURCE_PATH) + "/"
-AIP_METS_FILENAME = "METS.{}.xml".format(PACKAGE_UUID)
+AIP_METS_FILENAME = f"METS.{PACKAGE_UUID}.xml"
 AIP_EXTRACTED_METS_RELATIVE_PATH = os.path.join(AIP_NAME, "data", AIP_METS_FILENAME)
 AIP_EXTRACTED_METS_PATH = os.path.join(
     AIP_SOURCE_PATH_DIR, AIP_EXTRACTED_METS_RELATIVE_PATH
 )
 
 DIP_NAME_ORIG = "mydip"
-DIP_NAME = "{}-{}".format(DIP_NAME_ORIG, PACKAGE_UUID)
-DIP_SOURCE_PATH = "{}{}".format(SOURCE_PATH, DIP_NAME)
+DIP_NAME = f"{DIP_NAME_ORIG}-{PACKAGE_UUID}"
+DIP_SOURCE_PATH = f"{SOURCE_PATH}{DIP_NAME}"
 DIP_METS_PATH = os.path.join(DIP_SOURCE_PATH, AIP_METS_FILENAME)
 
-AIP_DEST_PATH = "/x/y/z/{}.7z".format(AIP_NAME)
+AIP_DEST_PATH = f"/x/y/z/{AIP_NAME}.7z"
 DS_REST_AIP_DEPO_URL = "{}/items/{}/bitstreams?name={}".format(
     DS_REST_URL, DS_ITEM_UUID, AIP_FILENAME
 )
@@ -142,7 +138,7 @@ as_ado_exc = ASRequestValidity(
 )
 
 
-class MoveFromCaseAIP(object):
+class MoveFromCaseAIP:
     """Describes a situation where an AIP is being moved from the storage
     service. Note: ``__iter__`` and ``__len__`` make it behave like a
     tuple/list so that pytest.mark.parametrize can handle it.
@@ -193,7 +189,7 @@ class MoveFromCaseDIP(MoveFromCaseAIP):
     )
 
 
-class MockPackage(object):
+class MockPackage:
     """Class to mock models.Package."""
 
     def __init__(self, **kwargs):
@@ -203,7 +199,7 @@ class MockPackage(object):
         self.fake_mets_file = kwargs.get("fake_mets_file", open(METS_1_PATH))
 
 
-class MockProcess(object):
+class MockProcess:
     """Class to mock the output of ``subprocess.Popen``."""
 
     def __init__(self, command, **kwargs):
@@ -217,7 +213,7 @@ class MockProcess(object):
         return self.stdout, self.stderr
 
 
-class FakeDSpaceRESTPOSTResponse(object):
+class FakeDSpaceRESTPOSTResponse:
     """Mock class that emulates all of the possible responses to POST requests
     to the DSpace REST API that are issuable by the DSpaceREST space.
     """
@@ -242,7 +238,7 @@ class FakeDSpaceRESTPOSTResponse(object):
             raise self._raise
 
 
-class FakeArchivesSpaceClient(object):
+class FakeArchivesSpaceClient:
     """Minimal mocks of agentarchives.archivesspace.ArchivesSpaceClient."""
 
     def __init__(self, exc=None):
@@ -361,10 +357,7 @@ def test_move_from_storage_service(
     mocker.patch("subprocess.Popen", return_value=MockProcess(["fake-command"]))
     mocker.patch("lxml.etree.parse", return_value=etree.parse(package.fake_mets_file))
     mocker.patch("os.remove")
-    if six.PY3:
-        mocker.patch("builtins.open")
-    else:
-        mocker.patch("__builtin__.open")
+    mocker.patch("builtins.open")
     mocker.patch("os.listdir", return_value=[AIP_METS_FILENAME])
     mocker.patch("scandir.walk", return_value=[("", [], [AIP_METS_FILENAME])])
 

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from collections import namedtuple
 
 from common import premis
@@ -21,7 +20,7 @@ def test_create_encryption_event():
     event = event[2:]
     assert [x for x in event if x[0] == "event_type"][0][1] == "encryption"
     assert [x for x in event if x[0] == "event_detail_information"][0][1][1] == (
-        "program=GPG; version={}; key={}".format(GPG_VERSION, SOME_FINGERPRINT)
+        f"program=GPG; version={GPG_VERSION}; key={SOME_FINGERPRINT}"
     )
     eoi = [x for x in event if x[0] == "event_outcome_information"][0]
     assert [x for x in eoi if x[0] == "event_outcome"][0][1] == "success"
@@ -32,5 +31,5 @@ def test_create_encryption_event():
     )
     lai = [x for x in event if x[0] == "linking_agent_identifier"][0]
     assert [x for x in lai if x[0] == "linking_agent_identifier_value"][0][1] == (
-        "Archivematica-Storage-Service-{}".format(ss_version)
+        f"Archivematica-Storage-Service-{ss_version}"
     )

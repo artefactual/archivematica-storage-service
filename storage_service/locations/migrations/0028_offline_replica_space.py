@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
-
 """Migration to add an Offline Replica Staging Space to the Storage Service."""
 
-from __future__ import absolute_import, unicode_literals
 
 from django.db import migrations, models
 import django.db.models.deletion
