@@ -10,7 +10,7 @@ boto3==1.17.109           # via -r base.in
 botocore==1.20.109        # via boto3, s3transfer
 brotli==0.5.2             # via -r base.in
 certifi==2021.5.30        # via requests
-cffi==1.14.6              # via cryptography
+cffi==1.14.6 ; python_version < "3.7"  # via -r base.in, cryptography
 chardet==4.0.0            # via requests
 cryptography==3.4.7       # via josepy, mozilla-django-oidc, pyopenssl
 debtcollector==2.2.0      # via oslo.config, oslo.utils, python-keystoneclient
@@ -24,7 +24,7 @@ git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git
 django-tastypie==0.14.3   # via -r base.in
 django==1.11.29           # via -r base.in, django-auth-ldap, django-cas-ng, django-csp, jsonfield, mozilla-django-oidc
 future==0.18.2            # via metsrw
-gevent==1.3.6             # via -r base.in
+gevent==21.1.2            # via -r base.in
 greenlet==1.1.0           # via gevent
 gunicorn==19.9.0          # via -r base.in
 httplib2==0.19.1          # via sword2
@@ -83,6 +83,8 @@ urllib3==1.26.6           # via botocore, requests
 whitenoise==3.3.0         # via -r base.in
 wrapt==1.12.1             # via debtcollector, positional
 zipp==3.5.0               # via importlib-metadata, importlib-resources
+zope.event==4.5.0         # via gevent
+zope.interface==5.4.0     # via gevent
 
 # The following packages are considered to be unsafe in a requirements file:
-setuptools==57.1.0        # via josepy
+setuptools==57.1.0        # via gevent, josepy, zope.event, zope.interface
