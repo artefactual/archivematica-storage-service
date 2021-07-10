@@ -2,15 +2,13 @@
 # are based on. They shouldn't be directly used with Api objects.
 
 # stdlib, alphabetical
+from urllib.parse import unquote
 import json
 import logging
 import os
 import pprint
 import re
 import shutil
-import six.moves.urllib.request
-import six.moves.urllib.parse
-import six.moves.urllib.error
 
 # Core Django, alphabetical
 from django.conf import settings
@@ -1277,7 +1275,7 @@ class PackageResource(ModelResource):
             return http.HttpBadRequest(
                 _("All of these fields must be provided: relative_path_to_file")
             )
-        relative_path_to_file = six.moves.urllib.parse.unquote(relative_path_to_file)
+        relative_path_to_file = unquote(relative_path_to_file)
         temp_dir = extracted_file_path = ""
 
         # Get Package details

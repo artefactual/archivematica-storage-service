@@ -11,7 +11,6 @@ from sys import path
 
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import ugettext_lazy as _
-import six
 
 # S3 adapter configuration.
 from .components.s3 import *

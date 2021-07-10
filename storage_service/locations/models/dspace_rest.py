@@ -4,18 +4,15 @@ Integration with DSpace, using REST API as the protocol.
 """
 
 # stdlib, alphabetical
+from urllib.parse import quote, urlparse
 import json
 import logging
 import os
 import subprocess
 import traceback
-import six.moves.urllib.request
-import six.moves.urllib.parse
-import six.moves.urllib.error
 
 # Core Django, alphabetical
 from django.db import models
-from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
@@ -395,7 +392,7 @@ class DSpaceREST(models.Model):
         for root, __, files in scandir.walk(source_path):
             for name in files:
                 bitstream_url = "{}/bitstreams?name={}".format(
-                    base_url, six.moves.urllib.parse.quote(name.encode("utf-8"))
+                    base_url, quote(name.encode("utf-8"))
                 )
                 try:
                     with open(os.path.join(root, name), "rb") as content:
@@ -463,9 +460,7 @@ class DSpaceREST(models.Model):
         bitstream_url = "{base_url}/items/{uuid}/bitstreams?name={name}".format(
             base_url=self._get_base_url(self.ds_rest_url),
             uuid=ds_item["uuid"],
-            name=six.moves.urllib.parse.quote(
-                os.path.basename(source_path).encode("utf-8")
-            ),
+            name=quote(os.path.basename(source_path).encode("utf-8")),
         )
         try:
             with open(source_path, "rb") as content:

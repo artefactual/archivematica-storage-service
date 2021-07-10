@@ -1,12 +1,9 @@
 # stdlib, alphabetical
+from urllib.parse import quote_plus
 import json
 import logging
-from lxml import etree
 import os
 import requests
-import six.moves.urllib.request
-import six.moves.urllib.parse
-import six.moves.urllib.error
 
 # Core Django, alphabetical
 from django.conf import settings
@@ -16,6 +13,7 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
+from lxml import etree
 import dateutil.parser
 import scandir
 
@@ -350,7 +348,7 @@ class Arkivum(models.Model):
                     + "/"
                     + path
                 )
-                url_path = six.moves.urllib.parse.quote_plus(url_path, safe="/")
+                url_path = quote_plus(url_path, safe="/")
                 url = "https://" + self.host + "/api/2/files/fileInfo/" + url_path
                 LOGGER.info("URL: %s", url)
                 try:

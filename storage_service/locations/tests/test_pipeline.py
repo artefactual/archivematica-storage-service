@@ -1,8 +1,8 @@
+from urllib.parse import ParseResult, urlparse
 import os
 
 from django.test import TestCase
 from django.urls import reverse
-from django.utils.six.moves.urllib.parse import ParseResult, urlparse
 
 from locations import models
 

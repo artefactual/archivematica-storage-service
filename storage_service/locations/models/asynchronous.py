@@ -1,10 +1,9 @@
 # stdlib, alphabetical
 import logging
+import pickle
 
 # Core Django, alphabetical
 from django.db import models
-from django.utils import six
-from django.utils.six.moves import cPickle as pickle
 from django.utils.translation import ugettext_lazy as _
 
 __all__ = ("Async",)
@@ -38,7 +37,7 @@ class Async(models.Model):
     @property
     def result(self):
         result = self._result
-        if isinstance(result, six.memoryview):
+        if isinstance(result, memoryview):
             result = str(result)
         return pickle.loads(result)
 
@@ -49,7 +48,7 @@ class Async(models.Model):
     @property
     def error(self):
         error = self._error
-        if isinstance(error, six.memoryview):
+        if isinstance(error, memoryview):
             error = str(error)
         return pickle.loads(error)
 

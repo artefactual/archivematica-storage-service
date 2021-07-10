@@ -1,10 +1,10 @@
 from collections import namedtuple
+from io import StringIO
 import os
 import shutil
 import subprocess
 import tarfile
 
-from six import StringIO
 from unittest import mock
 import pytest
 

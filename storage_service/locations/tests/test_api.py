@@ -1,3 +1,4 @@
+from urllib.parse import urlparse
 import base64
 import json
 import os
@@ -8,7 +9,6 @@ import vcr
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
-from django.utils.six.moves.urllib.parse import urlparse
 
 from locations import models
 from locations.api.sword.views import _parse_name_and_content_urls_from_mets_file
