@@ -6,6 +6,7 @@ on:
     branches:
       - "qa/**"
       - "stable/**"
+      - "dev/drop-py27"
 jobs:
   test:
     name: "Test ${{ matrix.name }}"
@@ -13,13 +14,21 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: "py27"
-            python-version: "2.7"
-            toxenv: "py27"
-            coverage: true
           - name: "py36"
             python-version: "3.6"
             toxenv: "py36"
+            coverage: true
+          - name: "py37"
+            python-version: "3.7"
+            toxenv: "py37"
+            coverage: true
+          - name: "py38"
+            python-version: "3.8"
+            toxenv: "py38"
+            coverage: true
+          - name: "py39"
+            python-version: "3.9"
+            toxenv: "py39"
             coverage: true
           - name: "migrations"
             python-version: "3.6"
