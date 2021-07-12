@@ -90,8 +90,7 @@ ENV FORWARDED_ALLOW_IPS *
 
 RUN set -ex \
 	&& export SS_DB_URL=mysql://ne:ver@min/d \
-	&& ./manage.py collectstatic --noinput --clear \
-	&& ./manage.py compilemessages
+	&& ./manage.py collectstatic --noinput --clear
 
 ENV DJANGO_SETTINGS_MODULE storage_service.settings.production
 

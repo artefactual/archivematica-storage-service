@@ -5,44 +5,42 @@
 #    pip-compile --allow-unsafe --output-file=production.txt production.in
 #
 agentarchives==0.6.0      # via -r base.txt
-bagit==1.7.0              # via -r base.txt
+bagit==1.8.1              # via -r base.txt
 boto3==1.17.112           # via -r base.txt
 botocore==1.20.112        # via -r base.txt, boto3, s3transfer
-brotli==0.5.2             # via -r base.txt
+brotli==1.0.9             # via -r base.txt
 certifi==2021.5.30        # via -r base.txt, requests
 cffi==1.14.6              # via -r base.txt, cryptography
 charset-normalizer==2.0.3  # via -r base.txt, requests
 cryptography==3.4.7       # via -r base.txt, josepy, mozilla-django-oidc, pyopenssl
 debtcollector==2.2.0      # via -r base.txt, oslo.config, oslo.utils, python-keystoneclient
-defusedxml==0.5.0         # via -r base.txt
-dj-database-url==0.4.2    # via -r production.in
-django-auth-ldap==1.3.0   # via -r base.txt
-django-cas-ng==3.6.0      # via -r base.txt
+defusedxml==0.7.1         # via -r base.txt
+dj-database-url==0.5.0    # via -r production.in
+django-auth-ldap==2.4.0   # via -r base.txt
+django-cas-ng==4.2.1      # via -r base.txt
 django-csp==3.7.0         # via -r base.txt
 django-extensions==1.7.9  # via -r base.txt
-django-prometheus==1.0.15  # via -r base.txt
+django-prometheus==2.1.0  # via -r base.txt
 git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git@67d270c65c201606fb86d548493d4b3fd8cc7a76#egg=django-shibboleth-remoteuser  # via -r base.txt
 django-tastypie==0.14.3   # via -r base.txt
-django==1.11.29           # via -r base.txt, django-auth-ldap, django-cas-ng, django-csp, jsonfield, mozilla-django-oidc
+django==2.2.24            # via -r base.txt, django-auth-ldap, django-cas-ng, django-csp, jsonfield, mozilla-django-oidc
 future==0.18.2            # via -r base.txt, metsrw
 gevent==21.1.2            # via -r base.txt
 greenlet==1.1.0           # via -r base.txt, gevent
-gunicorn==19.9.0          # via -r base.txt
+gunicorn==20.1.0          # via -r base.txt
 httplib2==0.19.1          # via -r base.txt, sword2
 idna==3.2                 # via -r base.txt, requests
-importlib-resources==1.5.0  # via -r base.txt
 iso8601==0.1.16           # via -r base.txt, keystoneauth1, oslo.utils
 jmespath==0.10.0          # via -r base.txt, boto3, botocore
 josepy==1.8.0             # via -r base.txt, mozilla-django-oidc
-jsonfield==2.0.1          # via -r base.txt
+jsonfield==3.1.0          # via -r base.txt
 keystoneauth1==4.3.1      # via -r base.txt, python-keystoneclient
-logutils==0.3.4.1         # via -r base.txt
 lxml==4.6.3               # via -r base.txt, metsrw, python-cas, sword2
 metsrw==0.3.17            # via -r base.txt
 mozilla-django-oidc==1.2.4  # via -r base.txt
 msgpack==1.0.2            # via -r base.txt, oslo.serialization
 mysqlclient==1.4.6        # via -r base.txt, agentarchives
-ndg-httpsclient==0.4.2    # via -r base.txt
+ndg-httpsclient==0.5.1    # via -r base.txt
 netaddr==0.8.0            # via -r base.txt, oslo.config, oslo.utils
 netifaces==0.11.0         # via -r base.txt, oslo.utils
 oauthlib==3.1.1           # via -r base.txt, requests-oauthlib
@@ -52,37 +50,36 @@ oslo.i18n==5.0.1          # via -r base.txt, oslo.config, oslo.utils, python-key
 oslo.serialization==4.1.0  # via -r base.txt, python-keystoneclient
 oslo.utils==4.9.2         # via -r base.txt, oslo.serialization, python-keystoneclient
 packaging==21.0           # via -r base.txt, oslo.utils
-pbr==5.6.0                # via -r base.txt, debtcollector, keystoneauth1, os-service-types, oslo.i18n, oslo.serialization, oslo.utils, positional, python-keystoneclient, stevedore
-positional==1.2.1         # via -r base.txt, python-keystoneclient
-prometheus-client==0.7.1  # via -r base.txt, django-prometheus
+pbr==5.6.0                # via -r base.txt, debtcollector, keystoneauth1, os-service-types, oslo.i18n, oslo.serialization, oslo.utils, python-keystoneclient, stevedore
+prometheus-client==0.11.0  # via -r base.txt, django-prometheus
 psycopg2==2.8             # via -r production.in
 pyasn1-modules==0.2.8     # via -r base.txt, python-ldap
-pyasn1==0.4.8             # via -r base.txt, pyasn1-modules, python-ldap
+pyasn1==0.4.8             # via -r base.txt, ndg-httpsclient, pyasn1-modules, python-ldap
 pycparser==2.20           # via -r base.txt, cffi
-pyldap==3.0.0.post1       # via -r base.txt, django-auth-ldap
 pyopenssl==20.0.1         # via -r base.txt, josepy, ndg-httpsclient
 pyparsing==2.4.7          # via -r base.txt, httplib2, oslo.utils, packaging
 python-cas==1.5.0         # via -r base.txt, django-cas-ng
 python-dateutil==2.8.2    # via -r base.txt, botocore, django-tastypie
 python-gnupg==0.4.7       # via -r base.txt
-python-keystoneclient==3.10.0  # via -r base.txt
-python-ldap==3.2.0        # via -r base.txt, pyldap
+python-keystoneclient==4.2.0  # via -r base.txt
+python-ldap==3.3.1        # via -r base.txt, django-auth-ldap
 python-mimeparse==1.6.0   # via -r base.txt, django-tastypie
-python-swiftclient==3.3.0  # via -r base.txt
+python-swiftclient==3.12.0  # via -r base.txt
 pytz==2021.1              # via -r base.txt, django, oslo.serialization, oslo.utils
 pyyaml==5.4.1             # via -r base.txt, oslo.config
-requests-oauthlib==1.2.0  # via -r base.txt
+requests-oauthlib==1.3.0  # via -r base.txt
 requests==2.26.0          # via -r base.txt, agentarchives, keystoneauth1, mozilla-django-oidc, oslo.config, python-cas, python-keystoneclient, python-swiftclient, requests-oauthlib
 rfc3986==1.5.0            # via -r base.txt, oslo.config
 s3transfer==0.4.2         # via -r base.txt, boto3
 six==1.16.0               # via -r base.txt, debtcollector, django-extensions, keystoneauth1, metsrw, mozilla-django-oidc, oslo.i18n, pyopenssl, python-cas, python-dateutil, python-keystoneclient, python-swiftclient
+sqlparse==0.4.1           # via -r base.txt, django
 stevedore==3.3.0          # via -r base.txt, keystoneauth1, oslo.config, python-keystoneclient
 git+https://github.com/swordapp/python-client-sword2.git@59db54c03e4498dd6b001ac4f3a4167aa2fb8987#egg=sword2  # via -r base.txt
 urllib3==1.26.6           # via -r base.txt, botocore, requests
-whitenoise==3.3.0         # via -r base.txt
-wrapt==1.12.1             # via -r base.txt, debtcollector, positional
+whitenoise==5.2.0         # via -r base.txt
+wrapt==1.12.1             # via -r base.txt, debtcollector
 zope.event==4.5.0         # via -r base.txt, gevent
 zope.interface==5.4.0     # via -r base.txt, gevent
 
 # The following packages are considered to be unsafe in a requirements file:
-setuptools==57.2.0        # via -r base.txt, gevent, josepy, zope.event, zope.interface
+setuptools==57.2.0        # via -r base.txt, gevent, gunicorn, josepy, zope.event, zope.interface

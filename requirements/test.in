@@ -1,13 +1,13 @@
 # Test dependencies go here.
 -r base.txt
 
-coverage==4.2
+coverage==5.5
 mock
-pip-tools==5.4.0
-pytest-cov==2.4.0
-pytest-django>=3,<4
-pytest-mock>=1,<2
-pytest-randomly==1.2.3
-pytest>=4,<5
+pip-tools==6.2.0
+pytest-cov==2.12.1
+pytest-django>=4,<5
+pytest-mock>=3,<4
+pytest-randomly==3.8.0
+pytest>=6,<7
 tox
-vcrpy>=1.0.0
+vcrpy>=4
