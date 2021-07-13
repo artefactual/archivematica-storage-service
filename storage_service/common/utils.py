@@ -13,7 +13,6 @@ import subprocess
 import tarfile
 import uuid
 
-import scandir
 from django.core.exceptions import ObjectDoesNotExist
 from django import http
 from django.utils.translation import ugettext as _
@@ -728,7 +727,7 @@ def recalculate_size(rein_aip_internal_path):
     """
     if os.path.isdir(rein_aip_internal_path):
         size = 0
-        for dirpath, ___, filenames in scandir.walk(rein_aip_internal_path):
+        for dirpath, ___, filenames in os.walk(rein_aip_internal_path):
             for filename in filenames:
                 file_path = os.path.join(dirpath, filename)
                 size += os.path.getsize(file_path)

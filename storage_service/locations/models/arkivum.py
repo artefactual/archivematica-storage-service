@@ -15,7 +15,6 @@ from django.utils.translation import ugettext_lazy as _
 # Third party dependencies, alphabetical
 from lxml import etree
 import dateutil.parser
-import scandir
 
 # This project, alphabetical
 from common import utils
@@ -381,7 +380,7 @@ class Arkivum(models.Model):
                     )
                     # Pick a random file and check the locality of it.
                     # WARNING assumes the package is local/not local as a unit.
-                    for dirpath, dirs, files in scandir.walk(package.full_path):
+                    for dirpath, dirs, files in os.walk(package.full_path):
                         if files:
                             file_path = os.path.join(dirpath, files[0])
                             break

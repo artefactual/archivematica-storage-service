@@ -76,7 +76,6 @@ requests-oauthlib==1.2.0  # via -r base.txt
 requests==2.25.1          # via -r base.txt, agentarchives, keystoneauth1, mozilla-django-oidc, oslo.config, python-cas, python-keystoneclient, python-swiftclient, requests-oauthlib
 rfc3986==1.5.0            # via -r base.txt, oslo.config
 s3transfer==0.4.2         # via -r base.txt, boto3
-scandir==1.10.0           # via -r base.txt
 six==1.16.0               # via -r base.txt, debtcollector, django-extensions, keystoneauth1, metsrw, mozilla-django-oidc, oslo.i18n, pyopenssl, python-cas, python-dateutil, python-keystoneclient, python-swiftclient
 stevedore==3.3.0          # via -r base.txt, keystoneauth1, oslo.config, python-keystoneclient
 git+https://github.com/swordapp/python-client-sword2.git@59db54c03e4498dd6b001ac4f3a4167aa2fb8987#egg=sword2  # via -r base.txt

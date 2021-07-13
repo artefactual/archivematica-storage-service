@@ -1,8 +1,8 @@
 import os
+from os import scandir
 import subprocess
 
 import pytest
-from scandir import scandir
 import shutil
 
 from locations.models import Space
@@ -75,7 +75,7 @@ def test_path2browse_dict_object_counting_ignores_read_protected_directories(
     }
 
     # Restrict read access to the "empty" directory.
-    mocker.patch("scandir.scandir", side_effect=_restrict_access_to(tree.join("empty")))
+    mocker.patch("os.scandir", side_effect=_restrict_access_to(tree.join("empty")))
     assert path2browse_dict(str(tree)) == {
         "directories": ["empty", "first", "second"],
         "entries": ["empty", "error.txt", "first", "second", "tree_a.txt"],
@@ -89,7 +89,7 @@ def test_path2browse_dict_object_counting_ignores_read_protected_directories(
     }
 
     # Restrict read access to the "first" directory.
-    mocker.patch("scandir.scandir", side_effect=_restrict_access_to(tree.join("first")))
+    mocker.patch("os.scandir", side_effect=_restrict_access_to(tree.join("first")))
     assert path2browse_dict(str(tree)) == {
         "directories": ["empty", "first", "second"],
         "entries": ["empty", "error.txt", "first", "second", "tree_a.txt"],
@@ -103,9 +103,7 @@ def test_path2browse_dict_object_counting_ignores_read_protected_directories(
     }
 
     # Restrict read access to the "second" directory.
-    mocker.patch(
-        "scandir.scandir", side_effect=_restrict_access_to(tree.join("second"))
-    )
+    mocker.patch("os.scandir", side_effect=_restrict_access_to(tree.join("second")))
     assert path2browse_dict(str(tree)) == {
         "directories": ["empty", "first", "second"],
         "entries": ["empty", "error.txt", "first", "second", "tree_a.txt"],
@@ -120,7 +118,7 @@ def test_path2browse_dict_object_counting_ignores_read_protected_directories(
 
     # Restrict read access to the "third" directory (child of the "second" directory).
     mocker.patch(
-        "scandir.scandir",
+        "os.scandir",
         side_effect=_restrict_access_to(tree.join("second").join("third")),
     )
     assert path2browse_dict(str(tree)) == {

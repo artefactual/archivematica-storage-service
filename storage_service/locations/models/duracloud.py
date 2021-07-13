@@ -12,7 +12,6 @@ from django.utils.translation import ugettext_lazy as _
 # Third party dependencies, alphabetical
 from lxml import etree
 import requests
-import scandir
 
 # This project, alphabetical
 from common import utils
@@ -486,7 +485,7 @@ class Duracloud(models.Model):
             # Both source and destination paths should end with /
             destination_path = os.path.join(destination_path, "")
             # Duracloud does not accept folders, so upload each file individually
-            for path, dirs, files in scandir.walk(source_path):
+            for path, dirs, files in os.walk(source_path):
                 for basename in files:
                     entry = os.path.join(path, basename)
                     dest = entry.replace(source_path, destination_path, 1)

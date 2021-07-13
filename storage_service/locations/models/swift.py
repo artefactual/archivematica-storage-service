@@ -7,7 +7,6 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
-import scandir
 import swiftclient
 
 # This project, alphabetical
@@ -213,7 +212,7 @@ class Swift(models.Model):
             # Both source and destination paths should end with /
             destination_path = os.path.join(destination_path, "")
             # Swift does not accept folders, so upload each file individually
-            for path, dirs, files in scandir.walk(source_path):
+            for path, dirs, files in os.walk(source_path):
                 for basename in files:
                     entry = os.path.join(path, basename)
                     dest = entry.replace(source_path, destination_path, 1)

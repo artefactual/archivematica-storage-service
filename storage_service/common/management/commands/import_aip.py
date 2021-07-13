@@ -56,7 +56,6 @@ import tarfile
 import tempfile
 
 import bagit
-import scandir
 from django.core.management.base import BaseCommand
 from django.db.utils import IntegrityError
 
@@ -181,7 +180,7 @@ def is_compressed(aip_path):
 
 
 def tree(path):
-    for root, _, files in scandir.walk(path):
+    for root, _, files in os.walk(path):
         level = root.replace(path, "").count(os.sep)
         indent = " " * 4 * (level)
         print(header(f"{indent}{os.path.basename(root)}/"))
@@ -290,7 +289,7 @@ def fix_ownership(aip_path, unix_owner):
     passwd_struct = getpwnam(unix_owner)
     am_uid = passwd_struct.pw_uid
     am_gid = passwd_struct.pw_gid
-    for root, dirs, files in scandir.walk(aip_path):
+    for root, dirs, files in os.walk(aip_path):
         os.chown(root, am_uid, am_gid)
         for dir_ in dirs:
             os.chown(os.path.join(root, dir_), am_uid, am_gid)
