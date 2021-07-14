@@ -7,5 +7,8 @@ cd ${__dir}
 env COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build minio mysql archivematica-storage-service
 
 docker-compose run --rm archivematica-storage-service
+__exit=$?
 
 docker-compose down --volumes
+
+exit ${__exit}

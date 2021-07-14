@@ -15,7 +15,6 @@ from __future__ import unicode_literals
 import json
 import shutil
 import os
-import scandir
 
 import pytest
 
@@ -124,7 +123,7 @@ def get_size(path):
     if os.path.isfile(path):
         return os.path.getsize(path)
     size = 0
-    for dirpath, _, filenames in scandir.walk(path):
+    for dirpath, _, filenames in os.walk(path):
         for filename in filenames:
             file_path = os.path.join(dirpath, filename)
             size += os.path.getsize(file_path)
