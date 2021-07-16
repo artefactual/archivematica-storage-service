@@ -5,4 +5,4 @@
 # moving these db related dependencies out of base.txt as they are not needed
 # in all cases (i.e. test.txt doesn't need them, but local and production do)
 dj-database-url==0.4.2
-psycopg2==2.7.1
+psycopg2==2.8

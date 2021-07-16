@@ -6,12 +6,12 @@
 #
 agentarchives==0.6.0      # via -r base.txt
 bagit==1.7.0              # via -r base.txt
-boto3==1.17.109           # via -r base.txt
-botocore==1.20.109        # via -r base.txt, boto3, s3transfer
+boto3==1.17.112           # via -r base.txt
+botocore==1.20.112        # via -r base.txt, boto3, s3transfer
 brotli==0.5.2             # via -r base.txt
 certifi==2021.5.30        # via -r base.txt, requests
-cffi==1.14.6 ; python_version < "3.7"  # via -r base.txt, cryptography
-chardet==4.0.0            # via -r base.txt, requests
+cffi==1.14.6              # via -r base.txt, cryptography
+charset-normalizer==2.0.3  # via -r base.txt, requests
 cryptography==3.4.7       # via -r base.txt, josepy, mozilla-django-oidc, pyopenssl
 debtcollector==2.2.0      # via -r base.txt, oslo.config, oslo.utils, python-keystoneclient
 defusedxml==0.5.0         # via -r base.txt
@@ -29,10 +29,9 @@ gevent==21.1.2            # via -r base.txt
 greenlet==1.1.0           # via -r base.txt, gevent
 gunicorn==19.9.0          # via -r base.txt
 httplib2==0.19.1          # via -r base.txt, sword2
-idna==2.10                # via -r base.txt, requests
-importlib-metadata==4.6.1  # via -r base.txt, importlib-resources, oslo.config, stevedore
-importlib-resources==1.5.0  # via -r base.txt, netaddr
-iso8601==0.1.14           # via -r base.txt, keystoneauth1, oslo.utils
+idna==3.2                 # via -r base.txt, requests
+importlib-resources==1.5.0  # via -r base.txt
+iso8601==0.1.16           # via -r base.txt, keystoneauth1, oslo.utils
 jmespath==0.10.0          # via -r base.txt, boto3, botocore
 josepy==1.8.0             # via -r base.txt, mozilla-django-oidc
 jsonfield==2.0.1          # via -r base.txt
@@ -48,7 +47,7 @@ netaddr==0.8.0            # via -r base.txt, oslo.config, oslo.utils
 netifaces==0.11.0         # via -r base.txt, oslo.utils
 oauthlib==3.1.1           # via -r base.txt, requests-oauthlib
 os-service-types==1.7.0   # via -r base.txt, keystoneauth1
-oslo.config==8.7.0        # via -r base.txt, python-keystoneclient
+oslo.config==8.7.1        # via -r base.txt, python-keystoneclient
 oslo.i18n==5.0.1          # via -r base.txt, oslo.config, oslo.utils, python-keystoneclient
 oslo.serialization==4.1.0  # via -r base.txt, python-keystoneclient
 oslo.utils==4.9.2         # via -r base.txt, oslo.serialization, python-keystoneclient
@@ -64,7 +63,7 @@ pyldap==3.0.0.post1       # via -r base.txt, django-auth-ldap
 pyopenssl==20.0.1         # via -r base.txt, josepy, ndg-httpsclient
 pyparsing==2.4.7          # via -r base.txt, httplib2, oslo.utils, packaging
 python-cas==1.5.0         # via -r base.txt, django-cas-ng
-python-dateutil==2.8.1    # via -r base.txt, botocore, django-tastypie
+python-dateutil==2.8.2    # via -r base.txt, botocore, django-tastypie
 python-gnupg==0.4.7       # via -r base.txt
 python-keystoneclient==3.10.0  # via -r base.txt
 python-ldap==3.2.0        # via -r base.txt, pyldap
@@ -73,19 +72,17 @@ python-swiftclient==3.3.0  # via -r base.txt
 pytz==2021.1              # via -r base.txt, django, oslo.serialization, oslo.utils
 pyyaml==5.4.1             # via -r base.txt, oslo.config
 requests-oauthlib==1.2.0  # via -r base.txt
-requests==2.25.1          # via -r base.txt, agentarchives, keystoneauth1, mozilla-django-oidc, oslo.config, python-cas, python-keystoneclient, python-swiftclient, requests-oauthlib
+requests==2.26.0          # via -r base.txt, agentarchives, keystoneauth1, mozilla-django-oidc, oslo.config, python-cas, python-keystoneclient, python-swiftclient, requests-oauthlib
 rfc3986==1.5.0            # via -r base.txt, oslo.config
 s3transfer==0.4.2         # via -r base.txt, boto3
 six==1.16.0               # via -r base.txt, debtcollector, django-extensions, keystoneauth1, metsrw, mozilla-django-oidc, oslo.i18n, pyopenssl, python-cas, python-dateutil, python-keystoneclient, python-swiftclient
 stevedore==3.3.0          # via -r base.txt, keystoneauth1, oslo.config, python-keystoneclient
 git+https://github.com/swordapp/python-client-sword2.git@59db54c03e4498dd6b001ac4f3a4167aa2fb8987#egg=sword2  # via -r base.txt
-typing-extensions==3.10.0.0  # via -r base.txt, importlib-metadata
 urllib3==1.26.6           # via -r base.txt, botocore, requests
 whitenoise==3.3.0         # via -r base.txt
 wrapt==1.12.1             # via -r base.txt, debtcollector, positional
-zipp==3.5.0               # via -r base.txt, importlib-metadata, importlib-resources
 zope.event==4.5.0         # via -r base.txt, gevent
 zope.interface==5.4.0     # via -r base.txt, gevent
 
 # The following packages are considered to be unsafe in a requirements file:
-setuptools==57.1.0        # via -r base.txt, gevent, josepy, zope.event, zope.interface
+setuptools==57.2.0        # via -r base.txt, gevent, josepy, zope.event, zope.interface
