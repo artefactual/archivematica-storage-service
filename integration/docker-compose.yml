@@ -6,6 +6,8 @@ services:
     build:
       context: "../"
       dockerfile: "Dockerfile"
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION:-}
     entrypoint: ""
     working_dir: "/src"
     command: ["./integration/wait-for-it.sh", "mysql:3306", "--timeout=30", "--", "pytest", "storage_service", "integration"]

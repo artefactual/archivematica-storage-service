@@ -9,38 +9,33 @@ on:
       - "dev/drop-py27"
 jobs:
   test:
-    name: "Test ${{ matrix.name }}"
+    name: "Test ${{ matrix.tox_section }} on ${{ matrix.python_version_in.docker }}"
     runs-on: "ubuntu-18.04"
     strategy:
+      fail-fast: false
       matrix:
+        tox_section:
+          - "storage-service"
+          - "migrations"
+        python_version_in:
+          - docker: "3.6"
+            tox: "py36"
+          - docker: "3.7"
+            tox: "py37"
+          - docker: "3.8"
+            tox: "py38"
+          - docker: "3.9"
+            tox: "py39"
         include:
-          - name: "py36"
-            python-version: "3.6"
-            toxenv: "py36"
+          - tox_section: "storage-service"
             coverage: true
-          - name: "py37"
-            python-version: "3.7"
-            toxenv: "py37"
-            coverage: true
-          - name: "py38"
-            python-version: "3.8"
-            toxenv: "py38"
-            coverage: true
-          - name: "py39"
-            python-version: "3.9"
-            toxenv: "py39"
-            coverage: true
-          - name: "migrations"
-            python-version: "3.6"
-            toxenv: "migrations"
-            coverage: false
     steps:
       - name: "Check out repository"
         uses: "actions/checkout@v2"
-      - name: "Set up Python ${{ matrix.python-version }}"
+      - name: "Set up Python ${{ matrix.python_version_in.docker }}"
         uses: "actions/setup-python@v2"
         with:
-          python-version: "${{ matrix.python-version }}"
+          python-version: "${{ matrix.python_version_in.docker }}"
       - name: "Install OS packages"
         run: |
           sudo apt-get --quiet update
@@ -69,14 +64,14 @@ jobs:
       - name: "Run tox"
         if: "! matrix.coverage"
         env:
-          TOXENV: ${{ matrix.toxenv }}
+          TOXENV: ${{ matrix.python_version_in.tox }}-${{ matrix.tox_section }}
           PYTEST_ADDOPTS: -vv
         run: |
           tox
       - name: "Run tox with coverage"
         if: "matrix.coverage"
         env:
-          TOXENV: ${{ matrix.toxenv }}
+          TOXENV: ${{ matrix.python_version_in.tox }}-${{ matrix.tox_section }}
           PYTEST_ADDOPTS: -vv --cov storage_service --cov-config=.coveragerc --cov-report xml:coverage.xml
         run: |
           tox
@@ -87,11 +82,19 @@ jobs:
           files: ./coverage.xml
           fail_ci_if_error: true
           verbose: true
-          name: ${{ matrix.name }}
-          flags: ${{ matrix.name }}
+          name: ${{ matrix.tox_section }}-${{ matrix.python_version_in.docker }}
+          flags: ${{ matrix.python_version_in.tox }}
   integration:
-    name: "Integration"
+    name: "Integration on ${{ matrix.python_version }}"
     runs-on: "ubuntu-18.04"
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version:
+          - "3.6"
+          - "3.7"
+          - "3.8"
+          - "3.9"
     steps:
       - name: "Check out repository"
         uses: "actions/checkout@v2"
@@ -104,6 +107,7 @@ jobs:
           COMPOSE_DOCKER_CLI_BUILD: 1
           DOCKER_BUILDKIT: 1
           PYTEST_ADDOPTS: -vv
+          PYTHON_VERSION: ${{ matrix.python_version }}
   linting:
     name: "Lint"
     runs-on: "ubuntu-18.04"
