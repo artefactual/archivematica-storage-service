@@ -309,6 +309,7 @@ class Package(models.Model):
         else:  # LOCKSS AU number specified, but not a LOCKSS package
             LOGGER.warning("Trying to download LOCKSS chunk for a non-LOCKSS package.")
             path = full_path
+        LOGGER.debug("Got download path {} for package {}".format(path, self.uuid))
         return path
 
     def get_local_path(self):
@@ -351,22 +352,18 @@ class Package(models.Model):
         ss_internal = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
         temp_dir = tempfile.mkdtemp(dir=ss_internal.full_path)
         int_path = os.path.join(temp_dir, self.current_path)
+        relative_path = int_path.replace(ss_internal.full_path, "", 1).lstrip("/")
 
         # If encrypted, this will decrypt.
         self.current_location.space.move_to_storage_service(
             source_path=os.path.join(
                 self.current_location.relative_path, self.current_path
             ),
-            destination_path=self.current_path,
+            destination_path=relative_path,
             destination_space=ss_internal.space,
         )
 
-        relative_path = int_path.replace(ss_internal.space.path, "", 1).lstrip("/")
-
-        ss_internal.space.move_from_storage_service(
-            source_path=self.current_path, destination_path=relative_path, package=self
-        )
-
+        self.current_location = ss_internal
         self.local_path_location = ss_internal
         self.local_path = int_path
         self.local_tempdirs.append(temp_dir)
