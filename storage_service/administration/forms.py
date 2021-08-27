@@ -258,6 +258,118 @@ class UserCreationForm(auth.forms.UserCreationForm):
                 self.add_error("password1", error)
 
 
+SYSTEM_USER_PERMISSIONS = [
+    #   'admin.add_logentry',
+    #   'admin.change_logentry',
+    #   'admin.delete_logentry',
+    "administration.add_settings",
+    "administration.change_settings",
+    "administration.delete_settings",
+    #    'auth.add_group',
+    #    'auth.add_permission',
+    #    'auth.add_user',
+    #    'auth.change_group',
+    #    'auth.change_permission',
+    #    'auth.change_user',
+    #    'auth.delete_group',
+    #    'auth.delete_permission',
+    #    'auth.delete_user',
+    #    'contenttypes.add_contenttype',
+    #    'contenttypes.change_contenttype',
+    #    'contenttypes.delete_contenttype',
+    "locations.add_arkivum",
+    "locations.add_async",
+    "locations.add_callback",
+    "locations.add_dataverse",
+    "locations.add_dspace",
+    "locations.add_dspacerest",
+    "locations.add_duracloud",
+    "locations.add_event",
+    "locations.add_fedora",
+    "locations.add_file",
+    "locations.add_fixitylog",
+    "locations.add_gpg",
+    "locations.add_localfilesystem",
+    "locations.add_location",
+    "locations.add_locationpipeline",
+    "locations.add_lockssomatic",
+    "locations.add_nfs",
+    "locations.add_offlinereplicastaging",
+    "locations.add_package",
+    "locations.add_packagedownloadtask",
+    "locations.add_packagedownloadtaskfile",
+    "locations.add_pipeline",
+    "locations.add_pipelinelocalfs",
+    "locations.add_s3",
+    "locations.add_space",
+    "locations.add_swift",
+    "locations.change_arkivum",
+    "locations.change_async",
+    "locations.change_callback",
+    "locations.change_dataverse",
+    "locations.change_dspace",
+    "locations.change_dspacerest",
+    "locations.change_duracloud",
+    "locations.change_event",
+    "locations.change_fedora",
+    "locations.change_file",
+    "locations.change_fixitylog",
+    "locations.change_gpg",
+    "locations.change_localfilesystem",
+    "locations.change_location",
+    "locations.change_locationpipeline",
+    "locations.change_lockssomatic",
+    "locations.change_nfs",
+    "locations.change_offlinereplicastaging",
+    "locations.change_package",
+    "locations.change_packagedownloadtask",
+    "locations.change_packagedownloadtaskfile",
+    "locations.change_pipeline",
+    "locations.change_pipelinelocalfs",
+    "locations.change_s3",
+    "locations.change_space",
+    "locations.change_swift",
+    "locations.delete_arkivum",
+    "locations.delete_async",
+    "locations.delete_callback",
+    "locations.delete_dataverse",
+    "locations.delete_dspace",
+    "locations.delete_dspacerest",
+    "locations.delete_duracloud",
+    "locations.delete_event",
+    "locations.delete_fedora",
+    "locations.delete_file",
+    "locations.delete_fixitylog",
+    "locations.delete_gpg",
+    "locations.delete_localfilesystem",
+    "locations.delete_location",
+    "locations.delete_locationpipeline",
+    "locations.delete_lockssomatic",
+    "locations.delete_nfs",
+    "locations.delete_offlinereplicastaging",
+    "locations.delete_package",
+    "locations.delete_packagedownloadtask",
+    "locations.delete_packagedownloadtaskfile",
+    "locations.delete_pipeline",
+    "locations.delete_pipelinelocalfs",
+    "locations.delete_s3",
+    "locations.delete_space",
+    "locations.delete_swift",
+    #    'sessions.add_session',
+    #    'sessions.change_session',
+    #    'sessions.delete_session',
+    #    'sites.add_site',
+    #    'sites.change_site',
+    #    'sites.delete_site',
+    #    'tastypie.add_apiaccess',
+    #    'tastypie.add_apikey',
+    #    'tastypie.change_apiaccess',
+    #    'tastypie.change_apikey',
+    #    'tastypie.delete_apiaccess',
+    #    'tastypie.delete_apikey',
+]
+
+
 class UserChangeForm(auth.forms.UserChangeForm):
     """Modifies an existing user. Inherits from Django's UserChangeForm."""
 
@@ -269,7 +381,15 @@ class UserChangeForm(auth.forms.UserChangeForm):
 
     class Meta:
         model = auth.get_user_model()
-        fields = ("username", "first_name", "last_name", "email", "is_superuser", "is_system_user", "can_approve_package_deletion")
+        fields = (
+            "username",
+            "first_name",
+            "last_name",
+            "email",
+            "is_superuser",
+            "is_system_user",
+            "can_approve_package_deletion",
+        )
 
     def __init__(self, *args, **kwargs):
         current_user = kwargs.pop("current_user", None)
@@ -285,7 +405,10 @@ class UserChangeForm(auth.forms.UserChangeForm):
             self.fields["is_superuser"].disabled = True
         del self.fields["password"]
 
-        self.has_approve_package_deletion_permission()
+        self.fields["is_system_user"].initial = self.has_system_user_permissions()
+        self.fields[
+            "can_approve_package_deletion"
+        ].initial = self.has_approve_package_deletion_permission()
 
     def clean(self):
         """Validate the form to protect against potential user errors."""
@@ -301,14 +424,21 @@ class UserChangeForm(auth.forms.UserChangeForm):
         return self.cleaned_data
 
     def save(self, commit=True):
-        # self.cleaned_data["is_system_user"]
-        # self.cleaned_data["can_approve_package_deletion"]
+        if self.cleaned_data["is_system_user"]:
+            self.user_being_edited.user_permissions.add(*SYSTEM_USER_PERMISSIONS)
+        else:
+            self.user_being_edited.user_permissions.remove(*SYSTEM_USER_PERMISSIONS)
+        if self.cleaned_data["can_approve_package_deletion"]:
+            self.user_being_edited.user_permissions.add("locations.add_package")
+        else:
+            self.user_being_edited.user_permissions.remove("locations.add_package")
         super().save(commit)
 
     def has_approve_package_deletion_permission(self):
-        raise Exception(self.user_being_edited)
+        return self.user_being_edited.has_perm("locations.add_package")
 
-
+    def has_system_user_permissions(self):
+        return self.user_being_edited.has_perms(SYSTEM_USER_PERMISSIONS)
 
 
 # ######################### KEYS ##########################
