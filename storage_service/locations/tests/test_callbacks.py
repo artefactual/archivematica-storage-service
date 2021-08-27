@@ -16,7 +16,10 @@ class TestCallbacksViews(TestCase):
     def setUpClass(cls):
         super(TestCallbacksViews, cls).setUpClass()
         User.objects.create_user(
-            username="admin", password="admin", email="admin@example.com"
+            username="admin",
+            password="admin",
+            email="admin@example.com",
+            is_superuser=True,
         )
 
     def setUp(self):

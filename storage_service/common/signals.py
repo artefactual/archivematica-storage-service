@@ -6,39 +6,59 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.dispatch import receiver
+from django_auth_ldap.backend import populate_user
 from django_cas_ng.signals import cas_user_authenticated
+
+from administration import roles
+
 
 LOGGER = logging.getLogger(__name__)
 
 
-def _cas_user_is_administrator(cas_attributes):
-    """Determine if new user is an administrator from CAS attributes.
+def _cas_user_role(cas_attributes):
+    """Determine the role of the user from CAS attributes.
 
     :param cas_attributes: Attributes dict returned by CAS server.
 
-    :returns: True if expected value is found, otherwise False.
+    :returns: The role of the user.
     """
-    ADMIN_ATTRIBUTE = settings.CAS_ADMIN_ATTRIBUTE
-    ADMIN_ATTRIBUTE_VALUE = settings.CAS_ADMIN_ATTRIBUTE_VALUE
-    if (ADMIN_ATTRIBUTE is None) or (ADMIN_ATTRIBUTE_VALUE is None):
-        LOGGER.error(
-            "Error determining if new user is an administrator. Please "
-            "be sure that CAS settings AUTH_CAS_ADMIN_ATTRIBUTE and "
-            "AUTH_CAS_ADMIN_ATTRIBUTE_VALUE are properly set."
-        )
-        return False
+    CAS_ROLE_ATTRIBUTES = [
+        (
+            roles.USER_ROLE_ADMIN,
+            "CAS_ADMIN_ATTRIBUTE",
+            "CAS_ADMIN_ATTRIBUTE_VALUE",
+        ),
+        (
+            roles.USER_ROLE_MANAGER,
+            "CAS_MANAGER_ATTRIBUTE",
+            "CAS_MANAGER_ATTRIBUTE_VALUE",
+        ),
+        (
+            roles.USER_ROLE_REVIEWER,
+            "CAS_REVIEWER_ATTRIBUTE",
+            "CAS_REVIEWER_ATTRIBUTE_VALUE",
+        ),
+    ]
 
-    # CAS attributes are a dictionary. The value for a given key can be
-    # a string or a list, so our approach for checking for the expected
-    # value takes that into account.
-    ATTRIBUTE_TO_CHECK = cas_attributes.get(ADMIN_ATTRIBUTE)
-    if isinstance(ATTRIBUTE_TO_CHECK, list):
-        if ADMIN_ATTRIBUTE_VALUE in ATTRIBUTE_TO_CHECK:
-            return True
-    elif isinstance(ATTRIBUTE_TO_CHECK, str):
-        if ATTRIBUTE_TO_CHECK == ADMIN_ATTRIBUTE_VALUE:
-            return True
-    return False
+    for role, role_attr, role_attr_val in CAS_ROLE_ATTRIBUTES:
+        role_attr = getattr(settings, role_attr, None)
+        role_attr_val = getattr(settings, role_attr_val, None)
+        if not all(
+            (
+                role_attr,
+                role_attr_val,
+            )
+        ):
+            continue
+        cas_attr = cas_attributes.get(role_attr)
+        if not cas_attr:
+            continue
+        if isinstance(cas_attr, str):
+            cas_attr = [cas_attr]
+        if role_attr_val in cas_attr:
+            return role
+
+    return roles.USER_ROLE_READER
 
 
 @receiver(cas_user_authenticated)
@@ -71,10 +91,38 @@ def cas_user_authenticated_callback(sender, **kwargs):
         return
 
     User = get_user_model()
-    is_administrator = _cas_user_is_administrator(attributes)
+    role = _cas_user_role(attributes)
+
+    role = roles.promoted_role(role)
 
     with transaction.atomic():
         user = User.objects.select_for_update().get(username=username)
-        if user.is_superuser != is_administrator:
-            user.is_superuser = is_administrator
-            user.save()
+        user.set_role(role)
+
+
+@receiver(populate_user)
+def ldap_populate_user_profile(sender, user=None, ldap_user=None, **kwargs):
+    """Populate the user role after authentication."""
+    if not settings.LDAP_AUTHENTICATION:
+        return
+
+    LOGGER.debug("django_auth_ldap.backend.populate_user signal received")
+
+    if user is None or ldap_user is None:
+        return
+
+    if user.is_superuser:
+        return
+
+    role = roles.USER_ROLE_READER
+    if settings.AUTH_LDAP_ADMIN_GROUP in ldap_user.group_names:
+        role = roles.USER_ROLE_ADMIN
+    elif settings.AUTH_LDAP_MANAGER_GROUP in ldap_user.group_names:
+        role = roles.USER_ROLE_MANAGER
+    elif settings.AUTH_LDAP_REVIEWER_GROUP in ldap_user.group_names:
+        role = roles.USER_ROLE_REVIEWER
+
+    role = roles.promoted_role(role)
+
+    LOGGER.debug("Setting role %s for user %s", role, user.username)
+    user.set_role(role)

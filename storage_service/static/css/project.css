@@ -11,7 +11,8 @@ h2 {
   margin-top: 1em;
 }
 
-p {
+p,
+form > .helptext {
   font-size:0.875em;
 }
 

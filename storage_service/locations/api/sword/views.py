@@ -133,6 +133,14 @@ def collection(request, location):
         return response
 
     elif request.method == "POST":
+
+        if not request.user.has_perms(
+            ["locations.add_package", "locations.change_package"]
+        ):
+            return helpers.sword_error_response(
+                request, 403, _("Permission denied: contact an administrator.")
+            )
+
         # has the In-Progress header been set?
         if "HTTP_IN_PROGRESS" in request.META:
             # process creation request, if criteria met
@@ -437,6 +445,13 @@ def deposit_edit(request, deposit):
     Example DELETE of deposit:
       curl -v -XDELETE http://127.0.0.1:8000/api/v1/file/149cc29d-6472-4bcf-bee8-f8223bf60580/sword/
     """
+    if not request.user.has_perms(
+        ["locations.add_package", "locations.change_package"]
+    ):
+        return helpers.sword_error_response(
+            request, 403, _("Permission denied: contact an administrator.")
+        )
+
     if isinstance(deposit, six.string_types):
         try:
             deposit = models.Package.objects.get(uuid=deposit)
@@ -598,7 +613,15 @@ def deposit_media(request, deposit):
     if request.method == "GET":
         # TODO should this be returned in SWORD XML?
         return HttpResponse(str(os.listdir(deposit.full_path)))
-    elif request.method == "PUT":
+
+    if not request.user.has_perms(
+        ["locations.add_package", "locations.change_package"]
+    ):
+        return helpers.sword_error_response(
+            request, 403, _("Permission denied: contact an administrator.")
+        )
+
+    if request.method == "PUT":
         # replace a file in the deposit
         return _handle_adding_to_or_replacing_file_in_deposit(
             request, deposit, replace_file=True

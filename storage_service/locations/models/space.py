@@ -214,7 +214,7 @@ class Space(models.Model):
         app_label = "locations"
 
     def __str__(self):
-        return six.text_type("{uuid}: {path} ({access_protocol}").format(
+        return six.text_type("{uuid}: {path} ({access_protocol})").format(
             uuid=self.uuid,
             access_protocol=self.get_access_protocol_display(),
             path=self.path,

@@ -17,16 +17,25 @@
     <dt>Actions</dt>
     <dd>
       <ul>
-        <li><a href="{% url 'locations:location_create' space.uuid %}">Create Location here</a></li>
-        <li><a href="{% url 'locations:space_edit' space.uuid %}">Edit Space</a></li>
-        <li><a href="{% url 'locations:space_delete' space.uuid %}">Delete Space</a></li>
+        {% if perms.locations.add_location %}
+          <li><a href="{% url 'locations:location_create' space.uuid %}">Create Location here</a></li>
+        {% endif %}
+        {% if perms.locations.change_space %}
+          <li><a href="{% url 'locations:space_edit' space.uuid %}">Edit Space</a></li>
+        {% endif %}
+        {% if perms.locations.delete_space %}
+          <li><a href="{% url 'locations:space_delete' space.uuid %}">Delete Space</a></li>
+        {% endif %}
       </ul>
     </dd>
   </dl>
 </div>
 
 <h2>Locations</h2>
-<p><a href="{%url 'locations:location_create' space.uuid %}">Create new location here</a></p>
+
+{% if perms.locations.add_location %}
+  <p><a href="{%url 'locations:location_create' space.uuid %}">Create new location here</a></p>
+{% endif %}
 
 {% if locations %}
   {% include "snippets/locations_table.html" with no_space=True %}

@@ -6,6 +6,8 @@ from django.utils.http import urlquote
 from re import compile
 from shibboleth.middleware import ShibbolethRemoteUserMiddleware
 
+from administration import roles
+
 
 # Login required code from https://gist.github.com/ryanwitt/130583
 # With modifications from comments on
@@ -78,10 +80,20 @@ class CustomShibbolethRemoteUserMiddleware(ShibbolethRemoteUserMiddleware):
         Customize the user based on shib_meta mappings (anything that's not
         already covered by the attribute map)
         """
-        # Make the user an administrator if they are in the designated admin group
         entitlements = shib_meta["entitlement"].split(";")
-        user.is_superuser = settings.SHIBBOLETH_ADMIN_ENTITLEMENT in entitlements
-        user.save()
+
+        # Assign the role that corresponds to the entitlement.
+        role = roles.USER_ROLE_READER
+        if settings.SHIBBOLETH_ADMIN_ENTITLEMENT in entitlements:
+            role = roles.USER_ROLE_ADMIN
+        elif settings.SHIBBOLETH_MANAGER_ENTITLEMENT in entitlements:
+            role = roles.USER_ROLE_MANAGER
+        elif settings.SHIBBOLETH_REVIEWER_ENTITLEMENT in entitlements:
+            role = roles.USER_ROLE_REVIEWER
+
+        role = roles.promoted_role(role)
+
+        user.set_role(role)
 
 
 class ForceDefaultLanguageMiddleware(MiddlewareMixin):

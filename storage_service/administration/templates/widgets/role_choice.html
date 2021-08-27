@@ -1,0 +1,11 @@
+{% load i18n %}
+
+{% include "django/forms/widgets/multiple_input.html" %}
+
+{% if widget.attrs.disabled %}
+  {% if is_admin %}
+    <p>{% trans "As an administrator, you can only change your user role from another administrator account." %}</p>
+  {% else %}
+    <p>{% trans "Please ask an administrator to change your user role." %}</p>
+  {% endif %}
+{% endif %}

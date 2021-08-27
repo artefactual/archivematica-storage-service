@@ -7,10 +7,14 @@
 
 {% include 'snippets/package_description.html' %}
 
-<p>
-  <a href="{% url 'locations:aip_recover_request' %}">{% trans "View recovery requests" %}</a>
-  | <a href="{% url 'locations:package_delete_request' %}">{% trans "View delete requests" %}</a>
-</p>
+<ul>
+  {% if perms.locations.change_package %}
+    <li><a href="{% url 'locations:aip_recover_request' %}">{% trans "View recovery requests" %}</a></li>
+  {% endif %}
+  {% if perms.locations.approve_package_deletion %}
+    <li><a href="{% url 'locations:package_delete_request' %}">{% trans "View delete requests" %}</a></li>
+  {% endif %}
+</ul>
 
 {% if package_count %}
   {% include "snippets/packages_table.html" %}

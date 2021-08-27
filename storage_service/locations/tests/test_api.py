@@ -12,6 +12,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils.six.moves.urllib.parse import urlparse
 
+from administration import roles
 from locations import models
 from locations.api.sword.views import _parse_name_and_content_urls_from_mets_file
 from . import TempDirMixin
@@ -107,11 +108,20 @@ class TestLocationAPI(TestCase):
     fixtures = ["base.json", "pipelines.json", "package.json"]
 
     def setUp(self):
-        user = User.objects.get(username="test")
-        user.set_password("test")
+        self.user = User.objects.get(username="test")
+        self.user.set_password("test")
         self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
             b"test:test"
         ).decode("utf8")
+
+    def as_reader(self):
+        self.user.set_role(roles.USER_ROLE_READER)
+
+    def as_reviewer(self):
+        self.user.set_role(roles.USER_ROLE_REVIEWER)
+
+    def as_manager(self):
+        self.user.set_role(roles.USER_ROLE_MANAGER)
 
     def test_requires_auth(self):
         del self.client.defaults["HTTP_AUTHORIZATION"]
@@ -142,6 +152,21 @@ class TestLocationAPI(TestCase):
         )
         assert response.status_code == 200
         assert response.content
+
+    def test_non_admins_cannot_create_location(self):
+        self.as_reader()
+        data = {
+            "space": "/api/v2/space/7d20c992-bc92-4f92-a794-7161ff2cc08b/",
+            "description": "automated workflow",
+            "relative_path": "automated-workflow/foo/bar",
+            "purpose": "TS",
+            "pipeline": ["/api/v2/pipeline/b25f6b71-3ebf-4fcc-823c-1feb0a2553dd/"],
+        }
+
+        response = self.client.post(
+            "/api/v2/location/", data=json.dumps(data), content_type="application/json"
+        )
+        assert response.status_code == 401
 
     def test_create_location(self):
         space = models.Space.objects.get(uuid="7d20c992-bc92-4f92-a794-7161ff2cc08b")
@@ -340,11 +365,20 @@ class TestPackageAPI(TempDirMixin, TestCase):
         pipeline = models.Pipeline.objects.first()
         models.Package.objects.all().update(origin_pipeline=pipeline)
 
-        user = User.objects.get(username="test")
-        user.set_password("test")
+        self.user = User.objects.get(username="test")
+        self.user.set_password("test")
         self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
             b"test:test"
         ).decode("utf8")
+
+    def as_reader(self):
+        self.user.set_role(roles.USER_ROLE_READER)
+
+    def as_reviewer(self):
+        self.user.set_role(roles.USER_ROLE_REVIEWER)
+
+    def as_manager(self):
+        self.user.set_role(roles.USER_ROLE_MANAGER)
 
     def test_requires_auth(self):
         del self.client.defaults["HTTP_AUTHORIZATION"]
@@ -360,25 +394,81 @@ class TestPackageAPI(TempDirMixin, TestCase):
             assert response.status_code == 401
 
     def test_non_admins_can_read_list(self):
-        user = User.objects.get(username="nonadmin")
-        user.set_password("test")
-        self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
-            b"nonadmin:test"
-        ).decode("utf8")
+        self.as_reader()
         response = self.client.get("/api/v2/file/")
         assert response.status_code == 200
         response_content = json.loads(response.content)
         assert len(response_content["objects"]) != 0
 
     def test_non_admins_can_read_detail(self):
-        user = User.objects.get(username="nonadmin")
-        user.set_password("test")
-        self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
-            b"nonadmin:test"
-        ).decode("utf8")
+        self.as_reader()
         response = self.client.get("/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/")
         assert response.status_code == 200
         assert response.content
+
+    def test_non_admins_cant_reindex(self):
+        self.as_reader()
+        response = self.client.post(
+            "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/reindex/"
+        )
+        assert response.status_code == 401
+
+    def test_non_admins_cant_reingest(self):
+        self.as_reader()
+        data = {
+            "pipeline": "0cbf947a-1b19-4a01-a575-454078768fcd",
+            "reingest_type": "FULL",
+        }
+        response = self.client.post(
+            "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/reingest/",
+            data=json.dumps(data),
+            content_type="application/json",
+        )
+        assert response.status_code == 401
+
+    def test_non_admins_cant_move(self):
+        self.as_reader()
+        data = {
+            "location_uuid": "7d20c992-bc92-4f92-a794-7161ff2cc08b",
+        }
+        response = self.client.post(
+            "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/move/",
+            data=json.dumps(data),
+            content_type="application/json",
+        )
+        assert response.status_code == 401
+
+    def test_non_admins_cant_add_file_to_package(self):
+        self.as_reader()
+        data = [
+            {
+                "relative_path": "empty-transfer-79245866-ca80-4f84-b904-a02b3e0ab621/1.txt",
+                "fileuuid": "7bffcce7-63f5-4b2e-af57-d266bfa2e3eb",
+                "accessionid": "",
+                "sipuuid": "79245866-ca80-4f84-b904-a02b3e0ab621",
+                "origin": "36398145-6e49-4b5b-af02-209b127f2726",
+            },
+            {
+                "relative_path": "empty-transfer-79245866-ca80-4f84-b904-a02b3e0ab621/2.txt",
+                "fileuuid": "152be912-819f-49c4-968f-d5ce959c1cb1",
+                "accessionid": "",
+                "sipuuid": "79245866-ca80-4f84-b904-a02b3e0ab621",
+                "origin": "36398145-6e49-4b5b-af02-209b127f2726",
+            },
+        ]
+        response = self.client.put(
+            "/api/v2/file/79245866-ca80-4f84-b904-a02b3e0ab621/contents/",
+            data=json.dumps(data),
+            content_type="application/json",
+        )
+        assert response.status_code == 401
+
+    def test_non_admins_cant_delete_file_from_package(self):
+        self.as_reader()
+        response = self.client.delete(
+            "/api/v2/file/79245866-ca80-4f84-b904-a02b3e0ab621/contents/",
+        )
+        assert response.status_code == 401
 
     def test_file_data_returns_metadata_given_relative_path(self):
         path = "test_sip/objects/file.txt"
@@ -704,24 +794,30 @@ class TestPipelineAPI(TestCase):
     fixtures = ["base.json"]
 
     def setUp(self):
-        user = User.objects.get(username="test")
-        user.set_password("test")
+        self.user = User.objects.get(username="test")
+        self.user.set_password("test")
         self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
             b"test:test"
         ).decode("utf8")
 
+    def as_reader(self):
+        self.user.set_role(roles.USER_ROLE_READER)
+
+    def as_reviewer(self):
+        self.user.set_role(roles.USER_ROLE_REVIEWER)
+
+    def as_manager(self):
+        self.user.set_role(roles.USER_ROLE_MANAGER)
+
     def test_non_admins_can_read_list(self):
-        user = User.objects.get(username="nonadmin")
-        user.set_password("test")
-        self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
-            b"nonadmin:test"
-        ).decode("utf8")
+        self.as_reader()
         response = self.client.get("/api/v2/pipeline/")
         assert response.status_code == 200
         response_content = json.loads(response.content)
         assert len(response_content["objects"]) != 0
 
     def test_non_admins_can_read_detail(self):
+        self.as_reader()
         user = User.objects.get(username="nonadmin")
         user.set_password("test")
         self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
