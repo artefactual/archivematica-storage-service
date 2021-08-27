@@ -261,6 +261,16 @@ class UserCreationForm(auth.forms.UserCreationForm):
 class UserChangeForm(auth.forms.UserChangeForm):
     """Modifies an existing user. Inherits from Django's UserChangeForm."""
 
+    is_system_user = forms.BooleanField(required=False)
+    can_approve_package_deletion = forms.BooleanField(required=False)
+
+    # todo: populate state
+    # todo: capture state and apply changes
+
+    class Meta:
+        model = auth.get_user_model()
+        fields = ("username", "first_name", "last_name", "email", "is_superuser", "is_system_user", "can_approve_package_deletion")
+
     def __init__(self, *args, **kwargs):
         current_user = kwargs.pop("current_user", None)
         self.user_being_edited = kwargs["instance"]
@@ -275,6 +285,8 @@ class UserChangeForm(auth.forms.UserChangeForm):
             self.fields["is_superuser"].disabled = True
         del self.fields["password"]
 
+        self.has_approve_package_deletion_permission()
+
     def clean(self):
         """Validate the form to protect against potential user errors."""
         if self.superusers.count() > 1:
@@ -288,9 +300,15 @@ class UserChangeForm(auth.forms.UserChangeForm):
             pass
         return self.cleaned_data
 
-    class Meta:
-        model = auth.get_user_model()
-        fields = ("username", "first_name", "last_name", "email", "is_superuser")
+    def save(self, commit=True):
+        # self.cleaned_data["is_system_user"]
+        # self.cleaned_data["can_approve_package_deletion"]
+        super().save(commit)
+
+    def has_approve_package_deletion_permission(self):
+        raise Exception(self.user_being_edited)
+
+
 
 
 # ######################### KEYS ##########################
