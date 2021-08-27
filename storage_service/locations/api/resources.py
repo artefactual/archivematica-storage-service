@@ -117,7 +117,9 @@ class CustomDjangoAuthorization(DjangoAuthorization):
         return True
 
 
-def _custom_endpoint(expected_methods=["get"], required_fields=[]):
+def _custom_endpoint(
+    expected_methods=["get"], required_fields=[], required_permission=None
+):
     """
     Decorator for custom endpoints that handles boilerplate code.
 
@@ -125,6 +127,12 @@ def _custom_endpoint(expected_methods=["get"], required_fields=[]):
     in the body.
 
     Custom endpoint must accept request and bundle.
+
+    ``required_permission`` is an optional string declaring what type of
+    permission checking should be performed. The supported values correspond to
+    the available methods in ``tastypie.Authorization``: read_list, read_detail,
+    create_list, create_detail, update_list, update_detail, delete_list and
+    delete_detail.
     """
 
     def decorator(func):
@@ -172,8 +180,25 @@ def _custom_endpoint(expected_methods=["get"], required_fields=[]):
                     % {"fields": ", ".join(required_fields)}
                 )
 
-            # Build bundle and return it
+            # Build bundle
             bundle = resource.build_bundle(obj=obj, data=deserialized, request=request)
+
+            # Check permission
+            if required_permission:
+                try:
+                    authorization_method = getattr(
+                        resource, f"authorized_{required_permission}"
+                    )
+                except AttributeError:
+                    LOGGER.debug(
+                        "Authorization method for %s does not exist.",
+                        required_permission,
+                    )
+                    raise tastypie.exceptions.ImmediateHttpResponse(
+                        response=http.HttpUnauthorized()
+                    )
+                authorization_method(resource.get_object_list(bundle.request), bundle)
+
             bundle = resource.alter_detail_data_to_serialize(request, bundle)
 
             # Call the decorated method
@@ -613,7 +638,7 @@ class LocationResource(ModelResource):
 
         return move_files_fn(data["files"], origin_location, destination_location)
 
-    @_custom_endpoint(expected_methods=["post"])
+    @_custom_endpoint(expected_methods=["post"], required_permission="update_detail")
     def post_detail_async(self, request, *args, **kwargs):
         """
         Moves files to this Location.  Return an async response (202 code) on
@@ -667,6 +692,10 @@ class LocationResource(ModelResource):
         return self._handle_location_file_move(move_files, request, *args, **kwargs)
 
     def sword_collection(self, request, **kwargs):
+        """Accepts or returns SWORD deposits.
+
+        User permissions are checked in ``sword_views.collection``.
+        """
         try:
             location = Location.objects.get(uuid=kwargs["uuid"])
         except Location.DoesNotExist:
@@ -1134,6 +1163,7 @@ class PackageResource(ModelResource):
                     )
                 )
         bundle = self.full_hydrate(bundle)
+        self.authorized_update_detail(self.get_object_list(bundle.request), bundle)
         bundle = self.obj_update_hook(bundle, **kwargs)
         return self.save(bundle, skip_errors=skip_errors)
 
@@ -1519,7 +1549,7 @@ class PackageResource(ModelResource):
         else:
             return http.HttpNoContent()
 
-    @_custom_endpoint(expected_methods=["post"])
+    @_custom_endpoint(expected_methods=["post"], required_permission="update_detail")
     def reindex_request(self, request, bundle, **kwargs):
         """Index file data from the Package transfer METS file."""
         package = bundle.obj
@@ -1569,7 +1599,9 @@ class PackageResource(ModelResource):
         )
 
     @_custom_endpoint(
-        expected_methods=["post"], required_fields=("pipeline", "reingest_type")
+        expected_methods=["post"],
+        required_fields=("pipeline", "reingest_type"),
+        required_permission="update_detail",
     )
     def reingest_request(self, request, bundle, **kwargs):
         """Request to reingest an AIP."""
@@ -1594,7 +1626,7 @@ class PackageResource(ModelResource):
         bundle.obj.clear_local_tempdirs()
         return self.create_response(request, response, status=status_code)
 
-    @_custom_endpoint(expected_methods=["post"])
+    @_custom_endpoint(expected_methods=["post"], required_permission="update_detail")
     def move_request(self, request, bundle, **kwargs):
         """Request to move a stored AIP.
 
@@ -1790,8 +1822,10 @@ class PackageResource(ModelResource):
     @_custom_endpoint(expected_methods=["get", "put", "delete"])
     def manage_contents(self, request, bundle, **kwargs):
         if request.method == "PUT":
+            self.authorized_update_detail(self.get_object_list(bundle.request), bundle)
             return self._add_files_to_package(request, bundle, **kwargs)
         elif request.method == "DELETE":
+            self.authorized_update_detail(self.get_object_list(bundle.request), bundle)
             return self._remove_files_from_package(request, bundle, **kwargs)
         elif request.method == "GET":
             return self._package_contents(request, bundle, **kwargs)

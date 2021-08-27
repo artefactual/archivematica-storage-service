@@ -14,4 +14,5 @@
   </table>
   <div id="user-data-packages" style="display: none;"
        data-uri="{{ uri }}"
-       data-package-uuid="{{ package_uuid }}">
+       data-package-uuid="{{ package_uuid }}"
+       data-user-can-change-package="{{ perms.locations.add_package|yesno:'true,false' }}">

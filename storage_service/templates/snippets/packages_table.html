@@ -26,4 +26,5 @@
        data-user-id="{{ user.id }}"
        data-user-email="{{ user.email }}"
        data-user-username="{{ user.username }}"
-       data-user-api-key="{{ api_key }}">
+       data-user-api-key="{{ api_key }}"
+       data-user-can-change-package="{{ perms.locations.add_package|yesno:'true,false' }}">

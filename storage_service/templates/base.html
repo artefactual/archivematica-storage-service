@@ -52,7 +52,7 @@
               <li {% if '/space' in request.path %}class="active"{% endif %}><a href="{% url 'locations:space_list' %}">{% trans "Spaces" %}</a></li>
               <li {% if '/location' in request.path %}class="active"{% endif %}><a href="{% url 'locations:location_list' %}">{% trans "Locations" %}</a></li>
               <li {% if '/package' in request.path %}class="active"{% endif %}><a href="{% url 'locations:package_list' %}">{% trans "Packages" %}</a></li>
-              <li {% if '/administration' in request.path or '/callbacks' in request.path %}class="active"{% endif %}><a href="{% url 'administration:settings_edit' %}">{% trans "Administration" %}</a></li>
+              <li {% if '/administration' in request.path or '/callbacks' in request.path %}class="active"{% endif %}><a href="{% url 'administration:index' %}">{% trans "Administration" %}</a></li>
               {% if user.is_authenticated %}
               <li><a href="{% logout_link %}">{% trans "Log out" %}</a></li>
               {% endif %}

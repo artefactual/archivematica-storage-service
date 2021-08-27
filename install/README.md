@@ -93,6 +93,11 @@ of these settings or provide values to mandatory fields.
     - **Type:** `boolean`
     - **Default:** `false`
 
+- **`SS_AUTH_DEFAULT_USER_ROLE`**:
+    - **Description:** user role that must be assigned to authenticated users that would be readers otherwise based on the results given by the authentication backend. Valid options are "manager", "reviewer" and "reader" (or empty string).
+    - **Type:** `string`
+    - **Default:** `"reader"`
+
 - **`SS_SHIBBOLETH_AUTHENTICATION`**:
     - **Description:** enables the Shibboleth authentication system. Other settings related to Shibboleth cannot be defined via environment variables at the moment, please edit [storage_service.settings.base](../storage_service/storage_service/settings/base.py) manually.
     - **Type:** `boolean`
@@ -395,6 +400,19 @@ These variables specify the behaviour of LDAP authentication. If `SS_LDAP_AUTHEN
     "allow", "try", "demand", or "hard". Corresponds to the TLSVerifyClient OpenLDAP setting.
     - **Type:** `string`
     - **Default:** `''`
+
+- **`AUTH_LDAP_ADMIN_GROUP`**:
+    - **Description:** Members of this LDAP group authenticate as administrators.
+    - **Type:** `string`
+    - **Default:** `'Administrators'`
+
+- **`AUTH_LDAP_MANAGER_GROUP`**: Members of this LDAP group authenticate as managers.
+    - **Type:** `string`
+    - **Default:** `'Managers'`
+
+- **`AUTH_LDAP_REVIEWER_GROUP`**: Members of this LDAP group authenticate as reviewers.
+    - **Type:** `string`
+    - **Default:** `'Reviewers'`
 
 ### CAS-specific environment variables
 

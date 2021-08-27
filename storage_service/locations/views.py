@@ -4,6 +4,8 @@ import logging
 import os
 import requests
 
+from django.contrib.auth.context_processors import PermWrapper
+from django.contrib.auth.decorators import permission_required
 from django.contrib import auth, messages
 from django.db.models import Q
 from django.http import HttpResponse
@@ -90,6 +92,7 @@ def package_list_ajax(request):
                     "package": package,
                     "redirect_path": request.META.get("HTTP_REFERER", request.path),
                     "csrf_token": csrf_token,
+                    "perms": PermWrapper(request.user),
                 }
             )
             .strip()
@@ -107,6 +110,7 @@ def package_list_ajax(request):
     )
 
 
+@permission_required("locations.change_package", raise_exception=True)
 def package_fixity(request, package_uuid):
     log_entries = FixityLog.objects.filter(package__uuid=package_uuid).order_by(
         "-datetime_reported"
@@ -156,7 +160,10 @@ class PackageRequestHandlerConfig(object):
         pass
 
 
+@permission_required("locations.change_package", raise_exception=True)
 def aip_recover_request(request):
+    """Lists existing AIP recover requests."""
+
     def execution_logic(aip):
         recover_location = LocationPipeline.objects.get(
             pipeline=aip.origin_pipeline, location__purpose=Location.AIP_RECOVERY
@@ -188,6 +195,7 @@ def aip_recover_request(request):
     return _handle_package_request(request, config, "locations:aip_recover_request")
 
 
+@permission_required("locations.delete_package", raise_exception=True)
 @require_http_methods(["POST"])
 def package_delete(request, uuid):
     """Delete packages without extra approval requirement.
@@ -229,6 +237,7 @@ def package_delete(request, uuid):
     return respond("success", _("Package deleted successfully!"))
 
 
+@permission_required("locations.approve_package_deletion", raise_exception=True)
 def package_delete_request(request):
     def execution_logic(package):
         return package.delete_from_storage()
@@ -377,6 +386,7 @@ def _handle_package_request_remote_result_notification(config, event, success):
     return response_message
 
 
+@permission_required("locations.change_package", raise_exception=True)
 def package_update_status(request, uuid):
     package = Package.objects.get(uuid=uuid)
 
@@ -410,6 +420,7 @@ def package_update_status(request, uuid):
     return redirect(next_url)
 
 
+@permission_required("locations.change_package", raise_exception=True)
 def aip_reingest(request, package_uuid):
     next_url = request.GET.get("next", reverse("locations:package_list"))
     try:
@@ -447,6 +458,7 @@ def aip_reingest(request, package_uuid):
 # ####################### LOCATIONS ##########################
 
 
+@permission_required("locations.change_location", raise_exception=True)
 def location_edit(request, space_uuid, location_uuid=None):
     space = get_object_or_404(Space, uuid=space_uuid)
     if location_uuid:
@@ -518,6 +530,7 @@ def location_delete_context(request, location_uuid):
     )
 
 
+@permission_required("locations.delete_location", raise_exception=True)
 @decorators.confirm_required("locations/delete.html", location_delete_context)
 def location_delete(request, location_uuid):
     location = get_object_or_404(Location, uuid=location_uuid)
@@ -529,6 +542,7 @@ def location_delete(request, location_uuid):
 # ######################## PIPELINES ##########################
 
 
+@permission_required("locations.change_pipeline", raise_exception=True)
 def pipeline_edit(request, uuid=None):
     if uuid:
         action = _("Edit Pipeline")
@@ -595,6 +609,7 @@ def pipeline_delete_context(request, uuid):
     )
 
 
+@permission_required("locations.delete_pipeline", raise_exception=True)
 @decorators.confirm_required("locations/delete.html", pipeline_delete_context)
 def pipeline_delete(request, uuid):
     pipeline = get_object_or_404(Pipeline, uuid=uuid)
@@ -658,6 +673,7 @@ def get_child_space_value(value, field, child):
     return value
 
 
+@permission_required("locations.add_space", raise_exception=True)
 def space_create(request):
     if request.method == "POST":
         space_form = forms.SpaceForm(request.POST, prefix="space")
@@ -690,6 +706,7 @@ def space_create(request):
     return render(request, "locations/space_form.html", locals())
 
 
+@permission_required("locations.change_space", raise_exception=True)
 def space_edit(request, uuid):
     space = get_object_or_404(Space, uuid=uuid)
     protocol_space = space.get_child_space()
@@ -705,6 +722,7 @@ def space_edit(request, uuid):
     return render(request, "locations/space_edit.html", locals())
 
 
+@permission_required("locations.change_space", raise_exception=True)
 def ajax_space_create_protocol_form(request):
     """ Return a protocol-specific form, based on the input protocol. """
     sent_protocol = request.GET.get("protocol")
@@ -726,6 +744,7 @@ def space_delete_context(request, uuid):
     )
 
 
+@permission_required("locations.delete_space", raise_exception=True)
 @decorators.confirm_required("locations/delete.html", space_delete_context)
 def space_delete(request, uuid):
     space = get_object_or_404(Space, uuid=uuid)
@@ -748,6 +767,7 @@ def callback_detail(request, uuid):
     return render(request, "locations/callback_detail.html", locals())
 
 
+@permission_required("locations.change_callback", raise_exception=True)
 def callback_switch_enabled(request, uuid):
     callback = get_object_or_404(Callback, uuid=uuid)
     callback.enabled = not callback.enabled
@@ -763,6 +783,7 @@ def callback_list(request):
     return render(request, "locations/callback_list.html", locals())
 
 
+@permission_required("locations.change_callback", raise_exception=True)
 def callback_edit(request, uuid=None):
     if uuid:
         action = _("Edit Callback")
@@ -779,6 +800,7 @@ def callback_edit(request, uuid=None):
     return render(request, "locations/callback_form.html", locals())
 
 
+@permission_required("locations.delete_callback", raise_exception=True)
 def callback_delete(request, uuid):
     callback = get_object_or_404(Callback, uuid=uuid)
     callback.delete()

@@ -245,7 +245,7 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = ["tastypie"]  # REST framework
 
 # Apps specific for this project go here.
-LOCAL_APPS = ["administration", "common", "locations"]
+LOCAL_APPS = ["administration.apps.AdministrationAppConfig", "common", "locations"]
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -332,6 +332,10 @@ WSGI_APPLICATION = "%s.wsgi.application" % SITE_NAME
 
 ALLOW_USER_EDITS = True
 
+# Fallback user role assigned to authenticated users when the group membership
+# detail was not provided by the authentication backend. Use one of the key
+# values in `administration.roles.USER_ROLES`.
+DEFAULT_USER_ROLE = environ.get("SS_AUTH_DEFAULT_USER_ROLE", "reader")
 
 ######### LDAP CONFIGURATION #########
 LDAP_AUTHENTICATION = is_true(environ.get("SS_LDAP_AUTHENTICATION", ""))
@@ -440,6 +444,13 @@ if LDAP_AUTHENTICATION:
     # Non-configurable sane defaults
     AUTH_LDAP_ALWAYS_UPDATE_USER = True
 
+    # If the user has this entitlement, they will be a superuser/admin
+    AUTH_LDAP_ADMIN_GROUP = environ.get("AUTH_LDAP_ADMIN_GROUP", "Administrators")
+    AUTH_LDAP_MANAGER_GROUP = environ.get("AUTH_LDAP_MANAGER_GROUP", "Managers")
+    AUTH_LDAP_REVIEWER_GROUP = environ.get("AUTH_LDAP_REVIEWER_GROUP", "Reviewers")
+
+    ALLOW_USER_EDITS = False
+
 ######### END LDAP CONFIGURATION #########
 
 
@@ -459,6 +470,8 @@ if SHIBBOLETH_AUTHENTICATION:
 
     # If the user has this entitlement, they will be a superuser/admin
     SHIBBOLETH_ADMIN_ENTITLEMENT = "preservation-admin"
+    SHIBBOLETH_MANAGER_ENTITLEMENT = "preservation-manager"
+    SHIBBOLETH_REVIEWER_ENTITLEMENT = "preservation-reviewer"
 
     TEMPLATES[0]["OPTIONS"]["context_processors"] += [
         "shibboleth.context_processors.logout_link"
@@ -511,6 +524,12 @@ if CAS_AUTHENTICATION:
     CAS_CHECK_ADMIN_ATTRIBUTES = environ.get("AUTH_CAS_CHECK_ADMIN_ATTRIBUTES", False)
     CAS_ADMIN_ATTRIBUTE = environ.get("AUTH_CAS_ADMIN_ATTRIBUTE", None)
     CAS_ADMIN_ATTRIBUTE_VALUE = environ.get("AUTH_CAS_ADMIN_ATTRIBUTE_VALUE", None)
+    CAS_MANAGER_ATTRIBUTE = environ.get("AUTH_CAS_MANAGER_ATTRIBUTE", None)
+    CAS_MANAGER_ATTRIBUTE_VALUE = environ.get("AUTH_CAS_MANAGER_ATTRIBUTE_VALUE", None)
+    CAS_REVIEWER_ATTRIBUTE = environ.get("AUTH_CAS_REVIEWER_ATTRIBUTE", None)
+    CAS_REVIEWER_ATTRIBUTE_VALUE = environ.get(
+        "AUTH_CAS_REVIEWER_ATTRIBUTE_VALUE", None
+    )
 
     CAS_AUTOCONFIGURE_EMAIL = environ.get("AUTH_CAS_AUTOCONFIGURE_EMAIL", False)
     CAS_EMAIL_DOMAIN = environ.get("AUTH_CAS_EMAIL_DOMAIN", None)
@@ -538,7 +557,7 @@ if OIDC_AUTHENTICATION:
     ALLOW_USER_EDITS = False
 
     AUTHENTICATION_BACKENDS += ["common.backends.CustomOIDCBackend"]
-    LOGIN_EXEMPT_URLS.append(r"^oidc")
+    LOGIN_EXEMPT_URLS = LOGIN_EXEMPT_URLS + (r"^oidc",)
     INSTALLED_APPS += ["mozilla_django_oidc"]
 
     # AUTH_SERVER = 'https://login.microsoftonline.com/common/v2.0/'
@@ -566,10 +585,12 @@ if OIDC_AUTHENTICATION:
             "https://login.microsoftonline.com/%s/discovery/v2.0/keys" % AZURE_TENANT_ID
         )
     else:
-        OIDC_OP_AUTHORIZATION_ENDPOINT = environ["OIDC_OP_AUTHORIZATION_ENDPOINT"]
-        OIDC_OP_TOKEN_ENDPOINT = environ["OIDC_OP_TOKEN_ENDPOINT"]
-        OIDC_OP_USER_ENDPOINT = environ["OIDC_OP_USER_ENDPOINT"]
-        OIDC_OP_JWKS_ENDPOINT = environ.get("OIDC_OP_JWKS_ENDPOINT", "")
+        OIDC_OP_AUTHORIZATION_ENDPOINT = environ.get(
+            "OIDC_OP_AUTHORIZATION_ENDPOINT", None
+        )
+        OIDC_OP_TOKEN_ENDPOINT = environ.get("OIDC_OP_TOKEN_ENDPOINT", None)
+        OIDC_OP_USER_ENDPOINT = environ.get("OIDC_OP_USER_ENDPOINT", None)
+        OIDC_OP_JWKS_ENDPOINT = environ.get("OIDC_OP_JWKS_ENDPOINT", None)
 
     OIDC_RP_SIGN_ALGO = environ.get("OIDC_RP_SIGN_ALGO", "HS256")
 

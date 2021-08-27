@@ -15,7 +15,9 @@
         <th>{% trans "Usage" %}</th>
         <th>{% trans "Enabled" %}</th>
         <th>{% trans "Default" %}</th>
-        <th>{% trans "Actions" %}</th>
+        {% if perms.locations.change_location %}
+          <th>{% trans "Actions" %}</th>
+        {% endif %}
       </tr>
     </thead>
     <tbody>
@@ -51,7 +53,17 @@
         <td>{{ loc.used }}B / {{ loc.quota|default:_("unlimited") }}</td>
         <td>{{ loc.enabled|yesno:_("Enabled,Disabled") }}</td>
         <td>{{ loc.default|yesno:_("Yes,No") }}</td>
-        <td><a href="{% url 'locations:location_edit' loc.space.uuid loc.uuid %}">{% trans "Edit" %}</a> | <a href="{% url 'locations:location_switch_enabled' loc.uuid %}?next={{ request.path }}">{{ loc.enabled|yesno:_("Disable,Enable") }}</a> | <a href="{% url 'locations:location_delete' loc.uuid %}?next={{ request.path }}">{% trans "Delete" %}</a></td>
+        {% if perms.locations.change_location or perms.locations.delete_location %}
+          <td>
+            {% if perms.locations.change_location %}
+              <a href="{% url 'locations:location_edit' loc.space.uuid loc.uuid %}">{% trans "Edit" %}</a>
+              | <a href="{% url 'locations:location_switch_enabled' loc.uuid %}?next={{ request.path }}">{{ loc.enabled|yesno:_("Disable,Enable") }}</a>
+            {% endif %}
+            {% if perms.locations.delete_location %}
+              | <a href="{% url 'locations:location_delete' loc.uuid %}?next={{ request.path }}">{% trans "Delete" %}</a>
+            {% endif %}
+          </td>
+        {% endif %}
       </tr>
     {% endfor %}
     </tbody>

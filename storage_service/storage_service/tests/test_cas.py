@@ -10,7 +10,9 @@ from django.test.client import Client
 import pytest
 
 from common.backends import CustomCASBackend
-from common.signals import _cas_user_is_administrator
+from common.signals import _cas_user_role
+from administration import roles
+
 
 TEST_CAS_USER = "casuser"
 TEST_CAS_ADMIN_ATTRIBUTE = "usertype"
@@ -106,7 +108,6 @@ class TestCAS(TestCase):
             # Create the user and check its properties.
             self.authenticate_user(request)
             user = User.objects.get(username=TEST_CAS_USER)
-            assert user is not None
             assert user.username == TEST_CAS_USER
             assert user.email == "casuser@artefactual.com"
 
@@ -128,8 +129,7 @@ class TestCAS(TestCase):
             request = self.create_request()
             self.authenticate_user(request)
             user = User.objects.get(username=TEST_CAS_USER)
-            assert user is not None
-            assert user.is_superuser is True
+            assert user.get_role() == roles.USER_ROLE_ADMIN
 
     @mock.patch("cas.CASClientV2.verify_ticket", mock_verify_superuser)
     def test_check_admin_attributes_superuser_existing_user(self):
@@ -140,8 +140,7 @@ class TestCAS(TestCase):
         non-administrative user should be updated to True.
         """
         user = User.objects.create(username=TEST_CAS_USER)
-        assert user is not None
-        assert user.is_superuser is False
+        assert user.get_role() == roles.USER_ROLE_READER
 
         # Authenticate again with CAS_CHECK_ADMIN_ATTRIBUTES enabled
         # and check that user.is_superuser has been updated to True.
@@ -153,8 +152,7 @@ class TestCAS(TestCase):
             request = self.create_request()
             self.authenticate_user(request)
             user = User.objects.get(username=TEST_CAS_USER)
-            assert user is not None
-            assert user.is_superuser is True
+            assert user.get_role() == roles.USER_ROLE_ADMIN
 
     @mock.patch("cas.CASClientV2.verify_ticket", mock_verify)
     def test_check_admin_attributes_regular_new_user(self):
@@ -175,8 +173,7 @@ class TestCAS(TestCase):
             request = self.create_request()
             self.authenticate_user(request)
             user = User.objects.get(username=TEST_CAS_USER)
-            assert user is not None
-            assert user.is_superuser is False
+            assert user.get_role() == roles.USER_ROLE_MANAGER
 
     @mock.patch("cas.CASClientV2.verify_ticket", mock_verify_superuser)
     def test_check_admin_attributes_regular_existing_user(self):
@@ -188,8 +185,7 @@ class TestCAS(TestCase):
         """
         # Create a new superuser.
         user = User.objects.create(username=TEST_CAS_USER, is_superuser=True)
-        assert user is not None
-        assert user.is_superuser is True
+        assert user.get_role() == roles.USER_ROLE_ADMIN
 
         # Authenticate with CAS_ADMIN_ATTRIBUTE_VALUE set to a value
         # not present in the CAS attributes and check that
@@ -202,36 +198,27 @@ class TestCAS(TestCase):
             request = self.create_request()
             self.authenticate_user(request)
             user = User.objects.get(username=TEST_CAS_USER)
-            assert user is not None
-            assert user.is_superuser is False
+            assert user.get_role() == roles.USER_ROLE_MANAGER
 
-    def test_user_is_administrator(self):
-        """Unit test for _cas_user_is_administrator helper."""
-        # If settings are improperly configured, function should return
-        # False.
+    def test_cas_user_role(self):
+        """Unit test for _cas_user_role helper."""
         with self.settings(
             CAS_CHECK_ADMIN_ATTRIBUTES=True,
-            CAS_ADMIN_ATTRIBUTE=TEST_CAS_ADMIN_ATTRIBUTE,
-            CAS_ADMIN_ATTRIBUTE_VALUE=None,
+            CAS_ADMIN_ATTRIBUTE="usertype",
+            CAS_ADMIN_ATTRIBUTE_VALUE="admin",
+            CAS_MANAGER_ATTRIBUTE="usertype",
+            CAS_MANAGER_ATTRIBUTE_VALUE="manager",
+            CAS_REVIEWER_ATTRIBUTE="usertype",
+            CAS_REVIEWER_ATTRIBUTE_VALUE="reviewer",
         ):
-            assert (
-                _cas_user_is_administrator(TEST_CAS_ATTRIBUTES_STRING_POSITIVE) is False
-            )
+            role = _cas_user_role({"usertype": "admin"})
+            assert role == roles.USER_ROLE_ADMIN
 
-        # Ensure function returns expected values whether
-        # CAS_ADMIN_ATTRIBUTE is a string or a list.
-        with self.settings(
-            CAS_CHECK_ADMIN_ATTRIBUTES=True,
-            CAS_ADMIN_ATTRIBUTE=TEST_CAS_ADMIN_ATTRIBUTE,
-            CAS_ADMIN_ATTRIBUTE_VALUE=TEST_CAS_ADMIN_ATTRIBUTE_VALUE_POSITIVE,
-        ):
-            assert (
-                _cas_user_is_administrator(TEST_CAS_ATTRIBUTES_STRING_POSITIVE) is True
-            )
-            assert (
-                _cas_user_is_administrator(TEST_CAS_ATTRIBUTES_STRING_NEGATIVE) is False
-            )
-            assert _cas_user_is_administrator(TEST_CAS_ATTRIBUTES_LIST_POSITIVE) is True
-            assert (
-                _cas_user_is_administrator(TEST_CAS_ATTRIBUTES_LIST_NEGATIVE) is False
-            )
+            role = _cas_user_role({"usertype": "manager"})
+            assert role == roles.USER_ROLE_MANAGER
+
+            role = _cas_user_role({"usertype": "reviewer"})
+            assert role == roles.USER_ROLE_REVIEWER
+
+            role = _cas_user_role({})
+            assert role == roles.USER_ROLE_READER

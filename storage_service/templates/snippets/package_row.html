@@ -26,7 +26,7 @@
 
         <td>
           {{ package.get_status_display }}
-          {% if package.status != 'DELETED' and package.status != 'FAIL'%}
+          {% if perms.locations.change_package and package.status != 'DELETED' and package.status != 'FAIL'%}
           (<a href="{% url 'locations:package_update_status' package.uuid %}?next={{ redirect_path }}">{% trans "Update Status" %}</a>)
           {% endif %}
         </td>
@@ -45,7 +45,7 @@
           {% endif %}
 
           <!-- Replicas should not be re-ingestible -->
-          {% if package.package_type in 'AIP AIC' and not package.replicated_package %}
+          {% if perms.locations.change_package and package.package_type in 'AIP AIC' and not package.replicated_package %}
             <a href="{% url 'locations:aip_reingest' package.uuid %}?next={{ redirect_path }}">{% trans "Re-ingest" %}</a> |
           {% endif %}
 
@@ -57,7 +57,7 @@
              >{% trans "Request Deletion" %}</a>
           {% endif %}
 
-          {% if package.package_type in package.PACKAGE_TYPE_CAN_DELETE_DIRECTLY and package.status != package.DELETED %}
+          {% if perms.locations.delete_package and package.package_type in package.PACKAGE_TYPE_CAN_DELETE_DIRECTLY and package.status != package.DELETED %}
             <form method="POST" class="submit-confirm" action="{% url 'locations:package_delete' package.uuid %}">
               {% csrf_token %}
               <button class="link" type="submit">{% trans "Delete" %}</button>

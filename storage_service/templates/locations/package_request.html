@@ -17,7 +17,9 @@
         <th>{% trans "Pipeline" %}</th>
         <th>{% trans "User" %}</th>
         <th>{% trans "Submitted" %}</th>
-        <th>{% trans "Approve/Reject" %}</th>
+        {% if perms.locations.approve_package_deletion %}
+          <th>{% trans "Approve/Reject" %}</th>
+        {% endif %}
       </tr>
     </thead>
     <tbody>
@@ -31,15 +33,17 @@
           {% blocktrans with email=req.user_email user_id=req.user_id %}{{ email }} (ID: {{ user_id }}){% endblocktrans %}
         </td>
         <td>{{ req.status_time }}</td>
-        <td>
-          <form action="{% url view_name %}" method="post">
-            {% csrf_token %}
-            {{ req.form.as_p }}
-            <input type="submit" name="approve" class='btn'
-              value="{% blocktrans with action=config.event_type|title %}Approve ({{ action }} package){% endblocktrans %}" />
-              <input type="submit" name="reject" value="{% trans "Reject (No change to package)" %}" class='btn btn-primary' />
-          </form>
-        </td>
+        {% if perms.locations.approve_package_deletion %}
+          <td>
+            <form action="{% url view_name %}" method="post">
+              {% csrf_token %}
+              {{ req.form.as_p }}
+              <input type="submit" name="approve" class='btn'
+                value="{% blocktrans with action=config.event_type|title %}Approve ({{ action }} package){% endblocktrans %}" />
+                <input type="submit" name="reject" value="{% trans "Reject (No change to package)" %}" class='btn btn-primary' />
+            </form>
+          </td>
+        {% endif %}
       </tr>
     {% endfor %}
     </tbody>

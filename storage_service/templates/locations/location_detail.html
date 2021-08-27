@@ -51,14 +51,22 @@
       {% endwith %}
     {% endif %}
 
-    <dt>{% trans "Actions" %}</dt>
+    {% if perms.locations.change_location or perms.locations.delete_location %}
+      <dt>{% trans "Actions" %}</dt>
       <dd>
         <ul>
-          <li><a href="{% url 'locations:location_edit' location.space.uuid location.uuid %}">{% trans "Edit Location" %}</a></li>
-          <li><a href="{% url 'locations:location_switch_enabled' location.uuid %}?next={{ request.path }}">{{ location.enabled|yesno:_("Disable,Enable") }}</a></li>
-          <li><a href="{% url 'locations:location_delete' location.uuid %}">{% trans "Delete Location" %}</a></li>
+          {% if perms.locations.change_location %}
+            <li><a href="{% url 'locations:location_edit' location.space.uuid location.uuid %}">{% trans "Edit Location" %}</a></li>
+          {% endif %}
+          {% if perms.locations.change_location %}
+            <li><a href="{% url 'locations:location_switch_enabled' location.uuid %}?next={{ request.path }}">{{ location.enabled|yesno:_("Disable,Enable") }}</a></li>
+          {% endif %}
+          {% if perms.locations.delete_location %}
+            <li><a href="{% url 'locations:location_delete' location.uuid %}">{% trans "Delete Location" %}</a></li>
+          {% endif %}
         </ul>
       </dd>
+    {% endif %}
   </dl>
 </div>
 

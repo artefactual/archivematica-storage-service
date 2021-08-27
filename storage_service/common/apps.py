@@ -15,4 +15,5 @@ class CommonAppConfig(AppConfig):
 
     def ready(self):
         import common.signals  # noqa: F401
+
         version_info.info({"version": __version__})

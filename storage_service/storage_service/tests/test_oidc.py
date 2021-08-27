@@ -1,7 +1,8 @@
 import pytest
 from django.conf import settings
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
+from administration import roles
 from common.backends import CustomOIDCBackend
 
 
@@ -20,6 +21,22 @@ class TestOIDC(TestCase):
         assert user.last_name == "User"
         assert user.email == "test@example.com"
         assert user.username == "test@example.com"
+        assert user.get_role() == roles.USER_ROLE_MANAGER
+
+    @override_settings(DEFAULT_USER_ROLE=roles.USER_ROLE_REVIEWER)
+    def test_create_demoted_user(self):
+        """The role given to a new user is based on ``DEFAULT_USER_ROLE``.
+
+        In this test, we're ensuring that new users are given the reviewer role
+        instead of the default "manager" role.
+        """
+        backend = CustomOIDCBackend()
+        user = backend.create_user(
+            {"email": "test@example.com", "first_name": "Test", "last_name": "User"}
+        )
+
+        user.refresh_from_db()
+        assert user.get_role() == roles.USER_ROLE_REVIEWER
 
     def test_get_userinfo(self):
         # Encoded at https://www.jsonwebtoken.io/

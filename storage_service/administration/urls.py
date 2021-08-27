@@ -6,7 +6,8 @@ from administration import views
 app_name = "administration"
 urlpatterns = [
     # Sorted by alphabetized categories
-    url(r"^$", views.settings_edit, name="settings_edit"),
+    url(r"^$", views.index, name="index"),
+    url(r"^configuration/$", views.configuration, name="configuration"),
     url(r"^version/$", views.version_view, name="version"),
     url(r"^users/$", views.user_list, name="user_list"),
     url(r"^users/create/$", views.user_create, name="user_create"),

@@ -6,10 +6,11 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 
-from common import utils
-
-from locations.models import Location, Space
 from six.moves import zip
+
+from common import utils
+from locations.models import Location, Space
+from . import roles
 
 
 # ######################## CUSTOM FIELDS/WIDGETS ##########################
@@ -213,16 +214,27 @@ class DefaultLocationsForm(SettingsForm):
 
 # ######################## USERS ##########################
 
+ROLE_FIELD_HELP_TEXT = _(
+    "Readers have read-only access; reviewers can additionally "
+    "approve/reject package deletion requests; managers have full "
+    "access excepting user management; administrators have all "
+    "permissions."
+)
+
 
 class UserCreationForm(auth.forms.UserCreationForm):
     """Creates a new user. Inherits from Django's UserCreationForm."""
 
     email = forms.EmailField(required=True, help_text=_("Required."))
+    role = forms.ChoiceField(
+        required=True,
+        widget=forms.RadioSelect,
+        choices=roles.USER_ROLES,
+        help_text=ROLE_FIELD_HELP_TEXT,
+    )
 
     def __init__(self, *args, **kwargs):
         super(UserCreationForm, self).__init__(*args, **kwargs)
-        self.fields["is_superuser"].label = _("Administrator?")
-        self.fields["is_superuser"].initial = True
 
     class Meta:
         model = auth.get_user_model()
@@ -231,9 +243,9 @@ class UserCreationForm(auth.forms.UserCreationForm):
             "first_name",
             "last_name",
             "email",
+            "role",
             "password1",
             "password2",
-            "is_superuser",
         )
 
     def clean_password2(self):
@@ -257,40 +269,73 @@ class UserCreationForm(auth.forms.UserCreationForm):
             except ValidationError as error:
                 self.add_error("password1", error)
 
+    def save(self, commit=True):
+        user = super().save(commit)
+        user.set_role(self.cleaned_data["role"])
+
+
+class RoleChoiceField(forms.ChoiceField):
+    """A custom ChoiceField to show and select user roles."""
+
+    class RadioSelectWidget(forms.widgets.RadioSelect):
+        template_name = "widgets/role_choice.html"
+
+        def render(self, name, value, attrs=None, renderer=None):
+            context = self.get_context(name, value, attrs)
+            context["is_admin"] = self.is_admin
+            return self._render(self.template_name, context, renderer)
+
+    widget = RadioSelectWidget
+
 
 class UserChangeForm(auth.forms.UserChangeForm):
     """Modifies an existing user. Inherits from Django's UserChangeForm."""
+
+    role = RoleChoiceField(
+        required=True,
+        choices=roles.USER_ROLES,
+        help_text=ROLE_FIELD_HELP_TEXT,
+    )
+
+    class Meta:
+        model = auth.get_user_model()
+        fields = (
+            "username",
+            "first_name",
+            "last_name",
+            "email",
+            "role",
+        )
 
     def __init__(self, *args, **kwargs):
         current_user = kwargs.pop("current_user", None)
         self.user_being_edited = kwargs["instance"]
         self.superusers = auth.get_user_model().objects.filter(is_superuser=True)
         super(UserChangeForm, self).__init__(*args, **kwargs)
-        self.fields["is_superuser"].label = _("Administrator?")
-        if not (current_user and current_user.is_superuser):
-            # If current user is not super, do not permit editing of that.
-            del self.fields["is_superuser"]
-        elif self.superusers.count() == 1 and current_user == self.user_being_edited:
-            # Provide some indication that this is undesirable.
-            self.fields["is_superuser"].widget.attrs["readonly"] = True
         del self.fields["password"]
+        self.fields["role"].initial = self.user_being_edited.get_role()
+        self.fields["role"].widget.is_admin = current_user.is_admin()
+        self.fields["role"].disabled = not current_user.is_admin() or (
+            current_user == self.user_being_edited
+        )
 
     def clean(self):
         """Validate the form to protect against potential user errors."""
         if self.superusers.count() > 1:
             return self.cleaned_data
         try:
-            # Protect field from being reverted if only one superuser.
-            if self.user_being_edited.is_superuser:
-                self.cleaned_data["is_superuser"] = True
+            # At this point we know there is just one admin user.
+            # Reset its role choice to ensure it does not get demoted.
+            if self.user_being_edited.is_admin():
+                self.cleaned_data["role"] = roles.USER_ROLE_ADMIN
         except KeyError:
             # Field isn't being modified, nothing to do.
             pass
         return self.cleaned_data
 
-    class Meta:
-        model = auth.get_user_model()
-        fields = ("username", "first_name", "last_name", "email", "is_superuser")
+    def save(self, commit=True):
+        self.user_being_edited.set_role(self.cleaned_data["role"])
+        super().save(commit)
 
 
 # ######################### KEYS ##########################

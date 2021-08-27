@@ -5,7 +5,9 @@
         <th>{% trans "UUID" %}</th>
         <th>{% trans "Description" %}</th>
         <th>{% trans "Enabled" %}</th>
-        <th>{% trans "Edit" %}</th>
+        {% if perms.locations.change_pipeline %}
+          <th>{% trans "Edit" %}</th>
+        {% endif %}
       </tr>
     </thead>
     <tbody>
@@ -14,7 +16,17 @@
         <td><a href="{% url 'locations:pipeline_detail' pipeline.uuid %}">{{ pipeline.uuid }}</a></td>
         <td>{{ pipeline.description }}</td>
         <td>{{ pipeline.enabled|yesno:_("Enabled,Disabled") }}</td>
-        <td><a href="{% url 'locations:pipeline_edit' pipeline.uuid %}">{% trans "Edit" %}</a> | <a href="{% url 'locations:pipeline_switch_enabled' pipeline.uuid %}?next={{ request.path }}">{{ pipeline.enabled|yesno:_("Disable,Enable") }}</a> | <a href="{% url 'locations:pipeline_delete' pipeline.uuid %}?next={{ request.path }}">{% trans "Delete" %}</a></td>
+        {% if perms.locations.change_pipeline or perms.locations.delete_pipeline %}
+          <td>
+            {% if perms.locations.change_pipeline %}
+              <a href="{% url 'locations:pipeline_edit' pipeline.uuid %}">{% trans "Edit" %}</a>
+              | <a href="{% url 'locations:pipeline_switch_enabled' pipeline.uuid %}?next={{ request.path }}">{{ pipeline.enabled|yesno:_("Disable,Enable") }}</a>
+            {% endif %}
+            {% if perms.locations.delete_pipeline %}
+              | <a href="{% url 'locations:pipeline_delete' pipeline.uuid %}?next={{ request.path }}">{% trans "Delete" %}</a>
+            {% endif %}
+          </td>
+        {% endif %}
       </tr>
     {% endfor %}
     </tbody>

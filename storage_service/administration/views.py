@@ -5,6 +5,7 @@ import subprocess
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import permission_required
 from django.contrib.auth.forms import SetPasswordForm
 from django.http import Http404
 from django.shortcuts import render, redirect, get_object_or_404
@@ -27,7 +28,14 @@ LOGGER = logging.getLogger(__name__)
 # ######################## ADMIN ##########################
 
 
-def settings_edit(request):
+def index(request):
+    if request.user.has_perm("administration.change_settings"):
+        return redirect("administration:configuration")
+    return redirect("administration:user_list")
+
+
+@permission_required("administration.change_settings", raise_exception=True)
+def configuration(request):
     initial_data = utils.get_all_settings()
     common_form = settings_forms.CommonSettingsForm(
         request.POST or None, initial=initial_data, prefix="common"
@@ -40,7 +48,7 @@ def settings_edit(request):
         common_form.save()
         default_location_form.save()
         messages.success(request, _("Setting saved."))
-        return redirect("administration:settings_edit")
+        return redirect("administration:configuration")
     return render(request, "administration/settings_form.html", locals())
 
 
@@ -73,7 +81,7 @@ def user_list(request):
 
 def user_edit(request, id):
     edit_allowed = settings.ALLOW_USER_EDITS and (
-        request.user.is_superuser or str(request.user.id) == id
+        request.user.has_perm("auth.change_user") or str(request.user.id) == id
     )
     if not edit_allowed:
         return redirect("administration:user_list")
@@ -105,7 +113,9 @@ def user_edit(request, id):
 
 
 def user_create(request):
-    create_allowed = settings.ALLOW_USER_EDITS and request.user.is_superuser
+    create_allowed = settings.ALLOW_USER_EDITS and request.user.has_perm(
+        "auth.add_user"
+    )
     if not create_allowed:
         return redirect("administration:user_list")
 
@@ -162,12 +172,14 @@ def change_language(request):
 # ######################### KEYS ##########################
 
 
+@permission_required("administration.change_settings", raise_exception=True)
 def key_list(request):
     """List all of the GPG keys that the SS knows about."""
     keys = gpgutils.get_gpg_key_list()
     return render(request, "administration/key_list.html", locals())
 
 
+@permission_required("administration.change_settings", raise_exception=True)
 def key_detail(request, key_fingerprint):
     """View details (including ASCII armor) of GPG key with fingerprint
     ``key_fingerprint``.
@@ -184,6 +196,7 @@ def key_detail(request, key_fingerprint):
     return render(request, "administration/key_detail.html", locals())
 
 
+@permission_required("administration.change_settings", raise_exception=True)
 def key_create(request):
     """Create a new key using the POST params; currently these are just the
     real name and email of the key's user/owner.
@@ -230,6 +243,7 @@ def key_create(request):
     )
 
 
+@permission_required("administration.change_settings", raise_exception=True)
 def key_import(request):
     """Import an existing key to the storage service by providing its ASCII
     armor in a form field. To get the ASCII armored private key with
