@@ -272,7 +272,7 @@ class UserChangeForm(auth.forms.UserChangeForm):
             del self.fields["is_superuser"]
         elif self.superusers.count() == 1 and current_user == self.user_being_edited:
             # Provide some indication that this is undesirable.
-            self.fields["is_superuser"].widget.attrs["readonly"] = True
+            self.fields["is_superuser"].disabled = True
         del self.fields["password"]
 
     def clean(self):
