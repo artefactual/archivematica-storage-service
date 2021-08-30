@@ -181,6 +181,9 @@ class Package(models.Model):
     class Meta:
         verbose_name = _("Package")
         app_label = "locations"
+        permissions = [
+            ("approve_package_deletion", "Can approve Package deletion requests"),
+        ]
 
     def __init__(self, *args, **kwargs):
         super(Package, self).__init__(*args, **kwargs)

@@ -3,14 +3,76 @@ from __future__ import absolute_import
 from django import forms
 from django.contrib import auth
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 
 from common import utils
 
-from locations.models import Location, Space
+from administration.models import Settings
+from locations.models import (
+    Arkivum,
+    Async,
+    Callback,
+    Dataverse,
+    DSpace,
+    DSpaceREST,
+    Duracloud,
+    Event,
+    Fedora,
+    File,
+    FixityLog,
+    GPG,
+    LocalFilesystem,
+    Location,
+    LocationPipeline,
+    Lockssomatic,
+    NFS,
+    OfflineReplicaStaging,
+    Package,
+    PackageDownloadTask,
+    PackageDownloadTaskFile,
+    Pipeline,
+    PipelineLocalFS,
+    S3,
+    Space,
+    Swift,
+)
+
 from six.moves import zip
 
+
+SS_MODELS = [
+    # locations
+    Arkivum,
+    Async,
+    Callback,
+    Dataverse,
+    DSpace,
+    DSpaceREST,
+    Duracloud,
+    Event,
+    Fedora,
+    File,
+    FixityLog,
+    GPG,
+    LocalFilesystem,
+    Location,
+    LocationPipeline,
+    Lockssomatic,
+    NFS,
+    OfflineReplicaStaging,
+    Package,
+    PackageDownloadTask,
+    PackageDownloadTaskFile,
+    Pipeline,
+    PipelineLocalFS,
+    S3,
+    Space,
+    Swift,
+    # administration
+    Settings,
+]
 
 # ######################## CUSTOM FIELDS/WIDGETS ##########################
 
@@ -425,17 +487,50 @@ class UserChangeForm(auth.forms.UserChangeForm):
 
     def save(self, commit=True):
         if self.cleaned_data["is_system_user"]:
-            self.user_being_edited.user_permissions.add(*SYSTEM_USER_PERMISSIONS)
+            self.user_being_edited.user_permissions.add(
+                # XXX: what about other custom model permissions?
+                *self.get_storage_service_model_default_permissions()
+            )
         else:
-            self.user_being_edited.user_permissions.remove(*SYSTEM_USER_PERMISSIONS)
+            self.user_being_edited.user_permissions.remove(
+                # XXX: what about other custom model permissions?
+                *self.get_storage_service_model_default_permissions()
+            )
         if self.cleaned_data["can_approve_package_deletion"]:
-            self.user_being_edited.user_permissions.add("locations.add_package")
+            self.user_being_edited.user_permissions.add(
+                self.get_approve_package_deletion_permission()
+            )
         else:
-            self.user_being_edited.user_permissions.remove("locations.add_package")
+            self.user_being_edited.user_permissions.remove(
+                self.get_approve_package_deletion_permission()
+            )
         super().save(commit)
 
+    def get_storage_service_model_default_permissions(self):
+        result = []
+        for model, content_type in ContentType.objects.get_for_models(
+            *SS_MODELS
+        ).items():
+            codenames = [
+                "{}_{}".format(prefix, model._meta.model_name)
+                for prefix in model._meta.default_permissions
+            ]
+            for codename in codenames:
+                result.append(
+                    auth.models.Permission.objects.get(
+                        content_type=content_type, codename=codename
+                    )
+                )
+        return result
+
+    def get_approve_package_deletion_permission(self):
+        return auth.models.Permission.objects.get(
+            content_type=ContentType.objects.get_for_model(Package),
+            codename="approve_package_deletion",
+        )
+
     def has_approve_package_deletion_permission(self):
-        return self.user_being_edited.has_perm("locations.add_package")
+        return self.user_being_edited.has_perm("locations.approve_package_deletion")
 
     def has_system_user_permissions(self):
         return self.user_being_edited.has_perms(SYSTEM_USER_PERMISSIONS)
