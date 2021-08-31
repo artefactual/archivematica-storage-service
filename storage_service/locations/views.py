@@ -4,6 +4,7 @@ import logging
 import os
 import requests
 
+from django.contrib.auth.decorators import permission_required
 from django.contrib import auth, messages
 from django.db.models import Q
 from django.http import HttpResponse
@@ -485,6 +486,7 @@ def location_edit(request, space_uuid, location_uuid=None):
     return render(request, "locations/location_form.html", locals())
 
 
+@permission_required('locations.change_location', raise_exception=True)
 def location_list(request):
     locations = Location.objects.all()
     return render(request, "locations/location_list.html", locals())
