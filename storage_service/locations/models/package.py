@@ -255,7 +255,7 @@ class Package(models.Model):
     @property
     def is_compressed(self):
         """ Determines whether or not the package is a compressed file. """
-        full_path = self.fetch_local_path()
+        full_path = self.get_local_path() or self.fetch_local_path()
         if os.path.isdir(full_path):
             return False
         elif os.path.isfile(full_path):
@@ -309,7 +309,7 @@ class Package(models.Model):
         else:  # LOCKSS AU number specified, but not a LOCKSS package
             LOGGER.warning("Trying to download LOCKSS chunk for a non-LOCKSS package.")
             path = full_path
-        LOGGER.debug("Got download path {} for package {}".format(path, self.uuid))
+        LOGGER.debug("Got download path %s for package %s", path, self.uuid)
         return path
 
     def get_local_path(self):
@@ -363,7 +363,6 @@ class Package(models.Model):
             destination_space=ss_internal.space,
         )
 
-        self.current_location = ss_internal
         self.local_path_location = ss_internal
         self.local_path = int_path
         self.local_tempdirs.append(temp_dir)
