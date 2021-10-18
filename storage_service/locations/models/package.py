@@ -1633,13 +1633,13 @@ class Package(models.Model):
                 # copy only one file out of aip
                 head, tail = os.path.split(full_path)
                 src = os.path.join(head, relative_path)
-                os.mkdir(os.path.join(extract_path, basename))
+                os.makedirs(os.path.dirname(output_path))
+                LOGGER.info("Copying from: %s to %s", src, output_path)
                 shutil.copy(src, output_path)
             else:
                 src = full_path
+                LOGGER.info("Copying from: %s to %s", full_path, output_path)
                 shutil.copytree(full_path, output_path)
-
-            LOGGER.info("Copying from: %s to %s", src, output_path)
 
         if not relative_path:
             self.local_path_location = ss_internal
