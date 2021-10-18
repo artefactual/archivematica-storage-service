@@ -448,6 +448,18 @@ class TestPackage(TestCase):
         assert output_path == os.path.join(self.tmp_dir, basedir, "manifest-md5.txt")
         assert os.path.isfile(output_path)
 
+    def test_extract_file_nested_file_from_uncompressed_aip(self):
+        """ It should return a single file from an uncompressed aip (with nested path) """
+        package = models.Package.objects.get(
+            uuid="0d4e739b-bf60-4b87-bc20-67a379b28cea"
+        )
+        basedir = package.get_base_directory()
+        output_path, extract_path = package.extract_file(
+            relative_path="working_bag/data/test.txt", extract_path=self.tmp_dir
+        )
+        assert output_path == os.path.join(self.tmp_dir, basedir, "data/test.txt")
+        assert os.path.isfile(output_path)
+
     def test_extract_file_file_from_compressed_aip(self):
         """ It should return a single file from a 7zip compressed aip """
         package = models.Package.objects.get(
