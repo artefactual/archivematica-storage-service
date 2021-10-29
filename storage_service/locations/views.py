@@ -13,7 +13,6 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import get_template
 from django.urls import reverse
 from django.utils.translation import ugettext as _
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from tastypie.models import ApiKey
 
@@ -706,21 +705,18 @@ def space_edit(request, uuid):
     return render(request, "locations/space_edit.html", locals())
 
 
-# FIXME this should probably submit a csrf token
-@csrf_exempt
 def ajax_space_create_protocol_form(request):
     """ Return a protocol-specific form, based on the input protocol. """
-    if request.method == "POST":
-        sent_protocol = request.POST.get("protocol")
-        try:
-            # Get form class if it exists
-            form_class = PROTOCOL[sent_protocol]["form"]
-        except KeyError:
-            response_data = {}
-        else:
-            # Create and return the form
-            form = form_class(prefix="protocol")
-            response_data = form.as_p()
+    sent_protocol = request.GET.get("protocol")
+    try:
+        # Get form class if it exists
+        form_class = PROTOCOL[sent_protocol]["form"]
+    except KeyError:
+        response_data = {}
+    else:
+        # Create and return the form
+        form = form_class(prefix="protocol")
+        response_data = form.as_p()
     return HttpResponse(response_data, content_type="text/html")
 
 
