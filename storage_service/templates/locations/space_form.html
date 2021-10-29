@@ -19,10 +19,11 @@
 
 $(document).ready(function () {
     $("#id_space-access_protocol").change(function () {
-        protocol_val = $(this).val();
-        $("#protocol_form").load(
-            "{% url 'locations:ajax_space_create_protocol_form' %}",
-            {protocol: protocol_val});
+        const url = "{% url 'locations:ajax_space_create_protocol_form' %}";
+        const protocol = $(this).val();
+        $.get(url, {protocol: protocol}, (data) => {
+            $("#protocol_form").html(data);
+        });
     });
 });
 
