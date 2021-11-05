@@ -12,17 +12,13 @@ from __future__ import absolute_import
 
 # stdlib, alphabetical
 import logging
+from pathlib import Path
 
 # Third party dependencies, alphabetical
 import gnupg
 from django.apps import apps
 from django.conf import settings
 from django.utils.translation import ugettext as _
-
-try:
-    from pathlib import Path
-except ImportError:
-    from pathlib2 import Path
 
 from .which import which
 

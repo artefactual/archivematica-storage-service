@@ -13,6 +13,7 @@ import shutil
 import six.moves.urllib.request
 import six.moves.urllib.parse
 import six.moves.urllib.error
+from pathlib import Path
 
 # Core Django, alphabetical
 from django.conf import settings
@@ -26,10 +27,6 @@ from django.utils.translation import ugettext as _
 # Third party dependencies, alphabetical
 import bagit
 
-try:
-    from pathlib import Path
-except ImportError:
-    from pathlib2 import Path
 import six
 from tastypie.authentication import (
     BasicAuthentication,
