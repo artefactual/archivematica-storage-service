@@ -16,16 +16,12 @@ import json
 import shutil
 import os
 import scandir
+from pathlib import Path
 
 import pytest
 
 from metsrw.plugins import premisrw
 from locations.models import Location, Package, Space
-
-try:
-    from pathlib import Path
-except ImportError:
-    from pathlib2 import Path
 
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"

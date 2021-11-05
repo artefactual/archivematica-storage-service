@@ -14,12 +14,8 @@ import re
 import shutil
 import subprocess
 import tempfile
+from pathlib import Path
 from uuid import uuid4
-
-try:
-    from pathlib import Path
-except ImportError:
-    from pathlib2 import Path
 
 # Core Django, alphabetical
 from django.conf import settings
