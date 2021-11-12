@@ -19,6 +19,7 @@ RUN set -ex \
 		libsasl2-dev \
 		locales \
 		locales-all \
+		openssh-client \
 		python3-dev \
 		p7zip-full \
 		rsync \
