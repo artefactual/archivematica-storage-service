@@ -2,7 +2,6 @@
 -r base.txt
 
 coverage==4.2
-mock
 pip-tools==6.4.0
 pytest-cov==2.4.0
 pytest-django>=3,<4

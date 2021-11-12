@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+
 import datetime
 import os
 import pytest
@@ -6,9 +7,9 @@ import shutil
 import tempfile
 import time
 import vcr
+from unittest import mock
 
-import mock
-
+import bagit
 from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
@@ -16,7 +17,6 @@ from django.urls import reverse
 from common import utils
 from locations import models
 
-import bagit
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures", ""))

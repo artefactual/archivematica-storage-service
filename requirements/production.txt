@@ -87,7 +87,7 @@ idna==2.10
     # via
     #   -r base.txt
     #   requests
-importlib-metadata==4.8.1
+importlib-metadata==4.8.2
     # via
     #   -r base.txt
     #   importlib-resources
