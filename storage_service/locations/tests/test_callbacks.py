@@ -1,9 +1,10 @@
 from __future__ import absolute_import
+
 import uuid
+from unittest import mock
 
 from django.contrib.auth.models import User
 from django.test import TestCase
-import mock
 
 
 def mock_uuid():

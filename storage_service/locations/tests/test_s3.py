@@ -1,9 +1,10 @@
 from __future__ import absolute_import
+
 import os
+from unittest import mock
 
 import botocore
 import boto3
-import mock
 import pytest
 from unittest import skip
 

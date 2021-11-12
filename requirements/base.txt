@@ -70,7 +70,7 @@ httplib2==0.19.1
     # via sword2
 idna==2.10
     # via requests
-importlib-metadata==4.8.1
+importlib-metadata==4.8.2
     # via
     #   importlib-resources
     #   oslo.config

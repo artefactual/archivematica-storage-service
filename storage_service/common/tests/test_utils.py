@@ -1,13 +1,14 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
+
 from collections import namedtuple
+from unittest import mock
 import os
 import shutil
 import subprocess
 import tarfile
 
 from six import StringIO
-import mock
 import pytest
 
 from metsrw import FSEntry

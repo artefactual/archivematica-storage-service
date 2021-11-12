@@ -104,7 +104,7 @@ idna==2.10
     #   -r base.txt
     #   requests
     #   yarl
-importlib-metadata==4.8.1
+importlib-metadata==4.8.2
     # via
     #   -r base.txt
     #   click
@@ -151,8 +151,6 @@ lxml==4.6.3
     #   sword2
 metsrw==0.3.17
     # via -r base.txt
-mock==4.0.3
-    # via -r test.in
 more-itertools==8.8.0
     # via pytest
 mozilla-django-oidc==1.2.4
