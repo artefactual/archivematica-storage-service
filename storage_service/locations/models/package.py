@@ -2244,7 +2244,7 @@ class Package(models.Model):
 
         # Fetch processing configuration, put it in the root of the package and
         # include the file in reingest_files.
-        if reingest_type == self.FULL and processing_config != "default":
+        if processing_config != "default":
             try:
                 config = pipeline.get_processing_config(processing_config)
             except requests.exceptions.RequestException:
@@ -2271,6 +2271,11 @@ class Package(models.Model):
                         processing_config,
                     )
                     raise
+                else:
+                    if reingest_type != self.FULL:
+                        reingest_files.append(
+                            os.path.join(relative_path, "processingMCP.xml")
+                        )
 
         LOGGER.info("Reingest: files: %s", reingest_files)
 

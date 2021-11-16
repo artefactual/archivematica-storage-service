@@ -523,6 +523,5 @@ class ReingestForm(forms.Form):
         required=False,
         initial="default",
         label=_("Processing config"),
-        help_text=_("Optional: The processing config is only used with full re-ingest"),
         widget=forms.TextInput(attrs={"placeholder": "default"}),
     )
