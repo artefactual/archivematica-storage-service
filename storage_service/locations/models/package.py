@@ -2291,7 +2291,7 @@ class Package(models.Model):
                 "message": _(
                     "No currently processing Location is associated with pipeline %(uuid)s"
                 )
-                % {"pipeline": pipeline.uuid},
+                % {"uuid": pipeline.uuid},
             }
         LOGGER.debug("Reingest: Current location: %s", current_location)
         dest_basepath = os.path.join(currently_processing.relative_path, "tmp", "")
