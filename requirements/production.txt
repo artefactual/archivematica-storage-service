@@ -119,7 +119,7 @@ keystoneauth1==4.3.1
     #   python-keystoneclient
 logutils==0.3.4.1
     # via -r base.txt
-lxml==4.6.3
+lxml==4.7.1
     # via
     #   -r base.txt
     #   metsrw
@@ -240,7 +240,7 @@ python-gnupg==0.4.7
     # via -r base.txt
 python-keystoneclient==3.10.0
     # via -r base.txt
-python-ldap==3.2.0
+python-ldap==3.4.0
     # via
     #   -r base.txt
     #   pyldap
