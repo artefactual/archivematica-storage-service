@@ -21,11 +21,12 @@ THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures", ""))
 
 
-class TestSpaceAPI(TestCase):
+class TestSpaceAPI(TempDirMixin, TestCase):
 
     fixtures = ["base.json"]
 
     def setUp(self):
+        super().setUp()
         user = User.objects.get(username="test")
         user.set_password("test")
         self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
@@ -102,12 +103,101 @@ class TestSpaceAPI(TestCase):
             in response.content.decode("utf8")
         )
 
+    def test_browse_follow_symlinks(self):
+        # Create a directory with two subdirectories and a file
+        out_dir = self.tmpdir / "out"
+        out_dir.mkdir()
+        (out_dir / "child_1").mkdir()
+        (out_dir / "child_1" / "file.txt").write_text("hello world")
+        (out_dir / "child_2").mkdir()
 
-class TestLocationAPI(TestCase):
+        # Create a symlink for the space targetting the "out" directory
+        space_dir = self.tmpdir / "space"
+        space_dir.symlink_to(out_dir)
+
+        # Create the Space model instance
+        space_uuid = str(uuid.uuid4())
+        space = models.Space.objects.create(
+            uuid=space_uuid,
+            path=str(space_dir),
+            access_protocol=models.Space.LOCAL_FILESYSTEM,
+        )
+        models.LocalFilesystem.objects.create(space=space)
+
+        # Browse the space root directory
+        response = self.client.get(
+            reverse(
+                "browse",
+                kwargs={"api_name": "v2", "resource_name": "space", "uuid": space_uuid},
+            ),
+            {"path": str(space_dir)},
+        )
+        assert response.status_code == 200
+
+        # Assert we get the two top level child directories
+        response_content = json.loads(response.content)
+        assert sorted(
+            [base64.b64decode(e).decode() for e in response_content["directories"]]
+        ) == ["child_1", "child_2"]
+        assert sorted(
+            [base64.b64decode(e).decode() for e in response_content["entries"]]
+        ) == ["child_1", "child_2"]
+        assert response_content["properties"] == {
+            "child_1": {"object count": 1},
+            "child_2": {"object count": 0},
+        }
+
+        # Browse the child_1 directory
+        response = self.client.get(
+            reverse(
+                "browse",
+                kwargs={"api_name": "v2", "resource_name": "space", "uuid": space_uuid},
+            ),
+            {"path": str(space_dir / "child_1")},
+        )
+        assert response.status_code == 200
+
+        # Assert we get the inner text file
+        response_content = json.loads(response.content)
+        assert response_content["directories"] == []
+        assert sorted(
+            [base64.b64decode(e).decode() for e in response_content["entries"]]
+        ) == ["file.txt"]
+        assert response_content["properties"] == {
+            "file.txt": {"size": 11},
+        }
+
+    def test_browse_with_symlinks_loop(self):
+        # Create a symlink pointing to itself for the space path
+        space_dir = self.tmpdir / "space"
+        space_dir.symlink_to(space_dir)
+
+        # Create the Space model instance
+        space_uuid = str(uuid.uuid4())
+        space = models.Space.objects.create(
+            uuid=space_uuid,
+            path=str(space_dir),
+            access_protocol=models.Space.LOCAL_FILESYSTEM,
+        )
+        models.LocalFilesystem.objects.create(space=space)
+
+        # Browse the space root directory
+        response = self.client.get(
+            reverse(
+                "browse",
+                kwargs={"api_name": "v2", "resource_name": "space", "uuid": space_uuid},
+            ),
+            {"path": str(space_dir)},
+        )
+        assert response.status_code == 400
+
+
+class TestLocationAPI(TempDirMixin, TestCase):
 
     fixtures = ["base.json", "pipelines.json", "package.json"]
 
     def setUp(self):
+        super().setUp()
         self.user = User.objects.get(username="test")
         self.user.set_password("test")
         self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
@@ -330,6 +420,128 @@ class TestLocationAPI(TestCase):
             "The path parameter must be relative to the location path"
             in response.content.decode("utf8")
         )
+
+    def test_browse_follow_symlinks(self):
+        # Create a directory with two subdirectories and a file
+        out_dir = self.tmpdir / "out"
+        out_dir.mkdir()
+        (out_dir / "child_1").mkdir()
+        (out_dir / "child_1" / "file.txt").write_text("hello world")
+        (out_dir / "child_2").mkdir()
+
+        # Create a directory for the space
+        space_dir = self.tmpdir / "space"
+        space_dir.mkdir()
+
+        # Create a symlink for the location targetting the "out" directory
+        location_dir = space_dir / "location"
+        location_dir.symlink_to(out_dir)
+
+        # Create the Space model instance
+        space = models.Space.objects.create(
+            uuid=str(uuid.uuid4()),
+            path=str(space_dir),
+            access_protocol=models.Space.LOCAL_FILESYSTEM,
+        )
+        models.LocalFilesystem.objects.create(space=space)
+
+        # Create the Location model instance
+        location_uuid = str(uuid.uuid4())
+        models.Location.objects.create(
+            uuid=location_uuid,
+            space=space,
+            relative_path="location",
+        )
+
+        # Browse the location root directory
+        response = self.client.get(
+            reverse(
+                "browse",
+                kwargs={
+                    "api_name": "v2",
+                    "resource_name": "location",
+                    "uuid": location_uuid,
+                },
+            ),
+            {"path": base64.b64encode(str(location_dir).encode())},
+        )
+        assert response.status_code == 200
+
+        # Assert we get the two top level child directories
+        response_content = json.loads(response.content)
+        assert sorted(
+            [base64.b64decode(e).decode() for e in response_content["directories"]]
+        ) == ["child_1", "child_2"]
+        assert sorted(
+            [base64.b64decode(e).decode() for e in response_content["entries"]]
+        ) == ["child_1", "child_2"]
+        assert response_content["properties"] == {
+            base64.b64encode(b"child_1").decode(): {"object count": 1},
+            base64.b64encode(b"child_2").decode(): {"object count": 0},
+        }
+
+        # Browse the child_1 directory
+        response = self.client.get(
+            reverse(
+                "browse",
+                kwargs={
+                    "api_name": "v2",
+                    "resource_name": "location",
+                    "uuid": location_uuid,
+                },
+            ),
+            {"path": base64.b64encode(str(location_dir / "child_1").encode())},
+        )
+        assert response.status_code == 200
+
+        # Assert we get the inner text file
+        response_content = json.loads(response.content)
+        assert response_content["directories"] == []
+        assert sorted(
+            [base64.b64decode(e).decode() for e in response_content["entries"]]
+        ) == ["file.txt"]
+        assert response_content["properties"] == {
+            base64.b64encode(b"file.txt").decode(): {"size": 11},
+        }
+
+    def test_browse_with_symlinks_loop(self):
+        # Create a directory for the space
+        space_dir = self.tmpdir / "space"
+        space_dir.mkdir()
+
+        # Create a symlink pointing to itself for the location path
+        location_dir = space_dir / "location"
+        location_dir.symlink_to(location_dir)
+
+        # Create the Space model instance
+        space = models.Space.objects.create(
+            uuid=str(uuid.uuid4()),
+            path=str(space_dir),
+            access_protocol=models.Space.LOCAL_FILESYSTEM,
+        )
+        models.LocalFilesystem.objects.create(space=space)
+
+        # Create the Location model instance
+        location_uuid = str(uuid.uuid4())
+        models.Location.objects.create(
+            uuid=location_uuid,
+            space=space,
+            relative_path="location",
+        )
+
+        # Browse the location root directory
+        response = self.client.get(
+            reverse(
+                "browse",
+                kwargs={
+                    "api_name": "v2",
+                    "resource_name": "location",
+                    "uuid": location_uuid,
+                },
+            ),
+            {"path": base64.b64encode(str(location_dir).encode())},
+        )
+        assert response.status_code == 400
 
 
 class TestPackageAPI(TempDirMixin, TestCase):

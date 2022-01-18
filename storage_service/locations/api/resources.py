@@ -73,9 +73,9 @@ LOGGER = logging.getLogger(__name__)
 def _is_relative_path(path1, path2):
     """Ensure path2 is relative to path1"""
     try:
-        Path(path2).resolve().relative_to(path1)
+        Path(path2).resolve().relative_to(Path(path1).resolve())
         return True
-    except ValueError:
+    except (ValueError, RuntimeError):
         return False
 
 
