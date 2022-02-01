@@ -248,6 +248,7 @@ class SpaceResource(ModelResource):
             "used",
             "uuid",
             "verified",
+            "staging_path",
         ]
         list_allowed_methods = ["get", "post"]
         detail_allowed_methods = ["get"]
@@ -260,6 +261,7 @@ class SpaceResource(ModelResource):
             "used": ALL,
             "uuid": ALL,
             "verified": ALL,
+            "staging_path": ALL,
         }
 
     def prepend_urls(self):
