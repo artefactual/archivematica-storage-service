@@ -1137,7 +1137,7 @@ class Package(models.Model):
             root.find(".//mets:fileGrp", namespaces=utils.NSMAP).set(
                 "USE", "Archival Information Package"
             )
-        with open(pointer_absolute_path, "w") as f:
+        with open(pointer_absolute_path, "wb") as f:
             f.write(
                 etree.tostring(
                     root, pretty_print=True, xml_declaration=True, encoding="utf-8"
