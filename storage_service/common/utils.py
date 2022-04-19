@@ -174,8 +174,7 @@ def download_file_stream(filepath, temp_dir=None):
     # Open file in binary mode
     response = http.FileResponse(open(filepath, "rb"))
 
-    mimetype = mimetypes.guess_type(filename)[0]
-    response["Content-type"] = mimetype
+    response["Content-type"] = get_mimetype(filename)
     response["Content-Disposition"] = 'attachment; filename="' + filename + '"'
     response["Content-Length"] = os.path.getsize(filepath)
 
@@ -797,3 +796,10 @@ def package_is_file(path):
         if path.endswith(ext):
             return True
     return False
+
+
+def get_mimetype(path):
+    """Returns a file's mimetype based on its extension.
+    Returns None if unable to determine the mimetype.
+    """
+    return mimetypes.guess_type(path)[0]

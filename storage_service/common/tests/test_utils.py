@@ -537,3 +537,10 @@ def test_get_compressed_package_checksum():
     assert utils.get_compressed_package_checksum(
         os.path.join(FIXTURES_DIR, "premis_3_pointer.xml")
     ) == ("c2924159fcbbeadf8d7f3962b43ec1bf301e1b4f12dd28a8b89ec819f3714747", "sha256")
+
+
+def test_get_mimetype():
+    assert utils.get_mimetype("video.mp4") == "video/mp4"
+    assert utils.get_mimetype("C:\\Windows\\Path\\windowsfile.xml") == "application/xml"
+    assert utils.get_mimetype("/var/lib/file.txt") == "text/plain"
+    assert utils.get_mimetype("undetermined") is None

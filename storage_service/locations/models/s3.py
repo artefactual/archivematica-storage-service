@@ -244,18 +244,25 @@ class S3(models.Model):
                     entry = os.path.join(path, basename)
                     dest = entry.replace(src_path, dest_path, 1)
 
-                    with open(entry, "rb") as data:
-                        bucket.upload_fileobj(data, dest)
+                    self.upload_object(bucket, dest, entry)
 
         elif os.path.isfile(src_path):
             # strip leading slash on dest_path
             dest_path = dest_path.lstrip("/")
 
-            with open(src_path, "rb") as data:
-                bucket.upload_fileobj(data, dest_path)
+            self.upload_object(bucket, dest_path, src_path)
 
         else:
             raise StorageException(
                 _("%(path)s is neither a file nor a directory, may not exist")
                 % {"path": src_path}
             )
+
+    def upload_object(self, bucket, path, data):
+        extra_args = {}
+        mtype = utils.get_mimetype(path)
+        if mtype:
+            extra_args["ContentType"] = mtype
+
+        with open(data, "rb") as d:
+            bucket.upload_fileobj(d, path, ExtraArgs=extra_args)
