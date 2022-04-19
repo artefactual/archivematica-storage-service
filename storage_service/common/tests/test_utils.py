@@ -468,3 +468,9 @@ def test_create_tar(
 )
 def test_strip_quad_dirs_from_path(input_path, expected_path):
     assert utils.strip_quad_dirs_from_path(input_path) == expected_path
+
+def test_get_mimetype():
+    assert utils.get_mimetype('video.mp4') == 'video/mp4'
+    assert utils.get_mimetype('C:\Windows\Path\windowsfile.xml') == 'application/xml'
+    assert utils.get_mimetype('/var/lib/file.txt') == 'text/plain'
+    assert utils.get_mimetype('undetermined') == None
