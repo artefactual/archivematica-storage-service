@@ -473,4 +473,4 @@ def test_get_mimetype():
     assert utils.get_mimetype('video.mp4') == 'video/mp4'
     assert utils.get_mimetype('C:\Windows\Path\windowsfile.xml') == 'application/xml'
     assert utils.get_mimetype('/var/lib/file.txt') == 'text/plain'
-    assert utils.get_mimetype('undetermined') == None
+    assert utils.get_mimetype('undetermined') is None
