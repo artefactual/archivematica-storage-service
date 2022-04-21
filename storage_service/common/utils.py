@@ -744,6 +744,7 @@ def package_is_file(path):
             return True
     return False
 
+
 def get_mimetype(path):
     """Returns a file's mimetype based on its extension.
     Returns None if unable to determine the mimetype.
