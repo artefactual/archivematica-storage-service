@@ -426,7 +426,7 @@ class Duracloud(models.Model):
                             "%s already in Duracloud, skipping upload", chunk_path
                         )
                     else:
-                        self._upload_chunk(chunk_url, chunk_path)
+                        self._upload_chunk(chunk_url, chunk_path, checksum.hexdigest())
                     # Delete chunk
                     os.remove(chunk_path)
                     i += 1
@@ -440,14 +440,14 @@ class Duracloud(models.Model):
                     ).decode("utf8")
                 )
             # Upload .dura-manifest
-            self._upload_chunk(manifest_url, manifest_path)
+            self._upload_chunk(manifest_url, manifest_path, checksum.hexdigest())
             os.remove(manifest_path)
             # TODO what if .dura-manifest over chunksize?
         else:
             # Example URL: https://trial.duracloud.org/durastore/trial261//ts/test.txt
-            self._upload_chunk(url, upload_file)
+            self._upload_chunk(url, upload_file, None)
 
-    def _upload_chunk(self, url, upload_file, retry_attempts=3):
+    def _upload_chunk(self, url, upload_file, checksum, retry_attempts=3):
         """
         Upload a single file to Duracloud.
 
@@ -456,20 +456,31 @@ class Duracloud(models.Model):
 
         :param url: URL to upload the file to.
         :param upload_file: Absolute path to the file to upload.
+        :param checksum: An optional string md5 checksum of the file.
         :param int retry_attempts: Number of retry attempts left.
         :returns: None
         :raises: StorageException if error storing file
         """
+
+        if checksum is None:
+            checksum = utils.generate_checksum(upload_file).hexdigest()
+
+        headers = {"Content-MD5": checksum}
+
+        mtype = utils.get_mimetype(upload_file)
+        if mtype:
+            headers["Content-Type"] = mtype
+
         try:
             LOGGER.debug("PUT URL: %s", url)
             with open(upload_file, "rb") as f:
-                response = self.session.put(url, data=f)
+                response = self.session.put(url, data=f, headers=headers)
             LOGGER.debug("Response: %s", response)
         except Exception:
             LOGGER.exception("Error in PUT to %s", url)
             if retry_attempts > 0:
                 LOGGER.info("Retrying %s", upload_file)
-                self._upload_chunk(url, upload_file, retry_attempts - 1)
+                self._upload_chunk(url, upload_file, checksum, retry_attempts - 1)
             else:
                 raise
         else:
@@ -477,7 +488,7 @@ class Duracloud(models.Model):
                 LOGGER.warning("%s: Response: %s", response, response.text)
                 if retry_attempts > 0:
                     LOGGER.info("Retrying %s", upload_file)
-                    self._upload_chunk(url, upload_file, retry_attempts - 1)
+                    self._upload_chunk(url, upload_file, checksum, retry_attempts - 1)
                 else:
                     raise StorageException(
                         _("Unable to store %(filename)s") % {"filename": upload_file}
