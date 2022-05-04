@@ -440,7 +440,10 @@ class Duracloud(models.Model):
                     ).decode("utf8")
                 )
             # Upload .dura-manifest
-            self._upload_chunk(manifest_url, manifest_path, checksum.hexdigest())
+            manifest_checksum = utils.generate_checksum(manifest_path)
+            self._upload_chunk(
+                manifest_url, manifest_path, manifest_checksum.hexdigest()
+            )
             os.remove(manifest_path)
             # TODO what if .dura-manifest over chunksize?
         else:
