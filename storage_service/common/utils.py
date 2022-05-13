@@ -95,7 +95,7 @@ DECOMPRESS_TRANSFORM_TYPE = "decompression"
 
 
 def get_all_settings():
-    """ Returns a dict of 'setting_name': value with all of the settings. """
+    """Returns a dict of 'setting_name': value with all of the settings."""
     settings = dict(models.Settings.objects.all().values_list("name", "value"))
     for setting, value in settings.items():
         try:
@@ -106,7 +106,7 @@ def get_all_settings():
 
 
 def get_setting(setting, default=None):
-    """ Returns the value of 'setting' from models.Settings, 'default' if not found."""
+    """Returns the value of 'setting' from models.Settings, 'default' if not found."""
     try:
         setting = models.Settings.objects.get(name=setting)
     except models.Settings.DoesNotExist:
@@ -134,7 +134,7 @@ def set_setting(setting, value=None):
 
 
 def dependent_objects(object_):
-    """ Returns all the objects that rely on 'object_'. """
+    """Returns all the objects that rely on 'object_'."""
     related_objects = [
         f
         for f in object_._meta.get_fields()

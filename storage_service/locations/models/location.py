@@ -27,7 +27,7 @@ LOGGER = logging.getLogger(__name__)
 
 @six.python_2_unicode_compatible
 class Location(models.Model):
-    """ Stores information about a location. """
+    """Stores information about a location."""
 
     uuid = UUIDField(
         editable=False, unique=True, version=4, help_text=_("Unique identifier")
@@ -126,7 +126,7 @@ class Location(models.Model):
     _default = None
 
     def __str__(self):
-        return _(u"%(uuid)s: %(path)s (%(purpose)s)") % {
+        return _("%(uuid)s: %(path)s (%(purpose)s)") % {
             "uuid": self.uuid,
             "purpose": self.get_purpose_display(),
             "path": self.relative_path,
@@ -135,7 +135,7 @@ class Location(models.Model):
     # Attributes
     @property
     def full_path(self):
-        """ Returns full path of location: space + location paths. """
+        """Returns full path of location: space + location paths."""
 
         # Dataverses are browsed using the relative path. We only want to
         # return that to display to the user here.
@@ -146,7 +146,7 @@ class Location(models.Model):
 
     @property
     def default(self):
-        """ Looks up whether this location is the default one application-wise. """
+        """Looks up whether this location is the default one application-wise."""
         if self._default is None:
             try:
                 name = "default_{}_location".format(self.purpose)
@@ -161,7 +161,7 @@ class Location(models.Model):
         self._default = value
 
     def get_description(self):
-        """ Returns a user-friendly description (or the path). """
+        """Returns a user-friendly description (or the path)."""
         return self.description or self.full_path
 
     def is_move_allowed(self):
@@ -215,7 +215,7 @@ class LocationPipeline(models.Model):
         app_label = "locations"
 
     def __str__(self):
-        return _(u"%(location)s is associated with %(pipeline)s") % {
+        return _("%(location)s is associated with %(pipeline)s") % {
             "location": self.location,
             "pipeline": self.pipeline,
         }

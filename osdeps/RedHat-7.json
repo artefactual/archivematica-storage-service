@@ -10,25 +10,80 @@
     "mariadb-devel: removed due to dependency conflicts ref. https://github.com/archivematica/Issues/issues/22"
   ],
   "osdeps_packages": [
-   { "name": "epel-release", "state": "latest"}
+    {
+      "name": "epel-release",
+      "state": "latest"
+    }
   ],
   "osdeps_packages_2": [
-   { "name": "nginx", "state": "latest"},
-   { "name": "unar", "state": "latest"},
-   { "name": "rsync", "state": "latest", "version": "3.1.1"},
-   { "name": "python3-devel", "state": "latest"},
-   { "name": "libxml2-devel", "state": "latest"},
-   { "name": "libxslt-devel", "state": "latest"},
-   { "name": "zlib-devel", "state": "latest"},
-   { "name": "libffi-devel", "state": "latest"},
-   { "name": "openssl-devel", "state": "latest"},
-   { "name": "gcc", "state": "latest"},
-   { "name": "gcc-c++", "state": "latest"},
-   { "name": "gettext", "state": "latest"},
-   { "name": "p7zip", "state": "latest"},
-   { "name": "p7zip-plugins", "state": "latest"},
-   { "name": "gnupg", "state": "latest"},
-   { "name": "rng-tools", "state": "latest"},
-   { "name": "openldap-devel", "state": "latest"}
+    {
+      "name": "nginx",
+      "state": "latest"
+    },
+    {
+      "name": "unar",
+      "state": "latest"
+    },
+    {
+      "name": "rsync",
+      "state": "latest",
+      "version": "3.1.1"
+    },
+    {
+      "name": "python3-devel",
+      "state": "latest"
+    },
+    {
+      "name": "libxml2-devel",
+      "state": "latest"
+    },
+    {
+      "name": "libxslt-devel",
+      "state": "latest"
+    },
+    {
+      "name": "zlib-devel",
+      "state": "latest"
+    },
+    {
+      "name": "libffi-devel",
+      "state": "latest"
+    },
+    {
+      "name": "openssl-devel",
+      "state": "latest"
+    },
+    {
+      "name": "gcc",
+      "state": "latest"
+    },
+    {
+      "name": "gcc-c++",
+      "state": "latest"
+    },
+    {
+      "name": "gettext",
+      "state": "latest"
+    },
+    {
+      "name": "p7zip",
+      "state": "latest"
+    },
+    {
+      "name": "p7zip-plugins",
+      "state": "latest"
+    },
+    {
+      "name": "gnupg",
+      "state": "latest"
+    },
+    {
+      "name": "rng-tools",
+      "state": "latest"
+    },
+    {
+      "name": "openldap-devel",
+      "state": "latest"
+    }
   ]
 }

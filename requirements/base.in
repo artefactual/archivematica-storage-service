@@ -37,4 +37,3 @@ django-cas-ng==3.6.0
 
 # Required for OpenID Connect authentication
 mozilla-django-oidc
-cffi==1.14.6; python_version < '3.7'

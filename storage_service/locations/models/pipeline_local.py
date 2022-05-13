@@ -123,7 +123,7 @@ class PipelineLocalFS(models.Model):
             shutil.rmtree(temp_dir)
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
-        """ Moves src_path to dest_space.staging_path/dest_path. """
+        """Moves src_path to dest_space.staging_path/dest_path."""
         # if dest_space == self:
         #     # If moving within same space, don't bring to storage service
         #     # FIXME dest_path is relative, and intended for staging_path, need
@@ -156,7 +156,7 @@ class PipelineLocalFS(models.Model):
         pass
 
     def move_from_storage_service(self, source_path, destination_path, package=None):
-        """ Moves self.staging_path/src_path to dest_path. """
+        """Moves self.staging_path/src_path to dest_path."""
 
         self.space.create_rsync_directory(
             destination_path, self.remote_user, self.remote_name

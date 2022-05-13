@@ -1,17 +1,26 @@
 repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.2.0
+  hooks:
+  - id: pretty-format-json
+    args: [--no-ensure-ascii, --autofix]
+    files: |
+      (?x)^(
+        osdeps/.*\.json
+      )
 - repo: https://github.com/ambv/black
-  rev: 20.8b1
+  rev: 22.3.0
   hooks:
   - id: black
     args: [--safe, --quiet]
     language_version: python3
 - repo: https://gitlab.com/pycqa/flake8
-  rev: 3.8.4
+  rev: 4.0.1
   hooks:
   - id: flake8
     language_version: python3
 - repo: https://github.com/pre-commit/mirrors-eslint
-  rev: 'v7.21.0'
+  rev: 'v8.15.0'
   hooks:
   - id: eslint
     files: ^storage_service/static/js/(project|.*directory_picker|file-explorer).js

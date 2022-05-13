@@ -41,7 +41,7 @@ class OfflineReplicaStaging(models.Model):
         )
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
-        """ Moves src_path to dest_space.staging_path/dest_path. """
+        """Moves src_path to dest_space.staging_path/dest_path."""
         raise NotImplementedError(
             _("Write-Only Offline Staging does not implement fetching packages")
         )

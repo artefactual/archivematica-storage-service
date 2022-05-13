@@ -71,10 +71,10 @@ class Duracloud(models.Model):
     # This may change in the future, see https://jira.duraspace.org/browse/DURACLOUD-922 for more.
     #
     # DuraCloud's default is 1 GB (1,000,000,000 bytes).
-    CHUNK_SIZE = 10 ** 9
+    CHUNK_SIZE = 10**9
 
     # Size of chunks when reading files from disk to be uploaded - 1 MB (1,000,000 bytes).
-    BUFFER_SIZE = 10 ** 6
+    BUFFER_SIZE = 10**6
 
     def __init__(self, *args, **kwargs):
         super(Duracloud, self).__init__(*args, **kwargs)
@@ -306,7 +306,7 @@ class Duracloud(models.Model):
         return True
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
-        """ Moves src_path to dest_space.staging_path/dest_path. """
+        """Moves src_path to dest_space.staging_path/dest_path."""
         # Convert unicode strings to byte strings
         #  .replace() doesn't handle mixed unicode/str well, and it's easiest to put it all in strs
         src_path = utils.coerce_str(src_path)
@@ -486,7 +486,7 @@ class Duracloud(models.Model):
     def move_from_storage_service(
         self, source_path, destination_path, package=None, resume=False
     ):
-        """ Moves self.staging_path/src_path to dest_path. """
+        """Moves self.staging_path/src_path to dest_path."""
         source_path = utils.coerce_str(source_path)
         destination_path = utils.coerce_str(destination_path)
         if os.path.isdir(source_path):

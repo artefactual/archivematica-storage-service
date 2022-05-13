@@ -185,7 +185,7 @@ class Swift(models.Model):
                 raise StorageException(message)
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
-        """ Moves src_path to dest_space.staging_path/dest_path. """
+        """Moves src_path to dest_space.staging_path/dest_path."""
         try:
             self._download_file(src_path, dest_path)
         except swiftclient.exceptions.ClientException:
@@ -210,7 +210,7 @@ class Swift(models.Model):
                 self._download_file(entry, dest)
 
     def move_from_storage_service(self, source_path, destination_path, package=None):
-        """ Moves self.staging_path/src_path to dest_path. """
+        """Moves self.staging_path/src_path to dest_path."""
         if os.path.isdir(source_path):
             # Both source and destination paths should end with /
             destination_path = os.path.join(destination_path, "")

@@ -1,6 +1,7 @@
 ARG TARGET=archivematica-storage-service
+ARG UBUNTU_VERSION=18.04
 
-FROM ubuntu:18.04 AS base
+FROM ubuntu:${UBUNTU_VERSION} AS base
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV PYTHONUNBUFFERED 1
@@ -14,16 +15,24 @@ RUN set -ex \
 		gettext \
 		git \
 		gnupg1 \
+		gpg-agent \
 		libldap2-dev \
 		libmysqlclient-dev \
 		libsasl2-dev \
 		locales \
 		locales-all \
 		openssh-client \
-		python3-dev \
 		p7zip-full \
 		rsync \
+		software-properties-common \
 		unar \
+	&& rm -rf /var/lib/apt/lists/*
+
+RUN set -ex \
+	&& add-apt-repository --no-update --yes "ppa:deadsnakes/ppa" \
+	&& apt-get update \
+	&& apt-get install -y --no-install-recommends \
+		python3.7-dev python3.7-distutils \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Set the locale
@@ -48,12 +57,12 @@ RUN set -ex \
 	&& chown -R archivematica:archivematica $internalDirs
 
 RUN set -ex \
-	&& curl -s https://bootstrap.pypa.io/pip/3.6/get-pip.py | python3.6 \
-	&& update-alternatives --install /usr/bin/python python /usr/bin/python3 10
+	&& curl -s https://bootstrap.pypa.io/get-pip.py | python3.7 \
+	&& update-alternatives --install /usr/bin/python python /usr/bin/python3.7 10
 
 COPY requirements/ /src/requirements/
 COPY ./install/storage-service.gunicorn-config.py /etc/archivematica/storage-service.gunicorn-config.py
-RUN pip3 install -q -r /src/requirements/production.txt -r /src/requirements/test.txt
+RUN pip3.7 install -q -r /src/requirements/production.txt -r /src/requirements/test.txt
 
 COPY ./ /src/
 

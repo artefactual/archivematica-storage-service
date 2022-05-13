@@ -59,11 +59,11 @@ class TestSwift(TempDirMixin, TestCase):
             "pictures",
             "Vector.NET-Free-Vector-Art-Pack-28-Freedom-Flight.eps",
             "WFPC01.GIF",
-            u"エブリンの写真.jpg",
+            "エブリンの写真.jpg",
         ]
-        assert resp["properties"][u"エブリンの写真.jpg"]["size"] == 158131
+        assert resp["properties"]["エブリンの写真.jpg"]["size"] == 158131
         assert (
-            resp["properties"][u"エブリンの写真.jpg"]["timestamp"]
+            resp["properties"]["エブリンの写真.jpg"]["timestamp"]
             == "2015-04-10T21:56:43.264560"
         )
 
@@ -132,7 +132,7 @@ class TestSwift(TempDirMixin, TestCase):
     def test_move_from_ss(self):
         # create test.txt
         test_file = self.tmpdir / "test.txt"
-        test_file.open("w").write(u"test file\n")
+        test_file.open("w").write("test file\n")
         # Test
         self.swift_object.move_from_storage_service(
             str(test_file), "transfers/SampleTransfers/test.txt"

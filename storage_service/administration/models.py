@@ -10,4 +10,4 @@ class Settings(models.Model):
     value = models.TextField(null=True, blank=True)
 
     def __str__(self):
-        return u"{}: {}".format(self.name, self.value)
+        return "{}: {}".format(self.name, self.value)

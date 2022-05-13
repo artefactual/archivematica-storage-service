@@ -17,7 +17,7 @@ from . import roles
 
 
 class DefaultLocationWidget(forms.MultiWidget):
-    """ Widget for entering required information to create a new location. """
+    """Widget for entering required information to create a new location."""
 
     template_name = "administration/location_widget.html"
 
@@ -34,7 +34,7 @@ class DefaultLocationWidget(forms.MultiWidget):
         self.widgets[0].choices += choices
 
     def decompress(self, value):
-        """ Splits initial data to a list for each sub-widget. """
+        """Splits initial data to a list for each sub-widget."""
         try:
             return [
                 value["space_id"],
@@ -53,7 +53,7 @@ class DefaultLocationWidget(forms.MultiWidget):
 
 
 class DefaultLocationField(forms.MultiValueField):
-    """ Field for entering required information to create a new location. """
+    """Field for entering required information to create a new location."""
 
     def __init__(self, *args, **kwargs):
         space_id = forms.ChoiceField(choices=[], *args, **kwargs)
@@ -71,7 +71,7 @@ class DefaultLocationField(forms.MultiValueField):
         self.widget.set_space_id_choices(choices)
 
     def compress(self, data_list):
-        """ Takes widget data and compresses to one data structure. """
+        """Takes widget data and compresses to one data structure."""
         if data_list and len(data_list) == 4:
             return {
                 "space_id": data_list[0],
@@ -86,16 +86,16 @@ class DefaultLocationField(forms.MultiValueField):
 
 
 class SettingsForm(forms.Form):
-    """ For all forms that save data to Settings model. """
+    """For all forms that save data to Settings model."""
 
     def save(self, *args, **kwargs):
-        """ Save each of the fields in the form to the Settings table. """
+        """Save each of the fields in the form to the Settings table."""
         for setting, value in self.cleaned_data.items():
             utils.set_setting(setting, value)
 
 
 class CommonSettingsForm(SettingsForm):
-    """ Configures common or generic settings that don't belong elsewhere. """
+    """Configures common or generic settings that don't belong elsewhere."""
 
     pipelines_disabled = forms.BooleanField(
         required=False, label=_("Pipelines are disabled upon creation?")
@@ -115,7 +115,7 @@ class CommonSettingsForm(SettingsForm):
 
 
 class DefaultLocationsForm(SettingsForm):
-    """ Configures default locations associated with a new pipeline. """
+    """Configures default locations associated with a new pipeline."""
 
     # This allows to look for the custom template of the DefaultLocationWidget
     # in the DIRS paths of the default templates backend (see settings.TEMPLATES)

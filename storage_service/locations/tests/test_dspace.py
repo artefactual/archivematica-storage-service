@@ -107,7 +107,7 @@ class TestDSpace(TempDirMixin, TestCase):
     )
     def test_move_from_ss(self):
         # Create test.txt
-        (self.tmpdir / "test.txt").open("w").write(u"test file\n")
+        (self.tmpdir / "test.txt").open("w").write("test file\n")
         package = models.Package.objects.get(
             uuid="1056123d-8a16-49c2-ac51-8e5fa367d8b5"
         )
