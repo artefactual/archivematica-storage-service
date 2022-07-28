@@ -255,6 +255,12 @@ class OfflineReplicaStagingForm(forms.ModelForm):
         fields = ()
 
 
+class RCloneForm(forms.ModelForm):
+    class Meta:
+        model = models.RClone
+        fields = ("remote_name", "container")
+
+
 class LocationForm(forms.ModelForm):
     default = forms.BooleanField(
         required=False, label=_("Set as global default location for its purpose")

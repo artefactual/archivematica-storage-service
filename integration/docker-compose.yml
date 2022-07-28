@@ -15,6 +15,12 @@ services:
       SS_GUNICORN_ACCESSLOG: "/dev/null"
       DJANGO_SETTINGS_MODULE: "storage_service.settings.testmysql"
       SS_GNUPG_HOME_PATH: "/var/archivematica/storage_service/.gnupg"
+      RCLONE_CONFIG_MYS3_TYPE: "s3"
+      RCLONE_CONFIG_MYS3_PROVIDER: "Minio"
+      RCLONE_CONFIG_MYS3_ENDPOINT: "http://minio:9000"
+      RCLONE_CONFIG_MYS3_ACCESS_KEY_ID: "minio"
+      RCLONE_CONFIG_MYS3_SECRET_ACCESS_KEY: "minio123"
+      RCLONE_CONFIG_MYS3_REGION: "planet-earth"
     volumes:
       - "../:/src"
     links:

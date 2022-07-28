@@ -29,6 +29,7 @@
    { "name": "p7zip-plugins", "state": "latest"},
    { "name": "gnupg", "state": "latest"},
    { "name": "rng-tools", "state": "latest"},
-   { "name": "openldap-devel", "state": "latest"}
+   { "name": "openldap-devel", "state": "latest"},
+   { "name": "rclone", "state": "latest"}
   ]
 }

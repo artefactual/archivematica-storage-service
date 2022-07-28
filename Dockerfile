@@ -24,7 +24,16 @@ RUN set -ex \
 		p7zip-full \
 		rsync \
 		unar \
+		unzip \
 	&& rm -rf /var/lib/apt/lists/*
+
+# Install rclone
+RUN set -ex \
+	&& cd $(mktemp -d) \
+ 	&& curl -OfsS "https://downloads.rclone.org/rclone-current-linux-amd64.zip" \
+ 	&& unzip "rclone-*-linux-amd64.zip" \
+ 	&& mv rclone-*-linux-amd64/rclone /usr/bin/ \
+ 	&& chmod a+x /usr/bin/rclone
 
 # Set the locale
 RUN locale-gen en_US.UTF-8

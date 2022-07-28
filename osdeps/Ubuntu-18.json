@@ -29,6 +29,7 @@
    { "name": "gnupg1", "state": "latest"},
    { "name": "rng-tools", "state": "latest"},
    { "name": "libsasl2-dev", "state": "latest"},
-   { "name": "libldap2-dev", "state": "latest"}
+   { "name": "libldap2-dev", "state": "latest"},
+   { "name": "rclone", "state": "latest"}
   ]
 }

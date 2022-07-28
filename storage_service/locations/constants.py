@@ -89,6 +89,11 @@ PROTOCOL = {
             "rsync_password",
         ],
     },
+    models.Space.RCLONE: {
+        "model": models.RClone,
+        "form": forms.RCloneForm,
+        "fields": ["remote_name", "container"],
+    },
     models.Space.SWIFT: {
         "model": models.Swift,
         "form": forms.SwiftForm,

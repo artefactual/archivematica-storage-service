@@ -144,6 +144,13 @@ class StorageScenario(object):
             "region": "planet-earth",
             "bucket": "aip-storage",
         },
+        Space.RCLONE: {
+            "access_protocol": Space.RCLONE,
+            "path": "",
+            "staging_path": "/var/archivematica/sharedDirectory/tmp/rp_staging_path",
+            "remote_name": "mys3",
+            "container": "mybucket",
+        },
         Space.NFS: {
             "access_protocol": Space.NFS,
             "path": "/var/archivematica/sharedDirectory/tmp/nfs_mount",
@@ -381,10 +388,22 @@ class StorageScenario(object):
             src=Space.NFS, dst=Space.S3, pkg=UNCOMPRESSED_PACKAGE, compressed=False
         ),
         StorageScenario(
+            src=Space.NFS, dst=Space.RCLONE, pkg=COMPRESSED_PACKAGE, compressed=True
+        ),
+        StorageScenario(
+            src=Space.NFS, dst=Space.RCLONE, pkg=UNCOMPRESSED_PACKAGE, compressed=False
+        ),
+        StorageScenario(
             src=Space.S3, dst=Space.NFS, pkg=COMPRESSED_PACKAGE, compressed=True
         ),
         StorageScenario(
             src=Space.S3, dst=Space.NFS, pkg=UNCOMPRESSED_PACKAGE, compressed=False
+        ),
+        StorageScenario(
+            src=Space.RCLONE, dst=Space.NFS, pkg=COMPRESSED_PACKAGE, compressed=True
+        ),
+        StorageScenario(
+            src=Space.RCLONE, dst=Space.NFS, pkg=UNCOMPRESSED_PACKAGE, compressed=False
         ),
         StorageScenario(
             src=Space.S3, dst=Space.S3, pkg=COMPRESSED_PACKAGE, compressed=True
@@ -392,14 +411,29 @@ class StorageScenario(object):
         StorageScenario(
             src=Space.S3, dst=Space.S3, pkg=UNCOMPRESSED_PACKAGE, compressed=False
         ),
+        StorageScenario(
+            src=Space.RCLONE, dst=Space.RCLONE, pkg=COMPRESSED_PACKAGE, compressed=True
+        ),
+        StorageScenario(
+            src=Space.RCLONE,
+            dst=Space.RCLONE,
+            pkg=UNCOMPRESSED_PACKAGE,
+            compressed=False,
+        ),
     ],
     ids=[
         "nfs_to_s3_compressed",
         "nfs_to_s3_uncompressed",
+        "nfs_to_rclone_compressed",
+        "nfs_to_rclone_uncompressed",
         "s3_to_nfs_compressed",
         "s3_to_nfs_uncompressed",
+        "rclone_to_nfs_compressed",
+        "rclone_to_nfs_uncompressed",
         "s3_to_s3_compressed",
         "s3_to_s3_uncompressed",
+        "rclone_to_rclone_compressed",
+        "rclone_to_rclone_uncompressed",
     ],
 )
 @pytest.mark.django_db(transaction=True)
