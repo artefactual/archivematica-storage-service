@@ -772,6 +772,7 @@ class PackageResource(ModelResource):
             "package_type",
             "size",
             "status",
+            "stored",
             "uuid",
             "related_packages",
             "misc_attributes",
@@ -789,6 +790,7 @@ class PackageResource(ModelResource):
             "path": ALL,
             "uuid": ALL,
             "status": ALL,
+            "stored": ALL,
             "related_packages": ALL_WITH_RELATIONS,
         }
 
