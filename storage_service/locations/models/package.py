@@ -5,6 +5,7 @@ from __future__ import absolute_import
 from collections import namedtuple
 import codecs
 import copy
+from datetime import datetime
 import distutils.dir_util
 import json
 import logging
@@ -82,6 +83,12 @@ class Package(models.Model):
     pointer_file_path = models.TextField(null=True, blank=True)
     size = models.BigIntegerField(
         default=0, help_text=_("Size in bytes of the package")
+    )
+    stored_date = models.DateTimeField(
+        default=None,
+        null=True,
+        blank=True,
+        help_text=_("Datetime when package is successfully stored"),
     )
     encryption_key_fingerprint = models.CharField(
         max_length=512,
@@ -724,6 +731,7 @@ class Package(models.Model):
         )
         if dest_space.access_protocol not in (Space.LOM, Space.ARKIVUM):
             replica_package.status = Package.UPLOADED
+        replica_package.stored_date = datetime.now()
         replica_package.save()
         dest_space.post_move_from_storage_service(
             staging_path=replica_package.current_path,
@@ -973,6 +981,7 @@ class Package(models.Model):
                 related_package = Package.objects.get(uuid=related_package_uuid)
                 self.related_packages.add(related_package)
             self.status = Package.UPLOADED
+            self.stored_date = datetime.now()
             self.save()
             self._update_quotas(v.dest_space, self.current_location)
             return storage_effects, checksum
@@ -1015,6 +1024,7 @@ class Package(models.Model):
             # Update package status once transferred to SS
             if v.dest_space.access_protocol not in (Space.LOM, Space.ARKIVUM):
                 self.status = Package.UPLOADED
+                self.stored_date = datetime.now()
             if related_package_uuid is not None:
                 related_package = Package.objects.get(uuid=related_package_uuid)
                 self.related_packages.add(related_package)

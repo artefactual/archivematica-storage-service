@@ -31,6 +31,9 @@
           {% endif %}
         </td>
         <td>
+          {{ package.stored_date|default_if_none:"" }}
+        </td>
+        <td>
           {{ package.latest_fixity_check_datetime|default_if_none:"" }}
         </td>
         <td>

@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+from collections import namedtuple
 import datetime
 import os
 import pytest
@@ -38,6 +39,30 @@ def recursive_file_count(target_dir):
 def recursive_dir_count(target_dir):
     """Return count of dirs in directory based on recursive walk."""
     return sum([len(dirs) for _, dirs, _ in os.walk(target_dir)])
+
+
+def mock_v():
+    """Return mock namedtuple with attributes needed to store AIP."""
+    V = namedtuple(
+        "V",
+        [
+            "src_space",
+            "dest_space",
+            "should_have_pointer",
+            "pointer_file_src",
+            "pointer_file_dst",
+            "already_generated_ptr_exists",
+        ],
+    )
+    space = models.Space.objects.get(uuid="7d20c992-bc92-4f92-a794-7161ff2cc08b")
+    return V(
+        src_space=space,
+        dest_space=space,
+        should_have_pointer=False,
+        pointer_file_src=None,
+        pointer_file_dst=None,
+        already_generated_ptr_exists=False,
+    )
 
 
 class TestPackage(TestCase):
@@ -286,6 +311,58 @@ class TestPackage(TestCase):
             ).source_id
             == "742f10b0-768a-4158-b255-94847a97c465"
         )
+
+    def test_stored_date(self):
+        package = models.Package.objects.get(
+            uuid="a59033c2-7fa7-41e2-9209-136f07174692"
+        )
+        assert package.stored_date is None
+
+        with mock.patch("locations.models.Space.posix_move"):
+            with mock.patch("locations.models.Package._update_quotas"):
+                package.origin_path = "origin/path"
+                package.origin_location = models.Location.objects.get(
+                    uuid="72ee3a1a-9497-46db-aa58-56ea8d7fedc5"
+                )
+                package.current_location = models.Location.objects.get(
+                    uuid="213086c8-232e-4b9e-bb03-98fbc7a7966a"
+                )
+                package.save()
+                package._store_aip_to_uploaded(
+                    mock_v(), "79245866-ca80-4f84-b904-a02b3e0ab621"
+                )
+                assert package.stored_date and isinstance(
+                    package.stored_date, datetime.datetime
+                )
+
+    @mock.patch("locations.models.Package._update_quotas")
+    @mock.patch("locations.models.Space.move_to_storage_service")
+    @mock.patch("locations.models.Space.post_move_to_storage_service")
+    @mock.patch("locations.models.Space.move_from_storage_service")
+    def test_stored_date_posix_exception(
+        self, update_quotas, move_to, post_move, move_from
+    ):
+        package = models.Package.objects.get(
+            uuid="a59033c2-7fa7-41e2-9209-136f07174692"
+        )
+        assert package.stored_date is None
+
+        with mock.patch("locations.models.Space.posix_move") as posix_move:
+            posix_move.side_effect = models.space.PosixMoveUnsupportedError
+            package.origin_path = "origin/path"
+            package.origin_location = models.Location.objects.get(
+                uuid="72ee3a1a-9497-46db-aa58-56ea8d7fedc5"
+            )
+            package.current_location = models.Location.objects.get(
+                uuid="213086c8-232e-4b9e-bb03-98fbc7a7966a"
+            )
+            package.save()
+            package._store_aip_to_uploaded(
+                mock_v(), "79245866-ca80-4f84-b904-a02b3e0ab621"
+            )
+            assert package.stored_date and isinstance(
+                package.stored_date, datetime.datetime
+            )
 
     def test_fixity_success(self):
         """
@@ -589,6 +666,9 @@ class TestPackage(TestCase):
         assert replica is not None
         assert replica.origin_pipeline == aip.origin_pipeline
         assert replica.replicas.count() == 0
+        assert replica.stored_date and isinstance(
+            replica.stored_date, datetime.datetime
+        )
         package_name = "working_bag.7z"
         dest_dir = os.path.join(replication_dir, utils.uuid_to_path(replica.uuid))
         repl_file_path = os.path.join(
@@ -620,6 +700,9 @@ class TestPackage(TestCase):
         assert replica is not None
         assert replica.origin_pipeline == aip.origin_pipeline
         assert replica.replicas.count() == 0
+        assert replica.stored_date and isinstance(
+            replica.stored_date, datetime.datetime
+        )
         self._test_bagit_structure(aip.replicas.first(), replication_dir)
 
     def test_replicate_aic(self):
