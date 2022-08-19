@@ -25,6 +25,7 @@
         "pointer_file_location": "",
         "pointer_file_path": "",
         "size": 0,
+        "stored": null,
         "package_type": "Transfer",
         "status": "Uploaded",
         "misc_attributes": "{}"
@@ -42,6 +43,7 @@
         "pointer_file_location": "",
         "pointer_file_path": "",
         "size": 0,
+        "stored": null,
         "package_type": "Transfer",
         "status": "Uploaded",
         "misc_attributes": "{}"
@@ -59,6 +61,7 @@
         "pointer_file_location": "",
         "pointer_file_path": "",
         "size": 0,
+        "stored": null,
         "package_type": "Transfer",
         "status": "Uploaded",
         "misc_attributes": "{}"
@@ -76,6 +79,7 @@
         "pointer_file_location": "",
         "pointer_file_path": "",
         "size": 0,
+        "stored": null,
         "package_type": "AIP",
         "status": "Uploaded",
         "misc_attributes": "{}"
@@ -93,6 +97,7 @@
         "pointer_file_location": "",
         "pointer_file_path": "",
         "size": 0,
+        "stored": null,
         "package_type": "AIP",
         "status": "Uploaded",
         "misc_attributes": "{}"
@@ -110,6 +115,7 @@
         "pointer_file_location": "",
         "pointer_file_path": "",
         "size": 0,
+        "stored": null,
         "package_type": "AIP",
         "status": "Uploaded",
         "misc_attributes": "{}"
@@ -127,6 +133,7 @@
         "pointer_file_location": "",
         "pointer_file_path": "",
         "size": 595,
+        "stored": null,
         "package_type": "AIP",
         "status": "Uploaded",
         "misc_attributes": "{}"
@@ -144,6 +151,7 @@
         "pointer_file_location": "",
         "pointer_file_path": "",
         "size": 0,
+        "stored": null,
         "package_type": "AIP",
         "status": "Uploaded",
         "misc_attributes": "{}"
@@ -161,6 +169,7 @@
         "pointer_file_location": "",
         "pointer_file_path": "",
         "size": 0,
+        "stored": null,
         "package_type": "AIP",
         "status": "Uploaded",
         "misc_attributes": "{}"
@@ -182,6 +191,7 @@
         "related_packages": [],
         "replicated_package": "f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04",
         "size": 299703,
+        "stored": null,
         "status": "UPLOADED",
         "uuid": "577f74bd-a283-49e0-b4e2-f8abb81d2566"
     }
@@ -202,6 +212,7 @@
         "related_packages": [],
         "replicated_package": null,
         "size": 299703,
+        "stored": null,
         "status": "UPLOADED",
         "uuid": "f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04"
     }
@@ -222,6 +233,7 @@
         "related_packages": [],
         "replicated_package": "f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04",
         "size": 299703,
+        "stored": null,
         "status": "UPLOADED",
         "uuid": "2f62b030-c3f4-4ac1-950f-fe47d0ddcd14"
     }
@@ -241,6 +253,7 @@
         "pointer_file_path": "pointer.4781e745-96bc-4b06-995c-ee59fddf856d.xml",
         "related_packages": [],
         "size": 2195,
+        "stored": null,
         "status": "UPLOADED",
         "uuid": "4781e745-96bc-4b06-995c-ee59fddf856d"
     }
