@@ -44,8 +44,9 @@ class PackageDataTable(object):
         2: "sort_by_full_path_key",
         4: "sort_by_package_type_key",
         6: "sort_by_status_key",
-        7: "sort_by_fixity_date_key",
-        8: "sort_by_fixity_status_key",
+        7: "sort_by_stored_date_key",
+        8: "sort_by_fixity_date_key",
+        9: "sort_by_fixity_status_key",
     }
 
     def __init__(self, query_dict):
@@ -170,6 +171,10 @@ class PackageDataTable(object):
 
     def sort_by_fixity_status_key(self, package):
         return package.latest_fixity_check_result
+
+    def sort_by_stored_date_key(self, package):
+        # avoid comparing datetimes with None
+        return package.stored or timezone.now()
 
 
 class FixityLogDataTable(PackageDataTable):
