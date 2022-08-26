@@ -5,7 +5,6 @@ from __future__ import absolute_import
 from collections import namedtuple
 import codecs
 import copy
-from datetime import datetime
 import distutils.dir_util
 import json
 import logging
@@ -21,6 +20,7 @@ from uuid import uuid4
 # Core Django, alphabetical
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
@@ -731,7 +731,7 @@ class Package(models.Model):
         )
         if dest_space.access_protocol not in (Space.LOM, Space.ARKIVUM):
             replica_package.status = Package.UPLOADED
-        replica_package.stored_date = datetime.now()
+        replica_package.stored_date = timezone.now()
         replica_package.save()
         dest_space.post_move_from_storage_service(
             staging_path=replica_package.current_path,
@@ -981,7 +981,7 @@ class Package(models.Model):
                 related_package = Package.objects.get(uuid=related_package_uuid)
                 self.related_packages.add(related_package)
             self.status = Package.UPLOADED
-            self.stored_date = datetime.now()
+            self.stored_date = timezone.now()
             self.save()
             self._update_quotas(v.dest_space, self.current_location)
             return storage_effects, checksum
@@ -1024,7 +1024,7 @@ class Package(models.Model):
             # Update package status once transferred to SS
             if v.dest_space.access_protocol not in (Space.LOM, Space.ARKIVUM):
                 self.status = Package.UPLOADED
-                self.stored_date = datetime.now()
+                self.stored_date = timezone.now()
             if related_package_uuid is not None:
                 related_package = Package.objects.get(uuid=related_package_uuid)
                 self.related_packages.add(related_package)
