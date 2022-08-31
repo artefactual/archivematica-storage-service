@@ -55,6 +55,8 @@ LOGGER = logging.getLogger(__name__)
 class Package(models.Model):
     """ A package stored in a specific location. """
 
+    DEFAULT_CHECKSUM_ALGORITHM = "sha256"
+
     uuid = UUIDField(
         editable=False, unique=True, version=4, help_text=_("Unique identifier")
     )
@@ -83,6 +85,16 @@ class Package(models.Model):
     pointer_file_path = models.TextField(null=True, blank=True)
     size = models.BigIntegerField(
         default=0, help_text=_("Size in bytes of the package")
+    )
+    # For compressed packages, the checksum value stored is the checksum of the
+    # package. For uncompressed packages, it is the checksum of the Bag's
+    # tagmanifest file.
+    checksum = models.TextField(null=True, blank=True)
+    # checksum_algorithm will be Package.DEFAULT_CHECKSUM_ALGORITHM, but we
+    # store it explicitly here so that if the default changes in the future it
+    # is not a breaking change.
+    checksum_algorithm = models.TextField(
+        default=DEFAULT_CHECKSUM_ALGORITHM, null=True, blank=True
     )
     stored_date = models.DateTimeField(
         default=None,
@@ -127,8 +139,6 @@ class Package(models.Model):
     )
     package_type = models.CharField(max_length=8, choices=PACKAGE_TYPE_CHOICES)
     related_packages = models.ManyToManyField("self", related_name="related")
-
-    DEFAULT_CHECKSUM_ALGORITHM = "sha256"
 
     PENDING = "PENDING"
     STAGING = "STAGING"
@@ -971,7 +981,7 @@ class Package(models.Model):
                 package=self,
             )
             checksum = None
-            if v.should_have_pointer and (not v.already_generated_ptr_exists):
+            if not v.already_generated_ptr_exists:
                 # If posix_move didn't raise, then get_local_path() should
                 # return not None
                 checksum = utils.generate_checksum(
@@ -982,6 +992,8 @@ class Package(models.Model):
                 self.related_packages.add(related_package)
             self.status = Package.UPLOADED
             self.stored_date = timezone.now()
+            self.checksum = checksum
+            self.checksum_algorithm = Package.DEFAULT_CHECKSUM_ALGORITHM
             self.save()
             self._update_quotas(v.dest_space, self.current_location)
             return storage_effects, checksum
@@ -1007,11 +1019,13 @@ class Package(models.Model):
             # ``self.get_local_path()`` won't work.
             local_aip_path = os.path.join(v.dest_space.staging_path, self.current_path)
             checksum = None
-            if v.should_have_pointer and (not v.already_generated_ptr_exists):
+            if not v.already_generated_ptr_exists:
                 checksum = utils.generate_checksum(
                     local_aip_path, Package.DEFAULT_CHECKSUM_ALGORITHM
                 ).hexdigest()
             self.status = Package.STAGING
+            self.checksum = checksum
+            self.checksum_algorithm = Package.DEFAULT_CHECKSUM_ALGORITHM
             self.save()
             v.src_space.post_move_to_storage_service()
             storage_effects = v.dest_space.move_from_storage_service(
@@ -1912,7 +1926,9 @@ class Package(models.Model):
         self.status = Package.UPLOADED
         self.save()
 
-    def check_fixity(self, force_local=False, delete_after=True):
+    def check_fixity(
+        self, force_local=False, delete_after=True, verify_correct_package=True
+    ):
         """Scans the package to verify its checksums.
 
         This will check if the Space can run a fixity and use that. If not, it will run fixity locally.
@@ -1941,6 +1957,11 @@ class Package(models.Model):
 
         :param bool force_local: If True, will always fetch and run fixity locally. If not, it will use a Space's fixity check if available.
         :param bool delete_after: If True and the package was copied to a local path, will delete the temporary copy once fixity is run.
+        :param bool verify_correct_package: If True, validate the stored checksum
+            for the package. If the AIP is compressed, we calculate the checksum
+            for the compresed package and return results accordingly. If it is
+            uncompressed, we validate that the tagmanifest file is the expected
+            one before moving on to the validate the BagIt bag.
         """
 
         if self.package_type not in (self.AIC, self.AIP):
@@ -1964,6 +1985,31 @@ class Package(models.Model):
             else:
                 return (success, failures, message, timestamp)
 
+        path = self.fetch_local_path()
+
+        # Verify that this is the correct Bag by checking its stored checksum.
+        # If the AIP is compressed, return fixity results immediately based on
+        # this check.
+        if self.checksum and verify_correct_package:
+            checksum = utils.generate_checksum(
+                path, self.checksum_algorithm
+            ).hexdigest()
+            if checksum != self.checksum:
+                LOGGER.error(
+                    "Package checksum %s for package %s did not validate against expected value %s",
+                    checksum,
+                    self.uuid,
+                    self.checksum,
+                )
+                failure = (
+                    "Expected package checksum {0}; calculated {1} instead".format(
+                        self.checksum, checksum
+                    )
+                )
+                return (False, [failure], _("Incorrect package checksum"), None)
+            if self.is_compressed:
+                return (True, [], "", None)
+
         if self.is_compressed:
             # bagit can't deal with compressed files, so extract before
             # starting the fixity check.
@@ -1972,7 +2018,6 @@ class Package(models.Model):
             except StorageException:
                 return (None, [], _("Error extracting file"), None)
         else:
-            path = self.fetch_local_path()
             temp_dir = None
 
         bag = bagit.Bag(path)
@@ -2202,6 +2247,13 @@ class Package(models.Model):
             }
         self.misc_attributes.update({"reingest_pipeline": pipeline.uuid})
 
+        # Run fixity
+        # Fixity will fetch & extract package if needed
+        success, ___, error_msg, ___ = self.check_fixity(delete_after=False)
+        LOGGER.debug("Reingest: Fixity response: %s, %s", success, error_msg)
+        if not success:
+            return {"error": True, "status_code": 500, "message": error_msg}
+
         # Fetch and extract if needed
         if self.is_compressed:
             local_path, temp_dir = self.extract_file()
@@ -2212,13 +2264,6 @@ class Package(models.Model):
             local_path = os.path.join(self.fetch_local_path(), "")
             temp_dir = ""
             LOGGER.debug("Reingest: uncompressed at %s", local_path)
-
-        # Run fixity
-        # Fixity will fetch & extract package if needed
-        success, ___, error_msg, ___ = self.check_fixity(delete_after=False)
-        LOGGER.debug("Reingest: Fixity response: %s, %s", success, error_msg)
-        if not success:
-            return {"error": True, "status_code": 500, "message": error_msg}
 
         # Make list of folders to move
         current_location = self.local_path_location or self.current_location

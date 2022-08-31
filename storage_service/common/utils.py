@@ -405,6 +405,30 @@ def get_compress_command(compression, extract_path, basename, full_path):
     return (command, compressed_filename)
 
 
+def get_compressed_package_checksum(pointer_path):
+    """Return the checksum (and algorithm) for a compressed package as
+    documented in the pointer file at ``pointer_path``.
+
+    :param pointer_path: path to xml pointer file
+    :returns: tuple(str: checksum, str: checksum_algorithm)`.
+    """
+    doc = etree.parse(pointer_path)
+
+    checksum = doc.findtext(".//premis:messageDigest", namespaces=NSMAP)
+    if checksum is None:
+        # Try the PREMIS3 namespace as the pointer file may be newer.
+        checksum = doc.findtext(".//premis3:messageDigest", namespaces=NSMAP)
+    checksum_algorithm = doc.findtext(
+        ".//premis:messageDigestAlgorithm", namespaces=NSMAP
+    )
+    if checksum_algorithm is None:
+        checksum_algorithm = doc.findtext(
+            ".//premis3:messageDigestAlgorithm", namespaces=NSMAP
+        )
+
+    return (checksum, checksum_algorithm)
+
+
 def get_tool_info_command(compression):
     """Return command for outputting compression tool details
 
@@ -637,13 +661,42 @@ def generate_checksum(file_path, checksum_type="md5"):
     """
     Returns checksum object for `file_path` using `checksum_type`.
 
+    If `file_path` is a directory (i.e. an uncompressed package), return the
+    checksum of the Bag tag-manifest file. This allows us to later validate
+    that this is the correct AIP.
+
     If checksum_type is not a valid checksum, ValueError raised by hashlib.
     """
     checksum = hashlib.new(checksum_type)
+
+    if os.path.isdir(file_path):
+        file_path = find_tagmanifest(file_path)
+
     with open(file_path, "rb") as f:
         for chunk in iter(lambda: f.read(128 * checksum.block_size), b""):
             checksum.update(chunk)
     return checksum
+
+
+def find_tagmanifest(file_path):
+    """Return the path to a Bag's tagmanifest file.
+
+    If there are multiple, return the first of sha512, sha256, or md5,
+    respecting the BagIt spec's preference for sha512 or sha256, respectively.
+    """
+    if not os.path.isdir(file_path):
+        return
+
+    bag_files = os.listdir(file_path)
+    tagmanifest_files = [
+        "tagmanifest-sha512.txt",
+        "tagmanifest-sha256.txt",
+        "tagmanifest-md5.txt",
+    ]
+
+    for tagmanifest in tagmanifest_files:
+        if tagmanifest in bag_files:
+            return os.path.join(file_path, tagmanifest)
 
 
 def uuid_to_path(uuid):

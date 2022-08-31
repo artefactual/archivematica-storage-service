@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 from collections import namedtuple
 import datetime
+import hashlib
 import os
 import pytest
 import shutil
@@ -29,6 +30,16 @@ FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures", ""))
 #   * 2 packages in Arkivum.json
 #
 TOTAL_FIXTURE_PACKAGES = 15
+
+TEST_CHECKSUM_HASHDIGEST = (
+    "810ff2fb242a5dee4220f2cb0e6a519891fb67f2f828a6cab4ef8894633b1f50"
+)
+
+
+def test_checksum():
+    checksum = hashlib.new("sha256")
+    checksum.update(b"testdata")
+    return checksum
 
 
 def recursive_file_count(target_dir):
@@ -312,7 +323,68 @@ class TestPackage(TestCase):
             == "742f10b0-768a-4158-b255-94847a97c465"
         )
 
-    def test_stored_date(self):
+    @mock.patch("common.utils.generate_checksum", return_value=test_checksum())
+    def test_stored_checksum(self, generate_checksum):
+        package = models.Package.objects.get(
+            uuid="a59033c2-7fa7-41e2-9209-136f07174692"
+        )
+        assert package.checksum is None
+
+        with mock.patch("locations.models.Space.posix_move"):
+            with mock.patch("locations.models.Package._update_quotas"):
+                package.origin_path = "origin/path"
+                package.origin_location = models.Location.objects.get(
+                    uuid="72ee3a1a-9497-46db-aa58-56ea8d7fedc5"
+                )
+                package.current_location = models.Location.objects.get(
+                    uuid="213086c8-232e-4b9e-bb03-98fbc7a7966a"
+                )
+                package.save()
+                package._store_aip_to_uploaded(
+                    mock_v(), "79245866-ca80-4f84-b904-a02b3e0ab621"
+                )
+                assert package.checksum and package.checksum == TEST_CHECKSUM_HASHDIGEST
+                assert (
+                    package.checksum_algorithm
+                    and package.checksum_algorithm
+                    == models.Package.DEFAULT_CHECKSUM_ALGORITHM
+                )
+
+    @mock.patch("locations.models.Package._update_quotas")
+    @mock.patch("locations.models.Space.move_to_storage_service")
+    @mock.patch("locations.models.Space.post_move_to_storage_service")
+    @mock.patch("locations.models.Space.move_from_storage_service")
+    @mock.patch("common.utils.generate_checksum", return_value=test_checksum())
+    def test_stored_checksum_posix_exception(
+        self, update_quotas, move_to, post_move, move_from, generate_checksum
+    ):
+        package = models.Package.objects.get(
+            uuid="a59033c2-7fa7-41e2-9209-136f07174692"
+        )
+        assert package.checksum is None
+
+        with mock.patch("locations.models.Space.posix_move") as posix_move:
+            posix_move.side_effect = models.space.PosixMoveUnsupportedError
+            package.origin_path = "origin/path"
+            package.origin_location = models.Location.objects.get(
+                uuid="72ee3a1a-9497-46db-aa58-56ea8d7fedc5"
+            )
+            package.current_location = models.Location.objects.get(
+                uuid="213086c8-232e-4b9e-bb03-98fbc7a7966a"
+            )
+            package.save()
+            package._store_aip_to_uploaded(
+                mock_v(), "79245866-ca80-4f84-b904-a02b3e0ab621"
+            )
+            assert package.checksum and package.checksum == TEST_CHECKSUM_HASHDIGEST
+            assert (
+                package.checksum_algorithm
+                and package.checksum_algorithm
+                == models.Package.DEFAULT_CHECKSUM_ALGORITHM
+            )
+
+    @mock.patch("common.utils.generate_checksum", return_value=test_checksum())
+    def test_stored_date(self, generate_checksum):
         package = models.Package.objects.get(
             uuid="a59033c2-7fa7-41e2-9209-136f07174692"
         )
@@ -339,8 +411,9 @@ class TestPackage(TestCase):
     @mock.patch("locations.models.Space.move_to_storage_service")
     @mock.patch("locations.models.Space.post_move_to_storage_service")
     @mock.patch("locations.models.Space.move_from_storage_service")
+    @mock.patch("common.utils.generate_checksum", return_value=test_checksum())
     def test_stored_date_posix_exception(
-        self, update_quotas, move_to, post_move, move_from
+        self, update_quotas, move_to, post_move, move_from, generate_checksum
     ):
         package = models.Package.objects.get(
             uuid="a59033c2-7fa7-41e2-9209-136f07174692"
@@ -404,6 +477,63 @@ class TestPackage(TestCase):
         assert success is None
         assert failures == []
         assert "package is not a bag" in message
+        assert timestamp is None
+
+    def test_fixity_success_package_checksum(self):
+        """
+        It should return success.
+        It should return no errors.
+        It should have an empty message.
+        """
+        package = models.Package.objects.get(
+            uuid="0d4e739b-bf60-4b87-bc20-67a379b28cea"
+        )
+        # SHA-256 hash for working_bag's tagmanifest Bag file.
+        package.checksum = (
+            "1e8096a2bba10d7a70689163374e21e671d0fcf917a78f88ef299fcd3dff5368"
+        )
+        package.save()
+        success, failures, message, timestamp = package.check_fixity()
+        assert success is True
+        assert failures == []
+        assert message == ""
+        assert timestamp is None
+
+    def test_fixity_success_compressed_package_checksum(self):
+        """
+        It should return success.
+        It should return no errors.
+        It should have an empty message.
+        """
+        package = models.Package.objects.get(
+            uuid="88deec53-c7dc-4828-865c-7356386e9399"
+        )
+        package.checksum = (
+            "aff81b3a69fe9e44a36cdfd1b7b2068f33066755c781eff95f95eb9147808c30"
+        )
+        package.save()
+        success, failures, message, timestamp = package.check_fixity()
+        assert success is True
+        assert failures == []
+        assert message == ""
+        assert timestamp is None
+
+    def test_fixity_failure_package_checksum(self):
+        """
+        It should return error.
+        It should return a list of errors.
+        It should have an error message.
+        """
+        package = models.Package.objects.get(
+            uuid="9f260047-a9b7-4a75-bb6a-e8d94c83edd2"
+        )
+        package.checksum = "incorrect"
+        package.save()
+        success, failures, message, timestamp = package.check_fixity()
+        assert success is False
+        assert len(failures) == 1
+        assert "Expected package checksum" in failures[0]
+        assert message == "Incorrect package checksum"
         assert timestamp is None
 
     @vcr.use_cassette(

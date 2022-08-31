@@ -15,6 +15,9 @@ from metsrw import FSEntry
 
 from common import utils
 
+TEST_DIR = os.path.dirname(os.path.realpath(__file__))
+FIXTURES_DIR = os.path.join(TEST_DIR, "fixtures")
+
 # Until further work is done to bring compression into its own module we can
 # use these constants for this test, but we can do better.
 PROG_VERS_7Z = "7z"
@@ -468,3 +471,69 @@ def test_create_tar(
 )
 def test_strip_quad_dirs_from_path(input_path, expected_path):
     assert utils.strip_quad_dirs_from_path(input_path) == expected_path
+
+
+@pytest.mark.parametrize(
+    "dir_listing, tagmanifest_file",
+    [
+        # Includes tagmanifest-md5.txt.
+        (["bag-info.txt", "data", "tagmanifest-md5.txt"], "tagmanifest-md5.txt"),
+        # Includes tagmanifest-sha256.txt.
+        (["bag-info.txt", "tagmanifest-sha256.txt", "data"], "tagmanifest-sha256.txt"),
+        # Does not include tagmanifest.
+        (["bag-info.txt", "data"], None),
+        # Includes multiple tagmanifests.
+        (
+            ["tagmanifest-sha256.txt", "tagmanifest-sha512.txt", "tagmanifest-md5.txt"],
+            "tagmanifest-sha512.txt",
+        ),
+        (["tagmanifest-sha256.txt", "tagmanifest-md5.txt"], "tagmanifest-sha256.txt"),
+        (["tagmanifest-md5.txt"], "tagmanifest-md5.txt"),
+    ],
+)
+def test_find_tagmanifest(mocker, tmp_path, dir_listing, tagmanifest_file):
+    mocker.patch("os.listdir", return_value=dir_listing)
+    aip_path = tmp_path / "aip"
+    aip_path.mkdir()
+    file_path = aip_path / "file.txt"
+    file_path.write_text("test data")
+    if tagmanifest_file is None:
+        assert utils.find_tagmanifest(aip_path) is None
+    else:
+        assert utils.find_tagmanifest(aip_path) == str(aip_path / tagmanifest_file)
+    assert utils.find_tagmanifest(file_path) is None
+
+
+def test_generate_checksum_uncompressed_aip(mocker, tmp_path):
+    aip_path = tmp_path / "aip"
+    aip_path.mkdir()
+    tagmanifest = aip_path / "tagmanifest-md5.txt"
+    tagmanifest.write_text("some test data")
+
+    mocker.patch("os.path.isdir", return_value=True)
+    find_tag_manifest = mocker.patch("common.utils.find_tagmanifest")
+
+    utils.generate_checksum(aip_path)
+    find_tag_manifest.assert_called_once()
+    find_tag_manifest.assert_called_with(aip_path)
+
+
+def test_get_compressed_package_checksum():
+    premis_2_xml = (
+        '<?xml version="1.0"?>'
+        '<mets:mets xmlns:mets="http://www.loc.gov/METS/" xmlns:premis="info:lc/xmlns/premis-v2">'
+        "<premis:fixity>"
+        "  <premis:messageDigestAlgorithm>sha256</premis:messageDigestAlgorithm>"
+        "  <premis:messageDigest>c2924159fcbbeadf8d7f3962b43ec1bf301e1b4f12dd28a8b89ec819f3714747</premis:messageDigest>"
+        "</premis:fixity>"
+        "</mets:mets>"
+    )
+    assert utils.get_compressed_package_checksum(StringIO(premis_2_xml)) == (
+        "c2924159fcbbeadf8d7f3962b43ec1bf301e1b4f12dd28a8b89ec819f3714747",
+        "sha256",
+    )
+
+    # Test PREMIS 3 from fixture.
+    assert utils.get_compressed_package_checksum(
+        os.path.join(FIXTURES_DIR, "premis_3_pointer.xml")
+    ) == ("c2924159fcbbeadf8d7f3962b43ec1bf301e1b4f12dd28a8b89ec819f3714747", "sha256")
