@@ -169,7 +169,7 @@ class TestPackagePointer(TestCase):
         self.package = models.Package.objects.all()[0]
 
     def test_create_pointer_file(self):
-        """ It should be able to create a pointer file. """
+        """It should be able to create a pointer file."""
         pointer_file = self.package.create_pointer_file(
             TEST_PREMIS_OBJECT,
             [TEST_PREMIS_EVENT],

@@ -136,10 +136,10 @@ def _custom_endpoint(
     """
 
     def decorator(func):
-        """ The decorator applied to the endpoint """
+        """The decorator applied to the endpoint"""
 
         def wrapper(resource, request, **kwargs):
-            """ Wrapper for custom endpoints with boilerplate code. """
+            """Wrapper for custom endpoints with boilerplate code."""
             # Tastypie API checks
             resource.method_check(request, allowed=expected_methods)
             resource.is_authenticated(request)
@@ -303,7 +303,7 @@ class SpaceResource(ModelResource):
     # alter_deserialized_detail_data
 
     def dehydrate(self, bundle):
-        """ Add protocol specific fields to an entry. """
+        """Add protocol specific fields to an entry."""
         bundle = super(SpaceResource, self).dehydrate(bundle)
         access_protocol = bundle.obj.access_protocol
         model = PROTOCOL[access_protocol]["model"]
@@ -321,7 +321,7 @@ class SpaceResource(ModelResource):
         return bundle
 
     def obj_create(self, bundle, **kwargs):
-        """ Creates protocol specific class when creating a Space. """
+        """Creates protocol specific class when creating a Space."""
         # TODO How to move this to the model?
         # Make dict of fields in model and values from bundle.data
         access_protocol = bundle.data["access_protocol"]

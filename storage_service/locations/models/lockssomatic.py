@@ -29,7 +29,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Lockssomatic(models.Model):
-    """ Spaces that store their contents in LOCKSS, via LOCKSS-o-matic. """
+    """Spaces that store their contents in LOCKSS, via LOCKSS-o-matic."""
 
     space = models.OneToOneField("Space", to_field="uuid", on_delete=models.CASCADE)
 
@@ -101,12 +101,12 @@ class Lockssomatic(models.Model):
         return {"directories": [], "entries": []}
 
     def move_to_storage_service(self, source_path, destination_path, dest_space):
-        """ Moves source_path to dest_space.staging_path/destination_path. """
+        """Moves source_path to dest_space.staging_path/destination_path."""
         # Check if in SS internal, if not then fetch from LOM
         raise NotImplementedError("LOCKSS-o-matic has not implemented retrieval.")
 
     def move_from_storage_service(self, source_path, destination_path, package=None):
-        """ Moves self.staging_path/source_path to destination_path. """
+        """Moves self.staging_path/source_path to destination_path."""
         self.space.create_local_directory(destination_path)
         return self.space.move_rsync(source_path, destination_path)
 

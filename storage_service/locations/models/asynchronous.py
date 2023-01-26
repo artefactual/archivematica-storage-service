@@ -16,7 +16,7 @@ LOGGER = logging.getLogger(__name__)
 
 @six.python_2_unicode_compatible
 class Async(models.Model):
-    """ Stores information about currently running asynchronous tasks. """
+    """Stores information about currently running asynchronous tasks."""
 
     completed = models.BooleanField(
         default=False,
@@ -65,4 +65,4 @@ class Async(models.Model):
         app_label = "locations"
 
     def __str__(self):
-        return u"{}".format(self.id)
+        return "{}".format(self.id)

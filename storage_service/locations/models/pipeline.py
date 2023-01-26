@@ -31,7 +31,7 @@ LOGGER = logging.getLogger(__name__)
 
 @six.python_2_unicode_compatible
 class Pipeline(URLMixin, models.Model):
-    """ Information about Archivematica instances using the storage service. """
+    """Information about Archivematica instances using the storage service."""
 
     uuid = UUIDField(
         unique=True,
@@ -100,7 +100,7 @@ class Pipeline(URLMixin, models.Model):
         )
 
     def save(self, create_default_locations=False, shared_path=None, *args, **kwargs):
-        """ Save pipeline and optionally create default locations. """
+        """Save pipeline and optionally create default locations."""
         super(Pipeline, self).save(*args, **kwargs)
         if create_default_locations:
             self.create_default_locations(shared_path)

@@ -197,7 +197,7 @@ def encryption_works(fingerprint):
         # python-gnupg stopped reporting "need passphrase".
         if (
             decrypted_data.status == "need passphrase"
-            or u"NEED_PASSPHRASE" in decrypted_data.stderr
+            or "NEED_PASSPHRASE" in decrypted_data.stderr
         ):
             return PASSPHRASED
         return ENCR_FAILS
@@ -211,7 +211,7 @@ def export_gpg_key(fingerprint):
 
 
 def delete_gpg_key(fingerprint):
-    """Delete the GPG key with fingerprint ``fingerprint``.  """
+    """Delete the GPG key with fingerprint ``fingerprint``."""
     result = gpg().delete_keys(fingerprint, True)
     try:
         assert str(result) == "ok"

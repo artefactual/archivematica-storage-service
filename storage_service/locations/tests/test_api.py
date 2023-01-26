@@ -791,7 +791,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         assert p.file_set.count() == 0
 
     def test_download_compressed_package(self):
-        """ It should return the package. """
+        """It should return the package."""
         response = self.client.get(
             "/api/v2/file/6aebdb24-1b6b-41ab-b4a3-df9a73726a34/download/"
         )
@@ -806,7 +806,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         return result.decode("utf8")
 
     def test_download_uncompressed_package(self):
-        """ It should tar a package before downloading. """
+        """It should tar a package before downloading."""
         response = self.client.get(
             "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/download/"
         )
@@ -823,7 +823,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         assert "test.txt" in content
 
     def test_download_lockss_chunk_incorrect(self):
-        """ It should default to the local path if a chunk ID is provided but package isn't in LOCKSS. """
+        """It should default to the local path if a chunk ID is provided but package isn't in LOCKSS."""
         response = self.client.get(
             "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/download/",
             data={"chunk_number": 1},
@@ -841,7 +841,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         assert "test.txt" in content
 
     def test_download_package_not_exist(self):
-        """ It should return 404 for a non-existant package. """
+        """It should return 404 for a non-existant package."""
         response = self.client.get(
             "/api/v2/file/dnednedn-edne-dned-nedn-ednednednedn/download/",
             data={"chunk_number": 1},
@@ -854,7 +854,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         )
     )
     def test_download_package_arkivum_not_available(self):
-        """ It should return 202 if the file is in Arkivum but only on tape. """
+        """It should return 202 if the file is in Arkivum but only on tape."""
         response = self.client.get(
             "/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/download/"
         )
@@ -872,7 +872,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         )
     )
     def test_download_package_arkivum_error(self):
-        """ It should return 502 error from Arkivum. """
+        """It should return 502 error from Arkivum."""
         response = self.client.get(
             "/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/download/"
         )
@@ -882,7 +882,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         assert "Error" in j["message"] and "Arkivum" in j["message"]
 
     def test_download_file_no_path(self):
-        """ It should return 400 Bad Request """
+        """It should return 400 Bad Request"""
         response = self.client.get(
             "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/extract_file/"
         )
@@ -890,7 +890,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         assert "relative_path_to_file" in response.content.decode("utf8")
 
     def test_download_file_from_compressed(self):
-        """ It should extract and return the file. """
+        """It should extract and return the file."""
         response = self.client.get(
             "/api/v2/file/6aebdb24-1b6b-41ab-b4a3-df9a73726a34/extract_file/",
             data={"relative_path_to_file": "working_bag/data/test.txt"},
@@ -902,7 +902,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         assert content == "test"
 
     def test_download_file_from_uncompressed(self):
-        """ It should return the file. """
+        """It should return the file."""
         response = self.client.get(
             "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/extract_file/",
             data={"relative_path_to_file": "working_bag/data/test.txt"},
@@ -919,7 +919,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         )
     )
     def test_download_file_arkivum_not_available(self):
-        """ It should return 202 if the file is in Arkivum but only on tape. """
+        """It should return 202 if the file is in Arkivum but only on tape."""
         response = self.client.get(
             "/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/extract_file/",
             data={"relative_path_to_file": "working_bag/data/test.txt"},
@@ -938,7 +938,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         )
     )
     def test_download_file_arkivum_error(self):
-        """ It should return 502 error from Arkivum. """
+        """It should return 502 error from Arkivum."""
         response = self.client.get(
             "/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/extract_file/",
             data={"relative_path_to_file": "working_bag/data/test.txt"},
