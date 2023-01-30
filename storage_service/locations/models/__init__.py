@@ -10,7 +10,7 @@ from .. import signals
 
 # Required by other files
 class StorageException(Exception):
-    """ Exceptions specific to the service."""
+    """Exceptions specific to the service."""
 
     pass
 

@@ -469,7 +469,7 @@ class TestPackage(TestCase):
         assert timestamp is None
 
     def test_fixity_package_type(self):
-        """ It should only fixity bags. """
+        """It should only fixity bags."""
         package = models.Package.objects.get(
             uuid="79245866-ca80-4f84-b904-a02b3e0ab621"
         )
@@ -542,7 +542,7 @@ class TestPackage(TestCase):
         )
     )
     def test_fixity_scheduled_arkivum(self):
-        """ It should return success of None. """
+        """It should return success of None."""
         package = models.Package.objects.get(
             uuid="e52c518d-fcf4-46cc-8581-bbc01aff7af3"
         )
@@ -560,7 +560,7 @@ class TestPackage(TestCase):
         os.path.join(FIXTURES_DIR, "vcr_cassettes", "package_fixity_amber_arkivum.yaml")
     )
     def test_fixity_amber_arkivum(self):
-        """ It should return success of None. """
+        """It should return success of None."""
         package = models.Package.objects.get(
             uuid="e52c518d-fcf4-46cc-8581-bbc01aff7af3"
         )
@@ -580,7 +580,7 @@ class TestPackage(TestCase):
         )
     )
     def test_fixity_success_arkivum(self):
-        """ It should return Arkivum's successful fixity not generate its own. """
+        """It should return Arkivum's successful fixity not generate its own."""
         package = models.Package.objects.get(
             uuid="e52c518d-fcf4-46cc-8581-bbc01aff7af3"
         )
@@ -600,7 +600,7 @@ class TestPackage(TestCase):
         )
     )
     def test_fixity_failure_arkivum(self):
-        """ It should return success of False from Arkivum. """
+        """It should return success of False from Arkivum."""
         package = models.Package.objects.get(
             uuid="e52c518d-fcf4-46cc-8581-bbc01aff7af3"
         )
@@ -623,7 +623,7 @@ class TestPackage(TestCase):
         assert timestamp is None
 
     def test_fixity_force_local(self):
-        """ It should do checksum locally if required. """
+        """It should do checksum locally if required."""
         package = models.Package.objects.get(
             uuid="e52c518d-fcf4-46cc-8581-bbc01aff7af3"
         )
@@ -634,7 +634,7 @@ class TestPackage(TestCase):
         assert timestamp is None
 
     def test_extract_file_aip_from_uncompressed_aip(self):
-        """ It should return an aip """
+        """It should return an aip"""
         package = models.Package.objects.get(
             uuid="0d4e739b-bf60-4b87-bc20-67a379b28cea"
         )
@@ -644,7 +644,7 @@ class TestPackage(TestCase):
         assert os.path.join(output_path, "manifest-md5.txt")
 
     def test_extract_file_file_from_uncompressed_aip(self):
-        """ It should return a single file from an uncompressed aip """
+        """It should return a single file from an uncompressed aip"""
         package = models.Package.objects.get(
             uuid="0d4e739b-bf60-4b87-bc20-67a379b28cea"
         )
@@ -656,7 +656,7 @@ class TestPackage(TestCase):
         assert os.path.isfile(output_path)
 
     def test_extract_file_nested_file_from_uncompressed_aip(self):
-        """ It should return a single file from an uncompressed aip (with nested path) """
+        """It should return a single file from an uncompressed aip (with nested path)"""
         package = models.Package.objects.get(
             uuid="0d4e739b-bf60-4b87-bc20-67a379b28cea"
         )
@@ -668,7 +668,7 @@ class TestPackage(TestCase):
         assert os.path.isfile(output_path)
 
     def test_extract_file_file_from_compressed_aip(self):
-        """ It should return a single file from a 7zip compressed aip """
+        """It should return a single file from a 7zip compressed aip"""
         package = models.Package.objects.get(
             uuid="88deec53-c7dc-4828-865c-7356386e9399"
         )
@@ -680,7 +680,7 @@ class TestPackage(TestCase):
         assert os.path.isfile(output_path)
 
     def test_extract_file_file_does_not_exist_compressed(self):
-        """ It should raise an error because the requested file does not exist"""
+        """It should raise an error because the requested file does not exist"""
         package = models.Package.objects.get(
             uuid="88deec53-c7dc-4828-865c-7356386e9399"
         )
@@ -692,7 +692,7 @@ class TestPackage(TestCase):
         assert e_info.value.args[0] == "Extraction error"
 
     def test_extract_file_aip_from_compressed_aip(self):
-        """ It should return an aip """
+        """It should return an aip"""
         package = models.Package.objects.get(
             uuid="88deec53-c7dc-4828-865c-7356386e9399"
         )
@@ -940,7 +940,7 @@ class TestPackage(TestCase):
         assert aip.replicas.count() == 1
         assert replica is not None
         assert mock_encrypt.call_args_list == [
-            mock.call(os.path.join(replica.full_path, ""), u"")
+            mock.call(os.path.join(replica.full_path, ""), "")
         ]
         self._test_bagit_structure(replica, replication_dir)
 

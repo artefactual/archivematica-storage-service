@@ -17,7 +17,7 @@ from .location import Location
 
 
 class Fedora(models.Model):
-    """ Accepts deposits from FEDORA via a SWORD2 server. """
+    """Accepts deposits from FEDORA via a SWORD2 server."""
 
     space = models.OneToOneField("Space", to_field="uuid", on_delete=models.CASCADE)
 
@@ -49,7 +49,7 @@ class Fedora(models.Model):
         super(Fedora, self).save(*args, **kwargs)
 
     def verify(self):
-        """ Verify that the space is accessible to the storage service. """
+        """Verify that the space is accessible to the storage service."""
         # TODO run script to verify that it works
         verified = os.path.isdir(self.space.path)
         self.space.verified = verified
@@ -73,7 +73,7 @@ class PackageDownloadTask(models.Model):
         app_label = "locations"
 
     def __str__(self):
-        return _(u"PackageDownloadTask ID: %(uuid)s for %(package)s") % {
+        return _("PackageDownloadTask ID: %(uuid)s for %(package)s") % {
             "uuid": self.uuid,
             "package": self.package,
         }
@@ -137,7 +137,7 @@ class PackageDownloadTaskFile(models.Model):
         app_label = "locations"
 
     def __str__(self):
-        return _(u"Download %(filename)s from %(url)s (%(status)s") % {
+        return _("Download %(filename)s from %(url)s (%(status)s") % {
             "filename": self.filename,
             "url": self.url,
             "status": self.downloading_status(),

@@ -53,7 +53,7 @@ LOGGER = logging.getLogger(__name__)
 
 @six.python_2_unicode_compatible
 class Package(models.Model):
-    """ A package stored in a specific location. """
+    """A package stored in a specific location."""
 
     DEFAULT_CHECKSUM_ALGORITHM = "sha256"
 
@@ -208,7 +208,7 @@ class Package(models.Model):
         self.local_tempdirs = []
 
     def __str__(self):
-        return u"{uuid}: {path}".format(uuid=self.uuid, path=self.full_path)
+        return "{uuid}: {path}".format(uuid=self.uuid, path=self.full_path)
         # return "File: {}".format(self.uuid)
 
     # Attributes
@@ -270,7 +270,7 @@ class Package(models.Model):
 
     @property
     def is_compressed(self):
-        """ Determines whether or not the package is a compressed file. """
+        """Determines whether or not the package is a compressed file."""
         full_path = self.get_local_path() or self.fetch_local_path()
         if os.path.isdir(full_path):
             return False

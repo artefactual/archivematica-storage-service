@@ -15,7 +15,7 @@ from django.utils.translation import ugettext_lazy as _
 
 @six.python_2_unicode_compatible
 class FixityLog(models.Model):
-    """ Stores fixity check success/failure and error details """
+    """Stores fixity check success/failure and error details"""
 
     package = models.ForeignKey("Package", to_field="uuid", on_delete=models.CASCADE)
     success = models.NullBooleanField(default=False)
@@ -27,4 +27,4 @@ class FixityLog(models.Model):
         app_label = "locations"
 
     def __str__(self):
-        return _(u"Fixity check of %(package)s") % {"package": self.package}
+        return _("Fixity check of %(package)s") % {"package": self.package}

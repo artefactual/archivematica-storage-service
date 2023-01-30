@@ -4,7 +4,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 
 def get_env_variable(var_name):
-    """ Get the environment variable or return exception """
+    """Get the environment variable or return exception"""
     try:
         return environ[var_name]
     except KeyError:

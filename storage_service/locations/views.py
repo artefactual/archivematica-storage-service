@@ -45,7 +45,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def get_delete_context_dict(request, model, object_uuid, default_cancel="/"):
-    """ Returns a dict of the values needed by the confirm delete view. """
+    """Returns a dict of the values needed by the confirm delete view."""
     obj = get_object_or_404(model, uuid=object_uuid)
     header = _("Confirm deleting %(item)s") % {"item": model._meta.verbose_name}
     dependent_objects = utils.dependent_objects(obj)
@@ -724,7 +724,7 @@ def space_edit(request, uuid):
 
 @permission_required("locations.change_space", raise_exception=True)
 def ajax_space_create_protocol_form(request):
-    """ Return a protocol-specific form, based on the input protocol. """
+    """Return a protocol-specific form, based on the input protocol."""
     sent_protocol = request.GET.get("protocol")
     try:
         # Get form class if it exists

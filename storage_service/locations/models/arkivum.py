@@ -92,7 +92,7 @@ class Arkivum(models.Model):
             raise StorageException("Unable to delete %s", delete_path)
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
-        """ Moves src_path to dest_space.staging_path/dest_path. """
+        """Moves src_path to dest_space.staging_path/dest_path."""
         # Get from watched dir
         if self.remote_user and self.remote_name:
             # Rsync from remote
@@ -103,7 +103,7 @@ class Arkivum(models.Model):
         self.space.move_rsync(src_path, dest_path)
 
     def move_from_storage_service(self, source_path, destination_path, package=None):
-        """ Moves self.staging_path/src_path to dest_path. """
+        """Moves self.staging_path/src_path to dest_path."""
         try_mv_local = False
         # Rsync to Arkivum watched directory
         if self.remote_user and self.remote_name:
@@ -120,7 +120,7 @@ class Arkivum(models.Model):
         self.space.move_rsync(source_path, rsync_dest, try_mv_local=try_mv_local)
 
     def post_move_from_storage_service(self, staging_path, destination_path, package):
-        """ POST to Arkivum with information about the newly stored Package. """
+        """POST to Arkivum with information about the newly stored Package."""
         if package is None:
             return
 

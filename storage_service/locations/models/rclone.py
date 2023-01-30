@@ -216,7 +216,7 @@ class RClone(models.Model):
         self._execute_rclone_subcommand(cmd)
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
-        """ Moves src_path to dest_space.staging_path/dest_path. """
+        """Moves src_path to dest_space.staging_path/dest_path."""
         # strip leading slash on src_path
         src_path = src_path.rstrip(".").lstrip("/")
         dest_path = dest_path.rstrip(".")
@@ -243,7 +243,7 @@ class RClone(models.Model):
         self._execute_rclone_subcommand(cmd)
 
     def move_from_storage_service(self, src_path, dest_path, package=None):
-        """ Moves self.staging_path/src_path to dest_path."""
+        """Moves self.staging_path/src_path to dest_path."""
         dest_path = dest_path.lstrip("/")
 
         if not self.container:

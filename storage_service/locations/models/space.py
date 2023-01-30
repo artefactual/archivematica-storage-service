@@ -32,7 +32,7 @@ __all__ = ("Space", "PosixMoveUnsupportedError")
 
 
 def validate_space_path(path):
-    """ Validation for path in Space.  Must be absolute. """
+    """Validation for path in Space.  Must be absolute."""
     if path[0] != "/":
         raise ValidationError(_("Path must begin with a /"))
 
@@ -230,7 +230,7 @@ class Space(models.Model):
             validate_space_path(self.path)
 
     def get_child_space(self):
-        """ Returns the protocol-specific space object. """
+        """Returns the protocol-specific space object."""
         # Importing PROTOCOL here because importing locations.constants at the
         # top of the file causes a circular dependency
         from ..constants import PROTOCOL
@@ -375,7 +375,7 @@ class Space(models.Model):
             )
 
     def post_move_to_storage_service(self, *args, **kwargs):
-        """ Hook for any actions that need to be taken after moving to the storage service. """
+        """Hook for any actions that need to be taken after moving to the storage service."""
         try:
             self.get_child_space().post_move_to_storage_service(*args, **kwargs)
         except AttributeError:

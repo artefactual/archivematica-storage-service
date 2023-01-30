@@ -395,7 +395,7 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
 
 
 def sword_error_response(request, status, summary):
-    """ Generate SWORD 2.0 error response """
+    """Generate SWORD 2.0 error response"""
     error_details = {"summary": summary, "status": status}
     error_details["request"] = request
     error_details["update_time"] = datetime.datetime.now().__str__()
