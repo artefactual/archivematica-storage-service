@@ -2616,6 +2616,8 @@ class Package(models.Model):
                 premis_agents=premis_agents,
                 aip_subtype=aip_subtype,
             )
+            self.checksum = checksum
+            self.checksum_algorithm = Package.DEFAULT_CHECKSUM_ALGORITHM
 
         # 8. Store the AIP in the reingest_location.
         storage_effects = self._move_rein_updated_to_final_dest(
