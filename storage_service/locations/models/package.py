@@ -981,7 +981,7 @@ class Package(models.Model):
                 package=self,
             )
             checksum = None
-            if not v.already_generated_ptr_exists:
+            if self.package_type != Package.DIP and not v.already_generated_ptr_exists:
                 # If posix_move didn't raise, then get_local_path() should
                 # return not None
                 checksum = utils.generate_checksum(
@@ -1019,7 +1019,7 @@ class Package(models.Model):
             # ``self.get_local_path()`` won't work.
             local_aip_path = os.path.join(v.dest_space.staging_path, self.current_path)
             checksum = None
-            if not v.already_generated_ptr_exists:
+            if self.package_type != Package.DIP and not v.already_generated_ptr_exists:
                 checksum = utils.generate_checksum(
                     local_aip_path, Package.DEFAULT_CHECKSUM_ALGORITHM
                 ).hexdigest()
@@ -2616,6 +2616,8 @@ class Package(models.Model):
                 premis_agents=premis_agents,
                 aip_subtype=aip_subtype,
             )
+            self.checksum = checksum
+            self.checksum_algorithm = Package.DEFAULT_CHECKSUM_ALGORITHM
 
         # 8. Store the AIP in the reingest_location.
         storage_effects = self._move_rein_updated_to_final_dest(
