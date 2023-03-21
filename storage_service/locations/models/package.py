@@ -2424,10 +2424,11 @@ class Package(models.Model):
         5.  Recreate the bagit manifest.
         6.  Compress the AIP according to what was selected during reingest in
             Archivematica.
-        7.  Create a pointer file if AM has not done so.
-        8.  Store the AIP in the reingest_location.
-        9.  Create or update replicas if they need to be made.
-        10. Update the pointer file.
+        7.  Generate checksum.
+        8.  Create a pointer file if AM has not done so.
+        9.  Store the AIP in the reingest_location.
+        10. Create or update replicas if they need to be made.
+        11. Update the pointer file.
 
         :param Location origin_location: Location the newly re-ingested AIP was
             procesed on.
@@ -2600,15 +2601,19 @@ class Package(models.Model):
         )
         self.size = utils.recalculate_size(updated_aip_path)
 
-        # 7. Create a pointer file if AM has not done so.
+        # 7. Generate checksum.
+        checksum = utils.generate_checksum(
+            updated_aip_path, Package.DEFAULT_CHECKSUM_ALGORITHM
+        ).hexdigest()
+        self.checksum = checksum
+        self.checksum_algorithm = Package.DEFAULT_CHECKSUM_ALGORITHM
+
+        # 8. Create a pointer file if AM has not done so.
         if (
             self.package_type in (Package.AIP, Package.AIC)
             and to_be_compressed
             and (not os.path.isfile(reingest_pointer_src_full_path))
         ):
-            checksum = utils.generate_checksum(
-                updated_aip_path, Package.DEFAULT_CHECKSUM_ALGORITHM
-            ).hexdigest()
             self._create_pointer_file_write_to_disk(
                 self.full_pointer_file_path,
                 checksum,
@@ -2619,7 +2624,7 @@ class Package(models.Model):
             self.checksum = checksum
             self.checksum_algorithm = Package.DEFAULT_CHECKSUM_ALGORITHM
 
-        # 8. Store the AIP in the reingest_location.
+        # 9. Store the AIP in the reingest_location.
         storage_effects = self._move_rein_updated_to_final_dest(
             to_be_compressed,
             removed_pres_der_paths,
@@ -2641,10 +2646,10 @@ class Package(models.Model):
                 )
                 write_pointer_file(revised_pointer_file, self.full_pointer_file_path)
 
-        # 9. Create or update replicas if they need to be made.
+        # 10. Create or update replicas if they need to be made.
         self.create_replicas()
 
-        # 10. Update the pointer file.
+        # 11. Update the pointer file.
         self._process_pointer_file_for_reingest(
             to_be_compressed, was_compressed, compression, updated_aip_path
         )
