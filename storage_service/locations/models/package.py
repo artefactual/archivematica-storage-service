@@ -1143,6 +1143,8 @@ class Package(models.Model):
     def _update_existing_ptr_loc_info(self):
         """Update an AM-created pointer file's location information."""
         pointer_absolute_path = self.full_pointer_file_path
+        if not pointer_absolute_path:
+            return
         root = etree.parse(pointer_absolute_path)
         element = root.find(".//mets:file", namespaces=utils.NSMAP)
         flocat = element.find("mets:FLocat", namespaces=utils.NSMAP)
