@@ -76,6 +76,14 @@ def mock_v():
     )
 
 
+def create_temporary_pointer(tmp_dir, path):
+    """Create temporary copy of pointer file at path."""
+    dst_dir = tempfile.mkdtemp(dir=tmp_dir)
+    temp_path = os.path.join(dst_dir, "temp_pointer.xml")
+    shutil.copy2(path, temp_path)
+    return temp_path
+
+
 class TestPackage(TestCase):
 
     fixtures = ["base.json", "package.json", "arkivum.json", "callback.json"]
@@ -849,16 +857,11 @@ class TestPackage(TestCase):
         )
         assert aic.replicas.count() == 0
 
-        def create_temporary_pointer(path):
-            """Create temporary copy of pointer file at path."""
-            temp_path = os.path.join(self.tmp_dir, "temp_pointer.xml")
-            shutil.copy2(path, temp_path)
-            return temp_path
-
         pointer = create_temporary_pointer(
+            self.tmp_dir,
             os.path.join(
                 FIXTURES_DIR, "pointer.4781e745-96bc-4b06-995c-ee59fddf856d.xml"
-            )
+            ),
         )
         with mock.patch.object(models.Package, "full_pointer_file_path", pointer):
             aic.create_replicas()
@@ -1256,6 +1259,61 @@ class TestPackage(TestCase):
             len(aip2.local_tempdirs) == 1
             and aip2.local_tempdirs[0] == tempdir_to_retain
         )
+
+    def _setup_move_test(self, pkg_path):
+        pkg_name = os.path.basename(pkg_path)
+        pkg_dir = os.path.dirname(pkg_path)
+        space = models.Space.objects.create(
+            path=pkg_dir,
+            access_protocol=models.Space.LOCAL_FILESYSTEM,
+        )
+        models.LocalFilesystem.objects.create(space=space)
+        src_location = models.Location.objects.create(
+            space=space,
+            description="Primary AIP storage location",
+            purpose=models.Location.AIP_STORAGE,
+            relative_path="",
+        )
+        dst_location = models.Location.objects.create(
+            space=space,
+            description="Secondary AIP storage location",
+            purpose=models.Location.AIP_STORAGE,
+            relative_path="",
+        )
+        pkg = models.Package.objects.create(
+            current_location=src_location,
+            current_path=pkg_name,
+            package_type=models.Package.AIP,
+            status=models.Package.UPLOADED,
+        )
+        return src_location, dst_location, pkg
+
+    def test_move_compressed_aip(self):
+        _, pkg_path = tempfile.mkstemp(dir=self.tmp_dir)
+        src_location, dst_location, pkg = self._setup_move_test(pkg_path)
+        assert pkg.current_location == src_location
+
+        pointer_path = create_temporary_pointer(
+            self.tmp_dir,
+            os.path.join(
+                FIXTURES_DIR, "pointer.4781e745-96bc-4b06-995c-ee59fddf856d.xml"
+            ),
+        )
+        with mock.patch.object(models.Package, "full_pointer_file_path", pointer_path):
+            pkg.move(dst_location)
+
+        assert pkg.current_location == dst_location
+
+    def test_move_uncompressed_aip(self):
+        pkg_path = tempfile.mkdtemp(dir=self.tmp_dir)
+        src_location, dst_location, pkg = self._setup_move_test(pkg_path)
+        assert pkg.current_location == src_location
+
+        pointer_path = None
+        with mock.patch.object(models.Package, "full_pointer_file_path", pointer_path):
+            pkg.move(dst_location)
+
+        assert pkg.current_location == dst_location
 
 
 class TestTransferPackage(TestCase):
