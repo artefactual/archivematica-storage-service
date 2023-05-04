@@ -436,7 +436,7 @@ class StorageScenario(object):
         "rclone_to_rclone_uncompressed",
     ],
 )
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db
 def test_main(startup, storage_scenario, admin_client):
     storage_scenario.init(admin_client)
     storage_scenario.store_aip()
