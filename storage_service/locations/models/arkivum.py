@@ -7,7 +7,6 @@ import urllib.parse
 import dateutil.parser
 import django.core.mail
 import requests
-import scandir
 from common import utils
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -378,7 +377,7 @@ class Arkivum(models.Model):
                     )
                     # Pick a random file and check the locality of it.
                     # WARNING assumes the package is local/not local as a unit.
-                    for dirpath, dirs, files in scandir.walk(package.full_path):
+                    for dirpath, dirs, files in os.walk(package.full_path):
                         if files:
                             file_path = os.path.join(dirpath, files[0])
                             break

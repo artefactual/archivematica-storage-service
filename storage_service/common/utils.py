@@ -11,7 +11,6 @@ import tarfile
 import uuid
 from collections import namedtuple
 
-import scandir
 from administration import models
 from django import http
 from django.core.exceptions import ObjectDoesNotExist
@@ -765,7 +764,7 @@ def recalculate_size(rein_aip_internal_path):
     """
     if os.path.isdir(rein_aip_internal_path):
         size = 0
-        for dirpath, ___, filenames in scandir.walk(rein_aip_internal_path):
+        for dirpath, ___, filenames in os.walk(rein_aip_internal_path):
             for filename in filenames:
                 file_path = os.path.join(dirpath, filename)
                 size += os.path.getsize(file_path)

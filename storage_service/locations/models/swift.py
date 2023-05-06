@@ -2,7 +2,6 @@
 import logging
 import os
 
-import scandir
 import swiftclient
 from common import utils
 from django.db import models
@@ -212,7 +211,7 @@ class Swift(models.Model):
             # Both source and destination paths should end with /
             destination_path = os.path.join(destination_path, "")
             # Swift does not accept folders, so upload each file individually
-            for path, dirs, files in scandir.walk(source_path):
+            for path, dirs, files in os.walk(source_path):
                 for basename in files:
                     entry = os.path.join(path, basename)
                     dest = entry.replace(source_path, destination_path, 1)

@@ -214,8 +214,6 @@ rfc3986==1.5.0
     # via oslo.config
 s3transfer==0.4.2
     # via boto3
-scandir==1.10.0
-    # via -r base.in
 six==1.16.0
     # via
     #   debtcollector

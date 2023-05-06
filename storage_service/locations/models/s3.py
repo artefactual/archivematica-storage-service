@@ -7,7 +7,6 @@ from functools import wraps
 
 import boto3
 import botocore
-import scandir
 from common import utils
 from django.conf import settings
 from django.db import models
@@ -235,7 +234,7 @@ class S3(models.Model):
             # strip leading slash on dest_path
             dest_path = dest_path.lstrip("/")
 
-            for path, dirs, files in scandir.walk(src_path):
+            for path, dirs, files in os.walk(src_path):
                 for basename in files:
                     entry = os.path.join(path, basename)
                     dest = entry.replace(src_path, dest_path, 1)

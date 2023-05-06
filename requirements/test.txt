@@ -339,8 +339,6 @@ s3transfer==0.4.2
     # via
     #   -r base.txt
     #   boto3
-scandir==1.10.0
-    # via -r base.txt
 six==1.16.0
     # via
     #   -r base.txt

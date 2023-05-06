@@ -359,7 +359,7 @@ def test_move_from_storage_service(
     mocker.patch("os.remove")
     mocker.patch("builtins.open")
     mocker.patch("os.listdir", return_value=[AIP_METS_FILENAME])
-    mocker.patch("scandir.walk", return_value=[("", [], [AIP_METS_FILENAME])])
+    mocker.patch("os.walk", return_value=[("", [], [AIP_METS_FILENAME])])
 
     # Patch ``requests.post``
     def mock_requests_post(*args, **kwargs):

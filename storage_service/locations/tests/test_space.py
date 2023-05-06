@@ -1,11 +1,12 @@
-import os
+import os.path
 import shutil
 import subprocess
+from os import makedirs
+from os import scandir
 
 import pytest
 from locations.models import Space
 from locations.models.space import path2browse_dict
-from scandir import scandir
 
 
 def _restrict_access_to(restricted_path):
@@ -74,7 +75,7 @@ def test_path2browse_dict_object_counting_ignores_read_protected_directories(
     }
 
     # Restrict read access to the "empty" directory.
-    mocker.patch("scandir.scandir", side_effect=_restrict_access_to(tree.join("empty")))
+    mocker.patch("os.scandir", side_effect=_restrict_access_to(tree.join("empty")))
     assert path2browse_dict(str(tree)) == {
         "directories": ["empty", "first", "second"],
         "entries": ["empty", "error.txt", "first", "second", "tree_a.txt"],
@@ -88,7 +89,7 @@ def test_path2browse_dict_object_counting_ignores_read_protected_directories(
     }
 
     # Restrict read access to the "first" directory.
-    mocker.patch("scandir.scandir", side_effect=_restrict_access_to(tree.join("first")))
+    mocker.patch("os.scandir", side_effect=_restrict_access_to(tree.join("first")))
     assert path2browse_dict(str(tree)) == {
         "directories": ["empty", "first", "second"],
         "entries": ["empty", "error.txt", "first", "second", "tree_a.txt"],
@@ -102,9 +103,7 @@ def test_path2browse_dict_object_counting_ignores_read_protected_directories(
     }
 
     # Restrict read access to the "second" directory.
-    mocker.patch(
-        "scandir.scandir", side_effect=_restrict_access_to(tree.join("second"))
-    )
+    mocker.patch("os.scandir", side_effect=_restrict_access_to(tree.join("second")))
     assert path2browse_dict(str(tree)) == {
         "directories": ["empty", "first", "second"],
         "entries": ["empty", "error.txt", "first", "second", "tree_a.txt"],
@@ -119,7 +118,7 @@ def test_path2browse_dict_object_counting_ignores_read_protected_directories(
 
     # Restrict read access to the "third" directory (child of the "second" directory).
     mocker.patch(
-        "scandir.scandir",
+        "os.scandir",
         side_effect=_restrict_access_to(tree.join("second").join("third")),
     )
     assert path2browse_dict(str(tree)) == {
@@ -256,7 +255,7 @@ def aipstore_compressed(tmpdir):
 
     for path in COMPRESSED_AIPS:
         path_to_write_to = os.path.join(aipstore_path, path[AIP_QUAD_PATH])
-        os.makedirs(path_to_write_to)
+        makedirs(path_to_write_to)
         package_file = os.path.join(
             aipstore_path, path[AIP_QUAD_PATH], path[COMPRESSED_PACKAGE_DIR]
         )

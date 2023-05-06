@@ -9,7 +9,6 @@ import stat
 import subprocess
 import tempfile
 
-import scandir
 from common import utils
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -846,7 +845,7 @@ class PosixMoveUnsupportedError(Exception):
 
 def _scandir_public(path):
     """Generate all directory entries, excluding hidden files."""
-    for entry in scandir.scandir(path):
+    for entry in os.scandir(path):
         if not entry.name.startswith("."):
             yield entry
 
@@ -854,7 +853,7 @@ def _scandir_public(path):
 def _scandir_files(path):
     """Generate all files, descending into subdirs."""
     try:
-        for entry in scandir.scandir(path):
+        for entry in os.scandir(path):
             if entry.is_dir():
                 yield from _scandir_files(entry.path)
             else:

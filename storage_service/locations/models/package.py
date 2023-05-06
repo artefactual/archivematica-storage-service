@@ -17,7 +17,6 @@ import distutils.dir_util
 import jsonfield
 import metsrw
 import requests
-import scandir
 from common import premis
 from common import utils
 from django.conf import settings
@@ -3055,7 +3054,7 @@ def _replace_old_pres_ders_with_reingested(
     preservation_regex = r"(.+)-\w{8}-\w{4}-\w{4}-\w{4}-\w{12}(.*)"
     removed_pres_der_paths = []  # a return value
     # Walk through all files in the internally stored reingested AIP
-    for rein_aip_dirpath, ___, rein_aip_filenames in scandir.walk(rein_aip_objects_dir):
+    for rein_aip_dirpath, ___, rein_aip_filenames in os.walk(rein_aip_objects_dir):
         for rein_aip_filename in rein_aip_filenames:
             match = re.match(preservation_regex, rein_aip_filename)
             # This file is a preservation derivative, so copy it

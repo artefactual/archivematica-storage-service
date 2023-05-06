@@ -12,7 +12,6 @@ import urllib.parse
 from urllib.parse import urlparse
 
 import requests
-import scandir
 from agentarchives import archivesspace
 from agentarchives.archivesspace.client import CommunicationError
 from common import utils
@@ -388,7 +387,7 @@ class DSpaceREST(models.Model):
         base_url = "{}/items/{}".format(
             self._get_base_url(self.ds_rest_url), ds_item["uuid"]
         )
-        for root, __, files in scandir.walk(source_path):
+        for root, __, files in os.walk(source_path):
             for name in files:
                 bitstream_url = "{}/bitstreams?name={}".format(
                     base_url, urllib.parse.quote(name.encode("utf-8"))
