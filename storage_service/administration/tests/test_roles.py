@@ -1,8 +1,7 @@
+import pytest
+from administration import roles
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-import pytest
-
-from administration import roles
 
 
 @pytest.fixture

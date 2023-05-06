@@ -1,12 +1,11 @@
-from __future__ import absolute_import
+from re import compile
+
+from administration import roles
 from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.utils.deprecation import MiddlewareMixin
 from django.utils.http import urlquote
-from re import compile
 from shibboleth.middleware import ShibbolethRemoteUserMiddleware
-
-from administration import roles
 
 
 # Login required code from https://gist.github.com/ryanwitt/130583
@@ -18,7 +17,7 @@ if hasattr(settings, "LOGIN_EXEMPT_URLS"):
     EXEMPT_URLS += [compile(expr) for expr in settings.LOGIN_EXEMPT_URLS]
 
 
-class AuditLogMiddleware(object):
+class AuditLogMiddleware:
     """Add X-Username header with authenticated user to responses."""
 
     def __init__(self, get_response):

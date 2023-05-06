@@ -2,36 +2,31 @@
 Integration with DSpace, using REST API as the protocol.
 
 """
-from __future__ import absolute_import, print_function
-
 # stdlib, alphabetical
 import json
 import logging
 import os
 import subprocess
 import traceback
-import six.moves.urllib.request
-import six.moves.urllib.parse
-import six.moves.urllib.error
+import urllib.parse
+from urllib.parse import urlparse
 
-# Core Django, alphabetical
-from django.db import models
-from six.moves.urllib.parse import urlparse
-from django.utils.translation import ugettext_lazy as _
-
-# Third party dependencies, alphabetical
-from lxml import etree
 import requests
 import scandir
-from requests import RequestException
-
-# This project, alphabetical
 from agentarchives import archivesspace
 from agentarchives.archivesspace.client import CommunicationError
-
-# This module, alphabetical
 from common import utils
+from django.db import models
+from django.utils.translation import ugettext_lazy as _
+from lxml import etree
+from requests import RequestException
+
 from .location import Location
+
+# Core Django, alphabetical
+# Third party dependencies, alphabetical
+# This project, alphabetical
+# This module, alphabetical
 
 LOGGER = logging.getLogger(__name__)
 
@@ -48,12 +43,12 @@ class DSpaceRESTException(Exception):
     def __init__(self, msg, url=None, email=None, exc_info=False):
         msg = [msg]
         if url:
-            msg.append(' Using url "{}".'.format(url))
+            msg.append(f' Using url "{url}".')
         if email:
-            msg.append(' Using email "{}".'.format(email))
+            msg.append(f' Using email "{email}".')
         if exc_info:
-            msg.append(" {}".format(traceback.format_exc()))
-        super(DSpaceRESTException, self).__init__("".join(msg))
+            msg.append(f" {traceback.format_exc()}")
+        super().__init__("".join(msg))
 
 
 class DSpaceREST(models.Model):
@@ -288,7 +283,7 @@ class DSpaceREST(models.Model):
     def _login_to_dspace_rest(self):
         """Log in to get DSpace REST API token."""
         body = {"email": self.ds_user, "password": self.ds_password}
-        login_url = "{}/login".format(self._get_base_url(self.ds_rest_url))
+        login_url = f"{self._get_base_url(self.ds_rest_url)}/login"
         try:
             response = self._post(login_url, data=body, headers=None)
             response.raise_for_status()
@@ -321,7 +316,7 @@ class DSpaceREST(models.Model):
         """Logout from DSpace API."""
         try:
             self._post(
-                "{}/logout".format(self._get_base_url(self.ds_rest_url)),
+                f"{self._get_base_url(self.ds_rest_url)}/logout",
                 cookies={"JSESSIONID": ds_sessionid},
             )
         except Exception as err:
@@ -334,11 +329,11 @@ class DSpaceREST(models.Model):
             self.ds_rest_url = self.ds_rest_url._replace(scheme=DS_SCHEME)
         if not self.as_url.port:
             self.as_url = self.as_url._replace(
-                netloc="{}:{}".format(self.as_url.netloc, DFLT_AS_PORT)
+                netloc=f"{self.as_url.netloc}:{DFLT_AS_PORT}"
             )
         if not self.ds_rest_url.port:
             self.ds_rest_url = self.ds_rest_url._replace(
-                netloc="{}:{}".format(self.ds_rest_url.netloc, DFLT_DS_PORT)
+                netloc=f"{self.ds_rest_url.netloc}:{DFLT_DS_PORT}"
             )
 
     def _post(self, url, data=None, cookies=None, headers=HEADERS):
@@ -362,7 +357,7 @@ class DSpaceREST(models.Model):
             return response.json()
         except RequestException as err:
             raise DSpaceRESTException(
-                "Could not create DSpace record: {}: {}.".format(collection_url, err)
+                f"Could not create DSpace record: {collection_url}: {err}."
             )
         except ValueError:
             raise DSpaceRESTException("Not a JSON response.")
@@ -396,7 +391,7 @@ class DSpaceREST(models.Model):
         for root, __, files in scandir.walk(source_path):
             for name in files:
                 bitstream_url = "{}/bitstreams?name={}".format(
-                    base_url, six.moves.urllib.parse.quote(name.encode("utf-8"))
+                    base_url, urllib.parse.quote(name.encode("utf-8"))
                 )
                 try:
                     with open(os.path.join(root, name), "rb") as content:
@@ -407,12 +402,12 @@ class DSpaceREST(models.Model):
                         )
                 except Exception:
                     raise DSpaceRESTException(
-                        "Error sending {} to {}.".format(name, bitstream_url)
+                        f"Error sending {name} to {bitstream_url}."
                     )
 
     def _get_as_client(self, as_archival_repo):
         try:
-            login_url = "{}://{}".format(self.as_url.scheme, self.as_url.hostname)
+            login_url = f"{self.as_url.scheme}://{self.as_url.hostname}"
             return archivesspace.ArchivesSpaceClient(
                 login_url,
                 self.as_user,
@@ -455,18 +450,16 @@ class DSpaceREST(models.Model):
                     " exist.".format(AS_DO_ADD_ERR, self.as_repository, as_archival_obj)
                 )
             raise DSpaceRESTException(
-                "{}ArchivesSpace Server error: {}.".format(AS_DO_ADD_ERR, err)
+                f"{AS_DO_ADD_ERR}ArchivesSpace Server error: {err}."
             )
         except Exception as err:
-            raise DSpaceRESTException("ArchivesSpace Server error: {}.".format(err))
+            raise DSpaceRESTException(f"ArchivesSpace Server error: {err}.")
 
     def _deposit_aip_to_dspace(self, source_path, ds_item, ds_sessionid):
         bitstream_url = "{base_url}/items/{uuid}/bitstreams?name={name}".format(
             base_url=self._get_base_url(self.ds_rest_url),
             uuid=ds_item["uuid"],
-            name=six.moves.urllib.parse.quote(
-                os.path.basename(source_path).encode("utf-8")
-            ),
+            name=urllib.parse.quote(os.path.basename(source_path).encode("utf-8")),
         )
         try:
             with open(source_path, "rb") as content:
@@ -524,7 +517,7 @@ class DSpaceREST(models.Model):
                 command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             ).communicate()
         except OSError as err:
-            raise DSpaceRESTException("Could not run {}: {}.".format(command[0], err))
+            raise DSpaceRESTException(f"Could not run {command[0]}: {err}.")
         except subprocess.CalledProcessError as err:
             raise DSpaceRESTException(
                 "Could not archive {} using {}: {}.".format(

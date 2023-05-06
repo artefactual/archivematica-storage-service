@@ -1,7 +1,5 @@
-from __future__ import absolute_import
-from django.conf.urls import url
-
 from administration import views
+from django.conf.urls import url
 
 app_name = "administration"
 urlpatterns = [

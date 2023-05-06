@@ -2,8 +2,6 @@
 
 Extracted from ``Lib/shutil.py`` (Python 3.7).
 """
-
-from __future__ import absolute_import
 import os
 import sys
 

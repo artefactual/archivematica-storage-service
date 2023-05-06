@@ -1,9 +1,9 @@
 import pytest
-from django.conf import settings
-from django.test import TestCase, override_settings
-
 from administration import roles
 from common.backends import CustomOIDCBackend
+from django.conf import settings
+from django.test import override_settings
+from django.test import TestCase
 
 
 @pytest.mark.skipif(

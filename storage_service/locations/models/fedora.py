@@ -1,19 +1,16 @@
-from __future__ import absolute_import
-
 # stdlib, alphabetical
 import datetime
 import os
 
-# Core Django, alphabetical
 from django.db import models
-import six
 from django.utils.translation import ugettext_lazy as _
-
-# Third party dependencies, alphabetical
 from django_extensions.db.fields import UUIDField
 
-# This project, alphabetical
 from .location import Location
+
+# Core Django, alphabetical
+# Third party dependencies, alphabetical
+# This project, alphabetical
 
 
 class Fedora(models.Model):
@@ -46,7 +43,7 @@ class Fedora(models.Model):
 
     def save(self, *args, **kwargs):
         self.verify()
-        super(Fedora, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def verify(self):
         """Verify that the space is accessible to the storage service."""
@@ -57,7 +54,6 @@ class Fedora(models.Model):
 
 
 # For SWORD asynchronous downloading support
-@six.python_2_unicode_compatible
 class PackageDownloadTask(models.Model):
     uuid = UUIDField(
         editable=False, unique=True, version=4, help_text=_("Unique identifier")
@@ -110,7 +106,6 @@ class PackageDownloadTask(models.Model):
             return self.FAILED
 
 
-@six.python_2_unicode_compatible
 class PackageDownloadTaskFile(models.Model):
     uuid = UUIDField(
         editable=False, unique=True, version=4, help_text=_("Unique identifier")

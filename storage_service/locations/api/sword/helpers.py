@@ -1,5 +1,4 @@
 # stdlib, alphabetical
-from __future__ import absolute_import
 import cgi
 import datetime
 import logging
@@ -8,20 +7,19 @@ import shutil
 import tempfile
 import time
 
-# Core Django, alphabetical
+import requests
+from common.utils import generate_checksum
 from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.translation import ugettext as _
-
-# External dependencies, alphabetical
-import requests
-
-# This project, alphabetical
 from locations import models
 from locations.models.async_manager import AsyncManager
-from common.utils import generate_checksum
+
+# Core Django, alphabetical
+# External dependencies, alphabetical
+# This project, alphabetical
 
 LOGGER = logging.getLogger(__name__)
 

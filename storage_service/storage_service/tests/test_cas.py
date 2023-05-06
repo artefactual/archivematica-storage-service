@@ -1,17 +1,14 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
-
 from unittest import mock
 
-from django.conf import settings
-from django.contrib.auth.models import User
-from django.test import TestCase, RequestFactory
-from django.test.client import Client
 import pytest
-
+from administration import roles
 from common.backends import CustomCASBackend
 from common.signals import _cas_user_role
-from administration import roles
+from django.conf import settings
+from django.contrib.auth.models import User
+from django.test import RequestFactory
+from django.test import TestCase
+from django.test.client import Client
 
 
 TEST_CAS_USER = "casuser"

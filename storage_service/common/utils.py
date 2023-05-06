@@ -1,12 +1,7 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
 import ast
-from collections import namedtuple
 import datetime
 import hashlib
 import logging
-from lxml import etree
-from lxml.builder import ElementMaker
 import mimetypes
 import os
 import re
@@ -14,16 +9,17 @@ import shutil
 import subprocess
 import tarfile
 import uuid
+from collections import namedtuple
 
 import scandir
-from django.core.exceptions import ObjectDoesNotExist
-from django import http
-from django.utils.translation import ugettext as _
-import six
-
 from administration import models
+from django import http
+from django.core.exceptions import ObjectDoesNotExist
+from django.utils.translation import ugettext as _
+from lxml import etree
+from lxml.builder import ElementMaker
+
 from storage_service import __version__ as ss_version
-from six.moves import range
 
 LOGGER = logging.getLogger(__name__)
 
@@ -123,8 +119,8 @@ def set_setting(setting, value=None):
     its string representation.  Strings are automatically esacped."""
     # Since we call literal_eval on settings when we extract them, we need to
     # put quotes around strings so they remain strings
-    if isinstance(value, six.string_types):
-        value = "'{}'".format(value)
+    if isinstance(value, str):
+        value = f"'{value}'"
     setting, _ = models.Settings.objects.get_or_create(name=setting)
     setting.value = value
     setting.save()
@@ -197,7 +193,7 @@ def mets_add_event(amdsec, event_type, event_detail="", event_outcome_detail_not
     Adds a PREMIS:EVENT and associated PREMIS:AGENT to the provided amdSec.
     """
     # Add PREMIS:EVENT
-    digiprov_id = "digiprovMD_{}".format(len(amdsec))
+    digiprov_id = f"digiprovMD_{len(amdsec)}"
     event = mets_event(
         digiprov_id=digiprov_id,
         event_type=event_type,
@@ -210,7 +206,7 @@ def mets_add_event(amdsec, event_type, event_detail="", event_outcome_detail_not
     amdsec.append(event)
 
     # Add PREMIS:AGENT for storage service
-    digiprov_id = "digiprovMD_{}".format(len(amdsec))
+    digiprov_id = f"digiprovMD_{len(amdsec)}"
     digiprov_agent = mets_ss_agent(amdsec, digiprov_id)
     if digiprov_agent is not None:
         LOGGER.debug(
@@ -400,7 +396,7 @@ def get_compress_command(compression, extract_path, basename, full_path):
             _("Algorithm %(algorithm)s not implemented") % {"algorithm": compression}
         )
 
-    command = list([_f for _f in command if _f])
+    command = list(_f for _f in command if _f)
     return (command, compressed_filename)
 
 
@@ -485,13 +481,13 @@ def get_compression_event_detail(compression):
     if compression in (COMPRESSION_7Z_BZIP, COMPRESSION_7Z_LZMA, COMPRESSION_7Z_COPY):
         try:
             version = get_7z_version()
-            event_detail = 'program="7z"; version="{}"'.format(version)
+            event_detail = f'program="7z"; version="{version}"'
         except (subprocess.CalledProcessError, Exception):
             event_detail = 'program="7z"'
     elif compression in (COMPRESSION_TAR_BZIP2, COMPRESSION_TAR, COMPRESSION_TAR_GZIP):
         try:
             version = get_tar_version()
-            event_detail = 'program="tar"; version="{}"'.format(version)
+            event_detail = f'program="tar"; version="{version}"'
         except (subprocess.CalledProcessError, Exception):
             event_detail = 'program="tar"'
     else:
@@ -597,7 +593,7 @@ def create_tar(path, extension=False):
     :param extension: Flag indicating whether to add .tar extension (bool)
     """
     path = path.rstrip("/")
-    tarpath = "{}{}".format(path, TAR_EXTENSION)
+    tarpath = f"{path}{TAR_EXTENSION}"
     changedir = os.path.dirname(tarpath)
     source = os.path.basename(path)
     cmd = ["tar", "-C", changedir, "-cf", tarpath, source]
@@ -637,7 +633,7 @@ def extract_tar(tarpath):
     :param tarpath: Path to tarfile to extract (str)
     """
     newtarpath = tarpath
-    newtarpath = "{}{}".format(tarpath, TAR_EXTENSION)
+    newtarpath = f"{tarpath}{TAR_EXTENSION}"
     os.rename(tarpath, newtarpath)
     changedir = os.path.dirname(newtarpath)
     cmd = ["tar", "-xf", newtarpath, "-C", changedir]
@@ -755,15 +751,6 @@ def strip_quad_dirs_from_path(dest_path):
         if output_path.endswith(extension):
             return output_path
     return os.path.join(output_path, "")
-
-
-def coerce_str(string):
-    """Return string as a str, not a unicode, encoded in utf-8.
-
-    :param basestring string: String to convert
-    :return: string converted to str, encoded in utf-8 if needed.
-    """
-    return six.ensure_str(string)
 
 
 StorageEffects = namedtuple(

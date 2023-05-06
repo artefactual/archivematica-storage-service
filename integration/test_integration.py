@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Integration testing.
 
 This module tests Archivematica Storage Service in isolation. It does not
@@ -10,18 +9,17 @@ worth investigating a setup where pytest orchestrates Compose services instead.
 Missing: encryption, multiple replicators, packages generated with older versions
 of Archivematica, etc...
 """
-from __future__ import unicode_literals
-
 import json
-import shutil
 import os
-import scandir
+import shutil
 from pathlib import Path
 
 import pytest
-
+import scandir
+from locations.models import Location
+from locations.models import Package
+from locations.models import Space
 from metsrw.plugins import premisrw
-from locations.models import Location, Package, Space
 
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
@@ -34,7 +32,7 @@ UNCOMPRESSED_PACKAGE = (
 )
 
 
-class Client(object):
+class Client:
     """Slim API client."""
 
     def __init__(self, admin_client):
@@ -60,7 +58,7 @@ class Client(object):
 
     def set_location(self, location_id, data):
         return self.admin_client.post(
-            "/api/v2/location/{}/".format(location_id),
+            f"/api/v2/location/{location_id}/",
             json.dumps(data),
             content_type="application/json",
         )
@@ -70,7 +68,7 @@ class Client(object):
 
     def add_file(self, file_id, data):
         return self.admin_client.put(
-            "/api/v2/file/{}/".format(file_id),
+            f"/api/v2/file/{file_id}/",
             json.dumps(data),
             content_type="application/json",
         )
@@ -79,10 +77,10 @@ class Client(object):
         return self.admin_client.get("/api/v2/file/")
 
     def get_pointer_file(self, file_id):
-        return self.admin_client.get("/api/v2/file/{}/pointer_file/".format(file_id))
+        return self.admin_client.get(f"/api/v2/file/{file_id}/pointer_file/")
 
     def check_fixity(self, file_id):
-        return self.admin_client.get("/api/v2/file/{}/check_fixity/".format(file_id))
+        return self.admin_client.get(f"/api/v2/file/{file_id}/check_fixity/")
 
 
 @pytest.fixture()
@@ -127,7 +125,7 @@ def get_size(path):
     return size
 
 
-class StorageScenario(object):
+class StorageScenario:
     """Storage test scenario."""
 
     PIPELINE_UUID = "00000b87-1655-4b7e-bbf8-344b317da334"
@@ -210,7 +208,7 @@ class StorageScenario(object):
                 "staging_path": "",
                 "purpose": Location.AIP_STORAGE,
                 "space": space["resource_uri"],
-                "pipeline": ["/api/v2/pipeline/{}/".format(self.PIPELINE_UUID)],
+                "pipeline": [f"/api/v2/pipeline/{self.PIPELINE_UUID}/"],
             }
         )
         assert resp.status_code == 201
@@ -284,7 +282,7 @@ class StorageScenario(object):
                 "staging_path": "",
                 "purpose": Location.REPLICATOR,
                 "space": space["resource_uri"],
-                "pipeline": ["/api/v2/pipeline/{}/".format(self.PIPELINE_UUID)],
+                "pipeline": [f"/api/v2/pipeline/{self.PIPELINE_UUID}/"],
             }
         )
         assert resp.status_code == 201
@@ -338,7 +336,7 @@ class StorageScenario(object):
                 "size": get_size(str(self.pkg)),
                 "package_type": Package.AIP,
                 "aip_subtype": "Archival Information Package",
-                "origin_pipeline": "/api/v2/pipeline/{}/".format(self.PIPELINE_UUID),
+                "origin_pipeline": f"/api/v2/pipeline/{self.PIPELINE_UUID}/",
                 "events": [self.get_compression_event()],
                 "agents": [self.get_agent()],
             },

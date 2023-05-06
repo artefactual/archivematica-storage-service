@@ -1,23 +1,20 @@
-from __future__ import absolute_import
-
 # stdlib, alphabetical
 import logging
 import os
 
-# Core Django, alphabetical
+import scandir
+import swiftclient
+from common import utils
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
-# Third party dependencies, alphabetical
-import scandir
-import swiftclient
-
-# This project, alphabetical
-from common import utils
-
-# This module, alphabetical
 from . import StorageException
 from .location import Location
+
+# Core Django, alphabetical
+# Third party dependencies, alphabetical
+# This project, alphabetical
+# This module, alphabetical
 
 LOGGER = logging.getLogger(__name__)
 
@@ -76,7 +73,7 @@ class Swift(models.Model):
     ]
 
     def __init__(self, *args, **kwargs):
-        super(Swift, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._connection = None
 
     @property

@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 # stdlib, alphabetical
 import logging
 import os
@@ -7,17 +5,15 @@ import shutil
 import subprocess
 import tempfile
 
-# Core Django, alphabetical
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
-# Third party dependencies, alphabetical
-
-# This project, alphabetical
-from common import utils
-
-# This module, alphabetical
 from .location import Location
+
+# Core Django, alphabetical
+# Third party dependencies, alphabetical
+# This project, alphabetical
+# This module, alphabetical
 
 LOGGER = logging.getLogger(__name__)
 
@@ -85,7 +81,7 @@ class PipelineLocalFS(models.Model):
         else:
             return_str = "{}@{}:{}"
 
-        return return_str.format(user, host, utils.coerce_str(path))
+        return return_str.format(user, host, path)
 
     def browse(self, path):
         path = os.path.join(path, "")

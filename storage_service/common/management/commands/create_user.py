@@ -1,10 +1,6 @@
-from __future__ import print_function
-from __future__ import unicode_literals
-
-from __future__ import absolute_import
 from django.contrib.auth import get_user_model
-from django.core.management.base import BaseCommand, CommandError
-
+from django.core.management.base import BaseCommand
+from django.core.management.base import CommandError
 from tastypie.models import ApiKey
 
 

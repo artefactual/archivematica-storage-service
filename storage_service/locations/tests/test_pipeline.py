@@ -1,15 +1,12 @@
-from __future__ import absolute_import
-
 import os
 from unittest import mock
-
-from django.test import TestCase
-from django.urls import reverse
-from six.moves.urllib.parse import ParseResult, urlparse
-
-from locations import models
+from urllib.parse import ParseResult
+from urllib.parse import urlparse
 
 import vcr
+from django.test import TestCase
+from django.urls import reverse
+from locations import models
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django.db import models
 
 
@@ -15,8 +14,8 @@ class Enabled(models.Manager):
             try:
                 self.model._meta.get_field("disabled")
             except models.FieldDoesNotExist:
-                return super(Enabled, self).get_queryset()
+                return super().get_queryset()
             else:
-                return super(Enabled, self).get_queryset().filter(disabled=False)
+                return super().get_queryset().filter(disabled=False)
         else:  # found enabled
-            return super(Enabled, self).get_queryset().filter(enabled=True)
+            return super().get_queryset().filter(enabled=True)

@@ -1,6 +1,12 @@
-from __future__ import absolute_import
 from django.contrib import admin
-from .models import Event, Package, LocalFilesystem, Location, NFS, Pipeline, Space
+
+from .models import Event
+from .models import LocalFilesystem
+from .models import Location
+from .models import NFS
+from .models import Package
+from .models import Pipeline
+from .models import Space
 
 admin.site.register(Event)
 admin.site.register(Package)

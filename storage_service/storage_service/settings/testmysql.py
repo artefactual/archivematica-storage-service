@@ -1,7 +1,4 @@
 # flake8: noqa
-
-from __future__ import absolute_import
-
 import dj_database_url
 
 from .test import *

@@ -1,10 +1,8 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import, unicode_literals
-
 import time
 from contextlib import contextmanager
 
-from prometheus_client import Counter, Gauge
+from prometheus_client import Counter
+from prometheus_client import Gauge
 
 
 async_manager_running_tasks = Gauge(

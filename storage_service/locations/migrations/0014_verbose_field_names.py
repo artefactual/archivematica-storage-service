@@ -1,11 +1,8 @@
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
-from __future__ import absolute_import
-from django.db import migrations, models
-import locations.models.space
 import django.core.validators
 import django_extensions.db.fields
+import locations.models.space
+from django.db import migrations
+from django.db import models
 
 
 class Migration(migrations.Migration):

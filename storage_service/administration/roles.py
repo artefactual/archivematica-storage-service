@@ -4,7 +4,6 @@ Every user in the system has a role. The role determines what the user can do.
 An administrator uses the `is_superuser` flag. Managers and reviewers are
 implemented as Django groups.
 """
-
 from django.conf import settings
 from django.contrib.auth.models import Group
 from django.db import transaction

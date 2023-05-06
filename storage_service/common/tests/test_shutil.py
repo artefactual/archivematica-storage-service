@@ -1,6 +1,4 @@
 """Extracted from Python's ``Lib/test/test_shutil.py``."""
-
-from __future__ import absolute_import
 import collections
 import contextlib
 import os

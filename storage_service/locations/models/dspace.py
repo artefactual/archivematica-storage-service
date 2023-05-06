@@ -4,8 +4,6 @@ Integration with DSpace, using SWORD2 as the protocol.
 Space path can be left empty, and the Location path should be the collection's
 IRI.
 """
-from __future__ import absolute_import
-
 # stdlib, alphabetical
 import logging
 import mimetypes
@@ -13,26 +11,22 @@ import os
 import re
 import shutil
 import subprocess
-import six.moves.urllib.parse
-import six.moves.urllib.request
-import six.moves.urllib.parse
-import six.moves.urllib.error
+import urllib.parse
 
-# Core Django, alphabetical
-from django.db import models
-from django.utils.translation import ugettext_lazy as _
-
-# Third party dependencies, alphabetical
-from lxml import etree
+import jsonfield
 import requests
 import sword2
-import jsonfield
-
-# This project, alphabetical
-
-# This module, alphabetical
 from common import utils
+from django.db import models
+from django.utils.translation import ugettext_lazy as _
+from lxml import etree
+
 from .location import Location
+
+# Core Django, alphabetical
+# Third party dependencies, alphabetical
+# This project, alphabetical
+# This module, alphabetical
 
 LOGGER = logging.getLogger(__name__)
 
@@ -361,7 +355,7 @@ class DSpace(models.Model):
                 # 'Content-MD5': str(md5sum),
                 "Content-Length": str(os.path.getsize(upload_path)),
                 "Content-Disposition": "attachment; filename=%s"
-                % six.moves.urllib.parse.quote(os.path.basename(upload_path)),
+                % urllib.parse.quote(os.path.basename(upload_path)),
             }
             requests.post(
                 entry_receipt.edit_media,
@@ -438,8 +432,8 @@ class DSpace(models.Model):
             return
 
         # Set bitstream permissions for bitstreams attached to handle
-        parsed_url = six.moves.urllib.parse.urlparse(self.sd_iri)
-        dspace_url = six.moves.urllib.parse.urlunparse(
+        parsed_url = urllib.parse.urlparse(self.sd_iri)
+        dspace_url = urllib.parse.urlunparse(
             (parsed_url.scheme, parsed_url.netloc, "", "", "", "")
         )
         # Log in to get DSpace REST API token

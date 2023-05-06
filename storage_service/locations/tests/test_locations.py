@@ -1,7 +1,6 @@
-from __future__ import absolute_import
 from django.test import TestCase
-
-from locations import forms, models
+from locations import forms
+from locations import models
 
 
 class TestLocations(TestCase):

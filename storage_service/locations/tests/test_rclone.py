@@ -1,8 +1,6 @@
-from __future__ import absolute_import
 import uuid
 
 import pytest
-
 from locations import models
 
 RCLONE_SPACE_UUID = str(uuid.uuid4())

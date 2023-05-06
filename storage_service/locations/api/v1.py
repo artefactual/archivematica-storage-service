@@ -1,6 +1,4 @@
-from __future__ import absolute_import
 import locations.api.resources as resources
-
 from tastypie import fields
 
 
