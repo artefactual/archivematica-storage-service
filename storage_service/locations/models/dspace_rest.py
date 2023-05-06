@@ -16,7 +16,7 @@ import six.moves.urllib.error
 
 # Core Django, alphabetical
 from django.db import models
-from django.utils.six.moves.urllib.parse import urlparse
+from six.moves.urllib.parse import urlparse
 from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical

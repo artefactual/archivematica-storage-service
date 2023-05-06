@@ -13,7 +13,7 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import ugettext as _
-from django.utils import six
+import six
 
 # External dependencies, alphabetical
 

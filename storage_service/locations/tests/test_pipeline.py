@@ -5,7 +5,7 @@ from unittest import mock
 
 from django.test import TestCase
 from django.urls import reverse
-from django.utils.six.moves.urllib.parse import ParseResult, urlparse
+from six.moves.urllib.parse import ParseResult, urlparse
 
 from locations import models
 
@@ -17,7 +17,6 @@ FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
 
 
 class TestPipeline(TestCase):
-
     fixtures = ["base.json", "pipelines.json"]
 
     def test_parse_and_fix_url(self):
@@ -88,7 +87,6 @@ class TestPipeline(TestCase):
 
 
 class TestPipelineViews(TestCase):
-
     fixtures = ["base.json", "pipelines.json"]
 
     def setUp(self):

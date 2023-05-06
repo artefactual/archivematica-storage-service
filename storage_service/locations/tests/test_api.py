@@ -10,7 +10,7 @@ import vcr
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
-from django.utils.six.moves.urllib.parse import urlparse
+from six.moves.urllib.parse import urlparse
 
 from administration import roles
 from locations import models
@@ -22,7 +22,6 @@ FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures", ""))
 
 
 class TestSpaceAPI(TempDirMixin, TestCase):
-
     fixtures = ["base.json"]
 
     def setUp(self):
@@ -193,7 +192,6 @@ class TestSpaceAPI(TempDirMixin, TestCase):
 
 
 class TestLocationAPI(TempDirMixin, TestCase):
-
     fixtures = ["base.json", "pipelines.json", "package.json"]
 
     def setUp(self):
@@ -545,7 +543,6 @@ class TestLocationAPI(TempDirMixin, TestCase):
 
 
 class TestPackageAPI(TempDirMixin, TestCase):
-
     fixtures = ["base.json", "package.json", "arkivum.json"]
 
     def setUp(self):
@@ -1002,7 +999,6 @@ class TestSwordAPI(TestCase):
 
 
 class TestPipelineAPI(TestCase):
-
     fixtures = ["base.json"]
 
     def setUp(self):

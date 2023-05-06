@@ -5,8 +5,8 @@ import logging
 
 # Core Django, alphabetical
 from django.db import models
-from django.utils import six
-from django.utils.six.moves import cPickle as pickle
+import six
+from six.moves import cPickle as pickle
 from django.utils.translation import ugettext_lazy as _
 
 __all__ = ("Async",)

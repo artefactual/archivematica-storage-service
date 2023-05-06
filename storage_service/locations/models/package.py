@@ -27,7 +27,7 @@ from django.utils.translation import ugettext_lazy as _
 import bagit
 import jsonfield
 from django_extensions.db.fields import UUIDField
-from django.utils import six
+import six
 import metsrw
 from metsrw.plugins import premisrw
 import requests

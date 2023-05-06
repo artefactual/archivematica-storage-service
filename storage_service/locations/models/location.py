@@ -8,7 +8,7 @@ import os
 # Core Django, alphabetical
 from django.dispatch import receiver
 from django.db import models
-from django.utils import six
+import six
 from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical

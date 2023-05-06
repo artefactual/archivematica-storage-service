@@ -3,7 +3,7 @@
 # Core Django, alphabetical
 from __future__ import absolute_import
 from django.db import models
-from django.utils import six
+import six
 from django.utils.translation import ugettext_lazy as _
 
 # Third party dependencies, alphabetical
