@@ -1,12 +1,10 @@
-from __future__ import absolute_import
 import os
 from uuid import uuid4
 
 import metsrw
-from metsrw.plugins import premisrw
 from django.test import TestCase
-
 from locations import models
+from metsrw.plugins import premisrw
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures", ""))

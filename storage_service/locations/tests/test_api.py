@@ -1,20 +1,18 @@
-from __future__ import absolute_import
-from __future__ import unicode_literals
 import base64
 import json
 import os
 import shutil
 import uuid
-import vcr
+from urllib.parse import urlparse
 
+import vcr
+from administration import roles
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
-from django.utils.six.moves.urllib.parse import urlparse
-
-from administration import roles
 from locations import models
 from locations.api.sword.views import _parse_name_and_content_urls_from_mets_file
+
 from . import TempDirMixin
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -22,7 +20,6 @@ FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures", ""))
 
 
 class TestSpaceAPI(TempDirMixin, TestCase):
-
     fixtures = ["base.json"]
 
     def setUp(self):
@@ -137,10 +134,10 @@ class TestSpaceAPI(TempDirMixin, TestCase):
         # Assert we get the two top level child directories
         response_content = json.loads(response.content)
         assert sorted(
-            [base64.b64decode(e).decode() for e in response_content["directories"]]
+            base64.b64decode(e).decode() for e in response_content["directories"]
         ) == ["child_1", "child_2"]
         assert sorted(
-            [base64.b64decode(e).decode() for e in response_content["entries"]]
+            base64.b64decode(e).decode() for e in response_content["entries"]
         ) == ["child_1", "child_2"]
         assert response_content["properties"] == {
             "child_1": {"object count": 1},
@@ -161,7 +158,7 @@ class TestSpaceAPI(TempDirMixin, TestCase):
         response_content = json.loads(response.content)
         assert response_content["directories"] == []
         assert sorted(
-            [base64.b64decode(e).decode() for e in response_content["entries"]]
+            base64.b64decode(e).decode() for e in response_content["entries"]
         ) == ["file.txt"]
         assert response_content["properties"] == {
             "file.txt": {"size": 11},
@@ -193,7 +190,6 @@ class TestSpaceAPI(TempDirMixin, TestCase):
 
 
 class TestLocationAPI(TempDirMixin, TestCase):
-
     fixtures = ["base.json", "pipelines.json", "package.json"]
 
     def setUp(self):
@@ -323,7 +319,7 @@ class TestLocationAPI(TempDirMixin, TestCase):
 
         response = _get_default_ts()
         assert response.status_code == 302
-        assert response.url == "/api/v2/location/%s/" % (body["uuid"],)
+        assert response.url == "/api/v2/location/{}/".format(body["uuid"])
 
     def test_cant_move_from_non_existant_locations(self):
         data = {
@@ -470,10 +466,10 @@ class TestLocationAPI(TempDirMixin, TestCase):
         # Assert we get the two top level child directories
         response_content = json.loads(response.content)
         assert sorted(
-            [base64.b64decode(e).decode() for e in response_content["directories"]]
+            base64.b64decode(e).decode() for e in response_content["directories"]
         ) == ["child_1", "child_2"]
         assert sorted(
-            [base64.b64decode(e).decode() for e in response_content["entries"]]
+            base64.b64decode(e).decode() for e in response_content["entries"]
         ) == ["child_1", "child_2"]
         assert response_content["properties"] == {
             base64.b64encode(b"child_1").decode(): {"object count": 1},
@@ -498,7 +494,7 @@ class TestLocationAPI(TempDirMixin, TestCase):
         response_content = json.loads(response.content)
         assert response_content["directories"] == []
         assert sorted(
-            [base64.b64decode(e).decode() for e in response_content["entries"]]
+            base64.b64decode(e).decode() for e in response_content["entries"]
         ) == ["file.txt"]
         assert response_content["properties"] == {
             base64.b64encode(b"file.txt").decode(): {"size": 11},
@@ -545,11 +541,10 @@ class TestLocationAPI(TempDirMixin, TestCase):
 
 
 class TestPackageAPI(TempDirMixin, TestCase):
-
     fixtures = ["base.json", "package.json", "arkivum.json"]
 
     def setUp(self):
-        super(TestPackageAPI, self).setUp()
+        super().setUp()
         ss_internal = self.tmpdir / "ss-internal"
         ss_internal.mkdir()
         self.test_location = models.Location.objects.get(
@@ -962,7 +957,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         aip_uuid = self._create_aip()
         # Call the request view
         self.client.post(
-            "/api/v2/file/{}/{}/".format(aip_uuid, view_name),
+            f"/api/v2/file/{aip_uuid}/{view_name}/",
             data=json.dumps(
                 {
                     "event_reason": "Some justification",
@@ -1002,7 +997,6 @@ class TestSwordAPI(TestCase):
 
 
 class TestPipelineAPI(TestCase):
-
     fixtures = ["base.json"]
 
     def setUp(self):

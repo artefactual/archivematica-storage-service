@@ -1,33 +1,27 @@
-from __future__ import absolute_import
-
 # stdlib, alphabetical
 import json
 import logging
-from lxml import etree
 import os
-import requests
-import six.moves.urllib.request
-import six.moves.urllib.parse
-import six.moves.urllib.error
+import urllib.parse
 
-# Core Django, alphabetical
-from django.conf import settings
+import dateutil.parser
 import django.core.mail
+import requests
+from common import utils
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from lxml import etree
 
-# Third party dependencies, alphabetical
-import dateutil.parser
-import scandir
-
-# This project, alphabetical
-from common import utils
-
-# This module, alphabetical
 from . import StorageException
 from .location import Location
 from .package import Package
+
+# Core Django, alphabetical
+# Third party dependencies, alphabetical
+# This project, alphabetical
+# This module, alphabetical
 
 LOGGER = logging.getLogger(__name__)
 
@@ -72,9 +66,7 @@ class Arkivum(models.Model):
         # Support browse so that the Location select works
         if self.remote_user and self.remote_name:
             path = os.path.join(path, "")
-            ssh_path = "{}@{}:{}".format(
-                self.remote_user, self.remote_name, utils.coerce_str(path)
-            )
+            ssh_path = f"{self.remote_user}@{self.remote_name}:{path}"
             return self.space.browse_rsync(ssh_path)
         else:
             return self.space.browse_local(path)
@@ -111,7 +103,7 @@ class Arkivum(models.Model):
                 destination_path, self.remote_user, self.remote_name
             )
             rsync_dest = "{}@{}:{}".format(
-                self.remote_user, self.remote_name, utils.coerce_str(destination_path)
+                self.remote_user, self.remote_name, destination_path
             )
         else:
             rsync_dest = destination_path
@@ -352,7 +344,7 @@ class Arkivum(models.Model):
                     + "/"
                     + path
                 )
-                url_path = six.moves.urllib.parse.quote_plus(url_path, safe="/")
+                url_path = urllib.parse.quote_plus(url_path, safe="/")
                 url = "https://" + self.host + "/api/2/files/fileInfo/" + url_path
                 LOGGER.info("URL: %s", url)
                 try:
@@ -385,7 +377,7 @@ class Arkivum(models.Model):
                     )
                     # Pick a random file and check the locality of it.
                     # WARNING assumes the package is local/not local as a unit.
-                    for dirpath, dirs, files in scandir.walk(package.full_path):
+                    for dirpath, dirs, files in os.walk(package.full_path):
                         if files:
                             file_path = os.path.join(dirpath, files[0])
                             break

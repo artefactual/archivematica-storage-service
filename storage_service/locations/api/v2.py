@@ -1,14 +1,11 @@
-from __future__ import absolute_import
 import base64
 
-import six
-from tastypie import fields
-
 import locations.api.resources as resources
+from tastypie import fields
 
 
 def b64encode_string(data):
-    return base64.b64encode(six.ensure_binary(data)).decode("utf8")
+    return base64.b64encode(data.encode()).decode("utf8")
 
 
 class PipelineResource(resources.PipelineResource):

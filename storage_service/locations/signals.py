@@ -1,17 +1,16 @@
-from __future__ import absolute_import
-
 import json
 import logging
 import sys
 
-from django.dispatch import receiver, Signal
-from django.contrib.auth.models import User
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.db.models import signals
+from django.dispatch import receiver
+from django.dispatch import Signal
 from django.urls import reverse
 from django.utils.translation import ugettext as _
-from tastypie.models import create_api_key
 from prometheus_client import Counter
+from tastypie.models import create_api_key
 
 LOGGER = logging.getLogger(__name__)
 

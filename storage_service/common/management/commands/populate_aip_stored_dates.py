@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Populate the Package.stored_date field for AIPs and AIP replicas.
 
 Currently this works only for AIPs and replicas that are stored in
@@ -9,17 +8,16 @@ AIPs that already have timestamps are ignored and not updated.
 Execution example:
 ./manage.py populate_aip_stored_dates
 """
-from __future__ import absolute_import, print_function
-from datetime import datetime
 import logging
 import os
-import pytz
+from datetime import datetime
 
+import pytz
+from common.management.commands import StorageServiceCommand
 from django.conf import settings
 from django.core.management.base import CommandError
-
-from common.management.commands import StorageServiceCommand
-from locations.models.package import Package, Space
+from locations.models.package import Package
+from locations.models.package import Space
 
 # Suppress the logging from models/package.py.
 logging.config.dictConfig({"version": 1, "disable_existing_loggers": True})

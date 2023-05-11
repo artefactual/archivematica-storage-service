@@ -1,7 +1,5 @@
 # flake8: noqa
-
 """Settings for basic user authentication."""
-
 from os import environ
 
 from storage_service.settings.helpers import is_true

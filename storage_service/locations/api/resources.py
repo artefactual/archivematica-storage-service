@@ -1,71 +1,62 @@
 # This file contains the base models that individual versioned models
 # are based on. They shouldn't be directly used with Api objects.
-
 # stdlib, alphabetical
-from __future__ import absolute_import
-from __future__ import unicode_literals
 import json
 import logging
 import os
 import pprint
 import re
 import shutil
-import six.moves.urllib.request
-import six.moves.urllib.parse
-import six.moves.urllib.error
+import urllib.parse
 from pathlib import Path
 
-# Core Django, alphabetical
-from django.conf import settings
-from django.conf.urls import url
-from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
-from django.http import HttpResponseRedirect
-from django.forms.models import model_to_dict
-from django.urls import reverse
-from django.utils.translation import ugettext as _
-
-# Third party dependencies, alphabetical
 import bagit
-
-import six
-from tastypie.authentication import (
-    BasicAuthentication,
-    ApiKeyAuthentication,
-    MultiAuthentication,
-    SessionAuthentication,
-)
-from tastypie.authorization import DjangoAuthorization
 import tastypie.exceptions
-from tastypie import fields
-from tastypie import http
-from tastypie.resources import ModelResource, ALL, ALL_WITH_RELATIONS
-from tastypie.validation import CleanedDataFormValidation
-from tastypie.utils import trailing_slash, dict_strip_unicode_keys
-
-# This project, alphabetical
 from administration.models import Settings
 from common import utils
-from locations.api.sword import views as sword_views
-
-from ..models import (
-    Callback,
-    CallbackError,
-    Event,
-    File,
-    Package,
-    Location,
-    LocationPipeline,
-    Space,
-    Pipeline,
-    StorageException,
-    Async,
-    PosixMoveUnsupportedError,
-)
-from ..forms import SpaceForm
-from ..constants import PROTOCOL
+from django.conf import settings
+from django.conf.urls import url
+from django.core.exceptions import MultipleObjectsReturned
+from django.core.exceptions import ObjectDoesNotExist
+from django.forms.models import model_to_dict
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+from django.utils.translation import ugettext as _
 from locations import signals
+from locations.api.sword import views as sword_views
+from tastypie import fields
+from tastypie import http
+from tastypie.authentication import ApiKeyAuthentication
+from tastypie.authentication import BasicAuthentication
+from tastypie.authentication import MultiAuthentication
+from tastypie.authentication import SessionAuthentication
+from tastypie.authorization import DjangoAuthorization
+from tastypie.resources import ALL
+from tastypie.resources import ALL_WITH_RELATIONS
+from tastypie.resources import ModelResource
+from tastypie.utils import dict_strip_unicode_keys
+from tastypie.utils import trailing_slash
+from tastypie.validation import CleanedDataFormValidation
 
+from ..constants import PROTOCOL
+from ..forms import SpaceForm
+from ..models import Async
+from ..models import Callback
+from ..models import CallbackError
+from ..models import Event
+from ..models import File
+from ..models import Location
+from ..models import LocationPipeline
+from ..models import Package
+from ..models import Pipeline
+from ..models import PosixMoveUnsupportedError
+from ..models import Space
+from ..models import StorageException
 from ..models.async_manager import AsyncManager
+
+# Core Django, alphabetical
+# Third party dependencies, alphabetical
+# This project, alphabetical
 
 LOGGER = logging.getLogger(__name__)
 
@@ -239,7 +230,7 @@ class PipelineResource(ModelResource):
         return bundle
 
     def obj_create(self, bundle, **kwargs):
-        bundle = super(PipelineResource, self).obj_create(bundle, **kwargs)
+        bundle = super().obj_create(bundle, **kwargs)
         bundle.obj.enabled = not utils.get_setting("pipelines_disabled", False)
         create_default_locations = bundle.data.get("create_default_locations", False)
         # Try to guess Pipeline's IP if remote_name is undefined
@@ -306,7 +297,7 @@ class SpaceResource(ModelResource):
 
     def dehydrate(self, bundle):
         """Add protocol specific fields to an entry."""
-        bundle = super(SpaceResource, self).dehydrate(bundle)
+        bundle = super().dehydrate(bundle)
         access_protocol = bundle.obj.access_protocol
         model = PROTOCOL[access_protocol]["model"]
 
@@ -329,7 +320,7 @@ class SpaceResource(ModelResource):
         access_protocol = bundle.data["access_protocol"]
         keep_fields = PROTOCOL[access_protocol]["fields"]
         fields_dict = {key: bundle.data[key] for key in keep_fields}
-        bundle = super(SpaceResource, self).obj_create(bundle, **kwargs)
+        bundle = super().obj_create(bundle, **kwargs)
         model = PROTOCOL[access_protocol]["model"]
         obj = model.objects.create(space=bundle.obj, **fields_dict)
         obj.save()
@@ -500,7 +491,7 @@ class LocationResource(ModelResource):
             # This is going to result in calling the `default` attribute setter
             # in the underlying model (Location).
             kwargs["default"] = bundle.data["default"]
-        return super(LocationResource, self).obj_create(bundle, **kwargs)
+        return super().obj_create(bundle, **kwargs)
 
     @_custom_endpoint(expected_methods=["get"])
     def browse(self, request, bundle, **kwargs):
@@ -517,7 +508,7 @@ class LocationResource(ModelResource):
         location = bundle.obj
         path = request.GET.get("path", "")
         path = self.decode_path(path)
-        location_path = six.ensure_str(location.full_path)
+        location_path = str(location.full_path)
         if not path.startswith(location_path):
             path = os.path.join(location_path, path)
 
@@ -1028,7 +1019,7 @@ class PackageResource(ModelResource):
             )
             return bundle
         try:
-            name = "default_{}_location".format(purpose)
+            name = f"default_{purpose}_location"
             uuid = Settings.objects.get(name=name).value
         except (Settings.DoesNotExist, KeyError):
             LOGGER.debug(
@@ -1108,7 +1099,7 @@ class PackageResource(ModelResource):
                 data=dict_strip_unicode_keys(deserialized), request=request
             )
 
-            bundle = super(PackageResource, self).obj_create(bundle, **kwargs)
+            bundle = super().obj_create(bundle, **kwargs)
 
             def task():
                 self._store_bundle(bundle)
@@ -1140,7 +1131,7 @@ class PackageResource(ModelResource):
         Create a new Package model instance. Called when a POST request is
         made to api/v2/file/.
         """
-        bundle = super(PackageResource, self).obj_create(bundle, **kwargs)
+        bundle = super().obj_create(bundle, **kwargs)
         self._store_bundle(bundle)
         return bundle
 
@@ -1233,9 +1224,7 @@ class PackageResource(ModelResource):
                 _("PATCH only allowed on %(fields)s")
                 % {"fields": ", ".join(self._meta.allowed_patch_fields)}
             )
-        return super(PackageResource, self).update_in_place(
-            request, original_bundle, new_data
-        )
+        return super().update_in_place(request, original_bundle, new_data)
 
     @_custom_endpoint(
         expected_methods=["post"],
@@ -1312,7 +1301,7 @@ class PackageResource(ModelResource):
             return http.HttpBadRequest(
                 _("All of these fields must be provided: relative_path_to_file")
             )
-        relative_path_to_file = six.moves.urllib.parse.unquote(relative_path_to_file)
+        relative_path_to_file = urllib.parse.unquote(relative_path_to_file)
         temp_dir = extracted_file_path = ""
 
         # Get Package details
@@ -1474,7 +1463,7 @@ class PackageResource(ModelResource):
         PUT /api/v1/file/<uuid>/compress/
         """
         return http.HttpResponse(
-            {"response": "You want to compress package {}".format(bundle.obj.uuid)},
+            {"response": f"You want to compress package {bundle.obj.uuid}"},
             content_type="application/json",
         )
 

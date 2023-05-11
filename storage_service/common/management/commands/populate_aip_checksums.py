@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Populate Package.checksum and Package.checksum_algorithm fields for AIPs
 and AIP replicas.
 
@@ -14,14 +13,13 @@ have the Package.checksum and Package.checksum_algorithm fields populated.
 Execution example:
 ./manage.py populate_aip_checksums
 """
-from __future__ import absolute_import, print_function
 import os
 
-from django.core.management.base import CommandError
-
-from common.management.commands import StorageServiceCommand
 from common import utils
-from locations.models.package import Package, Space
+from common.management.commands import StorageServiceCommand
+from django.core.management.base import CommandError
+from locations.models.package import Package
+from locations.models.package import Space
 
 
 class Command(StorageServiceCommand):
@@ -105,7 +103,7 @@ class Command(StorageServiceCommand):
             aip.checksum_algorithm = checksum_algorithm
             aip.save()
             self.info(
-                "AIP {0} updated with {1} checksum {2}".format(
+                "AIP {} updated with {} checksum {}".format(
                     aip.uuid, aip.checksum_algorithm, aip.checksum
                 )
             )
@@ -131,7 +129,7 @@ class Command(StorageServiceCommand):
             aip.checksum_algorithm = Package.DEFAULT_CHECKSUM_ALGORITHM
             aip.save()
             self.info(
-                "AIP {0} updated with {1} checksum {2}".format(
+                "AIP {} updated with {} checksum {}".format(
                     aip.uuid, aip.checksum_algorithm, aip.checksum
                 )
             )

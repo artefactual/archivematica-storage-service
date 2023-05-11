@@ -1,10 +1,7 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
 import os
 
-from django.test import TestCase
 import vcr
-
+from django.test import TestCase
 from locations import models
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))

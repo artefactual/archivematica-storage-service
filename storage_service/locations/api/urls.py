@@ -1,9 +1,9 @@
-from __future__ import absolute_import
-from django.conf.urls import include, url
-from tastypie.api import Api
-from locations.api import v1, v2
-
+from django.conf.urls import include
+from django.conf.urls import url
+from locations.api import v1
+from locations.api import v2
 from locations.api.sword import views
+from tastypie.api import Api
 
 v1_api = Api(api_name="v1")
 v1_api.register(v1.SpaceResource())

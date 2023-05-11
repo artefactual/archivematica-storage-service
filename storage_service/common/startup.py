@@ -3,11 +3,10 @@ import logging
 import os.path
 
 import django.core.exceptions
+from common import utils
 from django.db import connection
-
 from locations import models as locations_models
 from locations.models.async_manager import start_async_manager
-from common import utils
 
 
 LOGGER = logging.getLogger(__name__)
@@ -29,7 +28,7 @@ class PopulateLockError(Exception):
     """MySQL lock is already held or an error occurred."""
 
 
-class PopulateLock(object):
+class PopulateLock:
     """MySQL lock that gives up immediately on a held lock."""
 
     def __init__(self):

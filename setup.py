@@ -1,10 +1,7 @@
 #! /usr/bin/env python
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2013 Artefactual Systems Inc. http://www.artefactual.com
 #
 # This file is part of archivematica-storage-service.
-
 # archivematica-storage-service is free software: you can redistribute it
 # and/or modify it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the License,
@@ -18,8 +15,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with archivematica-storage-service.  If not,
 # see <http://www.gnu.org/licenses/>.
-
-from __future__ import absolute_import
 import codecs
 import os
 import re

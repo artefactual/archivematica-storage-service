@@ -1,15 +1,11 @@
-from __future__ import absolute_import
-
 import os
 from unittest import mock
-
-import botocore
-import boto3
-import pytest
 from unittest import skip
 
+import boto3
+import botocore
+import pytest
 from django.test import TestCase
-
 from locations import models
 
 

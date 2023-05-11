@@ -13,13 +13,13 @@ middleware here, or combine a Django application with an application of another
 framework.
 
 """
-from __future__ import absolute_import
 import os
-from os.path import abspath, dirname
+from os.path import abspath
+from os.path import dirname
 from sys import path
 
-from django.core.wsgi import get_wsgi_application
 import django
+from django.core.wsgi import get_wsgi_application
 
 django.setup()
 from common.startup import startup

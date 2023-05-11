@@ -1,13 +1,12 @@
-from __future__ import absolute_import
-from lxml import etree
 import os
 import shutil
+
 import requests
-
-from django.test import TestCase
 import vcr
-
+from django.test import TestCase
 from locations import models
+from lxml import etree
+
 from . import TempDirMixin
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -19,7 +18,7 @@ class TestDuracloud(TempDirMixin, TestCase):
     fixtures = ["base.json", "duracloud.json"]
 
     def setUp(self):
-        super(TestDuracloud, self).setUp()
+        super().setUp()
         self.ds_object = models.Duracloud.objects.first()
         self.auth = requests.auth.HTTPBasicAuth(
             self.ds_object.user, self.ds_object.password

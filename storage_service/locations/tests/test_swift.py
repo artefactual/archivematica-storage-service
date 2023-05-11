@@ -1,12 +1,10 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
 import os
 
-from django.test import TestCase
 import pytest
 import vcr
-
+from django.test import TestCase
 from locations import models
+
 from . import TempDirMixin
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -18,7 +16,7 @@ class TestSwift(TempDirMixin, TestCase):
     fixtures = ["base.json", "swift.json"]
 
     def setUp(self):
-        super(TestSwift, self).setUp()
+        super().setUp()
         self.swift_object = models.Swift.objects.first()
 
     def test_has_required_attributes(self):

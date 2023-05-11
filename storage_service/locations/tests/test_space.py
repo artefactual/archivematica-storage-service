@@ -1,15 +1,10 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
-
-import os
+import os.path
+import shutil
 import subprocess
+from os import makedirs
+from os import scandir
 
 import pytest
-from scandir import scandir
-import shutil
-
-import six
-
 from locations.models import Space
 from locations.models.space import path2browse_dict
 
@@ -19,7 +14,7 @@ def _restrict_access_to(restricted_path):
 
     def scandir_mock(path):
         if path == restricted_path:
-            raise OSError("Permission denied: '{}'".format(path))
+            raise OSError(f"Permission denied: '{path}'")
         return scandir(path)
 
     return scandir_mock
@@ -80,7 +75,7 @@ def test_path2browse_dict_object_counting_ignores_read_protected_directories(
     }
 
     # Restrict read access to the "empty" directory.
-    mocker.patch("scandir.scandir", side_effect=_restrict_access_to(tree.join("empty")))
+    mocker.patch("os.scandir", side_effect=_restrict_access_to(tree.join("empty")))
     assert path2browse_dict(str(tree)) == {
         "directories": ["empty", "first", "second"],
         "entries": ["empty", "error.txt", "first", "second", "tree_a.txt"],
@@ -94,7 +89,7 @@ def test_path2browse_dict_object_counting_ignores_read_protected_directories(
     }
 
     # Restrict read access to the "first" directory.
-    mocker.patch("scandir.scandir", side_effect=_restrict_access_to(tree.join("first")))
+    mocker.patch("os.scandir", side_effect=_restrict_access_to(tree.join("first")))
     assert path2browse_dict(str(tree)) == {
         "directories": ["empty", "first", "second"],
         "entries": ["empty", "error.txt", "first", "second", "tree_a.txt"],
@@ -108,9 +103,7 @@ def test_path2browse_dict_object_counting_ignores_read_protected_directories(
     }
 
     # Restrict read access to the "second" directory.
-    mocker.patch(
-        "scandir.scandir", side_effect=_restrict_access_to(tree.join("second"))
-    )
+    mocker.patch("os.scandir", side_effect=_restrict_access_to(tree.join("second")))
     assert path2browse_dict(str(tree)) == {
         "directories": ["empty", "first", "second"],
         "entries": ["empty", "error.txt", "first", "second", "tree_a.txt"],
@@ -125,7 +118,7 @@ def test_path2browse_dict_object_counting_ignores_read_protected_directories(
 
     # Restrict read access to the "third" directory (child of the "second" directory).
     mocker.patch(
-        "scandir.scandir",
+        "os.scandir",
         side_effect=_restrict_access_to(tree.join("second").join("third")),
     )
     assert path2browse_dict(str(tree)) == {
@@ -181,7 +174,7 @@ C5 = "0e-11112222-3333-8888-9999-aaaabbbbcccc.7z"
 C6 = "0f-11112222-8888-9999-aaaa-bbbbccccdddd.tar.gz"
 C7 = "1a-11118888-9999-aaaa-bbbb-cccceeeeeeee.zip"
 
-MAGIC = "\x37\x7A\xBC\xAF\x27\x1C"
+MAGIC = b"\x37\x7A\xBC\xAF\x27\x1C"
 
 AIPSTORE = "AIPstore"
 
@@ -262,12 +255,12 @@ def aipstore_compressed(tmpdir):
 
     for path in COMPRESSED_AIPS:
         path_to_write_to = os.path.join(aipstore_path, path[AIP_QUAD_PATH])
-        os.makedirs(path_to_write_to)
+        makedirs(path_to_write_to)
         package_file = os.path.join(
             aipstore_path, path[AIP_QUAD_PATH], path[COMPRESSED_PACKAGE_DIR]
         )
         with open(package_file, "wb") as package:
-            package.write(six.ensure_binary(MAGIC))
+            package.write(MAGIC)
         assert os.path.exists(package_file)
         assert os.path.isfile(package_file)
 
@@ -423,7 +416,7 @@ def aipstore_uncompressed(tmpdir):
     aipstore_path = str(aipstore)
 
     some_file_name = "some-manifest"
-    some_data = "some_data"
+    some_data = b"some_data"
 
     for path, aip_name in UNCOMPRESSED_AIPS:
         # Write some data to simulate an actual package in the storage
@@ -432,7 +425,7 @@ def aipstore_uncompressed(tmpdir):
         os.makedirs(path_to_write_to)
         some_file = os.path.join(aipstore_path, path, aip_name, some_file_name)
         with open(some_file, "wb") as _some_file:
-            _some_file.write(six.ensure_binary(some_data))
+            _some_file.write(some_data)
         assert os.path.exists(some_file)
 
     return aipstore

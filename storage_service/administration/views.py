@@ -1,25 +1,27 @@
-from __future__ import absolute_import
 import logging
 import subprocess
 
+from common import decorators
+from common import gpgutils
+from common import utils
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import permission_required
 from django.contrib.auth.forms import SetPasswordForm
 from django.http import Http404
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import get_object_or_404
+from django.shortcuts import redirect
+from django.shortcuts import render
 from django.urls import reverse
-from django.utils.translation import get_language, ugettext as _
+from django.utils.translation import get_language
+from django.utils.translation import ugettext as _
+from locations.models import GPG
+from locations.models import Package
 from tastypie.models import ApiKey
 
-from common import utils
-from common import gpgutils
-from common import decorators
-
-from storage_service import __version__ as ss_version
-from locations.models import GPG, Package
 from . import forms as settings_forms
+from storage_service import __version__ as ss_version
 
 
 LOGGER = logging.getLogger(__name__)
@@ -281,7 +283,7 @@ def key_import(request):
         else:
             messages.success(
                 request,
-                _("New key %(fingerprint)s created." % {"fingerprint": fingerprint}),
+                _(f"New key {fingerprint} created."),
             )
             return redirect("administration:key_list")
     explanation = _(

@@ -1,6 +1,4 @@
 # flake8: noqa
-from __future__ import absolute_import
-
 # Note that while the signals are not actually used here,
 # they should be imported here to make sure that they
 # are imported very early on globally. This ensures that

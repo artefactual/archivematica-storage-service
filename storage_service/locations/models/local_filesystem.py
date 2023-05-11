@@ -1,19 +1,16 @@
-from __future__ import absolute_import
-
 # stdlib, alphabetical
 import datetime
 import os
 
-# Core Django, alphabetical
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
-# Third party dependencies, alphabetical
-
-# This project, alphabetical
-
-# This module, alphabetical
 from .location import Location
+
+# Core Django, alphabetical
+# Third party dependencies, alphabetical
+# This project, alphabetical
+# This module, alphabetical
 
 
 class LocalFilesystem(models.Model):

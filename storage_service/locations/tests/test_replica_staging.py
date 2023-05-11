@@ -1,11 +1,10 @@
-from __future__ import absolute_import
 import os
 import tempfile
 
 from django.test import TestCase
+from locations import models
 
 from . import TempDirMixin
-from locations import models
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -17,7 +16,7 @@ class TestOfflineReplicaStaging(TempDirMixin, TestCase):
     fixtures = ["base.json", "replica_staging.json"]
 
     def setUp(self):
-        super(TestOfflineReplicaStaging, self).setUp()
+        super().setUp()
         self.replica = models.Package.objects.get(id=1)
         self.replica.current_location.space.staging_path = str(self.tmpdir)
         self.replica.current_location.space.save()

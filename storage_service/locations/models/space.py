@@ -1,5 +1,4 @@
 # stdlib, alphabetical
-from __future__ import absolute_import
 import datetime
 import errno
 import logging
@@ -10,18 +9,15 @@ import stat
 import subprocess
 import tempfile
 
-# Core Django, alphabetical
+from common import utils
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from django.utils import six
-
-# Third party dependencies, alphabetical
-import scandir
 from django_extensions.db.fields import UUIDField
 
+# Core Django, alphabetical
+# Third party dependencies, alphabetical
 # This project, alphabetical
-from common import utils
 
 LOGGER = logging.getLogger(__name__)
 
@@ -122,7 +118,6 @@ def validate_space_path(path):
 #         pass
 
 
-@six.python_2_unicode_compatible
 class Space(models.Model):
     """Common storage space information.
 
@@ -216,7 +211,7 @@ class Space(models.Model):
         app_label = "locations"
 
     def __str__(self):
-        return six.text_type("{uuid}: {path} ({access_protocol})").format(
+        return "{uuid}: {path} ({access_protocol})".format(
             uuid=self.uuid,
             access_protocol=self.get_access_protocol_display(),
             path=self.path,
@@ -465,7 +460,7 @@ class Space(models.Model):
                 destination_path=destination_path,
                 package=package,
                 *args,
-                **kwargs
+                **kwargs,
             )
         except AttributeError:
             # This is optional for the child class to implement
@@ -480,7 +475,7 @@ class Space(models.Model):
                     # which can result in an attempt to join mixed encodings;
                     # this blows up if the filename cannot be converted to
                     # unicode
-                    shutil.rmtree(utils.coerce_str(os.path.normpath(staging_path)))
+                    shutil.rmtree(os.path.normpath(staging_path))
                 elif os.path.isfile(staging_path):
                     os.remove(os.path.normpath(staging_path))
             except OSError:
@@ -549,8 +544,6 @@ class Space(models.Model):
         :param bool assume_rsync_daemon: If true, will use rsync daemon-style commands instead of the default rsync with remote shell transport
         :param rsync_password: used if assume_rsync_daemon is true, to specify value of RSYNC_PASSWORD environment variable
         """
-        source = utils.coerce_str(source)
-        destination = utils.coerce_str(destination)
         LOGGER.info("Moving from %s to %s", source, destination)
 
         if source == destination:
@@ -600,7 +593,7 @@ class Space(models.Model):
         p = subprocess.Popen(command, **kwargs)
         stdout, _ = p.communicate()
         if p.returncode != 0:
-            s = "Rsync failed with status {}: {}".format(p.returncode, stdout)
+            s = f"Rsync failed with status {p.returncode}: {stdout}"
             LOGGER.warning(s)
             raise StorageException(s)
 
@@ -668,7 +661,7 @@ class Space(models.Model):
         # Dir must end in a / for rsync to create it
         for directory in directories:
             path = os.path.join(os.path.dirname(directory), "")
-            path = "{}@{}:{}".format(user, host, utils.coerce_str(path))
+            path = f"{user}@{host}:{path}"
             cmd = [
                 "rsync",
                 "-vv",
@@ -696,7 +689,7 @@ class Space(models.Model):
         'size': Size of the object, as determined by os.path.getsize. May be misleading for directories, suggest use 'object count'
         'object count': Number of objects in the directory, including children
         """
-        if isinstance(path, six.text_type):
+        if isinstance(path, str):
             path = str(path)
         if not os.path.exists(path):
             LOGGER.info("%s in %s does not exist", path, self)
@@ -852,7 +845,7 @@ class PosixMoveUnsupportedError(Exception):
 
 def _scandir_public(path):
     """Generate all directory entries, excluding hidden files."""
-    for entry in scandir.scandir(path):
+    for entry in os.scandir(path):
         if not entry.name.startswith("."):
             yield entry
 
@@ -860,10 +853,9 @@ def _scandir_public(path):
 def _scandir_files(path):
     """Generate all files, descending into subdirs."""
     try:
-        for entry in scandir.scandir(path):
+        for entry in os.scandir(path):
             if entry.is_dir():
-                for subentry in _scandir_files(entry.path):
-                    yield subentry
+                yield from _scandir_files(entry.path)
             else:
                 yield entry
     except OSError:

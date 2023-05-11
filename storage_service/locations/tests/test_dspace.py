@@ -1,11 +1,10 @@
-from __future__ import absolute_import
 import os
 import shutil
 
-from django.test import TestCase
 import vcr
-
+from django.test import TestCase
 from locations import models
+
 from . import TempDirMixin
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -19,7 +18,7 @@ class TestDSpace(TempDirMixin, TestCase):
     fixtures = ["base.json", "dspace.json"]
 
     def setUp(self):
-        super(TestDSpace, self).setUp()
+        super().setUp()
         self.dspace_object = models.DSpace.objects.get(id=1)
 
     def test_has_required_attributes(self):

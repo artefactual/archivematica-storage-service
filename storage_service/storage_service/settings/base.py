@@ -1,23 +1,24 @@
 # flake8: noqa
-
 """Common settings and globals."""
-
-from __future__ import absolute_import
 import json
-import logging
 import logging.config
 from os import environ
-from os.path import abspath, basename, dirname, isfile, join, normpath
+from os.path import abspath
+from os.path import basename
+from os.path import dirname
+from os.path import isfile
+from os.path import join
+from os.path import normpath
 from sys import path
 
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import ugettext_lazy as _
-import six
+
+from .components.s3 import *
+from storage_service.settings.helpers import get_env_variable
+from storage_service.settings.helpers import is_true
 
 # S3 adapter configuration.
-from .components.s3 import *
-
-from storage_service.settings.helpers import get_env_variable, is_true
 
 try:
     import ldap
@@ -31,10 +32,10 @@ def _get_settings_from_file(path):
         result = {}
         with open(path, "rb") as f:
             code = compile(f.read(), path, "exec")
-            six.exec_(code, result, result)
+            exec(code, result, result)
         return result
     except Exception as err:
-        raise ImproperlyConfigured("{} could not be imported: {}".format(path, err))
+        raise ImproperlyConfigured(f"{path} could not be imported: {err}")
 
 
 # ######## PATH CONFIGURATION
@@ -312,7 +313,7 @@ LOGGING = {
 }
 
 if isfile(LOGGING_CONFIG_FILE):
-    with open(LOGGING_CONFIG_FILE, "rt") as f:
+    with open(LOGGING_CONFIG_FILE) as f:
         LOGGING = logging.config.dictConfig(json.load(f))
 else:
     logging.config.dictConfig(LOGGING)

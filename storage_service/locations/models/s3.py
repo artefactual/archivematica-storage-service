@@ -1,29 +1,24 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
-
 # stdlib, alphabetical
 import logging
 import os
 import pprint
+import re
 from functools import wraps
 
-# Core Django, alphabetical
+import boto3
+import botocore
+from common import utils
 from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
-# Third party dependencies, alphabetical
-import boto3
-import botocore
-import re
-import scandir
-
-# This project, alphabetical
-from common import utils
-
-# This module, alphabetical
 from . import StorageException
 from .location import Location
+
+# Core Django, alphabetical
+# Third party dependencies, alphabetical
+# This project, alphabetical
+# This module, alphabetical
 
 
 LOGGER = logging.getLogger(__name__)
@@ -202,7 +197,7 @@ class S3(models.Model):
             LOGGER.debug("S3 response when attempting to delete:")
             LOGGER.debug(pprint.pformat(resp))
         if not items:
-            err_str = "No packages found in S3 at: {}".format(delete_path)
+            err_str = f"No packages found in S3 at: {delete_path}"
             LOGGER.warning(err_str)
             raise StorageException(err_str)
 
@@ -239,7 +234,7 @@ class S3(models.Model):
             # strip leading slash on dest_path
             dest_path = dest_path.lstrip("/")
 
-            for path, dirs, files in scandir.walk(src_path):
+            for path, dirs, files in os.walk(src_path):
                 for basename in files:
                     entry = os.path.join(path, basename)
                     dest = entry.replace(src_path, dest_path, 1)

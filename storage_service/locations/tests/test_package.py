@@ -1,22 +1,19 @@
-from __future__ import absolute_import
-
-from collections import namedtuple
 import datetime
 import hashlib
 import os
-import pytest
 import shutil
 import tempfile
 import time
-import vcr
+from collections import namedtuple
 from unittest import mock
 
 import bagit
+import pytest
+import vcr
+from common import utils
 from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
-
-from common import utils
 from locations import models
 
 
@@ -44,12 +41,12 @@ def test_checksum():
 
 def recursive_file_count(target_dir):
     """Return count of files in directory based on recursive walk."""
-    return sum([len(files) for _, _, files in os.walk(target_dir)])
+    return sum(len(files) for _, _, files in os.walk(target_dir))
 
 
 def recursive_dir_count(target_dir):
     """Return count of dirs in directory based on recursive walk."""
-    return sum([len(dirs) for _, dirs, _ in os.walk(target_dir)])
+    return sum(len(dirs) for _, dirs, _ in os.walk(target_dir))
 
 
 def mock_v():

@@ -1,15 +1,12 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
 import json
 import logging
 import os
 import subprocess
 import time
 
+from common import utils
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-
-from common import utils
 
 from . import StorageException
 from .location import Location
@@ -103,7 +100,7 @@ class RClone(models.Model):
                     )
                 return stdout
             except FileNotFoundError as err:
-                err_msg = "rclone executable not found at path. Details: {}".format(err)
+                err_msg = f"rclone executable not found at path. Details: {err}"
                 LOGGER.error(err_msg)
                 raise StorageException(err_msg)
             except Exception as err:
@@ -131,7 +128,7 @@ class RClone(models.Model):
         we attempt to create the bucket, else, we raise a StorageException.
         """
         LOGGER.debug("Test that container '%s' exists", self.container)
-        prefixed_container_name = "{}{}".format(self.remote_prefix, self.container)
+        prefixed_container_name = f"{self.remote_prefix}{self.container}"
         cmd = ["ls", prefixed_container_name]
         try:
             self._execute_rclone_subcommand(cmd)
@@ -157,7 +154,7 @@ class RClone(models.Model):
             self._ensure_container_exists()
             container = os.path.join(self.container, "")
 
-        prefixed_path = "{}{}{}".format(self.remote_prefix, container, path)
+        prefixed_path = f"{self.remote_prefix}{container}{path}"
         cmd = ["lsjson", prefixed_path]
         stdout = self._execute_rclone_subcommand(cmd)
 
@@ -237,7 +234,7 @@ class RClone(models.Model):
 
         cmd = [
             subcommand,
-            "{}{}{}".format(self.remote_prefix, container, src_path),
+            f"{self.remote_prefix}{container}{src_path}",
             dest_path,
         ]
         self._execute_rclone_subcommand(cmd)
@@ -260,6 +257,6 @@ class RClone(models.Model):
         cmd = [
             subcommand,
             src_path,
-            "{}{}{}".format(self.remote_prefix, container, dest_path),
+            f"{self.remote_prefix}{container}{dest_path}",
         ]
         self._execute_rclone_subcommand(cmd)

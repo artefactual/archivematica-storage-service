@@ -1,15 +1,12 @@
-from __future__ import absolute_import
-
 import os
 from unittest import mock
-
-from django.test import TestCase
-from django.urls import reverse
-from django.utils.six.moves.urllib.parse import ParseResult, urlparse
-
-from locations import models
+from urllib.parse import ParseResult
+from urllib.parse import urlparse
 
 import vcr
+from django.test import TestCase
+from django.urls import reverse
+from locations import models
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -17,7 +14,6 @@ FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
 
 
 class TestPipeline(TestCase):
-
     fixtures = ["base.json", "pipelines.json"]
 
     def test_parse_and_fix_url(self):
@@ -88,7 +84,6 @@ class TestPipeline(TestCase):
 
 
 class TestPipelineViews(TestCase):
-
     fixtures = ["base.json", "pipelines.json"]
 
     def setUp(self):

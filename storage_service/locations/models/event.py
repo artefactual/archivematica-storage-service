@@ -1,22 +1,19 @@
 # stdlib, alphabetical
-from __future__ import absolute_import
-from collections import OrderedDict
 import json
+from collections import OrderedDict
 
-# Core Django, alphabetical
+import requests
 from django.conf import settings
 from django.db import models
-from django.utils import six
 from django.utils.translation import ugettext_lazy as _
-
-# Third party dependencies, alphabetical
 from django_extensions.db.fields import UUIDField
-import requests
 
-# This project, alphabetical
-
-# This module, alphabetical
 from . import StorageException
+
+# Core Django, alphabetical
+# Third party dependencies, alphabetical
+# This project, alphabetical
+# This module, alphabetical
 
 __all__ = ("Event", "Callback", "File", "CallbackError")
 
@@ -25,7 +22,6 @@ class CallbackError(StorageException):
     pass
 
 
-@six.python_2_unicode_compatible
 class Event(models.Model):
     """Stores requests to modify packages that need admin approval.
 

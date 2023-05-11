@@ -1,10 +1,9 @@
-from __future__ import absolute_import
 import os
 
-from django.test import TestCase
 import pytest
-
-from locations import forms, models
+from django.test import TestCase
+from locations import forms
+from locations import models
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures", ""))
