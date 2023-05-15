@@ -1713,7 +1713,7 @@ class Package(models.Model):
 
             script_path = f"/tmp/{str(uuid4())}"
             file_ = os.open(script_path, os.O_WRONLY | os.O_CREAT, 0o770)
-            os.write(file_, tool_info_command)
+            os.write(file_, tool_info_command.encode("utf-8"))
             os.close(file_)
             tic_cmd = [script_path]
             p = subprocess.Popen(
@@ -1726,9 +1726,9 @@ class Package(models.Model):
             LOGGER.debug(tic_stdout)
             LOGGER.debug(tic_stderr)
             details = {
-                "event_detail": tic_stdout,
+                "event_detail": tic_stdout.decode("utf-8"),
                 "event_outcome_detail_note": 'Standard Output="{}"; Standard Error="{}"'.format(
-                    stdout, stderr
+                    stdout.decode("utf-8"), stderr.decode("utf-8")
                 ),
             }
             return (compressed_filename, extract_path, details)
