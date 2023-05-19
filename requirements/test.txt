@@ -145,7 +145,7 @@ lxml==4.9.2
     #   metsrw
     #   python-cas
     #   sword2
-metsrw==0.3.22
+metsrw==0.3.23
     # via -r base.txt
 mozilla-django-oidc==1.2.4
     # via -r base.txt
