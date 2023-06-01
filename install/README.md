@@ -539,8 +539,8 @@ CentOS 7, Archivematica's processes are managed by `systemd`. Logs for the
 Storage Service can be accessed using `sudo journalctl -u archivematica-storage
 -service`.
 
-When running Archivematica using docker, `docker-compose logs` commands can be
-used to access the logs from different containers, e.g. `docker-compose logs
+When running Archivematica using docker, `docker compose logs` commands can be
+used to access the logs from different containers, e.g. `docker compose logs
 -f archivematica-storage-service`.
 
 ### Overriding the logging configuration
