@@ -9,7 +9,7 @@ services:
       dockerfile: "Dockerfile"
     entrypoint: ""
     working_dir: "/src"
-    command: ["./integration/wait-for-it.sh", "mysql:3306", "--timeout=30", "--", "pytest", "storage_service", "integration"]
+    command: ["pytest", "storage_service", "integration"]
     environment:
       PYTEST_ADDOPTS: ${PYTEST_ADDOPTS:-}
       FORWARDED_ALLOW_IPS: "*"
@@ -24,12 +24,15 @@ services:
       RCLONE_CONFIG_MYS3_REGION: "planet-earth"
     volumes:
       - "../:/src"
+    depends_on:
+      mysql:
+        condition: service_healthy
     links:
       - "minio"
       - "mysql"
 
   minio:
-    image: "minio/minio:RELEASE.2020-05-08T02-40-49Z"
+    image: "minio/minio:RELEASE.2023-05-27T05-56-19Z"
     command: "server /data"
     environment:
       MINIO_ACCESS_KEY: "minio"
@@ -40,9 +43,16 @@ services:
       - "9000"
 
   mysql:
-    image: "percona:5.6"
+    image: "percona:5.7"
     environment:
       MYSQL_ROOT_PASSWORD: "root"
       # These are used in the storage_service.settings.testmysql module
       MYSQL_USER: "archivematica"
       MYSQL_PASSWORD: "demo"
+      MYSQL_DATABASE: "test_SSTEST"
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "127.0.0.1"]
+      interval: 3s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
