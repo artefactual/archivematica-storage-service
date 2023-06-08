@@ -30,10 +30,6 @@
       "version": "3.1.1"
     },
     {
-      "name": "python3-devel",
-      "state": "latest"
-    },
-    {
       "name": "libxml2-devel",
       "state": "latest"
     },

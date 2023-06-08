@@ -26,10 +26,6 @@
       "state": "latest"
     },
     {
-      "name": "python3.6-dev",
-      "state": "latest"
-    },
-    {
       "name": "build-essential",
       "state": "latest"
     },
