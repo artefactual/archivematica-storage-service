@@ -2,6 +2,10 @@ ARG TARGET=archivematica-storage-service
 
 FROM ubuntu:18.04 AS base
 
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+ARG PYTHON_VERSION=3.6
+
 ENV DEBIAN_FRONTEND noninteractive
 ENV PYTHONUNBUFFERED 1
 
@@ -14,17 +18,27 @@ RUN set -ex \
 		gettext \
 		git \
 		gnupg1 \
+		libbz2-dev \
+		libffi-dev \
 		libldap2-dev \
+		liblzma-dev \
 		libmysqlclient-dev \
+		libncursesw5-dev \
+		libreadline-dev \
 		libsasl2-dev \
+		libsqlite3-dev \
+		libssl-dev \
+		libxml2-dev \
+		libxmlsec1-dev \
 		locales \
 		locales-all \
 		openssh-client \
-		python3-dev \
 		p7zip-full \
 		rsync \
 		unar \
 		unzip \
+		xz-utils tk-dev \
+		zlib1g-dev \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Install rclone
@@ -42,8 +56,8 @@ ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 
 RUN set -ex \
-	&& groupadd --gid 333 --system archivematica \
-	&& useradd --uid 333 --gid 333 --system archivematica
+	&& groupadd --gid ${GROUP_ID} --system archivematica \
+	&& useradd -m --uid ${USER_ID} --gid ${GROUP_ID} --create-home --home-dir /home/archivematica --system archivematica
 
 RUN set -ex \
 	&& internalDirs=' \
@@ -56,13 +70,22 @@ RUN set -ex \
 	&& mkdir -p $internalDirs \
 	&& chown -R archivematica:archivematica $internalDirs
 
+USER archivematica
+
+ENV PYENV_ROOT="/home/archivematica/.pyenv"
+ENV PATH=$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH
+
 RUN set -ex \
-	&& curl -s https://bootstrap.pypa.io/pip/3.6/get-pip.py | python3.6 \
-	&& update-alternatives --install /usr/bin/python python /usr/bin/python3 10
+	&& curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash \
+	&& pyenv install ${PYTHON_VERSION} \
+	&& pyenv global ${PYTHON_VERSION}
 
 COPY requirements/ /src/requirements/
 COPY ./install/storage-service.gunicorn-config.py /etc/archivematica/storage-service.gunicorn-config.py
-RUN pip3 install -q -r /src/requirements/production.txt -r /src/requirements/test.txt
+RUN set -ex \
+	&& pyenv exec python${PYTHON_VERSION} -m pip install --upgrade pip setuptools \
+	&& pyenv exec python${PYTHON_VERSION} -m pip install --requirement /src/requirements/production.txt --requirement /src/requirements/test.txt \
+	&& pyenv rehash
 
 COPY ./ /src/
 
@@ -70,9 +93,9 @@ COPY ./ /src/
 
 FROM base AS archivematica-storage-service
 
-WORKDIR /src/storage_service
+ARG PYTHON_VERSION=3.6
 
-USER archivematica
+WORKDIR /src/storage_service
 
 ENV DJANGO_SETTINGS_MODULE storage_service.settings.local
 ENV PYTHONPATH /src/storage_service
@@ -84,11 +107,11 @@ ENV FORWARDED_ALLOW_IPS *
 
 RUN set -ex \
 	&& export SS_DB_URL=mysql://ne:ver@min/d \
-	&& ./manage.py collectstatic --noinput --clear \
-	&& ./manage.py compilemessages
+	&& pyenv exec python${PYTHON_VERSION} ./manage.py collectstatic --noinput --clear \
+	&& pyenv exec python${PYTHON_VERSION} ./manage.py compilemessages
 
 ENV DJANGO_SETTINGS_MODULE storage_service.settings.production
 
 EXPOSE 8000
 
-ENTRYPOINT ["/usr/local/bin/gunicorn", "--config=/etc/archivematica/storage-service.gunicorn-config.py", "storage_service.wsgi:application"]
+ENTRYPOINT pyenv exec python${PYTHON_VERSION} -m gunicorn --config=/etc/archivematica/storage-service.gunicorn-config.py storage_service.wsgi:application
