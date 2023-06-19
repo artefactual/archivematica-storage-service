@@ -211,7 +211,9 @@ class Duracloud(models.Model):
         prepped.url = url
         return prepped
 
-    def _download_file(self, url, download_path, expected_size=0, checksum=None):
+    def _download_file(
+        self, url, download_path, expected_size=0, checksum=None, retry=0
+    ):
         """
         Helper to download files from DuraCloud.
 
@@ -271,16 +273,34 @@ class Duracloud(models.Model):
 
         # Verify file, if size or checksum is known
         if expected_size and os.path.getsize(download_path) != expected_size:
-            raise StorageException(
-                _(
-                    "File %(path)s does not match expected size of %(expected_size)s bytes, but was actually %(actual_size)s bytes"
-                ),
-                {
-                    "path": download_path,
-                    "expected_size": expected_size,
-                    "actual_size": os.path.getsize(download_path),
-                },
-            )
+            if retry < 3:
+                LOGGER.error(
+                    "[RETRY=%(retry)d] File %(path)s does not match expected size of %(expected_size)s bytes, but was actually %(actual_size)s bytes"
+                    % {
+                        "retry": retry,
+                        "path": download_path,
+                        "expected_size": expected_size,
+                        "actual_size": os.path.getsize(download_path),
+                    }
+                )
+                return self._download_file(
+                    url,
+                    download_path,
+                    expected_size=expected_size,
+                    checksum=checksum,
+                    retry=retry + 1,
+                )
+            else:
+                raise StorageException(
+                    _(
+                        "File %(path)s does not match expected size of %(expected_size)s bytes, but was actually %(actual_size)s bytes"
+                    ),
+                    {
+                        "path": download_path,
+                        "expected_size": expected_size,
+                        "actual_size": os.path.getsize(download_path),
+                    },
+                )
         calculated_checksum = utils.generate_checksum(download_path, "md5")
         if checksum and checksum != calculated_checksum.hexdigest():
             raise StorageException(
