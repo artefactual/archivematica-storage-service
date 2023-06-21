@@ -9,13 +9,12 @@ manage (i.e., list, created, import, delete) GPG keys.
 """
 import logging
 from pathlib import Path
+from shutil import which
 
 import gnupg
 from django.apps import apps
 from django.conf import settings
 from django.utils.translation import ugettext as _
-
-from .which import which
 
 LOGGER = logging.getLogger(__name__)
 
