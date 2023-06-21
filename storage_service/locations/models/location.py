@@ -1,4 +1,3 @@
-# stdlib, alphabetical
 import logging
 import os
 
@@ -9,11 +8,6 @@ from django.utils.translation import ugettext_lazy as _
 from django_extensions.db.fields import UUIDField
 
 from .managers import Enabled
-
-# Core Django, alphabetical
-# Third party dependencies, alphabetical
-# This project, alphabetical
-# This module, alphabetical
 
 __all__ = ("Location", "LocationPipeline")
 

@@ -1,4 +1,3 @@
-# stdlib, alphabetical
 import datetime
 import errno
 import logging
@@ -15,14 +14,9 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django_extensions.db.fields import UUIDField
 
-# Core Django, alphabetical
-# Third party dependencies, alphabetical
-# This project, alphabetical
+from . import StorageException
 
 LOGGER = logging.getLogger(__name__)
-
-# This module, alphabetical
-from . import StorageException  # noqa: E402
 
 __all__ = ("Space", "PosixMoveUnsupportedError")
 

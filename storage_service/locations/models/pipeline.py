@@ -1,4 +1,3 @@
-# stdlib, alphabetical
 import logging
 
 import requests
@@ -16,10 +15,6 @@ from .managers import Enabled
 from .space import Space
 from .urlmixin import URLMixin
 
-# Core Django, alphabetical
-# Third party dependencies, alphabetical
-# This project, alphabetical
-# This module, alphabetical
 
 __all__ = ("Pipeline",)
 

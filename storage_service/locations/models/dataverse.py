@@ -1,4 +1,3 @@
-# stdlib, alphabetical
 import json
 import logging
 import os
@@ -10,16 +9,11 @@ import requests
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
-# Core Django, alphabetical
-# Third party dependencies, alphabetical
+from . import StorageException
+from .location import Location
+from .urlmixin import URLMixin
 
-# This project, alphabetical
 LOGGER = logging.getLogger(__name__)
-
-# This module, alphabetical
-from . import StorageException  # noqa: E402
-from .location import Location  # noqa: E402
-from .urlmixin import URLMixin  # noqa: E40
 
 
 class Dataverse(URLMixin, models.Model):

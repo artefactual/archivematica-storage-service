@@ -1,4 +1,3 @@
-# stdlib, alphabetical
 import datetime
 import os
 
@@ -7,10 +6,6 @@ from django.utils.translation import ugettext_lazy as _
 from django_extensions.db.fields import UUIDField
 
 from .location import Location
-
-# Core Django, alphabetical
-# Third party dependencies, alphabetical
-# This project, alphabetical
 
 
 class Fedora(models.Model):

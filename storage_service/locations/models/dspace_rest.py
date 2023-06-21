@@ -2,7 +2,6 @@
 Integration with DSpace, using REST API as the protocol.
 
 """
-# stdlib, alphabetical
 import json
 import logging
 import os
@@ -22,10 +21,6 @@ from requests import RequestException
 
 from .location import Location
 
-# Core Django, alphabetical
-# Third party dependencies, alphabetical
-# This project, alphabetical
-# This module, alphabetical
 
 LOGGER = logging.getLogger(__name__)
 

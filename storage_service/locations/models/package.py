@@ -1,4 +1,3 @@
-# stdlib, alphabetical
 import codecs
 import copy
 import json
@@ -38,10 +37,6 @@ from .location import Location
 from .space import PosixMoveUnsupportedError
 from .space import Space
 
-# Core Django, alphabetical
-# Third party dependencies, alphabetical
-# This project, alphabetical
-# This module, alphabetical
 
 __all__ = ("Package",)
 

@@ -1,6 +1,5 @@
 # This file contains the base models that individual versioned models
 # are based on. They shouldn't be directly used with Api objects.
-# stdlib, alphabetical
 import json
 import logging
 import os
@@ -54,9 +53,6 @@ from ..models import Space
 from ..models import StorageException
 from ..models.async_manager import AsyncManager
 
-# Core Django, alphabetical
-# Third party dependencies, alphabetical
-# This project, alphabetical
 
 LOGGER = logging.getLogger(__name__)
 

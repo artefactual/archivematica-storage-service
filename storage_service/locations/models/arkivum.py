@@ -1,4 +1,3 @@
-# stdlib, alphabetical
 import json
 import logging
 import os
@@ -17,11 +16,6 @@ from lxml import etree
 from . import StorageException
 from .location import Location
 from .package import Package
-
-# Core Django, alphabetical
-# Third party dependencies, alphabetical
-# This project, alphabetical
-# This module, alphabetical
 
 LOGGER = logging.getLogger(__name__)
 

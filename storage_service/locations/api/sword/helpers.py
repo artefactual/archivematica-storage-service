@@ -1,4 +1,3 @@
-# stdlib, alphabetical
 import cgi
 import datetime
 import logging
@@ -17,9 +16,6 @@ from django.utils.translation import ugettext as _
 from locations import models
 from locations.models.async_manager import AsyncManager
 
-# Core Django, alphabetical
-# External dependencies, alphabetical
-# This project, alphabetical
 
 LOGGER = logging.getLogger(__name__)
 

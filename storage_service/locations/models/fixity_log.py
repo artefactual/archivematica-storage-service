@@ -1,13 +1,5 @@
-# stdlib, alphabetical
-# Core Django, alphabetical
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-
-# Third party dependencies, alphabetical
-
-# This project, alphabetical
-
-# This module, alphabetical
 
 
 class FixityLog(models.Model):

@@ -1,4 +1,3 @@
-# stdlib, alphabetical
 import errno
 import logging
 import math
@@ -16,10 +15,6 @@ from lxml import etree
 from .location import Location
 from .package import Package
 
-# Core Django, alphabetical
-# Third party dependencies, alphabetical
-# This project, alphabetical
-# This module, alphabetical
 
 LOGGER = logging.getLogger(__name__)
 
