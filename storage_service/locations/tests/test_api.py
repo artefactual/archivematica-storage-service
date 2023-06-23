@@ -323,7 +323,7 @@ class TestLocationAPI(TempDirMixin, TestCase):
 
     def test_cant_move_from_non_existant_locations(self):
         data = {
-            "origin_location": "/api/v2/location/dne1aacf-8492-4382-8ef3-262cc5420dne/",
+            "origin_location": "/api/v2/location/13ec52e6-773f-4f73-a6a8-043f285f6168/",
             "files": [{"source": "foo", "destination": "bar"}],
             "pipeline": "/api/v2/pipeline/b25f6b71-3ebf-4fcc-823c-1feb0a2553dd/",
         }
@@ -343,7 +343,7 @@ class TestLocationAPI(TempDirMixin, TestCase):
             "pipeline": "/api/v2/pipeline/b25f6b71-3ebf-4fcc-823c-1feb0a2553dd/",
         }
         response = self.client.post(
-            "/api/v2/location/dne086c8-232e-4b9e-bb03-98fbc7a7966a/",
+            "/api/v2/location/d898b2d0-bd63-4d4e-884b-ea3df9a8f56d/",
             data=json.dumps(data),
             content_type="application/json",
         )

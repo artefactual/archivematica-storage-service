@@ -1,11 +1,12 @@
 import logging
 import os
+import uuid
 
 from administration.models import Settings
+from common import fields
 from django.db import models
 from django.dispatch import receiver
 from django.utils.translation import ugettext_lazy as _
-from django_extensions.db.fields import UUIDField
 
 from .managers import Enabled
 
@@ -17,8 +18,11 @@ LOGGER = logging.getLogger(__name__)
 class Location(models.Model):
     """Stores information about a location."""
 
-    uuid = UUIDField(
-        editable=False, unique=True, version=4, help_text=_("Unique identifier")
+    uuid = fields.UUIDField(
+        editable=False,
+        unique=True,
+        help_text=_("Unique identifier"),
+        default=uuid.uuid4,
     )
     space = models.ForeignKey("Space", to_field="uuid", on_delete=models.CASCADE)
 
@@ -138,7 +142,7 @@ class Location(models.Model):
         if self._default is None:
             try:
                 name = f"default_{self.purpose}_location"
-                Settings.objects.get(name=name, value=self.uuid)
+                Settings.objects.get(name=name, value=str(self.uuid))
                 self._default = True
             except Settings.DoesNotExist:
                 self._default = False
@@ -160,7 +164,7 @@ class Location(models.Model):
 @receiver(models.signals.pre_delete, sender=Location)
 def unset_default_location(sender, instance, using, **kwargs):
     name = f"default_{instance.purpose}_location"
-    Settings.objects.filter(name=name, value=instance.uuid).delete()
+    Settings.objects.filter(name=name, value=str(instance.uuid)).delete()
 
 
 @receiver(models.signals.pre_save, sender=Location)
@@ -178,7 +182,7 @@ def set_default_location_pre_save(
         return
     if old.purpose != instance.purpose:
         Settings.objects.filter(
-            name=f"default_{old.purpose}_location", value=old.uuid
+            name=f"default_{old.purpose}_location", value=str(old.uuid)
         ).delete()
 
 
@@ -188,9 +192,11 @@ def set_default_location_post_save(
 ):
     name = f"default_{instance.purpose}_location"
     if instance.default:
-        Settings.objects.update_or_create(name=name, defaults={"value": instance.uuid})
+        Settings.objects.update_or_create(
+            name=name, defaults={"value": str(instance.uuid)}
+        )
     else:
-        Settings.objects.filter(name=name, value=instance.uuid).delete()
+        Settings.objects.filter(name=name, value=str(instance.uuid)).delete()
 
 
 class LocationPipeline(models.Model):

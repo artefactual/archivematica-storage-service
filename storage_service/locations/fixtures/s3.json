@@ -48,7 +48,7 @@
         "origin_pipeline": null,
         "current_location": "a2f62831-717b-4890-9292-35b5f4c444c6",
         "current_path": "locations/fixtures/small_compressed_bag.zip",
-        "pointer_file_location": "",
+        "pointer_file_location": null,
         "pointer_file_path": "",
         "size": 0,
         "package_type": "AIP",
