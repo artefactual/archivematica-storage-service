@@ -116,7 +116,9 @@ class DSpace(models.Model):
         # TODO Should output dir be a temp dir?
         output_dir = os.path.dirname(input_path) + "/"
         dirname = os.path.splitext(os.path.basename(input_path))[0]
-        relative_mets_path = os.path.join(dirname, "data", "METS." + aip_uuid + ".xml")
+        relative_mets_path = os.path.join(
+            dirname, "data", "METS." + str(aip_uuid) + ".xml"
+        )
         mets_path = os.path.join(output_dir, relative_mets_path)
         command = [
             "unar",

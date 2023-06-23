@@ -697,7 +697,7 @@ def uuid_to_path(uuid):
     """Converts a UUID into a path.
 
     Every 4 alphanumeric characters of the UUID become a folder name."""
-    uuid = uuid.replace("-", "")
+    uuid = uuid.hex
     path = [uuid[i : i + 4] for i in range(0, len(uuid), 4)]
     path = os.path.join(*path)
     LOGGER.debug("path %s", path)

@@ -17,13 +17,13 @@ import importlib_resources
 import jsonfield
 import metsrw
 import requests
+from common import fields
 from common import premis
 from common import utils
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
-from django_extensions.db.fields import UUIDField
 from locations import signals
 from lxml import etree
 from metsrw.plugins import premisrw
@@ -49,8 +49,11 @@ class Package(models.Model):
 
     DEFAULT_CHECKSUM_ALGORITHM = "sha256"
 
-    uuid = UUIDField(
-        editable=False, unique=True, version=4, help_text=_("Unique identifier")
+    uuid = fields.UUIDField(
+        editable=False,
+        unique=True,
+        help_text=_("Unique identifier"),
+        default=uuid4,
     )
     description = models.CharField(
         max_length=256,
@@ -201,7 +204,6 @@ class Package(models.Model):
 
     def __str__(self):
         return f"{self.uuid}: {self.full_path}"
-        # return "File: {}".format(self.uuid)
 
     # Attributes
     @property
@@ -640,7 +642,7 @@ class Package(models.Model):
         # Remove the /uuid/path from the replica's current_path and replace the
         # old UUID in the basename with the new UUID.
         replica_package.current_path = os.path.basename(replicandum_path).replace(
-            replicandum_uuid, replica_package.uuid, 1
+            str(replicandum_uuid), str(replica_package.uuid), 1
         )
         replica_package.current_location = replicator_location
 
@@ -683,7 +685,7 @@ class Package(models.Model):
         # Get the master AIP's pointer file and extract the checksum details
         master_ptr = self.get_pointer_instance()
         if master_ptr:
-            master_ptr_aip_fsentry = master_ptr.get_file(file_uuid=self.uuid)
+            master_ptr_aip_fsentry = master_ptr.get_file(file_uuid=str(self.uuid))
             master_premis_object = master_ptr_aip_fsentry.get_premis_objects()[0]
             master_checksum_algorithm = master_premis_object.message_digest_algorithm
             master_checksum = master_premis_object.message_digest
@@ -710,7 +712,7 @@ class Package(models.Model):
 
             # Create and write to disk the pointer file for the replica, which
             # contains the PREMIS replication event.
-            replication_event_uuid = str(uuid4())
+            replication_event_uuid = uuid4()
             replica_pointer_file = self.create_replica_pointer_file(
                 replica_package,
                 replication_event_uuid,
@@ -1136,7 +1138,7 @@ class Package(models.Model):
         root = etree.parse(pointer_absolute_path)
         element = root.find(".//mets:file", namespaces=utils.NSMAP)
         flocat = element.find("mets:FLocat", namespaces=utils.NSMAP)
-        if self.uuid in element.get("ID", "") and flocat is not None:
+        if str(self.uuid) in element.get("ID", "") and flocat is not None:
             flocat.set("{{{ns}}}href".format(ns=utils.NSMAP["xlink"]), self.full_path)
         # Add USE="Archival Information Package" to fileGrp. Required for
         # LOCKSS, and not provided in Archivematica <=1.1
@@ -1228,7 +1230,7 @@ class Package(models.Model):
 
         # 2. Get the master AIP's pointer file and extract what we need from it
         # in order to create the replica's pointer file.
-        master_ptr_aip_fsentry = master_ptr.get_file(file_uuid=self.uuid)
+        master_ptr_aip_fsentry = master_ptr.get_file(file_uuid=str(self.uuid))
         master_package_subtype = master_ptr_aip_fsentry.mets_div_type
         master_compression_event = [
             pe
@@ -1297,7 +1299,7 @@ class Package(models.Model):
         To do this, we parse the existing pointer file and return a new one
         based on the old.
         """
-        old_fsentry = old_pointer_file.get_file(file_uuid=self.uuid)
+        old_fsentry = old_pointer_file.get_file(file_uuid=str(self.uuid))
         package_subtype = old_fsentry.mets_div_type
         old_premis_object = old_fsentry.get_premis_objects()[0]
         old_premis_events = old_fsentry.get_premis_events()
@@ -1346,7 +1348,7 @@ class Package(models.Model):
         but which is altered in accordance with the effects of storing the AIP.
         This is useful when, for example, storage results in encryption.
         """
-        old_fsentry = old_pointer_file.get_file(file_uuid=self.uuid)
+        old_fsentry = old_pointer_file.get_file(file_uuid=str(self.uuid))
         package_subtype = old_fsentry.mets_div_type
         old_premis_object = old_fsentry.get_premis_objects()[0]
         old_composition_level = old_premis_object.composition_level
@@ -1549,7 +1551,7 @@ class Package(models.Model):
         equivalent to the Transfer name after "filename change".
         """
         return [
-            item.replace("<package_uuid>", self.uuid).replace(
+            item.replace("<package_uuid>", str(self.uuid)).replace(
                 "<package_name>", self.name
             )
             for item in (uri, body)
@@ -2264,7 +2266,7 @@ class Package(models.Model):
             "/"
         )
         reingest_files = [
-            os.path.join(relative_path, "data", "METS." + self.uuid + ".xml")
+            os.path.join(relative_path, "data", "METS." + str(self.uuid) + ".xml")
         ]
         if reingest_type == self.FULL:
             # All the things!
@@ -2384,7 +2386,7 @@ class Package(models.Model):
             "status_code": 202,
             "message": _("Package %(uuid)s sent to pipeline %(pipeline)s for re-ingest")
             % {"uuid": self.uuid, "pipeline": pipeline},
-            "reingest_uuid": reingest_uuid,
+            "reingest_uuid": str(reingest_uuid),
         }
 
     def finish_reingest(
@@ -2964,8 +2966,8 @@ class Package(models.Model):
         """
         clone = copy.deepcopy(self)
         clone.pk = None
-        clone.uuid = None
-        clone.save()  # Generate a new id and UUID
+        clone.uuid = uuid4()
+        clone.save()  # Generate a new id
 
         return clone
 

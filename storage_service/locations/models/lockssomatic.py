@@ -595,14 +595,14 @@ class Lockssomatic(models.Model):
                 kwargs={
                     "api_name": "v1",
                     "resource_name": "file",
-                    "uuid": uuid,
+                    "uuid": str(uuid),
                     "chunk_number": str(index),
                 },
             )
         else:  # Single file - not split
             download_url = reverse(
                 "download_request",
-                kwargs={"api_name": "v1", "resource_name": "file", "uuid": uuid},
+                kwargs={"api_name": "v1", "resource_name": "file", "uuid": str(uuid)},
             )
         # Prepend domain name
         download_url = self.external_domain + download_url

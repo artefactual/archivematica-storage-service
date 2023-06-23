@@ -61,14 +61,14 @@ def create_replication_event(
     if not agents:
         agents = [SS_AGENT]
     if not event_uuid:
-        event_uuid = str(uuid.uuid4())
+        event_uuid = uuid.uuid4()
     event = [
         "event",
         PREMIS_META,
         (
             "event_identifier",
             ("event_identifier_type", "UUID"),
-            ("event_identifier_value", event_uuid),
+            ("event_identifier_value", str(event_uuid)),
         ),
         ("event_type", "replication"),
         ("event_date_time", timestamp()),
@@ -243,12 +243,12 @@ def create_replication_derivation_relationship(
         (
             related_object_identifier,
             ("related_object_identifier_type", "UUID"),
-            ("related_object_identifier_value", related_aip_uuid),
+            ("related_object_identifier_value", str(related_aip_uuid)),
         ),
         (
             related_event_identifier,
             ("related_event_identifier_type", "UUID"),
-            ("related_event_identifier_value", replication_event_uuid),
+            ("related_event_identifier_value", str(replication_event_uuid)),
         ),
     )
 
@@ -289,7 +289,7 @@ def create_aip_premis_object(
     premis_relationships = premis_relationships or []
     kwargs = dict(
         xsi_type="premis:file",
-        identifier_value=package_uuid,
+        identifier_value=str(package_uuid),
         message_digest_algorithm=message_digest_algorithm,
         message_digest=message_digest,
         size=str(package_size),

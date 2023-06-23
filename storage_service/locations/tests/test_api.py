@@ -838,7 +838,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
     def test_download_package_not_exist(self):
         """It should return 404 for a non-existant package."""
         response = self.client.get(
-            "/api/v2/file/dnednedn-edne-dned-nedn-ednednednedn/download/",
+            "/api/v2/file/280bf046-ba55-4d44-94b4-685b3fec1770/download/",
             data={"chunk_number": 1},
         )
         assert response.status_code == 404

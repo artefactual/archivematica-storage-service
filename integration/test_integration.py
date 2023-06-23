@@ -12,6 +12,7 @@ of Archivematica, etc...
 import json
 import os
 import shutil
+import uuid
 from pathlib import Path
 
 import pytest
@@ -128,7 +129,7 @@ class StorageScenario:
     """Storage test scenario."""
 
     PIPELINE_UUID = "00000b87-1655-4b7e-bbf8-344b317da334"
-    PACKAGE_UUID = "5658e603-277b-4292-9b58-20bf261c8f88"
+    PACKAGE_UUID = uuid.UUID("5658e603-277b-4292-9b58-20bf261c8f88")
 
     SPACES = {
         Space.S3: {
@@ -327,7 +328,7 @@ class StorageScenario:
         resp = self.client.add_file(
             self.PACKAGE_UUID,
             {
-                "uuid": self.PACKAGE_UUID,
+                "uuid": str(self.PACKAGE_UUID),
                 "origin_location": cp_location["resource_uri"],
                 "origin_path": self.pkg.name,
                 "current_location": as_location["resource_uri"],
@@ -343,14 +344,14 @@ class StorageScenario:
         assert resp.status_code == 201
 
         aip = json.loads(resp.content)
-        aip_id = self.PACKAGE_UUID.replace("-", "")
+        aip_id = self.PACKAGE_UUID.hex
         aip_path = (
             [as_location["path"]]
             + [aip_id[i : i + 4] for i in range(0, len(aip_id), 4)]
             + [self.pkg.name]
         )
         aip_path = Path(*aip_path)
-        assert aip["uuid"] == self.PACKAGE_UUID
+        assert aip["uuid"] == str(self.PACKAGE_UUID)
         assert aip["current_full_path"] == str(aip_path)
         assert get_size(aip_path) > 1
 

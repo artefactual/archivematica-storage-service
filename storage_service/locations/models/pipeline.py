@@ -227,7 +227,7 @@ class Pipeline(URLMixin, models.Model):
         Approve reingest in the pipeline.
         """
         url = f"{target}/reingest"
-        fields = {"name": name, "uuid": uuid}
+        fields = {"name": name, "uuid": str(uuid)}
         resp = self._request_api("POST", url, fields=fields)
         if resp.status_code != requests.codes.ok:
             try:
