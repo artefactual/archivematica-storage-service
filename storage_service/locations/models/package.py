@@ -14,6 +14,7 @@ from uuid import uuid4
 
 import bagit
 import distutils.dir_util
+import importlib_resources
 import jsonfield
 import metsrw
 import requests
@@ -1455,6 +1456,11 @@ class Package(models.Model):
         premis_events = [premisrw.PREMISEvent(data=event) for event in premis_events]
         premis_agents = premis_agents or []
         premis_agents = [premisrw.PREMISAgent(data=agent) for agent in premis_agents]
+
+        # Use local XML schemas for validation.
+        os.environ["XML_CATALOG_FILES"] = str(
+            importlib_resources.files("common") / "assets" / "catalog.xml"
+        )
 
         compression_event = _find_compression_event(premis_events)
         if not compression_event:  # no pointer files for uncompressed AIPs
