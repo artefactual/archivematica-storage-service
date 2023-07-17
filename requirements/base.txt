@@ -54,13 +54,11 @@ django-shibboleth-remoteuser @ git+https://github.com/Brown-University-Library/d
     # via -r base.in
 django-tastypie==0.14.3
     # via -r base.in
-future==0.18.3
-    # via metsrw
 gevent==22.10.2
     # via -r base.in
 greenlet==2.0.2
     # via gevent
-gunicorn==20.1.0
+gunicorn==21.0.1
     # via -r base.in
 httplib2==0.22.0
     # via sword2
@@ -69,6 +67,7 @@ idna==3.4
 importlib-metadata==4.8.3
     # via
     #   debtcollector
+    #   gunicorn
     #   oslo.config
     #   python-keystoneclient
     #   stevedore
@@ -90,13 +89,13 @@ jsonfield==2.1.1
     # via -r base.in
 keystoneauth1==5.1.2
     # via python-keystoneclient
-lxml==4.9.2
+lxml==4.9.3
     # via
     #   -r base.in
     #   metsrw
     #   python-cas
     #   sword2
-metsrw==0.3.23
+metsrw==0.4.0
     # via -r base.in
 mozilla-django-oidc==1.2.4
     # via -r base.in
@@ -112,7 +111,7 @@ netifaces==0.11.0
     # via oslo.utils
 os-service-types==1.7.0
     # via keystoneauth1
-oslo.config==8.8.0
+oslo.config==8.8.1
     # via python-keystoneclient
 oslo.i18n==5.1.0
     # via
@@ -127,6 +126,7 @@ oslo.utils==4.13.0
     #   python-keystoneclient
 packaging==21.3
     # via
+    #   gunicorn
     #   oslo.utils
     #   python-keystoneclient
 pbr==5.11.1
@@ -138,7 +138,7 @@ pbr==5.11.1
     #   oslo.utils
     #   python-keystoneclient
     #   stevedore
-prometheus-client==0.16.0
+prometheus-client==0.17.1
     # via
     #   -r base.in
     #   django-prometheus
@@ -150,9 +150,9 @@ pyasn1-modules==0.3.0
     # via python-ldap
 pycparser==2.21
     # via cffi
-pyopenssl==23.1.1
+pyopenssl==23.2.0
     # via josepy
-pyparsing==3.0.9
+pyparsing==3.1.0
     # via
     #   httplib2
     #   oslo.utils
@@ -201,7 +201,6 @@ six==1.16.0
     #   django-extensions
     #   jsonfield
     #   keystoneauth1
-    #   metsrw
     #   mozilla-django-oidc
     #   python-cas
     #   python-dateutil
@@ -215,7 +214,7 @@ sword2 @ git+https://github.com/swordapp/python-client-sword2.git@59db54c03e4498
     # via -r base.in
 typing-extensions==4.1.1
     # via importlib-metadata
-urllib3==1.26.15
+urllib3==1.26.16
     # via
     #   botocore
     #   requests
@@ -236,7 +235,6 @@ zope.interface==5.5.2
 setuptools==59.6.0
     # via
     #   gevent
-    #   gunicorn
     #   josepy
     #   zope.event
     #   zope.interface
