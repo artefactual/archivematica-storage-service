@@ -29,6 +29,7 @@ from .fixity_log import *
 
 # Protocol Spaces
 # Will only have one model, so import that directly
+from .archipelago import Archipelago
 from .arkivum import Arkivum
 from .dataverse import Dataverse
 from .duracloud import Duracloud
