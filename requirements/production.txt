@@ -65,17 +65,13 @@ django-shibboleth-remoteuser @ git+https://github.com/Brown-University-Library/d
     # via -r base.txt
 django-tastypie==0.14.3
     # via -r base.txt
-future==0.18.3
-    # via
-    #   -r base.txt
-    #   metsrw
 gevent==22.10.2
     # via -r base.txt
 greenlet==2.0.2
     # via
     #   -r base.txt
     #   gevent
-gunicorn==20.1.0
+gunicorn==21.0.1
     # via -r base.txt
 httplib2==0.22.0
     # via
@@ -89,6 +85,7 @@ importlib-metadata==4.8.3
     # via
     #   -r base.txt
     #   debtcollector
+    #   gunicorn
     #   oslo.config
     #   python-keystoneclient
     #   stevedore
@@ -116,13 +113,13 @@ keystoneauth1==5.1.2
     # via
     #   -r base.txt
     #   python-keystoneclient
-lxml==4.9.2
+lxml==4.9.3
     # via
     #   -r base.txt
     #   metsrw
     #   python-cas
     #   sword2
-metsrw==0.3.23
+metsrw==0.4.0
     # via -r base.txt
 mozilla-django-oidc==1.2.4
     # via -r base.txt
@@ -147,7 +144,7 @@ os-service-types==1.7.0
     # via
     #   -r base.txt
     #   keystoneauth1
-oslo.config==8.8.0
+oslo.config==8.8.1
     # via
     #   -r base.txt
     #   python-keystoneclient
@@ -169,6 +166,7 @@ oslo.utils==4.13.0
 packaging==21.3
     # via
     #   -r base.txt
+    #   gunicorn
     #   oslo.utils
     #   python-keystoneclient
 pbr==5.11.1
@@ -181,7 +179,7 @@ pbr==5.11.1
     #   oslo.utils
     #   python-keystoneclient
     #   stevedore
-prometheus-client==0.16.0
+prometheus-client==0.17.1
     # via
     #   -r base.txt
     #   django-prometheus
@@ -198,11 +196,11 @@ pycparser==2.21
     # via
     #   -r base.txt
     #   cffi
-pyopenssl==23.1.1
+pyopenssl==23.2.0
     # via
     #   -r base.txt
     #   josepy
-pyparsing==3.0.9
+pyparsing==3.1.0
     # via
     #   -r base.txt
     #   httplib2
@@ -265,7 +263,6 @@ six==1.16.0
     #   django-extensions
     #   jsonfield
     #   keystoneauth1
-    #   metsrw
     #   mozilla-django-oidc
     #   python-cas
     #   python-dateutil
@@ -282,7 +279,7 @@ typing-extensions==4.1.1
     # via
     #   -r base.txt
     #   importlib-metadata
-urllib3==1.26.15
+urllib3==1.26.16
     # via
     #   -r base.txt
     #   botocore
@@ -312,7 +309,6 @@ setuptools==59.6.0
     # via
     #   -r base.txt
     #   gevent
-    #   gunicorn
     #   josepy
     #   zope.event
     #   zope.interface
