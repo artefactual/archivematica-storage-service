@@ -57,11 +57,15 @@ ENV LC_ALL en_US.UTF-8
 
 RUN set -ex \
 	&& groupadd --gid ${GROUP_ID} --system archivematica \
-	&& useradd -m --uid ${USER_ID} --gid ${GROUP_ID} --create-home --home-dir /home/archivematica --system archivematica
+	&& useradd --uid ${USER_ID} --gid ${GROUP_ID} --home-dir /var/archivematica --system archivematica
+
+ENV PYENV_ROOT="/pyenv/data"
+ENV PATH=$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH
 
 RUN set -ex \
 	&& internalDirs=' \
-		/db \
+		/pyenv \
+		/home/archivematica \
 		/src/storage_service/assets \
 		/src/storage_service/locations/fixtures \
 		/var/archivematica/storage_service \
@@ -71,9 +75,6 @@ RUN set -ex \
 	&& chown -R archivematica:archivematica $internalDirs
 
 USER archivematica
-
-ENV PYENV_ROOT="/home/archivematica/.pyenv"
-ENV PATH=$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH
 
 RUN set -ex \
 	&& curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash \
