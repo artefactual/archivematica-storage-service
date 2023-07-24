@@ -124,7 +124,7 @@ class S3(models.Model):
 
     @property
     def bucket_name(self):
-        return self.bucket or self.space_id
+        return self.bucket or str(self.space_id)
 
     def browse(self, path):
         LOGGER.debug("Browsing s3://%s/%s on S3 storage", self.bucket_name, path)
