@@ -2013,7 +2013,7 @@ class PackageResource(ModelResource):
                     "filename": os.path.basename(f.name),
                     "relative_path": f.name,
                     "fileuuid": f.source_id,
-                    "origin": f.origin,
+                    "origin": str(f.origin) if f.origin is not None else f.origin,
                     "sipuuid": f.source_package,
                 }
             )
