@@ -1,9 +1,10 @@
 import datetime
 import os
+import uuid
 
+from common import fields
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from django_extensions.db.fields import UUIDField
 
 from .location import Location
 
@@ -50,8 +51,11 @@ class Fedora(models.Model):
 
 # For SWORD asynchronous downloading support
 class PackageDownloadTask(models.Model):
-    uuid = UUIDField(
-        editable=False, unique=True, version=4, help_text=_("Unique identifier")
+    uuid = fields.UUIDField(
+        editable=False,
+        unique=True,
+        help_text=_("Unique identifier"),
+        default=uuid.uuid4,
     )
     package = models.ForeignKey("Package", to_field="uuid", on_delete=models.CASCADE)
 
@@ -102,8 +106,11 @@ class PackageDownloadTask(models.Model):
 
 
 class PackageDownloadTaskFile(models.Model):
-    uuid = UUIDField(
-        editable=False, unique=True, version=4, help_text=_("Unique identifier")
+    uuid = fields.UUIDField(
+        editable=False,
+        unique=True,
+        help_text=_("Unique identifier"),
+        default=uuid.uuid4,
     )
     task = models.ForeignKey(
         "PackageDownloadTask",
