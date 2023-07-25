@@ -362,7 +362,7 @@ class LocationForm(forms.ModelForm):
                     total=Count("location")
                 )
             )
-            pipelines = [d["pipeline"] for d in existing_recovery_rel]
+            pipelines = [str(d["pipeline"]) for d in existing_recovery_rel]
             if pipelines:
                 raise forms.ValidationError(
                     _(

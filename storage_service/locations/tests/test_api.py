@@ -961,7 +961,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
             data=json.dumps(
                 {
                     "event_reason": "Some justification",
-                    "pipeline": pipeline.uuid,
+                    "pipeline": str(pipeline.uuid),
                     "user_email": "test@example.com",
                     "user_id": User.objects.get(username="test").id,
                 }

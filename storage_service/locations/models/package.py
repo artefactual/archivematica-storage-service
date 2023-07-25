@@ -2240,7 +2240,7 @@ class Package(models.Model):
                 "message": _("This AIP is already being reingested on %(pipeline)s")
                 % {"pipeline": self.misc_attributes["reingest_pipeline"]},
             }
-        self.misc_attributes.update({"reingest_pipeline": pipeline.uuid})
+        self.misc_attributes.update({"reingest_pipeline": str(pipeline.uuid)})
 
         # Run fixity
         # Fixity will fetch & extract package if needed
@@ -2657,7 +2657,9 @@ class Package(models.Model):
         """Confirm that this package's origin_pipeline matches the
         reingest_pipeline set during ``start_reingest``.
         """
-        if self.origin_pipeline.uuid != self.misc_attributes.get("reingest_pipeline"):
+        if str(self.origin_pipeline.uuid) != self.misc_attributes.get(
+            "reingest_pipeline"
+        ):
             LOGGER.info(
                 "Reingest: Received pipeline %s did not match expected" " pipeline %s",
                 self.origin_pipeline.uuid,

@@ -1,12 +1,12 @@
 import logging
+import uuid
 
 import requests
+from common import fields
 from common import utils
 from django.conf import settings
-from django.core import validators
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from django_extensions.db.fields import UUIDField
 
 from .local_filesystem import LocalFilesystem
 from .location import Location
@@ -24,21 +24,11 @@ LOGGER = logging.getLogger(__name__)
 class Pipeline(URLMixin, models.Model):
     """Information about Archivematica instances using the storage service."""
 
-    uuid = UUIDField(
+    uuid = fields.UUIDField(
         unique=True,
-        version=4,
-        auto=False,
         verbose_name=_("UUID"),
         help_text=_("Identifier for the Archivematica pipeline"),
-        validators=[
-            validators.RegexValidator(
-                r"\w{8}-\w{4}-\w{4}-\w{4}-\w{12}",
-                _(
-                    "Needs to be format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx where x is a hexadecimal digit."
-                ),
-                _("Invalid UUID"),
-            )
-        ],
+        default=uuid.uuid4,
     )
     description = models.CharField(
         max_length=256,
@@ -86,9 +76,7 @@ class Pipeline(URLMixin, models.Model):
     active = Enabled()
 
     def __str__(self):
-        return "{description} ({uuid})".format(
-            uuid=self.uuid, description=self.description
-        )
+        return f"{self.description} ({self.uuid})"
 
     def save(self, create_default_locations=False, shared_path=None, *args, **kwargs):
         """Save pipeline and optionally create default locations."""
