@@ -1,10 +1,11 @@
-import django_extensions.db.fields
+import uuid
+
+import common.fields
 from django.db import migrations
 from django.db import models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [("locations", "0002_v0_4")]
 
     operations = [
@@ -22,8 +23,8 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "uuid",
-                    django_extensions.db.fields.UUIDField(
-                        max_length=36, editable=False, blank=True
+                    common.fields.UUIDField(
+                        max_length=36, editable=False, blank=True, default=uuid.uuid4
                     ),
                 ),
                 (
@@ -179,12 +180,13 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "uuid",
-                    django_extensions.db.fields.UUIDField(
+                    common.fields.UUIDField(
                         help_text=b"Unique identifier",
                         unique=True,
                         max_length=36,
                         editable=False,
                         blank=True,
+                        default=uuid.uuid4,
                     ),
                 ),
                 ("name", models.TextField(max_length=1000)),
@@ -209,12 +211,13 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "uuid",
-                    django_extensions.db.fields.UUIDField(
+                    common.fields.UUIDField(
                         help_text=b"Unique identifier",
                         unique=True,
                         max_length=36,
                         editable=False,
                         blank=True,
+                        default=uuid.uuid4,
                     ),
                 ),
                 ("downloads_attempted", models.IntegerField(default=0)),
@@ -249,12 +252,13 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "uuid",
-                    django_extensions.db.fields.UUIDField(
+                    common.fields.UUIDField(
                         help_text=b"Unique identifier",
                         unique=True,
                         max_length=36,
                         editable=False,
                         blank=True,
+                        default=uuid.uuid4,
                     ),
                 ),
                 ("filename", models.CharField(max_length=256)),

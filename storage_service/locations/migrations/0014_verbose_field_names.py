@@ -1,12 +1,10 @@
-import django.core.validators
-import django_extensions.db.fields
+import common.fields
 import locations.models.space
 from django.db import migrations
 from django.db import models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [("locations", "0013_pipeline_local_rsync_daemon")]
 
     operations = [
@@ -391,15 +389,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="pipeline",
             name="uuid",
-            field=django_extensions.db.fields.UUIDField(
-                auto=False,
-                validators=[
-                    django.core.validators.RegexValidator(
-                        b"\\w{8}-\\w{4}-\\w{4}-\\w{4}-\\w{12}",
-                        "Needs to be format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx where x is a hexadecimal digit.",
-                        "Invalid UUID",
-                    )
-                ],
+            field=common.fields.UUIDField(
                 help_text="Identifier for the Archivematica pipeline",
                 unique=True,
                 verbose_name="UUID",
