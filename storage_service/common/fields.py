@@ -8,6 +8,9 @@ class UUIDField(models.UUIDField):
         kwargs["max_length"] = 36
         models.Field.__init__(self, *args, **kwargs)
 
+    def db_type(self, connection):
+        return "varchar(%s)" % self.max_length
+
     def get_db_prep_value(self, value, connection, prepared=False):
         if value is None:
             return None
