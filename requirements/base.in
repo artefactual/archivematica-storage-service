@@ -4,7 +4,6 @@ boto3
 brotli
 Django>=1.11,<2
 django-csp
-django-extensions==1.7.9
 django-tastypie==0.14.3
 gevent
 gunicorn
