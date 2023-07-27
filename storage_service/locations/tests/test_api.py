@@ -953,7 +953,9 @@ class TestPackageAPI(TempDirMixin, TestCase):
 
     def _test_request_view_updates_package_status(self, view_name, expected_status):
         # Create a pipeline and an AIP
-        pipeline = models.Pipeline.objects.create()
+        pipeline = models.Pipeline.objects.create(
+            uuid="7e3ef632-2633-4c7c-820b-a828229e8613"
+        )
         aip_uuid = self._create_aip()
         # Call the request view
         self.client.post(

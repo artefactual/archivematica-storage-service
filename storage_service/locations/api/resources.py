@@ -34,7 +34,6 @@ from tastypie.authorization import DjangoAuthorization
 from tastypie.resources import ALL
 from tastypie.resources import ALL_WITH_RELATIONS
 from tastypie.resources import ModelResource
-from tastypie.utils import dict_strip_unicode_keys
 from tastypie.utils import trailing_slash
 from tastypie.validation import CleanedDataFormValidation
 
@@ -1096,9 +1095,7 @@ class PackageResource(ModelResource):
                 format=request.headers.get("content-type", "application/json"),
             )
             deserialized = self.alter_deserialized_detail_data(request, deserialized)
-            bundle = self.build_bundle(
-                data=dict_strip_unicode_keys(deserialized), request=request
-            )
+            bundle = self.build_bundle(data=deserialized, request=request)
 
             bundle = super().obj_create(bundle, **kwargs)
 

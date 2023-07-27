@@ -1,6 +1,5 @@
 """Tests for the datatable utilities."""
 import os
-import tempfile
 import uuid
 
 from django.test import TestCase
@@ -119,36 +118,6 @@ class TestPackageDataTable(TestCase):
         assert datatable.total_records == TOTAL_FIXTURE_PACKAGES
         assert datatable.total_display_records == TOTAL_FIXTURE_PACKAGES
         assert len(datatable.records) == DISPLAY_LEN
-
-    def _create_replicas(self, uuid):
-        test_location = models.Location.objects.get(
-            uuid="615103f0-0ee0-4a12-ba17-43192d1143ea"
-        )
-        test_location.relative_path = FIXTURES_DIR[1:]
-        test_location.save()
-        models.Location.objects.filter(purpose="SS").update(
-            relative_path=FIXTURES_DIR[1:]
-        )
-        tmp_dir = tempfile.mkdtemp()
-        space_dir = tempfile.mkdtemp(dir=tmp_dir, prefix="space")
-        replication_dir = tempfile.mkdtemp(dir=tmp_dir, prefix="replication")
-        replication_dir2 = tempfile.mkdtemp(dir=tmp_dir, prefix="replication")
-        aip = models.models.Package.objects.get(uuid=uuid)
-        aip.current_location.space.staging_path = space_dir
-        aip.current_location.space.save()
-        aip.current_location.replicators.create(
-            space=aip.current_location.space,
-            relative_path=replication_dir,
-            purpose=models.Location.REPLICATOR,
-        )
-        aip.current_location.replicators.create(
-            space=aip.current_location.space,
-            relative_path=replication_dir2,
-            purpose=models.Location.REPLICATOR,
-        )
-        aip.create_replicas()
-        assert aip.replicas.count() == 2
-        return [replica.uuid for replica in aip.replicas.all()]
 
     def test_search_replica_of(self):
         package_uuid = uuid.UUID("f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04")

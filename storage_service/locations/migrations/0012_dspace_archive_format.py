@@ -3,7 +3,6 @@ from django.db import models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [("locations", "0011_fixitylog_status")]
 
     operations = [
@@ -11,7 +10,7 @@ class Migration(migrations.Migration):
             model_name="dspace",
             name="archive_format",
             field=models.CharField(
-                default=b"ZIP",
+                default="ZIP",
                 max_length=3,
                 verbose_name=b"Archive format",
                 choices=[(b"ZIP", b"ZIP"), (b"7Z", b"7z")],
