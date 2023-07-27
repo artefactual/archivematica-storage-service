@@ -1,5 +1,6 @@
 import os
 import shutil
+import uuid
 
 import vcr
 from django.test import TestCase
@@ -14,7 +15,6 @@ dspace_vcr = vcr.VCR(filter_headers=["authorization"])
 
 
 class TestDSpace(TempDirMixin, TestCase):
-
     fixtures = ["base.json", "dspace.json"]
 
     def setUp(self):
@@ -59,7 +59,7 @@ class TestDSpace(TempDirMixin, TestCase):
         )
         ret = self.dspace_object._get_metadata(
             str(self.tmpdir / "small_compressed_bag.zip"),
-            "1056123d-8a16-49c2-ac51-8e5fa367d8b5",
+            uuid.UUID("1056123d-8a16-49c2-ac51-8e5fa367d8b5"),
         )
         assert len(ret) == 6
         assert ret["dcterms_title"] == "Yamani Weapons"

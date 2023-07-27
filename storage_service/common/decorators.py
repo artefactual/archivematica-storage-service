@@ -1,7 +1,4 @@
-try:
-    from functools import wraps
-except ImportError:
-    from django.utils.functional import wraps
+from functools import wraps
 
 from django.shortcuts import render
 

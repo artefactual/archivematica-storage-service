@@ -4,7 +4,6 @@ Integration with DSpace, using SWORD2 as the protocol.
 Space path can be left empty, and the Location path should be the collection's
 IRI.
 """
-# stdlib, alphabetical
 import logging
 import mimetypes
 import os
@@ -22,11 +21,6 @@ from django.utils.translation import ugettext_lazy as _
 from lxml import etree
 
 from .location import Location
-
-# Core Django, alphabetical
-# Third party dependencies, alphabetical
-# This project, alphabetical
-# This module, alphabetical
 
 LOGGER = logging.getLogger(__name__)
 
@@ -122,7 +116,9 @@ class DSpace(models.Model):
         # TODO Should output dir be a temp dir?
         output_dir = os.path.dirname(input_path) + "/"
         dirname = os.path.splitext(os.path.basename(input_path))[0]
-        relative_mets_path = os.path.join(dirname, "data", "METS." + aip_uuid + ".xml")
+        relative_mets_path = os.path.join(
+            dirname, "data", "METS." + str(aip_uuid) + ".xml"
+        )
         mets_path = os.path.join(output_dir, relative_mets_path)
         command = [
             "unar",

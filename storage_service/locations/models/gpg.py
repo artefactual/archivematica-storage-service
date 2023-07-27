@@ -1,4 +1,3 @@
-# stdlib, alphabetical
 import datetime
 import logging
 import os
@@ -14,11 +13,6 @@ from django.utils.translation import ugettext_lazy as _
 from . import space
 from .location import Location
 from .package import Package
-
-# Core Django, alphabetical
-# Third party dependencies, alphabetical
-# This project, alphabetical
-# This module, alphabetical
 
 
 LOGGER = logging.getLogger(__name__)

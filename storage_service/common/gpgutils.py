@@ -7,19 +7,14 @@ needed by both the GPG space and the administration view which can be used to
 manage (i.e., list, created, import, delete) GPG keys.
 
 """
-# stdlib, alphabetical
 import logging
 from pathlib import Path
+from shutil import which
 
 import gnupg
 from django.apps import apps
 from django.conf import settings
 from django.utils.translation import ugettext as _
-
-from .which import which
-
-# Third party dependencies, alphabetical
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -42,7 +37,6 @@ class GPGBinaryPathError(Exception):
 
 
 class GPG:
-
     # List of binaries in order of preference. In distros like Ubuntu 18.04,
     # GnuPG v1 is only available via ``gpg1`` (package ``gnupg1``).
     PREFERRED_GNUPG_BINARIES = ["gpg1", "gpg"]

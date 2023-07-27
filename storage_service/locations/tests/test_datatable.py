@@ -1,6 +1,7 @@
 """Tests for the datatable utilities."""
 import os
 import tempfile
+import uuid
 
 from django.test import TestCase
 from locations import datatable_utils
@@ -17,7 +18,6 @@ TOTAL_FIXTURE_FIXITY_LOGS = 4
 
 
 class TestPackageDataTable(TestCase):
-
     fixtures = ["base.json", "package.json"]
 
     def test_initialization(self):
@@ -151,21 +151,21 @@ class TestPackageDataTable(TestCase):
         return [replica.uuid for replica in aip.replicas.all()]
 
     def test_search_replica_of(self):
-        package_uuid = "f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04"
+        package_uuid = uuid.UUID("f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04")
         replicas_uuids = [
-            "2f62b030-c3f4-4ac1-950f-fe47d0ddcd14",
-            "577f74bd-a283-49e0-b4e2-f8abb81d2566",
+            uuid.UUID("2f62b030-c3f4-4ac1-950f-fe47d0ddcd14"),
+            uuid.UUID("577f74bd-a283-49e0-b4e2-f8abb81d2566"),
         ]
         datatable = datatable_utils.PackageDataTable(
             {
-                "sSearch": package_uuid,
+                "sSearch": str(package_uuid),
                 "iDisplayStart": 0,
                 "iDisplayLength": 10,
                 "sEcho": "1",
             }
         )
         expected_params = {
-            "search": package_uuid,
+            "search": str(package_uuid),
             "display_start": 0,
             "display_length": 10,
             "sorting_column": {},
@@ -180,21 +180,21 @@ class TestPackageDataTable(TestCase):
         assert sorted(p.uuid for p in datatable.records) == expected_packages_uuids
 
     def test_reverse_search_replica_of(self):
-        package_uuid = "f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04"
+        package_uuid = uuid.UUID("f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04")
         replicas_uuids = [
-            "2f62b030-c3f4-4ac1-950f-fe47d0ddcd14",
-            "577f74bd-a283-49e0-b4e2-f8abb81d2566",
+            uuid.UUID("2f62b030-c3f4-4ac1-950f-fe47d0ddcd14"),
+            uuid.UUID("577f74bd-a283-49e0-b4e2-f8abb81d2566"),
         ]
         datatable = datatable_utils.PackageDataTable(
             {
-                "sSearch": replicas_uuids[0],
+                "sSearch": str(replicas_uuids[0]),
                 "iDisplayStart": 0,
                 "iDisplayLength": 10,
                 "sEcho": "1",
             }
         )
         expected_params = {
-            "search": replicas_uuids[0],
+            "search": str(replicas_uuids[0]),
             "display_start": 0,
             "display_length": 10,
             "sorting_column": {},
@@ -229,16 +229,16 @@ class TestPackageDataTable(TestCase):
         }
         assert datatable.params == expected_params
         expected_uuids = [
-            "0d4e739b-bf60-4b87-bc20-67a379b28cea",
-            "2f62b030-c3f4-4ac1-950f-fe47d0ddcd14",
-            "473a9398-0024-4804-81da-38946040c8af",
-            "4781e745-96bc-4b06-995c-ee59fddf856d",
-            "577f74bd-a283-49e0-b4e2-f8abb81d2566",
-            "6aebdb24-1b6b-41ab-b4a3-df9a73726a34",
-            "708f7a1d-dda4-46c7-9b3e-99e188eeb04c",
-            "79245866-ca80-4f84-b904-a02b3e0ab621",
-            "88deec53-c7dc-4828-865c-7356386e9399",
-            "9f260047-a9b7-4a75-bb6a-e8d94c83edd2",
+            uuid.UUID("0d4e739b-bf60-4b87-bc20-67a379b28cea"),
+            uuid.UUID("2f62b030-c3f4-4ac1-950f-fe47d0ddcd14"),
+            uuid.UUID("473a9398-0024-4804-81da-38946040c8af"),
+            uuid.UUID("4781e745-96bc-4b06-995c-ee59fddf856d"),
+            uuid.UUID("577f74bd-a283-49e0-b4e2-f8abb81d2566"),
+            uuid.UUID("6aebdb24-1b6b-41ab-b4a3-df9a73726a34"),
+            uuid.UUID("708f7a1d-dda4-46c7-9b3e-99e188eeb04c"),
+            uuid.UUID("79245866-ca80-4f84-b904-a02b3e0ab621"),
+            uuid.UUID("88deec53-c7dc-4828-865c-7356386e9399"),
+            uuid.UUID("9f260047-a9b7-4a75-bb6a-e8d94c83edd2"),
         ]
         assert [package.uuid for package in datatable.records] == expected_uuids
 
@@ -263,16 +263,16 @@ class TestPackageDataTable(TestCase):
         }
         assert datatable.params == expected_params
         expected_uuids = [
-            "f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04",
-            "e0a41934-c1d7-45ba-9a95-a7531c063ed1",
-            "a59033c2-7fa7-41e2-9209-136f07174692",
-            "9f260047-a9b7-4a75-bb6a-e8d94c83edd2",
-            "88deec53-c7dc-4828-865c-7356386e9399",
-            "79245866-ca80-4f84-b904-a02b3e0ab621",
-            "708f7a1d-dda4-46c7-9b3e-99e188eeb04c",
-            "6aebdb24-1b6b-41ab-b4a3-df9a73726a34",
-            "577f74bd-a283-49e0-b4e2-f8abb81d2566",
-            "4781e745-96bc-4b06-995c-ee59fddf856d",
+            uuid.UUID("f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04"),
+            uuid.UUID("e0a41934-c1d7-45ba-9a95-a7531c063ed1"),
+            uuid.UUID("a59033c2-7fa7-41e2-9209-136f07174692"),
+            uuid.UUID("9f260047-a9b7-4a75-bb6a-e8d94c83edd2"),
+            uuid.UUID("88deec53-c7dc-4828-865c-7356386e9399"),
+            uuid.UUID("79245866-ca80-4f84-b904-a02b3e0ab621"),
+            uuid.UUID("708f7a1d-dda4-46c7-9b3e-99e188eeb04c"),
+            uuid.UUID("6aebdb24-1b6b-41ab-b4a3-df9a73726a34"),
+            uuid.UUID("577f74bd-a283-49e0-b4e2-f8abb81d2566"),
+            uuid.UUID("4781e745-96bc-4b06-995c-ee59fddf856d"),
         ]
         assert [package.uuid for package in datatable.records] == expected_uuids
 
@@ -351,7 +351,6 @@ class TestPackageDataTable(TestCase):
 
 
 class TestFixityLogDataTable(TestCase):
-
     fixtures = ["base.json", "package.json", "fixity_log.json"]
 
     def test_fixity_logs_are_filtered_by_package(self):

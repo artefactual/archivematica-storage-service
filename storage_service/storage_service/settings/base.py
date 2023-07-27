@@ -18,8 +18,6 @@ from .components.s3 import *
 from storage_service.settings.helpers import get_env_variable
 from storage_service.settings.helpers import is_true
 
-# S3 adapter configuration.
-
 try:
     import ldap
     from django_auth_ldap import config as ldap_config

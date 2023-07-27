@@ -51,6 +51,7 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
+import uuid
 from pwd import getpwnam
 
 import bagit
@@ -76,7 +77,6 @@ ANSI_ENDC = "\033[0m"
 
 
 class Command(BaseCommand):
-
     help = "Import an AIP into the Storage Service"
 
     def add_arguments(self, parser):
@@ -243,7 +243,7 @@ def get_aip_mets_path(aip_path):
 
 
 def get_aip_uuid(aip_mets_path):
-    return os.path.basename(aip_mets_path)[5:41]
+    return uuid.UUID(os.path.basename(aip_mets_path)[5:41])
 
 
 def get_aip_storage_locations(aip_storage_location_uuid):

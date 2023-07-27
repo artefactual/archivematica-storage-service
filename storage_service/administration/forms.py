@@ -149,31 +149,32 @@ class DefaultLocationsForm(SettingsForm):
     )
     new_recovery = DefaultLocationField(required=False, label=_("New AIP Recovery:"))
 
+    def _get_locations_by_purpose(self, purpose):
+        return [
+            (str(loc.uuid), loc.get_description())
+            for loc in Location.active.filter(purpose=purpose)
+        ] + [("new", _("Create new location for each pipeline"))]
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Dynamic choices done in init, because did not update consistently in
         # field definition
-        self.fields["default_transfer_source"].choices = [
-            (loc.uuid, loc.get_description())
-            for loc in Location.active.filter(purpose=Location.TRANSFER_SOURCE)
-        ] + [("new", _("Create new location for each pipeline"))]
-        self.fields["default_aip_storage"].choices = [
-            (loc.uuid, loc.get_description())
-            for loc in Location.active.filter(purpose=Location.AIP_STORAGE)
-        ] + [("new", _("Create new location for each pipeline"))]
-        self.fields["default_dip_storage"].choices = [
-            (loc.uuid, loc.get_description())
-            for loc in Location.active.filter(purpose=Location.DIP_STORAGE)
-        ] + [("new", _("Create new location for each pipeline"))]
-        self.fields["default_backlog"].choices = [
-            (loc.uuid, loc.get_description())
-            for loc in Location.active.filter(purpose=Location.BACKLOG)
-        ] + [("new", _("Create new location for each pipeline"))]
-        self.fields["default_recovery"].choices = [
-            (loc.uuid, loc.get_description())
-            for loc in Location.active.filter(purpose=Location.AIP_RECOVERY)
-        ] + [("new", _("Create new location for each pipeline"))]
-        space_id_choices = [(s.uuid, str(s)) for s in Space.objects.all()]
+        self.fields["default_transfer_source"].choices = self._get_locations_by_purpose(
+            Location.TRANSFER_SOURCE
+        )
+        self.fields["default_aip_storage"].choices = self._get_locations_by_purpose(
+            Location.AIP_STORAGE
+        )
+        self.fields["default_dip_storage"].choices = self._get_locations_by_purpose(
+            Location.DIP_STORAGE
+        )
+        self.fields["default_backlog"].choices = self._get_locations_by_purpose(
+            Location.BACKLOG
+        )
+        self.fields["default_recovery"].choices = self._get_locations_by_purpose(
+            Location.AIP_RECOVERY
+        )
+        space_id_choices = [(str(s.uuid), str(s)) for s in Space.objects.all()]
         for field_name in self.fields:
             field = self.fields[field_name]
             if isinstance(field, DefaultLocationField):

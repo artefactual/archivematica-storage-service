@@ -6,6 +6,12 @@ cd ${__dir}
 
 docker compose build archivematica-storage-service
 
+status=$?
+
+if [ $status -ne 0 ]; then
+    exit $status
+fi
+
 docker compose run --rm archivematica-storage-service
 
 status=$?

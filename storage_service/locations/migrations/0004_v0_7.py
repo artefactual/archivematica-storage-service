@@ -1,10 +1,9 @@
-import django_extensions.db.fields
+import common.fields
 from django.db import migrations
 from django.db import models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [("locations", "0003_v0_5")]
 
     operations = [
@@ -133,8 +132,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="file",
             name="origin",
-            field=django_extensions.db.fields.UUIDField(
-                default="",
+            field=common.fields.UUIDField(
+                default=None,
                 help_text=b"Unique identifier of originating Archivematica dashboard",
                 max_length=36,
                 editable=False,

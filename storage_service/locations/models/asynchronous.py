@@ -1,11 +1,8 @@
-# stdlib, alphabetical
 import logging
 import pickle as pickle
 
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-
-# Core Django, alphabetical
 
 __all__ = ("Async",)
 

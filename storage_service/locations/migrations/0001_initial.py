@@ -1,5 +1,6 @@
-import django.core.validators
-import django_extensions.db.fields
+import uuid
+
+import common.fields
 import locations.models
 from django.conf import settings
 from django.db import migrations
@@ -7,7 +8,6 @@ from django.db import models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [migrations.swappable_dependency(settings.AUTH_USER_MODEL)]
 
     operations = [
@@ -87,12 +87,13 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "uuid",
-                    django_extensions.db.fields.UUIDField(
+                    common.fields.UUIDField(
                         help_text=b"Unique identifier",
                         unique=True,
                         max_length=36,
                         editable=False,
                         blank=True,
+                        default=uuid.uuid4,
                     ),
                 ),
                 (
@@ -223,12 +224,13 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "uuid",
-                    django_extensions.db.fields.UUIDField(
+                    common.fields.UUIDField(
                         help_text=b"Unique identifier",
                         unique=True,
                         max_length=36,
                         editable=False,
                         blank=True,
+                        default=uuid.uuid4,
                     ),
                 ),
                 ("current_path", models.TextField()),
@@ -290,20 +292,14 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "uuid",
-                    django_extensions.db.fields.UUIDField(
-                        validators=[
-                            django.core.validators.RegexValidator(
-                                b"\\w{8}-\\w{4}-\\w{4}-\\w{4}-\\w{12}",
-                                b"Needs to be format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx where x is a hexadecimal digit.",
-                                b"Invalid UUID",
-                            )
-                        ],
+                    common.fields.UUIDField(
                         editable=False,
                         max_length=36,
                         blank=True,
                         help_text=b"Identifier for the Archivematica pipeline",
                         unique=True,
                         verbose_name="UUID",
+                        default=uuid.uuid4,
                     ),
                 ),
                 (
@@ -370,12 +366,13 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "uuid",
-                    django_extensions.db.fields.UUIDField(
+                    common.fields.UUIDField(
                         help_text=b"Unique identifier",
                         unique=True,
                         max_length=36,
                         editable=False,
                         blank=True,
+                        default=uuid.uuid4,
                     ),
                 ),
                 (

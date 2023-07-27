@@ -4,6 +4,7 @@ import os
 import shutil
 import tempfile
 import time
+import uuid
 from collections import namedtuple
 from unittest import mock
 
@@ -82,7 +83,6 @@ def create_temporary_pointer(tmp_dir, path):
 
 
 class TestPackage(TestCase):
-
     fixtures = ["base.json", "package.json", "arkivum.json", "callback.json"]
 
     def setUp(self):
@@ -101,7 +101,8 @@ class TestPackage(TestCase):
         # Set up locations to point to fixtures directory
         FIXTURE_DIR_NO_LEADING_SLASH = FIXTURES_DIR[1:]
         self._point_location_at_on_disk_storage(
-            "615103f0-0ee0-4a12-ba17-43192d1143ea", FIXTURE_DIR_NO_LEADING_SLASH
+            uuid.UUID("615103f0-0ee0-4a12-ba17-43192d1143ea"),
+            FIXTURE_DIR_NO_LEADING_SLASH,
         )
 
         # Arkivum space points at fixtures directory
@@ -1028,10 +1029,10 @@ class TestPackage(TestCase):
         during a reingest process. Ensure that a new replica is created
         in its place which reflects the original's updated structure.
         """
-        AIP_UUID = "f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04"
+        AIP_UUID = uuid.UUID("f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04")
         OLD_REPLICAS = [
-            "2f62b030-c3f4-4ac1-950f-fe47d0ddcd14",
-            "577f74bd-a283-49e0-b4e2-f8abb81d2566",
+            uuid.UUID("2f62b030-c3f4-4ac1-950f-fe47d0ddcd14"),
+            uuid.UUID("577f74bd-a283-49e0-b4e2-f8abb81d2566"),
         ]
 
         space_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="space")
@@ -1120,7 +1121,7 @@ class TestPackage(TestCase):
         """
         PACKAGE = "working_bag"
         FILES = ["file_one", "file_two", "file_three"]
-        AIP_LOC = "615103f0-0ee0-4a12-ba17-43192d1143ea"
+        AIP_LOC = uuid.UUID("615103f0-0ee0-4a12-ba17-43192d1143ea")
 
         new_aip_store = self._create_mutable_fixture_for_replication(PACKAGE, FILES)
         self._point_location_at_on_disk_storage(AIP_LOC, new_aip_store)

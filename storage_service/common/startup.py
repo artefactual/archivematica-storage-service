@@ -165,5 +165,5 @@ def populate_default_locations():
             loc_info["default_setting"]
             and utils.get_setting(loc_info["default_setting"]) is None
         ):
-            utils.set_setting(loc_info["default_setting"], [new_loc.uuid])
+            utils.set_setting(loc_info["default_setting"], [str(new_loc.uuid)])
             LOGGER.info("Set %s as %s", new_loc, loc_info["default_setting"])

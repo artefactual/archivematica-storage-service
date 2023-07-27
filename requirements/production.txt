@@ -57,8 +57,6 @@ django-cas-ng==3.6.0
     # via -r base.txt
 django-csp==3.7
     # via -r base.txt
-django-extensions==1.7.9
-    # via -r base.txt
 django-prometheus==2.0.0
     # via -r base.txt
 django-shibboleth-remoteuser @ git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git@67d270c65c201606fb86d548493d4b3fd8cc7a76
@@ -260,7 +258,6 @@ s3transfer==0.5.2
 six==1.16.0
     # via
     #   -r base.txt
-    #   django-extensions
     #   jsonfield
     #   keystoneauth1
     #   mozilla-django-oidc

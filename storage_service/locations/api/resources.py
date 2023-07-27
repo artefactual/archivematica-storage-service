@@ -1,6 +1,5 @@
 # This file contains the base models that individual versioned models
 # are based on. They shouldn't be directly used with Api objects.
-# stdlib, alphabetical
 import json
 import logging
 import os
@@ -8,6 +7,7 @@ import pprint
 import re
 import shutil
 import urllib.parse
+import uuid
 from pathlib import Path
 
 import bagit
@@ -54,9 +54,6 @@ from ..models import Space
 from ..models import StorageException
 from ..models.async_manager import AsyncManager
 
-# Core Django, alphabetical
-# Third party dependencies, alphabetical
-# This project, alphabetical
 
 LOGGER = logging.getLogger(__name__)
 
@@ -993,6 +990,10 @@ class PackageResource(ModelResource):
         except (ValueError, TypeError, KeyError):
             return 0
 
+    def hydrate_uuid(self, bundle):
+        bundle.data["uuid"] = uuid.UUID(bundle.data["uuid"])
+        return bundle
+
     def hydrate_current_location(self, bundle):
         """Customize unserialization of current_location.
 
@@ -1141,7 +1142,12 @@ class PackageResource(ModelResource):
 
         Identical to original function except obj_update_hook added between hydrating the data and saving the object.
         """
-        if not bundle.obj or not self.get_bundle_detail_data(bundle):
+        bundle_detail_data = self.get_bundle_detail_data(bundle) if bundle.obj else None
+        arg_detail_data = kwargs.get(self._meta.detail_uri_name, None)
+
+        if not bundle_detail_data or (
+            arg_detail_data and bundle_detail_data != arg_detail_data
+        ):
             try:
                 lookup_kwargs = self.lookup_kwargs_with_identifiers(bundle, kwargs)
             except Exception:
@@ -1925,22 +1931,23 @@ class PackageResource(ModelResource):
             ]
         }
         """
-        response = {"success": True, "package": bundle.obj.uuid, "files": []}
+        response = {"success": True, "package": str(bundle.obj.uuid), "files": []}
 
         for f in bundle.obj.file_set.all():
-            response["files"].append(
-                {
-                    attr: getattr(f, attr)
-                    for attr in (
-                        "source_id",
-                        "name",
-                        "source_package",
-                        "checksum",
-                        "accessionid",
-                        "origin",
-                    )
-                }
-            )
+            d = {}
+            for attr in (
+                "source_id",
+                "name",
+                "source_package",
+                "checksum",
+                "accessionid",
+                "origin",
+            ):
+                value = getattr(f, attr)
+                if value is not None:
+                    value = str(value)
+                d[attr] = value
+            response["files"].append(d)
 
         return http.HttpResponse(
             status=200, content=json.dumps(response), content_type="application/json"
@@ -2006,7 +2013,7 @@ class PackageResource(ModelResource):
                     "filename": os.path.basename(f.name),
                     "relative_path": f.name,
                     "fileuuid": f.source_id,
-                    "origin": f.origin,
+                    "origin": str(f.origin) if f.origin is not None else f.origin,
                     "sipuuid": f.source_package,
                 }
             )

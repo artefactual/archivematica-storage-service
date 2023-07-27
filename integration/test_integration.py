@@ -12,6 +12,7 @@ of Archivematica, etc...
 import json
 import os
 import shutil
+import uuid
 from pathlib import Path
 
 import pytest
@@ -127,8 +128,8 @@ def get_size(path):
 class StorageScenario:
     """Storage test scenario."""
 
-    PIPELINE_UUID = "00000b87-1655-4b7e-bbf8-344b317da334"
-    PACKAGE_UUID = "5658e603-277b-4292-9b58-20bf261c8f88"
+    PIPELINE_UUID = uuid.UUID("00000b87-1655-4b7e-bbf8-344b317da334")
+    PACKAGE_UUID = uuid.UUID("5658e603-277b-4292-9b58-20bf261c8f88")
 
     SPACES = {
         Space.S3: {
@@ -176,7 +177,7 @@ class StorageScenario:
     def register_pipeline(self):
         resp = self.client.add_pipeline(
             {
-                "uuid": self.PIPELINE_UUID,
+                "uuid": str(self.PIPELINE_UUID),
                 "description": "Beefy pipeline",
                 "create_default_locations": True,
                 "shared_path": "/var/archivematica/sharedDirectory",
@@ -190,17 +191,12 @@ class StorageScenario:
     def register_aip_storage_location(self):
         """Register AIP Storage location."""
 
-        # 1. Remove existing AIP Storage location.
-        Location.objects.filter(
-            pipeline__uuid=[self.PIPELINE_UUID], purpose=Location.AIP_STORAGE
-        ).delete()
-
-        # 2. Add space.
+        # Add space.
         resp = self.client.add_space(self.SPACES[self.src])
         assert resp.status_code == 201
         space = json.loads(resp.content)
 
-        # 3. Add location.
+        # Add location.
         resp = self.client.add_location(
             {
                 "relative_path": "aips",
@@ -289,7 +285,7 @@ class StorageScenario:
 
         # 3. Install replicator (not possible via API).
         resp = self.client.get_locations(
-            {"pipeline_uuid": self.PIPELINE_UUID, "purpose": Location.AIP_STORAGE}
+            {"pipeline_uuid": str(self.PIPELINE_UUID), "purpose": Location.AIP_STORAGE}
         )
         as_location = json.loads(resp.content)["objects"][0]
         rp_location = Location.objects.get(uuid=rp_location["uuid"])
@@ -313,21 +309,21 @@ class StorageScenario:
     def store_aip(self):
         resp = self.client.get_locations(
             {
-                "pipeline_uuid": self.PIPELINE_UUID,
+                "pipeline_uuid": str(self.PIPELINE_UUID),
                 "purpose": Location.CURRENTLY_PROCESSING,
             }
         )
         cp_location = json.loads(resp.content)["objects"][0]
 
         resp = self.client.get_locations(
-            {"pipeline_uuid": self.PIPELINE_UUID, "purpose": Location.AIP_STORAGE}
+            {"pipeline_uuid": str(self.PIPELINE_UUID), "purpose": Location.AIP_STORAGE}
         )
         as_location = json.loads(resp.content)["objects"][0]
 
         resp = self.client.add_file(
             self.PACKAGE_UUID,
             {
-                "uuid": self.PACKAGE_UUID,
+                "uuid": str(self.PACKAGE_UUID),
                 "origin_location": cp_location["resource_uri"],
                 "origin_path": self.pkg.name,
                 "current_location": as_location["resource_uri"],
@@ -343,14 +339,14 @@ class StorageScenario:
         assert resp.status_code == 201
 
         aip = json.loads(resp.content)
-        aip_id = self.PACKAGE_UUID.replace("-", "")
+        aip_id = self.PACKAGE_UUID.hex
         aip_path = (
             [as_location["path"]]
             + [aip_id[i : i + 4] for i in range(0, len(aip_id), 4)]
             + [self.pkg.name]
         )
         aip_path = Path(*aip_path)
-        assert aip["uuid"] == self.PACKAGE_UUID
+        assert aip["uuid"] == str(self.PACKAGE_UUID)
         assert aip["current_full_path"] == str(aip_path)
         assert get_size(aip_path) > 1
 

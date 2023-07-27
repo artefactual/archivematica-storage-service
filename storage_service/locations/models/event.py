@@ -1,19 +1,14 @@
-# stdlib, alphabetical
 import json
 from collections import OrderedDict
+from uuid import uuid4
 
 import requests
+from common import fields
 from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from django_extensions.db.fields import UUIDField
 
 from . import StorageException
-
-# Core Django, alphabetical
-# Third party dependencies, alphabetical
-# This project, alphabetical
-# This module, alphabetical
 
 __all__ = ("Event", "Callback", "File", "CallbackError")
 
@@ -90,7 +85,7 @@ class Callback(models.Model):
         ("put", "PUT"),
     )
 
-    uuid = UUIDField()
+    uuid = fields.UUIDField(editable=False, default=uuid4)
     uri = models.CharField(
         max_length=1024,
         verbose_name=_("URI"),
@@ -180,8 +175,11 @@ class Callback(models.Model):
 
 
 class File(models.Model):
-    uuid = UUIDField(
-        editable=False, unique=True, version=4, help_text=_("Unique identifier")
+    uuid = fields.UUIDField(
+        editable=False,
+        unique=True,
+        help_text=_("Unique identifier"),
+        default=uuid4,
     )
     package = models.ForeignKey("Package", null=True, on_delete=models.CASCADE)
     name = models.TextField(max_length=1000)
@@ -195,12 +193,12 @@ class File(models.Model):
     accessionid = models.TextField(
         blank=True, help_text=_("Accession ID of originating transfer")
     )
-    origin = UUIDField(
+    origin = fields.UUIDField(
         editable=False,
         unique=False,
-        version=4,
         blank=True,
         help_text=_("Unique identifier of originating Archivematica dashboard"),
+        default=uuid4,
     )
 
     class Meta:

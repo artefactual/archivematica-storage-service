@@ -77,7 +77,7 @@ class SpaceForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         instance = getattr(self, "instance", None)
         self.filter_beta_protocols()
-        if instance and instance.uuid:
+        if instance and instance.pk:
             # If editing (not creating a new object) access protocol shouldn't
             # be changed.  Remove from fields, print in template
             del self.fields["access_protocol"]
@@ -96,7 +96,7 @@ class SpaceForm(forms.ModelForm):
 
     def clean_access_protocol(self):
         instance = getattr(self, "instance", None)
-        if instance and instance.uuid:
+        if instance and instance.pk:
             return instance.access_protocol
         else:
             return self.cleaned_data["access_protocol"]
@@ -362,7 +362,7 @@ class LocationForm(forms.ModelForm):
                     total=Count("location")
                 )
             )
-            pipelines = [d["pipeline"] for d in existing_recovery_rel]
+            pipelines = [str(d["pipeline"]) for d in existing_recovery_rel]
             if pipelines:
                 raise forms.ValidationError(
                     _(

@@ -1,4 +1,3 @@
-# stdlib, alphabetical
 import logging
 import os
 import pprint
@@ -14,11 +13,6 @@ from django.utils.translation import ugettext_lazy as _
 
 from . import StorageException
 from .location import Location
-
-# Core Django, alphabetical
-# Third party dependencies, alphabetical
-# This project, alphabetical
-# This module, alphabetical
 
 
 LOGGER = logging.getLogger(__name__)
@@ -130,7 +124,7 @@ class S3(models.Model):
 
     @property
     def bucket_name(self):
-        return self.bucket or self.space_id
+        return self.bucket or str(self.space_id)
 
     def browse(self, path):
         LOGGER.debug("Browsing s3://%s/%s on S3 storage", self.bucket_name, path)

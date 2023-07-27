@@ -1,4 +1,3 @@
-# stdlib, alphabetical
 import datetime
 import errno
 import logging
@@ -8,21 +7,17 @@ import shutil
 import stat
 import subprocess
 import tempfile
+import uuid
 
+from common import fields
 from common import utils
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from django_extensions.db.fields import UUIDField
 
-# Core Django, alphabetical
-# Third party dependencies, alphabetical
-# This project, alphabetical
+from . import StorageException
 
 LOGGER = logging.getLogger(__name__)
-
-# This module, alphabetical
-from . import StorageException  # noqa: E402
 
 __all__ = ("Space", "PosixMoveUnsupportedError")
 
@@ -124,8 +119,11 @@ class Space(models.Model):
     Knows what protocol to use to access a storage space, but all protocol
     specific information is in children classes with ForeignKeys to Space."""
 
-    uuid = UUIDField(
-        editable=False, unique=True, version=4, help_text=_("Unique identifier")
+    uuid = fields.UUIDField(
+        editable=False,
+        unique=True,
+        help_text=_("Unique identifier"),
+        default=uuid.uuid4,
     )
 
     # Max length 8 (see access_protocol definition)

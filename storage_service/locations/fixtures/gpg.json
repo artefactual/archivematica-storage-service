@@ -8,7 +8,7 @@
             "origin_pipeline": null,
             "current_location": "4056b25d-6a85-4557-b9a5-9c85565fd892",
             "current_path": "some/relative/path/to/images-transfer-abcdabcd-97dd-48e0-8417-03be78359531",
-            "pointer_file_location": "",
+            "pointer_file_location": null,
             "pointer_file_path": "",
             "size": 0,
             "package_type": "Transfer",

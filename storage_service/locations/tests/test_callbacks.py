@@ -3,6 +3,7 @@ from unittest import mock
 
 from django.contrib.auth.models import User
 from django.test import TestCase
+from django.urls import reverse
 
 
 def mock_uuid():
@@ -33,15 +34,18 @@ class TestCallbacksViews(TestCase):
         ]
 
     def test_displays_no_callbacks_message(self):
-        response = self.client.get("/callbacks/")
+        response = self.client.get(reverse("locations:callback_list"))
         self.assertContains(response, "No callbacks currently exist.")
         for header in self.callbacks_table_headers:
             self.assertNotContains(response, header, html=True)
 
-    @mock.patch("uuid.uuid4", mock_uuid)
+    @mock.patch(
+        "locations.models.event.fields.UUIDField.get_default",
+        mock.Mock(side_effect=mock_uuid),
+    )
     def _create_callback(self):
         response = self.client.post(
-            "/callbacks/create/",
+            reverse("locations:callback_create"),
             {
                 "uri": "http://localhost",
                 "event": "post_store_aip",
@@ -56,7 +60,7 @@ class TestCallbacksViews(TestCase):
 
     def test_displays_callbacks_table(self):
         self._create_callback()
-        response = self.client.get("/callbacks/")
+        response = self.client.get(reverse("locations:callback_list"))
         self.assertNotContains(response, "No callbacks currently exist.")
         for header in self.callbacks_table_headers:
             self.assertContains(response, header, html=True)

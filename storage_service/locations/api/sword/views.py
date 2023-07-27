@@ -1,4 +1,3 @@
-# stdlib, alphabetical
 import logging
 import os
 import shutil
@@ -14,10 +13,6 @@ from locations import models
 from lxml import etree as etree
 
 from . import helpers
-
-# Core Django, alphabetical
-# External dependencies, alphabetical
-# This project, alphabetical
 
 LOGGER = logging.getLogger(__name__)
 
@@ -130,7 +125,6 @@ def collection(request, location):
         return response
 
     elif request.method == "POST":
-
         if not request.user.has_perms(
             ["locations.add_package", "locations.change_package"]
         ):
@@ -343,7 +337,6 @@ def _parse_name_and_content_urls_from_mets_file(filepath):
     mods = []
 
     for type_ in ("OBJ", "MODS"):
-
         if type_ == "OBJ":
             collection = objects
         elif type_ == "MODS":
