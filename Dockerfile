@@ -90,6 +90,12 @@ RUN set -ex \
 
 COPY ./ /src/
 
+# Allow Django's compilemessages to write *.mo files to the messages subdirectories.
+USER root
+RUN set -ex \
+	&& find /src/storage_service/locale -type d -name 'LC_MESSAGES' -exec chown archivematica:archivematica '{}' \;
+USER archivematica
+
 # -----------------------------------------------------------------------------
 
 FROM base AS archivematica-storage-service
