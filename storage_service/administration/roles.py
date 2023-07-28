@@ -7,7 +7,7 @@ implemented as Django groups.
 from django.conf import settings
 from django.contrib.auth.models import Group
 from django.db import transaction
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 
 
 # User roles codenames and labels used in this application.

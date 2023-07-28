@@ -12,7 +12,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import timezone
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from locations import models
 from locations.models.async_manager import AsyncManager
 
@@ -393,7 +393,7 @@ def sword_error_response(request, status, summary):
     error_details = {"summary": summary, "status": status}
     error_details["request"] = request
     error_details["update_time"] = datetime.datetime.now().__str__()
-    error_details["user_agent"] = request.META["HTTP_USER_AGENT"]
+    error_details["user_agent"] = request.headers["user-agent"]
     error_xml = render_to_string("locations/api/sword/error.xml", error_details)
     return HttpResponse(error_xml, status=error_details["status"])
 

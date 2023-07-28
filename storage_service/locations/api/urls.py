@@ -1,5 +1,5 @@
-from django.conf.urls import include
-from django.conf.urls import url
+from django.urls import include
+from django.urls import path
 from locations.api import v1
 from locations.api import v2
 from locations.api.sword import views
@@ -20,8 +20,8 @@ v2_api.register(v2.PipelineResource())
 v2_api.register(v2.AsyncResource())
 
 urlpatterns = [
-    url(r"", include(v1_api.urls)),
-    url(r"v1/sword/$", views.service_document, name="sword_service_document"),
-    url(r"", include(v2_api.urls)),
-    url(r"v2/sword/$", views.service_document, name="sword_service_document"),
+    path("", include(v1_api.urls)),
+    path("v1/sword/", views.service_document, name="sword_service_document"),
+    path("", include(v2_api.urls)),
+    path("v2/sword/", views.service_document, name="sword_service_document"),
 ]

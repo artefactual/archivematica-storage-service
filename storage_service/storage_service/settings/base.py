@@ -12,7 +12,7 @@ from os.path import normpath
 from sys import path
 
 from django.core.exceptions import ImproperlyConfigured
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from .components.s3 import *
 from storage_service.settings.helpers import get_env_variable

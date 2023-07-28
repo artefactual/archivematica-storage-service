@@ -14,7 +14,7 @@ from collections import namedtuple
 from administration import models
 from django import http
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from lxml import etree
 from lxml.builder import ElementMaker
 

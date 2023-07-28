@@ -6,7 +6,7 @@ from common import fields
 from common import utils
 from django.conf import settings
 from django.db import models
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from .local_filesystem import LocalFilesystem
 from .location import Location
