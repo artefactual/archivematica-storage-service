@@ -32,7 +32,7 @@ services:
       - "mysql"
 
   minio:
-    image: "minio/minio:RELEASE.2023-05-27T05-56-19Z"
+    image: "minio/minio:RELEASE.2023-08-16T20-17-30Z"
     command: "server /data"
     environment:
       MINIO_ACCESS_KEY: "minio"
@@ -43,7 +43,7 @@ services:
       - "9000"
 
   mysql:
-    image: "percona:5.7"
+    image: "percona:8.0"
     environment:
       MYSQL_ROOT_PASSWORD: "root"
       # These are used in the storage_service.settings.testmysql module
