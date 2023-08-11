@@ -35,13 +35,6 @@ jobs:
           sudo apt-get install --quiet --yes build-essential \
             libmysqlclient-dev libsasl2-dev libldap2-dev libssl-dev \
             p7zip-full unar
-      - name: "Downgrade libsqlite3-0 to version 3.22"
-        # Django 1.11 migrations break with SQLite >= 3.26
-        # See https://code.djangoproject.com/ticket/29182
-        run: |
-          wget http://security.ubuntu.com/ubuntu/pool/main/s/sqlite3/libsqlite3-0_3.22.0-1ubuntu0.7_amd64.deb -O /tmp/libsqlite3-0_3.22.0-1ubuntu0.7_amd64.deb
-          sudo dpkg -i /tmp/libsqlite3-0_3.22.0-1ubuntu0.7_amd64.deb
-          rm /tmp/libsqlite3-0_3.22.0-1ubuntu0.7_amd64.deb
       - name: "Create directories needed by test_duracloud.py"
         run: |
           sudo mkdir -p /var/archivematica/storage_service
