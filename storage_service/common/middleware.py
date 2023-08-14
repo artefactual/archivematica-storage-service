@@ -1,10 +1,10 @@
 from re import compile
+from urllib.parse import quote
 
 from administration import roles
 from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.utils.deprecation import MiddlewareMixin
-from django.utils.http import urlquote
 from shibboleth.middleware import ShibbolethRemoteUserMiddleware
 
 
@@ -54,7 +54,7 @@ class LoginRequiredMiddleware(MiddlewareMixin):
             path = request.path_info.lstrip("/")
             if not any(m.match(path) for m in EXEMPT_URLS):
                 fullURL = "{}?next={}".format(
-                    settings.LOGIN_URL, urlquote(request.get_full_path())
+                    settings.LOGIN_URL, quote(request.get_full_path())
                 )
                 return HttpResponseRedirect(fullURL)
 
@@ -109,5 +109,5 @@ class ForceDefaultLanguageMiddleware(MiddlewareMixin):
     """
 
     def process_request(self, request):
-        if "HTTP_ACCEPT_LANGUAGE" in request.META:
+        if "accept-language" in request.headers:
             del request.META["HTTP_ACCEPT_LANGUAGE"]

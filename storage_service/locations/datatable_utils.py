@@ -8,6 +8,7 @@ The request and response details are documented in:
 http://legacy.datatables.net/usage/server-side
 """
 import os
+import uuid
 
 from django.db.models import Q
 from django.utils import timezone
@@ -72,9 +73,24 @@ class PackageDataTable:
                 | Q(replicas__uuid__icontains=search)
                 | Q(replicated_package__uuid__icontains=search)
             )
+            if self._is_uuid(search):
+                search_filter |= (
+                    Q(uuid=search)
+                    | Q(origin_pipeline__uuid=search)
+                    | Q(replicas__uuid=search)
+                    | Q(replicated_package__uuid=search)
+                )
         queryset = self.model.objects.filter(search_filter).distinct()
         self.total_display_records = queryset.count()
         self.records = self.get_records(queryset)
+
+    def _is_uuid(self, value):
+        try:
+            uuid.UUID(value)
+        except ValueError:
+            return False
+        else:
+            return True
 
     def _get_int_parameter(self, query_dict, param, default=0):
         """Get an integer parameter from the request QueryDict.
@@ -175,7 +191,6 @@ class PackageDataTable:
 
 
 class FixityLogDataTable(PackageDataTable):
-
     model = FixityLog
 
     ORDER_BY_MAPPING = {

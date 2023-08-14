@@ -8,16 +8,16 @@ from django.db.models import signals
 from django.dispatch import receiver
 from django.dispatch import Signal
 from django.urls import reverse
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from prometheus_client import Counter
 from tastypie.models import create_api_key
 
 LOGGER = logging.getLogger(__name__)
 
-deletion_request = Signal(providing_args=["uuid", "location", "url", "pipeline"])
-failed_fixity_check = Signal(providing_args=["uuid", "location", "report"])
-successful_fixity_check = Signal(providing_args=["uuid", "location", "report"])
-fixity_check_not_run = Signal(providing_args=["uuid", "location", "report"])
+deletion_request = Signal()
+failed_fixity_check = Signal()
+successful_fixity_check = Signal()
+fixity_check_not_run = Signal()
 
 
 def _notify_administrators(subject, message):

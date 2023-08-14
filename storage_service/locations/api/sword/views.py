@@ -8,7 +8,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from locations import models
 from lxml import etree as etree
 
@@ -133,7 +133,7 @@ def collection(request, location):
             )
 
         # has the In-Progress header been set?
-        if "HTTP_IN_PROGRESS" in request.META:
+        if "in-progress" in request.headers:
             # process creation request, if criteria met
             source_location = request.GET.get("source_location", "")
             relative_path_to_files = request.GET.get("relative_path_to_files", "")
@@ -168,8 +168,8 @@ def collection(request, location):
 
                         # TODO: should get this from author header or provided XML metadata
                         sourceofacquisition = (
-                            request.META["HTTP_ON_BEHALF_OF"]
-                            if "HTTP_ON_BEHALF_OF" in request.META
+                            request.headers["on-behalf-of"]
+                            if "on-behalf-of" in request.headers
                             else None
                         )
                         deposit = _create_deposit_directory_and_db_entry(
@@ -194,7 +194,7 @@ def collection(request, location):
                             deposit, request, mets_data
                         )
 
-                        if request.META["HTTP_IN_PROGRESS"] == "true":
+                        if request.headers["in-progress"] == "true":
                             return _deposit_receipt_response(request, deposit, 201)
                         else:
                             return _deposit_receipt_response(request, deposit, 200)
@@ -305,7 +305,7 @@ def _spawn_batch_download_and_flag_finalization_if_requested(
 
     If HTTP_IN_PROGRESS is set to true, spawn async batch download
     """
-    if request.META["HTTP_IN_PROGRESS"] == "false":
+    if request.headers["in-progress"] == "false":
         # Indicate that the deposit is ready for finalization (after all batch
         # downloads have completed)
         deposit.misc_attributes.update({"ready_for_finalization": True})
@@ -500,8 +500,8 @@ def deposit_edit(request, deposit):
         else:
             # Attempt to finalize (if requested), otherwise just return deposit receipt
             if (
-                "HTTP_IN_PROGRESS" in request.META
-                and request.META["HTTP_IN_PROGRESS"] == "false"
+                "in-progress" in request.headers
+                and request.headers["in-progress"] == "false"
             ):
                 return _finalize_or_mark_for_finalization(request, deposit)
             else:
@@ -536,10 +536,7 @@ def _finalize_or_mark_for_finalization(request, deposit):
 
     Returns deposit receipt response or error response
     """
-    if (
-        "HTTP_IN_PROGRESS" in request.META
-        and request.META["HTTP_IN_PROGRESS"] == "false"
-    ):
+    if "in-progress" in request.headers and request.headers["in-progress"] == "false":
         if (
             helpers.deposit_downloading_status(deposit)
             == models.PackageDownloadTask.COMPLETE
@@ -618,10 +615,7 @@ def deposit_media(request, deposit):
         )
     elif request.method == "POST":
         # Allow async batch upload via METS XML body content
-        if (
-            "HTTP_PACKAGING" in request.META
-            and request.META["HTTP_PACKAGING"] == "METS"
-        ):
+        if "packaging" in request.headers and request.headers["packaging"] == "METS":
             # If METS XML has been sent to indicate a list of files needing downloading, handle it
             if request.body != "":
                 temp_filepath = helpers.write_request_body_to_temp_file(request)
@@ -770,9 +764,9 @@ def _handle_adding_to_or_replacing_file_in_deposit(
     Returns a response with an HTTP status code indicating whether creation (201)
     or updating (204) has occurred or an error response
     """
-    if "HTTP_CONTENT_DISPOSITION" in request.META:
+    if "content-disposition" in request.headers:
         filename = helpers.parse_filename_from_content_disposition(
-            request.META["HTTP_CONTENT_DISPOSITION"]
+            request.headers["content-disposition"]
         )
 
         if filename != "":
@@ -819,9 +813,9 @@ def _handle_upload_request_with_potential_md5_checksum(
     if a checksum has been provided but the destination file's is different
     """
     temp_filepath = helpers.write_request_body_to_temp_file(request)
-    if "HTTP_CONTENT_MD5" in request.META:
+    if "content-md5" in request.headers:
         md5sum = helpers.get_file_md5_checksum(temp_filepath)
-        if request.META["HTTP_CONTENT_MD5"] != md5sum:
+        if request.headers["content-md5"] != md5sum:
             os.remove(temp_filepath)
             return helpers.sword_error_response(
                 request,
@@ -831,7 +825,7 @@ def _handle_upload_request_with_potential_md5_checksum(
                 )
                 % {
                     "uploaded_md5sum": md5sum,
-                    "header_md5sum": request.META["HTTP_CONTENT_MD5"],
+                    "header_md5sum": request.headers["content-md5"],
                 },
             )
         else:

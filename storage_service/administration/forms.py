@@ -3,7 +3,7 @@ from django import forms
 from django.contrib import auth
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from locations.models import Location
 from locations.models import Space
 

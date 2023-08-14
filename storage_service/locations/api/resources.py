@@ -15,13 +15,13 @@ import tastypie.exceptions
 from administration.models import Settings
 from common import utils
 from django.conf import settings
-from django.conf.urls import url
 from django.core.exceptions import MultipleObjectsReturned
 from django.core.exceptions import ObjectDoesNotExist
 from django.forms.models import model_to_dict
 from django.http import HttpResponseRedirect
+from django.urls import re_path
 from django.urls import reverse
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from locations import signals
 from locations.api.sword import views as sword_views
 from tastypie import fields
@@ -34,7 +34,6 @@ from tastypie.authorization import DjangoAuthorization
 from tastypie.resources import ALL
 from tastypie.resources import ALL_WITH_RELATIONS
 from tastypie.resources import ModelResource
-from tastypie.utils import dict_strip_unicode_keys
 from tastypie.utils import trailing_slash
 from tastypie.validation import CleanedDataFormValidation
 
@@ -151,7 +150,7 @@ def _custom_endpoint(
                 deserialized = resource.deserialize(
                     request,
                     request.body,
-                    format=request.META.get("CONTENT_TYPE", "application/json"),
+                    format=request.headers.get("content-type", "application/json"),
                 )
                 deserialized = resource.alter_deserialized_detail_data(
                     request, deserialized
@@ -276,7 +275,7 @@ class SpaceResource(ModelResource):
 
     def prepend_urls(self):
         return [
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/browse%s$"
                 % (
                     self._meta.resource_name,
@@ -394,13 +393,13 @@ class LocationResource(ModelResource):
 
     def prepend_urls(self):
         return [
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/default/(?P<purpose>[A-Z]{2})%s$"
                 % (self._meta.resource_name, trailing_slash()),
                 self.wrap_view("default"),
                 name="default_location",
             ),
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/browse%s$"
                 % (
                     self._meta.resource_name,
@@ -410,7 +409,7 @@ class LocationResource(ModelResource):
                 self.wrap_view("browse"),
                 name="browse",
             ),
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/async%s$"
                 % (
                     self._meta.resource_name,
@@ -421,7 +420,7 @@ class LocationResource(ModelResource):
                 name="post_detail_async",
             ),
             # FEDORA/SWORD2 endpoints
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/collection%s$"
                 % (
                     self._meta.resource_name,
@@ -786,13 +785,13 @@ class PackageResource(ModelResource):
 
     def prepend_urls(self):
         return [
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/async%s$"
                 % (self._meta.resource_name, trailing_slash()),
                 self.wrap_view("obj_create_async"),
                 name="obj_create_async",
             ),
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/delete_aip%s$"
                 % (
                     self._meta.resource_name,
@@ -802,7 +801,7 @@ class PackageResource(ModelResource):
                 self.wrap_view("delete_aip_request"),
                 name="delete_aip_request",
             ),
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/recover_aip%s$"
                 % (
                     self._meta.resource_name,
@@ -812,7 +811,7 @@ class PackageResource(ModelResource):
                 self.wrap_view("recover_aip_request"),
                 name="recover_aip_request",
             ),
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/extract_file%s$"
                 % (
                     self._meta.resource_name,
@@ -822,7 +821,7 @@ class PackageResource(ModelResource):
                 self.wrap_view("extract_file_request"),
                 name="extract_file_request",
             ),
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/download/(?P<chunk_number>\d+)%s$"
                 % (
                     self._meta.resource_name,
@@ -832,7 +831,7 @@ class PackageResource(ModelResource):
                 self.wrap_view("download_request"),
                 name="download_lockss",
             ),
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/download%s$"
                 % (
                     self._meta.resource_name,
@@ -842,7 +841,7 @@ class PackageResource(ModelResource):
                 self.wrap_view("download_request"),
                 name="download_request",
             ),
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/pointer_file%s$"
                 % (
                     self._meta.resource_name,
@@ -852,7 +851,7 @@ class PackageResource(ModelResource):
                 self.wrap_view("pointer_file_request"),
                 name="pointer_file_request",
             ),
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/check_fixity%s$"
                 % (
                     self._meta.resource_name,
@@ -862,7 +861,7 @@ class PackageResource(ModelResource):
                 self.wrap_view("check_fixity_request"),
                 name="check_fixity_request",
             ),
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/compress%s$"
                 % (
                     self._meta.resource_name,
@@ -872,7 +871,7 @@ class PackageResource(ModelResource):
                 self.wrap_view("compress_request"),
                 name="compress_request",
             ),
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/send_callback/post_store%s$"
                 % (
                     self._meta.resource_name,
@@ -882,7 +881,7 @@ class PackageResource(ModelResource):
                 self.wrap_view("aip_store_callback_request"),
                 name="aip_store_callback_request",
             ),
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/contents%s$"
                 % (
                     self._meta.resource_name,
@@ -892,13 +891,13 @@ class PackageResource(ModelResource):
                 self.wrap_view("manage_contents"),
                 name="manage_contents",
             ),
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/metadata%s$"
                 % (self._meta.resource_name, trailing_slash()),
                 self.wrap_view("file_data"),
                 name="file_data",
             ),
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/reindex%s$"
                 % (
                     self._meta.resource_name,
@@ -909,7 +908,7 @@ class PackageResource(ModelResource):
                 name="reindex_request",
             ),
             # Reingest
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/reingest%s$"
                 % (
                     self._meta.resource_name,
@@ -920,7 +919,7 @@ class PackageResource(ModelResource):
                 name="reingest_request",
             ),
             # Move
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/move%s$"
                 % (
                     self._meta.resource_name,
@@ -931,7 +930,7 @@ class PackageResource(ModelResource):
                 name="move_request",
             ),
             # FEDORA/SWORD2 endpoints
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword%s$"
                 % (
                     self._meta.resource_name,
@@ -941,7 +940,7 @@ class PackageResource(ModelResource):
                 self.wrap_view("sword_deposit"),
                 name="sword_deposit",
             ),
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/media%s$"
                 % (
                     self._meta.resource_name,
@@ -951,7 +950,7 @@ class PackageResource(ModelResource):
                 self.wrap_view("sword_deposit_media"),
                 name="sword_deposit_media",
             ),
-            url(
+            re_path(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/sword/state%s$"
                 % (
                     self._meta.resource_name,
@@ -1093,12 +1092,10 @@ class PackageResource(ModelResource):
             deserialized = self.deserialize(
                 request,
                 request.body,
-                format=request.META.get("CONTENT_TYPE", "application/json"),
+                format=request.headers.get("content-type", "application/json"),
             )
             deserialized = self.alter_deserialized_detail_data(request, deserialized)
-            bundle = self.build_bundle(
-                data=dict_strip_unicode_keys(deserialized), request=request
-            )
+            bundle = self.build_bundle(data=deserialized, request=request)
 
             bundle = super().obj_create(bundle, **kwargs)
 

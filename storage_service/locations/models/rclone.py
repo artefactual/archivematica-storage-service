@@ -6,7 +6,7 @@ import time
 
 from common import utils
 from django.db import models
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from . import StorageException
 from .location import Location

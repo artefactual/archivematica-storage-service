@@ -19,7 +19,7 @@ from django.shortcuts import redirect
 from django.shortcuts import render
 from django.template.loader import get_template
 from django.urls import reverse
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
 from tastypie.models import ApiKey
 
@@ -89,7 +89,7 @@ def package_list_ajax(request):
             .render(
                 {
                     "package": package,
-                    "redirect_path": request.META.get("HTTP_REFERER", request.path),
+                    "redirect_path": request.headers.get("referer", request.path),
                     "csrf_token": csrf_token,
                     "perms": PermWrapper(request.user),
                 }

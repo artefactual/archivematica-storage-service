@@ -6,6 +6,10 @@
 #
 agentarchives==0.7.0
     # via -r base.txt
+asgiref==3.4.1
+    # via
+    #   -r base.txt
+    #   django
 bagit==1.8.1
     # via -r base.txt
 boto3==1.23.10
@@ -17,7 +21,7 @@ botocore==1.26.10
     #   s3transfer
 brotli==1.0.9
     # via -r base.txt
-certifi==2023.5.7
+certifi==2023.7.22
     # via
     #   -r base.txt
     #   requests
@@ -43,7 +47,7 @@ debtcollector==2.5.0
     #   python-keystoneclient
 dj-database-url==0.5.0
     # via -r local.in
-django==1.11.29
+django==3.2.20
     # via
     #   -r base.txt
     #   django-auth-ldap
@@ -51,17 +55,17 @@ django==1.11.29
     #   django-csp
     #   jsonfield
     #   mozilla-django-oidc
-django-auth-ldap==2.2.0
+django-auth-ldap==4.0.0
     # via -r base.txt
-django-cas-ng==3.6.0
+django-cas-ng==4.3.0
     # via -r base.txt
 django-csp==3.7
     # via -r base.txt
-django-prometheus==2.0.0
+django-prometheus==2.2.0
     # via -r base.txt
-django-shibboleth-remoteuser @ git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git@67d270c65c201606fb86d548493d4b3fd8cc7a76
+django-shibboleth-remoteuser @ git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git@962f6f9818683ef5f6432f091d22945e54b82592
     # via -r base.txt
-django-tastypie==0.14.3
+django-tastypie==0.14.5
     # via -r base.txt
 gevent==22.10.2
     # via -r base.txt
@@ -69,7 +73,7 @@ greenlet==2.0.2
     # via
     #   -r base.txt
     #   gevent
-gunicorn==21.0.1
+gunicorn==21.2.0
     # via -r base.txt
 httplib2==0.22.0
     # via
@@ -105,7 +109,7 @@ josepy==1.13.0
     # via
     #   -r base.txt
     #   mozilla-django-oidc
-jsonfield==2.1.1
+jsonfield==3.1.0
     # via -r base.txt
 keystoneauth1==5.1.2
     # via
@@ -119,7 +123,7 @@ lxml==4.9.3
     #   sword2
 metsrw==0.4.0
     # via -r base.txt
-mozilla-django-oidc==1.2.4
+mozilla-django-oidc==2.0.0
     # via -r base.txt
 msgpack==1.0.5
     # via
@@ -213,7 +217,7 @@ python-dateutil==2.8.2
     #   -r base.txt
     #   botocore
     #   django-tastypie
-python-gnupg==0.5.0
+python-gnupg==0.5.1
     # via -r base.txt
 python-keystoneclient==4.5.0
     # via -r base.txt
@@ -233,7 +237,7 @@ pytz==2023.3
     #   django
     #   oslo.serialization
     #   oslo.utils
-pyyaml==6.0
+pyyaml==6.0.1
     # via
     #   -r base.txt
     #   oslo.config
@@ -258,12 +262,14 @@ s3transfer==0.5.2
 six==1.16.0
     # via
     #   -r base.txt
-    #   jsonfield
     #   keystoneauth1
-    #   mozilla-django-oidc
     #   python-cas
     #   python-dateutil
     #   python-keystoneclient
+sqlparse==0.4.4
+    # via
+    #   -r base.txt
+    #   django
 stevedore==3.5.2
     # via
     #   -r base.txt
@@ -275,6 +281,7 @@ sword2 @ git+https://github.com/swordapp/python-client-sword2.git@59db54c03e4498
 typing-extensions==4.1.1
     # via
     #   -r base.txt
+    #   asgiref
     #   importlib-metadata
 urllib3==1.26.16
     # via
