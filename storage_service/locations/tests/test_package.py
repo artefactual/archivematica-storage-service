@@ -34,7 +34,7 @@ TEST_CHECKSUM_HASHDIGEST = (
 )
 
 
-def test_checksum():
+def _test_checksum():
     checksum = hashlib.new("sha256")
     checksum.update(b"testdata")
     return checksum
@@ -329,7 +329,7 @@ class TestPackage(TestCase):
             == "742f10b0-768a-4158-b255-94847a97c465"
         )
 
-    @mock.patch("common.utils.generate_checksum", return_value=test_checksum())
+    @mock.patch("common.utils.generate_checksum", return_value=_test_checksum())
     def test_stored_checksum(self, generate_checksum):
         package = models.Package.objects.get(
             uuid="a59033c2-7fa7-41e2-9209-136f07174692"
@@ -360,7 +360,7 @@ class TestPackage(TestCase):
     @mock.patch("locations.models.Space.move_to_storage_service")
     @mock.patch("locations.models.Space.post_move_to_storage_service")
     @mock.patch("locations.models.Space.move_from_storage_service")
-    @mock.patch("common.utils.generate_checksum", return_value=test_checksum())
+    @mock.patch("common.utils.generate_checksum", return_value=_test_checksum())
     def test_stored_checksum_posix_exception(
         self, update_quotas, move_to, post_move, move_from, generate_checksum
     ):
@@ -389,7 +389,7 @@ class TestPackage(TestCase):
                 == models.Package.DEFAULT_CHECKSUM_ALGORITHM
             )
 
-    @mock.patch("common.utils.generate_checksum", return_value=test_checksum())
+    @mock.patch("common.utils.generate_checksum", return_value=_test_checksum())
     def test_stored_date(self, generate_checksum):
         package = models.Package.objects.get(
             uuid="a59033c2-7fa7-41e2-9209-136f07174692"
@@ -417,7 +417,7 @@ class TestPackage(TestCase):
     @mock.patch("locations.models.Space.move_to_storage_service")
     @mock.patch("locations.models.Space.post_move_to_storage_service")
     @mock.patch("locations.models.Space.move_from_storage_service")
-    @mock.patch("common.utils.generate_checksum", return_value=test_checksum())
+    @mock.patch("common.utils.generate_checksum", return_value=_test_checksum())
     def test_stored_date_posix_exception(
         self, update_quotas, move_to, post_move, move_from, generate_checksum
     ):
