@@ -1,6 +1,6 @@
 ARG TARGET=archivematica-storage-service
 
-FROM ubuntu:18.04 AS base
+FROM ubuntu:22.04 AS base
 
 ARG USER_ID=1000
 ARG GROUP_ID=1000
@@ -39,6 +39,7 @@ RUN set -ex \
 		unzip \
 		xz-utils tk-dev \
 		zlib1g-dev \
+		media-types \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Install rclone
