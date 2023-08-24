@@ -87,6 +87,6 @@
     }
   ],
   "osdeps_repos": [
-    "deb http://archive.ubuntu.com/ubuntu/ focal universe"
+    "deb http://archive.ubuntu.com/ubuntu/ jammy universe"
   ]
 }
