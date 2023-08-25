@@ -84,6 +84,10 @@
     {
       "name": "rclone",
       "state": "latest"
+    },
+    {
+      "name": "mime-support",
+      "state": "latest"
     }
   ],
   "osdeps_repos": [

@@ -84,6 +84,10 @@
     {
       "name": "rclone",
       "state": "latest"
+    },
+    {
+      "name": "media-types",
+      "state": "latest"
     }
   ],
   "osdeps_repos": [

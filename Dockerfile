@@ -39,16 +39,7 @@ RUN set -ex \
 		unzip \
 		xz-utils tk-dev \
 		zlib1g-dev \
-		media-types \
 	&& rm -rf /var/lib/apt/lists/*
-
-# Install rclone
-RUN set -ex \
-	&& cd $(mktemp -d) \
- 	&& curl -OfsS "https://downloads.rclone.org/rclone-current-linux-amd64.zip" \
- 	&& unzip "rclone-*-linux-amd64.zip" \
- 	&& mv rclone-*-linux-amd64/rclone /usr/bin/ \
- 	&& chmod a+x /usr/bin/rclone
 
 # Set the locale
 RUN locale-gen en_US.UTF-8
@@ -91,8 +82,13 @@ RUN set -ex \
 
 COPY ./ /src/
 
-# Allow Django's compilemessages to write *.mo files to the messages subdirectories.
 USER root
+# Install Ubuntu release specific packages.
+RUN set -ex \
+	&& apt-get update \
+	&& /src/osdeps.py Ubuntu-22 1 | grep -v -E "python3.6-dev" | xargs apt-get install -y --no-install-recommends \
+	&& rm -rf /var/lib/apt/lists/*
+# Allow Django's compilemessages to write *.mo files to the messages subdirectories.
 RUN set -ex \
 	&& find /src/storage_service/locale -type d -name 'LC_MESSAGES' -exec chown archivematica:archivematica '{}' \;
 USER archivematica
