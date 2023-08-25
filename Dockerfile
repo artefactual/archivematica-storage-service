@@ -1,7 +1,9 @@
 ARG TARGET=archivematica-storage-service
+ARG UBUNTU_VERSION=22.04
 
-FROM ubuntu:22.04 AS base
+FROM ubuntu:${UBUNTU_VERSION} AS base
 
+ARG UBUNTU_VERSION=22.04
 ARG USER_ID=1000
 ARG GROUP_ID=1000
 ARG PYTHON_VERSION=3.6
@@ -86,7 +88,7 @@ USER root
 # Install Ubuntu release specific packages.
 RUN set -ex \
 	&& apt-get update \
-	&& /src/osdeps.py Ubuntu-22 1 | grep -v -E "python3.6-dev" | xargs apt-get install -y --no-install-recommends \
+	&& /src/osdeps.py Ubuntu-${UBUNTU_VERSION} 1 | grep -v -E "python3.6-dev" | xargs apt-get install -y --no-install-recommends \
 	&& rm -rf /var/lib/apt/lists/*
 # Allow Django's compilemessages to write *.mo files to the messages subdirectories.
 RUN set -ex \

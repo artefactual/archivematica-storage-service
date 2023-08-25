@@ -7,6 +7,9 @@ services:
     build:
       context: "../"
       dockerfile: "Dockerfile"
+      args:
+        UBUNTU_VERSION: ${UBUNTU_VERSION:-22.04}
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.6}
     entrypoint: ""
     working_dir: "/src"
     command: ["pytest", "storage_service", "integration"]
