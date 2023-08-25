@@ -78,8 +78,12 @@ jobs:
           name: ${{ matrix.name }}
           flags: ${{ matrix.name }}
   integration:
-    name: "Integration"
+    name: "Integration ${{ matrix.ubuntu-version }}"
     runs-on: "ubuntu-22.04"
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu-version: ["20.04", "22.04"]
     steps:
       - name: "Check out repository"
         uses: "actions/checkout@v3"
@@ -89,6 +93,8 @@ jobs:
         shell: "bash"
         working-directory: "integration"
         env:
+          UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
+          PYTHON_VERSION: "3.6"
           COMPOSE_DOCKER_CLI_BUILD: 1
           DOCKER_BUILDKIT: 1
           PYTEST_ADDOPTS: -vv
