@@ -56,7 +56,6 @@ def data_migration_up(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [("locations", "0026_update_package_status")]
 
     operations = [migrations.RunPython(data_migration_up, data_migration_down)]

@@ -3,7 +3,7 @@ function createSingleDirectoryPicker( // eslint-disable-line no-unused-vars
   textFieldCssId,
   triggerElementCssId,
   destinationCssId,
-  ajaxChildDataUrl
+  ajaxChildDataUrl,
 ) {
   var SingleDirectoryPickerView = Backbone.View.extend({
     initialize: function (options) {

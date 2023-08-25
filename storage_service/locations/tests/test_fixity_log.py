@@ -3,7 +3,6 @@ from locations import models
 
 
 class TestFixityLog(TestCase):
-
     fixtures = ["base.json", "package.json", "fixity_log.json"]
 
     def setUp(self):

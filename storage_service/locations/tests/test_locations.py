@@ -4,7 +4,6 @@ from locations import models
 
 
 class TestLocations(TestCase):
-
     fixtures = ["base.json", "pipelines.json"]
 
     def test_clean_works(self):

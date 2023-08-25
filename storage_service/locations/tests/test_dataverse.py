@@ -11,7 +11,6 @@ FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
 
 
 class TestDataverse(TempDirMixin, TestCase):
-
     fixtures = ["base.json", "dataverse.json", "dataverse2.json"]
 
     def setUp(self):

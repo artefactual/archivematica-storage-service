@@ -18,7 +18,6 @@ def get_pkg_uuid_path(package_uuid):
 
 
 class TestArkivum(TempDirMixin, TestCase):
-
     fixtures = ["base.json", "arkivum.json"]
 
     def setUp(self):

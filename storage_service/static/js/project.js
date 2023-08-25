@@ -43,8 +43,8 @@ var setPackagesDataTable = function (options) {
       options,
       uri + "packages_ajax",
       $(".packages-datatable thead th"),
-      filter
-    )
+      filter,
+    ),
   );
 };
 
@@ -70,8 +70,8 @@ var setFixityLogsDataTable = function (options) {
       customOptions,
       uri + "fixity_ajax",
       $(".fixity-logs-datatable thead th"),
-      filter
-    )
+      filter,
+    ),
   );
 };
 
@@ -146,7 +146,7 @@ $(document).ready(function () {
           .after(
             "<div id='package-delete-alert' class='alert alert-success'>" +
               data.message +
-              "</div>"
+              "</div>",
           );
       },
       failure: function (data) {
@@ -156,7 +156,7 @@ $(document).ready(function () {
           .after(
             "<div id='package-delete-alert' class='alert alert-warning'>" +
               data.message +
-              "</div>"
+              "</div>",
           );
       },
     });
@@ -180,7 +180,7 @@ $(document).ready(function () {
       }
       event.preventDefault();
       $modal.modal("show");
-    }
+    },
   );
 
   /***************
@@ -191,9 +191,9 @@ $(document).ready(function () {
   $(".callback > form input[name^=header_] + input[name^=header_]").each(
     function () {
       $(this).after(
-        $('<a href="#" class="delete_header">' + gettext("Delete") + "</a>")
+        $('<a href="#" class="delete_header">' + gettext("Delete") + "</a>"),
       );
-    }
+    },
   );
 
   // Append add header link after the existing headers
@@ -203,8 +203,8 @@ $(document).ready(function () {
       $(
         '<p><a href="#" class="add_header">' +
           gettext("Add header") +
-          "</a></p>"
-      )
+          "</a></p>",
+      ),
     );
 
   // Manage inputs from a set of headers
@@ -222,7 +222,7 @@ $(document).ready(function () {
             value,
             $input.prop(value).replace(/\d+/, function (key) {
               return parseInt(key) + increment;
-            })
+            }),
           );
         });
       }
@@ -244,7 +244,7 @@ $(document).ready(function () {
     // decrease the id and name counter (keeping the values) and remove it.
     if ($headers_count > 1) {
       var $following_headers = $this_header.nextAll(
-        ":has(input[name^=header_])"
+        ":has(input[name^=header_])",
       );
       updateHeaderInputs($following_headers, -1, false);
       // If we're deleting the first header, move the label to the next one

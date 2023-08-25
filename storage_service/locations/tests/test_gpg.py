@@ -438,7 +438,6 @@ def test__parse_gpg_version():
 
 
 class TestGPG(TestCase):
-
     fixtures = ["base.json", "package.json", "gpg.json"]
 
     def test__encr_path2key_fingerprint(self):
