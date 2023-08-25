@@ -8,20 +8,12 @@ on:
       - "stable/**"
 jobs:
   test:
-    name: "Test ${{ matrix.name }}"
+    name: "Test Python ${{ matrix.python-version }}"
     runs-on: "ubuntu-20.04"
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: "py36"
-            python-version: "3.6"
-            toxenv: "py36"
-            coverage: true
-          - name: "migrations"
-            python-version: "3.6"
-            toxenv: "migrations"
-            coverage: false
+        python-version: ["3.6"]
     steps:
       - name: "Check out repository"
         uses: "actions/checkout@v3"
@@ -29,6 +21,9 @@ jobs:
         uses: "actions/setup-python@v4"
         with:
           python-version: "${{ matrix.python-version }}"
+          cache: "pip"
+          cache-dependency-path: |
+            **/requirements/test.txt
       - name: "Install OS packages"
         run: |
           sudo apt-get --quiet update
@@ -53,7 +48,7 @@ jobs:
       - name: "Install tox"
         run: |
           python -m pip install --upgrade pip
-          pip install tox
+          pip install tox tox-gh-actions
       - name: "Run tox"
         if: "! matrix.coverage"
         env:
