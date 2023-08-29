@@ -14,13 +14,16 @@ metsrw
 python-gnupg
 python-keystoneclient
 python-swiftclient
-requests~=2.27
+requests~=2.27; python_version == "3.6"
+requests
 git+https://github.com/swordapp/python-client-sword2.git@59db54c03e4498dd6b001ac4f3a4167aa2fb8987#egg=sword2
-whitenoise>=5.3.0,<6.0
+whitenoise>=5.3.0,<6.0; python_version == "3.6"
+whitenoise
 agentarchives
 git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git@962f6f9818683ef5f6432f091d22945e54b82592#egg=django-shibboleth-remoteuser
 prometheus_client
-django-prometheus>=2.2,<2.3
+django-prometheus>=2.2,<2.3; python_version == "3.6"
+django-prometheus
 
 # LDAP support
 python-ldap
@@ -30,4 +33,5 @@ django-auth-ldap
 django-cas-ng
 
 # Required for OpenID Connect authentication
-mozilla-django-oidc~=2.0
+mozilla-django-oidc~=2.0; python_version == "3.6"
+mozilla-django-oidc

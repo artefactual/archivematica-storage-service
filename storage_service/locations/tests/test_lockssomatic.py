@@ -9,7 +9,6 @@ FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
 
 
 class TestLockssomatic(TestCase):
-
     fixtures = ["base.json", "lockssomatic.json"]
 
     def setUp(self):

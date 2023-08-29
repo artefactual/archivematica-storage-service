@@ -96,7 +96,6 @@ def revert_migration(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("locations", "0029_python3"),
     ]

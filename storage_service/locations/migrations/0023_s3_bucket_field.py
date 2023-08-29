@@ -3,7 +3,6 @@ from django.db import models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [("locations", "0022_update_pipeline_help_text")]
 
     operations = [

@@ -3,7 +3,6 @@ from django.db import models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [("locations", "0016_mirror_location_aip_replication")]
 
     operations = [

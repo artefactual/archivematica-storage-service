@@ -23,7 +23,6 @@ from locations.models.package import Space
 
 
 class Command(StorageServiceCommand):
-
     help = __doc__
 
     def add_arguments(self, parser):

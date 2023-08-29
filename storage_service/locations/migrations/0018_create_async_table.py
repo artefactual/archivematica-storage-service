@@ -3,7 +3,6 @@ from django.db import models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [("locations", "0017_gpg_space_minor_migration")]
 
     operations = [

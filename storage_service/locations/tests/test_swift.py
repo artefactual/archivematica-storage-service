@@ -12,7 +12,6 @@ FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
 
 
 class TestSwift(TempDirMixin, TestCase):
-
     fixtures = ["base.json", "swift.json"]
 
     def setUp(self):

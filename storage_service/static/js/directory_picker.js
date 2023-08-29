@@ -67,7 +67,7 @@ var DirectoryPickerView = fileBrowser.FileExplorer.extend({
         $.post(self.ajaxDeleteDirectoryUrl + id + "/", {}, function () {
           self.updateSelectedDirectories();
         });
-      }
+      },
     );
   },
 
@@ -77,10 +77,10 @@ var DirectoryPickerView = fileBrowser.FileExplorer.extend({
       this.ajaxSelectedDirectoryUrl + "?" + new Date().getTime(),
       function (results) {
         var tableTemplate = _.template(
-            $("#template-source-directory-table").html()
+            $("#template-source-directory-table").html(),
           ),
           rowTemplate = _.template(
-            $("#template-source-directory-table-row").html()
+            $("#template-source-directory-table-row").html(),
           );
 
         $("#directories").empty();
@@ -107,7 +107,7 @@ var DirectoryPickerView = fileBrowser.FileExplorer.extend({
         if (cb != undefined) {
           cb();
         }
-      }
+      },
     );
   },
 

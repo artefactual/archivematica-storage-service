@@ -39,7 +39,6 @@ def get_replica_count(aip_uuid):
 
 
 class Command(StorageServiceCommand):
-
     help = __doc__
 
     def add_arguments(self, parser):

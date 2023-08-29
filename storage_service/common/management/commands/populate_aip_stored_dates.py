@@ -26,7 +26,6 @@ TIMEZONE = pytz.timezone(settings.TIME_ZONE)
 
 
 class Command(StorageServiceCommand):
-
     help = __doc__
 
     def add_arguments(self, parser):

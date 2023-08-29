@@ -132,7 +132,7 @@
         for (var index in this.actionHandlers) {
           var handler = this.actionHandlers[index];
           var actionEl = $(
-            "<a class='actionHandler' href='#'>" + handler.iconHtml + "</a>"
+            "<a class='actionHandler' href='#'>" + handler.iconHtml + "</a>",
           );
           self = this;
           // use closure to isolate handler logic
@@ -193,7 +193,7 @@
         },
         function () {
           $(this).removeClass("backbone-file-exporer-entry-highlighted");
-        }
+        },
       );
     },
 
@@ -316,10 +316,10 @@
 
                   // update zebra striping
                   $(".backbone-file-explorer-entry").removeClass(
-                    "backbone-file-explorer-entry-odd"
+                    "backbone-file-explorer-entry-odd",
                   );
                   $(".backbone-file-explorer-entry:visible:odd").addClass(
-                    "backbone-file-explorer-entry-odd"
+                    "backbone-file-explorer-entry-odd",
                   );
 
                   // re-bind drag/drop
@@ -333,10 +333,10 @@
 
               // update zebra striping
               $(".backbone-file-explorer-entry").removeClass(
-                "backbone-file-explorer-entry-odd"
+                "backbone-file-explorer-entry-odd",
               );
               $(".backbone-file-explorer-entry:visible:odd").addClass(
-                "backbone-file-explorer-entry-odd"
+                "backbone-file-explorer-entry-odd",
               );
 
               // re-bind drag/drop
@@ -443,7 +443,7 @@
 
     busy: function () {
       $(this.el).append(
-        '<span id="backbone-file-explorer-busy-text">Loading...</span>'
+        '<span id="backbone-file-explorer-busy-text">Loading...</span>',
       );
       $(this.el).addClass("backbone-file-explorer-busy");
       $(this.el).removeClass("backbone-file-explorer-idle");
@@ -536,7 +536,7 @@
       if (this.structure) {
         directory = this.structureToObjects(
           this.structure,
-          new exports.Directory()
+          new exports.Directory(),
         );
       }
 
@@ -561,7 +561,7 @@
       this.restoreToggledFolders();
 
       $(".backbone-file-explorer-entry:odd").addClass(
-        "backbone-file-explorer-entry-odd"
+        "backbone-file-explorer-entry-odd",
       );
 
       return this;
