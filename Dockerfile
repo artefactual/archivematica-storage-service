@@ -75,11 +75,11 @@ RUN set -ex \
 	&& pyenv install ${PYTHON_VERSION} \
 	&& pyenv global ${PYTHON_VERSION}
 
-COPY requirements/ /src/requirements/
+COPY requirements-dev.txt /src/requirements-dev.txt
 COPY ./install/storage-service.gunicorn-config.py /etc/archivematica/storage-service.gunicorn-config.py
 RUN set -ex \
 	&& pyenv exec python${PYTHON_VERSION} -m pip install --upgrade pip setuptools \
-	&& pyenv exec python${PYTHON_VERSION} -m pip install --requirement /src/requirements/production.txt --requirement /src/requirements/test.txt \
+	&& pyenv exec python${PYTHON_VERSION} -m pip install --requirement /src/requirements-dev.txt \
 	&& pyenv rehash
 
 COPY ./ /src/
