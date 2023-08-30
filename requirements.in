@@ -5,6 +5,7 @@ brotli
 Django>=3.2,<4
 django-csp
 django-tastypie
+dj-database-url
 gevent
 gunicorn
 importlib_resources
