@@ -8,6 +8,7 @@ version_info = Info("version", "Archivematica Storage Service version info")
 
 
 class CommonAppConfig(AppConfig):
+    default_auto_field = "django.db.models.AutoField"
     name = "common"
 
     def ready(self):
