@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 
 
 class AdministrationAppConfig(AppConfig):
+    default_auto_field = "django.db.models.AutoField"
     name = "administration"
 
     def ready(self):
