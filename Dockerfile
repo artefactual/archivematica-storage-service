@@ -82,18 +82,18 @@ RUN set -ex \
 	&& pyenv exec python${PYTHON_VERSION} -m pip install --requirement /src/requirements-dev.txt \
 	&& pyenv rehash
 
-COPY ./ /src/
+# Install Ubuntu release specific packages.
+COPY osdeps.py /src/osdeps.py
+COPY osdeps /src/osdeps
 
 USER root
-# Install Ubuntu release specific packages.
 RUN set -ex \
 	&& apt-get update \
 	&& /src/osdeps.py Ubuntu-${UBUNTU_VERSION} 1 | grep -v -E "python3.9-dev" | xargs apt-get install -y --no-install-recommends \
 	&& rm -rf /var/lib/apt/lists/*
-# Allow Django's compilemessages to write *.mo files to the messages subdirectories.
-RUN set -ex \
-	&& find /src/storage_service/locale -type d -name 'LC_MESSAGES' -exec chown archivematica:archivematica '{}' \;
 USER archivematica
+
+COPY --chown=${USER_ID}:${GROUP_ID} ./ /src/
 
 # -----------------------------------------------------------------------------
 
