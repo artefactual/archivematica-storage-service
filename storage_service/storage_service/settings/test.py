@@ -34,6 +34,8 @@ LOGGING = {
 }
 
 # Disable whitenoise
-STATICFILES_STORAGE = None
+STORAGES["staticfiles"][
+    "BACKEND"
+] = "django.contrib.staticfiles.storage.StaticFilesStorage"
 if MIDDLEWARE[0] == "whitenoise.middleware.WhiteNoiseMiddleware":
     del MIDDLEWARE[0]
