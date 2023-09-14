@@ -14,7 +14,11 @@ import logging
 import threading
 import time
 import traceback
+from typing import Any
+from typing import Callable
 from typing import List
+from typing import NoReturn
+from typing import Optional
 
 from django.utils import timezone
 
@@ -48,11 +52,12 @@ class RunningTask:
 
 
 class AsyncManager:
+    watchdog: Optional[threading.Thread] = None
     running_tasks: List[Async] = []
     lock = threading.Lock()
 
     @staticmethod
-    def _watchdog():
+    def _watchdog() -> NoReturn:
         while True:
             try:
                 with metrics.watchdog_loop_timer():
@@ -63,7 +68,7 @@ class AsyncManager:
             time.sleep(WATCHDOG_POLL_SECONDS)
 
     @staticmethod
-    def _watchdog_loop():
+    def _watchdog_loop() -> None:
         """Wake up, expire old tasks, report completed tasks and give a sign of
         life for everything that's still running"""
         with AsyncManager.lock:
@@ -123,7 +128,7 @@ class AsyncManager:
                     )
 
     @staticmethod
-    def _wrap_task(task, task_fn):
+    def _wrap_task(task: Any, task_fn: Callable[[Any], Any]) -> Callable[[Any], Any]:
         """Run a function, capturing its output/errors in `task`"""
 
         # Share stack of the caller with the task thread, excluding this func.
@@ -174,7 +179,7 @@ class AsyncManager:
         return async_task
 
 
-def start_async_manager():
+def start_async_manager() -> None:
     """Start our watchdog thread."""
     AsyncManager.watchdog = threading.Thread(target=AsyncManager._watchdog)
     AsyncManager.watchdog.daemon = True

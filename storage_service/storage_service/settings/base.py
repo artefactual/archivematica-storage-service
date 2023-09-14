@@ -29,9 +29,9 @@ except ImportError:
     ldap, ldap_config = None, None
 
 
-def _get_settings_from_file(path):
+def _get_settings_from_file(path: str) -> Dict[Any, Any]:
     try:
-        result = {}
+        result: Dict[Any, Any] = {}
         with open(path, "rb") as f:
             code = compile(f.read(), path, "exec")
             exec(code, result, result)

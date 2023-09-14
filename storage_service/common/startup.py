@@ -1,6 +1,12 @@
 import errno
 import logging
 import os.path
+from types import TracebackType
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Type
 
 import django.core.exceptions
 from common import utils
@@ -12,7 +18,7 @@ from locations.models.async_manager import start_async_manager
 LOGGER = logging.getLogger(__name__)
 
 
-def startup():
+def startup() -> None:
     LOGGER.info("Running startup")
 
     try:
@@ -31,32 +37,37 @@ class PopulateLockError(Exception):
 class PopulateLock:
     """MySQL lock that gives up immediately on a held lock."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.name = "default_locations"
         self.connection = connection
         self.timeout = 0
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         if self.connection.vendor == "mysql":
             self.acquire()
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
         if self.connection.vendor == "mysql":
             self.release()
 
-    def acquire(self):
+    def acquire(self) -> None:
         with self.connection.cursor() as cursor:
             cursor.execute("SELECT GET_LOCK(%s, %s)", (self.name, self.timeout))
             result = cursor.fetchone()[0]
             if result != 1:
                 raise PopulateLockError("Error obtaining the lock or already acquried.")
 
-    def release(self):
+    def release(self) -> None:
         with self.connection.cursor() as cursor:
             cursor.execute("SELECT RELEASE_LOCK(%s)", (self.name,))
 
 
-def populate_default_locations():
+def populate_default_locations() -> None:
     """Create default local filesystem space and its locations."""
     try:
         space, space_created = locations_models.Space.objects.get_or_create(
@@ -75,7 +86,7 @@ def populate_default_locations():
         LOGGER.info("Multiple default Spaces exist, done default setup.")
         return
 
-    default_locations = [
+    default_locations: List[Dict[str, Any]] = [
         {
             "purpose": locations_models.Location.TRANSFER_SOURCE,
             "relative_path": "home",
