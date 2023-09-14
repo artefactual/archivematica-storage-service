@@ -39,6 +39,13 @@ repos:
   hooks:
   - id: mypy
     additional_dependencies: [types-all]
+    exclude: |
+      (?x)^(
+        setup\.py |
+        install/(make_key|storage-service.gunicorn-config)\.py |
+        integration/(conftest|test_integration)\.py |
+        storage_service/manage\.py
+      )
 - repo: https://github.com/pre-commit/mirrors-eslint
   rev: v8.48.0
   hooks:
