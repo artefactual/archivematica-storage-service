@@ -8,6 +8,7 @@ import stat
 import subprocess
 import tempfile
 import uuid
+from typing import Set
 
 from common import fields
 from common import utils
@@ -143,7 +144,7 @@ class Space(models.Model):
     GPG = "GPG"
     S3 = "S3"
     # These will not be displayed in the Space Create GUI (see locations/forms.py)
-    BETA_PROTOCOLS = {}
+    BETA_PROTOCOLS: Set[str] = set()
     OBJECT_STORAGE = {DATAVERSE, DSPACE, DSPACE_REST, DURACLOUD, RCLONE, SWIFT, S3}
     ACCESS_PROTOCOL_CHOICES = (
         (ARKIVUM, _("Arkivum")),

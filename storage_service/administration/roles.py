@@ -4,18 +4,21 @@ Every user in the system has a role. The role determines what the user can do.
 An administrator uses the `is_superuser` flag. Managers and reviewers are
 implemented as Django groups.
 """
+from typing import Any
+from typing import List
+from typing import Tuple
+
 from django.conf import settings
 from django.contrib.auth.models import Group
 from django.db import transaction
 from django.utils.translation import gettext as _
-
 
 # User roles codenames and labels used in this application.
 USER_ROLE_ADMIN = "admin"
 USER_ROLE_MANAGER = "manager"
 USER_ROLE_REVIEWER = "reviewer"
 USER_ROLE_READER = "reader"
-USER_ROLES = [
+USER_ROLES: List[Tuple[str, Any]] = [
     # Users with the is_superuser flag enabled.
     (USER_ROLE_ADMIN, _("Administrator")),
     # Members of the "Managers" group.
@@ -52,7 +55,7 @@ def get_user_role_label(user):
     return dict(USER_ROLES)[get_user_role(user)]
 
 
-@transaction.atomic
+@transaction.atomic  # type: ignore
 def set_user_role(user, role: str):
     """Assign a new role to a User given the role codename."""
     # Only users with the admin role are Django superusers.
@@ -74,7 +77,7 @@ def set_user_role(user, role: str):
         user.groups.clear()
 
 
-def promoted_role(role: str):
+def promoted_role(role: str) -> str:
     """Return a new role that replaces a reader.
 
     This is used to promote a reader to a role with more permissions, based on
@@ -82,7 +85,7 @@ def promoted_role(role: str):
     """
     if role != USER_ROLE_READER:
         return role
-    suggested = settings.DEFAULT_USER_ROLE
+    suggested: str = settings.DEFAULT_USER_ROLE
     if dict(USER_ROLES).get(suggested):
         return suggested
     return role

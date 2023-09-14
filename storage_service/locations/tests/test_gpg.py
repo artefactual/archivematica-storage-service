@@ -2,6 +2,8 @@
 import os
 import tarfile
 from collections import namedtuple
+from typing import Any
+from typing import Dict
 
 import pytest
 from common import gpgutils
@@ -38,7 +40,7 @@ TEST_AGENTS = [
         )
     )
 ]
-BROWSE_FAIL_DICT = {"directories": [], "entries": [], "properties": {}}
+BROWSE_FAIL_DICT: Dict[str, Any] = {"directories": [], "entries": [], "properties": {}}
 
 
 FakeGPGRet = namedtuple("FakeGPGRet", "ok status stderr")
