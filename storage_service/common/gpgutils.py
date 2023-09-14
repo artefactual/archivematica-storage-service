@@ -10,6 +10,7 @@ manage (i.e., list, created, import, delete) GPG keys.
 import logging
 from pathlib import Path
 from shutil import which
+from typing import Optional
 
 import gnupg
 from django.apps import apps
@@ -41,10 +42,10 @@ class GPG:
     # GnuPG v1 is only available via ``gpg1`` (package ``gnupg1``).
     PREFERRED_GNUPG_BINARIES = ["gpg1", "gpg"]
 
-    def __init__(self):
-        self._gpg = None
+    def __init__(self) -> None:
+        self._gpg: Optional[gnupg.GPG] = None
 
-    def __call__(self):
+    def __call__(self) -> Optional[gnupg.GPG]:
         if not self._gpg:
             gnupghome = self._get_gnupg_home_path()
             self._ensure_gnupg_home_exists(gnupghome)
@@ -53,16 +54,17 @@ class GPG:
             )
         return self._gpg
 
-    def _get_gnupg_home_path(self):
+    def _get_gnupg_home_path(self) -> str:
         """Find and return the home path for GnuPG to store its config."""
-        gnupg_home_path = settings.GNUPG_HOME_PATH
-        if not gnupg_home_path:
+        gnupg_home_path: Optional[str] = settings.GNUPG_HOME_PATH
+        if gnupg_home_path is None:
             Location = apps.get_model(app_label="locations", model_name="Location")
             ss_internal = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
-            gnupg_home_path = ss_internal.full_path
+            full_path = ss_internal.full_path
+            gnupg_home_path = full_path
         return gnupg_home_path
 
-    def _get_gnupg_bin_path(self):
+    def _get_gnupg_bin_path(self) -> str:
         """Find and return the path of the preferred GnuPG binary."""
         for item in self.PREFERRED_GNUPG_BINARIES:
             ret = which(item)
@@ -74,7 +76,7 @@ class GPG:
         )
 
     @staticmethod
-    def _ensure_gnupg_home_exists(gnupghome):
+    def _ensure_gnupg_home_exists(gnupghome: str) -> None:
         """Ensure that GnuPG's home directory exists."""
         Path(gnupghome).mkdir(mode=0o700, parents=False, exist_ok=True)
 
