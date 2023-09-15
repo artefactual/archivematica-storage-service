@@ -1,4 +1,7 @@
 import uuid
+from typing import Any
+from typing import Optional
+from typing import Union
 
 from django.db import models
 
@@ -14,14 +17,19 @@ class UUIDField(models.UUIDField):
     VARCHAR(36) columns instead.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         kwargs["max_length"] = 36
         models.Field.__init__(self, *args, **kwargs)
 
-    def db_type(self, connection):
+    def db_type(self, connection: Any) -> str:
         return "varchar(%s)" % self.max_length
 
-    def get_db_prep_value(self, value, connection, prepared=False):
+    def get_db_prep_value(
+        self,
+        value: Optional[Union[uuid.UUID, str]],
+        connection: Any,
+        prepared: bool = False,
+    ) -> Optional[Union[uuid.UUID, str]]:
         if value is None:
             return None
         if not isinstance(value, uuid.UUID):
