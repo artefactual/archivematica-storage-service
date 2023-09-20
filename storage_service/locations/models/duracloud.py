@@ -488,7 +488,7 @@ class Duracloud(models.Model):
             # Both source and destination paths should end with /
             destination_path = os.path.join(destination_path, "")
             # Duracloud does not accept folders, so upload each file individually
-            for path, dirs, files in os.walk(source_path):
+            for path, _dirs, files in os.walk(source_path):
                 for basename in files:
                     entry = os.path.join(path, basename)
                     dest = entry.replace(source_path, destination_path, 1)

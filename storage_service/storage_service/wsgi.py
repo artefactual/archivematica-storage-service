@@ -22,7 +22,7 @@ import django
 from django.core.wsgi import get_wsgi_application
 
 django.setup()
-from common.startup import startup
+from common.startup import startup  # noqa: E402
 
 
 SITE_ROOT = dirname(dirname(abspath(__file__)))

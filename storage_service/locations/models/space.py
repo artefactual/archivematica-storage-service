@@ -889,7 +889,7 @@ def count_objects_in_directory(path):
     Returns all the files in a directory, including children.
     """
     count = 0
-    for entry in _scandir_files(path):
+    for _entry in _scandir_files(path):
         count += 1
 
         # Limit the number of files counted to keep it from being too slow
