@@ -287,19 +287,19 @@ def create_aip_premis_object(
         ".gz": {"puid": utils.PRONOM_GZIP, "name": "GZIP Compressed Archive"},
     }
     premis_relationships = premis_relationships or []
-    kwargs = dict(
-        xsi_type="premis:file",
-        identifier_value=str(package_uuid),
-        message_digest_algorithm=message_digest_algorithm,
-        message_digest=message_digest,
-        size=str(package_size),
-        creating_application_name=archive_tool,
-        creating_application_version=compression_program_version,
-        date_created_by_application=timestamp(),
-        relationship=premis_relationships,
-        premis_version=PREMIS_META["version"],
-        composition_level=str(composition_level),
-    )
+    kwargs = {
+        "xsi_type": "premis:file",
+        "identifier_value": str(package_uuid),
+        "message_digest_algorithm": message_digest_algorithm,
+        "message_digest": message_digest,
+        "size": str(package_size),
+        "creating_application_name": archive_tool,
+        "creating_application_version": compression_program_version,
+        "date_created_by_application": timestamp(),
+        "relationship": premis_relationships,
+        "premis_version": PREMIS_META["version"],
+        "composition_level": str(composition_level),
+    }
     try:
         kwargs.update(
             {

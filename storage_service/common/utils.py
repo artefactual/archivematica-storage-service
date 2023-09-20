@@ -395,7 +395,7 @@ def get_compress_command(compression, extract_path, basename, full_path):
             _("Algorithm %(algorithm)s not implemented") % {"algorithm": compression}
         )
 
-    command = list(_f for _f in command if _f)
+    command = [_f for _f in command if _f]
     return (command, compressed_filename)
 
 

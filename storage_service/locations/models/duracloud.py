@@ -238,7 +238,7 @@ class Duracloud(models.Model):
             root = etree.fromstring(response.content)
             expected_size = int(root.findtext("header/sourceContent/byteSize"))
             checksum = root.findtext("header/sourceContent/md5")
-            chunk_elements = [e for e in root.findall("chunks/chunk")]
+            chunk_elements = list(root.findall("chunks/chunk"))
             # Download each chunk and append to original file
             self.space.create_local_directory(download_path)
             LOGGER.debug("Writing to %s", download_path)
