@@ -82,10 +82,6 @@ LANGUAGE_CODE = "en-us"
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#site-id
 SITE_ID = 1
 
-# See: https://docs.djangoproject.com/en/dev/ref/settings/#use-i18n
-
-# See: https://docs.djangoproject.com/en/dev/ref/settings/#use-l10n
-
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#use-tz
 USE_TZ = True
 # ######## END GENERAL CONFIGURATION
