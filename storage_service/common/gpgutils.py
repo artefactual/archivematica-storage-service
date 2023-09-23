@@ -127,6 +127,7 @@ def generate_default_gpg_key():
         key_length=DFLT_KEY_LENGTH,
         name_real=DFLT_KEY_REAL_NAME,
         passphrase=DFLT_KEY_PASSPHRASE,
+        no_protection=True,
     )
     LOGGER.info("Creating default AM SS key with name %s", DFLT_KEY_REAL_NAME)
     gpg().gen_key(input_data)
@@ -141,6 +142,7 @@ def generate_gpg_key(name_real, name_email):
         name_real=name_real,
         name_email=name_email,
         passphrase=DFLT_KEY_PASSPHRASE,
+        no_protection=True,
     )
     return gpg().gen_key(input_data)
 
