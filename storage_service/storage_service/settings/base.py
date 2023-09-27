@@ -386,7 +386,15 @@ if LDAP_AUTHENTICATION:
         )
 
     # https://pythonhosted.org/django-auth-ldap/groups.html#types-of-groups
-    AUTH_LDAP_GROUP_TYPE = ldap_config.ActiveDirectoryGroupType()
+    if "AUTH_LDAP_GROUP_TYPE" in environ:
+        try:
+            AUTH_LDAP_GROUP_TYPE = getattr(
+                ldap_config, environ.get("AUTH_LDAP_GROUP_TYPE", "PosixGroupType")
+            )()
+        except AttributeError:
+            AUTH_LDAP_GROUP_TYPE = ldap_config.ActiveDirectoryGroupType()
+    else:
+        AUTH_LDAP_GROUP_TYPE = ldap_config.ActiveDirectoryGroupType()
 
     AUTH_LDAP_REQUIRE_GROUP = environ.get("AUTH_LDAP_REQUIRE_GROUP", None)
     AUTH_LDAP_DENY_GROUP = environ.get("AUTH_LDAP_DENY_GROUP", None)
