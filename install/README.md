@@ -331,6 +331,12 @@ These variables specify the behaviour of LDAP authentication. If `SS_LDAP_AUTHEN
     - **Type:** `string`
     - **Default:** `''`
 
+- **`AUTH_LDAP_GROUP_TYPE`**:
+    - **Description:** An LDAPGroupType instance describing the type of group returned by AUTH_LDAP_GROUP_SEARCH. See [available values](https://django-auth-ldap.readthedocs.io/en/latest/groups.html), e.g.
+    "PosixGroupType".
+    - **Type:** `string`
+    - **Default:** `ActiveDirectoryGroupType`
+
 - **`AUTH_LDAP_GROUP_SEARCH_BASE_DN`**:
     - **Description:** Base LDAP DN for group search, e.g. "ou=django,ou=groups,dc=example,dc=com".
     - **Type:** `string`
