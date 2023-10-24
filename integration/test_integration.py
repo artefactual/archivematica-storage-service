@@ -209,57 +209,53 @@ class StorageScenario:
         assert resp.status_code == 201
 
     def get_compression_event(self):
-        return tuple(
-            [
-                "event",
-                premisrw.PREMIS_META,
+        return (
+            "event",
+            premisrw.PREMIS_META,
+            (
+                "event_identifier",
+                ("event_identifier_type", "UUID"),
+                ("event_identifier_value", "4711f4eb-8903-4e58-85da-4827e6530d0b"),
+            ),
+            ("event_type", "compression"),
+            ("event_date_time", "2017-08-15T00:30:55"),
+            (
+                "event_detail",
                 (
-                    "event_identifier",
-                    ("event_identifier_type", "UUID"),
-                    ("event_identifier_value", "4711f4eb-8903-4e58-85da-4827e6530d0b"),
+                    "program=7z; "
+                    "version=p7zip Version 9.20 "
+                    "(locale=en_US.UTF-8,Utf16=on,HugeFiles=on,2 CPUs); "
+                    "algorithm=bzip2"
                 ),
-                ("event_type", "compression"),
-                ("event_date_time", "2017-08-15T00:30:55"),
+            ),
+            (
+                "event_outcome_information",
                 (
-                    "event_detail",
+                    "event_outcome_detail",
                     (
-                        "program=7z; "
-                        "version=p7zip Version 9.20 "
-                        "(locale=en_US.UTF-8,Utf16=on,HugeFiles=on,2 CPUs); "
-                        "algorithm=bzip2"
+                        "event_outcome_detail_note",
+                        'Standard Output="..."; Standard Error=""',
                     ),
                 ),
-                (
-                    "event_outcome_information",
-                    (
-                        "event_outcome_detail",
-                        (
-                            "event_outcome_detail_note",
-                            'Standard Output="..."; Standard Error=""',
-                        ),
-                    ),
-                ),
-                (
-                    "linking_agent_identifier",
-                    ("linking_agent_identifier_type", "foobar"),
-                    ("linking_agent_identifier_value", "foobar"),
-                ),
-            ]
+            ),
+            (
+                "linking_agent_identifier",
+                ("linking_agent_identifier_type", "foobar"),
+                ("linking_agent_identifier_value", "foobar"),
+            ),
         )
 
     def get_agent(self):
-        return tuple(
-            [
-                "agent",
-                premisrw.PREMIS_3_0_META,
-                (
-                    "agent_identifier",
-                    ("agent_identifier_type", "foobar"),
-                    ("agent_identifier_value", "foobar"),
-                ),
-                ("agent_name", "foobar"),
-                ("agent_type", "foobar"),
-            ]
+        return (
+            "agent",
+            premisrw.PREMIS_3_0_META,
+            (
+                "agent_identifier",
+                ("agent_identifier_type", "foobar"),
+                ("agent_identifier_value", "foobar"),
+            ),
+            ("agent_name", "foobar"),
+            ("agent_type", "foobar"),
         )
 
     def register_aip_storage_replicator(self):

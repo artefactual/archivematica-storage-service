@@ -156,7 +156,7 @@ class PackageDataTable:
         elif sorting_column["index"] in self.SORT_KEY_HELPERS_MAPPING:
             sorting_method_name = self.SORT_KEY_HELPERS_MAPPING[sorting_column["index"]]
             sorting_method = getattr(self, sorting_method_name)
-            return sorted(list(queryset), key=sorting_method, reverse=sort_descending)
+            return sorted(queryset, key=sorting_method, reverse=sort_descending)
         else:
             return queryset
 

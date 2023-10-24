@@ -228,7 +228,7 @@ class S3(models.Model):
             # strip leading slash on dest_path
             dest_path = dest_path.lstrip("/")
 
-            for path, dirs, files in os.walk(src_path):
+            for path, _dirs, files in os.walk(src_path):
                 for basename in files:
                     entry = os.path.join(path, basename)
                     dest = entry.replace(src_path, dest_path, 1)

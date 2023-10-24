@@ -1051,7 +1051,7 @@ class TestPipelineAPI(TestCase):
         assert response.status_code == 201
 
         pipeline = models.Pipeline.objects.get(uuid=data["uuid"])
-        pipeline.parse_and_fix_url(pipeline.remote_name) == urlparse(
+        assert pipeline.parse_and_fix_url(pipeline.remote_name) == urlparse(
             data["remote_name"]
         )
 
@@ -1067,6 +1067,6 @@ class TestPipelineAPI(TestCase):
         )
         assert response.status_code == 201
         pipeline = models.Pipeline.objects.get(uuid=data["uuid"])
-        pipeline.parse_and_fix_url(pipeline.remote_name) == urlparse(
+        assert pipeline.parse_and_fix_url(pipeline.remote_name) == urlparse(
             "http://192.168.0.10"
         )
