@@ -719,7 +719,7 @@ def removedirs(relative_path, base=None):
         return os.removedirs(relative_path)
     try:
         os.rmdir(os.path.join(base, relative_path))
-    except os.error:
+    except OSError:
         pass
     head, tail = os.path.split(relative_path)
     if not tail:
@@ -727,7 +727,7 @@ def removedirs(relative_path, base=None):
     while head and tail:
         try:
             os.rmdir(os.path.join(base, head))
-        except os.error:
+        except OSError:
             break
         head, tail = os.path.split(head)
 

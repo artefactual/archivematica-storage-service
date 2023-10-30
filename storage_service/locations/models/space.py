@@ -620,7 +620,7 @@ class Space(models.Model):
             return
         try:
             os.makedirs(dir_path, mode)
-        except os.error as e:
+        except OSError as e:
             # If the leaf node already exists, that's fine
             if e.errno != errno.EEXIST:
                 LOGGER.warning("Could not create storage directory: %s", e)
@@ -631,7 +631,7 @@ class Space(models.Model):
         # wrap it in a try-catch and ignore the failure.
         try:
             os.chmod(os.path.dirname(path), mode)
-        except os.error as e:
+        except OSError as e:
             LOGGER.warning(e)
 
     def create_rsync_directory(self, destination_path, user, host):
@@ -791,7 +791,7 @@ class Space(models.Model):
                 os.remove(delete_path)
             if os.path.isdir(delete_path):
                 shutil.rmtree(delete_path)
-        except (os.error, shutil.Error):
+        except (OSError, shutil.Error):
             LOGGER.warning("Error deleting package %s", delete_path, exc_info=True)
             raise
 
