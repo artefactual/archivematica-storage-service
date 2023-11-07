@@ -11,7 +11,7 @@ gunicorn
 importlib_resources
 jsonfield
 lxml
-metsrw
+git+https://github.com/artefactual-labs/mets-reader-writer.git@610065dd77291a675c55960044014d394899bc7a#egg=metsrw
 python-gnupg
 python-keystoneclient
 python-swiftclient

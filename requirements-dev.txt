@@ -12,9 +12,9 @@ asgiref==3.7.2
     #   django
 bagit==1.8.1
     # via -r requirements.txt
-boto3==1.28.73
+boto3==1.28.79
     # via -r requirements.txt
-botocore==1.31.73
+botocore==1.31.79
     # via
     #   -r requirements.txt
     #   boto3
@@ -35,7 +35,7 @@ cffi==1.16.0
     #   cryptography
 chardet==5.2.0
     # via tox
-charset-normalizer==3.3.1
+charset-normalizer==3.3.2
     # via
     #   -r requirements.txt
     #   requests
@@ -63,7 +63,7 @@ distlib==0.3.7
     # via virtualenv
 dj-database-url==2.1.0
     # via -r requirements.txt
-django==3.2.22
+django==3.2.23
     # via
     #   -r requirements.txt
     #   dj-database-url
@@ -86,7 +86,7 @@ django-tastypie==0.14.6
     # via -r requirements.txt
 exceptiongroup==1.1.3
     # via pytest
-filelock==3.13.0
+filelock==3.13.1
     # via
     #   tox
     #   virtualenv
@@ -111,7 +111,7 @@ importlib-metadata==6.8.0
     # via
     #   build
     #   pytest-randomly
-importlib-resources==6.1.0
+importlib-resources==6.1.1
     # via -r requirements.txt
 iniconfig==2.0.0
     # via pytest
@@ -125,7 +125,7 @@ jmespath==1.0.1
     #   -r requirements.txt
     #   boto3
     #   botocore
-josepy==1.13.0
+josepy==1.14.0
     # via
     #   -r requirements.txt
     #   mozilla-django-oidc
@@ -141,7 +141,7 @@ lxml==4.9.3
     #   metsrw
     #   python-cas
     #   sword2
-metsrw==0.4.0
+metsrw @ git+https://github.com/artefactual-labs/mets-reader-writer.git@610065dd77291a675c55960044014d394899bc7a
     # via -r requirements.txt
 mozilla-django-oidc==3.0.0
     # via -r requirements.txt
@@ -216,7 +216,7 @@ pluggy==1.3.0
     # via
     #   pytest
     #   tox
-prometheus-client==0.17.1
+prometheus-client==0.18.0
     # via
     #   -r requirements.txt
     #   django-prometheus
@@ -393,7 +393,6 @@ pip==23.3.1
 setuptools==68.2.2
     # via
     #   -r requirements.txt
-    #   josepy
     #   pip-tools
     #   zope-event
     #   zope-interface

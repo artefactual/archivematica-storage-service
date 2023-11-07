@@ -10,9 +10,9 @@ asgiref==3.7.2
     # via django
 bagit==1.8.1
     # via -r requirements.in
-boto3==1.28.73
+boto3==1.28.79
     # via -r requirements.in
-botocore==1.31.73
+botocore==1.31.79
     # via
     #   boto3
     #   s3transfer
@@ -22,7 +22,7 @@ certifi==2023.7.22
     # via requests
 cffi==1.16.0
     # via cryptography
-charset-normalizer==3.3.1
+charset-normalizer==3.3.2
     # via requests
 cryptography==41.0.5
     # via
@@ -36,7 +36,7 @@ debtcollector==2.5.0
     #   python-keystoneclient
 dj-database-url==2.1.0
     # via -r requirements.in
-django==3.2.22
+django==3.2.23
     # via
     #   -r requirements.in
     #   dj-database-url
@@ -67,7 +67,7 @@ httplib2==0.22.0
     # via sword2
 idna==3.4
     # via requests
-importlib-resources==6.1.0
+importlib-resources==6.1.1
     # via -r requirements.in
 iso8601==2.1.0
     # via
@@ -77,7 +77,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-josepy==1.13.0
+josepy==1.14.0
     # via mozilla-django-oidc
 jsonfield==3.1.0
     # via -r requirements.in
@@ -89,7 +89,7 @@ lxml==4.9.3
     #   metsrw
     #   python-cas
     #   sword2
-metsrw==0.4.0
+metsrw @ git+https://github.com/artefactual-labs/mets-reader-writer.git@610065dd77291a675c55960044014d394899bc7a
     # via -r requirements.in
 mozilla-django-oidc==3.0.0
     # via -r requirements.in
@@ -131,7 +131,7 @@ pbr==5.11.1
     #   oslo-serialization
     #   python-keystoneclient
     #   stevedore
-prometheus-client==0.17.1
+prometheus-client==0.18.0
     # via
     #   -r requirements.in
     #   django-prometheus
@@ -228,6 +228,5 @@ zope-interface==6.1
 # The following packages are considered to be unsafe in a requirements file:
 setuptools==68.2.2
     # via
-    #   josepy
     #   zope-event
     #   zope-interface
