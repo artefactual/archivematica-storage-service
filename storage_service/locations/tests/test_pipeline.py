@@ -1,16 +1,10 @@
-import os
 from unittest import mock
 from urllib.parse import ParseResult
 from urllib.parse import urlparse
 
-import vcr
 from django.test import TestCase
 from django.urls import reverse
 from locations import models
-
-
-THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
 
 
 class TestPipeline(TestCase):
@@ -56,12 +50,27 @@ class TestPipeline(TestCase):
                 verify=False,
             )
 
-    @vcr.use_cassette(
-        os.path.join(
-            FIXTURES_DIR, "vcr_cassettes", "pipeline_list_unapproved_transfers.yaml"
-        )
+    @mock.patch(
+        "locations.models.Pipeline._request_api",
+        side_effect=[
+            mock.Mock(
+                **{
+                    "status_code": 200,
+                    "json.return_value": {
+                        "message": "Fetched unapproved transfers successfully.",
+                        "results": [
+                            {
+                                "directory": "Foobar1",
+                                "type": "standard",
+                                "uuid": "090b7f5b-637b-400b-9014-3eb58986fe8f",
+                            }
+                        ],
+                    },
+                }
+            )
+        ],
     )
-    def test_list_unapproved_transfers(self):
+    def test_list_unapproved_transfers(self, request_api):
         pipeline = models.Pipeline.objects.get(pk=3)
         result = pipeline.list_unapproved_transfers()
 
@@ -72,10 +81,21 @@ class TestPipeline(TestCase):
         assert result["results"][0]["type"] == "standard"
         assert result["results"][0]["uuid"] == "090b7f5b-637b-400b-9014-3eb58986fe8f"
 
-    @vcr.use_cassette(
-        os.path.join(FIXTURES_DIR, "vcr_cassettes", "pipeline_approve_transfer.yaml")
+    @mock.patch(
+        "locations.models.Pipeline._request_api",
+        side_effect=[
+            mock.Mock(
+                **{
+                    "status_code": 200,
+                    "json.return_value": {
+                        "message": "Approval successful.",
+                        "uuid": "090b7f5b-637b-400b-9014-3eb58986fe8f",
+                    },
+                }
+            )
+        ],
     )
-    def test_approve_transfer(self):
+    def test_approve_transfer(self, request_api):
         pipeline = models.Pipeline.objects.get(pk=3)
         result = pipeline.approve_transfer("Foobar1", "standard")
 

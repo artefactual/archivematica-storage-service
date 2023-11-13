@@ -1,8 +1,8 @@
 import os
 import shutil
 import uuid
+from unittest import mock
 
-import vcr
 from django.test import TestCase
 from locations import models
 
@@ -10,8 +10,6 @@ from . import TempDirMixin
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
-
-dspace_vcr = vcr.VCR(filter_headers=["authorization"])
 
 
 class TestDSpace(TempDirMixin, TestCase):
@@ -27,10 +25,29 @@ class TestDSpace(TempDirMixin, TestCase):
         assert self.dspace_object.password
         assert self.dspace_object.sword_connection is None
 
-    @dspace_vcr.use_cassette(
-        os.path.join(FIXTURES_DIR, "vcr_cassettes", "dspace_get_sword_connection.yaml")
+    @mock.patch(
+        "httplib2.Http.request",
+        side_effect=[
+            (mock.Mock(status=200), ""),
+            (
+                mock.Mock(status=200),
+                """
+                <service xmlns="http://www.w3.org/2007/app" xmlns:atom="http://www.w3.org/2005/Atom">
+                    <workspace>
+                        <atom:title type="text">DSpace at My University</atom:title>
+                        <collection href="http://demo.dspace.org/swordv2/collection/123456789/2">
+                            <atom:title type="text">Test collection</atom:title>
+                            <collectionPolicy xmlns="http://purl.org/net/sword/terms/">Short license text</collectionPolicy>
+                            <mediation xmlns="http://purl.org/net/sword/terms/">true</mediation>
+                        </collection>
+                    </workspace>
+                    <version xmlns="http://purl.org/net/sword/terms/">2.0</version>
+                </service>
+                """,
+            ),
+        ],
     )
-    def test_get_sword_connection(self):
+    def test_get_sword_connection(self, _request):
         assert self.dspace_object.sword_connection is None
         self.dspace_object._get_sword_connection()
         assert self.dspace_object.sword_connection is not None
@@ -39,18 +56,6 @@ class TestDSpace(TempDirMixin, TestCase):
             self.dspace_object.sword_connection.workspaces[0][1][0].title
             == "Test collection"
         )
-
-    @dspace_vcr.use_cassette(
-        os.path.join(FIXTURES_DIR, "vcr_cassettes", "dspace_browse.yaml")
-    )
-    def test_browse(self):
-        pass
-
-    @dspace_vcr.use_cassette(
-        os.path.join(FIXTURES_DIR, "vcr_cassettes", "dspace_delete.yaml")
-    )
-    def test_delete(self):
-        pass
 
     def test_get_metadata(self):
         """It should fetch DC metadata from AIP."""
@@ -101,10 +106,56 @@ class TestDSpace(TempDirMixin, TestCase):
         assert str(self.tmpdir / "metadata.7z") in split_paths
         assert (self.tmpdir / "metadata.7z").is_file()
 
-    @dspace_vcr.use_cassette(
-        os.path.join(FIXTURES_DIR, "vcr_cassettes", "dspace_move_from_ss.yaml")
+    @mock.patch(
+        "httplib2.Http.request",
+        side_effect=[
+            (mock.Mock(status=200), ""),
+            (mock.Mock(status=200), ""),
+            (
+                mock.MagicMock(status=201),
+                """
+                <entry xmlns="http://www.w3.org/2005/Atom">
+                    <id>http://demo.dspace.org/swordv2/edit/86</id>
+                    <link href="http://demo.dspace.org/swordv2/edit/86" rel="edit" />
+                    <link href="http://demo.dspace.org/swordv2/edit/86" rel="http://purl.org/net/sword/terms/add" />
+                    <link href="http://demo.dspace.org/swordv2/edit-media/86.atom" rel="edit-media" type="application/atom+xml; type=feed" />
+                    <link href="http://demo.dspace.org/swordv2/statement/86.rdf" rel="http://purl.org/net/sword/terms/statement" type="application/rdf+xml" />
+                    <link href="http://demo.dspace.org/swordv2/statement/86.atom" rel="http://purl.org/net/sword/terms/statement" type="application/atom+xml; type=feed" />
+                    <link href="http://localhost:8080/xmlui/submit?workspaceID=86" rel="alternate" />
+                </entry>
+                """,
+            ),
+            (
+                mock.MagicMock(status=201),
+                """
+                <entry xmlns="http://www.w3.org/2005/Atom">
+                    <id>http://demo.dspace.org/swordv2/edit/86</id>
+                    <link href="http://demo.dspace.org/swordv2/edit/86" rel="edit" />
+                    <link href="http://demo.dspace.org/swordv2/edit/86" rel="http://purl.org/net/sword/terms/add" />
+                    <link href="http://demo.dspace.org/swordv2/edit-media/86.atom" rel="edit-media" type="application/atom+xml; type=feed" />
+                    <link href="http://demo.dspace.org/swordv2/statement/86.rdf" rel="http://purl.org/net/sword/terms/statement" type="application/rdf+xml" />
+                    <link href="http://demo.dspace.org/swordv2/statement/86.atom" rel="http://purl.org/net/sword/terms/statement" type="application/atom+xml; type=feed" />
+                </entry>
+                """,
+            ),
+            (
+                mock.MagicMock(status=200),
+                """
+                <feed xmlns="http://www.w3.org/2005/Atom">
+                    <entry>
+                        <id>http://demo.dspace.org/xmlui/bitstream/123456789/35/1/sword-2016-08-10T19:25:00.original.xml</id>
+                        <category term="http://purl.org/net/sword/terms/originalDeposit" scheme="http://purl.org/net/sword/terms/" label="Original Deposit" />
+                    </entry>
+                </feed>
+                """,
+            ),
+        ],
     )
-    def test_move_from_ss(self):
+    @mock.patch(
+        "requests.post",
+        side_effect=[mock.Mock(status_code=201), mock.Mock(status_code=201)],
+    )
+    def test_move_from_ss(self, _requests_post, _request):
         # Create test.txt
         (self.tmpdir / "test.txt").open("w").write("test file\n")
         package = models.Package.objects.get(
@@ -126,9 +177,3 @@ class TestDSpace(TempDirMixin, TestCase):
         )
         assert package.misc_attributes["handle"] == "123456789/35"
         # FIXME How to verify?
-
-    @dspace_vcr.use_cassette(
-        os.path.join(FIXTURES_DIR, "vcr_cassettes", "dspace_move_to_ss.yaml")
-    )
-    def test_move_to_ss(self):
-        pass

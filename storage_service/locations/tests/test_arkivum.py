@@ -1,8 +1,8 @@
 import os
 import shutil
+from unittest import mock
 
 import requests
-import vcr
 from django.test import TestCase
 from locations import models
 
@@ -73,10 +73,33 @@ class TestArkivum(TempDirMixin, TestCase):
         assert response["properties"]["aips"]["object count"] == 0
         assert response["properties"]["ts"]["object count"] == 0
 
-    @vcr.use_cassette(
-        os.path.join(FIXTURES_DIR, "vcr_cassettes", "arkivum_delete.yaml")
+    @mock.patch(
+        "requests.get",
+        side_effect=[
+            mock.Mock(
+                **{
+                    "status_code": 200,
+                    "json.return_value": {
+                        "files": [
+                            {"name": "test"},
+                            {"name": "test.txt"},
+                            {"name": "unittest.txt"},
+                        ],
+                    },
+                }
+            ),
+            mock.Mock(
+                **{
+                    "status_code": 200,
+                    "json.return_value": {
+                        "files": [{"name": "test"}, {"name": "test.txt"}],
+                    },
+                }
+            ),
+        ],
     )
-    def test_delete(self):
+    @mock.patch("requests.delete", side_effect=[mock.Mock(status_code=204)])
+    def test_delete(self, requests_delete, requests_get):
         # Verify exists
         url = "https://" + self.arkivum_object.host + "/files/ts"
         response = requests.get(url, verify=False)
@@ -88,33 +111,18 @@ class TestArkivum(TempDirMixin, TestCase):
         response = requests.get(url, verify=False)
         assert "unittest.txt" not in [x["name"] for x in response.json()["files"]]
 
-        # Delete folder
-        # self.arkivum_object.delete_path('/ts/test/')
-        # Verify deleted
-
-    # def test_move_from_ss(self):
-    #     # TODO need to fake filesystem interactions
-    #     # Create test.txt
-    #     open('unittest.txt', 'w').write('test file\n')
-    #     # Upload
-    #     self.arkivum_object.move_from_storage_service('unittest.txt', '/mnt/arkivum/test/unittest.txt')
-    #     # Verify
-    #     url = 'https://' + self.arkivum_object.host + '/files/'
-    #     response = requests.get(url, verify=False)
-    #     assert 'test' in [x['name'] for x in response.json()['files']]
-    #     url += 'test'
-    #     response = requests.get(url, verify=False)
-    #     assert 'unittest.txt' in [x['name'] for x in response.json()['files']]
-    #     # Cleanup
-    #     os.remove('unittest.txt')
-    #     shutil.rmtree('/mnt/arkivum/test')
-
-    #     # TODO test folder in new test
-
-    @vcr.use_cassette(
-        os.path.join(FIXTURES_DIR, "vcr_cassettes", "arkivum_post_move_from_ss.yaml")
+    @mock.patch(
+        "requests.post",
+        side_effect=[
+            mock.Mock(
+                **{
+                    "status_code": 202,
+                    "json.return_value": {"id": "a09f9c18-df2b-474f-8c7f-50eb3dedba2d"},
+                }
+            )
+        ],
     )
-    def test_post_move_from_ss(self):
+    def test_post_move_from_ss(self, requests_post):
         # POST to Arkivum about file
         self.arkivum_object.post_move_from_storage_service(
             str(self.tmpdir / "working_bag.zip"), self.package.full_path, self.package
@@ -123,35 +131,36 @@ class TestArkivum(TempDirMixin, TestCase):
             "a09f9c18-df2b-474f-8c7f-50eb3dedba2d"
         )
 
-    # def test_move_to_ss(self):
-    #     # Test file
-    #     self.arkivum_object.move_to_storage_service('/mnt/arkivum/ts/test.txt', 'folder/test.txt', None)
-    #     assert os.path.isdir('folder')
-    #     assert os.path.isfile('folder/test.txt')
-    #     assert open('folder/test.txt', 'r').read() == 'test file\n'
-    #     # Cleanup
-    #     os.remove('folder/test.txt')
-    #     os.removedirs('folder')
-    #     # Test folder
-    #     self.arkivum_object.move_to_storage_service('/mnt/arkivum/ts/test/', 'folder/test/', None)
-    #     assert os.path.isdir('folder')
-    #     assert os.path.isdir('folder/test')
-    #     assert os.path.isdir('folder/test/subfolder')
-    #     assert os.path.isfile('folder/test/test.txt')
-    #     assert os.path.isfile('folder/test/subfolder/test2.txt')
-    #     assert open('folder/test/test.txt').read() == 'test file\n'
-    #     assert open('folder/test/subfolder/test2.txt').read() == 'test file2\n'
-    #     # Cleanup
-    #     os.remove('folder/test/test.txt')
-    #     os.remove('folder/test/subfolder/test2.txt')
-    #     os.removedirs('folder/test/subfolder')
-
-    @vcr.use_cassette(
-        os.path.join(
-            FIXTURES_DIR, "vcr_cassettes", "arkivum_update_package_status.yaml"
-        )
+    @mock.patch(
+        "requests.get",
+        side_effect=[
+            mock.Mock(
+                **{
+                    "status_code": 200,
+                    "json.return_value": {
+                        "fileInformation": {"replicationState": "yellow"},
+                    },
+                }
+            ),
+            mock.Mock(
+                **{
+                    "status_code": 200,
+                    "json.return_value": {
+                        "fileInformation": {"replicationState": "green"},
+                    },
+                }
+            ),
+            mock.Mock(
+                **{
+                    "status_code": 200,
+                    "json.return_value": {
+                        "fileInformation": {"replicationState": "yellow"},
+                    },
+                }
+            ),
+        ],
     )
-    def test_update_package_status_compressed(self):
+    def test_update_package_status_compressed(self, requests_get):
         # Setup request_id
         self.package.misc_attributes.update(
             {"arkivum_identifier": "2e75c8ad-cded-4f7e-8ac7-85627a116e39"}
@@ -171,14 +180,55 @@ class TestArkivum(TempDirMixin, TestCase):
         self.arkivum_object.update_package_status(self.package)
         # Verify what?
 
-    @vcr.use_cassette(
-        os.path.join(
-            FIXTURES_DIR,
-            "vcr_cassettes",
-            "arkivum_update_package_status_uncompressed.yaml",
-        )
+    @mock.patch(
+        "requests.get",
+        side_effect=[
+            mock.Mock(
+                **{
+                    "status_code": 200,
+                    "json.return_value": {
+                        "id": "5afe9428-c6d6-4d0f-9196-5e7fd028726d",
+                        "status": "Scheduled",
+                    },
+                }
+            ),
+            mock.Mock(
+                **{
+                    "status_code": 200,
+                    "json.return_value": {},
+                }
+            ),
+            mock.Mock(
+                **{
+                    "status_code": 200,
+                    "json.return_value": {
+                        "processed": 18,
+                        "replicationState": "red",
+                        "fixityLastChecked": "2015-11-24",
+                        "replicationStates": {"red": 18},
+                        "id": "5afe9428-c6d6-4d0f-9196-5e7fd028726d",
+                        "passed": "18",
+                        "status": "Completed",
+                    },
+                }
+            ),
+            mock.Mock(
+                **{
+                    "status_code": 200,
+                    "json.return_value": {
+                        "processed": 18,
+                        "replicationState": "green",
+                        "fixityLastChecked": "2015-11-24",
+                        "replicationStates": {"green": 18},
+                        "id": "5afe9428-c6d6-4d0f-9196-5e7fd028726d",
+                        "passed": "18",
+                        "status": "Completed",
+                    },
+                }
+            ),
+        ],
     )
-    def test_update_package_status_uncompressed(self):
+    def test_update_package_status_uncompressed(self, _requests_get):
         self.uncompressed_package.current_path = str(self.tmpdir)
         # Setup request_id
         self.uncompressed_package.misc_attributes.update(
