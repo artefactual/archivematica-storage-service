@@ -10,9 +10,9 @@ asgiref==3.7.2
     # via django
 bagit==1.8.1
     # via -r requirements.in
-boto3==1.28.82
+boto3==1.28.84
     # via -r requirements.in
-botocore==1.31.82
+botocore==1.31.84
     # via
     #   boto3
     #   s3transfer
@@ -114,7 +114,7 @@ oslo-i18n==6.1.0
     #   python-keystoneclient
 oslo-serialization==5.2.0
     # via python-keystoneclient
-oslo-utils==6.2.1
+oslo-utils==6.3.0
     # via
     #   oslo-serialization
     #   python-keystoneclient
@@ -173,7 +173,9 @@ pytz==2023.3.post1
     #   oslo-serialization
     #   oslo-utils
 pyyaml==6.0.1
-    # via oslo-config
+    # via
+    #   oslo-config
+    #   oslo-utils
 requests==2.31.0
     # via
     #   -r requirements.in
@@ -216,7 +218,7 @@ urllib3==1.26.18
     #   requests
 whitenoise==6.6.0
     # via -r requirements.in
-wrapt==1.15.0
+wrapt==1.16.0
     # via debtcollector
 zipp==3.17.0
     # via importlib-resources

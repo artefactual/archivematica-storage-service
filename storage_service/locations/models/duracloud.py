@@ -199,7 +199,7 @@ class Duracloud(models.Model):
                 url = self.duraspace_url + urllib.parse.quote(d)
                 response = self.session.delete(url)
 
-    def generate_duracloud_request(self, url):
+    def _generate_duracloud_request(self, url):
         """Generate PreparedRequest with DuraCloud URLs.
 
         The request returned is capable to carry URLs expected by DuraCloud. It
@@ -221,7 +221,7 @@ class Duracloud(models.Model):
         :raises: StorageException if response code not 200 or 404
         """
         LOGGER.debug("URL: %s", url)
-        request = self.generate_duracloud_request(url)
+        request = self._generate_duracloud_request(url)
         response = self.session.send(request)
         LOGGER.debug("Response: %s", response)
         if response.status_code == 404:
