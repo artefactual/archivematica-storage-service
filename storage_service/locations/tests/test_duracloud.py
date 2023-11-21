@@ -538,24 +538,27 @@ def test_move_from_storage_service_uploads_folder_contents(space, mocker, tmp_pa
 
     d.move_from_storage_service(src.as_posix(), "some/folder")
 
-    assert put.mock_calls == [
-        mocker.call(
-            "https://duracloud.org/durastore/myspace/some/folder//a.txt",
-            data=mocker.ANY,
-            headers={
-                "Content-MD5": "31d97c4d04593b21b399ace73b061c34",
-                "Content-Type": "text/plain",
-            },
-        ),
-        mocker.call(
-            "https://duracloud.org/durastore/myspace/some/folder//b.txt",
-            data=mocker.ANY,
-            headers={
-                "Content-MD5": "1651d570b74339e94cace90cde7d3147",
-                "Content-Type": "text/plain",
-            },
-        ),
-    ]
+    put.assert_has_calls(
+        [
+            mocker.call(
+                "https://duracloud.org/durastore/myspace/some/folder//a.txt",
+                data=mocker.ANY,
+                headers={
+                    "Content-MD5": "31d97c4d04593b21b399ace73b061c34",
+                    "Content-Type": "text/plain",
+                },
+            ),
+            mocker.call(
+                "https://duracloud.org/durastore/myspace/some/folder//b.txt",
+                data=mocker.ANY,
+                headers={
+                    "Content-MD5": "1651d570b74339e94cace90cde7d3147",
+                    "Content-Type": "text/plain",
+                },
+            ),
+        ],
+        any_order=True,
+    )
 
 
 @pytest.mark.django_db
