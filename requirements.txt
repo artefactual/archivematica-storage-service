@@ -10,21 +10,21 @@ asgiref==3.7.2
     # via django
 bagit==1.8.1
     # via -r requirements.in
-boto3==1.28.85
+boto3==1.33.2
     # via -r requirements.in
-botocore==1.31.85
+botocore==1.33.2
     # via
     #   boto3
     #   s3transfer
 brotli==1.1.0
     # via -r requirements.in
-certifi==2023.7.22
+certifi==2023.11.17
     # via requests
 cffi==1.16.0
     # via cryptography
 charset-normalizer==3.3.2
     # via requests
-cryptography==41.0.5
+cryptography==41.0.7
     # via
     #   josepy
     #   mozilla-django-oidc
@@ -65,7 +65,7 @@ gunicorn==21.2.0
     # via -r requirements.in
 httplib2==0.22.0
     # via sword2
-idna==3.4
+idna==3.6
     # via requests
 importlib-resources==6.1.1
     # via -r requirements.in
@@ -81,7 +81,7 @@ josepy==1.14.0
     # via mozilla-django-oidc
 jsonfield==3.1.0
     # via -r requirements.in
-keystoneauth1==5.3.0
+keystoneauth1==5.4.0
     # via python-keystoneclient
 lxml==4.9.3
     # via
@@ -107,7 +107,7 @@ os-service-types==1.7.0
     # via keystoneauth1
 oslo-config==9.2.0
     # via python-keystoneclient
-oslo-i18n==6.1.0
+oslo-i18n==6.2.0
     # via
     #   oslo-config
     #   oslo-utils
@@ -131,11 +131,11 @@ pbr==6.0.0
     #   oslo-serialization
     #   python-keystoneclient
     #   stevedore
-prometheus-client==0.18.0
+prometheus-client==0.19.0
     # via
     #   -r requirements.in
     #   django-prometheus
-pyasn1==0.5.0
+pyasn1==0.5.1
     # via
     #   pyasn1-modules
     #   python-ldap
@@ -159,7 +159,7 @@ python-gnupg==0.5.1
     # via -r requirements.in
 python-keystoneclient==5.2.0
     # via -r requirements.in
-python-ldap==3.4.3
+python-ldap==3.4.4
     # via
     #   -r requirements.in
     #   django-auth-ldap
@@ -188,7 +188,7 @@ requests==2.31.0
     #   python-swiftclient
 rfc3986==2.0.0
     # via oslo-config
-s3transfer==0.7.0
+s3transfer==0.8.1
     # via boto3
 six==1.16.0
     # via
@@ -228,7 +228,7 @@ zope-interface==6.1
     # via gevent
 
 # The following packages are considered to be unsafe in a requirements file:
-setuptools==68.2.2
+setuptools==69.0.2
     # via
     #   zope-event
     #   zope-interface
