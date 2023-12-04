@@ -1,19 +1,23 @@
-import requests
-import logging
-import subprocess
-import os
 import json
-from .location import Location
+import logging
+import os
+import subprocess
+
+import requests
+from django.db import models
+from django.utils.translation import gettext_lazy as _
 from lxml import etree
-from django.utils.translation import ugettext_lazy as _
+
+from .location import Location
 
 # Core Django, alphabetical
-from django.db import models
 
 LOGGER = logging.getLogger(__name__)
 
+
 class Archipelago(models.Model):
     """Integration with Archipelago using the REST API."""
+
     space = models.OneToOneField("Space", to_field="uuid", on_delete=models.CASCADE)
 
     archipelago_url = models.URLField(
@@ -40,36 +44,50 @@ class Archipelago(models.Model):
 
     ALLOWED_LOCATION_PURPOSE = [Location.AIP_STORAGE, Location.DIP_STORAGE]
 
-    def _upload_file(self,filename, source_path):
-        url = self.archipelago_url+f'/jsonapi/node/aip/field_file_drop'
+    def _upload_file(self, filename, source_path):
+        url = self.archipelago_url + "/jsonapi/node/aip/field_file_drop"
         headers = {
-            'Content-Type': 'application/octet-stream',
-            'Content-Disposition': f'file; filename="{filename}"'
+            "Content-Type": "application/octet-stream",
+            "Content-Disposition": f'file; filename="{filename}"',
         }
         try:
-            with open(source_path, 'rb') as file:
-                response = requests.post(url, data=file, headers=headers, auth=(self.archipelago_user, self.archipelago_password))
+            with open(source_path, "rb") as file:
+                response = requests.post(
+                    url,
+                    data=file,
+                    headers=headers,
+                    auth=(self.archipelago_user, self.archipelago_password),
+                )
                 response.raise_for_status()
 
             if response.status_code == 201:
-                LOGGER.info('AIP file uploaded successfully!')
+                LOGGER.info("AIP file uploaded successfully!")
                 response_json = response.json()
-                fid = response_json.get('data', {}).get('attributes', {}).get('drupal_internal__fid')
+                fid = (
+                    response_json.get("data", {})
+                    .get("attributes", {})
+                    .get("drupal_internal__fid")
+                )
                 return fid
             else:
-                LOGGER.error(f'File upload failed with status code {response.status_code}: {response.text}')
-        except (IOError, requests.exceptions.RequestException) as e:
+                LOGGER.error(
+                    f"File upload failed with status code {response.status_code}: {response.text}"
+                )
+        except (OSError, requests.exceptions.RequestException) as e:
             LOGGER.error("Error during AIP upload to archipelago", str(e))
-    
+
     def extract_title_from_mets_xml(self, xml_string):
         try:
             root = etree.fromstring(xml_string)
             namespaces = {
                 "mets": "http://www.loc.gov/METS/",
                 "dc": "http://purl.org/dc/elements/1.1/",
-                "dcterms": "http://purl.org/dc/terms/"
+                "dcterms": "http://purl.org/dc/terms/",
             }
-            title_element = root.find(".//mets:dmdSec/mets:mdWrap/mets:xmlData/dcterms:dublincore/dc:title", namespaces=namespaces)
+            title_element = root.find(
+                ".//mets:dmdSec/mets:mdWrap/mets:xmlData/dcterms:dublincore/dc:title",
+                namespaces=namespaces,
+            )
             if title_element is not None:
                 return title_element.text.strip()
         except Exception as e:
@@ -87,9 +105,11 @@ class Archipelago(models.Model):
                 field_name = dc_element.tag.split("}")[-1]
                 if field_name == "title":
                     continue
-                appended_field = "field_"+field_name
+                appended_field = "field_" + field_name
                 field_value = dc_element.text.strip() if dc_element.text else None
-                LOGGER.info(f"dc value added which is {field_value} where the field is {appended_field}")
+                LOGGER.info(
+                    f"dc value added which is {field_value} where the field is {appended_field}"
+                )
                 dc_fields[appended_field] = field_value
             strawberry = json.dumps(dc_fields)
             LOGGER.info(f"strawberry json is {strawberry}")
@@ -139,85 +159,95 @@ class Archipelago(models.Model):
     def _get_metadata(self, input_path, aip_uuid, package_type):
         output_dir = os.path.dirname(input_path) + "/"
         dirname = os.path.splitext(os.path.basename(input_path))[0]
-        mets_el = self._get_mets_el(package_type, output_dir, input_path, dirname, aip_uuid)
+        mets_el = self._get_mets_el(
+            package_type, output_dir, input_path, dirname, aip_uuid
+        )
         return etree.tostring(mets_el)
 
     def _upload_metadata(self, fid, strawberry, title):
         LOGGER.info("uploading metadata")
-        url = self.archipelago_url + f'/jsonapi/node/aip'
-        archivematica_zip_link = {"label": title, "archivematica_zip": fid, #links new aip entity to uploaded zip file
+        url = self.archipelago_url + "/jsonapi/node/aip"
+        archivematica_zip_link = {
+            "label": title,
+            "archivematica_zip": fid,  # links new aip entity to uploaded zip file
             "ap:entitymapping": {
-            "entity:file": [
-                "archivematica_zip"
-            ],
-            "entity:node": [
-                "ispartof",
-                "ismemberof"
-            ]
-         },}
-        headers = {
-            'Content-Type': 'application/vnd.api+json'
+                "entity:file": ["archivematica_zip"],
+                "entity:node": ["ispartof", "ismemberof"],
+            },
         }
+        headers = {"Content-Type": "application/vnd.api+json"}
         strawberry_dict = json.loads(strawberry)
-        combined_data = {**strawberry_dict, **archivematica_zip_link} #these are our strawberry field
+        combined_data = {
+            **strawberry_dict,
+            **archivematica_zip_link,
+        }  # these are our strawberry field
         json_metadata = json.dumps(combined_data)
         request_data = {
             "data": {
                 "type": "AIP",
                 "attributes": {
                     "title": title,
-                    "field_descriptive_metadata": json_metadata
-                }
+                    "field_descriptive_metadata": json_metadata,
+                },
             }
         }
         json_data = json.dumps(request_data)
         try:
-            response = requests.post(url, data=json_data, headers=headers, auth=(self.archipelago_user, self.archipelago_password))
+            response = requests.post(
+                url,
+                data=json_data,
+                headers=headers,
+                auth=(self.archipelago_user, self.archipelago_password),
+            )
             response.raise_for_status()
 
             if response.status_code == 201:
-                LOGGER.info('AIP entity created successfully!')
+                LOGGER.info("AIP entity created successfully!")
             else:
-                LOGGER.error(f'File upload failed with status code {response.status_code}: {response.text}')
-        except (IOError, requests.exceptions.RequestException) as e:
+                LOGGER.error(
+                    f"File upload failed with status code {response.status_code}: {response.text}"
+                )
+        except (OSError, requests.exceptions.RequestException) as e:
             LOGGER.error("Error during AIP upload to archipelago", str(e))
 
-
-    
     def move_from_storage_service(self, source_path, destination_path, package=None):
-        """ Moves self.staging_path/src_path to dest_path. """
+        """Moves self.staging_path/src_path to dest_path."""
         if package is None:
             raise Exception("Archipelago requires package param.")
         LOGGER.info(
             "source_path: %s, destination_path: %s, package: %s",
             source_path,
             destination_path,
-            package
+            package,
         )
         field_uuid = package.uuid
         mets_xml = self._get_metadata(source_path, field_uuid, package_type="AIP")
         title = self.extract_title_from_mets_xml(mets_xml)
         filename = os.path.basename(source_path)
-        if title is None: #use transfer name if title was not defined in metadata.
+        if title is None:  # use transfer name if title was not defined in metadata.
             parts = filename.split("-")
             if len(parts) < 2:
                 title = "Default title for Archipelago AIP"
             else:
-                title = parts[0] #splitting title from uuid
+                title = parts[0]  # splitting title from uuid
         try:
             fid = self._upload_file(filename, source_path)
             LOGGER.info(f"fid found to be {fid}")
-            strawberry = self.get_dc_metadata(mets_xml) #getting other dublic core metadata fields
+            strawberry = self.get_dc_metadata(
+                mets_xml
+            )  # getting other dublic core metadata fields
             if strawberry is not None:
                 try:
                     self._upload_metadata(fid, strawberry, title)
-                except:
-                    LOGGER.error("could not upload metadata (make aip entity to archipelago): %s", str(e))
+                except Exception as e:
+                    LOGGER.error(
+                        "could not upload metadata (make aip entity to archipelago): %s",
+                        str(e),
+                    )
             else:
                 LOGGER.info("strawberry was not found")
         except Exception as e:
             LOGGER.error("could not upload AIP file: %s", str(e))
-
 
     def browse(self, path):
         raise NotImplementedError("Archipelago does not implement browse")
@@ -226,4 +256,4 @@ class Archipelago(models.Model):
         raise NotImplementedError("Archipelago does not implement browse")
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):
-       raise NotImplementedError("Archipelago does not implement browse")
+        raise NotImplementedError("Archipelago does not implement browse")
