@@ -45,6 +45,8 @@ class Archipelago(models.Model):
     ALLOWED_LOCATION_PURPOSE = [Location.AIP_STORAGE, Location.DIP_STORAGE]
 
     def _upload_file(self, filename, source_path):
+        """Uploads zip file to Archipelago before creating new entity
+        so if upload fails, new entity not created"""
         url = self.archipelago_url + "/jsonapi/node/aip/field_file_drop"
         headers = {
             "Content-Type": "application/octet-stream",
@@ -77,6 +79,7 @@ class Archipelago(models.Model):
             LOGGER.error("Error during AIP upload to archipelago", str(e))
 
     def extract_title_from_mets_xml(self, xml_string):
+        """Retrieves title from METs file or creates title from file name"""
         try:
             root = etree.fromstring(xml_string)
             namespaces = {
@@ -95,6 +98,7 @@ class Archipelago(models.Model):
         return None
 
     def get_dc_metadata(self, xml_string):
+        """Extracts Dublin Core metadata from METS file"""
         try:
             root = etree.fromstring(xml_string)
             namespaces = {
@@ -157,6 +161,7 @@ class Archipelago(models.Model):
                     return etree.parse(mets_path)
 
     def _get_metadata(self, input_path, aip_uuid, package_type):
+        """Extracts METS.xml from AIP"""
         output_dir = os.path.dirname(input_path) + "/"
         dirname = os.path.splitext(os.path.basename(input_path))[0]
         mets_el = self._get_mets_el(
@@ -165,6 +170,8 @@ class Archipelago(models.Model):
         return etree.tostring(mets_el)
 
     def _upload_metadata(self, fid, strawberry, title):
+        """POSTs metadata via JSON API to create new entity on archipelago containing the file
+        and metadata"""
         LOGGER.info("uploading metadata")
         url = self.archipelago_url + "/jsonapi/node/aip"
         archivematica_zip_link = {
