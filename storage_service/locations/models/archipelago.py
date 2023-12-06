@@ -76,7 +76,7 @@ class Archipelago(models.Model):
                     f"File upload failed with status code {response.status_code}: {response.text}"
                 )
         except (OSError, requests.exceptions.RequestException) as e:
-            LOGGER.error("Error during AIP upload to archipelago", str(e))
+            LOGGER.error("Error during AIP upload to archipelago %s", str(e))
 
     def extract_title_from_mets_xml(self, xml_string):
         """Retrieves title from METs file or creates title from file name"""
@@ -94,7 +94,7 @@ class Archipelago(models.Model):
             if title_element is not None:
                 return title_element.text.strip()
         except Exception as e:
-            LOGGER.error("Error extracting title from METS XML:", str(e))
+            LOGGER.error("Error extracting title from METS XML: %s", str(e))
         return None
 
     def get_dc_metadata(self, xml_string):
@@ -120,7 +120,7 @@ class Archipelago(models.Model):
             return strawberry
 
         except Exception as e:
-            LOGGER.error("Error extracting dc fields", str(e))
+            LOGGER.error("Error extracting dc fields %s", str(e))
         return None
 
     @staticmethod
@@ -167,6 +167,9 @@ class Archipelago(models.Model):
         mets_el = self._get_mets_el(
             package_type, output_dir, input_path, dirname, aip_uuid
         )
+        if mets_el is None:
+            LOGGER.error("Failed to get METS element")
+            return None
         return etree.tostring(mets_el)
 
     def _upload_metadata(self, fid, strawberry, title):
@@ -215,7 +218,7 @@ class Archipelago(models.Model):
                     f"File upload failed with status code {response.status_code}: {response.text}"
                 )
         except (OSError, requests.exceptions.RequestException) as e:
-            LOGGER.error("Error during AIP upload to archipelago", str(e))
+            LOGGER.error("Error during AIP upload to archipelago %s", str(e))
 
     def move_from_storage_service(self, source_path, destination_path, package=None):
         """Moves self.staging_path/src_path to dest_path."""
