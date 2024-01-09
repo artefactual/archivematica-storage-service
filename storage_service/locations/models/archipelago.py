@@ -42,7 +42,7 @@ class Archipelago(models.Model):
         verbose_name = _("Archipelago via REST API")
         app_label = "locations"
 
-    ALLOWED_LOCATION_PURPOSE = [Location.AIP_STORAGE, Location.DIP_STORAGE]
+    ALLOWED_LOCATION_PURPOSE = [Location.AIP_STORAGE]
 
     def _upload_file(self, filename, source_path):
         """Uploads zip file to Archipelago before creating new entity
@@ -154,11 +154,6 @@ class Archipelago(models.Model):
                         mets_path, input_path, err
                     )
                 )
-        elif package_type == "DIP":
-            for dip_file in os.listdir(input_path):
-                if dip_file.startswith("METS") and dip_file.endswith(".xml"):
-                    mets_path = os.path.join(input_path, dip_file)
-                    return etree.parse(mets_path)
 
     def _get_metadata(self, input_path, aip_uuid, package_type):
         """Extracts METS.xml from AIP"""
