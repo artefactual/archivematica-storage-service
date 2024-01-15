@@ -60,7 +60,7 @@ class Migration(migrations.Migration):
                 (
                     "archipelago_user",
                     models.CharField(
-                        help_text="Archiipelago username for authentication",
+                        help_text="Archipelago username for authentication",
                         max_length=64,
                         verbose_name="Archipelago username",
                     ),

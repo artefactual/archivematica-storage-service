@@ -4,6 +4,7 @@ import os
 import subprocess
 
 import requests
+from common import utils
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from lxml import etree
@@ -29,7 +30,7 @@ class Archipelago(models.Model):
     archipelago_user = models.CharField(
         max_length=64,
         verbose_name=_("Archipelago username"),
-        help_text=_("Archiipelago username for authentication"),
+        help_text=_("Archipelago username for authentication"),
     )
 
     archipelago_password = models.CharField(
@@ -82,11 +83,7 @@ class Archipelago(models.Model):
         """Retrieves title from METs file or creates title from file name"""
         try:
             root = etree.fromstring(xml_string)
-            namespaces = {
-                "mets": "http://www.loc.gov/METS/",
-                "dc": "http://purl.org/dc/elements/1.1/",
-                "dcterms": "http://purl.org/dc/terms/",
-            }
+            namespaces = utils.NSMAP
             title_element = root.find(
                 ".//mets:dmdSec/mets:mdWrap/mets:xmlData/dcterms:dublincore/dc:title",
                 namespaces=namespaces,
@@ -101,9 +98,7 @@ class Archipelago(models.Model):
         """Extracts Dublin Core metadata from METS file"""
         try:
             root = etree.fromstring(xml_string)
-            namespaces = {
-                "dc": "http://purl.org/dc/elements/1.1/",
-            }
+            namespaces = utils.NSMAP
             dc_fields = {}
             for dc_element in root.findall(".//dc:*", namespaces=namespaces):
                 field_name = dc_element.tag.split("}")[-1]
