@@ -95,6 +95,7 @@ class Space(models.Model):
     )
 
     # Max length 8 (see access_protocol definition)
+    ARCHIPELAGO = "ARCHIPEL"
     ARKIVUM = "ARKIVUM"
     DATAVERSE = "DV"
     DURACLOUD = "DC"
@@ -112,8 +113,18 @@ class Space(models.Model):
     S3 = "S3"
     # These will not be displayed in the Space Create GUI (see locations/forms.py)
     BETA_PROTOCOLS = {}
-    OBJECT_STORAGE = {DATAVERSE, DSPACE, DSPACE_REST, DURACLOUD, RCLONE, SWIFT, S3}
+    OBJECT_STORAGE = {
+        ARCHIPELAGO,
+        DATAVERSE,
+        DSPACE,
+        DSPACE_REST,
+        DURACLOUD,
+        RCLONE,
+        SWIFT,
+        S3,
+    }
     ACCESS_PROTOCOL_CHOICES = (
+        (ARCHIPELAGO, _("Archipelago")),
         (ARKIVUM, _("Arkivum")),
         (DATAVERSE, _("Dataverse")),
         (DURACLOUD, _("DuraCloud")),

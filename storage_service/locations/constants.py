@@ -5,6 +5,11 @@ from . import models
 
 # Mapping between access protocol and protocol specific fields
 PROTOCOL = {
+    models.Space.ARCHIPELAGO: {
+        "model": models.Archipelago,
+        "form": forms.ArchipelagoForm,
+        "fields": ["archipelago_url", "archipelago_user", "archipelago_password"],
+    },
     models.Space.ARKIVUM: {
         "model": models.Arkivum,
         "form": forms.ArkivumForm,

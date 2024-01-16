@@ -102,6 +102,12 @@ class SpaceForm(forms.ModelForm):
             return self.cleaned_data["access_protocol"]
 
 
+class ArchipelagoForm(forms.ModelForm):
+    class Meta:
+        model = models.Archipelago
+        fields = ("archipelago_url", "archipelago_user", "archipelago_password")
+
+
 class ArkivumForm(forms.ModelForm):
     class Meta:
         model = models.Arkivum
