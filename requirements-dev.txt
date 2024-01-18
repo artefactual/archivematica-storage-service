@@ -12,9 +12,9 @@ asgiref==3.7.2
     #   django
 bagit==1.8.1
     # via -r requirements.txt
-boto3==1.33.2
+boto3==1.34.21
     # via -r requirements.txt
-botocore==1.33.2
+botocore==1.34.21
     # via
     #   -r requirements.txt
     #   boto3
@@ -43,7 +43,7 @@ click==8.1.7
     # via pip-tools
 colorama==0.4.6
     # via tox
-coverage[toml]==7.3.2
+coverage[toml]==7.4.0
     # via
     #   -r requirements-dev.in
     #   pytest-cov
@@ -59,11 +59,11 @@ debtcollector==2.5.0
     #   oslo-config
     #   oslo-utils
     #   python-keystoneclient
-distlib==0.3.7
+distlib==0.3.8
     # via virtualenv
 dj-database-url==2.1.0
     # via -r requirements.txt
-django==3.2.23
+django==4.2.9
     # via
     #   -r requirements.txt
     #   dj-database-url
@@ -92,7 +92,7 @@ filelock==3.13.1
     #   virtualenv
 gevent==23.9.1
     # via -r requirements.txt
-greenlet==3.0.1
+greenlet==3.0.3
     # via
     #   -r requirements.txt
     #   gevent
@@ -106,7 +106,7 @@ idna==3.6
     # via
     #   -r requirements.txt
     #   requests
-importlib-metadata==6.8.0
+importlib-metadata==7.0.1
     # via
     #   build
     #   pytest-randomly
@@ -130,11 +130,11 @@ josepy==1.14.0
     #   mozilla-django-oidc
 jsonfield==3.1.0
     # via -r requirements.txt
-keystoneauth1==5.4.0
+keystoneauth1==5.5.0
     # via
     #   -r requirements.txt
     #   python-keystoneclient
-lxml==4.9.3
+lxml==5.1.0
     # via
     #   -r requirements.txt
     #   metsrw
@@ -142,17 +142,17 @@ lxml==4.9.3
     #   sword2
 metsrw==0.5.0
     # via -r requirements.txt
-mozilla-django-oidc==3.0.0
+mozilla-django-oidc==4.0.0
     # via -r requirements.txt
 msgpack==1.0.7
     # via
     #   -r requirements.txt
     #   oslo-serialization
-mysqlclient==2.2.0
+mysqlclient==2.2.1
     # via
     #   -r requirements.txt
     #   agentarchives
-netaddr==0.9.0
+netaddr==0.10.1
     # via
     #   -r requirements.txt
     #   oslo-config
@@ -165,7 +165,7 @@ os-service-types==1.7.0
     # via
     #   -r requirements.txt
     #   keystoneauth1
-oslo-config==9.2.0
+oslo-config==9.3.0
     # via
     #   -r requirements.txt
     #   python-keystoneclient
@@ -175,11 +175,11 @@ oslo-i18n==6.2.0
     #   oslo-config
     #   oslo-utils
     #   python-keystoneclient
-oslo-serialization==5.2.0
+oslo-serialization==5.3.0
     # via
     #   -r requirements.txt
     #   python-keystoneclient
-oslo-utils==6.3.0
+oslo-utils==7.0.0
     # via
     #   -r requirements.txt
     #   oslo-serialization
@@ -205,7 +205,7 @@ pbr==6.0.0
     #   stevedore
 pip-tools==7.3.0
     # via -r requirements-dev.in
-platformdirs==4.0.0
+platformdirs==4.1.0
     # via
     #   tox
     #   virtualenv
@@ -243,7 +243,7 @@ pyproject-api==1.6.1
     # via tox
 pyproject-hooks==1.0.0
     # via build
-pytest==7.4.3
+pytest==7.4.4
     # via
     #   -r requirements-dev.in
     #   pytest-cov
@@ -267,9 +267,9 @@ python-dateutil==2.8.2
     #   -r requirements.txt
     #   botocore
     #   django-tastypie
-python-gnupg==0.5.1
+python-gnupg==0.5.2
     # via -r requirements.txt
-python-keystoneclient==5.2.0
+python-keystoneclient==5.3.0
     # via -r requirements.txt
 python-ldap==3.4.4
     # via
@@ -284,7 +284,6 @@ python-swiftclient==4.4.0
 pytz==2023.3.post1
     # via
     #   -r requirements.txt
-    #   django
     #   oslo-serialization
     #   oslo-utils
 pyyaml==6.0.1
@@ -306,7 +305,7 @@ rfc3986==2.0.0
     # via
     #   -r requirements.txt
     #   oslo-config
-s3transfer==0.8.1
+s3transfer==0.10.0
     # via
     #   -r requirements.txt
     #   boto3
@@ -337,14 +336,14 @@ tomli==2.0.1
     #   pyproject-hooks
     #   pytest
     #   tox
-tox==4.11.4
+tox==4.12.1
     # via -r requirements-dev.in
-typing-extensions==4.8.0
+typing-extensions==4.9.0
     # via
     #   -r requirements.txt
     #   asgiref
     #   dj-database-url
-tzdata==2023.3
+tzdata==2023.4
     # via
     #   -r requirements.txt
     #   oslo-serialization
@@ -354,7 +353,7 @@ urllib3==1.26.18
     #   -r requirements.txt
     #   botocore
     #   requests
-virtualenv==20.24.7
+virtualenv==20.25.0
     # via tox
 wheel==0.42.0
     # via pip-tools
@@ -379,9 +378,9 @@ zope-interface==6.1
     #   gevent
 
 # The following packages are considered to be unsafe in a requirements file:
-pip==23.3.1
+pip==23.3.2
     # via pip-tools
-setuptools==69.0.2
+setuptools==69.0.3
     # via
     #   -r requirements.txt
     #   pip-tools
