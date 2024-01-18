@@ -5,7 +5,7 @@ from django.db import models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("locations", "0035_django32"),
+        ("locations", "0036_archipelago"),
     ]
 
     operations = [
