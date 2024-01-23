@@ -327,6 +327,61 @@ def test_move_to_storage_service_fails_if_it_cannot_download_file(
 
 
 @pytest.mark.django_db
+def test_move_to_storage_service_retries_after_chunk_download_errors(
+    space, mocker, tmp_path
+):
+    send = mocker.patch(
+        "requests.Session.send",
+        side_effect=[
+            mocker.Mock(status_code=404, spec=requests.Response),
+            mocker.Mock(status_code=200, content=b"a", spec=requests.Response),
+            mocker.Mock(status_code=200, content=b"a ch", spec=requests.Response),
+            mocker.Mock(status_code=200, content=b"unked file", spec=requests.Response),
+        ],
+    )
+    mocker.patch(
+        "requests.Session.get",
+        side_effect=[
+            mocker.Mock(
+                status_code=200,
+                content=b"""\
+                    <dur>
+                        <header>
+                            <sourceContent>
+                                <byteSize>14</byteSize>
+                                <md5>1b8107d332e5d9f2a0b8e5924ca1ca3e</md5>
+                            </sourceContent>
+                        </header>
+                        <chunks>
+                            <chunk chunkId="some/file.txt.dura-chunk-0001">
+                                <byteSize>4</byteSize>
+                                <md5>1781a616499ac88f78b56af57fcca974</md5>
+                            </chunk>
+                        </chunks>
+                        <chunks>
+                            <chunk chunkId="some/file.txt.dura-chunk-0002">
+                                <byteSize>10</byteSize>
+                                <md5>29224657c84874b1c83a92fae2f2ea22</md5>
+                            </chunk>
+                        </chunks>
+                    </dur>
+                """,
+                spec=requests.Response,
+            ),
+        ],
+    )
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    dst = tmp_path / "dst" / "file.txt"
+
+    d.move_to_storage_service("some/file.txt", dst.as_posix(), None)
+
+    assert dst.read_text() == "a chunked file"
+
+    # The session.send mock shows the first chunk download was retried.
+    assert len(send.mock_calls) == 4
+
+
+@pytest.mark.django_db
 def test_move_to_storage_service_fails_if_chunk_size_does_not_match(
     space, mocker, tmp_path
 ):
