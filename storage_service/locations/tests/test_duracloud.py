@@ -334,6 +334,9 @@ def test_move_to_storage_service_fails_if_chunk_size_does_not_match(
         "requests.Session.send",
         side_effect=[
             mocker.Mock(status_code=404, spec=requests.Response),
+            # Fail all the download retry attempts.
+            mocker.Mock(status_code=200, content=b"ERRORERROR", spec=requests.Response),
+            mocker.Mock(status_code=200, content=b"ERRORERROR", spec=requests.Response),
             mocker.Mock(status_code=200, content=b"ERRORERROR", spec=requests.Response),
             mocker.Mock(status_code=200, content=b"unked file", spec=requests.Response),
         ],
@@ -386,8 +389,8 @@ def test_move_to_storage_service_fails_if_chunk_size_does_not_match(
     # The destination file was created but no chunks were written to it.
     assert dst.read_text() == ""
 
-    # The session.send mock was not called after the first chunk failed validation.
-    assert len(send.mock_calls) == 2
+    # The session.send mock was called the maximum amount of download retries.
+    assert len(send.mock_calls) == 5
 
 
 @pytest.mark.django_db
