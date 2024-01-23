@@ -277,7 +277,7 @@ class Duracloud(models.Model):
                 LOGGER.error(
                     "[RETRY=%(retry)d] File %(path)s does not match expected size of %(expected_size)s bytes, but was actually %(actual_size)s bytes"
                     % {
-                        "retry": retry,
+                        "retry": retry + 1,
                         "path": download_path,
                         "expected_size": expected_size,
                         "actual_size": os.path.getsize(download_path),
