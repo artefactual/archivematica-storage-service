@@ -41,6 +41,7 @@ def test_import_aip_command_creates_uncompressed_package(
 ):
     mocker.patch("os.chown")
     mocker.patch("pwd.getpwnam")
+    mocker.patch("logging.config")
     call_command(
         "import_aip",
         "--decompress-source",
@@ -73,6 +74,7 @@ def test_import_aip_command_creates_compressed_package(
 ):
     mocker.patch("os.chown")
     mocker.patch("pwd.getpwnam")
+    mocker.patch("logging.config")
     call_command(
         "import_aip",
         "--decompress-source",
