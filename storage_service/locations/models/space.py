@@ -809,7 +809,9 @@ class Space(models.Model):
         Deletes `delete_path` in this space, assuming it is locally accessible.
         """
         if not os.path.exists(delete_path):
-            LOGGER.debug("Attempted to delete '%s' but path does not exist")
+            LOGGER.debug(
+                "Attempted to delete '%s' but path does not exist", delete_path
+            )
             return
         self._del_package(delete_path)
         self._delete_quad_dir_structure(delete_path)

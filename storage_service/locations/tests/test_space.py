@@ -5,6 +5,7 @@ from os import makedirs
 from os import scandir
 
 import pytest
+from locations.models import LocalFilesystem
 from locations.models import Space
 from locations.models.space import path2browse_dict
 
@@ -606,4 +607,23 @@ def test_create_rsync_directory_commands_decode_paths(tmp_path, mocker):
                 ]
             ),
         ]
+    )
+
+
+@pytest.mark.django_db
+def test_delete_path_logs_deletion_attempt_error(tmp_path, caplog):
+    space_dir = tmp_path / "dir"
+    space_dir.mkdir()
+    space_subdir = space_dir / "subdir"
+    space = Space.objects.create(
+        path=space_dir.as_posix(), access_protocol=Space.LOCAL_FILESYSTEM
+    )
+    LocalFilesystem.objects.create(space=space)
+
+    space.delete_path(space_subdir.as_posix())
+
+    log_record = caplog.records[0]
+    assert (
+        log_record.message
+        == f"Attempted to delete '{space_subdir}' but path does not exist"
     )
