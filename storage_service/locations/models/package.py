@@ -1714,16 +1714,16 @@ class Package(models.Model):
             rc = p.returncode
             LOGGER.debug("Compress package RC: %s", rc)
 
-            script_path = f"/tmp/{str(uuid4())}"
-            file_ = os.open(script_path, os.O_WRONLY | os.O_CREAT, 0o770)
-            os.write(file_, tool_info_command.encode("utf-8"))
-            os.close(file_)
-            tic_cmd = [script_path]
-            p = subprocess.Popen(
-                tic_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-            )
-            tic_stdout, tic_stderr = p.communicate()
-            os.remove(script_path)
+            with tempfile.NamedTemporaryFile(mode="wb", delete=False) as tmpfile:
+                os.chmod(tmpfile.name, 0o770)
+                tmpfile.write(tool_info_command.encode("utf-8"))
+                tmpfile.close()
+                tic_cmd = [tmpfile.name]
+                p = subprocess.Popen(
+                    tic_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+                )
+                tic_stdout, tic_stderr = p.communicate()
+                os.unlink(tmpfile.name)
             LOGGER.debug("Tool info stdout")
             LOGGER.debug(tool_info_command)
             LOGGER.debug(tic_stdout)
