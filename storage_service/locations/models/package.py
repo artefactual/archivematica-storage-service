@@ -1714,9 +1714,11 @@ class Package(models.Model):
             rc = p.returncode
             LOGGER.debug("Compress package RC: %s", rc)
 
-            with tempfile.NamedTemporaryFile(mode="wb", delete=False) as tmpfile:
+            with tempfile.NamedTemporaryFile(
+                encoding="utf-8", mode="wt", delete=False
+            ) as tmpfile:
                 os.chmod(tmpfile.name, 0o770)
-                tmpfile.write(tool_info_command.encode("utf-8"))
+                tmpfile.write(tool_info_command)
                 tmpfile.close()
                 tic_cmd = [tmpfile.name]
                 p = subprocess.Popen(
