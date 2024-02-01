@@ -10,9 +10,9 @@ asgiref==3.7.2
     # via django
 bagit==1.8.1
     # via -r requirements.in
-boto3==1.34.21
+boto3==1.34.33
     # via -r requirements.in
-botocore==1.34.21
+botocore==1.34.33
     # via
     #   boto3
     #   s3transfer
@@ -24,7 +24,7 @@ cffi==1.16.0
     # via cryptography
 charset-normalizer==3.3.2
     # via requests
-cryptography==41.0.7
+cryptography==42.0.2
     # via
     #   josepy
     #   mozilla-django-oidc
@@ -89,7 +89,7 @@ lxml==5.1.0
     #   metsrw
     #   python-cas
     #   sword2
-metsrw==0.5.0
+metsrw==0.5.1
     # via -r requirements.in
 mozilla-django-oidc==4.0.0
     # via -r requirements.in
@@ -143,7 +143,7 @@ pyasn1-modules==0.3.0
     # via python-ldap
 pycparser==2.21
     # via cffi
-pyopenssl==23.3.0
+pyopenssl==24.0.0
     # via josepy
 pyparsing==3.1.1
     # via
@@ -167,7 +167,7 @@ python-mimeparse==1.6.0
     # via django-tastypie
 python-swiftclient==4.4.0
     # via -r requirements.in
-pytz==2023.3.post1
+pytz==2023.4
     # via
     #   oslo-serialization
     #   oslo-utils
