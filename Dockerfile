@@ -1,9 +1,22 @@
 ARG TARGET=archivematica-storage-service
 ARG UBUNTU_VERSION=22.04
 
-FROM ubuntu:${UBUNTU_VERSION} AS base
+FROM ubuntu:20.04 AS install_osdeps_20.04
+RUN set -ex \
+	&& apt-get update \
+	&& apt-get install -y --no-install-recommends \
+		mime-support \
+    && rm -rf /var/lib/apt/lists/*
 
-ARG UBUNTU_VERSION=22.04
+FROM ubuntu:22.04 AS install_osdeps_22.04
+RUN set -ex \
+	&& apt-get update \
+	&& apt-get install -y --no-install-recommends \
+		media-types \
+    && rm -rf /var/lib/apt/lists/*
+
+FROM install_osdeps_${UBUNTU_VERSION} AS base
+
 ARG USER_ID=1000
 ARG GROUP_ID=1000
 ARG PYTHON_VERSION=3.9
@@ -17,6 +30,7 @@ RUN set -ex \
 	&& apt-get install -y --no-install-recommends \
 		build-essential \
 		curl \
+		gcc \
 		gettext \
 		git \
 		gnupg1 \
@@ -32,15 +46,19 @@ RUN set -ex \
 		libssl-dev \
 		libxml2-dev \
 		libxmlsec1-dev \
+		libxslt1-dev \
+		libz-dev \
 		locales \
 		locales-all \
 		openssh-client \
 		p7zip-full \
+		rng-tools \
 		rsync \
 		unar \
 		unzip \
 		xz-utils tk-dev \
 		zlib1g-dev \
+		rclone \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Set the locale
@@ -81,17 +99,6 @@ RUN set -ex \
 	&& pyenv exec python${PYTHON_VERSION} -m pip install --upgrade pip setuptools \
 	&& pyenv exec python${PYTHON_VERSION} -m pip install --requirement /src/requirements-dev.txt \
 	&& pyenv rehash
-
-# Install Ubuntu release specific packages.
-COPY osdeps.py /src/osdeps.py
-COPY osdeps /src/osdeps
-
-USER root
-RUN set -ex \
-	&& apt-get update \
-	&& /src/osdeps.py Ubuntu-${UBUNTU_VERSION} 1 | grep -v -E "python3.9-dev" | xargs apt-get install -y --no-install-recommends \
-	&& rm -rf /var/lib/apt/lists/*
-USER archivematica
 
 COPY --chown=${USER_ID}:${GROUP_ID} ./ /src/
 
