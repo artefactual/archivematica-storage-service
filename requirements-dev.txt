@@ -325,7 +325,7 @@ stevedore==5.1.0
     #   keystoneauth1
     #   oslo-config
     #   python-keystoneclient
-sword2 @ git+https://github.com/swordapp/python-client-sword2.git@59db54c03e4498dd6b001ac4f3a4167aa2fb8987
+sword2 @ git+https://github.com/artefactual-labs/python-client-sword2.git@619ee44467dcdb2ab75fab16864ea2e4ded7ffe4
     # via -r requirements.txt
 tomli==2.0.1
     # via
