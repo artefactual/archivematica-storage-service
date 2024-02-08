@@ -16,7 +16,7 @@ python-gnupg
 python-keystoneclient
 python-swiftclient
 requests
-git+https://github.com/swordapp/python-client-sword2.git@59db54c03e4498dd6b001ac4f3a4167aa2fb8987#egg=sword2
+git+https://github.com/artefactual-labs/python-client-sword2.git@619ee44467dcdb2ab75fab16864ea2e4ded7ffe4#egg=sword2
 whitenoise
 agentarchives
 git+https://github.com/Brown-University-Library/django-shibboleth-remoteuser.git@962f6f9818683ef5f6432f091d22945e54b82592#egg=django-shibboleth-remoteuser
