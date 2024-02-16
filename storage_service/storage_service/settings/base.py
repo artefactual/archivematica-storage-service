@@ -9,10 +9,9 @@ from sys import path
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
 
-from storage_service.settings.helpers import is_true
-from storage_service.settings.helpers import get_env_variable
-
 from .components.s3 import *
+from storage_service.settings.helpers import get_env_variable
+from storage_service.settings.helpers import is_true
 
 try:
     import ldap
@@ -84,7 +83,7 @@ USE_TZ = True
 
 
 # ######## LOCALE CONFIGURATION
-LOCALE_PATHS = [ str(SITE_ROOT / "locale") ]
+LOCALE_PATHS = [str(SITE_ROOT / "locale")]
 
 LANGUAGES = [
     ("en", _("English")),
@@ -114,7 +113,7 @@ STATIC_URL = "/static/"
 
 # See:
 # https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#std:setting-STATICFILES_DIRS
-STATICFILES_DIRS = str(SITE_ROOT / "static"),
+STATICFILES_DIRS = (str(SITE_ROOT / "static"),)
 
 # See:
 # https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#staticfiles-finders
@@ -151,7 +150,7 @@ ALLOWED_HOSTS = ["*"]
 # ######## FIXTURE CONFIGURATION
 # See:
 # https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-FIXTURE_DIRS
-FIXTURE_DIRS = str(SITE_ROOT / "fixtures"),
+FIXTURE_DIRS = (str(SITE_ROOT / "fixtures"),)
 # ######## END FIXTURE CONFIGURATION
 
 
@@ -160,9 +159,7 @@ FIXTURE_DIRS = str(SITE_ROOT / "fixtures"),
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [
-            str(SITE_ROOT / 'templates')
-        ],
+        "DIRS": [str(SITE_ROOT / "templates")],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
