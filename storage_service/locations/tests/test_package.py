@@ -10,7 +10,6 @@ from unittest import mock
 
 import bagit
 import pytest
-import vcr
 from common import utils
 from django.contrib.messages import get_messages
 from django.test import TestCase
@@ -542,12 +541,21 @@ class TestPackage(TestCase):
         assert message == "Incorrect package checksum"
         assert timestamp is None
 
-    @vcr.use_cassette(
-        os.path.join(
-            FIXTURES_DIR, "vcr_cassettes", "package_fixity_scheduled_arkivum.yaml"
-        )
+    @mock.patch(
+        "requests.get",
+        side_effect=[
+            mock.Mock(
+                **{
+                    "status_code": 200,
+                    "json.return_value": {
+                        "id": "5afe9428-c6d6-4d0f-9196-5e7fd028726d",
+                        "status": "Scheduled",
+                    },
+                }
+            )
+        ],
     )
-    def test_fixity_scheduled_arkivum(self):
+    def test_fixity_scheduled_arkivum(self, requests_get):
         """It should return success of None."""
         package = models.Package.objects.get(
             uuid="e52c518d-fcf4-46cc-8581-bbc01aff7af3"
@@ -562,10 +570,26 @@ class TestPackage(TestCase):
         assert failures == []
         assert timestamp is None
 
-    @vcr.use_cassette(
-        os.path.join(FIXTURES_DIR, "vcr_cassettes", "package_fixity_amber_arkivum.yaml")
+    @mock.patch(
+        "requests.get",
+        side_effect=[
+            mock.Mock(
+                **{
+                    "status_code": 200,
+                    "json.return_value": {
+                        "processed": 18,
+                        "replicationState": "amber",
+                        "fixityLastChecked": "2015-11-24",
+                        "replicationStates": {"amber": 18},
+                        "id": "5afe9428-c6d6-4d0f-9196-5e7fd028726d",
+                        "passed": "18",
+                        "status": "Completed",
+                    },
+                }
+            )
+        ],
     )
-    def test_fixity_amber_arkivum(self):
+    def test_fixity_amber_arkivum(self, requests_get):
         """It should return success of None."""
         package = models.Package.objects.get(
             uuid="e52c518d-fcf4-46cc-8581-bbc01aff7af3"
@@ -580,12 +604,26 @@ class TestPackage(TestCase):
         assert failures == []
         assert timestamp == "2015-11-24T00:00:00"
 
-    @vcr.use_cassette(
-        os.path.join(
-            FIXTURES_DIR, "vcr_cassettes", "package_fixity_success_arkivum.yaml"
-        )
+    @mock.patch(
+        "requests.get",
+        side_effect=[
+            mock.Mock(
+                **{
+                    "status_code": 200,
+                    "json.return_value": {
+                        "processed": 18,
+                        "replicationState": "green",
+                        "fixityLastChecked": "2015-11-24",
+                        "replicationStates": {"green": 18},
+                        "id": "5afe9428-c6d6-4d0f-9196-5e7fd028726d",
+                        "passed": "18",
+                        "status": "Completed",
+                    },
+                }
+            )
+        ],
     )
-    def test_fixity_success_arkivum(self):
+    def test_fixity_success_arkivum(self, requests_get):
         """It should return Arkivum's successful fixity not generate its own."""
         package = models.Package.objects.get(
             uuid="e52c518d-fcf4-46cc-8581-bbc01aff7af3"
@@ -600,12 +638,31 @@ class TestPackage(TestCase):
         assert failures == []
         assert timestamp == "2015-11-24T00:00:00"
 
-    @vcr.use_cassette(
-        os.path.join(
-            FIXTURES_DIR, "vcr_cassettes", "package_fixity_failure_arkivum.yaml"
-        )
+    @mock.patch(
+        "requests.get",
+        side_effect=[
+            mock.Mock(
+                **{
+                    "status_code": 200,
+                    "json.return_value": {
+                        "failures": [
+                            {
+                                "filepath": "data/test/test1.txt",
+                                "reason": "Initial verification failed",
+                            },
+                            {
+                                "reason": "Initial verification failed",
+                                "filepath": "manifest-md5.txt",
+                            },
+                        ],
+                        "id": "059b7285-dfd7-45f9-be31-f6609435b6ed",
+                        "status": "Failed",
+                    },
+                }
+            )
+        ],
     )
-    def test_fixity_failure_arkivum(self):
+    def test_fixity_failure_arkivum(self, requests_get):
         """It should return success of False from Arkivum."""
         package = models.Package.objects.get(
             uuid="e52c518d-fcf4-46cc-8581-bbc01aff7af3"

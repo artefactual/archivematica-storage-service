@@ -3,9 +3,9 @@ import json
 import os
 import shutil
 import uuid
+from unittest import mock
 from urllib.parse import urlparse
 
-import vcr
 from administration import roles
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -843,12 +843,27 @@ class TestPackageAPI(TempDirMixin, TestCase):
         )
         assert response.status_code == 404
 
-    @vcr.use_cassette(
-        os.path.join(
-            FIXTURES_DIR, "vcr_cassettes", "arkivum_update_package_status.yaml"
-        )
+    @mock.patch(
+        "requests.get",
+        side_effect=[
+            mock.Mock(
+                **{
+                    "status_code": 200,
+                    "json.return_value": {
+                        "id": "2e75c8ad-cded-4f7e-8ac7-85627a116e39",
+                        "status": "Scheduled",
+                        "originalSize": "775702",
+                        "actualSize": "775702",
+                        "originalChecksum": "5a44c7ba5bbe4ec867233d67e4806848",
+                        "originalChecksumAlgorithm": "md5",
+                        "originalCompressionAlgorithm": "",
+                        "fileInformation": {"replicationState": "yellow"},
+                    },
+                }
+            )
+        ],
     )
-    def test_download_package_arkivum_not_available(self):
+    def test_download_package_arkivum_not_available(self, requests_get):
         """It should return 202 if the file is in Arkivum but only on tape."""
         response = self.client.get(
             "/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/download/"
@@ -861,12 +876,11 @@ class TestPackageAPI(TempDirMixin, TestCase):
             == "File is not locally available.  Contact your storage administrator to fetch it."
         )
 
-    @vcr.use_cassette(
-        os.path.join(
-            FIXTURES_DIR, "vcr_cassettes", "api_download_package_arkivum_error.yaml"
-        )
+    @mock.patch(
+        "requests.get",
+        side_effect=[mock.Mock(**{"status_code": 404})],
     )
-    def test_download_package_arkivum_error(self):
+    def test_download_package_arkivum_error(self, requests_get):
         """It should return 502 error from Arkivum."""
         response = self.client.get(
             "/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/download/"
@@ -908,12 +922,20 @@ class TestPackageAPI(TempDirMixin, TestCase):
         content = self._decode_response_content(response)
         assert content == "test"
 
-    @vcr.use_cassette(
-        os.path.join(
-            FIXTURES_DIR, "vcr_cassettes", "arkivum_update_package_status.yaml"
-        )
+    @mock.patch(
+        "requests.get",
+        side_effect=[
+            mock.Mock(
+                **{
+                    "status_code": 200,
+                    "json.return_value": {
+                        "fileInformation": {"replicationState": "yellow"},
+                    },
+                }
+            )
+        ],
     )
-    def test_download_file_arkivum_not_available(self):
+    def test_download_file_arkivum_not_available(self, requests_get):
         """It should return 202 if the file is in Arkivum but only on tape."""
         response = self.client.get(
             "/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/extract_file/",
@@ -927,12 +949,11 @@ class TestPackageAPI(TempDirMixin, TestCase):
             == "File is not locally available.  Contact your storage administrator to fetch it."
         )
 
-    @vcr.use_cassette(
-        os.path.join(
-            FIXTURES_DIR, "vcr_cassettes", "api_download_package_arkivum_error.yaml"
-        )
+    @mock.patch(
+        "requests.get",
+        side_effect=[mock.Mock(**{"status_code": 404})],
     )
-    def test_download_file_arkivum_error(self):
+    def test_download_file_arkivum_error(self, requests_get):
         """It should return 502 error from Arkivum."""
         response = self.client.get(
             "/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/extract_file/",
@@ -1051,7 +1072,7 @@ class TestPipelineAPI(TestCase):
         assert response.status_code == 201
 
         pipeline = models.Pipeline.objects.get(uuid=data["uuid"])
-        pipeline.parse_and_fix_url(pipeline.remote_name) == urlparse(
+        assert pipeline.parse_and_fix_url(pipeline.remote_name) == urlparse(
             data["remote_name"]
         )
 
@@ -1067,6 +1088,6 @@ class TestPipelineAPI(TestCase):
         )
         assert response.status_code == 201
         pipeline = models.Pipeline.objects.get(uuid=data["uuid"])
-        pipeline.parse_and_fix_url(pipeline.remote_name) == urlparse(
+        assert pipeline.parse_and_fix_url(pipeline.remote_name) == urlparse(
             "http://192.168.0.10"
         )

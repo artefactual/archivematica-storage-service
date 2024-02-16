@@ -346,7 +346,7 @@ class Lockssomatic(models.Model):
             LOGGER.debug("path to delete: %s", path)
             try:
                 os.remove(path)
-            except os.error as e:
+            except OSError as e:
                 if e.errno != errno.ENOENT:
                     LOGGER.exception("Could not delete %s", path)
             element.getparent().remove(element)

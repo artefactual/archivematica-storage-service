@@ -395,7 +395,7 @@ def get_compress_command(compression, extract_path, basename, full_path):
             _("Algorithm %(algorithm)s not implemented") % {"algorithm": compression}
         )
 
-    command = list(_f for _f in command if _f)
+    command = [_f for _f in command if _f]
     return (command, compressed_filename)
 
 
@@ -719,7 +719,7 @@ def removedirs(relative_path, base=None):
         return os.removedirs(relative_path)
     try:
         os.rmdir(os.path.join(base, relative_path))
-    except os.error:
+    except OSError:
         pass
     head, tail = os.path.split(relative_path)
     if not tail:
@@ -727,7 +727,7 @@ def removedirs(relative_path, base=None):
     while head and tail:
         try:
             os.rmdir(os.path.join(base, head))
-        except os.error:
+        except OSError:
             break
         head, tail = os.path.split(head)
 
@@ -740,7 +740,7 @@ def strip_quad_dirs_from_path(dest_path):
     UUID4_QUAD = re.compile(r"[0-9a-f]{4}\Z", re.I)
     dest_path = dest_path.rstrip("/")
     output_path, package_name = os.path.split(dest_path)
-    for quad_dir in range(8):
+    for _quad_dir in range(8):
         head, tail = os.path.split(output_path)
         if not re.match(UUID4_QUAD, tail):
             continue

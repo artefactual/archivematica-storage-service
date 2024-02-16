@@ -199,7 +199,7 @@ class Duracloud(models.Model):
                 url = self.duraspace_url + urllib.parse.quote(d)
                 response = self.session.delete(url)
 
-    def generate_duracloud_request(self, url):
+    def _generate_duracloud_request(self, url):
         """Generate PreparedRequest with DuraCloud URLs.
 
         The request returned is capable to carry URLs expected by DuraCloud. It
@@ -211,7 +211,9 @@ class Duracloud(models.Model):
         prepped.url = url
         return prepped
 
-    def _download_file(self, url, download_path, expected_size=0, checksum=None):
+    def _download_file(
+        self, url, download_path, expected_size=0, checksum=None, retry=0
+    ):
         """
         Helper to download files from DuraCloud.
 
@@ -221,7 +223,7 @@ class Duracloud(models.Model):
         :raises: StorageException if response code not 200 or 404
         """
         LOGGER.debug("URL: %s", url)
-        request = self.generate_duracloud_request(url)
+        request = self._generate_duracloud_request(url)
         response = self.session.send(request)
         LOGGER.debug("Response: %s", response)
         if response.status_code == 404:
@@ -238,7 +240,7 @@ class Duracloud(models.Model):
             root = etree.fromstring(response.content)
             expected_size = int(root.findtext("header/sourceContent/byteSize"))
             checksum = root.findtext("header/sourceContent/md5")
-            chunk_elements = [e for e in root.findall("chunks/chunk")]
+            chunk_elements = list(root.findall("chunks/chunk"))
             # Download each chunk and append to original file
             self.space.create_local_directory(download_path)
             LOGGER.debug("Writing to %s", download_path)
@@ -271,16 +273,34 @@ class Duracloud(models.Model):
 
         # Verify file, if size or checksum is known
         if expected_size and os.path.getsize(download_path) != expected_size:
-            raise StorageException(
-                _(
-                    "File %(path)s does not match expected size of %(expected_size)s bytes, but was actually %(actual_size)s bytes"
-                ),
-                {
-                    "path": download_path,
-                    "expected_size": expected_size,
-                    "actual_size": os.path.getsize(download_path),
-                },
-            )
+            if retry < 3:
+                LOGGER.error(
+                    "[RETRY=%(retry)d] File %(path)s does not match expected size of %(expected_size)s bytes, but was actually %(actual_size)s bytes"
+                    % {
+                        "retry": retry + 1,
+                        "path": download_path,
+                        "expected_size": expected_size,
+                        "actual_size": os.path.getsize(download_path),
+                    }
+                )
+                return self._download_file(
+                    url,
+                    download_path,
+                    expected_size=expected_size,
+                    checksum=checksum,
+                    retry=retry + 1,
+                )
+            else:
+                raise StorageException(
+                    _(
+                        "File %(path)s does not match expected size of %(expected_size)s bytes, but was actually %(actual_size)s bytes"
+                    ),
+                    {
+                        "path": download_path,
+                        "expected_size": expected_size,
+                        "actual_size": os.path.getsize(download_path),
+                    },
+                )
         calculated_checksum = utils.generate_checksum(download_path, "md5")
         if checksum and checksum != calculated_checksum.hexdigest():
             raise StorageException(
@@ -488,7 +508,7 @@ class Duracloud(models.Model):
             # Both source and destination paths should end with /
             destination_path = os.path.join(destination_path, "")
             # Duracloud does not accept folders, so upload each file individually
-            for path, dirs, files in os.walk(source_path):
+            for path, _dirs, files in os.walk(source_path):
                 for basename in files:
                     entry = os.path.join(path, basename)
                     dest = entry.replace(source_path, destination_path, 1)

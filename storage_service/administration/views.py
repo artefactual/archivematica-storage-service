@@ -59,7 +59,8 @@ def configuration(request):
 
 def get_git_commit():
     try:
-        return subprocess.check_output(["git", "rev-parse", "HEAD"])
+        result = subprocess.check_output(["git", "rev-parse", "HEAD"])
+        return result.decode().strip()
     except (OSError, subprocess.CalledProcessError):
         return None
 

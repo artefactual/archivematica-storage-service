@@ -105,7 +105,7 @@ class CustomDjangoAuthorization(DjangoAuthorization):
 
 
 def _custom_endpoint(
-    expected_methods=["get"], required_fields=[], required_permission=None
+    expected_methods=("get",), required_fields=None, required_permission=None
 ):
     """
     Decorator for custom endpoints that handles boilerplate code.
@@ -121,6 +121,8 @@ def _custom_endpoint(
     create_list, create_detail, update_list, update_detail, delete_list and
     delete_detail.
     """
+    if required_fields is None:
+        required_fields = []
 
     def decorator(func):
         """The decorator applied to the endpoint"""

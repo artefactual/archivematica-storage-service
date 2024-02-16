@@ -111,13 +111,25 @@ def ldap_populate_user_profile(sender, user=None, ldap_user=None, **kwargs):
     if user.is_superuser:
         return
 
-    role = roles.USER_ROLE_READER
-    if settings.AUTH_LDAP_ADMIN_GROUP in ldap_user.group_names:
-        role = roles.USER_ROLE_ADMIN
-    elif settings.AUTH_LDAP_MANAGER_GROUP in ldap_user.group_names:
-        role = roles.USER_ROLE_MANAGER
-    elif settings.AUTH_LDAP_REVIEWER_GROUP in ldap_user.group_names:
-        role = roles.USER_ROLE_REVIEWER
+    role = roles.settings.DEFAULT_USER_ROLE
+
+    if hasattr(settings, "AUTH_LDAP_GROUP_SEARCH"):
+        LOGGER.debug(
+            "Using LDAP groups for user %s. LDAP Groups: %s",
+            user.username,
+            ldap_user.group_names,
+        )
+        if settings.AUTH_LDAP_ADMIN_GROUP in ldap_user.group_names:
+            role = roles.USER_ROLE_ADMIN
+        elif settings.AUTH_LDAP_MANAGER_GROUP in ldap_user.group_names:
+            role = roles.USER_ROLE_MANAGER
+        elif settings.AUTH_LDAP_REVIEWER_GROUP in ldap_user.group_names:
+            role = roles.USER_ROLE_REVIEWER
+    else:
+        LOGGER.debug(
+            "Not using LDAP groups because AUTH_LDAP_GROUP_SEARCH is not defined. Using SS_AUTH_DEFAULT_USER_ROLE: %s",
+            settings.DEFAULT_USER_ROLE,
+        )
 
     role = roles.promoted_role(role)
 

@@ -1,609 +1,685 @@
-import os
-import shutil
-
+import pytest
 import requests
-import vcr
-from django.test import TestCase
-from locations import models
-from lxml import etree
-
-from . import TempDirMixin
-
-THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
+from locations.models import Duracloud
+from locations.models import Space
+from locations.models import StorageException
 
 
-class TestDuracloud(TempDirMixin, TestCase):
-    fixtures = ["base.json", "duracloud.json"]
+@pytest.fixture
+def space():
+    return Space.objects.create()
 
-    def setUp(self):
-        super().setUp()
-        self.ds_object = models.Duracloud.objects.first()
-        self.auth = requests.auth.HTTPBasicAuth(
-            self.ds_object.user, self.ds_object.password
-        )
-        # Set the staging path of the space to a temporary directory.
-        models.Space.objects.filter(uuid="6fb34c82-4222-425e-b0ea-30acfd31f52e").update(
-            staging_path=str(self.tmpdir)
-        )
 
-    def test_has_required_attributes(self):
-        assert self.ds_object.host
-        assert self.ds_object.user
-        assert self.ds_object.password
-        assert self.ds_object.duraspace
+@pytest.mark.django_db
+def test_duraspace_url(space):
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
 
-    def test_generate_duracloud_request_includes_auth_headers(self):
-        request = self.ds_object.generate_duracloud_request(
-            "http://domain.tld:8000/tmp"
-        )
+    assert d.duraspace_url == "https://duracloud.org/durastore/myspace/"
 
-        assert (
-            request.headers.get("Authorization") == "Basic dHJpYWx1c2VyMjYzOnNzNnVtZkho"
-        )
 
-    @vcr.use_cassette(
-        os.path.join(FIXTURES_DIR, "vcr_cassettes", "duracloud_browse.yaml")
+@pytest.mark.django_db
+def test_browse(space, mocker):
+    page1 = """
+    <space id="self.durastore">
+        <item>/foo/</item>
+        <item>/foo/bar/bar-a.zip</item>
+        <item>/foo/bar/bar-b.zip</item>
+        <item>/foo/foo-a.zip</item>
+        <item>/baz/</item>
+    </space>
+    """
+    page2 = """
+    <space id="self.durastore">
+    </space>
+    """
+    mocker.patch(
+        "requests.Session.get",
+        side_effect=[
+            mocker.Mock(status_code=200, content=page1, spec=requests.Response),
+            mocker.Mock(status_code=200, content=page2, spec=requests.Response),
+        ],
     )
-    def test_browse(self):
-        resp = self.ds_object.browse("SampleTransfers")
-        assert resp
-        assert resp["directories"] == ["Images", "Multimedia", "OCRImage"]
-        assert resp["entries"] == [
-            "BagTransfer.zip",
-            "Images",
-            "Multimedia",
-            "OCRImage",
-        ]
-        assert resp["properties"]["Images"]["object count"] == 10
-        assert resp["properties"]["Multimedia"]["object count"] == 7
-        assert resp["properties"]["OCRImage"]["object count"] == 1
-        resp = self.ds_object.browse("SampleTransfers/Images")
-        assert resp
-        assert resp["directories"] == ["pictures"]
-        assert resp["entries"] == [
-            "799px-Euroleague-LE Roma vs Toulouse IC-27.bmp",
-            "BBhelmet.ai",
-            "G31DS.TIF",
-            "lion.svg",
-            "Nemastylis_geminiflora_Flower.PNG",
-            "oakland03.jp2",
-            "pictures",
-            "Vector.NET-Free-Vector-Art-Pack-28-Freedom-Flight.eps",
-            "WFPC01.GIF",
-        ]
-        assert resp["properties"]["pictures"]["object count"] == 2
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
 
-    @vcr.use_cassette(
-        os.path.join(FIXTURES_DIR, "vcr_cassettes", "duracloud_browse_split_files.yaml")
-    )
-    def test_browse_split_files(self):
-        # Hide split files
-        resp = self.ds_object.browse("chunked")
-        assert resp
-        assert resp["directories"] == []
-        assert resp["entries"] == ["chunked_image.jpg"]
+    result = d.browse("/foo")
 
-    @vcr.use_cassette(
-        os.path.join(FIXTURES_DIR, "vcr_cassettes", "duracloud_delete_file.yaml")
-    )
-    def test_delete_file(self):
-        # Verify exists
-        response = requests.head(
-            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg",
-            auth=self.auth,
-        )
-        assert response.status_code == 200
-        # Delete file
-        self.ds_object.delete_path("delete/delete.svg")
-        # Verify deleted
-        response = requests.head(
-            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg",
-            auth=self.auth,
-        )
-        assert response.status_code == 404
+    assert result == {
+        "directories": ["bar"],
+        "entries": ["bar", "foo-a.zip"],
+        "properties": {"bar": {"object count": 2}},
+    }
 
-    @vcr.use_cassette(
-        os.path.join(FIXTURES_DIR, "vcr_cassettes", "duracloud_delete_folder.yaml")
-    )
-    def test_delete_folder(self):
-        # Verify exists
-        response = requests.head(
-            "https://archivematica.duracloud.org/durastore/testing/delete/delete/delete.svg",
-            auth=self.auth,
-        )
-        assert response.status_code == 200
-        response = requests.head(
-            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg",
-            auth=self.auth,
-        )
-        assert response.status_code == 200
-        # Delete folder
-        # BUG If delete_path is a folder but provided without a trailing /, will deleted a file with the same name.
-        self.ds_object.delete_path("delete/delete/")
-        # Verify deleted
-        response = requests.head(
-            "https://archivematica.duracloud.org/durastore/testing/delete/delete/delete.svg",
-            auth=self.auth,
-        )
-        assert response.status_code == 404
-        # Verify that file with same prefix not deleted
-        response = requests.head(
-            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg",
-            auth=self.auth,
-        )
-        assert response.status_code == 200
 
-    @vcr.use_cassette(
-        os.path.join(
-            FIXTURES_DIR, "vcr_cassettes", "duracloud_delete_percent_encoding.yaml"
-        )
+@pytest.mark.django_db
+def test_browse_strips_manifest_and_chunk_suffixes(space, mocker):
+    page1 = """
+    <space id="self.durastore">
+        <item>/foo/</item>
+        <item>/foo/bar/bar-a.zip</item>
+        <item>/foo/bar/bar-b.zip.dura-manifest</item>
+        <item>/foo/bar/bar-b.zip.dura-chunk-0000</item>
+        <item>/foo/foo-a.zip</item>
+        <item>/foo/foo-b.zip.dura-manifest</item>
+        <item>/foo/foo-b.zip.dura-chunk-0000</item>
+        <item>/baz/</item>
+    </space>
+    """
+    page2 = """
+    <space id="self.durastore">
+    </space>
+    """
+    mocker.patch(
+        "requests.Session.get",
+        side_effect=[
+            mocker.Mock(status_code=200, content=page1, spec=requests.Response),
+            mocker.Mock(status_code=200, content=page2, spec=requests.Response),
+        ],
     )
-    def test_delete_percent_encoding(self):
-        # Verify exists
-        response = requests.head(
-            "https://archivematica.duracloud.org/durastore/testing/delete/delete%20%23.svg",
-            auth=self.auth,
-        )
-        assert response.status_code == 200
-        # Delete file
-        self.ds_object.delete_path("delete/delete #.svg")
-        # Verify deleted
-        response = requests.head(
-            "https://archivematica.duracloud.org/durastore/testing/delete/delete%20%23.svg",
-            auth=self.auth,
-        )
-        assert response.status_code == 404
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
 
-    @vcr.use_cassette(
-        os.path.join(
-            FIXTURES_DIR, "vcr_cassettes", "duracloud_delete_chunked_file.yaml"
-        )
-    )
-    def test_delete_chunked_file(self):
-        # Ensure file exists
-        response = requests.head(
-            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg",
-            auth=self.auth,
-        )
-        assert response.status_code == 404
-        response = requests.head(
-            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dura-manifest",
-            auth=self.auth,
-        )
-        assert response.status_code == 200
-        response = requests.head(
-            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dnd",
-            auth=self.auth,
-        )
-        assert response.status_code == 200
-        # Delete file
-        self.ds_object.delete_path("delete/delete.svg")
-        # Verify deleted
-        response = requests.head(
-            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg",
-            auth=self.auth,
-        )
-        assert response.status_code == 404
-        response = requests.head(
-            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dura-manifest",
-            auth=self.auth,
-        )
-        assert response.status_code == 404
-        response = requests.head(
-            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dura-chunk-0000",
-            auth=self.auth,
-        )
-        assert response.status_code == 404
-        response = requests.head(
-            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dura-chunk-0001",
-            auth=self.auth,
-        )
-        assert response.status_code == 404
-        # Verify file with same prefix not deleted
-        response = requests.head(
-            "https://archivematica.duracloud.org/durastore/testing/delete/delete.svg.dnd",
-            auth=self.auth,
-        )
-        assert response.status_code == 200
+    result = d.browse("/foo")
 
-    @vcr.use_cassette(
-        os.path.join(FIXTURES_DIR, "vcr_cassettes", "duracloud_move_from_ss_file.yaml")
-    )
-    def test_move_from_ss_file(self):
-        # Create test.txt
-        testfile = self.tmpdir / "test.txt"
-        testfile.open("w").write("test file\n")
-        # Upload
-        self.ds_object.move_from_storage_service(str(testfile), "test/test.txt")
-        # Verify
-        response = requests.get(
-            "https://archivematica.duracloud.org/durastore/testing/test/test.txt",
-            auth=self.auth,
-        )
-        assert response.status_code == 200
-        assert response.text == "test file\n"
-        # Cleanup
-        requests.delete(
-            "https://"
-            + self.ds_object.host
-            + "/durastore/"
-            + self.ds_object.duraspace
-            + "/test/test.txt",
-            auth=self.auth,
-        )
+    assert result == {
+        "directories": ["bar"],
+        "entries": ["bar", "foo-a.zip", "foo-b.zip"],
+        "properties": {"bar": {"object count": 2}},
+    }
 
-    @vcr.use_cassette(
-        os.path.join(
-            FIXTURES_DIR, "vcr_cassettes", "duracloud_move_from_ss_folder.yaml"
-        )
-    )
-    def test_move_from_ss_folder(self):
-        # Create test folder
-        testdir = self.tmpdir / "test"
-        (testdir / "subfolder").mkdir(parents=True)
-        (testdir / "test.txt").open("w").write("test file\n")
-        (testdir / "subfolder" / "test2.txt").open("w").write("test file2\n")
-        # Upload
-        self.ds_object.move_from_storage_service(str(testdir) + os.sep, "test/foo/")
-        # Verify
-        response = requests.get(
-            "https://archivematica.duracloud.org/durastore/testing/test/foo/test.txt",
-            auth=self.auth,
-        )
-        assert response.status_code == 200
-        assert response.text == "test file\n"
-        response = requests.get(
-            "https://archivematica.duracloud.org/durastore/testing/test/foo/subfolder/test2.txt",
-            auth=self.auth,
-        )
-        assert response.status_code == 200
-        assert response.text == "test file2\n"
-        # Cleanup
-        requests.delete(
-            "https://"
-            + self.ds_object.host
-            + "/durastore/"
-            + self.ds_object.duraspace
-            + "/test/foo/test.txt",
-            auth=self.auth,
-        )
-        requests.delete(
-            "https://"
-            + self.ds_object.host
-            + "/durastore/"
-            + self.ds_object.duraspace
-            + "/test/foo/subfolder/test2.txt",
-            auth=self.auth,
-        )
 
-    @vcr.use_cassette(
-        os.path.join(
-            FIXTURES_DIR,
-            "vcr_cassettes",
-            "duracloud_move_from_ss_percent_encoding.yaml",
-        )
+@pytest.mark.django_db
+def test_browse_fails_if_it_cannot_retrieve_files_initially(space, mocker):
+    mocker.patch(
+        "requests.Session.get",
+        side_effect=[mocker.Mock(status_code=503, spec=requests.Response)],
     )
-    def test_move_from_ss_percent_encoding(self):
-        # Create bad #name.txt
-        testfile = self.tmpdir / "bad #name.txt"
-        testfile.open("w").write("test file\n")
-        # Upload
-        self.ds_object.move_from_storage_service(str(testfile), "test/bad #name.txt")
-        # Verify
-        response = requests.get(
-            "https://archivematica.duracloud.org/durastore/testing/test/bad%20%23name.txt",
-            auth=self.auth,
-        )
-        assert response.status_code == 200
-        assert response.text == "bad #name file\n"
-        # Cleanup
-        requests.delete(
-            "https://"
-            + self.ds_object.host
-            + "/durastore/"
-            + self.ds_object.duraspace
-            + "/test/bad%20%23name.txt",
-            auth=self.auth,
-        )
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
 
-    @vcr.use_cassette(
-        os.path.join(
-            FIXTURES_DIR, "vcr_cassettes", "duracloud_move_from_ss_chunked.yaml"
-        )
-    )
-    def test_move_from_ss_chunked_file(self):
-        shutil.copy(os.path.join(FIXTURES_DIR, "chunk_file.txt"), str(self.tmpdir))
-        file_path = str(self.tmpdir / "chunk_file.txt")
-        self.ds_object.CHUNK_SIZE = 10 * 1024  # Set testing chunk size
-        self.ds_object.BUFFER_SIZE = 1
-        # Upload
-        self.ds_object.move_from_storage_service(
-            file_path, "chunked/chunked #image.txt"
-        )
-        # Verify
-        response = requests.get(
-            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked%20%23image.txt",
-            auth=self.auth,
-        )
-        assert response.status_code == 404
-        response = requests.get(
-            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked%20%23image.txt.dura-manifest",
-            auth=self.auth,
-        )
-        assert response.status_code == 200
-        # Verify manifest
-        root = etree.fromstring(response.content)
-        assert (
-            root.find("header/sourceContent").attrib["contentId"]
-            == "chunked/chunked #image.txt"
-        )
-        assert root.find("header/sourceContent/byteSize").text == "11037"
-        assert (
-            root.find("header/sourceContent/md5").text
-            == "e7aba5d09b490b9f91c65867754ae190"
-        )
-        assert (
-            root.find("chunks")[0].attrib["chunkId"]
-            == "chunked/chunked #image.txt.dura-chunk-0000"
-        )
-        assert root.find("chunks")[0].find("byteSize").text == "10240"
-        assert (
-            root.find("chunks")[0].find("md5").text
-            == "2147aa269812cac6204ad66ec953ccfe"
-        )
-        assert (
-            root.find("chunks")[1].attrib["chunkId"]
-            == "chunked/chunked #image.txt.dura-chunk-0001"
-        )
-        assert root.find("chunks")[1].find("byteSize").text == "797"
-        assert (
-            root.find("chunks")[1].find("md5").text
-            == "aa9d2932a31f4b81cbfd1bcdb2c75020"
-        )
-        response = requests.get(
-            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked%20%23image.txt.dura-chunk-0000",
-            auth=self.auth,
-        )
-        assert response.status_code == 200
-        response = requests.get(
-            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked%20%23image.txt.dura-chunk-0001",
-            auth=self.auth,
-        )
-        assert response.status_code == 200
-        # Cleanup
-        requests.delete(
-            "https://"
-            + self.ds_object.host
-            + "/durastore/"
-            + self.ds_object.duraspace
-            + "/chunked/chunked%20%23image.txt.dura-manifest",
-            auth=self.auth,
-        )
-        requests.delete(
-            "https://"
-            + self.ds_object.host
-            + "/durastore/"
-            + self.ds_object.duraspace
-            + "/chunked/chunked%20%23image.txt.dura-chunk-0000",
-            auth=self.auth,
-        )
-        requests.delete(
-            "https://"
-            + self.ds_object.host
-            + "/durastore/"
-            + self.ds_object.duraspace
-            + "/chunked/chunked%20%23image.txt.dura-chunk-0001",
-            auth=self.auth,
-        )
+    with pytest.raises(StorageException, match="Unable to get list of files in /foo/"):
+        d.browse("/foo")
 
-    @vcr.use_cassette(
-        os.path.join(
-            FIXTURES_DIR, "vcr_cassettes", "duracloud_move_from_ss_chunked_resume.yaml"
-        )
-    )
-    def test_move_from_ss_chunked_resume(self):
-        # Setup
-        shutil.copy(os.path.join(FIXTURES_DIR, "chunk_file.txt"), str(self.tmpdir))
-        file_path = str(self.tmpdir / "chunk_file.txt")
-        self.ds_object.CHUNK_SIZE = 10 * 1024  # Set testing chunk size
-        self.ds_object.BUFFER_SIZE = 1
-        requests.put(
-            "https://"
-            + self.ds_object.host
-            + "/durastore/"
-            + self.ds_object.duraspace
-            + "/chunked/chunked_image.txt.dura-chunk-0000",
-            auth=self.auth,
-            data="Placeholder",
-        )
-        # Verify initial state
-        response = requests.get(
-            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt",
-            auth=self.auth,
-        )
-        assert response.status_code == 404
-        response = requests.get(
-            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-manifest",
-            auth=self.auth,
-        )
-        assert response.status_code == 404
-        response = requests.get(
-            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0000",
-            auth=self.auth,
-        )
-        assert response.status_code == 200
-        response = requests.get(
-            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0001",
-            auth=self.auth,
-        )
-        assert response.status_code == 404
-        # Upload
-        self.ds_object.move_from_storage_service(
-            str(file_path), "chunked/chunked_image.txt", resume=True
-        )
-        # Verify
-        response = requests.get(
-            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt",
-            auth=self.auth,
-        )
-        assert response.status_code == 404
-        response = requests.get(
-            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-manifest",
-            auth=self.auth,
-        )
-        assert response.status_code == 200
-        # Verify manifest
-        root = etree.fromstring(response.content)
-        assert (
-            root.find("header/sourceContent").attrib["contentId"]
-            == "chunked/chunked_image.txt"
-        )
-        assert root.find("header/sourceContent/byteSize").text == "11037"
-        assert (
-            root.find("header/sourceContent/md5").text
-            == "e7aba5d09b490b9f91c65867754ae190"
-        )
-        assert (
-            root.find("chunks")[0].attrib["chunkId"]
-            == "chunked/chunked_image.txt.dura-chunk-0000"
-        )
-        assert root.find("chunks")[0].find("byteSize").text == "10240"
-        assert (
-            root.find("chunks")[0].find("md5").text
-            == "2147aa269812cac6204ad66ec953ccfe"
-        )
-        assert (
-            root.find("chunks")[1].attrib["chunkId"]
-            == "chunked/chunked_image.txt.dura-chunk-0001"
-        )
-        assert root.find("chunks")[1].find("byteSize").text == "797"
-        assert (
-            root.find("chunks")[1].find("md5").text
-            == "aa9d2932a31f4b81cbfd1bcdb2c75020"
-        )
-        response = requests.get(
-            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0000",
-            auth=self.auth,
-        )
-        assert response.status_code == 200
-        assert response.text == "Placeholder"
-        response = requests.get(
-            "https://archivematica.duracloud.org/durastore/testing/chunked/chunked_image.txt.dura-chunk-0001",
-            auth=self.auth,
-        )
-        assert response.status_code == 200
-        # Cleanup
-        requests.delete(
-            "https://"
-            + self.ds_object.host
-            + "/durastore/"
-            + self.ds_object.duraspace
-            + "/chunked/chunked_image.txt.dura-manifest",
-            auth=self.auth,
-        )
-        requests.delete(
-            "https://"
-            + self.ds_object.host
-            + "/durastore/"
-            + self.ds_object.duraspace
-            + "/chunked/chunked_image.txt.dura-chunk-0000",
-            auth=self.auth,
-        )
-        requests.delete(
-            "https://"
-            + self.ds_object.host
-            + "/durastore/"
-            + self.ds_object.duraspace
-            + "/chunked/chunked_image.txt.dura-chunk-0001",
-            auth=self.auth,
-        )
 
-    @vcr.use_cassette(
-        os.path.join(FIXTURES_DIR, "vcr_cassettes", "duracloud_move_to_ss_file.yaml")
+@pytest.mark.django_db
+def test_browse_fails_if_it_cannot_retrieve_additional_files(space, mocker):
+    page1 = """
+    <space id="self.durastore">
+        <item>/foo/</item>
+        <item>/foo/bar/bar-a.zip</item>
+        <item>/foo/bar/bar-b.zip</item>
+        <item>/foo/foo-a.zip</item>
+        <item>/baz/</item>
+    </space>
+    """
+    mocker.patch(
+        "requests.Session.get",
+        side_effect=[
+            mocker.Mock(status_code=200, content=page1, spec=requests.Response),
+            mocker.Mock(status_code=503, spec=requests.Response),
+        ],
     )
-    def test_move_to_ss_file(self):
-        tmpdir = self.tmpdir / "move_to_ss_file_dir"
-        tmpfile = tmpdir / "test.txt"
-        # Test file
-        self.ds_object.move_to_storage_service("test/test.txt", str(tmpfile), None)
-        assert tmpdir.is_dir()
-        assert tmpfile.is_file()
-        assert tmpfile.open().read() == "test file\n"
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
 
-    @vcr.use_cassette(
-        os.path.join(FIXTURES_DIR, "vcr_cassettes", "duracloud_move_to_ss_folder.yaml")
-    )
-    def test_move_to_ss_folder(self):
-        tmpdir = self.tmpdir / "move_to_ss_file_dir"
-        # Test folder
-        self.ds_object.move_to_storage_service(
-            "test/foo/", str(tmpdir / "test") + os.sep, None
-        )
-        assert tmpdir.is_dir()
-        assert (tmpdir / "test").is_dir()
-        assert (tmpdir / "test" / "subfolder").is_dir()
-        assert (tmpdir / "test" / "test.txt").is_file()
-        assert (tmpdir / "test" / "test.txt").open().read() == "test file\n"
-        assert (tmpdir / "test" / "subfolder" / "test2.txt").is_file()
-        assert (
-            tmpdir / "test" / "subfolder" / "test2.txt"
-        ).open().read() == "test file2\n"
+    with pytest.raises(
+        StorageException, match="Unable to get list of files in /foo/bar/"
+    ):
+        d.browse("/foo/bar/")
 
-    @vcr.use_cassette(
-        os.path.join(
-            FIXTURES_DIR, "vcr_cassettes", "duracloud_move_to_ss_folder_globbing.yaml"
-        )
-    )
-    def test_move_to_ss_folder_globbing(self):
-        tmpdir = self.tmpdir / "move_to_ss_folder_globbing_dir"
-        # Test with globbing
-        self.ds_object.move_to_storage_service(
-            "test/foo/.", str(tmpdir / "test") + os.sep, None
-        )
-        assert tmpdir.is_dir()
-        assert (tmpdir / "test").is_dir()
-        assert (tmpdir / "test" / "subfolder").is_dir()
-        assert (tmpdir / "test" / "test.txt").is_file()
-        assert (tmpdir / "test" / "test.txt").open().read() == "test file\n"
-        assert (tmpdir / "test" / "subfolder" / "test2.txt").is_file()
-        assert (
-            tmpdir / "test" / "subfolder" / "test2.txt"
-        ).open().read() == "test file2\n"
 
-    @vcr.use_cassette(
-        os.path.join(
-            FIXTURES_DIR, "vcr_cassettes", "duracloud_move_to_ss_percent_encoding.yaml"
-        )
+@pytest.mark.django_db
+def test_delete_path_deletes_file(space, mocker):
+    delete = mocker.patch(
+        "requests.Session.delete",
+        side_effect=[mocker.Mock(status_code=200, spec=requests.Response)],
     )
-    def test_move_to_ss_percent_encoding(self):
-        testdir = self.tmpdir / "move_to_ss_percent_dir"
-        testfile = testdir / "bad #name.txt"
-        # Move to SS with # in path & filename
-        self.ds_object.move_to_storage_service(
-            "test/bad #name/bad #name.txt", str(testfile), None
-        )
-        # Verify
-        assert testdir.is_dir()
-        assert testfile.is_file()
-        assert testfile.open().read() == "test file\n"
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
 
-    @vcr.use_cassette(
-        os.path.join(
-            FIXTURES_DIR, "vcr_cassettes", "duracloud_move_to_ss_chunked_file.yaml"
-        )
+    d.delete_path("some/file.zip")
+
+    assert delete.mock_calls == [
+        mocker.call("https://duracloud.org/durastore/myspace/some/file.zip")
+    ]
+
+
+@pytest.mark.django_db
+def test_delete_path_deletes_chunked_file(space, mocker):
+    delete = mocker.patch(
+        "requests.Session.delete",
+        side_effect=[
+            mocker.Mock(status_code=404, spec=requests.Response),
+            mocker.Mock(status_code=200, spec=requests.Response),
+        ],
     )
-    def test_move_to_ss_chunked_file(self):
-        testdir = self.tmpdir / "move_to_ss_chunked"
-        testfile = testdir / "chunked #image.jpg"
-        # chunked #image.jpg is actually chunked
-        self.ds_object.move_to_storage_service(
-            "chunked/chunked #image.jpg", str(testfile), None
+    get = mocker.patch(
+        "requests.Session.get",
+        side_effect=[
+            mocker.Mock(
+                status_code=200,
+                content=b"""\
+                    <chunks>
+                        <chunk chunkId="some/file.zip.dura-chunk-0001">
+                            <byteSize>8084</byteSize>
+                            <md5>dcbfdd6ff7f78194e1084f900514a194</md5>
+                        </chunk>
+                    </chunks>
+                """,
+                spec=requests.Response,
+            )
+        ],
+    )
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+
+    d.delete_path("some/file.zip")
+
+    assert delete.mock_calls == [
+        mocker.call("https://duracloud.org/durastore/myspace/some/file.zip"),
+        mocker.call(
+            "https://duracloud.org/durastore/myspace/some/file.zip.dura-manifest"
+        ),
+    ]
+    assert get.mock_calls == [
+        mocker.call(
+            "https://duracloud.org/durastore/myspace/some/file.zip.dura-manifest"
         )
-        # Verify
-        assert testdir.is_dir()
-        assert not (testdir / "chunked #image.jpg.dura-manifest").exists()
-        assert not (testdir / "chunked #image.jpg.dura-chunk-0000").exists()
-        assert not (testdir / "chunked #image.jpg.dura-chunk-0001").exists()
-        assert testfile.is_file()
-        assert testfile.stat().st_size == 158131
+    ]
+
+
+@pytest.mark.django_db
+def test_delete_path_deletes_folder(space, mocker):
+    delete = mocker.patch(
+        "requests.Session.delete",
+        side_effect=[
+            mocker.Mock(status_code=404, spec=requests.Response),
+            mocker.Mock(status_code=200, spec=requests.Response),
+            mocker.Mock(status_code=200, spec=requests.Response),
+        ],
+    )
+    get = mocker.patch(
+        "requests.Session.get",
+        side_effect=[mocker.Mock(status_code=404, ok=False, spec=requests.Response)],
+    )
+    mocker.patch(
+        "locations.models.duracloud.Duracloud._get_files_list",
+        side_effect=[["some/folder/a.zip", "some/folder/b.zip"]],
+    )
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+
+    d.delete_path("some/folder")
+
+    assert delete.mock_calls == [
+        mocker.call("https://duracloud.org/durastore/myspace/some/folder"),
+        mocker.call("https://duracloud.org/durastore/myspace/some/folder/a.zip"),
+        mocker.call("https://duracloud.org/durastore/myspace/some/folder/b.zip"),
+    ]
+    assert get.mock_calls == [
+        mocker.call("https://duracloud.org/durastore/myspace/some/folder.dura-manifest")
+    ]
+
+
+@pytest.mark.django_db
+def test_move_to_storage_service_downloads_file(space, mocker, tmp_path):
+    mocker.patch(
+        "requests.Session.send",
+        side_effect=[
+            mocker.Mock(status_code=200, content=b"a file", spec=requests.Response)
+        ],
+    )
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    dst = tmp_path / "dst" / "file.txt"
+
+    d.move_to_storage_service("some/file.txt", dst.as_posix(), None)
+
+    assert dst.read_text() == "a file"
+
+
+@pytest.mark.django_db
+def test_move_to_storage_service_downloads_chunked_file(space, mocker, tmp_path):
+    mocker.patch(
+        "requests.Session.send",
+        side_effect=[
+            mocker.Mock(status_code=404, spec=requests.Response),
+            mocker.Mock(status_code=200, content=b"a ch", spec=requests.Response),
+            mocker.Mock(status_code=200, content=b"unked file", spec=requests.Response),
+        ],
+    )
+    mocker.patch(
+        "requests.Session.get",
+        side_effect=[
+            mocker.Mock(
+                status_code=200,
+                content=b"""\
+                    <dur>
+                        <header>
+                            <sourceContent>
+                                <byteSize>14</byteSize>
+                                <md5>1b8107d332e5d9f2a0b8e5924ca1ca3e</md5>
+                            </sourceContent>
+                        </header>
+                        <chunks>
+                            <chunk chunkId="some/file.txt.dura-chunk-0001">
+                                <byteSize>4</byteSize>
+                                <md5>1781a616499ac88f78b56af57fcca974</md5>
+                            </chunk>
+                        </chunks>
+                        <chunks>
+                            <chunk chunkId="some/file.txt.dura-chunk-0002">
+                                <byteSize>10</byteSize>
+                                <md5>29224657c84874b1c83a92fae2f2ea22</md5>
+                            </chunk>
+                        </chunks>
+                    </dur>
+                """,
+                spec=requests.Response,
+            ),
+        ],
+    )
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    dst = tmp_path / "dst" / "file.txt"
+
+    d.move_to_storage_service("some/file.txt", dst.as_posix(), None)
+
+    assert dst.read_text() == "a chunked file"
+
+
+@pytest.mark.django_db
+def test_move_to_storage_service_downloads_folder(space, mocker, tmp_path):
+    mocker.patch(
+        "requests.Session.send",
+        side_effect=[
+            mocker.Mock(status_code=404, spec=requests.Response),
+            mocker.Mock(status_code=200, content=b"file A", spec=requests.Response),
+            mocker.Mock(status_code=200, content=b"file B", spec=requests.Response),
+        ],
+    )
+    mocker.patch(
+        "requests.Session.get",
+        side_effect=[mocker.Mock(status_code=404, ok=False, spec=requests.Response)],
+    )
+    mocker.patch(
+        "locations.models.duracloud.Duracloud._get_files_list",
+        side_effect=[["some/folder/a.txt", "some/folder/b.txt"]],
+    )
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    dst = tmp_path / "dst"
+
+    d.move_to_storage_service("some/folder", dst.as_posix(), None)
+
+    # The folder contents were downloaded to the destination folder.
+    assert {e.name for e in dst.iterdir()} == {"a.txt", "b.txt"}
+    assert (dst / "a.txt").read_text() == "file A"
+    assert (dst / "b.txt").read_text() == "file B"
+
+
+@pytest.mark.django_db
+def test_move_to_storage_service_fails_if_it_cannot_download_file(
+    space, mocker, tmp_path
+):
+    mocker.patch(
+        "requests.Session.send",
+        side_effect=[mocker.Mock(status_code=503, spec=requests.Response)],
+    )
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    dst = tmp_path / "dst" / "file.txt"
+
+    with pytest.raises(
+        StorageException,
+        match="Unable to fetch https://duracloud.org/durastore/myspace/some/file.txt",
+    ):
+        d.move_to_storage_service("some/file.txt", dst.as_posix(), None)
+
+
+@pytest.mark.django_db
+def test_move_to_storage_service_retries_after_chunk_download_errors(
+    space, mocker, tmp_path
+):
+    send = mocker.patch(
+        "requests.Session.send",
+        side_effect=[
+            mocker.Mock(status_code=404, spec=requests.Response),
+            mocker.Mock(status_code=200, content=b"a", spec=requests.Response),
+            mocker.Mock(status_code=200, content=b"a ch", spec=requests.Response),
+            mocker.Mock(status_code=200, content=b"unked file", spec=requests.Response),
+        ],
+    )
+    mocker.patch(
+        "requests.Session.get",
+        side_effect=[
+            mocker.Mock(
+                status_code=200,
+                content=b"""\
+                    <dur>
+                        <header>
+                            <sourceContent>
+                                <byteSize>14</byteSize>
+                                <md5>1b8107d332e5d9f2a0b8e5924ca1ca3e</md5>
+                            </sourceContent>
+                        </header>
+                        <chunks>
+                            <chunk chunkId="some/file.txt.dura-chunk-0001">
+                                <byteSize>4</byteSize>
+                                <md5>1781a616499ac88f78b56af57fcca974</md5>
+                            </chunk>
+                        </chunks>
+                        <chunks>
+                            <chunk chunkId="some/file.txt.dura-chunk-0002">
+                                <byteSize>10</byteSize>
+                                <md5>29224657c84874b1c83a92fae2f2ea22</md5>
+                            </chunk>
+                        </chunks>
+                    </dur>
+                """,
+                spec=requests.Response,
+            ),
+        ],
+    )
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    dst = tmp_path / "dst" / "file.txt"
+
+    d.move_to_storage_service("some/file.txt", dst.as_posix(), None)
+
+    assert dst.read_text() == "a chunked file"
+
+    # The session.send mock shows the first chunk download was retried.
+    assert len(send.mock_calls) == 4
+
+
+@pytest.mark.django_db
+def test_move_to_storage_service_fails_if_chunk_size_does_not_match(
+    space, mocker, tmp_path
+):
+    send = mocker.patch(
+        "requests.Session.send",
+        side_effect=[
+            mocker.Mock(status_code=404, spec=requests.Response),
+            # Fail all the download retry attempts.
+            mocker.Mock(status_code=200, content=b"ERRORERROR", spec=requests.Response),
+            mocker.Mock(status_code=200, content=b"ERRORERROR", spec=requests.Response),
+            mocker.Mock(status_code=200, content=b"ERRORERROR", spec=requests.Response),
+            mocker.Mock(status_code=200, content=b"unked file", spec=requests.Response),
+        ],
+    )
+    mocker.patch(
+        "requests.Session.get",
+        side_effect=[
+            mocker.Mock(
+                status_code=200,
+                content=b"""\
+                    <dur>
+                        <header>
+                            <sourceContent>
+                                <byteSize>14</byteSize>
+                                <md5>1b8107d332e5d9f2a0b8e5924ca1ca3e</md5>
+                            </sourceContent>
+                        </header>
+                        <chunks>
+                            <chunk chunkId="some/file.txt.dura-chunk-0001">
+                                <byteSize>4</byteSize>
+                                <md5>1781a616499ac88f78b56af57fcca974</md5>
+                            </chunk>
+                        </chunks>
+                        <chunks>
+                            <chunk chunkId="some/file.txt.dura-chunk-0002">
+                                <byteSize>10</byteSize>
+                                <md5>29224657c84874b1c83a92fae2f2ea22</md5>
+                            </chunk>
+                        </chunks>
+                    </dur>
+                """,
+                spec=requests.Response,
+            ),
+        ],
+    )
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    dst = tmp_path / "dst" / "file.txt"
+
+    # Look for a partial match since the exception receives multiple parameters.
+    with pytest.raises(
+        StorageException, match="does not match expected size of"
+    ) as exc_info:
+        d.move_to_storage_service("some/file.txt", dst.as_posix(), None)
+
+    assert exc_info.value.args == (
+        "File %(path)s does not match expected size of %(expected_size)s bytes, but was actually %(actual_size)s bytes",
+        {"actual_size": 10, "expected_size": 4, "path": f"{dst}.dura-chunk-0001"},
+    )
+
+    # The destination file was created but no chunks were written to it.
+    assert dst.read_text() == ""
+
+    # The session.send mock was called the maximum amount of download retries.
+    assert len(send.mock_calls) == 5
+
+
+@pytest.mark.django_db
+def test_move_to_storage_service_fails_if_chunk_checksum_does_not_match(
+    space, mocker, tmp_path
+):
+    send = mocker.patch(
+        "requests.Session.send",
+        side_effect=[
+            mocker.Mock(status_code=404, spec=requests.Response),
+            mocker.Mock(status_code=200, content=b"a ch", spec=requests.Response),
+            mocker.Mock(status_code=200, content=b"unked file", spec=requests.Response),
+        ],
+    )
+    mocker.patch(
+        "requests.Session.get",
+        side_effect=[
+            mocker.Mock(
+                status_code=200,
+                content=b"""\
+                    <dur>
+                        <header>
+                            <sourceContent>
+                                <byteSize>14</byteSize>
+                                <md5>1b8107d332e5d9f2a0b8e5924ca1ca3e</md5>
+                            </sourceContent>
+                        </header>
+                        <chunks>
+                            <chunk chunkId="some/file.txt.dura-chunk-0001">
+                                <byteSize>4</byteSize>
+                                <md5>bogus</md5>
+                            </chunk>
+                        </chunks>
+                        <chunks>
+                            <chunk chunkId="some/file.txt.dura-chunk-0002">
+                                <byteSize>10</byteSize>
+                                <md5>29224657c84874b1c83a92fae2f2ea22</md5>
+                            </chunk>
+                        </chunks>
+                    </dur>
+                """,
+                spec=requests.Response,
+            ),
+        ],
+    )
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    dst = tmp_path / "dst" / "file.txt"
+
+    # Look for a partial match since the exception receives multiple parameters.
+    with pytest.raises(
+        StorageException, match="does not match expected checksum of"
+    ) as exc_info:
+        d.move_to_storage_service("some/file.txt", dst.as_posix(), None)
+
+    assert exc_info.value.args == (
+        "File %s does not match expected checksum of %s, but was actually %s",
+        f"{dst}.dura-chunk-0001",
+        "bogus",
+        "1781a616499ac88f78b56af57fcca974",
+    )
+
+    # The destination file was created but no chunks were written to it.
+    assert dst.read_text() == ""
+
+    # The session.send mock was not called after the first chunk failed validation.
+    assert len(send.mock_calls) == 2
+
+
+@pytest.mark.django_db
+def test_move_from_storage_service_uploads_file(space, mocker, tmp_path):
+    put = mocker.patch(
+        "requests.Session.put",
+        side_effect=[mocker.Mock(status_code=201, spec=requests.Response)],
+    )
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    src = tmp_path / "src"
+    src.mkdir()
+    f = src / "file.txt"
+    f.write_text("a file")
+
+    d.move_from_storage_service(f.as_posix(), "some/file.txt")
+
+    assert put.mock_calls == [
+        mocker.call(
+            "https://duracloud.org/durastore/myspace/some/file.txt",
+            data=mocker.ANY,
+            headers={
+                "Content-MD5": "d6d0c756fb8abfb33e652a20e85b70bc",
+                "Content-Type": "text/plain",
+            },
+        )
+    ]
+
+
+@pytest.mark.django_db
+def test_move_from_storage_service_uploads_chunked_file(space, mocker, tmp_path):
+    put = mocker.patch(
+        "requests.Session.put",
+        side_effect=[
+            mocker.Mock(status_code=201, spec=requests.Response),
+            mocker.Mock(status_code=201, spec=requests.Response),
+            mocker.Mock(status_code=201, spec=requests.Response),
+        ],
+    )
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    d.CHUNK_SIZE = 4
+    d.BUFFER_SIZE = 2
+    src = tmp_path / "src"
+    src.mkdir()
+    f = src / "file.txt"
+    f.write_text("a file")
+
+    d.move_from_storage_service(f.as_posix(), "some/file.txt")
+
+    assert put.mock_calls == [
+        mocker.call(
+            "https://duracloud.org/durastore/myspace/some/file.txt.dura-chunk-0000",
+            data=mocker.ANY,
+            headers={"Content-MD5": "417a095d4148cb184601f536fb626765"},
+        ),
+        mocker.call(
+            "https://duracloud.org/durastore/myspace/some/file.txt.dura-chunk-0001",
+            data=mocker.ANY,
+            headers={"Content-MD5": "d9180594744f870aeefb086982e980bb"},
+        ),
+        mocker.call(
+            "https://duracloud.org/durastore/myspace/some/file.txt.dura-manifest",
+            data=mocker.ANY,
+            headers={"Content-MD5": "59e5f62e5ed85ba339e73db5756e57c7"},
+        ),
+    ]
+
+
+@pytest.mark.django_db
+def test_move_from_storage_service_uploads_folder_contents(space, mocker, tmp_path):
+    put = mocker.patch(
+        "requests.Session.put",
+        side_effect=[
+            mocker.Mock(status_code=201, spec=requests.Response),
+            mocker.Mock(status_code=201, spec=requests.Response),
+        ],
+    )
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "a.txt").write_text("file A")
+    (src / "b.txt").write_text("file B")
+
+    d.move_from_storage_service(src.as_posix(), "some/folder")
+
+    put.assert_has_calls(
+        [
+            mocker.call(
+                "https://duracloud.org/durastore/myspace/some/folder//a.txt",
+                data=mocker.ANY,
+                headers={
+                    "Content-MD5": "31d97c4d04593b21b399ace73b061c34",
+                    "Content-Type": "text/plain",
+                },
+            ),
+            mocker.call(
+                "https://duracloud.org/durastore/myspace/some/folder//b.txt",
+                data=mocker.ANY,
+                headers={
+                    "Content-MD5": "1651d570b74339e94cace90cde7d3147",
+                    "Content-Type": "text/plain",
+                },
+            ),
+        ],
+        any_order=True,
+    )
+
+
+@pytest.mark.django_db
+def test_move_from_storage_service_fails_uploading_after_exceeding_retries(
+    space, mocker, tmp_path
+):
+    put = mocker.patch(
+        "requests.Session.put",
+        side_effect=mocker.Mock(status_code=503, spec=requests.Response),
+    )
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    src = tmp_path / "src"
+    src.mkdir()
+    f = src / "file.txt"
+    f.write_text("a file")
+
+    with pytest.raises(StorageException, match=f"Unable to store {f}"):
+        d.move_from_storage_service(f.as_posix(), "some/file.txt")
+
+    # Check session's put method was called with initial attempt plus 3 retries.
+    assert len(put.mock_calls) == 4
+
+
+@pytest.mark.django_db
+def test_move_from_storage_service_reraises_requests_exception(space, mocker, tmp_path):
+    put = mocker.patch(
+        "requests.Session.put",
+        side_effect=requests.exceptions.ConnectionError(),
+    )
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    src = tmp_path / "src"
+    src.mkdir()
+    f = src / "file.txt"
+    f.write_text("a file")
+
+    with pytest.raises(requests.exceptions.ConnectionError):
+        d.move_from_storage_service(f.as_posix(), "some/file.txt")
+
+    # Check session's put method was called with initial attempt plus 3 retries.
+    assert len(put.mock_calls) == 4
+
+
+@pytest.mark.django_db
+def test_move_from_storage_service_fails_if_source_file_does_not_exist(space, tmp_path):
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    src = tmp_path / "src"
+    src.mkdir()
+    f = src / "file.txt"
+
+    with pytest.raises(StorageException, match=f"{f} does not exist."):
+        d.move_from_storage_service(f.as_posix(), "some/file.txt")
+
+
+@pytest.mark.django_db
+def test_move_from_storage_service_fails_if_source_file_cannot_be_determined(
+    space, mocker, tmp_path
+):
+    # Mocking exists like this forces all move_from_storage_service conditions to fail.
+    mocker.patch("os.path.exists", return_value=True)
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    src = tmp_path / "src"
+    src.mkdir()
+    f = src / "file.txt"
+
+    with pytest.raises(StorageException, match=f"{f} is not a file or directory."):
+        d.move_from_storage_service(f.as_posix(), "some/file.txt")

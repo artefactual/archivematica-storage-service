@@ -78,12 +78,6 @@ LANGUAGE_CODE = "en-us"
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#site-id
 SITE_ID = 1
 
-# See: https://docs.djangoproject.com/en/dev/ref/settings/#use-i18n
-USE_I18N = True
-
-# See: https://docs.djangoproject.com/en/dev/ref/settings/#use-l10n
-USE_L10N = True
-
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#use-tz
 USE_TZ = True
 # ######## END GENERAL CONFIGURATION
@@ -129,7 +123,14 @@ STATICFILES_FINDERS = (
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
 )
 
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 # END STATIC FILE CONFIGURATION
 
 
@@ -386,7 +387,15 @@ if LDAP_AUTHENTICATION:
         )
 
     # https://pythonhosted.org/django-auth-ldap/groups.html#types-of-groups
-    AUTH_LDAP_GROUP_TYPE = ldap_config.ActiveDirectoryGroupType()
+    if "AUTH_LDAP_GROUP_TYPE" in environ:
+        try:
+            AUTH_LDAP_GROUP_TYPE = getattr(
+                ldap_config, environ.get("AUTH_LDAP_GROUP_TYPE", "PosixGroupType")
+            )()
+        except AttributeError:
+            AUTH_LDAP_GROUP_TYPE = ldap_config.ActiveDirectoryGroupType()
+    else:
+        AUTH_LDAP_GROUP_TYPE = ldap_config.ActiveDirectoryGroupType()
 
     AUTH_LDAP_REQUIRE_GROUP = environ.get("AUTH_LDAP_REQUIRE_GROUP", None)
     AUTH_LDAP_DENY_GROUP = environ.get("AUTH_LDAP_DENY_GROUP", None)

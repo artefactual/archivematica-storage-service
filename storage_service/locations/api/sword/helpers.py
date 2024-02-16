@@ -322,7 +322,7 @@ def activate_transfer_and_request_approval_from_pipeline(deposit, pipeline):
     """
     # make sure pipeline API access is configured
     attrs = ("remote_name", "api_username", "api_key")
-    if not all([getattr(pipeline, attr, None) for attr in attrs]):
+    if not all(getattr(pipeline, attr, None) for attr in attrs):
         missing_attrs = [a for a in attrs if not getattr(pipeline, a, None)]
         return {
             "error": True,
