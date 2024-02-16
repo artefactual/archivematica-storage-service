@@ -1,4 +1,3 @@
-# flake8: noqa
 """Common settings and globals."""
 import json
 import logging.config

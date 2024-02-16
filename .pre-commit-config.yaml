@@ -35,6 +35,22 @@ repos:
     additional_dependencies:
     - flake8-bugbear==23.9.16
     - flake8-comprehensions==3.14.0
+    exclude: |
+      (?x)^(
+        storage_service/storage_service/settings/.*\.py
+      )
+- repo: https://github.com/pycqa/flake8
+  rev: "7.0.0"
+  hooks:
+  - id: flake8
+    name: flake8-use-pathlib
+    args: [--select, "PL"]
+    additional_dependencies:
+    - flake8-use-pathlib==0.3.0
+    files: |
+      (?x)^(
+        storage_service/storage_service/settings/(base).py
+      )
 - repo: https://github.com/pre-commit/mirrors-eslint
   rev: v8.56.0
   hooks:
