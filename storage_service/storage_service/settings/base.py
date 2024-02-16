@@ -22,7 +22,7 @@ except ImportError:
 def _get_settings_from_file(path):
     try:
         result = {}
-        with open(path, "rb") as f:
+        with Path(path).open("rb") as f:
             code = compile(f.read(), path, "exec")
             exec(code, result, result)
         return result
