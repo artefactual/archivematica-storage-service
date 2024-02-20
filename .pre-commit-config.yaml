@@ -40,6 +40,9 @@ repos:
         storage_service/storage_service/settings/.*\.py
       )
 - repo: https://github.com/pycqa/flake8
+  # This is a temporary hook to port os.path code to pathlib gradually. Add
+  # the ported modules/packages explicitly to `files` below. For reference see
+  # https://github.com/archivematica/Issues/issues/1622#issuecomment-1912524642
   rev: "7.0.0"
   hooks:
   - id: flake8
