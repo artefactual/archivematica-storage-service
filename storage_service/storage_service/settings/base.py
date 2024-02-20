@@ -1,14 +1,8 @@
-# flake8: noqa
 """Common settings and globals."""
 import json
 import logging.config
 from os import environ
-from os.path import abspath
-from os.path import basename
-from os.path import dirname
-from os.path import isfile
-from os.path import join
-from os.path import normpath
+from pathlib import Path
 from sys import path
 
 from django.core.exceptions import ImproperlyConfigured
@@ -28,7 +22,7 @@ except ImportError:
 def _get_settings_from_file(path):
     try:
         result = {}
-        with open(path, "rb") as f:
+        with Path(path).open("rb") as f:
             code = compile(f.read(), path, "exec")
             exec(code, result, result)
         return result
@@ -38,17 +32,17 @@ def _get_settings_from_file(path):
 
 # ######## PATH CONFIGURATION
 # Absolute filesystem path to the Django project directory:
-DJANGO_ROOT = dirname(dirname(abspath(__file__)))
+DJANGO_ROOT = Path(__file__).resolve(strict=True).parent.parent
 
 # Absolute filesystem path to the top-level project folder:
-SITE_ROOT = dirname(DJANGO_ROOT)
+SITE_ROOT = DJANGO_ROOT.parent
 
 # Site name:
-SITE_NAME = basename(DJANGO_ROOT)
+SITE_NAME = DJANGO_ROOT.name
 
 # Add our project to our pythonpath, this way we don't need to type our project
 # name in our dotted import paths:
-path.append(DJANGO_ROOT)
+path.append(str(DJANGO_ROOT))
 # ######## END PATH CONFIGURATION
 
 
@@ -88,7 +82,7 @@ USE_TZ = True
 
 
 # ######## LOCALE CONFIGURATION
-LOCALE_PATHS = [normpath(join(SITE_ROOT, "locale"))]
+LOCALE_PATHS = [str(SITE_ROOT / "locale")]
 
 LANGUAGES = [
     ("en", _("English")),
@@ -102,7 +96,7 @@ LANGUAGES = [
 
 # ######## MEDIA CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#media-root
-MEDIA_ROOT = normpath(join(SITE_ROOT, "media"))
+MEDIA_ROOT = str(SITE_ROOT / "media")
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#media-url
 MEDIA_URL = "/media/"
@@ -111,14 +105,14 @@ MEDIA_URL = "/media/"
 
 # ######## STATIC FILE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#static-root
-STATIC_ROOT = normpath(join(SITE_ROOT, "assets"))
+STATIC_ROOT = str(SITE_ROOT / "assets")
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#static-url
 STATIC_URL = "/static/"
 
 # See:
 # https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#std:setting-STATICFILES_DIRS
-STATICFILES_DIRS = (normpath(join(SITE_ROOT, "static")),)
+STATICFILES_DIRS = (str(SITE_ROOT / "static"),)
 
 # See:
 # https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#staticfiles-finders
@@ -155,7 +149,7 @@ ALLOWED_HOSTS = ["*"]
 # ######## FIXTURE CONFIGURATION
 # See:
 # https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-FIXTURE_DIRS
-FIXTURE_DIRS = (normpath(join(SITE_ROOT, "fixtures")),)
+FIXTURE_DIRS = (str(SITE_ROOT / "fixtures"),)
 # ######## END FIXTURE CONFIGURATION
 
 
@@ -164,7 +158,7 @@ FIXTURE_DIRS = (normpath(join(SITE_ROOT, "fixtures")),)
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [normpath(join(SITE_ROOT, "templates"))],
+        "DIRS": [str(SITE_ROOT / "templates")],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -311,8 +305,10 @@ LOGGING = {
     "root": {"handlers": ["console"], "level": "WARNING"},
 }
 
-if isfile(LOGGING_CONFIG_FILE):
-    with open(LOGGING_CONFIG_FILE) as f:
+logging_config_path = Path(LOGGING_CONFIG_FILE)
+
+if logging_config_path.is_file():
+    with logging_config_path.open() as f:
         LOGGING = logging.config.dictConfig(json.load(f))
 else:
     logging.config.dictConfig(LOGGING)
