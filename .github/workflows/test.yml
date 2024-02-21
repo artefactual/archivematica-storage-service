@@ -77,6 +77,14 @@ jobs:
     steps:
       - name: "Check out repository"
         uses: "actions/checkout@v4"
+      - name: "Save user id"
+        id: user_id
+        run: |
+          echo "user_id=$(id -u)" >> $GITHUB_OUTPUT
+      - name: "Save group id"
+        id: group_id
+        run: |
+          echo "group_id=$(id -g)" >> $GITHUB_OUTPUT
       - name: "Set up buildx"
         uses: "docker/setup-buildx-action@v3"
       - name: "Build the archivematica-storage-service image"
@@ -84,6 +92,8 @@ jobs:
         with:
           target: "archivematica-storage-service"
           build-args: |
+            USER_ID=${{ steps.user_id.outputs.user_id }}
+            GROUP_ID=${{ steps.group_id.outputs.group_id }}
             UBUNTU_VERSION=${{ matrix.ubuntu-version }}
             PYTHON_VERSION=${{ matrix.python-version }}
           tags: "archivematica-storage-service:latest"
@@ -97,6 +107,8 @@ jobs:
         shell: "bash"
         working-directory: "integration"
         env:
+          USER_ID: ${{ steps.user_id.outputs.user_id }}
+          GROUP_ID: ${{ steps.group_id.outputs.group_id }}
           UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
           PYTHON_VERSION: ${{ matrix.python-version }}
           COMPOSE_DOCKER_CLI_BUILD: 1
