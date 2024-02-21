@@ -47,15 +47,7 @@ else:
     ]
 
 if "shibboleth" in settings.INSTALLED_APPS:
-    # Simulate a shibboleth urls module (so our custom Shibboleth logout view
-    # matches the same namespaced URL name as the standard logout view from
-    # the shibboleth lib)
-    class ShibbolethURLs:
-        urlpatterns = [
-            path("logout/", views.CustomShibbolethLogoutView.as_view(), name="logout")
-        ]
-
-    urlpatterns += [path("shib/", include(ShibbolethURLs, namespace="shibboleth"))]
+    urlpatterns += [path("shib/", include("shibboleth.urls"))]
 
 
 if settings.PROMETHEUS_ENABLED:
