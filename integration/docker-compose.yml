@@ -57,7 +57,7 @@ services:
       MYSQL_DATABASE: "test_SSTEST"
     healthcheck:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "127.0.0.1"]
-      interval: 3s
-      timeout: 3s
-      retries: 3
-      start_period: 10s
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
