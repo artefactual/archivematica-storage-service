@@ -1,21 +1,7 @@
 ARG TARGET=archivematica-storage-service
 ARG UBUNTU_VERSION=22.04
 
-FROM ubuntu:20.04 AS install_osdeps_20.04
-RUN set -ex \
-	&& apt-get update \
-	&& apt-get install -y --no-install-recommends \
-		mime-support \
-    && rm -rf /var/lib/apt/lists/*
-
-FROM ubuntu:22.04 AS install_osdeps_22.04
-RUN set -ex \
-	&& apt-get update \
-	&& apt-get install -y --no-install-recommends \
-		media-types \
-    && rm -rf /var/lib/apt/lists/*
-
-FROM install_osdeps_${UBUNTU_VERSION} AS base
+FROM ubuntu:${UBUNTU_VERSION} AS base
 
 ARG USER_ID=1000
 ARG GROUP_ID=1000
@@ -50,6 +36,7 @@ RUN set -ex \
 		libz-dev \
 		locales \
 		locales-all \
+		media-types \
 		openssh-client \
 		p7zip-full \
 		rng-tools \
