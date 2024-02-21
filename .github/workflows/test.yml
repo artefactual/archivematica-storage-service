@@ -113,7 +113,16 @@ jobs:
           PYTHON_VERSION: ${{ matrix.python-version }}
           COMPOSE_DOCKER_CLI_BUILD: 1
           DOCKER_BUILDKIT: 1
-          PYTEST_ADDOPTS: -vv
+          PYTEST_ADDOPTS: -vv --cov storage_service --cov-config=.coveragerc --cov-report xml:coverage.xml
+      - name: "Upload coverage report"
+        if: github.repository == 'artefactual/archivematica-storage-service'
+        uses: "codecov/codecov-action@v4"
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   linting:
     name: "Lint"
     runs-on: "ubuntu-22.04"
