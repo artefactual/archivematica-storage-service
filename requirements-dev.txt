@@ -12,9 +12,9 @@ asgiref==3.7.2
     #   django
 bagit==1.8.1
     # via -r requirements.txt
-boto3==1.34.37
+boto3==1.34.46
     # via -r requirements.txt
-botocore==1.34.37
+botocore==1.34.46
     # via
     #   -r requirements.txt
     #   boto3
@@ -43,11 +43,11 @@ click==8.1.7
     # via pip-tools
 colorama==0.4.6
     # via tox
-coverage[toml]==7.4.1
+coverage[toml]==7.4.2
     # via
     #   -r requirements-dev.in
     #   pytest-cov
-cryptography==42.0.2
+cryptography==42.0.4
     # via
     #   -r requirements.txt
     #   josepy
@@ -90,7 +90,7 @@ filelock==3.13.1
     # via
     #   tox
     #   virtualenv
-gevent==23.9.1
+gevent==24.2.1
     # via -r requirements.txt
 greenlet==3.0.3
     # via
@@ -148,11 +148,11 @@ msgpack==1.0.7
     # via
     #   -r requirements.txt
     #   oslo-serialization
-mysqlclient==2.2.3
+mysqlclient==2.2.4
     # via
     #   -r requirements.txt
     #   agentarchives
-netaddr==0.10.1
+netaddr==1.2.1
     # via
     #   -r requirements.txt
     #   oslo-config
@@ -203,7 +203,7 @@ pbr==6.0.0
     #   oslo-serialization
     #   python-keystoneclient
     #   stevedore
-pip-tools==7.3.0
+pip-tools==7.4.0
     # via -r requirements-dev.in
 platformdirs==4.2.0
     # via
@@ -213,7 +213,7 @@ pluggy==1.4.0
     # via
     #   pytest
     #   tox
-prometheus-client==0.19.0
+prometheus-client==0.20.0
     # via
     #   -r requirements.txt
     #   django-prometheus
@@ -242,8 +242,10 @@ pyparsing==3.1.1
 pyproject-api==1.6.1
     # via tox
 pyproject-hooks==1.0.0
-    # via build
-pytest==8.0.0
+    # via
+    #   build
+    #   pip-tools
+pytest==8.0.1
     # via
     #   -r requirements-dev.in
     #   pytest-cov
@@ -336,14 +338,14 @@ tomli==2.0.1
     #   pyproject-hooks
     #   pytest
     #   tox
-tox==4.12.1
+tox==4.13.0
     # via -r requirements-dev.in
 typing-extensions==4.9.0
     # via
     #   -r requirements.txt
     #   asgiref
     #   dj-database-url
-tzdata==2023.4
+tzdata==2024.1
     # via
     #   -r requirements.txt
     #   oslo-serialization
@@ -372,7 +374,7 @@ zope-event==5.0
     # via
     #   -r requirements.txt
     #   gevent
-zope-interface==6.1
+zope-interface==6.2
     # via
     #   -r requirements.txt
     #   gevent
@@ -380,7 +382,7 @@ zope-interface==6.1
 # The following packages are considered to be unsafe in a requirements file:
 pip==24.0
     # via pip-tools
-setuptools==69.0.3
+setuptools==69.1.0
     # via
     #   -r requirements.txt
     #   pip-tools

@@ -10,9 +10,9 @@ asgiref==3.7.2
     # via django
 bagit==1.8.1
     # via -r requirements.in
-boto3==1.34.37
+boto3==1.34.46
     # via -r requirements.in
-botocore==1.34.37
+botocore==1.34.46
     # via
     #   boto3
     #   s3transfer
@@ -24,7 +24,7 @@ cffi==1.16.0
     # via cryptography
 charset-normalizer==3.3.2
     # via requests
-cryptography==42.0.2
+cryptography==42.0.4
     # via
     #   josepy
     #   mozilla-django-oidc
@@ -57,7 +57,7 @@ django-shibboleth-remoteuser @ git+https://github.com/Brown-University-Library/d
     # via -r requirements.in
 django-tastypie==0.14.6
     # via -r requirements.in
-gevent==23.9.1
+gevent==24.2.1
     # via -r requirements.in
 greenlet==3.0.3
     # via gevent
@@ -95,9 +95,9 @@ mozilla-django-oidc==4.0.0
     # via -r requirements.in
 msgpack==1.0.7
     # via oslo-serialization
-mysqlclient==2.2.3
+mysqlclient==2.2.4
     # via agentarchives
-netaddr==0.10.1
+netaddr==1.2.1
     # via
     #   oslo-config
     #   oslo-utils
@@ -131,7 +131,7 @@ pbr==6.0.0
     #   oslo-serialization
     #   python-keystoneclient
     #   stevedore
-prometheus-client==0.19.0
+prometheus-client==0.20.0
     # via
     #   -r requirements.in
     #   django-prometheus
@@ -207,7 +207,7 @@ typing-extensions==4.9.0
     # via
     #   asgiref
     #   dj-database-url
-tzdata==2023.4
+tzdata==2024.1
     # via
     #   oslo-serialization
     #   oslo-utils
@@ -223,11 +223,11 @@ zipp==3.17.0
     # via importlib-resources
 zope-event==5.0
     # via gevent
-zope-interface==6.1
+zope-interface==6.2
     # via gevent
 
 # The following packages are considered to be unsafe in a requirements file:
-setuptools==69.0.3
+setuptools==69.1.0
     # via
     #   zope-event
     #   zope-interface
