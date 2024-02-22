@@ -77,6 +77,7 @@ FROM base-builder as base
 
 ARG USER_ID=1000
 ARG GROUP_ID=1000
+ARG PYENV_DIR=/pyenv
 
 RUN set -ex \
 	&& apt-get update \
@@ -118,7 +119,7 @@ RUN set -ex \
 
 USER archivematica
 
-COPY --chown=${USER_ID}:${GROUP_ID} --from=pyenv-builder --link /pyenv /pyenv
+COPY --chown=${USER_ID}:${GROUP_ID} --from=pyenv-builder --link ${PYENV_DIR} ${PYENV_DIR}
 COPY --link ./install/storage-service.gunicorn-config.py /etc/archivematica/storage-service.gunicorn-config.py
 COPY --chown=${USER_ID}:${GROUP_ID} --link . /src/
 
