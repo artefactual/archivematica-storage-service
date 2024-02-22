@@ -8,6 +8,8 @@ services:
       context: "../"
       dockerfile: "Dockerfile"
       args:
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
         UBUNTU_VERSION: ${UBUNTU_VERSION:-22.04}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
     entrypoint: ""
@@ -55,7 +57,7 @@ services:
       MYSQL_DATABASE: "test_SSTEST"
     healthcheck:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "127.0.0.1"]
-      interval: 3s
-      timeout: 3s
-      retries: 3
-      start_period: 10s
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 15s

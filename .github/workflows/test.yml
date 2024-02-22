@@ -7,57 +7,6 @@ on:
       - "qa/**"
       - "stable/**"
 jobs:
-  test:
-    name: "Test Python ${{ matrix.python-version }}"
-    runs-on: "ubuntu-22.04"
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: [
-          "3.8",
-          "3.9",
-          "3.10",
-          "3.11",
-          "3.12",
-        ]
-    steps:
-      - name: "Check out repository"
-        uses: "actions/checkout@v4"
-      - name: "Set up Python ${{ matrix.python-version }}"
-        uses: "actions/setup-python@v5"
-        with:
-          python-version: "${{ matrix.python-version }}"
-          cache: "pip"
-          cache-dependency-path: |
-            requirements-dev.txt
-      - name: "Install OS packages"
-        run: |
-          sudo apt-get --quiet update
-          sudo apt-get install --quiet --yes build-essential \
-            libmysqlclient-dev libsasl2-dev libldap2-dev libssl-dev \
-            p7zip-full unar
-      - name: "Create directories needed by test_duracloud.py"
-        run: |
-          sudo mkdir -p /var/archivematica/storage_service
-          sudo chown -R $USER /var/archivematica/storage_service
-      - name: "Install tox"
-        run: |
-          python -m pip install --upgrade pip
-          pip install tox tox-gh-actions
-      - name: "Run tox with coverage"
-        env:
-          PYTEST_ADDOPTS: -vv --cov storage_service --cov-config=.coveragerc --cov-report xml:coverage.xml
-        run: |
-          tox
-      - name: "Upload coverage report"
-        if: github.repository == 'artefactual/archivematica-storage-service'
-        uses: "codecov/codecov-action@v4"
-        with:
-          files: ./coverage.xml
-          fail_ci_if_error: false
-          verbose: true
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   integration:
     name: "Integration ${{ matrix.ubuntu-version }} with ${{ matrix.python-version }}"
     runs-on: "ubuntu-22.04"
@@ -65,7 +14,6 @@ jobs:
       fail-fast: false
       matrix:
         ubuntu-version: [
-          "20.04",
           "22.04",
         ]
         python-version: [
@@ -78,20 +26,62 @@ jobs:
     steps:
       - name: "Check out repository"
         uses: "actions/checkout@v4"
+      - name: "Save user id"
+        id: user_id
+        run: |
+          echo "user_id=$(id -u)" >> $GITHUB_OUTPUT
+      - name: "Save group id"
+        id: group_id
+        run: |
+          echo "group_id=$(id -g)" >> $GITHUB_OUTPUT
+      - name: "Set up buildx"
+        uses: "docker/setup-buildx-action@v3"
+      - name: "Build the archivematica-storage-service image"
+        uses: "docker/build-push-action@v5"
+        with:
+          target: "archivematica-storage-service"
+          build-args: |
+            USER_ID=${{ steps.user_id.outputs.user_id }}
+            GROUP_ID=${{ steps.group_id.outputs.group_id }}
+            UBUNTU_VERSION=${{ matrix.ubuntu-version }}
+            PYTHON_VERSION=${{ matrix.python-version }}
+          tags: "archivematica-storage-service:latest"
+          push: false
+          load: true
+          cache-from: "type=gha,scope=archivematica-storage-service-${{ matrix.ubuntu-version }}-${{ matrix.python-version }}"
+          cache-to: "type=gha,scope=archivematica-storage-service-${{ matrix.ubuntu-version }}-${{ matrix.python-version }},mode=max"
       - name: "Run tests"
         run: |
           ./run.sh
         shell: "bash"
         working-directory: "integration"
         env:
+          USER_ID: ${{ steps.user_id.outputs.user_id }}
+          GROUP_ID: ${{ steps.group_id.outputs.group_id }}
           UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
           PYTHON_VERSION: ${{ matrix.python-version }}
           COMPOSE_DOCKER_CLI_BUILD: 1
           DOCKER_BUILDKIT: 1
-          PYTEST_ADDOPTS: -vv
-  linting:
-    name: "Lint"
+          PYTEST_ADDOPTS: -vv --cov storage_service --cov-config=.coveragerc --cov-report xml:coverage.xml
+      - name: "Upload coverage report"
+        if: github.repository == 'artefactual/archivematica-storage-service'
+        uses: "codecov/codecov-action@v4"
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+  tox:
+    name: "Tox ${{ matrix.toxenv }}"
     runs-on: "ubuntu-22.04"
+    strategy:
+      fail-fast: false
+      matrix:
+        toxenv: [
+          "linting",
+          "migrations",
+        ]
     steps:
       - name: "Check out repository"
         uses: "actions/checkout@v4"
@@ -99,10 +89,13 @@ jobs:
         uses: "actions/setup-python@v5"
         with:
           python-version: "3.9"
+          cache: "pip"
+          cache-dependency-path: |
+            requirements-dev.txt
       - name: "Install tox"
         run: |
           python -m pip install --upgrade pip
           pip install tox
       - name: "Run tox"
         run: |
-          tox -e linting
+          tox -e ${{ matrix.toxenv }}
