@@ -60,7 +60,7 @@ RUN set -ex \
 	&& rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
 RUN set -ex \
-	&& curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash \
+	&& curl --retry 3 -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash \
 	&& pyenv install ${PYTHON_VERSION} \
 	&& pyenv global ${PYTHON_VERSION}
 
