@@ -72,9 +72,16 @@ jobs:
           verbose: true
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-  linting:
-    name: "Lint"
+  tox:
+    name: "Tox ${{ matrix.toxenv }}"
     runs-on: "ubuntu-22.04"
+    strategy:
+      fail-fast: false
+      matrix:
+        toxenv: [
+          "linting",
+          "migrations",
+        ]
     steps:
       - name: "Check out repository"
         uses: "actions/checkout@v4"
@@ -91,4 +98,4 @@ jobs:
           pip install tox
       - name: "Run tox"
         run: |
-          tox -e linting
+          tox -e ${{ matrix.toxenv }}
