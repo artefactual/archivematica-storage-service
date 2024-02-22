@@ -1,5 +1,11 @@
 ARG TARGET=archivematica-storage-service
 ARG UBUNTU_VERSION=22.04
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+ARG PYTHON_VERSION=3.9
+ARG PYENV_DIR=/pyenv
+
+# -----------------------------------------------------------------------------
 
 FROM ubuntu:${UBUNTU_VERSION} AS base-builder
 
