@@ -43,7 +43,6 @@ via a pipeline? Should this be fixed by the import command?::
     -rwxrwxr-x  1 joeldunham  wheel    51M 30 Jul 22:58 /tmp/am-pipeline-data/www/AIPsStore/237e/12b4/03c9/451a/9be7/4915/b0bd/9012/FakeCVA2-237e12b4-03c9-451a-9be7-4915b0bd9012.7z
 
 """
-import glob
 import logging
 import os
 import shlex
@@ -52,6 +51,7 @@ import subprocess
 import tarfile
 import tempfile
 import uuid
+from pathlib import Path
 from pwd import getpwnam
 
 import bagit
@@ -208,13 +208,15 @@ def _decompress_tar_gz(aip_path, temp_dir):
     with tarfile.open(aip_path) as tar:
         aip_root_dir = os.path.commonprefix(tar.getnames())
         tar.extractall(path=temp_dir)
-    return os.path.join(temp_dir, aip_root_dir)
+    return Path(temp_dir) / aip_root_dir
 
 
 def _decompress_7z(aip_path, temp_dir):
     cmd = shlex.split(f"7z x {aip_path} -o{temp_dir}")
     subprocess.check_output(cmd)
-    return os.path.join(temp_dir, os.listdir(temp_dir)[0])
+    temp_dir_path = Path(temp_dir)
+    # Convert the Path object to a string to ensure compatibility with bagit.py
+    return str(temp_dir_path / next(temp_dir_path.iterdir()))
 
 
 def confirm_aip_exists(aip_path):
@@ -236,7 +238,7 @@ def validate(aip_path):
 
 
 def get_aip_mets_path(aip_path):
-    aip_mets_path = glob.glob(os.path.join(aip_path, "data", "METS*xml"))
+    aip_mets_path = list(Path(aip_path).joinpath("data").glob("METS*xml"))
     if not aip_mets_path:
         raise ImportAIPException(f"Unable to find a METS file in {aip_path}.")
     return aip_mets_path[0]
@@ -290,16 +292,16 @@ def fix_ownership(aip_path, unix_owner):
     for root, dirs, files in os.walk(aip_path):
         os.chown(root, am_uid, am_gid)
         for dir_ in dirs:
-            os.chown(os.path.join(root, dir_), am_uid, am_gid)
+            os.chown(Path(root) / dir_, am_uid, am_gid)
         for file_ in files:
-            os.chown(os.path.join(root, file_), am_uid, am_uid)
+            os.chown(Path(root) / file_, am_uid, am_uid)
 
 
 def copy_aip_to_aip_storage_location(
     aip_model_inst, aip_path, local_as_location, unix_owner
 ):
     aip_storage_location_path = local_as_location.full_path
-    dest = os.path.join(aip_storage_location_path, aip_model_inst.current_path)
+    dest = Path(aip_storage_location_path) / aip_model_inst.current_path
     copy_rsync(aip_path, dest)
     fix_ownership(dest, unix_owner)
     print(
@@ -312,7 +314,7 @@ def copy_aip_to_aip_storage_location(
 
 
 def copy_rsync(source, destination):
-    source = os.path.join(source, "")
+    source = str(Path(source) / "_")[:-1]
     p = subprocess.Popen(
         [
             "rsync",
@@ -385,10 +387,8 @@ def compress(aip_model_inst, compression_algorithm):
     compressed_aip_fname = os.path.basename(compressed_aip_path)
     aip_current_dir = os.path.dirname(aip_model_inst.current_path)
     shutil.rmtree(aip_model_inst.full_path)
-    new_current_path = os.path.join(aip_current_dir, compressed_aip_fname)
-    new_full_path = os.path.join(
-        aip_model_inst.current_location.full_path, new_current_path
-    )
+    new_current_path = Path(aip_current_dir) / compressed_aip_fname
+    new_full_path = Path(aip_model_inst.current_location.full_path) / new_current_path
     shutil.move(compressed_aip_path, new_full_path)
     aip_model_inst.current_path = new_current_path
     shutil.rmtree(compressed_aip_parent_path)
@@ -454,10 +454,8 @@ def import_aip(
     print(
         okgreen(
             "Path: {}.".format(
-                os.path.join(
-                    aip_model_inst.current_location.full_path,
-                    aip_model_inst.current_path,
-                )
+                Path(aip_model_inst.current_location.full_path)
+                / aip_model_inst.current_path
             )
         )
     )
