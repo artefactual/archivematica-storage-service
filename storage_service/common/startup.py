@@ -1,6 +1,6 @@
 import errno
 import logging
-import os.path
+import os
 from pathlib import Path
 
 import django.core.exceptions
@@ -140,10 +140,10 @@ def populate_default_locations():
         if created and loc_info.get("create_dirs"):
             LOGGER.info("Creating %s Location %s", loc_info["purpose"], new_loc)
             try:
-                os.mkdir(new_loc.full_path)
+                Path(new_loc.full_path).mkdir()
                 # Hack for extra recovery dir
                 if loc_info["purpose"] == locations_models.Location.AIP_RECOVERY:
-                    os.mkdir(os.path.join(new_loc.full_path, "backup"))
+                    Path(new_loc.full_path).joinpath("backup").mkdir()
             except OSError as e:
                 if e.errno != errno.EEXIST:
                     LOGGER.error(
