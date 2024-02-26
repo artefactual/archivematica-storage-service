@@ -54,7 +54,7 @@ jobs:
         run: |
           ./run.sh
         shell: "bash"
-        working-directory: "integration"
+        working-directory: "tests/integration"
         env:
           USER_ID: ${{ steps.user_id.outputs.user_id }}
           GROUP_ID: ${{ steps.group_id.outputs.group_id }}

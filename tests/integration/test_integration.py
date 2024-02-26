@@ -21,6 +21,9 @@ from locations.models import Package
 from locations.models import Space
 from metsrw.plugins import premisrw
 
+if "RUN_INTEGRATION_TESTS" not in os.environ:
+    pytest.skip("Skipping integration tests", allow_module_level=True)
+
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
