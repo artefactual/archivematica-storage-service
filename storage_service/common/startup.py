@@ -1,6 +1,7 @@
 import errno
 import logging
 import os.path
+from pathlib import Path
 
 import django.core.exceptions
 from common import utils
@@ -58,15 +59,14 @@ class PopulateLock:
 
 def populate_default_locations():
     """Create default local filesystem space and its locations."""
+
+    BASE_PATH = Path("var") / "archivematica"
+
     try:
         space, space_created = locations_models.Space.objects.get_or_create(
             access_protocol=locations_models.Space.LOCAL_FILESYSTEM,
             path=os.sep,
-            defaults={
-                "staging_path": os.path.join(
-                    os.sep, "var", "archivematica", "storage_service"
-                )
-            },
+            defaults={"staging_path": os.sep / BASE_PATH / "storage_service"},
         )
         if space_created:
             locations_models.LocalFilesystem.objects.create(space=space)
@@ -84,45 +84,36 @@ def populate_default_locations():
         },
         {
             "purpose": locations_models.Location.AIP_STORAGE,
-            "relative_path": os.path.join(
-                "var", "archivematica", "sharedDirectory", "www", "AIPsStore"
-            ),
+            "relative_path": BASE_PATH / "sharedDirectory" / "www" / "AIPsStore",
             "description": "Store AIP in standard Archivematica Directory",
             "default_setting": "default_aip_storage",
         },
         {
             "purpose": locations_models.Location.DIP_STORAGE,
-            "relative_path": os.path.join(
-                "var", "archivematica", "sharedDirectory", "www", "DIPsStore"
-            ),
+            "relative_path": BASE_PATH / "sharedDirectory" / "www" / "DIPsStore",
             "description": "Store DIP in standard Archivematica Directory",
             "default_setting": "default_dip_storage",
         },
         {
             "purpose": locations_models.Location.BACKLOG,
-            "relative_path": os.path.join(
-                "var",
-                "archivematica",
-                "sharedDirectory",
-                "www",
-                "AIPsStore",
-                "transferBacklog",
-            ),
+            "relative_path": BASE_PATH
+            / "sharedDirectory"
+            / "www"
+            / "AIPsStore"
+            / "transferBacklog",
             "description": "Default transfer backlog",
             "default_setting": "default_backlog",
         },
         {
             "purpose": locations_models.Location.STORAGE_SERVICE_INTERNAL,
-            "relative_path": os.path.join("var", "archivematica", "storage_service"),
+            "relative_path": BASE_PATH / "storage_service",
             "description": "For storage service internal usage.",
             "default_setting": None,
             "create_dirs": True,
         },
         {
             "purpose": locations_models.Location.AIP_RECOVERY,
-            "relative_path": os.path.join(
-                "var", "archivematica", "storage_service", "recover"
-            ),
+            "relative_path": BASE_PATH / "storage_service" / "recover",
             "description": "Default AIP recovery",
             "default_setting": "default_recovery",
             "create_dirs": True,
