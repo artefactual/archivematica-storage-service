@@ -174,7 +174,7 @@ def fail(string):
 
 
 def is_compressed(aip_path):
-    return os.path.isfile(aip_path)
+    return Path(aip_path).is_file()
 
 
 def tree(path):
@@ -220,7 +220,7 @@ def _decompress_7z(aip_path, temp_dir):
 
 
 def confirm_aip_exists(aip_path):
-    if not os.path.exists(aip_path):
+    if not Path(aip_path).exists():
         raise ImportAIPException(f"There is nothing at {aip_path}")
 
 
@@ -385,7 +385,7 @@ def compress(aip_model_inst, compression_algorithm):
         details,
     ) = aip_model_inst.compress_package(compression_algorithm, detailed_output=True)
     compressed_aip_fname = Path(compressed_aip_path).name
-    aip_current_dir = os.path.dirname(aip_model_inst.current_path)
+    aip_current_dir = Path(aip_model_inst.current_path).parent
     shutil.rmtree(aip_model_inst.full_path)
     new_current_path = Path(aip_current_dir) / compressed_aip_fname
     new_full_path = Path(aip_model_inst.current_location.full_path) / new_current_path
