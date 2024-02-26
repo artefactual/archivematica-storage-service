@@ -181,7 +181,7 @@ def tree(path):
     for root, _, files in os.walk(path):
         level = root.replace(path, "").count(os.sep)
         indent = " " * 4 * (level)
-        print(header(f"{indent}{os.path.basename(root)}/"))
+        print(header(f"{indent}{Path(root).name}/"))
         subindent = " " * 4 * (level + 1)
         for f in files:
             print(okgreen(f"{subindent}{f}"))
@@ -245,7 +245,7 @@ def get_aip_mets_path(aip_path):
 
 
 def get_aip_uuid(aip_mets_path):
-    return uuid.UUID(os.path.basename(aip_mets_path)[5:41])
+    return uuid.UUID(Path(aip_mets_path).name[5:41])
 
 
 def get_aip_storage_locations(aip_storage_location_uuid):
@@ -384,7 +384,7 @@ def compress(aip_model_inst, compression_algorithm):
         compressed_aip_parent_path,
         details,
     ) = aip_model_inst.compress_package(compression_algorithm, detailed_output=True)
-    compressed_aip_fname = os.path.basename(compressed_aip_path)
+    compressed_aip_fname = Path(compressed_aip_path).name
     aip_current_dir = os.path.dirname(aip_model_inst.current_path)
     shutil.rmtree(aip_model_inst.full_path)
     new_current_path = Path(aip_current_dir) / compressed_aip_fname
@@ -430,7 +430,7 @@ def import_aip(
         size=utils.recalculate_size(aip_path),
         origin_pipeline=get_pipeline(adoptive_pipeline_uuid),
         current_location=local_as_location,
-        current_path=os.path.basename(os.path.normpath(aip_path)),
+        current_path=Path(aip_path).name,
     )
     copy_aip_to_aip_storage_location(
         aip_model_inst, aip_path, local_as_location, unix_owner
