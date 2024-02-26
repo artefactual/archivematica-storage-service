@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+import pathlib
 import shutil
 import uuid
 from unittest import mock
@@ -15,12 +16,12 @@ from locations.api.sword.views import _parse_name_and_content_urls_from_mets_fil
 
 from . import TempDirMixin
 
-THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures", ""))
+FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
 
 class TestSpaceAPI(TempDirMixin, TestCase):
-    fixtures = ["base.json"]
+    fixture_files = ["base.json"]
+    fixtures = [FIXTURES_DIR / f for f in fixture_files]
 
     def setUp(self):
         super().setUp()
@@ -190,7 +191,8 @@ class TestSpaceAPI(TempDirMixin, TestCase):
 
 
 class TestLocationAPI(TempDirMixin, TestCase):
-    fixtures = ["base.json", "pipelines.json", "package.json"]
+    fixture_files = ["base.json", "pipelines.json", "package.json"]
+    fixtures = [FIXTURES_DIR / f for f in fixture_files]
 
     def setUp(self):
         super().setUp()
@@ -541,7 +543,8 @@ class TestLocationAPI(TempDirMixin, TestCase):
 
 
 class TestPackageAPI(TempDirMixin, TestCase):
-    fixtures = ["base.json", "package.json", "arkivum.json"]
+    fixture_files = ["base.json", "package.json", "arkivum.json"]
+    fixtures = [FIXTURES_DIR / f for f in fixture_files]
 
     def setUp(self):
         super().setUp()
@@ -552,13 +555,13 @@ class TestPackageAPI(TempDirMixin, TestCase):
         )
         # Set up locations with fixtures
         shutil.copy(os.path.join(FIXTURES_DIR, "working_bag.zip"), str(self.tmpdir))
-        self.test_location.relative_path = FIXTURES_DIR[1:]
+        self.test_location.relative_path = str(FIXTURES_DIR.relative_to(os.sep))
         self.test_location.save()
         models.Space.objects.filter(uuid="6fb34c82-4222-425e-b0ea-30acfd31f52e").update(
             path=str(self.tmpdir)
         )
         ss_int = models.Location.objects.get(purpose="SS")
-        ss_int.relative_path = str(ss_internal)[1:]
+        ss_int.relative_path = str(ss_internal.relative_to(os.sep))
         ss_int.save()
         # Set Arkivum package request ID
         models.Package.objects.filter(
@@ -1020,7 +1023,8 @@ class TestSwordAPI(TestCase):
 
 
 class TestPipelineAPI(TestCase):
-    fixtures = ["base.json"]
+    fixture_files = ["base.json"]
+    fixtures = [FIXTURES_DIR / f for f in fixture_files]
 
     def setUp(self):
         self.user = User.objects.get(username="test")

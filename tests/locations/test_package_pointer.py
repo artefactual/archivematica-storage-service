@@ -1,4 +1,4 @@
-import os
+import pathlib
 from uuid import uuid4
 
 import metsrw
@@ -6,9 +6,8 @@ from django.test import TestCase
 from locations import models
 from metsrw.plugins import premisrw
 
-THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures", ""))
 
+FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
 TEST_PREMIS_OBJECT_UUID = str(uuid4())
 TEST_PREMIS_OBJECT_MESSAGE_DIGEST_ALGORITHM = "sha256"
@@ -161,7 +160,8 @@ TEST_PREMIS_EVENT = (
 class TestPackagePointer(TestCase):
     """Test the package model's pointer file-related capabilities."""
 
-    fixtures = ["base.json", "package.json"]
+    fixture_files = ["base.json", "package.json"]
+    fixtures = [FIXTURES_DIR / f for f in fixture_files]
 
     def setUp(self):
         self.package = models.Package.objects.all()[0]

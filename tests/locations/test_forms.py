@@ -1,16 +1,15 @@
-import os
+import pathlib
 
 import pytest
 from django.test import TestCase
 from locations import forms
 from locations import models
 
-THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures", ""))
+CALLBACK_FIXTURE = pathlib.Path(__file__).parent / "fixtures" / "callback.json"
 
 
 class TestCallbackForm(TestCase):
-    fixtures = ["callback.json"]
+    fixtures = [CALLBACK_FIXTURE]
 
     def test_headers_added(self):
         callback = models.Callback.objects.get(

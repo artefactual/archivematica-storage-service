@@ -1,3 +1,4 @@
+import pathlib
 from unittest import mock
 from urllib.parse import ParseResult
 from urllib.parse import urlparse
@@ -6,9 +7,12 @@ from django.test import TestCase
 from django.urls import reverse
 from locations import models
 
+FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
+
 
 class TestPipeline(TestCase):
-    fixtures = ["base.json", "pipelines.json"]
+    fixture_files = ["base.json", "pipelines.json"]
+    fixtures = [FIXTURES_DIR / f for f in fixture_files]
 
     def test_parse_and_fix_url(self):
         pipeline = models.Pipeline.objects.get(pk=1)
@@ -104,7 +108,8 @@ class TestPipeline(TestCase):
 
 
 class TestPipelineViews(TestCase):
-    fixtures = ["base.json", "pipelines.json"]
+    fixture_files = ["base.json", "pipelines.json"]
+    fixtures = [FIXTURES_DIR / f for f in fixture_files]
 
     def setUp(self):
         self.client.login(username="test", password="test")

@@ -1,13 +1,13 @@
 """Tests for the datatable utilities."""
-import os
+import pathlib
 import uuid
 
 from django.test import TestCase
 from locations import datatable_utils
 from locations import models
 
-THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures", ""))
+FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
+
 
 # There are 12 total packages in package.json.
 TOTAL_FIXTURE_PACKAGES = 13
@@ -17,7 +17,8 @@ TOTAL_FIXTURE_FIXITY_LOGS = 4
 
 
 class TestPackageDataTable(TestCase):
-    fixtures = ["base.json", "package.json"]
+    fixture_files = ["base.json", "package.json"]
+    fixtures = [FIXTURES_DIR / f for f in fixture_files]
 
     def test_initialization(self):
         DISPLAY_LEN = 10
@@ -320,7 +321,8 @@ class TestPackageDataTable(TestCase):
 
 
 class TestFixityLogDataTable(TestCase):
-    fixtures = ["base.json", "package.json", "fixity_log.json"]
+    fixture_files = ["base.json", "package.json", "fixity_log.json"]
+    fixtures = [FIXTURES_DIR / f for f in fixture_files]
 
     def test_fixity_logs_are_filtered_by_package(self):
         # count all fixity logs with no filtering

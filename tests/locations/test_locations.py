@@ -1,10 +1,15 @@
+import pathlib
+
 from django.test import TestCase
 from locations import forms
 from locations import models
 
+FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
+
 
 class TestLocations(TestCase):
-    fixtures = ["base.json", "pipelines.json"]
+    fixture_files = ["base.json", "pipelines.json"]
+    fixtures = [FIXTURES_DIR / f for f in fixture_files]
 
     def test_clean_works(self):
         pipelines = models.Pipeline.objects.all()

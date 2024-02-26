@@ -1,5 +1,6 @@
 """Tests for the GPG encrypted space."""
 import os
+import pathlib
 import tarfile
 from collections import namedtuple
 
@@ -12,7 +13,7 @@ from locations.models import Package
 from locations.models import space
 from metsrw.plugins import premisrw
 
-
+FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 GPG_VERSION = "1.4.16"
 SS_VERSION = "0.11.0"
 SUCCESS_STATUS = "good times"
@@ -438,7 +439,8 @@ def test__parse_gpg_version():
 
 
 class TestGPG(TestCase):
-    fixtures = ["base.json", "package.json", "gpg.json"]
+    fixture_files = ["base.json", "package.json", "gpg.json"]
+    fixtures = [FIXTURES_DIR / f for f in fixture_files]
 
     def test__encr_path2key_fingerprint(self):
         package = Package.objects.get(pk=8)

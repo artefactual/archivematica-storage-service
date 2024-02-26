@@ -1,6 +1,7 @@
 import datetime
 import hashlib
 import os
+import pathlib
 import shutil
 import tempfile
 import time
@@ -17,8 +18,7 @@ from django.urls import reverse
 from locations import models
 
 
-THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures", ""))
+FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
 # Fixture files are not cleanly separated, with potential for
 # enumeration of PKs across both:
@@ -82,7 +82,8 @@ def create_temporary_pointer(tmp_dir, path):
 
 
 class TestPackage(TestCase):
-    fixtures = ["base.json", "package.json", "arkivum.json", "callback.json"]
+    fixture_files = ["base.json", "package.json", "arkivum.json", "callback.json"]
+    fixtures = [FIXTURES_DIR / f for f in fixture_files]
 
     def setUp(self):
         packages = models.Package.objects.all()
@@ -93,12 +94,10 @@ class TestPackage(TestCase):
         )
 
         self.package = packages[0]
-        self.mets_path = os.path.normpath(
-            os.path.join(__file__, "..", "..", "fixtures")
-        )
+        self.mets_path = os.path.normpath(os.path.join(__file__, "..", "fixtures"))
 
         # Set up locations to point to fixtures directory
-        FIXTURE_DIR_NO_LEADING_SLASH = FIXTURES_DIR[1:]
+        FIXTURE_DIR_NO_LEADING_SLASH = str(FIXTURES_DIR.relative_to(os.sep))
         self._point_location_at_on_disk_storage(
             uuid.UUID("615103f0-0ee0-4a12-ba17-43192d1143ea"),
             FIXTURE_DIR_NO_LEADING_SLASH,
