@@ -216,7 +216,7 @@ def gpg_decrypt_file(path, decr_path):
     """Use GPG to decrypt the file at ``path`` and save the decrypted file to
     ``decr_path``.
     """
-    with open(path, "rb") as stream:
+    with Path(path).open("rb") as stream:
         return gpg().decrypt_file(stream, output=decr_path)
 
 
@@ -227,7 +227,7 @@ def gpg_encrypt_file(path, recipient_fingerprint):
     result <gnupg.Crypt> object are returned.
     """
     encr_path = path + ".gpg"
-    with open(path, "rb") as stream:
+    with Path(path).open("rb") as stream:
         result = gpg().encrypt_file(
             stream,
             [recipient_fingerprint],
