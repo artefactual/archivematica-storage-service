@@ -45,13 +45,13 @@ via a pipeline? Should this be fixed by the import command?::
 """
 import logging
 import os
+import pathlib
 import shlex
 import shutil
 import subprocess
 import tarfile
 import tempfile
 import uuid
-from pathlib import Path
 from pwd import getpwnam
 
 import bagit
@@ -174,14 +174,14 @@ def fail(string):
 
 
 def is_compressed(aip_path):
-    return Path(aip_path).is_file()
+    return pathlib.Path(aip_path).is_file()
 
 
 def tree(path):
     for root, _, files in os.walk(path):
         level = root.replace(path, "").count(os.sep)
         indent = " " * 4 * (level)
-        print(header(f"{indent}{Path(root).name}/"))
+        print(header(f"{indent}{pathlib.Path(root).name}/"))
         subindent = " " * 4 * (level + 1)
         for f in files:
             print(okgreen(f"{subindent}{f}"))
@@ -208,19 +208,19 @@ def _decompress_tar_gz(aip_path, temp_dir):
     with tarfile.open(aip_path) as tar:
         aip_root_dir = os.path.commonprefix(tar.getnames())
         tar.extractall(path=temp_dir)
-    return Path(temp_dir) / aip_root_dir
+    return pathlib.Path(temp_dir) / aip_root_dir
 
 
 def _decompress_7z(aip_path, temp_dir):
     cmd = shlex.split(f"7z x {aip_path} -o{temp_dir}")
     subprocess.check_output(cmd)
-    temp_dir_path = Path(temp_dir)
+    temp_dir_path = pathlib.Path(temp_dir)
     # Convert the Path object to a string to ensure compatibility with bagit.py
     return str(temp_dir_path / next(temp_dir_path.iterdir()))
 
 
 def confirm_aip_exists(aip_path):
-    if not Path(aip_path).exists():
+    if not pathlib.Path(aip_path).exists():
         raise ImportAIPException(f"There is nothing at {aip_path}")
 
 
@@ -238,14 +238,14 @@ def validate(aip_path):
 
 
 def get_aip_mets_path(aip_path):
-    aip_mets_path = list(Path(aip_path).joinpath("data").glob("METS*xml"))
+    aip_mets_path = list(pathlib.Path(aip_path).joinpath("data").glob("METS*xml"))
     if not aip_mets_path:
         raise ImportAIPException(f"Unable to find a METS file in {aip_path}.")
     return aip_mets_path[0]
 
 
 def get_aip_uuid(aip_mets_path):
-    return uuid.UUID(Path(aip_mets_path).name[5:41])
+    return uuid.UUID(pathlib.Path(aip_mets_path).name[5:41])
 
 
 def get_aip_storage_locations(aip_storage_location_uuid):
@@ -290,18 +290,19 @@ def fix_ownership(aip_path, unix_owner):
     am_uid = passwd_struct.pw_uid
     am_gid = passwd_struct.pw_gid
     for root, dirs, files in os.walk(aip_path):
-        os.chown(root, am_uid, am_gid)
+        root_path = pathlib.Path(root)
+        os.chown(root_path, am_uid, am_gid)
         for dir_ in dirs:
-            os.chown(Path(root) / dir_, am_uid, am_gid)
+            os.chown(root_path / dir_, am_uid, am_gid)
         for file_ in files:
-            os.chown(Path(root) / file_, am_uid, am_uid)
+            os.chown(root_path / file_, am_uid, am_uid)
 
 
 def copy_aip_to_aip_storage_location(
     aip_model_inst, aip_path, local_as_location, unix_owner
 ):
     aip_storage_location_path = local_as_location.full_path
-    dest = Path(aip_storage_location_path) / aip_model_inst.current_path
+    dest = pathlib.Path(aip_storage_location_path) / aip_model_inst.current_path
     copy_rsync(aip_path, dest)
     fix_ownership(dest, unix_owner)
     print(
@@ -314,7 +315,7 @@ def copy_aip_to_aip_storage_location(
 
 
 def copy_rsync(source, destination):
-    source = str(Path(source) / "_")[:-1]
+    source = str(pathlib.Path(source) / "_")[:-1]
     p = subprocess.Popen(
         [
             "rsync",
@@ -384,11 +385,13 @@ def compress(aip_model_inst, compression_algorithm):
         compressed_aip_parent_path,
         details,
     ) = aip_model_inst.compress_package(compression_algorithm, detailed_output=True)
-    compressed_aip_fname = Path(compressed_aip_path).name
-    aip_current_dir = Path(aip_model_inst.current_path).parent
+    compressed_aip_fname = pathlib.Path(compressed_aip_path).name
+    aip_current_dir = pathlib.Path(aip_model_inst.current_path).parent
     shutil.rmtree(aip_model_inst.full_path)
-    new_current_path = Path(aip_current_dir) / compressed_aip_fname
-    new_full_path = Path(aip_model_inst.current_location.full_path) / new_current_path
+    new_current_path = pathlib.Path(aip_current_dir) / compressed_aip_fname
+    new_full_path = (
+        pathlib.Path(aip_model_inst.current_location.full_path) / new_current_path
+    )
     shutil.move(compressed_aip_path, new_full_path)
     aip_model_inst.current_path = new_current_path
     shutil.rmtree(compressed_aip_parent_path)
@@ -430,7 +433,7 @@ def import_aip(
         size=utils.recalculate_size(aip_path),
         origin_pipeline=get_pipeline(adoptive_pipeline_uuid),
         current_location=local_as_location,
-        current_path=Path(aip_path).name,
+        current_path=pathlib.Path(aip_path).name,
     )
     copy_aip_to_aip_storage_location(
         aip_model_inst, aip_path, local_as_location, unix_owner
@@ -454,7 +457,7 @@ def import_aip(
     print(
         okgreen(
             "Path: {}.".format(
-                Path(aip_model_inst.current_location.full_path)
+                pathlib.Path(aip_model_inst.current_location.full_path)
                 / aip_model_inst.current_path
             )
         )

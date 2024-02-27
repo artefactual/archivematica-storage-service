@@ -1,7 +1,7 @@
 import errno
 import logging
 import os
-from pathlib import Path
+import pathlib
 
 import django.core.exceptions
 from common import utils
@@ -60,7 +60,7 @@ class PopulateLock:
 def populate_default_locations():
     """Create default local filesystem space and its locations."""
 
-    BASE_PATH = Path("var") / "archivematica"
+    BASE_PATH = pathlib.Path("var") / "archivematica"
 
     try:
         space, space_created = locations_models.Space.objects.get_or_create(
@@ -140,10 +140,10 @@ def populate_default_locations():
         if created and loc_info.get("create_dirs"):
             LOGGER.info("Creating %s Location %s", loc_info["purpose"], new_loc)
             try:
-                Path(new_loc.full_path).mkdir()
+                pathlib.Path(new_loc.full_path).mkdir()
                 # Hack for extra recovery dir
                 if loc_info["purpose"] == locations_models.Location.AIP_RECOVERY:
-                    Path(new_loc.full_path).joinpath("backup").mkdir()
+                    pathlib.Path(new_loc.full_path).joinpath("backup").mkdir()
             except OSError as e:
                 if e.errno != errno.EEXIST:
                     LOGGER.error(

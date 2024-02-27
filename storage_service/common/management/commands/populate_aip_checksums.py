@@ -13,7 +13,7 @@ have the Package.checksum and Package.checksum_algorithm fields populated.
 Execution example:
 ./manage.py populate_aip_checksums
 """
-from pathlib import Path
+import pathlib
 
 from common import utils
 from common.management.commands import StorageServiceCommand
@@ -54,7 +54,7 @@ class Command(StorageServiceCommand):
         compressed_aips = []
         uncompressed_aips = []
         for aip in aips:
-            if Path(aip.current_path).suffix in utils.PACKAGE_EXTENSIONS:
+            if pathlib.Path(aip.current_path).suffix in utils.PACKAGE_EXTENSIONS:
                 compressed_aips.append(aip)
             else:
                 uncompressed_aips.append(aip)
