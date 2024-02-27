@@ -1,4 +1,5 @@
 import os
+import pathlib
 import shutil
 from unittest import mock
 
@@ -8,8 +9,7 @@ from locations import models
 
 from . import TempDirMixin
 
-THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
+FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
 
 def get_pkg_uuid_path(package_uuid):
@@ -18,7 +18,8 @@ def get_pkg_uuid_path(package_uuid):
 
 
 class TestArkivum(TempDirMixin, TestCase):
-    fixtures = ["base.json", "arkivum.json"]
+    fixture_files = ["base.json", "arkivum.json"]
+    fixtures = [FIXTURES_DIR / f for f in fixture_files]
 
     def setUp(self):
         super().setUp()

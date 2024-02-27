@@ -1,4 +1,5 @@
 import os
+import pathlib
 from unittest import mock
 
 import pytest
@@ -8,9 +9,12 @@ from locations import models
 
 from . import TempDirMixin
 
+FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
+
 
 class TestSwift(TempDirMixin, TestCase):
-    fixtures = ["base.json", "swift.json"]
+    fixture_files = ["base.json", "swift.json"]
+    fixtures = [FIXTURES_DIR / f for f in fixture_files]
 
     def setUp(self):
         super().setUp()

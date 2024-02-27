@@ -18,7 +18,7 @@ from lxml import etree
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
+FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "fixtures"))
 
 METS_1_PATH = os.path.join(FIXTURES_DIR, "dspacerestmetsmetadata.xml")
 METS_1_DSPACE_AIP_COLLECTION = "09c098c1-99b1-4130-8337-7733409d39b8"

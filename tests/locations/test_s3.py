@@ -1,4 +1,5 @@
 import os
+import pathlib
 from unittest import mock
 from unittest import skip
 
@@ -9,12 +10,12 @@ from django.test import TestCase
 from locations import models
 
 
-THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
+FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
 
 class TestS3Storage(TestCase):
-    fixtures = ["base.json", "s3.json"]
+    fixture_files = ["base.json", "s3.json"]
+    fixtures = [FIXTURES_DIR / f for f in fixture_files]
 
     def setUp(self):
         self.s3_object = models.S3.objects.get(id=1)

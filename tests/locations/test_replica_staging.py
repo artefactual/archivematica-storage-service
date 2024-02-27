@@ -1,4 +1,5 @@
 import os
+import pathlib
 import tempfile
 
 from django.test import TestCase
@@ -7,12 +8,12 @@ from locations import models
 from . import TempDirMixin
 
 
-THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "..", "fixtures"))
+FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
 
 class TestOfflineReplicaStaging(TempDirMixin, TestCase):
-    fixtures = ["base.json", "replica_staging.json"]
+    fixture_files = ["base.json", "replica_staging.json"]
+    fixtures = [FIXTURES_DIR / f for f in fixture_files]
 
     def setUp(self):
         super().setUp()

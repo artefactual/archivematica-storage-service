@@ -5,7 +5,7 @@ services:
 
   archivematica-storage-service:
     build:
-      context: "../"
+      context: "../../"
       dockerfile: "Dockerfile"
       args:
         USER_ID: ${USER_ID:-1000}
@@ -14,9 +14,10 @@ services:
         PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
     entrypoint: ""
     working_dir: "/src"
-    command: ["pytest", "storage_service", "integration"]
+    command: ["pytest"]
     environment:
       PYTEST_ADDOPTS: ${PYTEST_ADDOPTS:-}
+      RUN_INTEGRATION_TESTS: "true"
       FORWARDED_ALLOW_IPS: "*"
       SS_GUNICORN_ACCESSLOG: "/dev/null"
       DJANGO_SETTINGS_MODULE: "storage_service.settings.testmysql"
@@ -28,7 +29,7 @@ services:
       RCLONE_CONFIG_MYS3_SECRET_ACCESS_KEY: "minio123"
       RCLONE_CONFIG_MYS3_REGION: "planet-earth"
     volumes:
-      - "../:/src"
+      - "../../:/src"
     depends_on:
       mysql:
         condition: service_healthy

@@ -1,11 +1,15 @@
+import pathlib
 from unittest import mock
 
 from django.test import TestCase
 from locations import models
 
+FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
+
 
 class TestLockssomatic(TestCase):
-    fixtures = ["base.json", "lockssomatic.json"]
+    fixture_files = ["base.json", "lockssomatic.json"]
+    fixtures = [FIXTURES_DIR / f for f in fixture_files]
 
     def setUp(self):
         self.lom_object = models.Lockssomatic.objects.all()[0]
