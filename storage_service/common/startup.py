@@ -140,10 +140,11 @@ def populate_default_locations():
         if created and loc_info.get("create_dirs"):
             LOGGER.info("Creating %s Location %s", loc_info["purpose"], new_loc)
             try:
-                pathlib.Path(new_loc.full_path).mkdir()
+                new_loc_full_path = pathlib.Path(new_loc.full_path)
+                new_loc_full_path.mkdir()
                 # Hack for extra recovery dir
                 if loc_info["purpose"] == locations_models.Location.AIP_RECOVERY:
-                    pathlib.Path(new_loc.full_path).joinpath("backup").mkdir()
+                    (new_loc_full_path / "backup").mkdir()
             except OSError as e:
                 if e.errno != errno.EEXIST:
                     LOGGER.error(
