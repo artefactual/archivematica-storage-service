@@ -80,7 +80,9 @@ class Command(BaseCommand):
     help = "Import an AIP into the Storage Service"
 
     def add_arguments(self, parser):
-        parser.add_argument("aip_path", help="Full path to the AIP to be imported")
+        parser.add_argument(
+            "aip_path", help="Full path to the AIP to be imported", type=pathlib.Path
+        )
         parser.add_argument(
             "--aip-storage-location",
             help="UUID of the AIP Storage Location where the imported AIP"
@@ -174,7 +176,7 @@ def fail(string):
 
 
 def is_compressed(aip_path):
-    return pathlib.Path(aip_path).is_file()
+    return aip_path.is_file()
 
 
 def tree(path):
@@ -194,8 +196,8 @@ def decompress(aip_path, decompress_source, temp_dir):
 
 
 def _decompress(aip_path, temp_dir):
-    is_tar_gz = aip_path.endswith(".tar.gz")
-    is_7z = aip_path.endswith(".7z")
+    is_tar_gz = "".join(aip_path.suffixes) == ".tar.gz"
+    is_7z = aip_path.suffix == ".7z"
     if not (is_tar_gz or is_7z):
         raise ImportAIPException(f"Unable to decompress the AIP at {aip_path}")
     if is_tar_gz:
@@ -208,26 +210,25 @@ def _decompress_tar_gz(aip_path, temp_dir):
     with tarfile.open(aip_path) as tar:
         aip_root_dir = os.path.commonprefix(tar.getnames())
         tar.extractall(path=temp_dir)
-    return pathlib.Path(temp_dir) / aip_root_dir
+    return temp_dir / aip_root_dir
 
 
 def _decompress_7z(aip_path, temp_dir):
     cmd = shlex.split(f"7z x {aip_path} -o{temp_dir}")
     subprocess.check_output(cmd)
-    temp_dir_path = pathlib.Path(temp_dir)
-    # Convert the Path object to a string to ensure compatibility with bagit.py
-    return str(temp_dir_path / next(temp_dir_path.iterdir()))
+    return temp_dir / next(temp_dir.iterdir())
 
 
 def confirm_aip_exists(aip_path):
-    if not pathlib.Path(aip_path).exists():
+    if not aip_path.exists():
         raise ImportAIPException(f"There is nothing at {aip_path}")
 
 
 def validate(aip_path):
     error_msg = f"The AIP at {aip_path} is not a valid Bag; aborting."
     try:
-        bag = bagit.Bag(aip_path)
+        # Convert the Path object to a string to ensure compatibility with bagit
+        bag = bagit.Bag(str(aip_path))
     except bagit.BagError:
         if is_compressed(aip_path):
             error_msg = f"{error_msg} Try passing the --decompress-source flag."
@@ -238,14 +239,14 @@ def validate(aip_path):
 
 
 def get_aip_mets_path(aip_path):
-    aip_mets_path = list(pathlib.Path(aip_path).joinpath("data").glob("METS*xml"))
+    aip_mets_path = list((aip_path / "data").glob("METS*xml"))
     if not aip_mets_path:
         raise ImportAIPException(f"Unable to find a METS file in {aip_path}.")
     return aip_mets_path[0]
 
 
 def get_aip_uuid(aip_mets_path):
-    return uuid.UUID(pathlib.Path(aip_mets_path).name[5:41])
+    return uuid.UUID(aip_mets_path.name[5:41])
 
 
 def get_aip_storage_locations(aip_storage_location_uuid):
@@ -315,7 +316,7 @@ def copy_aip_to_aip_storage_location(
 
 
 def copy_rsync(source, destination):
-    source = str(pathlib.Path(source) / "_")[:-1]
+    source = str(source / "_")[:-1]
     p = subprocess.Popen(
         [
             "rsync",
@@ -416,7 +417,7 @@ def import_aip(
     tmp_dir,
 ):
     confirm_aip_exists(aip_path)
-    temp_dir = tempfile.mkdtemp(dir=tmp_dir)
+    temp_dir = pathlib.Path(tempfile.mkdtemp(dir=tmp_dir))
     aip_path = decompress(aip_path, decompress_source, temp_dir)
     validate(aip_path)
     aip_mets_path = get_aip_mets_path(aip_path)
@@ -433,7 +434,7 @@ def import_aip(
         size=utils.recalculate_size(aip_path),
         origin_pipeline=get_pipeline(adoptive_pipeline_uuid),
         current_location=local_as_location,
-        current_path=pathlib.Path(aip_path).name,
+        current_path=aip_path.name,
     )
     copy_aip_to_aip_storage_location(
         aip_model_inst, aip_path, local_as_location, unix_owner
