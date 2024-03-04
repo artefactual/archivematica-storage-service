@@ -4,6 +4,7 @@ import hashlib
 import logging
 import mimetypes
 import os
+import pathlib
 import re
 import shutil
 import subprocess
@@ -160,21 +161,23 @@ def download_file_stream(filepath, temp_dir=None):
 
     Deletes temp_dir once stream created if it exists.
     """
+    file_path = pathlib.Path(filepath)
+
     # If not found, return 404
-    if not os.path.exists(filepath):
+    if not file_path.exists():
         return http.HttpResponseNotFound(_("File not found"))
 
-    filename = os.path.basename(filepath)
+    filename = file_path.name
 
     # Open file in binary mode
-    response = http.FileResponse(open(filepath, "rb"))
+    response = http.FileResponse(file_path.open("rb"))
 
     response["Content-type"] = get_mimetype(filename)
     response["Content-Disposition"] = 'attachment; filename="' + filename + '"'
-    response["Content-Length"] = os.path.getsize(filepath)
+    response["Content-Length"] = file_path.stat().st_size
 
     # Delete temp dir if created
-    if temp_dir and os.path.exists(temp_dir):
+    if temp_dir and pathlib.Path(temp_dir).exists():
         shutil.rmtree(temp_dir, ignore_errors=True)
 
     return response
