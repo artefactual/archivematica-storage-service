@@ -598,11 +598,10 @@ def create_tar(path, extension=False):
     :param extension: Flag indicating whether to add .tar extension (bool)
     """
     path = pathlib.Path(path)
-    # tarpath = f"{path}{TAR_EXTENSION}"
     tarpath = path.with_suffix(TAR_EXTENSION)
     changedir = tarpath.parent
     source = path.name
-    cmd = ["tar", "-C", changedir, "-cf", str(tarpath), source]
+    cmd = ["tar", "-C", changedir, "-cf", tarpath, source]
     LOGGER.info(
         "creating archive of %s at %s, relative to %s", source, tarpath, changedir
     )
