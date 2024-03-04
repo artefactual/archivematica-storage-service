@@ -350,28 +350,31 @@ def get_compress_command(compression, extract_path, basename, full_path):
         `command` is the compression command (as a list of strings)
         `compressed_filename` is the full path to the compressed file
     """
+    extract_path = pathlib.Path(extract_path) / basename
+    full_path = pathlib.Path(full_path)
+
     if compression in (COMPRESSION_TAR, COMPRESSION_TAR_BZIP2, COMPRESSION_TAR_GZIP):
-        compressed_filename = os.path.join(extract_path, basename + TAR_EXTENSION)
-        relative_path = os.path.dirname(full_path)
+        compressed_filename = extract_path.with_suffix(TAR_EXTENSION)
+        relative_path = full_path.parent
         algo = ""
         if compression == COMPRESSION_TAR_BZIP2:
             algo = "-j"  # Compress with bzip2
-            compressed_filename += ".bz2"
+            compressed_filename = extract_path.with_suffix(TAR_EXTENSION + ".bz2")
         elif compression == COMPRESSION_TAR_GZIP:
             algo = "-z"  # Compress with gzip
-            compressed_filename += ".gz"
+            compressed_filename = extract_path.with_suffix(TAR_EXTENSION + ".gz")
         command = [
             "tar",
             "c",  # Create tar
             algo,  # Optional compression flag
             "-C",
-            relative_path,  # Work in this directory
+            str(relative_path),  # Work in this directory
             "-f",
-            compressed_filename,  # Output file
-            os.path.basename(full_path),  # Relative path to source files
+            str(compressed_filename),  # Output file
+            full_path.name,  # Relative path to source files
         ]
     elif compression in (COMPRESSION_7Z_BZIP, COMPRESSION_7Z_LZMA, COMPRESSION_7Z_COPY):
-        compressed_filename = os.path.join(extract_path, basename + ".7z")
+        compressed_filename = extract_path.with_suffix(".7z")
         if compression == COMPRESSION_7Z_BZIP:
             algo = COMPRESS_ALGO_BZIP2
         elif compression == COMPRESSION_7Z_LZMA:
@@ -389,8 +392,8 @@ def get_compress_command(compression, extract_path, basename, full_path):
             "-mtm=on",
             "-mta=on",  # Keep timestamps (create, mod, access)
             "-mmt=on",  # Multithreaded
-            compressed_filename,  # Destination
-            full_path,  # Source
+            str(compressed_filename),  # Destination
+            str(full_path),  # Source
         ]
 
     else:
