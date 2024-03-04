@@ -313,25 +313,26 @@ def test_extract_tar(mocker, path, will_be_dir, sp_raises, expected):
         mocker.patch.object(subprocess, "check_output", side_effect=OSError("gotcha!"))
     else:
         mocker.patch.object(subprocess, "check_output")
-    mocker.patch.object(os, "rename")
-    mocker.patch.object(os, "remove")
+    mocker.patch.object(pathlib.Path, "rename")
+    mocker.patch.object(pathlib.Path, "unlink")
     if will_be_dir:
-        mocker.patch.object(os.path, "isdir", return_value=True)
+        mocker.patch.object(pathlib.Path, "is_dir", return_value=True)
     else:
-        mocker.patch.object(os.path, "isdir", return_value=False)
-    tarpath_ext = f"{path}.tar"
-    dirname = os.path.dirname(tarpath_ext)
+        mocker.patch.object(pathlib.Path, "is_dir", return_value=False)
+    path = pathlib.Path(path)
+    tarpath_ext = path.with_suffix(".tar")
+    dirname = tarpath_ext.parent
     if expected == "success":
         ret = utils.extract_tar(path)
         assert ret is None
-        os.remove.assert_called_once_with(tarpath_ext)
+        tarpath_ext.unlink.assert_called_once()
     else:
         with pytest.raises(utils.TARException) as excinfo:
             ret = utils.extract_tar(path)
         assert f"Failed to extract {path}: gotcha!" == str(excinfo.value)
-        os.rename.assert_any_call(tarpath_ext, path)
-        assert not os.remove.called
-    os.rename.assert_any_call(path, tarpath_ext)
+        tarpath_ext.rename.assert_any_call(path)
+        assert not pathlib.Path.unlink.called
+    path.rename.assert_any_call(tarpath_ext)
     subprocess.check_output.assert_called_once_with(
         ["tar", "-xf", tarpath_ext, "-C", dirname]
     )

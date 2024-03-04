@@ -638,10 +638,10 @@ def extract_tar(tarpath):
 
     :param tarpath: Path to tarfile to extract (str)
     """
-    newtarpath = tarpath
-    newtarpath = f"{tarpath}{TAR_EXTENSION}"
-    os.rename(tarpath, newtarpath)
-    changedir = os.path.dirname(newtarpath)
+    tarpath = pathlib.Path(tarpath)
+    newtarpath = tarpath.with_suffix(TAR_EXTENSION)
+    tarpath.rename(newtarpath)
+    changedir = newtarpath.parent
     cmd = ["tar", "-xf", newtarpath, "-C", changedir]
     try:
         subprocess.check_output(cmd)
@@ -650,9 +650,9 @@ def extract_tar(tarpath):
             "Failed to extract %(tarpath)s: %(error)s"
             % {"tarpath": tarpath, "error": err}
         )
-        os.rename(newtarpath, tarpath)
+        newtarpath.rename(tarpath)
         raise TARException(fail_msg)
-    os.remove(newtarpath)
+    newtarpath.unlink()
 
 
 # ########### OTHER ############
