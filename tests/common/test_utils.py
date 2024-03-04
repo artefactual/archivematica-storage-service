@@ -1,4 +1,5 @@
 import os
+import pathlib
 import shutil
 import subprocess
 import tarfile
@@ -404,16 +405,16 @@ def test_create_tar(
         mocker.patch.object(subprocess, "check_output", side_effect=OSError("gotcha!"))
     else:
         mocker.patch.object(subprocess, "check_output")
-    mocker.patch.object(os.path, "isfile", return_value=will_be_file)
+    mocker.patch.object(pathlib.Path, "is_file", return_value=will_be_file)
     mocker.patch.object(tarfile, "is_tarfile", return_value=will_be_tar)
-    mocker.patch.object(os, "rename")
+    mocker.patch.object(pathlib.Path, "rename")
     mocker.patch.object(shutil, "rmtree")
-    fixed_path = path.rstrip("/")
-    tarpath = f"{fixed_path}.tar"
+    fixed_path = pathlib.Path(path)
+    tarpath = fixed_path.with_suffix(".tar")
     if expected == "success":
         ret = utils.create_tar(path)
         shutil.rmtree.assert_called_once_with(fixed_path)
-        os.rename.assert_called_once_with(tarpath, fixed_path)
+        tarpath.rename.assert_called_once_with(fixed_path)
         tarfile.is_tarfile.assert_any_call(fixed_path)
         assert ret is None
     else:
@@ -423,13 +424,13 @@ def test_create_tar(
             tarpath, fixed_path
         ) == str(excinfo.value)
         assert not shutil.rmtree.called
-        assert not os.rename.called
+        assert not pathlib.Path.rename.called
     if not sp_raises:
-        os.path.isfile.assert_called_once_with(tarpath)
+        tarpath.is_file.assert_called_once()
         if will_be_file:
             tarfile.is_tarfile.assert_any_call(tarpath)
         if extension:
-            tarpath.endswith(utils.TAR_EXTENSION)
+            assert tarpath.suffix == utils.TAR_EXTENSION
 
 
 @pytest.mark.parametrize(

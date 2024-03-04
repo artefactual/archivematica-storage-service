@@ -597,11 +597,12 @@ def create_tar(path, extension=False):
     :param path: Path to directory or file to tar (str)
     :param extension: Flag indicating whether to add .tar extension (bool)
     """
-    path = path.rstrip("/")
-    tarpath = f"{path}{TAR_EXTENSION}"
-    changedir = os.path.dirname(tarpath)
-    source = os.path.basename(path)
-    cmd = ["tar", "-C", changedir, "-cf", tarpath, source]
+    path = pathlib.Path(path)
+    # tarpath = f"{path}{TAR_EXTENSION}"
+    tarpath = path.with_suffix(TAR_EXTENSION)
+    changedir = tarpath.parent
+    source = path.name
+    cmd = ["tar", "-C", changedir, "-cf", str(tarpath), source]
     LOGGER.info(
         "creating archive of %s at %s, relative to %s", source, tarpath, changedir
     )
@@ -614,21 +615,21 @@ def create_tar(path, extension=False):
         raise TARException(fail_msg)
 
     # Providing the TAR is successfully created then remove the original.
-    if os.path.isfile(tarpath) and tarfile.is_tarfile(tarpath):
+    if tarpath.is_file() and tarfile.is_tarfile(tarpath):
         try:
             shutil.rmtree(path)
         except OSError:
             # Remove a file-path as We're likely packaging a file, e.g. 7z.
-            os.remove(path)
+            path.unlink()
         if not extension:
-            os.rename(tarpath, path)
+            tarpath.rename(path)
     else:
         raise TARException(fail_msg)
 
     if not tarfile.is_tarfile(tarpath if extension else path):
         raise TARException(fail_msg)
 
-    if os.path.exists(path if extension else tarpath):
+    if (path if extension else tarpath).exists():
         raise TARException(fail_msg)
 
 
