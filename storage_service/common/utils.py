@@ -782,10 +782,7 @@ def package_is_file(path):
     or a directory. As paths are usually abstract, i.e. stored in the database,
     we can't (usually) simply test whether the object is a file on disk.
     """
-    for ext in PACKAGE_EXTENSIONS:
-        if path.endswith(ext):
-            return True
-    return False
+    return pathlib.Path(path).suffix in PACKAGE_EXTENSIONS
 
 
 def get_mimetype(path):
