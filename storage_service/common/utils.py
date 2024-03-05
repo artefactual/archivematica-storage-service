@@ -706,7 +706,7 @@ def uuid_to_path(uuid):
     Every 4 alphanumeric characters of the UUID become a folder name."""
     uuid = uuid.hex
     path = [uuid[i : i + 4] for i in range(0, len(uuid), 4)]
-    path = os.path.join(*path)
+    path = pathlib.Path(*path)
     LOGGER.debug("path %s", path)
     return path
 
@@ -724,19 +724,15 @@ def removedirs(relative_path, base=None):
     """
     if not base:
         return os.removedirs(relative_path)
+
+    base_path = pathlib.Path(base)
+    full_path = base_path / relative_path
     try:
-        os.rmdir(os.path.join(base, relative_path))
+        while full_path != base_path:
+            full_path.rmdir()
+            full_path = full_path.parent
     except OSError:
         pass
-    head, tail = os.path.split(relative_path)
-    if not tail:
-        head, tail = os.path.split(head)
-    while head and tail:
-        try:
-            os.rmdir(os.path.join(base, head))
-        except OSError:
-            break
-        head, tail = os.path.split(head)
 
 
 def strip_quad_dirs_from_path(dest_path):
