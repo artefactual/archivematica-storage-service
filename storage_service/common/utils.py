@@ -765,14 +765,15 @@ def recalculate_size(rein_aip_internal_path):
     because of changed preservation derivatives or because of a metadata-only
     reingest. If the AIP is a directory, then calculate the size recursively.
     """
-    if os.path.isdir(rein_aip_internal_path):
-        size = 0
-        for dirpath, ___, filenames in os.walk(rein_aip_internal_path):
-            for filename in filenames:
-                file_path = os.path.join(dirpath, filename)
-                size += os.path.getsize(file_path)
+    rein_aip_internal_path = pathlib.Path(rein_aip_internal_path)
+    size = 0
+
+    if rein_aip_internal_path.is_dir():
+        for file_path in rein_aip_internal_path.rglob("*"):
+            if file_path.is_file():
+                size += file_path.stat().st_size
     else:
-        size = os.path.getsize(rein_aip_internal_path)
+        size = rein_aip_internal_path.stat().st_size
     return size
 
 
