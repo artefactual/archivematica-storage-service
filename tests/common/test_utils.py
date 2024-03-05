@@ -1,4 +1,3 @@
-import os
 import pathlib
 import shutil
 import subprocess
@@ -11,8 +10,8 @@ import pytest
 from common import utils
 from metsrw import FSEntry
 
-TEST_DIR = os.path.dirname(os.path.realpath(__file__))
-FIXTURES_DIR = os.path.join(TEST_DIR, "fixtures")
+TEST_DIR = pathlib.Path(__file__).resolve().parent
+FIXTURES_DIR = TEST_DIR / "fixtures"
 
 # Until further work is done to bring compression into its own module we can
 # use these constants for this test, but we can do better.
@@ -537,7 +536,7 @@ def test_get_compressed_package_checksum():
 
     # Test PREMIS 3 from fixture.
     assert utils.get_compressed_package_checksum(
-        os.path.join(FIXTURES_DIR, "premis_3_pointer.xml")
+        str(FIXTURES_DIR / "premis_3_pointer.xml")
     ) == ("c2924159fcbbeadf8d7f3962b43ec1bf301e1b4f12dd28a8b89ec819f3714747", "sha256")
 
 
