@@ -10,9 +10,9 @@ asgiref==3.7.2
     # via django
 bagit==1.8.1
     # via -r requirements.in
-boto3==1.34.46
+boto3==1.34.55
     # via -r requirements.in
-botocore==1.34.46
+botocore==1.34.55
     # via
     #   boto3
     #   s3transfer
@@ -24,19 +24,19 @@ cffi==1.16.0
     # via cryptography
 charset-normalizer==3.3.2
     # via requests
-cryptography==42.0.4
+cryptography==42.0.5
     # via
     #   josepy
     #   mozilla-django-oidc
     #   pyopenssl
-debtcollector==2.5.0
+debtcollector==3.0.0
     # via
     #   oslo-config
     #   oslo-utils
     #   python-keystoneclient
 dj-database-url==2.1.0
     # via -r requirements.in
-django==4.2.10
+django==4.2.11
     # via
     #   -r requirements.in
     #   dj-database-url
@@ -49,7 +49,7 @@ django-auth-ldap==4.6.0
     # via -r requirements.in
 django-cas-ng==5.0.1
     # via -r requirements.in
-django-csp==3.7
+django-csp==3.8
     # via -r requirements.in
 django-prometheus==2.3.1
     # via -r requirements.in
@@ -67,7 +67,7 @@ httplib2==0.22.0
     # via sword2
 idna==3.6
     # via requests
-importlib-resources==6.1.1
+importlib-resources==6.1.2
     # via -r requirements.in
 iso8601==2.1.0
     # via
@@ -81,7 +81,7 @@ josepy==1.14.0
     # via mozilla-django-oidc
 jsonfield==3.1.0
     # via -r requirements.in
-keystoneauth1==5.5.0
+keystoneauth1==5.6.0
     # via python-keystoneclient
 lxml==5.1.0
     # via
@@ -93,7 +93,7 @@ metsrw==0.5.1
     # via -r requirements.in
 mozilla-django-oidc==4.0.0
     # via -r requirements.in
-msgpack==1.0.7
+msgpack==1.0.8
     # via oslo-serialization
 mysqlclient==2.2.4
     # via agentarchives
@@ -105,16 +105,16 @@ netifaces==0.11.0
     # via oslo-utils
 os-service-types==1.7.0
     # via keystoneauth1
-oslo-config==9.3.0
+oslo-config==9.4.0
     # via python-keystoneclient
-oslo-i18n==6.2.0
+oslo-i18n==6.3.0
     # via
     #   oslo-config
     #   oslo-utils
     #   python-keystoneclient
-oslo-serialization==5.3.0
+oslo-serialization==5.4.0
     # via python-keystoneclient
-oslo-utils==7.0.0
+oslo-utils==7.1.0
     # via
     #   oslo-serialization
     #   python-keystoneclient
@@ -151,13 +151,13 @@ pyparsing==3.1.1
     #   oslo-utils
 python-cas==1.6.0
     # via django-cas-ng
-python-dateutil==2.8.2
+python-dateutil==2.9.0.post0
     # via
     #   botocore
     #   django-tastypie
 python-gnupg==0.5.2
     # via -r requirements.in
-python-keystoneclient==5.3.0
+python-keystoneclient==5.4.0
     # via -r requirements.in
 python-ldap==3.4.4
     # via
@@ -165,12 +165,8 @@ python-ldap==3.4.4
     #   django-auth-ldap
 python-mimeparse==1.6.0
     # via django-tastypie
-python-swiftclient==4.4.0
+python-swiftclient==4.5.0
     # via -r requirements.in
-pytz==2024.1
-    # via
-    #   oslo-serialization
-    #   oslo-utils
 pyyaml==6.0.1
     # via
     #   oslo-config
@@ -193,17 +189,16 @@ six==1.16.0
     # via
     #   python-cas
     #   python-dateutil
-    #   python-keystoneclient
 sqlparse==0.4.4
     # via django
-stevedore==5.1.0
+stevedore==5.2.0
     # via
     #   keystoneauth1
     #   oslo-config
     #   python-keystoneclient
 sword2 @ git+https://github.com/artefactual-labs/python-client-sword2.git@619ee44467dcdb2ab75fab16864ea2e4ded7ffe4
     # via -r requirements.in
-typing-extensions==4.9.0
+typing-extensions==4.10.0
     # via
     #   asgiref
     #   dj-database-url
@@ -227,7 +222,7 @@ zope-interface==6.2
     # via gevent
 
 # The following packages are considered to be unsafe in a requirements file:
-setuptools==69.1.0
+setuptools==69.1.1
     # via
     #   zope-event
     #   zope-interface

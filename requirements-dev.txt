@@ -12,18 +12,18 @@ asgiref==3.7.2
     #   django
 bagit==1.8.1
     # via -r requirements.txt
-boto3==1.34.46
+boto3==1.34.55
     # via -r requirements.txt
-botocore==1.34.46
+botocore==1.34.55
     # via
     #   -r requirements.txt
     #   boto3
     #   s3transfer
 brotli==1.1.0
     # via -r requirements.txt
-build==1.0.3
+build==1.1.1
     # via pip-tools
-cachetools==5.3.2
+cachetools==5.3.3
     # via tox
 certifi==2024.2.2
     # via
@@ -43,17 +43,17 @@ click==8.1.7
     # via pip-tools
 colorama==0.4.6
     # via tox
-coverage[toml]==7.4.2
+coverage[toml]==7.4.3
     # via
     #   -r requirements-dev.in
     #   pytest-cov
-cryptography==42.0.4
+cryptography==42.0.5
     # via
     #   -r requirements.txt
     #   josepy
     #   mozilla-django-oidc
     #   pyopenssl
-debtcollector==2.5.0
+debtcollector==3.0.0
     # via
     #   -r requirements.txt
     #   oslo-config
@@ -63,7 +63,7 @@ distlib==0.3.8
     # via virtualenv
 dj-database-url==2.1.0
     # via -r requirements.txt
-django==4.2.10
+django==4.2.11
     # via
     #   -r requirements.txt
     #   dj-database-url
@@ -76,7 +76,7 @@ django-auth-ldap==4.6.0
     # via -r requirements.txt
 django-cas-ng==5.0.1
     # via -r requirements.txt
-django-csp==3.7
+django-csp==3.8
     # via -r requirements.txt
 django-prometheus==2.3.1
     # via -r requirements.txt
@@ -110,7 +110,7 @@ importlib-metadata==7.0.1
     # via
     #   build
     #   pytest-randomly
-importlib-resources==6.1.1
+importlib-resources==6.1.2
     # via -r requirements.txt
 iniconfig==2.0.0
     # via pytest
@@ -130,7 +130,7 @@ josepy==1.14.0
     #   mozilla-django-oidc
 jsonfield==3.1.0
     # via -r requirements.txt
-keystoneauth1==5.5.0
+keystoneauth1==5.6.0
     # via
     #   -r requirements.txt
     #   python-keystoneclient
@@ -144,7 +144,7 @@ metsrw==0.5.1
     # via -r requirements.txt
 mozilla-django-oidc==4.0.0
     # via -r requirements.txt
-msgpack==1.0.7
+msgpack==1.0.8
     # via
     #   -r requirements.txt
     #   oslo-serialization
@@ -165,21 +165,21 @@ os-service-types==1.7.0
     # via
     #   -r requirements.txt
     #   keystoneauth1
-oslo-config==9.3.0
+oslo-config==9.4.0
     # via
     #   -r requirements.txt
     #   python-keystoneclient
-oslo-i18n==6.2.0
+oslo-i18n==6.3.0
     # via
     #   -r requirements.txt
     #   oslo-config
     #   oslo-utils
     #   python-keystoneclient
-oslo-serialization==5.3.0
+oslo-serialization==5.4.0
     # via
     #   -r requirements.txt
     #   python-keystoneclient
-oslo-utils==7.0.0
+oslo-utils==7.1.0
     # via
     #   -r requirements.txt
     #   oslo-serialization
@@ -245,7 +245,7 @@ pyproject-hooks==1.0.0
     # via
     #   build
     #   pip-tools
-pytest==8.0.1
+pytest==8.0.2
     # via
     #   -r requirements-dev.in
     #   pytest-cov
@@ -264,14 +264,14 @@ python-cas==1.6.0
     # via
     #   -r requirements.txt
     #   django-cas-ng
-python-dateutil==2.8.2
+python-dateutil==2.9.0.post0
     # via
     #   -r requirements.txt
     #   botocore
     #   django-tastypie
 python-gnupg==0.5.2
     # via -r requirements.txt
-python-keystoneclient==5.3.0
+python-keystoneclient==5.4.0
     # via -r requirements.txt
 python-ldap==3.4.4
     # via
@@ -281,13 +281,8 @@ python-mimeparse==1.6.0
     # via
     #   -r requirements.txt
     #   django-tastypie
-python-swiftclient==4.4.0
+python-swiftclient==4.5.0
     # via -r requirements.txt
-pytz==2024.1
-    # via
-    #   -r requirements.txt
-    #   oslo-serialization
-    #   oslo-utils
 pyyaml==6.0.1
     # via
     #   -r requirements.txt
@@ -316,12 +311,11 @@ six==1.16.0
     #   -r requirements.txt
     #   python-cas
     #   python-dateutil
-    #   python-keystoneclient
 sqlparse==0.4.4
     # via
     #   -r requirements.txt
     #   django
-stevedore==5.1.0
+stevedore==5.2.0
     # via
     #   -r requirements.txt
     #   keystoneauth1
@@ -340,7 +334,7 @@ tomli==2.0.1
     #   tox
 tox==4.13.0
     # via -r requirements-dev.in
-typing-extensions==4.9.0
+typing-extensions==4.10.0
     # via
     #   -r requirements.txt
     #   asgiref
@@ -355,7 +349,7 @@ urllib3==1.26.18
     #   -r requirements.txt
     #   botocore
     #   requests
-virtualenv==20.25.0
+virtualenv==20.25.1
     # via tox
 wheel==0.42.0
     # via pip-tools
@@ -382,7 +376,7 @@ zope-interface==6.2
 # The following packages are considered to be unsafe in a requirements file:
 pip==24.0
     # via pip-tools
-setuptools==69.1.0
+setuptools==69.1.1
     # via
     #   -r requirements.txt
     #   pip-tools
