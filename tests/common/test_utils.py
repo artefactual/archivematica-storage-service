@@ -489,15 +489,18 @@ def test_strip_quad_dirs_from_path(input_path, expected_path):
     ],
 )
 def test_find_tagmanifest(mocker, tmp_path, dir_listing, tagmanifest_file):
-    mocker.patch("os.listdir", return_value=dir_listing)
     aip_path = tmp_path / "aip"
     aip_path.mkdir()
-    file_path = aip_path / "file.txt"
-    file_path.write_text("test data")
+    mock_files = [aip_path / file_ for file_ in dir_listing]
+    mocker.patch.object(pathlib.Path, "iterdir", return_value=mock_files)
+
     if tagmanifest_file is None:
         assert utils.find_tagmanifest(aip_path) is None
     else:
-        assert utils.find_tagmanifest(aip_path) == str(aip_path / tagmanifest_file)
+        assert utils.find_tagmanifest(aip_path) == aip_path / tagmanifest_file
+
+    file_path = aip_path / "file.txt"
+    file_path.write_text("test data")
     assert utils.find_tagmanifest(file_path) is None
 
 
@@ -507,8 +510,10 @@ def test_generate_checksum_uncompressed_aip(mocker, tmp_path):
     tagmanifest = aip_path / "tagmanifest-md5.txt"
     tagmanifest.write_text("some test data")
 
-    mocker.patch("os.path.isdir", return_value=True)
-    find_tag_manifest = mocker.patch("common.utils.find_tagmanifest")
+    mocker.patch.object(pathlib.Path, "is_dir", return_value=True)
+    find_tag_manifest = mocker.patch(
+        "common.utils.find_tagmanifest", return_value=tagmanifest
+    )
 
     utils.generate_checksum(aip_path)
     find_tag_manifest.assert_called_once()

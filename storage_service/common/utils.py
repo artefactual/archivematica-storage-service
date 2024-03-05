@@ -667,12 +667,13 @@ def generate_checksum(file_path, checksum_type="md5"):
 
     If checksum_type is not a valid checksum, ValueError raised by hashlib.
     """
+    file_path = pathlib.Path(file_path)
     checksum = hashlib.new(checksum_type)
 
-    if os.path.isdir(file_path):
+    if file_path.is_dir():
         file_path = find_tagmanifest(file_path)
 
-    with open(file_path, "rb") as f:
+    with file_path.open("rb") as f:
         for chunk in iter(lambda: f.read(128 * checksum.block_size), b""):
             checksum.update(chunk)
     return checksum
@@ -684,10 +685,10 @@ def find_tagmanifest(file_path):
     If there are multiple, return the first of sha512, sha256, or md5,
     respecting the BagIt spec's preference for sha512 or sha256, respectively.
     """
-    if not os.path.isdir(file_path):
+    if not file_path.is_dir():
         return
 
-    bag_files = os.listdir(file_path)
+    bag_files = [file_.name for file_ in file_path.iterdir()]
     tagmanifest_files = [
         "tagmanifest-sha512.txt",
         "tagmanifest-sha256.txt",
@@ -696,7 +697,7 @@ def find_tagmanifest(file_path):
 
     for tagmanifest in tagmanifest_files:
         if tagmanifest in bag_files:
-            return os.path.join(file_path, tagmanifest)
+            return file_path / tagmanifest
 
 
 def uuid_to_path(uuid):
