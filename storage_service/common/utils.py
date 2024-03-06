@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import tarfile
 import uuid
+from collections import deque
 from collections import namedtuple
 
 from administration import models
@@ -741,18 +742,24 @@ def strip_quad_dirs_from_path(dest_path):
     Ensure that paths to uncompressed packages terminate in a trailing slash.
     """
     UUID4_QUAD = re.compile(r"[0-9a-f]{4}\Z", re.I)
-    dest_path = dest_path.rstrip("/")
-    output_path, package_name = os.path.split(dest_path)
-    for _quad_dir in range(8):
-        head, tail = os.path.split(output_path)
-        if not re.match(UUID4_QUAD, tail):
-            continue
-        output_path = head
-    output_path = os.path.join(output_path, package_name)
+
+    dest_path = pathlib.Path(dest_path)
+    package_name = dest_path.name
+
+    filtered_parts = deque()
+    quad_dir_count = 0
+    for part in reversed(dest_path.parent.parts):
+        if quad_dir_count < 8 and UUID4_QUAD.match(part):
+            quad_dir_count += 1
+        else:
+            filtered_parts.appendleft(part)
+
+    output_path = pathlib.Path(*filtered_parts) / package_name
+
     for extension in PACKAGE_EXTENSIONS:
-        if output_path.endswith(extension):
-            return output_path
-    return os.path.join(output_path, "")
+        if output_path.suffix == extension:
+            return str(output_path)
+    return str(output_path / "_")[:-1]
 
 
 StorageEffects = namedtuple(
