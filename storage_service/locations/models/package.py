@@ -133,7 +133,7 @@ class Package(models.Model):
         (DEPOSIT, _("FEDORA Deposit")),
     )
     package_type = models.CharField(max_length=8, choices=PACKAGE_TYPE_CHOICES)
-    related_packages = models.ManyToManyField("self", related_name="related")
+    related_packages = models.ManyToManyField("self")
 
     PENDING = "PENDING"
     STAGING = "STAGING"
