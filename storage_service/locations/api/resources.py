@@ -1380,7 +1380,7 @@ class PackageResource(ModelResource):
             )
 
         response = utils.download_file_stream(extracted_file_path, temp_dir)
-
+        package.clear_local_tempdirs()
         return response
 
     @_custom_endpoint(expected_methods=["get", "head"])
