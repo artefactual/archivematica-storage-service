@@ -3,6 +3,7 @@ import os
 import pprint
 import re
 from functools import wraps
+from urllib.parse import urlparse
 
 import boto3
 import botocore
@@ -75,10 +76,11 @@ class S3(models.Model):
             )
             boto_args = {
                 "service_name": "s3",
-                "endpoint_url": self.endpoint_url,
                 "region_name": self.region,
                 "config": config,
             }
+            if not self._is_global_endpoint(self.endpoint_url):
+                boto_args["endpoint_url"] = self.endpoint_url
             if self.access_key_id and self.secret_access_key:
                 boto_args.update(
                     aws_access_key_id=self.access_key_id,
@@ -86,6 +88,9 @@ class S3(models.Model):
                 )
             self._resource = boto3.resource(**boto_args)
         return self._resource
+
+    def _is_global_endpoint(self, url):
+        return urlparse(url).netloc == "s3.amazonaws.com"
 
     @boto_exception
     def _ensure_bucket_exists(self):
