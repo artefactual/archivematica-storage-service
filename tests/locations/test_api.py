@@ -7,6 +7,7 @@ import uuid
 from unittest import mock
 from urllib.parse import urlparse
 
+import pytest
 from administration import roles
 from django.contrib.auth.models import User
 from django.test import TestCase
@@ -1095,3 +1096,111 @@ class TestPipelineAPI(TestCase):
         assert pipeline.parse_and_fix_url(pipeline.remote_name) == urlparse(
             "http://192.168.0.10"
         )
+
+
+@pytest.fixture
+def internal_processing_location(db, tmp_path):
+    space_dir = tmp_path / "space"
+    space_dir.mkdir()
+
+    staging_dir = space_dir / "staging"
+    staging_dir.mkdir()
+
+    return models.Location.objects.create(
+        space=models.Space.objects.create(
+            access_protocol=models.Space.LOCAL_FILESYSTEM,
+            path=space_dir,
+            staging_path=staging_dir,
+        ),
+        purpose=models.Location.STORAGE_SERVICE_INTERNAL,
+        relative_path=staging_dir.relative_to(space_dir),
+    )
+
+
+@pytest.fixture
+def aip_storage_location(db):
+    space = models.Space.objects.create(
+        access_protocol=models.Space.S3,
+    )
+    models.S3.objects.create(space=space)
+
+    return models.Location.objects.create(
+        space=space,
+        purpose=models.Location.AIP_STORAGE,
+        relative_path="aips",
+    )
+
+
+@pytest.fixture
+def compressed_bag_fixture_path():
+    return FIXTURES_DIR / "working_bag.zip"
+
+
+@pytest.fixture
+def s3_resource(compressed_bag_fixture_path, aip_storage_location):
+    """Mock the S3 bucket interactions in S3.move_to_storage_service."""
+
+    def download_file(_key, dest_file):
+        shutil.copy(compressed_bag_fixture_path, dest_file)
+
+    return mock.Mock(
+        **{
+            "Bucket.side_effect": [
+                mock.Mock(
+                    **{
+                        "download_file.side_effect": download_file,
+                    }
+                ),
+                mock.Mock(
+                    **{
+                        "objects.filter.return_value": [
+                            mock.Mock(
+                                key=f"{aip_storage_location.relative_path}/{compressed_bag_fixture_path.name}"
+                            )
+                        ]
+                    }
+                ),
+            ]
+        }
+    )
+
+
+@mock.patch("boto3.resource")
+def test_s3_space_deletes_temporary_files_after_extracting_file(
+    resource,
+    admin_client,
+    compressed_bag_fixture_path,
+    s3_resource,
+    aip_storage_location,
+    internal_processing_location,
+):
+    # Mock the S3 bucket interactions.
+    resource.side_effect = [s3_resource]
+
+    # Add a compressed AIP to the AIP Storage location.
+    package = models.Package.objects.create(
+        current_location=aip_storage_location,
+        package_type=models.Package.AIP,
+        current_path=compressed_bag_fixture_path.name,
+    )
+
+    # Extract a file from the compressed AIP.
+    response = admin_client.get(
+        reverse(
+            "extract_file_request",
+            kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+        ),
+        {"relative_path_to_file": "working_bag/data/test.txt"},
+    )
+
+    # Verify the response attributes.
+    assert response.status_code == 200
+    assert response["content-type"] == "text/plain"
+    assert response["content-disposition"] == 'attachment; filename="test.txt"'
+
+    # Verify the contents of the extracted file.
+    result = b"".join(response.streaming_content)
+    assert result.decode() == "test"
+
+    # Verify there are no temporary files left in the internal processing location.
+    assert list(pathlib.Path(internal_processing_location.full_path).iterdir()) == []
