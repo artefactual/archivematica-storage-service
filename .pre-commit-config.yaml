@@ -53,13 +53,8 @@ repos:
     files: |
       (?x)^(
         storage_service/storage_service/settings/.*\.py |
-        storage_service/common/gpgutils.py |
-        storage_service/common/startup.py |
-        storage_service/common/management/commands/populate_aip_checksums.py |
-        storage_service/common/management/commands/import_aip.py |
-        storage_service/common/utils.py |
-        tests/common/test_utils.py |
-        tests/common/test_command_import_aip.py
+        storage_service/common/.*\.py |
+        tests/common/.*\.py
       )
 - repo: https://github.com/pre-commit/mirrors-eslint
   rev: v8.56.0
