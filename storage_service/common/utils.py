@@ -403,7 +403,7 @@ def get_compress_command(compression, extract_path, basename, full_path):
         )
 
     command = [_f for _f in command if _f]
-    return (command, compressed_filename)
+    return (command, str(compressed_filename))
 
 
 def get_compressed_package_checksum(pointer_path):
