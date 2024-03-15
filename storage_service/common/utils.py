@@ -709,7 +709,7 @@ def uuid_to_path(uuid):
     path = [uuid[i : i + 4] for i in range(0, len(uuid), 4)]
     path = pathlib.Path(*path)
     LOGGER.debug("path %s", path)
-    return path
+    return str(path)
 
 
 def removedirs(relative_path, base=None):
