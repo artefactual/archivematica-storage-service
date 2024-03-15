@@ -1,13 +1,13 @@
-import os
+import pathlib
 import uuid
 
 import pytest
 from django.core.management import call_command
 from locations import models
 
-TEST_DIR = os.path.dirname(os.path.realpath(__file__))
-FIXTURES_DIR = os.path.join(TEST_DIR, "fixtures")
-AIP_PATH = os.path.join(FIXTURES_DIR, "import_aip_test.7z")
+TEST_DIR = pathlib.Path(__file__).resolve().parent
+FIXTURES_DIR = TEST_DIR / "fixtures"
+AIP_PATH = FIXTURES_DIR / "import_aip_test.7z"
 
 
 @pytest.fixture

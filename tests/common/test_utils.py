@@ -1,4 +1,4 @@
-import os
+import pathlib
 import shutil
 import subprocess
 import tarfile
@@ -10,8 +10,8 @@ import pytest
 from common import utils
 from metsrw import FSEntry
 
-TEST_DIR = os.path.dirname(os.path.realpath(__file__))
-FIXTURES_DIR = os.path.join(TEST_DIR, "fixtures")
+TEST_DIR = pathlib.Path(__file__).resolve().parent
+FIXTURES_DIR = TEST_DIR / "fixtures"
 
 # Until further work is done to bring compression into its own module we can
 # use these constants for this test, but we can do better.
@@ -312,25 +312,26 @@ def test_extract_tar(mocker, path, will_be_dir, sp_raises, expected):
         mocker.patch.object(subprocess, "check_output", side_effect=OSError("gotcha!"))
     else:
         mocker.patch.object(subprocess, "check_output")
-    mocker.patch.object(os, "rename")
-    mocker.patch.object(os, "remove")
+    mocker.patch.object(pathlib.Path, "rename")
+    mocker.patch.object(pathlib.Path, "unlink")
     if will_be_dir:
-        mocker.patch.object(os.path, "isdir", return_value=True)
+        mocker.patch.object(pathlib.Path, "is_dir", return_value=True)
     else:
-        mocker.patch.object(os.path, "isdir", return_value=False)
-    tarpath_ext = f"{path}.tar"
-    dirname = os.path.dirname(tarpath_ext)
+        mocker.patch.object(pathlib.Path, "is_dir", return_value=False)
+    path = pathlib.Path(path)
+    tarpath_ext = path.with_suffix(".tar")
+    dirname = tarpath_ext.parent
     if expected == "success":
         ret = utils.extract_tar(path)
         assert ret is None
-        os.remove.assert_called_once_with(tarpath_ext)
+        tarpath_ext.unlink.assert_called_once()
     else:
         with pytest.raises(utils.TARException) as excinfo:
             ret = utils.extract_tar(path)
         assert f"Failed to extract {path}: gotcha!" == str(excinfo.value)
-        os.rename.assert_any_call(tarpath_ext, path)
-        assert not os.remove.called
-    os.rename.assert_any_call(path, tarpath_ext)
+        tarpath_ext.rename.assert_any_call(path)
+        assert not pathlib.Path.unlink.called
+    path.rename.assert_any_call(tarpath_ext)
     subprocess.check_output.assert_called_once_with(
         ["tar", "-xf", tarpath_ext, "-C", dirname]
     )
@@ -404,16 +405,16 @@ def test_create_tar(
         mocker.patch.object(subprocess, "check_output", side_effect=OSError("gotcha!"))
     else:
         mocker.patch.object(subprocess, "check_output")
-    mocker.patch.object(os.path, "isfile", return_value=will_be_file)
+    mocker.patch.object(pathlib.Path, "is_file", return_value=will_be_file)
     mocker.patch.object(tarfile, "is_tarfile", return_value=will_be_tar)
-    mocker.patch.object(os, "rename")
+    mocker.patch.object(pathlib.Path, "rename")
     mocker.patch.object(shutil, "rmtree")
-    fixed_path = path.rstrip("/")
-    tarpath = f"{fixed_path}.tar"
+    fixed_path = pathlib.Path(path)
+    tarpath = fixed_path.with_suffix(".tar")
     if expected == "success":
         ret = utils.create_tar(path)
         shutil.rmtree.assert_called_once_with(fixed_path)
-        os.rename.assert_called_once_with(tarpath, fixed_path)
+        tarpath.rename.assert_called_once_with(fixed_path)
         tarfile.is_tarfile.assert_any_call(fixed_path)
         assert ret is None
     else:
@@ -423,13 +424,13 @@ def test_create_tar(
             tarpath, fixed_path
         ) == str(excinfo.value)
         assert not shutil.rmtree.called
-        assert not os.rename.called
+        assert not pathlib.Path.rename.called
     if not sp_raises:
-        os.path.isfile.assert_called_once_with(tarpath)
+        tarpath.is_file.assert_called_once()
         if will_be_file:
             tarfile.is_tarfile.assert_any_call(tarpath)
         if extension:
-            tarpath.endswith(utils.TAR_EXTENSION)
+            assert tarpath.suffix == utils.TAR_EXTENSION
 
 
 @pytest.mark.parametrize(
@@ -487,15 +488,18 @@ def test_strip_quad_dirs_from_path(input_path, expected_path):
     ],
 )
 def test_find_tagmanifest(mocker, tmp_path, dir_listing, tagmanifest_file):
-    mocker.patch("os.listdir", return_value=dir_listing)
     aip_path = tmp_path / "aip"
     aip_path.mkdir()
-    file_path = aip_path / "file.txt"
-    file_path.write_text("test data")
+    mock_files = [aip_path / file_ for file_ in dir_listing]
+    mocker.patch.object(pathlib.Path, "iterdir", return_value=mock_files)
+
     if tagmanifest_file is None:
         assert utils.find_tagmanifest(aip_path) is None
     else:
-        assert utils.find_tagmanifest(aip_path) == str(aip_path / tagmanifest_file)
+        assert utils.find_tagmanifest(aip_path) == aip_path / tagmanifest_file
+
+    file_path = aip_path / "file.txt"
+    file_path.write_text("test data")
     assert utils.find_tagmanifest(file_path) is None
 
 
@@ -505,8 +509,10 @@ def test_generate_checksum_uncompressed_aip(mocker, tmp_path):
     tagmanifest = aip_path / "tagmanifest-md5.txt"
     tagmanifest.write_text("some test data")
 
-    mocker.patch("os.path.isdir", return_value=True)
-    find_tag_manifest = mocker.patch("common.utils.find_tagmanifest")
+    mocker.patch.object(pathlib.Path, "is_dir", return_value=True)
+    find_tag_manifest = mocker.patch(
+        "common.utils.find_tagmanifest", return_value=tagmanifest
+    )
 
     utils.generate_checksum(aip_path)
     find_tag_manifest.assert_called_once()
@@ -530,7 +536,7 @@ def test_get_compressed_package_checksum():
 
     # Test PREMIS 3 from fixture.
     assert utils.get_compressed_package_checksum(
-        os.path.join(FIXTURES_DIR, "premis_3_pointer.xml")
+        str(FIXTURES_DIR / "premis_3_pointer.xml")
     ) == ("c2924159fcbbeadf8d7f3962b43ec1bf301e1b4f12dd28a8b89ec819f3714747", "sha256")
 
 
