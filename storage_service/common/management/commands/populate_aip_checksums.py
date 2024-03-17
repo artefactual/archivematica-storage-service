@@ -18,8 +18,8 @@ import pathlib
 from common import utils
 from common.management.commands import StorageServiceCommand
 from django.core.management.base import CommandError
-from locations.models.package import Package
-from locations.models.package import Space
+from locations.models import Package
+from locations.models import Space
 
 
 class Command(StorageServiceCommand):

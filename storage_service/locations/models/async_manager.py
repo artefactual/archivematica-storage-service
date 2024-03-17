@@ -14,6 +14,7 @@ import logging
 import threading
 import time
 import traceback
+from typing import List
 
 from django.utils import timezone
 
@@ -47,7 +48,7 @@ class RunningTask:
 
 
 class AsyncManager:
-    running_tasks = []
+    running_tasks: List[Async] = []
     lock = threading.Lock()
 
     @staticmethod

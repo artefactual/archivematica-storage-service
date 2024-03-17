@@ -1,9 +1,16 @@
 # flake8: noqa
 """Development settings and globals."""
+from os import environ
+
 import dj_database_url
 
 from .base import *
+from .helpers import get_env_variable
 
+try:
+    import ldap
+except ImportError:
+    ldap = None
 
 # ######## DATABASE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#databases

@@ -16,8 +16,8 @@ import pytz
 from common.management.commands import StorageServiceCommand
 from django.conf import settings
 from django.core.management.base import CommandError
-from locations.models.package import Package
-from locations.models.package import Space
+from locations.models import Package
+from locations.models import Space
 
 # Suppress the logging from models/package.py.
 logging.config.dictConfig({"version": 1, "disable_existing_loggers": True})

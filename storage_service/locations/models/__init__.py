@@ -36,3 +36,24 @@ from .replica_staging import OfflineReplicaStaging
 from .rclone import RClone
 from .swift import Swift
 from .s3 import S3
+
+__all__ = [
+    "Archipelago",
+    "Arkivum",
+    "Dataverse",
+    "Duracloud",
+    "DSpace",
+    "DSpaceREST",
+    "Fedora",
+    "PackageDownloadTask",
+    "PackageDownloadTaskFile",
+    "GPG",
+    "LocalFilesystem",
+    "Lockssomatic",
+    "NFS",
+    "PipelineLocalFS",
+    "OfflineReplicaStaging",
+    "RClone",
+    "Swift",
+    "S3",
+]
