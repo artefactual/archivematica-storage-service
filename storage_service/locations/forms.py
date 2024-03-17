@@ -1,6 +1,8 @@
 import json
 import logging
 from collections import OrderedDict
+from typing import Any
+from typing import Iterable
 
 import django.core.exceptions
 import django.utils
@@ -34,7 +36,12 @@ class DisableableSelectWidget(forms.Select):
 
     # From https://djangosnippets.org/snippets/2743/
     # Updated for Django 1.5 Select widget
-    def __init__(self, attrs=None, disabled_choices=(), choices=()):
+    def __init__(
+        self,
+        attrs: Any = None,
+        disabled_choices: Iterable[Any] = (),
+        choices: Iterable[Any] = (),
+    ) -> None:
         super().__init__(attrs, choices)
         self.disabled_choices = list(disabled_choices)
 

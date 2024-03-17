@@ -12,6 +12,7 @@ import tarfile
 import uuid
 from collections import deque
 from collections import namedtuple
+from typing import Any
 
 from administration import models
 from django import http
@@ -102,7 +103,7 @@ def get_all_settings():
     return settings
 
 
-def get_setting(setting, default=None):
+def get_setting(setting: Any, default: Any = None) -> Any:
     """Returns the value of 'setting' from models.Settings, 'default' if not found."""
     try:
         setting = models.Settings.objects.get(name=setting)
@@ -113,7 +114,7 @@ def get_setting(setting, default=None):
     return return_value
 
 
-def set_setting(setting, value=None):
+def set_setting(setting: Any, value: Any = None) -> None:
     """Sets 'setting' to 'value' in models.Settings.
 
     'value' must be an object that can be recreated by calling literal_eval on

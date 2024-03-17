@@ -7,6 +7,7 @@ import tempfile
 import time
 import uuid
 from collections import namedtuple
+from typing import Any
 from unittest import mock
 
 import bagit
@@ -33,7 +34,7 @@ TEST_CHECKSUM_HASHDIGEST = (
 )
 
 
-def _test_checksum():
+def _test_checksum() -> Any:
     checksum = hashlib.new("sha256")
     checksum.update(b"testdata")
     return checksum

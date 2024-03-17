@@ -163,7 +163,7 @@ class StorageScenario:
         },
     }
 
-    def __init__(self, src, dst, pkg, compressed):
+    def __init__(self, src: str, dst: str, pkg: Path, compressed: bool):
         self.src = src
         self.dst = dst
         self.pkg = pkg

@@ -69,7 +69,7 @@ ENCRYPT_RET_FAIL = DECRYPT_RET_FAIL = FakeGPGRet(
 
 
 class MockPackage:
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         self.encryption_key_fingerprint = kwargs.get("fingerprint", SOME_FINGERPRINT)
         self._should_have_pointer_file = kwargs.get("should_have_pointer", True)
         self.save_called = 0

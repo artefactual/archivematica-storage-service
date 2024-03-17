@@ -11,7 +11,7 @@ import os
 """
 
 
-def gen():
+def gen() -> str:
     return hashlib.sha1(os.urandom(512)).hexdigest()
 
 

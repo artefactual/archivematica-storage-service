@@ -9,6 +9,10 @@ import shutil
 import urllib.parse
 import uuid
 from pathlib import Path
+from typing import Any
+from typing import Callable
+from typing import Iterable
+from typing import Optional
 
 import bagit
 import tastypie.exceptions
@@ -105,8 +109,10 @@ class CustomDjangoAuthorization(DjangoAuthorization):
 
 
 def _custom_endpoint(
-    expected_methods=("get",), required_fields=None, required_permission=None
-):
+    expected_methods: Iterable[str] = ("get"),
+    required_fields: Optional[Iterable[str]] = None,
+    required_permission: Optional[str] = None,
+) -> Callable[[Any], Any]:
     """
     Decorator for custom endpoints that handles boilerplate code.
 

@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 from collections import namedtuple
+from typing import Any
 from uuid import uuid4
 
 import agentarchives
@@ -157,7 +158,7 @@ class MoveFromCaseAIP:
         ("upload_to_tsm", UPLOAD_TO_TSM),
     )
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         for key, dflt in self.attrs:
             val = kwargs.get(key, dflt)
             if callable(val):
@@ -193,7 +194,7 @@ class MoveFromCaseDIP(MoveFromCaseAIP):
 class MockPackage:
     """Class to mock models.Package."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         self.uuid = kwargs.get("uuid", PACKAGE_UUID)
         self.package_type = kwargs.get("package_type", Package.AIP)
         self.isfile = kwargs.get("isfile", True)

@@ -1,3 +1,7 @@
+from typing import Any
+from typing import Dict
+from typing import List
+
 from common import utils
 from django import forms
 from django.contrib import auth
@@ -18,7 +22,7 @@ class DefaultLocationWidget(forms.MultiWidget):
 
     template_name = "administration/location_widget.html"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         widgets = [
             forms.Select(choices=[], *args, **kwargs),  # space_id
             forms.TextInput(*args, **kwargs),  # relative_path
@@ -27,10 +31,10 @@ class DefaultLocationWidget(forms.MultiWidget):
         ]
         super().__init__(widgets=widgets, *args, **kwargs)
 
-    def set_space_id_choices(self, choices):
+    def set_space_id_choices(self, choices: Any) -> None:
         self.widgets[0].choices += choices
 
-    def decompress(self, value):
+    def decompress(self, value: Dict[Any, Any]) -> List[Dict[Any, Any]]:
         """Splits initial data to a list for each sub-widget."""
         try:
             return [
@@ -52,7 +56,7 @@ class DefaultLocationWidget(forms.MultiWidget):
 class DefaultLocationField(forms.MultiValueField):
     """Field for entering required information to create a new location."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         space_id = forms.ChoiceField(choices=[], *args, **kwargs)
         relative_path = forms.CharField(*args, **kwargs)
         description = forms.CharField(*args, **kwargs)
@@ -61,11 +65,11 @@ class DefaultLocationField(forms.MultiValueField):
         widget = DefaultLocationWidget()
         super().__init__(fields=fields, widget=widget, *args, **kwargs)
 
-    def set_space_id_choices(self, choices):
+    def set_space_id_choices(self, choices: Any) -> None:
         self.fields[0].choices += choices
         self.widget.set_space_id_choices(choices)
 
-    def compress(self, data_list):
+    def compress(self, data_list: Any) -> Dict[str, Any]:
         """Takes widget data and compresses to one data structure."""
         if data_list and len(data_list) == 4:
             return {

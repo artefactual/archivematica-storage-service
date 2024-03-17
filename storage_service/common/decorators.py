@@ -1,11 +1,16 @@
 from functools import wraps
+from typing import Any
+from typing import Callable
 
+from django.http import HttpResponse
 from django.shortcuts import render
 
 
 # Requires confirmation from a prompt page before executing a request
 # (see http://djangosnippets.org/snippets/1922/)
-def confirm_required(template_name, context_creator, key="__confirm__"):
+def confirm_required(
+    template_name: str, context_creator: Any, key: str = "__confirm__"
+) -> Callable[[Any], HttpResponse]:
     """
     Decorator for views that need confirmation page. For example, delete
     object view. Decorated view renders confirmation page defined by template

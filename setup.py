@@ -39,7 +39,7 @@ def find_version(*file_paths):
 setup(
     name="archivematica-storage-service",
     packages=["storage_service"],
-    version=find_version("storage_service", "storage_service", "__init__.py"),
+    version=find_version("storage_service", "storage_service", "__init__.py"),  # type: ignore[no-untyped-call]
     author="Artefactual Systems Inc",
     author_email="info@artefactual.com",
     url="https://github.com/artefacutal/archivematica-storage-service",
