@@ -12,17 +12,14 @@ import logging
 import os
 from datetime import datetime
 
-import pytz
 from common.management.commands import StorageServiceCommand
-from django.conf import settings
 from django.core.management.base import CommandError
+from django.utils.timezone import get_current_timezone
 from locations.models.package import Package
 from locations.models.package import Space
 
 # Suppress the logging from models/package.py.
 logging.config.dictConfig({"version": 1, "disable_existing_loggers": True})
-
-TIMEZONE = pytz.timezone(settings.TIME_ZONE)
 
 
 class Command(StorageServiceCommand):
@@ -55,6 +52,8 @@ class Command(StorageServiceCommand):
         success_count = 0
         skipped_count = 0
 
+        tz = get_current_timezone()
+
         for aip in aips:
             # Skip AIPs that already have datestamps.
             if aip.stored_date is not None:
@@ -71,7 +70,7 @@ class Command(StorageServiceCommand):
                 )
                 continue
 
-            aip.stored_date = datetime.fromtimestamp(int(modified_unix), tz=TIMEZONE)
+            aip.stored_date = datetime.fromtimestamp(int(modified_unix), tz=tz)
             aip.save()
             success_count += 1
 
