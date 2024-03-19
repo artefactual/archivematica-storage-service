@@ -2,7 +2,6 @@
 
 omit =
     **/migrations/*
-    **/management/commands/*
     **/settings/*
     **/wsgi.py
     **/tests/*
