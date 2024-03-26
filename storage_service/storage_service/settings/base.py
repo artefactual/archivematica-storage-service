@@ -556,6 +556,15 @@ if CAS_AUTHENTICATION:
 
 ######### END CAS CONFIGURATION #########
 
+# Fetch the CSRF_TRUSTED_ORIGINS environment variable, split by comma, or default to an empty list
+CSRF_TRUSTED_ORIGINS = (
+    environ.get("CSRF_TRUSTED_ORIGINS").split(",")
+    if environ.get("CSRF_TRUSTED_ORIGINS", "").strip()
+    else []
+)
+
+USE_X_FORWARDED_HOST = is_true(environ.get("USE_X_FORWARDED_HOST", ""))
+
 OIDC_AUTHENTICATION = is_true(environ.get("SS_OIDC_AUTHENTICATION", ""))
 if OIDC_AUTHENTICATION:
     ALLOW_USER_EDITS = False
