@@ -6,7 +6,6 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import include
 from django.urls import path
-from django.urls import re_path
 from django.views.generic import TemplateView
 
 from storage_service import views
@@ -15,7 +14,7 @@ from storage_service import views
 urlpatterns = [
     path("", TemplateView.as_view(template_name="index.html")),
     # Uncomment the next line to enable the admin:
-    re_path(r"^admin/", admin.site.urls),
+    path("admin/", admin.site.urls),
     path("", include(locations.urls)),
     path("administration/", include(administration.urls)),
     path("api/", include(locations.api.urls)),
