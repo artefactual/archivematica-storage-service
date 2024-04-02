@@ -7,7 +7,7 @@ urlpatterns = [
     # Locations
     path("locations/", views.location_list, name="location_list"),
     path(
-        "locations/<uuid:location_uuid>",
+        "locations/<uuid:location_uuid>/",
         views.location_detail,
         name="location_detail",
     ),
