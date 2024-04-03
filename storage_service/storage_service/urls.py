@@ -13,7 +13,6 @@ from storage_service import views
 
 urlpatterns = [
     path("", TemplateView.as_view(template_name="index.html")),
-    # Uncomment the next line to enable the admin:
     path("admin/", admin.site.urls),
     path("", include(locations.urls)),
     path("administration/", include(administration.urls)),

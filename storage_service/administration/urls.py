@@ -13,7 +13,7 @@ urlpatterns = [
     path("users/<int:id>/", views.user_detail, name="user_detail"),
     path("language/", views.change_language, name="change_language"),
     path("keys/", views.key_list, name="key_list"),
-    path("keys/<str:key_fingerprint>/detail/", views.key_detail, name="key_detail"),
+    path("keys/<str:key_fingerprint>/detail", views.key_detail, name="key_detail"),
     path("keys/create/", views.key_create, name="key_create"),
     path("keys/import/", views.key_import, name="key_import"),
     path(
