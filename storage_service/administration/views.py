@@ -84,7 +84,7 @@ def user_list(request):
 
 def user_edit(request, id):
     edit_allowed = settings.ALLOW_USER_EDITS and (
-        request.user.has_perm("auth.change_user") or str(request.user.id) == id
+        request.user.has_perm("auth.change_user") or request.user.id == id
     )
     if not edit_allowed:
         return redirect("administration:user_list")
@@ -137,7 +137,7 @@ def user_create(request):
 
 def user_detail(request, id):
     # Only a superuser or the user themselves can view their full details
-    view_allowed = request.user.is_superuser or str(request.user.id) == id
+    view_allowed = request.user.is_superuser or request.user.id == id
     if not view_allowed:
         return redirect("administration:user_list")
 
