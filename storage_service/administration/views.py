@@ -84,7 +84,7 @@ def user_list(request):
 
 def user_edit(request, id):
     edit_allowed = settings.ALLOW_USER_EDITS and (
-        request.user.has_perm("auth.change_user") or (request.user.id) == id
+        request.user.has_perm("auth.change_user") or request.user.id == id
     )
     if not edit_allowed:
         return redirect("administration:user_list")
