@@ -137,7 +137,7 @@ def user_create(request):
 
 def user_detail(request, id):
     # Only a superuser or the user themselves can view their full details
-    view_allowed = request.user.is_superuser or (request.user.id) == id
+    view_allowed = request.user.is_superuser or request.user.id == id
     if not view_allowed:
         return redirect("administration:user_list")
 
