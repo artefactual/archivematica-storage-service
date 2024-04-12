@@ -65,7 +65,7 @@ gunicorn==21.2.0
     # via -r requirements.in
 httplib2==0.22.0
     # via sword2
-idna==3.6
+idna==3.7
     # via requests
 importlib-resources==6.4.0
     # via -r requirements.in

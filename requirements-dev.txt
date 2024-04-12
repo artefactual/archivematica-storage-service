@@ -102,7 +102,7 @@ httplib2==0.22.0
     # via
     #   -r requirements.txt
     #   sword2
-idna==3.6
+idna==3.7
     # via
     #   -r requirements.txt
     #   requests
