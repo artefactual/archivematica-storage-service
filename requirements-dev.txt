@@ -96,7 +96,7 @@ greenlet==3.0.3
     # via
     #   -r requirements.txt
     #   gevent
-gunicorn==21.2.0
+gunicorn==22.0.0
     # via -r requirements.txt
 httplib2==0.22.0
     # via
