@@ -83,7 +83,6 @@ RUN set -ex \
 	&& apt-get update \
 	&& apt-get install -y --no-install-recommends \
 		build-essential \
-		gcc \
 		gettext \
 		gnupg1 \
 		libffi-dev \
