@@ -22,7 +22,7 @@ fixity_check_not_run = Signal()
 
 
 def _notify_administrators(subject, message):
-    admin_users = User.objects.filter(is_superuser=True)
+    admin_users = User.objects.filter(is_active=True)
     for user in admin_users:
         try:
             user.email_user(subject, message)

@@ -3,6 +3,7 @@ import json
 from unittest import mock
 
 import pytest
+from django.contrib.auth.models import User
 from django.utils import timezone
 from locations import models
 from locations import signals
@@ -48,3 +49,31 @@ def test_report_failed_fixity_check(_notify_administrators: mock.Mock):
         ).count()
         == 1
     )
+
+
+@pytest.fixture
+def user1(db):
+    return User.objects.create_user(
+        username="demo", email="demo@example.com", password="Abc.Def.1234"
+    )
+
+
+@pytest.fixture
+def user2(db):
+    return User.objects.create_user(
+        username="test", email="test@example.com", password="test.1234", is_active=False
+    )
+
+
+@pytest.mark.django_db
+def test_notify_administrators(user1, user2, mailoutbox):
+    subject = "foo"
+    message = "bar"
+
+    signals._notify_administrators(subject, message)
+
+    assert len(mailoutbox) == 1
+    result = mailoutbox[0]
+    assert list(result.to) == [user1.email]
+    assert result.subject == subject
+    assert result.body == message
