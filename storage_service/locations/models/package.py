@@ -2082,7 +2082,7 @@ class Package(models.Model):
             if isinstance(failure, bagit.UnexpectedFile):
                 info = {"path": failure.path, "message": str(failure)}
                 response["failures"]["files"]["untracked"].append(info)
-        report = json.dumps(response)
+        report = json.dumps(response, default=str)
 
         # Trigger the signals (so ``FixityLog`` instances are created)
         if success is False:
