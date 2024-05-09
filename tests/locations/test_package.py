@@ -1370,6 +1370,89 @@ class TestPackage(TestCase):
         assert pkg.current_location == dst_location
 
 
+@pytest.fixture
+@pytest.mark.django_db
+def space(tmp_path):
+    space_dir = tmp_path / "space"
+    space_dir.mkdir()
+
+    staging_dir = tmp_path / "staging"
+    staging_dir.mkdir()
+
+    space = models.Space.objects.create(
+        uuid=uuid.uuid4(),
+        access_protocol=models.Space.LOCAL_FILESYSTEM,
+        path=space_dir,
+        staging_path=staging_dir,
+    )
+    models.LocalFilesystem.objects.create(space=space)
+    return space
+
+
+@pytest.fixture
+@pytest.mark.django_db
+def location(space):
+    aipstore = models.Location.objects.create(
+        uuid=uuid.uuid4(),
+        space=space,
+        relative_path="fs-aips",
+        purpose="AS",
+    )
+    models.Location.objects.create(
+        space=space, purpose=models.Location.STORAGE_SERVICE_INTERNAL, relative_path=""
+    )
+    return aipstore
+
+
+@pytest.fixture
+@pytest.mark.django
+def bag_fixture(tmp_path):
+    tmp_dir = tmp_path / "dir"
+    tmp_dir.mkdir()
+    src = os.path.join(FIXTURES_DIR, "working_bag.zip")
+    dst = os.path.join(tmp_dir, "")
+    return shutil.copy(src, dst)
+
+
+@pytest.fixture
+@pytest.mark.django_db
+def package(location, bag_fixture):
+    return models.Package.objects.create(
+        uuid=uuid.uuid4(),
+        current_location=location,
+        current_path=bag_fixture,
+        package_type="AIP",
+        status="Uploaded",
+    )
+
+
+@pytest.mark.django_db
+@mock.patch(
+    "common.utils.generate_checksum",
+    return_value=mock.Mock(
+        **{
+            "hexdigest.return_value": "myhash",
+        }
+    ),
+)
+def test_get_fixity_check_report_send_signals(generate_checksum, package):
+    """
+    It verifies report of fixity check
+    """
+    package.checksum = "incorrect"
+    package.save()
+
+    report, response = package.get_fixity_check_report_send_signals()
+
+    assert response == {
+        "success": False,
+        "message": "Incorrect package checksum",
+        "failures": {"files": {"missing": [], "changed": [], "untracked": []}},
+        "timestamp": None,
+    }
+    assert response["message"] == "Incorrect package checksum"
+
+
 class TestTransferPackage(TestCase):
     """Test integration of transfer reading and indexing.
 

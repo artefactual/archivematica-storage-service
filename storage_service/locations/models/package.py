@@ -2062,13 +2062,13 @@ class Package(models.Model):
         # Build the response (to be a JSON object)
         response = {
             "success": success,
-            "message": message,
+            "message": str(message),
             "failures": {"files": {"missing": [], "changed": [], "untracked": []}},
             "timestamp": timestamp,
         }
         for failure in failures:
             if isinstance(failure, bagit.FileMissing):
-                info = {"path": failure.path, "message": str(failure)}
+                info = {"path": failure.path, "message": failure}
                 response["failures"]["files"]["missing"].append(info)
             if isinstance(failure, bagit.ChecksumMismatch):
                 info = {
@@ -2076,13 +2076,13 @@ class Package(models.Model):
                     "expected": failure.expected,
                     "actual": failure.found,
                     "hash_type": failure.algorithm,
-                    "message": str(failure),
+                    "message": failure,
                 }
                 response["failures"]["files"]["changed"].append(info)
             if isinstance(failure, bagit.UnexpectedFile):
-                info = {"path": failure.path, "message": str(failure)}
+                info = {"path": failure.path, "message": failure}
                 response["failures"]["files"]["untracked"].append(info)
-        report = json.dumps(response, default=str)
+        report = json.dumps(response)
 
         # Trigger the signals (so ``FixityLog`` instances are created)
         if success is False:
