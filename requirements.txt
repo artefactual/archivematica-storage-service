@@ -10,9 +10,9 @@ asgiref==3.8.1
     # via django
 bagit==1.8.1
     # via -r requirements.in
-boto3==1.34.85
+boto3==1.34.101
     # via -r requirements.in
-botocore==1.34.85
+botocore==1.34.101
     # via
     #   boto3
     #   s3transfer
@@ -24,7 +24,7 @@ cffi==1.16.0
     # via cryptography
 charset-normalizer==3.3.2
     # via requests
-cryptography==42.0.5
+cryptography==42.0.7
     # via
     #   josepy
     #   mozilla-django-oidc
@@ -36,7 +36,7 @@ debtcollector==3.0.0
     #   python-keystoneclient
 dj-database-url==2.1.0
     # via -r requirements.in
-django==4.2.11
+django==4.2.13
     # via
     #   -r requirements.in
     #   dj-database-url
@@ -55,7 +55,7 @@ django-prometheus==2.3.1
     # via -r requirements.in
 django-shibboleth-remoteuser @ git+https://github.com/artefactual-labs/django-shibboleth-remoteuser.git@f08a7864d6130416c352981ccf318fff0fd5be58
     # via -r requirements.in
-django-tastypie==0.14.6
+django-tastypie==0.14.7
     # via -r requirements.in
 gevent==24.2.1
     # via -r requirements.in
