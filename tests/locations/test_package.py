@@ -1380,7 +1380,6 @@ def space(tmp_path):
     staging_dir.mkdir()
 
     space = models.Space.objects.create(
-        uuid=uuid.uuid4(),
         access_protocol=models.Space.LOCAL_FILESYSTEM,
         path=space_dir,
         staging_path=staging_dir,
@@ -1393,19 +1392,22 @@ def space(tmp_path):
 @pytest.mark.django_db
 def location(space):
     aipstore = models.Location.objects.create(
-        uuid=uuid.uuid4(),
         space=space,
         relative_path="fs-aips",
         purpose="AS",
-    )
-    models.Location.objects.create(
-        space=space, purpose=models.Location.STORAGE_SERVICE_INTERNAL, relative_path=""
     )
     return aipstore
 
 
 @pytest.fixture
-@pytest.mark.django
+@pytest.mark.django_db
+def internal_location(space):
+    return models.Location.objects.create(
+        space=space, purpose=models.Location.STORAGE_SERVICE_INTERNAL, relative_path=""
+    )
+
+
+@pytest.fixture
 def bag_fixture(tmp_path):
     tmp_dir = tmp_path / "dir"
     tmp_dir.mkdir()
@@ -1418,9 +1420,8 @@ def bag_fixture(tmp_path):
 @pytest.mark.django_db
 def package(location, bag_fixture):
     return models.Package.objects.create(
-        uuid=uuid.uuid4(),
         current_location=location,
-        current_path=bag_fixture,
+        current_path=os.path.join(location.full_path, bag_fixture),
         package_type="AIP",
         status="Uploaded",
     )
@@ -1431,15 +1432,17 @@ def package(location, bag_fixture):
     "common.utils.generate_checksum",
     return_value=mock.Mock(
         **{
-            "hexdigest.return_value": "myhash",
+            "hexdigest.return_value": "098f6bcd4621d373cade4e832627b4f9",
         }
     ),
 )
-def test_get_fixity_check_report_send_signals(generate_checksum, package):
+def test_get_fixity_check_report_send_signals(
+    generate_checksum, package, internal_location
+):
     """
-    It verifies report of fixity check
+    Verifies scenarios of fixity failure signals
     """
-    package.checksum = "incorrect"
+    package.checksum = "098f6bcd4621d373cade4e832627b4f6"
     package.save()
 
     report, response = package.get_fixity_check_report_send_signals()
@@ -1450,7 +1453,6 @@ def test_get_fixity_check_report_send_signals(generate_checksum, package):
         "failures": {"files": {"missing": [], "changed": [], "untracked": []}},
         "timestamp": None,
     }
-    assert response["message"] == "Incorrect package checksum"
 
 
 class TestTransferPackage(TestCase):

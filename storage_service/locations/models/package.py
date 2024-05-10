@@ -2068,7 +2068,7 @@ class Package(models.Model):
         }
         for failure in failures:
             if isinstance(failure, bagit.FileMissing):
-                info = {"path": failure.path, "message": failure}
+                info = {"path": failure.path, "message": str(failure)}
                 response["failures"]["files"]["missing"].append(info)
             if isinstance(failure, bagit.ChecksumMismatch):
                 info = {
@@ -2076,11 +2076,11 @@ class Package(models.Model):
                     "expected": failure.expected,
                     "actual": failure.found,
                     "hash_type": failure.algorithm,
-                    "message": failure,
+                    "message": str(failure),
                 }
                 response["failures"]["files"]["changed"].append(info)
             if isinstance(failure, bagit.UnexpectedFile):
-                info = {"path": failure.path, "message": failure}
+                info = {"path": failure.path, "message": str(failure)}
                 response["failures"]["files"]["untracked"].append(info)
         report = json.dumps(response)
 
