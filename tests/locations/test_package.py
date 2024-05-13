@@ -1396,6 +1396,7 @@ def location(space):
         relative_path="fs-aips",
         purpose="AS",
     )
+    pathlib.Path(aipstore.full_path).mkdir()
     return aipstore
 
 
@@ -1408,23 +1409,17 @@ def internal_location(space):
 
 
 @pytest.fixture
-def bag_fixture(tmp_path):
-    tmp_dir = tmp_path / "dir"
-    tmp_dir.mkdir()
-    src = os.path.join(FIXTURES_DIR, "working_bag.zip")
-    dst = os.path.join(tmp_dir, "")
-    return shutil.copy(src, dst)
-
-
-@pytest.fixture
 @pytest.mark.django_db
-def package(location, bag_fixture):
-    return models.Package.objects.create(
+def package(location):
+    result = models.Package.objects.create(
         current_location=location,
-        current_path=os.path.join(location.full_path, bag_fixture),
+        current_path="working_bag.zip",
         package_type="AIP",
         status="Uploaded",
     )
+    src = os.path.join(FIXTURES_DIR, "working_bag.zip")
+    shutil.copy(src, result.full_path)
+    return result
 
 
 @pytest.mark.django_db
@@ -1439,9 +1434,6 @@ def package(location, bag_fixture):
 def test_get_fixity_check_report_send_signals(
     generate_checksum, package, internal_location
 ):
-    """
-    Verifies scenarios of fixity failure signals
-    """
     package.checksum = "098f6bcd4621d373cade4e832627b4f6"
     package.save()
 
