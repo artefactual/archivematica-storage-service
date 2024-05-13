@@ -1431,7 +1431,7 @@ def package(location):
         }
     ),
 )
-def test_get_fixity_check_report_send_signals(
+def test_get_fixity_check_report_send_signals_verifies_failed_fixity_check(
     generate_checksum, package, internal_location
 ):
     package.checksum = "098f6bcd4621d373cade4e832627b4f6"
