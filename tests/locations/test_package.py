@@ -1370,6 +1370,83 @@ class TestPackage(TestCase):
         assert pkg.current_location == dst_location
 
 
+@pytest.fixture
+@pytest.mark.django_db
+def space(tmp_path):
+    space_dir = tmp_path / "space"
+    space_dir.mkdir()
+
+    staging_dir = tmp_path / "staging"
+    staging_dir.mkdir()
+
+    space = models.Space.objects.create(
+        access_protocol=models.Space.LOCAL_FILESYSTEM,
+        path=space_dir,
+        staging_path=staging_dir,
+    )
+    models.LocalFilesystem.objects.create(space=space)
+    return space
+
+
+@pytest.fixture
+@pytest.mark.django_db
+def location(space):
+    aipstore = models.Location.objects.create(
+        space=space,
+        relative_path="fs-aips",
+        purpose="AS",
+    )
+    pathlib.Path(aipstore.full_path).mkdir()
+    return aipstore
+
+
+@pytest.fixture
+@pytest.mark.django_db
+def internal_location(space):
+    return models.Location.objects.create(
+        space=space, purpose=models.Location.STORAGE_SERVICE_INTERNAL, relative_path=""
+    )
+
+
+@pytest.fixture
+@pytest.mark.django_db
+def package(location):
+    result = models.Package.objects.create(
+        current_location=location,
+        current_path="working_bag.zip",
+        package_type="AIP",
+        status="Uploaded",
+    )
+    src = os.path.join(FIXTURES_DIR, "working_bag.zip")
+    shutil.copy(src, result.full_path)
+    return result
+
+
+@pytest.mark.django_db
+@mock.patch(
+    "common.utils.generate_checksum",
+    return_value=mock.Mock(
+        **{
+            "hexdigest.return_value": "098f6bcd4621d373cade4e832627b4f9",
+        }
+    ),
+)
+def test_get_fixity_check_report_send_signals_verifies_failed_fixity_check(
+    generate_checksum, package, internal_location
+):
+    package.checksum = "098f6bcd4621d373cade4e832627b4f6"
+    package.save()
+
+    report, response = package.get_fixity_check_report_send_signals()
+
+    assert response == {
+        "success": False,
+        "message": "Incorrect package checksum",
+        "failures": {"files": {"missing": [], "changed": [], "untracked": []}},
+        "timestamp": None,
+    }
+
+
 class TestTransferPackage(TestCase):
     """Test integration of transfer reading and indexing.
 

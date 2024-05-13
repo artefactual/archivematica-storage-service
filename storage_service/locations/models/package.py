@@ -2062,7 +2062,7 @@ class Package(models.Model):
         # Build the response (to be a JSON object)
         response = {
             "success": success,
-            "message": message,
+            "message": str(message),
             "failures": {"files": {"missing": [], "changed": [], "untracked": []}},
             "timestamp": timestamp,
         }
