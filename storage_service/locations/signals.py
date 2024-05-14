@@ -8,6 +8,7 @@ from django.db.models import signals
 from django.dispatch import receiver
 from django.dispatch import Signal
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.translation import gettext as _
 from prometheus_client import Counter
 from tastypie.models import create_api_key
@@ -63,7 +64,7 @@ def _log_report(uuid, success, message=None):
     from . import models
 
     package = models.Package.objects.get(uuid=uuid)
-    models.FixityLog.objects.create(
+    return models.FixityLog.objects.create(
         package=package, success=success, error_details=message
     )
 
@@ -71,22 +72,21 @@ def _log_report(uuid, success, message=None):
 @receiver(failed_fixity_check, dispatch_uid="fixity_check")
 def report_failed_fixity_check(sender, **kwargs):
     report_data = json.loads(kwargs["report"])
-    _log_report(kwargs["uuid"], False, report_data["message"])
+    fixity_log = _log_report(kwargs["uuid"], False, report_data["message"])
+    timestamp = timezone.localtime(fixity_log.datetime_reported).strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
 
     subject = _("Fixity check failed for package %(uuid)s") % {"uuid": kwargs["uuid"]}
     message = (
         _(
             """
-A fixity check failed for the package with UUID %(uuid)s. This package is currently stored at: %(location)s
-
-Full failure report (in JSON format):
-%(report)s
+[%(timestamp)s] A fixity check failed for the package with UUID %(uuid)s.
 """
         )
         % {
+            "timestamp": timestamp,
             "uuid": kwargs["uuid"],
-            "location": kwargs["location"],
-            "report": kwargs["report"],
         }
     )
 
