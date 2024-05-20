@@ -10,9 +10,9 @@ asgiref==3.8.1
     # via django
 bagit==1.8.1
     # via -r requirements.in
-boto3==1.34.101
+boto3==1.34.109
     # via -r requirements.in
-botocore==1.34.101
+botocore==1.34.109
     # via
     #   boto3
     #   s3transfer
@@ -83,7 +83,7 @@ jsonfield==3.1.0
     # via -r requirements.in
 keystoneauth1==5.6.0
     # via python-keystoneclient
-lxml==5.2.1
+lxml==5.2.2
     # via
     #   -r requirements.in
     #   metsrw
@@ -171,7 +171,7 @@ pyyaml==6.0.1
     # via
     #   oslo-config
     #   oslo-utils
-requests==2.31.0
+requests==2.32.1
     # via
     #   -r requirements.in
     #   agentarchives
@@ -214,11 +214,11 @@ whitenoise==6.6.0
     # via -r requirements.in
 wrapt==1.16.0
     # via debtcollector
-zipp==3.18.1
+zipp==3.18.2
     # via importlib-resources
 zope-event==5.0
     # via gevent
-zope-interface==6.3
+zope-interface==6.4
     # via gevent
 
 # The following packages are considered to be unsafe in a requirements file:
