@@ -13,6 +13,7 @@ have the Package.checksum and Package.checksum_algorithm fields populated.
 Execution example:
 ./manage.py populate_aip_checksums
 """
+
 import pathlib
 
 from common import utils

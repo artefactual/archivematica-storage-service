@@ -9,6 +9,7 @@ worth investigating a setup where pytest orchestrates Compose services instead.
 Missing: encryption, multiple replicators, packages generated with older versions
 of Archivematica, etc...
 """
+
 import json
 import os
 import shutil

@@ -1,6 +1,7 @@
 """
 PREMIS metadata generation.
 """
+
 import uuid
 
 import metsrw

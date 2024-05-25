@@ -1,5 +1,6 @@
 # flake8: noqa
 """Development settings and globals."""
+
 import dj_database_url
 
 from .base import *

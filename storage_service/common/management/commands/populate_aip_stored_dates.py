@@ -8,6 +8,7 @@ AIPs that already have timestamps are ignored and not updated.
 Execution example:
 ./manage.py populate_aip_stored_dates
 """
+
 import logging
 import os
 from datetime import datetime

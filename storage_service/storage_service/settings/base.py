@@ -1,4 +1,5 @@
 """Common settings and globals."""
+
 import json
 import logging.config
 from os import environ
@@ -9,7 +10,6 @@ from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
 
 from .components.s3 import *
-from storage_service.settings.helpers import get_env_variable
 from storage_service.settings.helpers import is_true
 
 try:
@@ -433,9 +433,9 @@ if LDAP_AUTHENTICATION:
         elif require_cert == "try":
             AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_REQUIRE_CERT] = ldap.OPT_X_TLS_TRY
         elif require_cert == "demand":
-            AUTH_LDAP_GLOBAL_OPTIONS[
-                ldap.OPT_X_TLS_REQUIRE_CERT
-            ] = ldap.OPT_X_TLS_DEMAND
+            AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_REQUIRE_CERT] = (
+                ldap.OPT_X_TLS_DEMAND
+            )
         elif require_cert == "hard":
             AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_REQUIRE_CERT] = ldap.OPT_X_TLS_HARD
         else:

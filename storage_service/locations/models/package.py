@@ -297,9 +297,7 @@ class Package(models.Model):
         try:
             return FixityLog.objects.filter(package=self).order_by(
                 "-datetime_reported"
-            )[
-                0
-            ]  # limit 1
+            )[0]  # limit 1
         except IndexError:
             return None
 

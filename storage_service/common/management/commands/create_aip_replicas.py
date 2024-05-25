@@ -11,6 +11,7 @@ location.
 Execution example:
 ./manage.py create_aip_replicas --location <UUID>
 """
+
 import logging
 
 from administration.models import Settings

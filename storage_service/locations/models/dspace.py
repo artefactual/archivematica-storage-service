@@ -4,6 +4,7 @@ Integration with DSpace, using SWORD2 as the protocol.
 Space path can be left empty, and the Location path should be the collection's
 IRI.
 """
+
 import logging
 import mimetypes
 import os
@@ -90,7 +91,7 @@ class DSpace(models.Model):
                 user_pass=self.password,
                 keep_history=False,
                 cache_deposit_receipts=False,
-                http_impl=sword2.http_layer.HttpLib2Layer(cache_dir=None)
+                http_impl=sword2.http_layer.HttpLib2Layer(cache_dir=None),
                 # http_impl=sword2.http_layer.UrlLib2Layer(),  # This causes the deposit receipt to return the wrong URLs
             )
             LOGGER.debug("Getting service document")

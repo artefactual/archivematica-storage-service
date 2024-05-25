@@ -1,4 +1,5 @@
 """Tests for the GPG encrypted space."""
+
 import os
 import pathlib
 import tarfile
@@ -145,7 +146,8 @@ def test_move_to_storage_service(
             assert (
                 "Unable to move {}; this file/dir does not"
                 " exist, not even in encrypted directory"
-                " {}.".format(src_path, encr_path) == str(excinfo.value)
+                " {}.".format(src_path, encr_path)
+                == str(excinfo.value)
             )
     if src_exists2 and encr_path:
         gpg_space.space.move_rsync.assert_called_once_with(src_path, dst_path)

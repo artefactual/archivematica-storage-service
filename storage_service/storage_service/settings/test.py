@@ -1,5 +1,6 @@
 # flake8: noqa
 """Test settings and globals."""
+
 from .base import *
 
 
@@ -34,8 +35,8 @@ LOGGING = {
 }
 
 # Disable whitenoise
-STORAGES["staticfiles"][
-    "BACKEND"
-] = "django.contrib.staticfiles.storage.StaticFilesStorage"
+STORAGES["staticfiles"]["BACKEND"] = (
+    "django.contrib.staticfiles.storage.StaticFilesStorage"
+)
 if MIDDLEWARE[0] == "whitenoise.middleware.WhiteNoiseMiddleware":
     del MIDDLEWARE[0]
