@@ -9,7 +9,7 @@ from sys import path
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
 
-from .components.s3 import *
+from .components.s3 import *  # noqa: F403
 from storage_service.settings.helpers import is_true
 
 try:
@@ -184,7 +184,7 @@ TEMPLATES = [
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#authentication-backends
 AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
 
-from .components.auth import *
+from .components.auth import *  # noqa: E402, F403
 
 # ######### END AUTHENTICATION CONFIGURATION
 
@@ -608,7 +608,10 @@ if OIDC_AUTHENTICATION:
     OIDC_RP_SIGN_ALGO = environ.get("OIDC_RP_SIGN_ALGO", "HS256")
 
     # Username is email address
-    OIDC_USERNAME_ALGO = lambda email: email
+    def _get_email(email):
+        return email
+
+    OIDC_USERNAME_ALGO = _get_email
 
     # map attributes from access token
     OIDC_ACCESS_ATTRIBUTE_MAP = {"given_name": "first_name", "family_name": "last_name"}
