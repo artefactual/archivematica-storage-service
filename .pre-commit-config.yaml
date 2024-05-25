@@ -1,52 +1,15 @@
 repos:
-- repo: https://github.com/asottile/pyupgrade
-  rev: v3.15.2
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.4.5
   hooks:
-  - id: pyupgrade
-    args: [--py38-plus]
-- repo: https://github.com/asottile/reorder_python_imports
-  rev: v3.12.0
-  hooks:
-  - id: reorder-python-imports
-    args: [--py38-plus]
+  - id: ruff
+    args: [--fix, --exit-non-zero-on-fix]
+  - id: ruff-format
 - repo: https://github.com/adamchainz/django-upgrade
   rev: "1.16.0"
   hooks:
   - id: django-upgrade
     args: [--target-version, "4.2"]
-- repo: https://github.com/psf/black
-  rev: "23.12.1"
-  hooks:
-  - id: black
-    args: [--safe, --quiet]
-- repo: https://github.com/pycqa/flake8
-  rev: "7.0.0"
-  hooks:
-  - id: flake8
-    additional_dependencies:
-    - flake8-bugbear==23.9.16
-    - flake8-comprehensions==3.14.0
-    exclude: |
-      (?x)^(
-        storage_service/storage_service/settings/.*\.py
-      )
-- repo: https://github.com/pycqa/flake8
-  # This is a temporary hook to port os.path code to pathlib gradually. Add
-  # the ported modules/packages explicitly to `files` below. For reference see
-  # https://github.com/archivematica/Issues/issues/1622#issuecomment-1912524642
-  rev: "7.0.0"
-  hooks:
-  - id: flake8
-    name: flake8-use-pathlib
-    args: [--select, "PL"]
-    additional_dependencies:
-    - flake8-use-pathlib==0.3.0
-    files: |
-      (?x)^(
-        storage_service/storage_service/settings/.*\.py |
-        storage_service/common/.*\.py |
-        tests/common/.*\.py
-      )
 - repo: https://github.com/pre-commit/mirrors-eslint
   rev: v8.56.0
   hooks:
