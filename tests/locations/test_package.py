@@ -17,7 +17,6 @@ from django.test import TestCase
 from django.urls import reverse
 from locations import models
 
-
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
 # Fixture files are not cleanly separated, with potential for

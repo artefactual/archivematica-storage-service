@@ -15,7 +15,6 @@ from lxml import etree
 from .location import Location
 from .package import Package
 
-
 LOGGER = logging.getLogger(__name__)
 
 

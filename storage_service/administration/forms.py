@@ -9,7 +9,6 @@ from locations.models import Space
 
 from . import roles
 
-
 # ######################## CUSTOM FIELDS/WIDGETS ##########################
 
 

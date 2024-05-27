@@ -22,7 +22,6 @@ from requests import RequestException
 
 from .location import Location
 
-
 LOGGER = logging.getLogger(__name__)
 
 

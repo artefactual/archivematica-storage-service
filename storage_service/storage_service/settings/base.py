@@ -9,8 +9,9 @@ from sys import path
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
 
-from .components.s3 import *  # noqa: F403
 from storage_service.settings.helpers import is_true
+
+from .components.s3 import *  # noqa: F403
 
 try:
     import ldap

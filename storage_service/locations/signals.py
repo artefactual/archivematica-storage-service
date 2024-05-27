@@ -5,8 +5,8 @@ import sys
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db.models import signals
-from django.dispatch import receiver
 from django.dispatch import Signal
+from django.dispatch import receiver
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _

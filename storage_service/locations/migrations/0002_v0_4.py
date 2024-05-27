@@ -1,7 +1,8 @@
 import jsonfield.fields
-import locations.models
 from django.db import migrations
 from django.db import models
+
+import locations.models
 
 
 class Migration(migrations.Migration):

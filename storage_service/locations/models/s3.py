@@ -15,7 +15,6 @@ from django.utils.translation import gettext_lazy as _
 from . import StorageException
 from .location import Location
 
-
 LOGGER = logging.getLogger(__name__)
 
 

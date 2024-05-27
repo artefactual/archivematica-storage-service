@@ -10,7 +10,6 @@ from django.contrib.auth.models import Group
 from django.db import transaction
 from django.utils.translation import gettext as _
 
-
 # User roles codenames and labels used in this application.
 USER_ROLE_ADMIN = "admin"
 USER_ROLE_MANAGER = "manager"

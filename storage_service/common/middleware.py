@@ -7,7 +7,6 @@ from django.http import HttpResponseRedirect
 from django.utils.deprecation import MiddlewareMixin
 from shibboleth.middleware import ShibbolethRemoteUserMiddleware
 
-
 # Login required code from https://gist.github.com/ryanwitt/130583
 # With modifications from comments on
 # http://onecreativeblog.com/post/59051248/django-login-required-middleware

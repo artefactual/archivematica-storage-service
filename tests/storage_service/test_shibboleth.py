@@ -1,8 +1,8 @@
 import pytest
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.test import override_settings
 from django.test import TestCase
+from django.test import override_settings
 
 
 @pytest.mark.skipif(

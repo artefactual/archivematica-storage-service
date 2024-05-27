@@ -1,9 +1,10 @@
 from django.urls import include
 from django.urls import path
+from tastypie.api import Api
+
 from locations.api import v1
 from locations.api import v2
 from locations.api.sword import views
-from tastypie.api import Api
 
 v1_api = Api(api_name="v1")
 v1_api.register(v1.SpaceResource())

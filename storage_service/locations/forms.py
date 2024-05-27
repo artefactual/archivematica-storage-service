@@ -8,8 +8,8 @@ from common import gpgutils
 from django import forms
 from django.db.models import Count
 from django.utils.translation import gettext_lazy as _
-from locations import models
 
+from locations import models
 
 LOGGER = logging.getLogger(__name__)
 

@@ -9,8 +9,8 @@ import pytest
 from common import gpgutils
 from common import utils
 from django.test import TestCase
-from locations.models import gpg
 from locations.models import Package
+from locations.models import gpg
 from locations.models import space
 from metsrw.plugins import premisrw
 

@@ -20,9 +20,9 @@ from locations.models import GPG
 from locations.models import Package
 from tastypie.models import ApiKey
 
-from . import forms as settings_forms
 from storage_service import __version__ as ss_version
 
+from . import forms as settings_forms
 
 LOGGER = logging.getLogger(__name__)
 

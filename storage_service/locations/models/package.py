@@ -1,5 +1,6 @@
 import codecs
 import copy
+import distutils.dir_util
 import json
 import logging
 import os
@@ -12,7 +13,6 @@ from pathlib import Path
 from uuid import uuid4
 
 import bagit
-import distutils.dir_util
 import importlib_resources
 import jsonfield
 import metsrw
@@ -24,9 +24,10 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from locations import signals
 from lxml import etree
 from metsrw.plugins import premisrw
+
+from locations import signals
 
 from . import StorageException
 from .event import Callback
@@ -36,7 +37,6 @@ from .fixity_log import FixityLog
 from .location import Location
 from .space import PosixMoveUnsupportedError
 from .space import Space
-
 
 __all__ = ("Package",)
 

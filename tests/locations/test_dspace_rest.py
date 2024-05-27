@@ -11,12 +11,11 @@ import pytest
 import requests
 from agentarchives import archivesspace
 from agentarchives.archivesspace.client import CommunicationError
-from locations.models import dspace_rest
 from locations.models import DSpaceREST
 from locations.models import Package
 from locations.models import Space
+from locations.models import dspace_rest
 from lxml import etree
-
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FIXTURES_DIR = os.path.abspath(os.path.join(THIS_DIR, "fixtures"))

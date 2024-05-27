@@ -10,7 +10,6 @@ from django.test import RequestFactory
 from django.test import TestCase
 from django.test.client import Client
 
-
 TEST_CAS_USER = "casuser"
 TEST_CAS_ADMIN_ATTRIBUTE = "usertype"
 TEST_CAS_ADMIN_ATTRIBUTE_VALUE_POSITIVE = "admin"

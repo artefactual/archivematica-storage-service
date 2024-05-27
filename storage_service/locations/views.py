@@ -26,10 +26,10 @@ from tastypie.models import ApiKey
 from . import datatable_utils
 from . import forms
 from .constants import PROTOCOL
+from .models import GPG
 from .models import Callback
 from .models import Event
 from .models import FixityLog
-from .models import GPG
 from .models import Location
 from .models import LocationPipeline
 from .models import Package

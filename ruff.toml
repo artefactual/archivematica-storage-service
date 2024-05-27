@@ -1,0 +1,5 @@
+[lint]
+select = ["I"]
+
+[lint.isort]
+force-single-line = true

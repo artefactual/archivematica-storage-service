@@ -1,7 +1,6 @@
 import hashlib
 import os
 
-
 """
 - Update django secret key
 - syncdb

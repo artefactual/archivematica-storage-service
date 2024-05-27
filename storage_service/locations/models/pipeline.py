@@ -15,7 +15,6 @@ from .managers import Enabled
 from .space import Space
 from .urlmixin import URLMixin
 
-
 __all__ = ("Pipeline",)
 
 LOGGER = logging.getLogger(__name__)
