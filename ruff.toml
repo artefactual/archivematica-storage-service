@@ -1,5 +1,6 @@
 [lint]
-select = ["I"]
+select = ["E", "I", "W"]
+ignore = ["E501"]
 
 [lint.isort]
 force-single-line = true
