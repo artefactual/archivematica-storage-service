@@ -1769,9 +1769,7 @@ class PackageResource(ModelResource):
         or package deletion: DEL_REQ.
         """
         LOGGER.info(
-            "Package event: '{}' requested, with package status: '{}'".format(
-                event_type, event_status
-            )
+            f"Package event: '{event_type}' requested, with package status: '{event_status}'"
         )
         LOGGER.debug(pprint.pformat(request_info))
 

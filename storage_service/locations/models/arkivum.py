@@ -82,9 +82,7 @@ class Arkivum(models.Model):
         # Get from watched dir
         if self.remote_user and self.remote_name:
             # Rsync from remote
-            src_path = "{user}@{host}:{path}".format(
-                user=self.remote_user, host=self.remote_name, path=src_path
-            )
+            src_path = f"{self.remote_user}@{self.remote_name}:{src_path}"
         self.space.create_local_directory(dest_path)
         self.space.move_rsync(src_path, dest_path)
 
@@ -96,9 +94,7 @@ class Arkivum(models.Model):
             self.space.create_rsync_directory(
                 destination_path, self.remote_user, self.remote_name
             )
-            rsync_dest = "{}@{}:{}".format(
-                self.remote_user, self.remote_name, destination_path
-            )
+            rsync_dest = f"{self.remote_user}@{self.remote_name}:{destination_path}"
         else:
             rsync_dest = destination_path
             self.space.create_local_directory(destination_path)

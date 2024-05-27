@@ -79,7 +79,7 @@ class DSpace(models.Model):
     ALLOWED_LOCATION_PURPOSE = [Location.AIP_STORAGE]
 
     def __str__(self):
-        return "space: {s.space_id}; sd_iri: {s.sd_iri}; user: {s.user}".format(s=self)
+        return f"space: {self.space_id}; sd_iri: {self.sd_iri}; user: {self.user}"
 
     def _get_sword_connection(self):
         if self.sword_connection is None:

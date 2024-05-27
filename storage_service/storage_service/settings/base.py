@@ -441,10 +441,8 @@ if LDAP_AUTHENTICATION:
             AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_REQUIRE_CERT] = ldap.OPT_X_TLS_HARD
         else:
             raise ImproperlyConfigured(
-                (
-                    "Unexpected value for AUTH_LDAP_TLS_REQUIRE_CERT: {}. "
-                    "Supported values: 'never', 'allow', try', 'hard', or 'demand'."
-                ).format(require_cert)
+                f"Unexpected value for AUTH_LDAP_TLS_REQUIRE_CERT: {require_cert}. "
+                "Supported values: 'never', 'allow', try', 'hard', or 'demand'."
             )
     # Non-configurable sane defaults
     AUTH_LDAP_ALWAYS_UPDATE_USER = True
@@ -520,10 +518,8 @@ if CAS_AUTHENTICATION:
     CAS_VERSION = environ.get("AUTH_CAS_PROTOCOL_VERSION", "3")
     if CAS_VERSION not in ALLOWED_CAS_VERSION_VALUES:
         raise ImproperlyConfigured(
-            (
-                "Unexpected value for AUTH_CAS_PROTOCOL_VERSION: {}. "
-                "Supported values: '1', '2', '3', or 'CAS_2_SAML_1_0'."
-            ).format(CAS_VERSION)
+            f"Unexpected value for AUTH_CAS_PROTOCOL_VERSION: {CAS_VERSION}. "
+            "Supported values: '1', '2', '3', or 'CAS_2_SAML_1_0'."
         )
 
     CAS_CHECK_ADMIN_ATTRIBUTES = environ.get("AUTH_CAS_CHECK_ADMIN_ATTRIBUTES", False)

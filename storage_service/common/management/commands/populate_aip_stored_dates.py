@@ -66,9 +66,7 @@ class Command(StorageServiceCommand):
                 modified_unix = pathlib.Path(aip.full_path).stat().st_mtime
             except (TypeError, FileNotFoundError) as err:
                 self.error(
-                    "Unable to get timestamp for local AIP {}. Details: {}".format(
-                        aip.uuid, err
-                    )
+                    f"Unable to get timestamp for local AIP {aip.uuid}. Details: {err}"
                 )
                 continue
 
@@ -80,13 +78,9 @@ class Command(StorageServiceCommand):
             self.success("Complete. No matching AIPs found.")
         elif skipped_count == aip_count:
             self.success(
-                "Complete. All {} AIPs that already have stored_dates skipped.".format(
-                    aip_count
-                )
+                f"Complete. All {aip_count} AIPs that already have stored_dates skipped."
             )
         else:
             self.success(
-                "Complete. Datestamps for {} of {} identified AIPs added. {} AIPs that already have stored_dates were skipped.".format(
-                    success_count, aip_count, skipped_count
-                )
+                f"Complete. Datestamps for {success_count} of {aip_count} identified AIPs added. {skipped_count} AIPs that already have stored_dates were skipped."
             )

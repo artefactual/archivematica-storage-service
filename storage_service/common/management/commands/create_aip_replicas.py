@@ -126,10 +126,8 @@ class Command(StorageServiceCommand):
             success_count += 1
 
         self.success(
-            "Replica creation complete. {} existing replicas deleted. "
-            "New replicas created for {} of {} AIPs in location.".format(
-                deleted_count, success_count, aips_count
-            )
+            f"Replica creation complete. {deleted_count} existing replicas deleted. "
+            f"New replicas created for {success_count} of {aips_count} AIPs in location."
         )
 
     def _delete_replicas(self, aip_uuid, replicator_uuid):
@@ -155,9 +153,7 @@ class Command(StorageServiceCommand):
                 deleted_count += 1
             except ReplicaDeleteException as err:
                 self.error(
-                    "Unable to delete existing replica {} of AIP {}: {}".format(
-                        replica.uuid, aip_uuid, err
-                    )
+                    f"Unable to delete existing replica {replica.uuid} of AIP {aip_uuid}: {err}"
                 )
         return deleted_count
 

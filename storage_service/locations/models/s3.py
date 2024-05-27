@@ -182,9 +182,7 @@ class S3(models.Model):
         """
         if delete_path.startswith(os.sep):
             LOGGER.info(
-                "S3 path to delete {} begins with {}; removing from path prior to deletion".format(
-                    delete_path, os.sep
-                )
+                f"S3 path to delete {delete_path} begins with {os.sep}; removing from path prior to deletion"
             )
             delete_path = delete_path.lstrip(os.sep)
         obj = self.resource.Bucket(self.bucket_name).objects.filter(Prefix=delete_path)

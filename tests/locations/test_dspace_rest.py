@@ -83,11 +83,11 @@ DIP_SOURCE_PATH = f"{SOURCE_PATH}{DIP_NAME}"
 DIP_METS_PATH = os.path.join(DIP_SOURCE_PATH, AIP_METS_FILENAME)
 
 AIP_DEST_PATH = f"/x/y/z/{AIP_NAME}.7z"
-DS_REST_AIP_DEPO_URL = "{}/items/{}/bitstreams?name={}".format(
-    DS_REST_URL, DS_ITEM_UUID, AIP_FILENAME
+DS_REST_AIP_DEPO_URL = (
+    f"{DS_REST_URL}/items/{DS_ITEM_UUID}/bitstreams?name={AIP_FILENAME}"
 )
-DS_REST_DIP_DEPO_URL = "{}/items/{}/bitstreams?name={}".format(
-    DS_REST_URL, DS_ITEM_UUID, AIP_METS_FILENAME
+DS_REST_DIP_DEPO_URL = (
+    f"{DS_REST_URL}/items/{DS_ITEM_UUID}/bitstreams?name={AIP_METS_FILENAME}"
 )
 DSPACE_SPACE_EXTRACTABLE_METADATA = [
     {"language": "", "value": AIP_NAME_ORIG.title(), "key": "dc.title"}
@@ -406,8 +406,8 @@ def test_move_from_storage_service(
             )
         assert excinfo.value.message == (
             "Error depositing to DSpace or ArchiveSpace: Could not login to"
-            " ArchivesSpace server: {}, port: {}, user: {}, repository:"
-            " {}".format(AS_URL_NO_PORT, AS_PORT, AS_USER, AS_REPOSITORY)
+            f" ArchivesSpace server: {AS_URL_NO_PORT}, port: {AS_PORT}, user: {AS_USER}, repository:"
+            f" {AS_REPOSITORY}"
         )
         return
 
@@ -474,9 +474,7 @@ def test_move_from_storage_service(
                 AS_URL_NO_PORT, AS_USER, AS_PASSWORD, AS_PORT, AS_REPOSITORY
             )
             assert fake_as_client.args == (
-                "/repositories/{}/archival_objects/{}".format(
-                    AS_REPOSITORY, AS_ARCHIVAL_OBJECT
-                ),
+                f"/repositories/{AS_REPOSITORY}/archival_objects/{AS_ARCHIVAL_OBJECT}",
                 PACKAGE_UUID,
             )
             assert fake_as_client.kwargs == {

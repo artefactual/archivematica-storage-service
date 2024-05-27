@@ -116,7 +116,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--unix-owner",
             help="The Unix system user that should own the file(s) of the"
-            " imported AIP. Default: {}".format(DEFAULT_UNIX_OWNER),
+            f" imported AIP. Default: {DEFAULT_UNIX_OWNER}",
             default=DEFAULT_UNIX_OWNER,
         )
         parser.add_argument(
@@ -271,9 +271,7 @@ def get_aip_storage_locations(aip_storage_location_uuid):
         final_as_location = models.Location.objects.get(uuid=aip_storage_location_uuid)
     except models.Location.DoesNotExist:
         raise ImportAIPException(
-            "Unable to find an AIP storage location matching {}.".format(
-                aip_storage_location_uuid
-            )
+            f"Unable to find an AIP storage location matching {aip_storage_location_uuid}."
         )
     else:
         if final_as_location.space.access_protocol != models.Space.LOCAL_FILESYSTEM:
@@ -309,9 +307,7 @@ def copy_aip_to_aip_storage_location(
     fix_ownership(dest, unix_owner)
     print(
         okgreen(
-            "Location: {} ({}).".format(
-                local_as_location.uuid, local_as_location.space.access_protocol
-            )
+            f"Location: {local_as_location.uuid} ({local_as_location.space.access_protocol})."
         )
     )
 
@@ -364,9 +360,9 @@ def check_if_aip_already_exists(aip_uuid):
     duplicates = models.Package.objects.filter(uuid=aip_uuid).all()
     if duplicates:
         prompt = warning(
-            "An AIP with UUID {} already exists in this Storage Service? If you"
+            f"An AIP with UUID {aip_uuid} already exists in this Storage Service? If you"
             " want to import this AIP anyway (and destroy the existing one),"
-            ' then enter "y" or "yes": '.format(aip_uuid)
+            ' then enter "y" or "yes": '
         )
         user_response = input(prompt)
         if user_response.lower() not in ("y", "yes"):

@@ -387,9 +387,7 @@ class Package(models.Model):
                     LOGGER.debug(f"Deleted Storage Service internal tempdir: {tempdir}")
                 except OSError as err:
                     LOGGER.debug(
-                        "Error deleting Storage Service internal tempdir: {}".format(
-                            err
-                        )
+                        f"Error deleting Storage Service internal tempdir: {err}"
                     )
 
     def get_base_directory(self):
@@ -1998,9 +1996,7 @@ class Package(models.Model):
                     self.uuid,
                     self.checksum,
                 )
-                failure = "Expected package checksum {}; calculated {} instead".format(
-                    self.checksum, checksum
-                )
+                failure = f"Expected package checksum {self.checksum}; calculated {checksum} instead"
                 return (False, [failure], _("Incorrect package checksum"), None)
             if self.is_compressed:
                 return (True, [], "", None)
@@ -2227,9 +2223,7 @@ class Package(models.Model):
             return {
                 "error": True,
                 "status_code": 405,
-                "message": "Package with type {} cannot be re-ingested.".format(
-                    self.get_package_type_display()
-                ),
+                "message": f"Package with type {self.get_package_type_display()} cannot be re-ingested.",
             }
 
         # Check and set reingest pipeline
@@ -2563,8 +2557,8 @@ class Package(models.Model):
                         "copy": utils.COMPRESSION_7Z_COPY,
                     }[compression_algorithm]
                     LOGGER.info(
-                        'Extracted compression "{}" from AM-passed'
-                        " PREMIS events".format(compression)
+                        f'Extracted compression "{compression}" from AM-passed'
+                        " PREMIS events"
                     )
                 except KeyError:
                     msg = (
@@ -3174,26 +3168,15 @@ def _get_checksum_report(
     success = replica_checksum == master_checksum
     if success:
         message = (
-            "Master AIP {m_uuid} and replica AIP {r_uuid} both"
-            " have checksum {checksum} when using algorithm"
-            " {algorithm}.".format(
-                m_uuid=master_uuid,
-                r_uuid=replica_uuid,
-                checksum=master_checksum,
-                algorithm=algorithm,
-            )
+            f"Master AIP {master_uuid} and replica AIP {replica_uuid} both"
+            f" have checksum {master_checksum} when using algorithm"
+            f" {algorithm}."
         )
     else:
         message = (
-            "Using algorithm {algorithm}, master AIP {m_uuid}"
-            " has checksum {m_checksum} while replica AIP"
-            " {r_uuid} has checksum {r_checksum}.".format(
-                m_uuid=master_uuid,
-                r_uuid=replica_uuid,
-                m_checksum=master_checksum,
-                r_checksum=replica_checksum,
-                algorithm=algorithm,
-            )
+            f"Using algorithm {algorithm}, master AIP {master_uuid}"
+            f" has checksum {master_checksum} while replica AIP"
+            f" {replica_uuid} has checksum {replica_checksum}."
         )
     return {"success": success, "message": message}
 

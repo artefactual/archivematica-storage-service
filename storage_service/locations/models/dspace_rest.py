@@ -148,8 +148,8 @@ class DSpaceREST(models.Model):
 
     def __str__(self):
         return (
-            "space: {s.space_id}; rest_url: {s.ds_rest_url}; user:"
-            " {s.ds_user}".format(s=self)
+            f"space: {self.space_id}; rest_url: {self.ds_rest_url}; user:"
+            f" {self.ds_user}"
         )
 
     def browse(self, path):
@@ -188,9 +188,7 @@ class DSpaceREST(models.Model):
                 return mets_el
             except subprocess.CalledProcessError as err:
                 raise DSpaceRESTException(
-                    "Could not extract {} from {}: {}.".format(
-                        mets_path, input_path, err
-                    )
+                    f"Could not extract {mets_path} from {input_path}: {err}."
                 )
         elif package_type == "DIP":
             for dip_file in os.listdir(input_path):
@@ -205,13 +203,13 @@ class DSpaceREST(models.Model):
         """
         for dmdid in dmdids.split():
             dc_metadata = mets_el.find(
-                'mets:dmdSec[@ID="{}"]/mets:mdWrap/mets:xmlData/'
-                "dcterms:dublincore".format(dmdid),
+                f'mets:dmdSec[@ID="{dmdid}"]/mets:mdWrap/mets:xmlData/'
+                "dcterms:dublincore",
                 namespaces=utils.NSMAP,
             )
             other_metadata = mets_el.find(
-                'mets:dmdSec[@ID="{}"]/mets:mdWrap[@MDTYPE="OTHER"]/'
-                "mets:xmlData".format(dmdid),
+                f'mets:dmdSec[@ID="{dmdid}"]/mets:mdWrap[@MDTYPE="OTHER"]/'
+                "mets:xmlData",
                 namespaces=utils.NSMAP,
             )
             if other_metadata is not None:
@@ -283,15 +281,15 @@ class DSpaceREST(models.Model):
             response.raise_for_status()
         except requests.HTTPError as err:
             raise DSpaceRESTException(
-                "Bad response {} received when attempting to login via the"
-                " DSpace REST API: {}.".format(response.status_code, err),
+                f"Bad response {response.status_code} received when attempting to login via the"
+                f" DSpace REST API: {err}.",
                 url=login_url,
                 email=self.ds_user,
             )
         except Exception as err:
             raise DSpaceRESTException(
                 "Unexpected error encountered when attempting to login via the"
-                " DSpace REST API: {}.".format(err),
+                f" DSpace REST API: {err}.",
                 url=login_url,
                 email=self.ds_user,
             )
@@ -302,7 +300,7 @@ class DSpaceREST(models.Model):
                 raise DSpaceRESTException(
                     "Unable to login to the DSpace REST API: no"
                     ' "Set-Cookie" in response headers:'
-                    " {}.".format(response.headers)
+                    f" {response.headers}."
                 )
             return set_cookie[set_cookie.find("=") + 1 :]
 
@@ -338,8 +336,8 @@ class DSpaceREST(models.Model):
     def _create_dspace_record(self, metadata, ds_sessionid, ds_collection):
         # Structure necessary to create DSpace record
         item = {"type": "item", "metadata": metadata}
-        collection_url = "{base_url}/collections/{ds_collection}/items".format(
-            base_url=self._get_base_url(self.ds_rest_url), ds_collection=ds_collection
+        collection_url = (
+            f"{self._get_base_url(self.ds_rest_url)}/collections/{ds_collection}/items"
         )
         try:  # Create item in DSpace
             response = self._post(
@@ -376,7 +374,7 @@ class DSpaceREST(models.Model):
 
     @staticmethod
     def _get_base_url(parsed_url):
-        return "{url.scheme}://{url.netloc}{url.path}".format(url=parsed_url)
+        return f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
 
     def _deposit_dip_to_dspace(self, source_path, ds_item, ds_sessionid):
         base_url = "{}/items/{}".format(
@@ -411,10 +409,8 @@ class DSpaceREST(models.Model):
             )
         except Exception:
             raise DSpaceRESTException(
-                "Could not login to ArchivesSpace server: {}, port: {},"
-                " user: {}, repository: {}.".format(
-                    login_url, self.as_url.port, self.as_user, as_archival_repo
-                )
+                f"Could not login to ArchivesSpace server: {login_url}, port: {self.as_url.port},"
+                f" user: {self.as_user}, repository: {as_archival_repo}."
             )
 
     def _link_dip_to_archivesspace(
@@ -428,9 +424,7 @@ class DSpaceREST(models.Model):
     ):
         try:
             as_client.add_digital_object(
-                "/repositories/{}/archival_objects/{}".format(
-                    as_archival_repo, as_archival_obj
-                ),
+                f"/repositories/{as_archival_repo}/archival_objects/{as_archival_obj}",
                 package_uuid,
                 title=package_title,
                 uri="{}://{}/handle/{}".format(
@@ -440,8 +434,8 @@ class DSpaceREST(models.Model):
         except CommunicationError as err:
             if err.response and err.response.status_code == 404:
                 raise DSpaceRESTException(
-                    "{}Either repository {} or archival object {} does not"
-                    " exist.".format(AS_DO_ADD_ERR, self.as_repository, as_archival_obj)
+                    f"{AS_DO_ADD_ERR}Either repository {self.as_repository} or archival object {as_archival_obj} does not"
+                    " exist."
                 )
             raise DSpaceRESTException(
                 f"{AS_DO_ADD_ERR}ArchivesSpace Server error: {err}."
@@ -463,9 +457,7 @@ class DSpaceREST(models.Model):
             response.raise_for_status()
         except Exception:
             raise DSpaceRESTException(
-                "Error depositing AIP at {} to DSpace via URL {}.".format(
-                    source_path, bitstream_url
-                )
+                f"Error depositing AIP at {source_path} to DSpace via URL {bitstream_url}."
             )
 
     def _handle_dip(
@@ -514,9 +506,7 @@ class DSpaceREST(models.Model):
             raise DSpaceRESTException(f"Could not run {command[0]}: {err}.")
         except subprocess.CalledProcessError as err:
             raise DSpaceRESTException(
-                "Could not archive {} using {}: {}.".format(
-                    source_path, command[0], err
-                )
+                f"Could not archive {source_path} using {command[0]}: {err}."
             )
 
     def move_from_storage_service(self, source_path, destination_path, package=None):

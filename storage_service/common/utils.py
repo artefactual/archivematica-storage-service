@@ -271,9 +271,7 @@ def mets_ss_agent(xml, digiprov_id, agent_value=None, agent_type="storage servic
     if agent_value is None:
         agent_value = _storage_service_agent()
     existing_agent = xml.xpath(
-        ".//mets:agentIdentifier[mets:agentIdentifierType='{}' and mets:agentIdentifierValue='{}']".format(
-            agent_type, agent_value
-        ),
+        f".//mets:agentIdentifier[mets:agentIdentifierType='{agent_type}' and mets:agentIdentifierValue='{agent_value}']",
         namespaces=NSMAP,
     )
     if existing_agent:
@@ -443,8 +441,8 @@ def get_tool_info_command(compression):
 
         tool_info_command = (
             'echo program="tar"\\; '
-            'algorithm="{}"\\; '
-            'version="`tar --version | grep tar`"'.format(algo)
+            f'algorithm="{algo}"\\; '
+            'version="`tar --version | grep tar`"'
         )
     elif compression in (COMPRESSION_7Z_BZIP, COMPRESSION_7Z_LZMA, COMPRESSION_7Z_COPY):
         algo = {
@@ -455,8 +453,8 @@ def get_tool_info_command(compression):
         tool_info_command = (
             "#!/bin/bash\n"
             'echo program="7z"\\; '
-            'algorithm="{}"\\; '
-            'version="`7z | grep Version`"'.format(algo)
+            f'algorithm="{algo}"\\; '
+            'version="`7z | grep Version`"'
         )
     else:
         raise NotImplementedError(
@@ -606,9 +604,7 @@ def create_tar(path, extension=False):
     LOGGER.info(
         "creating archive of %s at %s, relative to %s", source, tarpath, changedir
     )
-    fail_msg = "Failed to create a tarfile at {tarpath} for dir at {path}".format(
-        tarpath=tarpath, path=path
-    )
+    fail_msg = f"Failed to create a tarfile at {tarpath} for dir at {path}"
     try:
         subprocess.check_output(cmd)
     except (OSError, subprocess.CalledProcessError):
