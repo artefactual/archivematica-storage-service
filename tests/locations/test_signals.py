@@ -10,8 +10,8 @@ from locations import signals
 
 
 @pytest.mark.django_db
-@mock.patch("locations.signals._notify_administrators")
-def test_report_failed_fixity_check(_notify_administrators: mock.Mock):
+@mock.patch("locations.signals._notify_users")
+def test_report_failed_fixity_check(_notify_users: mock.Mock):
     package = models.Package.objects.create(
         current_location=models.Location.objects.create(
             space=models.Space.objects.create()
@@ -38,9 +38,10 @@ def test_report_failed_fixity_check(_notify_administrators: mock.Mock):
     ):
         signals.report_failed_fixity_check(sender, **kwargs)
 
-    _notify_administrators.assert_called_once_with(
+    _notify_users.assert_called_once_with(
         f"Fixity check failed for package {package.uuid}",
         f"\n[{expected_time.strftime('%Y-%m-%d %H:%M:%S')}] A fixity check failed for the package with UUID {package.uuid}.\n",
+        mock.ANY,
     )
 
     assert (
@@ -52,28 +53,20 @@ def test_report_failed_fixity_check(_notify_administrators: mock.Mock):
 
 
 @pytest.fixture
-def user1(db):
+def user(db):
     return User.objects.create_user(
         username="demo", email="demo@example.com", password="Abc.Def.1234"
     )
 
 
-@pytest.fixture
-def user2(db):
-    return User.objects.create_user(
-        username="test", email="test@example.com", password="test.1234", is_active=False
-    )
-
-
 @pytest.mark.django_db
-def test_notify_administrators(user1, user2, mailoutbox):
+def test_notify_users(mailoutbox, user):
     subject = "foo"
     message = "bar"
 
-    signals._notify_administrators(subject, message)
+    signals._notify_users(subject, message, [user])
 
-    assert len(mailoutbox) == 1
     result = mailoutbox[0]
-    assert list(result.to) == [user1.email]
+    assert list(result.to) == [user.email]
     assert result.subject == subject
     assert result.body == message

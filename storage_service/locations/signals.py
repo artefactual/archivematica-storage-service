@@ -21,9 +21,8 @@ successful_fixity_check = Signal()
 fixity_check_not_run = Signal()
 
 
-def _notify_administrators(subject, message):
-    admin_users = User.objects.filter(is_active=True)
-    for user in admin_users:
+def _notify_users(subject, message, users):
+    for user in users:
         try:
             user.email_user(subject, message)
         except Exception:
@@ -55,7 +54,7 @@ Package location: %(location)s"""
             "url": kwargs["url"] + reverse("package_delete_request")
         }
 
-    _notify_administrators(subject, message)
+    _notify_users(subject, message, User.objects.filter(is_superuser=True))
 
 
 def _log_report(uuid, success, message=None):
@@ -90,7 +89,7 @@ def report_failed_fixity_check(sender, **kwargs):
         }
     )
 
-    _notify_administrators(subject, message)
+    _notify_users(subject, message, User.objects.filter(is_active=True))
 
 
 @receiver(successful_fixity_check, dispatch_uid="fixity_check")
