@@ -1,5 +1,5 @@
 [lint]
-select = ["C4", "E", "I", "W"]
+select = ["C4", "E", "F", "I", "W"]
 ignore = ["E501"]
 
 [lint.isort]
