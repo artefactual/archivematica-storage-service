@@ -433,10 +433,10 @@ class Space(models.Model):
             )
         try:
             self.get_child_space().post_move_from_storage_service(
+                *args,
                 staging_path=staging_path,
                 destination_path=destination_path,
                 package=package,
-                *args,
                 **kwargs,
             )
         except AttributeError:

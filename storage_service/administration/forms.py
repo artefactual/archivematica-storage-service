@@ -19,12 +19,12 @@ class DefaultLocationWidget(forms.MultiWidget):
 
     def __init__(self, *args, **kwargs):
         widgets = [
-            forms.Select(choices=[], *args, **kwargs),  # space_id
+            forms.Select(*args, choices=[], **kwargs),  # space_id
             forms.TextInput(*args, **kwargs),  # relative_path
             forms.TextInput(*args, **kwargs),  # description
             forms.TextInput(*args, **kwargs),  # quota
         ]
-        super().__init__(widgets=widgets, *args, **kwargs)
+        super().__init__(*args, widgets=widgets, **kwargs)
 
     def set_space_id_choices(self, choices):
         self.widgets[0].choices += choices
@@ -52,13 +52,13 @@ class DefaultLocationField(forms.MultiValueField):
     """Field for entering required information to create a new location."""
 
     def __init__(self, *args, **kwargs):
-        space_id = forms.ChoiceField(choices=[], *args, **kwargs)
+        space_id = forms.ChoiceField(*args, choices=[], **kwargs)
         relative_path = forms.CharField(*args, **kwargs)
         description = forms.CharField(*args, **kwargs)
-        quota = forms.IntegerField(min_value=0, *args, **kwargs)
+        quota = forms.IntegerField(*args, min_value=0, **kwargs)
         fields = [space_id, relative_path, description, quota]
         widget = DefaultLocationWidget()
-        super().__init__(fields=fields, widget=widget, *args, **kwargs)
+        super().__init__(*args, fields=fields, widget=widget, **kwargs)
 
     def set_space_id_choices(self, choices):
         self.fields[0].choices += choices

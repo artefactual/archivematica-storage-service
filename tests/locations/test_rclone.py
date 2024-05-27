@@ -186,7 +186,7 @@ def test_rclone_remote_prefix(
         assert remote_prefix == expected_return
     else:
         with pytest.raises(models.StorageException):
-            rclone_space.remote_prefix
+            assert rclone_space.remote_prefix is not None
 
 
 @pytest.mark.parametrize(

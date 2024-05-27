@@ -1,6 +1,6 @@
 [lint]
-select = ["C4", "E", "F", "I", "PTH", "W"]
-ignore = ["E501"]
+select = ["B", "C4", "E", "F", "I", "PTH", "W"]
+ignore = ["B904", "E501"]
 
 [lint.per-file-ignores]
 "{storage_service,tests}/locations/*" = ["PTH"]
