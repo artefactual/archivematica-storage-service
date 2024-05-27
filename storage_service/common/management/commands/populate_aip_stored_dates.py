@@ -10,7 +10,7 @@ Execution example:
 """
 
 import logging
-import os
+import pathlib
 from datetime import datetime
 
 from django.core.management.base import CommandError
@@ -63,8 +63,8 @@ class Command(StorageServiceCommand):
                 continue
 
             try:
-                modified_unix = os.path.getmtime(aip.full_path)
-            except OSError as err:
+                modified_unix = pathlib.Path(aip.full_path).stat().st_mtime
+            except (TypeError, FileNotFoundError) as err:
                 self.error(
                     "Unable to get timestamp for local AIP {}. Details: {}".format(
                         aip.uuid, err

@@ -1,6 +1,9 @@
 [lint]
-select = ["C4", "E", "F", "I", "W"]
+select = ["C4", "E", "F", "I", "PTH", "W"]
 ignore = ["E501"]
+
+[lint.per-file-ignores]
+"{storage_service,tests}/locations/*" = ["PTH"]
 
 [lint.isort]
 force-single-line = true

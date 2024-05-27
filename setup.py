@@ -16,14 +16,14 @@
 # along with archivematica-storage-service.  If not,
 # see <http://www.gnu.org/licenses/>.
 import codecs
-import os
+import pathlib
 import re
 
 from setuptools import setup
 
 
 def read(*parts):
-    path = os.path.join(os.path.dirname(__file__), *parts)
+    path = pathlib.Path(pathlib.Path(__file__).parent, *parts)
     with codecs.open(path, encoding="utf-8") as fobj:
         return fobj.read()
 
