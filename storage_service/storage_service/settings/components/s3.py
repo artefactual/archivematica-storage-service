@@ -2,6 +2,7 @@
 
 From here we can configure aspects of S3 in the Storage Service.
 """
+
 from os import environ
 
 from django.core.exceptions import ImproperlyConfigured

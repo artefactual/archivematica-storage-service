@@ -13,13 +13,15 @@ have the Package.checksum and Package.checksum_algorithm fields populated.
 Execution example:
 ./manage.py populate_aip_checksums
 """
+
 import pathlib
 
-from common import utils
-from common.management.commands import StorageServiceCommand
 from django.core.management.base import CommandError
 from locations.models.package import Package
 from locations.models.package import Space
+
+from common import utils
+from common.management.commands import StorageServiceCommand
 
 
 class Command(StorageServiceCommand):
@@ -91,9 +93,7 @@ class Command(StorageServiceCommand):
             )
             if checksum is None:
                 self.error(
-                    "Unable to retrieve checksum information from pointer file for compressed AIP {}".format(
-                        aip.uuid
-                    )
+                    f"Unable to retrieve checksum information from pointer file for compressed AIP {aip.uuid}"
                 )
                 error_count += 1
                 continue
@@ -102,9 +102,7 @@ class Command(StorageServiceCommand):
             aip.checksum_algorithm = checksum_algorithm
             aip.save()
             self.info(
-                "AIP {} updated with {} checksum {}".format(
-                    aip.uuid, aip.checksum_algorithm, aip.checksum
-                )
+                f"AIP {aip.uuid} updated with {aip.checksum_algorithm} checksum {aip.checksum}"
             )
             success_count += 1
 
@@ -117,9 +115,7 @@ class Command(StorageServiceCommand):
             ).hexdigest()
             if checksum is None:
                 self.error(
-                    "Unable to calculate tagmanifest checksum for uncompressed AIP {}".format(
-                        aip.uuid
-                    )
+                    f"Unable to calculate tagmanifest checksum for uncompressed AIP {aip.uuid}"
                 )
                 error_count += 1
                 continue
@@ -128,9 +124,7 @@ class Command(StorageServiceCommand):
             aip.checksum_algorithm = Package.DEFAULT_CHECKSUM_ALGORITHM
             aip.save()
             self.info(
-                "AIP {} updated with {} checksum {}".format(
-                    aip.uuid, aip.checksum_algorithm, aip.checksum
-                )
+                f"AIP {aip.uuid} updated with {aip.checksum_algorithm} checksum {aip.checksum}"
             )
             success_count += 1
 
@@ -138,13 +132,9 @@ class Command(StorageServiceCommand):
             self.info("Complete. No matching AIPs identified.")
         elif success_count == total_aip_count:
             self.info(
-                "Complete. Checksums added for all {} identified AIPs.".format(
-                    total_aip_count
-                )
+                f"Complete. Checksums added for all {total_aip_count} identified AIPs."
             )
         else:
             self.info(
-                "Complete. Checksums added for {} of {} identified AIPs. See output for details.".format(
-                    success_count, total_aip_count
-                )
+                f"Complete. Checksums added for {success_count} of {total_aip_count} identified AIPs. See output for details."
             )

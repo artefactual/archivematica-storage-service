@@ -4,11 +4,11 @@ import os
 import pathlib
 
 import django.core.exceptions
-from common import utils
 from django.db import connection
 from locations import models as locations_models
 from locations.models.async_manager import start_async_manager
 
+from common import utils
 
 LOGGER = logging.getLogger(__name__)
 

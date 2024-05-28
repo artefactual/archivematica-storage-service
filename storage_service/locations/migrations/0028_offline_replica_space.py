@@ -1,4 +1,5 @@
 """Migration to add an Offline Replica Staging Space to the Storage Service."""
+
 import django.db.models.deletion
 from django.db import migrations
 from django.db import models

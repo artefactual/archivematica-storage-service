@@ -175,7 +175,7 @@ C5 = "0e-11112222-3333-8888-9999-aaaabbbbcccc.7z"
 C6 = "0f-11112222-8888-9999-aaaa-bbbbccccdddd.tar.gz"
 C7 = "1a-11118888-9999-aaaa-bbbb-cccceeeeeeee.zip"
 
-MAGIC = b"\x37\x7A\xBC\xAF\x27\x1C"
+MAGIC = b"\x37\x7a\xbc\xaf\x27\x1c"
 
 AIPSTORE = "AIPstore"
 

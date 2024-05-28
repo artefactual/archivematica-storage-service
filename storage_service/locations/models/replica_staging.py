@@ -93,7 +93,5 @@ class OfflineReplicaStaging(models.Model):
             os.rmdir(dest_path)
         except OSError as err:
             LOGGER.warning(
-                "Unable to cleanup expected temporary artefact {}: {}".format(
-                    dest_path, err
-                )
+                f"Unable to cleanup expected temporary artefact {dest_path}: {err}"
             )

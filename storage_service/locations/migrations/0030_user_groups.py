@@ -7,6 +7,7 @@ like regular authenticated users, i.e. they can read and list records, with an
 extra `locations.approve_package_deletion` permission that allows them to
 accept/reject package deletion requests.
 """
+
 from django.contrib.auth.management import create_permissions
 from django.db import migrations
 

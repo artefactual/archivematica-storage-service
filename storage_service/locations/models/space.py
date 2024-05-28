@@ -188,11 +188,7 @@ class Space(models.Model):
         app_label = "locations"
 
     def __str__(self):
-        return "{uuid}: {path} ({access_protocol})".format(
-            uuid=self.uuid,
-            access_protocol=self.get_access_protocol_display(),
-            path=self.path,
-        )
+        return f"{self.uuid}: {self.path} ({self.get_access_protocol_display()})"
 
     def clean(self):
         # Object storage spaces do not require a path, or for it to start with /
@@ -433,10 +429,10 @@ class Space(models.Model):
             )
         try:
             self.get_child_space().post_move_from_storage_service(
+                *args,
                 staging_path=staging_path,
                 destination_path=destination_path,
                 package=package,
-                *args,
                 **kwargs,
             )
         except AttributeError:

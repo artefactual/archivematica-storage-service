@@ -15,7 +15,6 @@ from lxml import etree
 from .location import Location
 from .package import Package
 
-
 LOGGER = logging.getLogger(__name__)
 
 
@@ -507,9 +506,7 @@ class Lockssomatic(models.Model):
             amdsec,
             event_type="division",
             event_detail=event_detail,
-            event_outcome_detail_note="{} LOCKSS chunks created".format(
-                len(output_files)
-            ),
+            event_outcome_detail_note=f"{len(output_files)} LOCKSS chunks created",
         )
 
         # Update structMap & fileSec
@@ -673,9 +670,7 @@ class Lockssomatic(models.Model):
 
             # Get checksum and size from pointer file (or generate if not found)
             file_e = self.pointer_root.find(
-                ".//mets:fileGrp[@USE='LOCKSS chunk']/mets:file[@ID='{}']".format(
-                    os.path.basename(file_path)
-                ),
+                f".//mets:fileGrp[@USE='LOCKSS chunk']/mets:file[@ID='{os.path.basename(file_path)}']",
                 namespaces=utils.NSMAP,
             )
             if file_e is not None:

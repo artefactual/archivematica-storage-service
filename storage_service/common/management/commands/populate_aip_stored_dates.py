@@ -8,15 +8,17 @@ AIPs that already have timestamps are ignored and not updated.
 Execution example:
 ./manage.py populate_aip_stored_dates
 """
+
 import logging
-import os
+import pathlib
 from datetime import datetime
 
-from common.management.commands import StorageServiceCommand
 from django.core.management.base import CommandError
 from django.utils.timezone import get_current_timezone
 from locations.models.package import Package
 from locations.models.package import Space
+
+from common.management.commands import StorageServiceCommand
 
 # Suppress the logging from models/package.py.
 logging.config.dictConfig({"version": 1, "disable_existing_loggers": True})
@@ -61,12 +63,10 @@ class Command(StorageServiceCommand):
                 continue
 
             try:
-                modified_unix = os.path.getmtime(aip.full_path)
-            except OSError as err:
+                modified_unix = pathlib.Path(aip.full_path).stat().st_mtime
+            except (TypeError, FileNotFoundError) as err:
                 self.error(
-                    "Unable to get timestamp for local AIP {}. Details: {}".format(
-                        aip.uuid, err
-                    )
+                    f"Unable to get timestamp for local AIP {aip.uuid}. Details: {err}"
                 )
                 continue
 
@@ -78,13 +78,9 @@ class Command(StorageServiceCommand):
             self.success("Complete. No matching AIPs found.")
         elif skipped_count == aip_count:
             self.success(
-                "Complete. All {} AIPs that already have stored_dates skipped.".format(
-                    aip_count
-                )
+                f"Complete. All {aip_count} AIPs that already have stored_dates skipped."
             )
         else:
             self.success(
-                "Complete. Datestamps for {} of {} identified AIPs added. {} AIPs that already have stored_dates were skipped.".format(
-                    success_count, aip_count, skipped_count
-                )
+                f"Complete. Datestamps for {success_count} of {aip_count} identified AIPs added. {skipped_count} AIPs that already have stored_dates were skipped."
             )

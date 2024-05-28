@@ -13,9 +13,9 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.translation import gettext as _
+
 from locations import models
 from locations.models.async_manager import AsyncManager
-
 
 LOGGER = logging.getLogger(__name__)
 

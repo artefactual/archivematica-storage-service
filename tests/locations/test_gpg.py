@@ -1,4 +1,5 @@
 """Tests for the GPG encrypted space."""
+
 import os
 import pathlib
 import tarfile
@@ -8,8 +9,8 @@ import pytest
 from common import gpgutils
 from common import utils
 from django.test import TestCase
-from locations.models import gpg
 from locations.models import Package
+from locations.models import gpg
 from locations.models import space
 from metsrw.plugins import premisrw
 
@@ -137,15 +138,14 @@ def test_move_to_storage_service(
             gpg_space.move_to_storage_service(src_path, dst_path, None)
         if not encr_path:
             assert (
-                "Unable to move {}; this file/dir does not exist;"
-                " nor is it in an encrypted directory.".format(src_path)
-                == str(excinfo.value)
+                f"Unable to move {src_path}; this file/dir does not exist;"
+                " nor is it in an encrypted directory." == str(excinfo.value)
             )
         if not src_exists2:
             assert (
-                "Unable to move {}; this file/dir does not"
+                f"Unable to move {src_path}; this file/dir does not"
                 " exist, not even in encrypted directory"
-                " {}.".format(src_path, encr_path) == str(excinfo.value)
+                f" {encr_path}." == str(excinfo.value)
             )
     if src_exists2 and encr_path:
         gpg_space.space.move_rsync.assert_called_once_with(src_path, dst_path)
@@ -419,9 +419,10 @@ def test__gpg_decrypt(
         with pytest.raises(gpg.GPGException) as excinfo:
             gpg._gpg_decrypt(path)
         if isfile:
-            assert "Failed to decrypt {}. Reason: {}".format(
-                path, DECRYPT_RET_FAIL_STATUS
-            ) == str(excinfo.value)
+            assert (
+                f"Failed to decrypt {path}. Reason: {DECRYPT_RET_FAIL_STATUS}"
+                == str(excinfo.value)
+            )
         else:
             assert f"Cannot decrypt file at {path}; no such file." == str(excinfo.value)
         assert not os.remove.called
@@ -466,6 +467,6 @@ class TestGPG(TestCase):
         with pytest.raises(gpg.GPGException) as excinfo:
             encr_path = "/some/non/matching/path.jpg"
             gpg._encr_path2key_fingerprint(encr_path)
-        assert "Unable to find package matching encrypted path {}".format(
-            encr_path
-        ) in str(excinfo.value)
+        assert f"Unable to find package matching encrypted path {encr_path}" in str(
+            excinfo.value
+        )

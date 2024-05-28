@@ -49,9 +49,7 @@ def test_get_compression(pronom, algorithm, compression):
 
     assert (
         utils.get_compression(StringIO(xml)) == compression
-    ), "Incorrect compression value: {} returned for XML (pointer file) input".format(
-        compression
-    )
+    ), f"Incorrect compression value: {compression} returned for XML (pointer file) input"
 
 
 @pytest.mark.parametrize(
@@ -86,9 +84,7 @@ def test_get_compress_command(compression, command):
     )
     assert (
         " ".join(cmd) == command
-    ), "Incorrect compression command: {} returned for compression input {}".format(
-        cmd, compression
-    )
+    ), f"Incorrect compression command: {cmd} returned for compression input {compression}"
 
 
 @pytest.mark.parametrize(
@@ -124,9 +120,7 @@ def test_get_tool_info_command(compression, command):
     cmd = utils.get_tool_info_command(compression)
     assert (
         cmd == command
-    ), "Incorrect tool info: {} returned for compression input {}".format(
-        cmd, compression
-    )
+    ), f"Incorrect tool info: {cmd} returned for compression input {compression}"
 
 
 @pytest.mark.parametrize(
@@ -174,9 +168,7 @@ def test_get_compression_event_detail(
 
     assert (
         detail == expected_detail
-    ), "Incorrect detail: {} returned for compression input {}".format(
-        detail, compression
-    )
+    ), f"Incorrect detail: {detail} returned for compression input {compression}"
 
 
 @pytest.mark.parametrize(
@@ -420,9 +412,10 @@ def test_create_tar(
     else:
         with pytest.raises(utils.TARException) as excinfo:
             ret = utils.create_tar(path, extension=extension)
-        assert "Failed to create a tarfile at {} for dir at {}".format(
-            tarpath, fixed_path
-        ) == str(excinfo.value)
+        assert (
+            f"Failed to create a tarfile at {tarpath} for dir at {fixed_path}"
+            == str(excinfo.value)
+        )
         assert not shutil.rmtree.called
         assert not pathlib.Path.rename.called
     if not sp_raises:

@@ -9,6 +9,7 @@ worth investigating a setup where pytest orchestrates Compose services instead.
 Missing: encryption, multiple replicators, packages generated with older versions
 of Archivematica, etc...
 """
+
 import json
 import os
 import shutil
@@ -116,15 +117,13 @@ def startup(scope="function"):
 
 
 def get_size(path):
-    if isinstance(path, Path):
-        path = str(path)
-    if os.path.isfile(path):
-        return os.path.getsize(path)
+    if path.is_file():
+        return path.stat().st_size
     size = 0
     for dirpath, _, filenames in os.walk(path):
+        directory = Path(dirpath)
         for filename in filenames:
-            file_path = os.path.join(dirpath, filename)
-            size += os.path.getsize(file_path)
+            size += (directory / filename).stat().st_size
     return size
 
 
@@ -327,7 +326,7 @@ class StorageScenario:
                 "origin_path": self.pkg.name,
                 "current_location": as_location["resource_uri"],
                 "current_path": self.pkg.name,
-                "size": get_size(str(self.pkg)),
+                "size": get_size(self.pkg),
                 "package_type": Package.AIP,
                 "aip_subtype": "Archival Information Package",
                 "origin_pipeline": f"/api/v2/pipeline/{self.PIPELINE_UUID}/",

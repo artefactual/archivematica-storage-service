@@ -1,7 +1,8 @@
 import common.fields
-import locations.models.space
 from django.db import migrations
 from django.db import models
+
+import locations.models.space
 
 
 class Migration(migrations.Migration):

@@ -145,9 +145,7 @@ class Archipelago(models.Model):
                 return mets_el
             except subprocess.CalledProcessError as err:
                 raise Exception(
-                    "Could not extract {} from {}: {}.".format(
-                        mets_path, input_path, err
-                    )
+                    f"Could not extract {mets_path} from {input_path}: {err}."
                 )
 
     def _get_metadata(self, input_path, aip_uuid, package_type):

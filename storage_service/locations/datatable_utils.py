@@ -7,6 +7,7 @@ service (in the Packages and the Location detail views).
 The request and response details are documented in:
 http://legacy.datatables.net/usage/server-side
 """
+
 import os
 import uuid
 

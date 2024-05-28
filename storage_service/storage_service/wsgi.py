@@ -13,9 +13,9 @@ middleware here, or combine a Django application with an application of another
 framework.
 
 """
+
 import os
-from os.path import abspath
-from os.path import dirname
+import pathlib
 from sys import path
 
 import django
@@ -24,8 +24,7 @@ from django.core.wsgi import get_wsgi_application
 django.setup()
 from common.startup import startup  # noqa: E402
 
-
-SITE_ROOT = dirname(dirname(abspath(__file__)))
+SITE_ROOT = str(pathlib.Path(__file__).resolve().parent.parent)
 path.append(SITE_ROOT)
 
 

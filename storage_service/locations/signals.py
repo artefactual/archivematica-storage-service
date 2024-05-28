@@ -5,8 +5,8 @@ import sys
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db.models import signals
-from django.dispatch import receiver
 from django.dispatch import Signal
+from django.dispatch import receiver
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
@@ -32,20 +32,17 @@ def _notify_users(subject, message, users):
 @receiver(deletion_request, dispatch_uid="deletion_request")
 def report_deletion_request(sender, **kwargs):
     subject = _("Deletion request for package %(uuid)s") % {"uuid": kwargs["uuid"]}
-    message = (
-        _(
-            """A package deletion request was received:
+    message = _(
+        """A package deletion request was received:
 
 Pipeline UUID: %(pipeline)s
 Package UUID: %(uuid)s
 Package location: %(location)s"""
-        )
-        % {
-            "pipeline": kwargs["pipeline"],
-            "uuid": kwargs["uuid"],
-            "location": kwargs["location"],
-        }
-    )
+    ) % {
+        "pipeline": kwargs["pipeline"],
+        "uuid": kwargs["uuid"],
+        "location": kwargs["location"],
+    }
 
     # The URL may not be configured in the site; if it isn't,
     # don't try to tell the user the URL to approve/deny the request.
@@ -77,17 +74,14 @@ def report_failed_fixity_check(sender, **kwargs):
     )
 
     subject = _("Fixity check failed for package %(uuid)s") % {"uuid": kwargs["uuid"]}
-    message = (
-        _(
-            """
+    message = _(
+        """
 [%(timestamp)s] A fixity check failed for the package with UUID %(uuid)s.
 """
-        )
-        % {
-            "timestamp": timestamp,
-            "uuid": kwargs["uuid"],
-        }
-    )
+    ) % {
+        "timestamp": timestamp,
+        "uuid": kwargs["uuid"],
+    }
 
     _notify_users(subject, message, User.objects.filter(is_active=True))
 

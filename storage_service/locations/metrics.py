@@ -4,7 +4,6 @@ from contextlib import contextmanager
 from prometheus_client import Counter
 from prometheus_client import Gauge
 
-
 async_manager_running_tasks = Gauge(
     "async_manager_running_tasks",
     "Number of tasks being executed",

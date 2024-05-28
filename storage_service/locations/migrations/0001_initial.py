@@ -1,10 +1,11 @@
 import uuid
 
 import common.fields
-import locations.models
 from django.conf import settings
 from django.db import migrations
 from django.db import models
+
+import locations.models
 
 
 class Migration(migrations.Migration):

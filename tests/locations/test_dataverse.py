@@ -7,7 +7,6 @@ from locations import models
 
 from . import TempDirMixin
 
-
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
 

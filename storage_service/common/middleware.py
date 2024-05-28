@@ -7,7 +7,6 @@ from django.http import HttpResponseRedirect
 from django.utils.deprecation import MiddlewareMixin
 from shibboleth.middleware import ShibbolethRemoteUserMiddleware
 
-
 # Login required code from https://gist.github.com/ryanwitt/130583
 # With modifications from comments on
 # http://onecreativeblog.com/post/59051248/django-login-required-middleware
@@ -42,9 +41,7 @@ class LoginRequiredMiddleware(MiddlewareMixin):
     """
 
     def process_request(self, request):
-        assert hasattr(
-            request, "user"
-        ), "The Login Required middleware\
+        assert hasattr(request, "user"), "The Login Required middleware\
  requires authentication middleware to be installed. Edit your\
  MIDDLEWARE setting to insert\
  'django.contrib.auth.middlware.AuthenticationMiddleware'. If that doesn't\
@@ -53,9 +50,7 @@ class LoginRequiredMiddleware(MiddlewareMixin):
         if not request.user.is_authenticated:
             path = request.path_info.lstrip("/")
             if not any(m.match(path) for m in EXEMPT_URLS):
-                fullURL = "{}?next={}".format(
-                    settings.LOGIN_URL, quote(request.get_full_path())
-                )
+                fullURL = f"{settings.LOGIN_URL}?next={quote(request.get_full_path())}"
                 return HttpResponseRedirect(fullURL)
 
 

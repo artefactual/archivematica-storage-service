@@ -80,9 +80,7 @@ class RClone(models.Model):
                 if proc.returncode in self.RETRIABLE_EXIT_CODES:
                     attempt += 1
                     if attempt >= self.MAX_RETRIES:
-                        err_msg = "rclone failed to succesfully run command after {} attempts".format(
-                            self.MAX_RETRIES
-                        )
+                        err_msg = f"rclone failed to succesfully run command after {self.MAX_RETRIES} attempts"
                         LOGGER.error(err_msg)
                         raise StorageException(err_msg)
 
@@ -104,9 +102,7 @@ class RClone(models.Model):
                 LOGGER.error(err_msg)
                 raise StorageException(err_msg)
             except Exception as err:
-                err_msg = "Error running rclone command. Command called: {}. Details: {}".format(
-                    cmd, err
-                )
+                err_msg = f"Error running rclone command. Command called: {cmd}. Details: {err}"
                 LOGGER.error(err_msg)
                 raise StorageException(err_msg)
 
@@ -138,8 +134,8 @@ class RClone(models.Model):
             try:
                 self._execute_rclone_subcommand(create_container_cmd)
             except StorageException:
-                err_msg = "Unable to find or create container {}".format(
-                    prefixed_container_name
+                err_msg = (
+                    f"Unable to find or create container {prefixed_container_name}"
                 )
                 LOGGER.error(err_msg)
                 raise StorageException(err_msg)
@@ -195,9 +191,7 @@ class RClone(models.Model):
         """Delete package."""
         if delete_path.startswith(os.sep):
             LOGGER.info(
-                "Rclone path to delete {} begins with {}; removing from path prior to deletion".format(
-                    delete_path, os.sep
-                )
+                f"Rclone path to delete {delete_path} begins with {os.sep}; removing from path prior to deletion"
             )
             delete_path = delete_path.lstrip(os.sep)
 

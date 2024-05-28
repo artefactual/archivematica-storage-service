@@ -1,9 +1,9 @@
 from django.contrib import admin
 
+from .models import NFS
 from .models import Event
 from .models import LocalFilesystem
 from .models import Location
-from .models import NFS
 from .models import Package
 from .models import Pipeline
 from .models import Space

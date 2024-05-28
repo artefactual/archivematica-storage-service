@@ -134,13 +134,13 @@ def test_command_completes_when_location_does_not_contain_aips(
 
 
 @pytest.mark.django_db
-@mock.patch("os.path.getmtime", side_effect=[1710831600])
+@mock.patch("pathlib.Path.stat", side_effect=[mock.Mock(st_mtime=1710831600)])
 @mock.patch("common.management.commands.StorageServiceCommand.error")
 @mock.patch("common.management.commands.StorageServiceCommand.success")
 def test_command_filters_aips_by_location_uuid(
     success: mock.Mock,
     error: mock.Mock,
-    getmtime: mock.Mock,
+    stat: mock.Mock,
     settings: Any,
     aip_uploaded_fs_location: models.Package,
     secondary_aip_uploaded_fs_location: models.Package,
@@ -158,7 +158,6 @@ def test_command_filters_aips_by_location_uuid(
         uuid=secondary_aip_uploaded_fs_location.uuid
     ).stored_date == datetime.datetime(2024, 3, 19, 7, 0, tzinfo=datetime.timezone.utc)
 
-    getmtime.assert_called_once_with(secondary_aip_uploaded_fs_location.full_path)
     success.assert_called_once_with(
         "Complete. Datestamps for 1 of 1 identified AIPs added. 0 AIPs that already have stored_dates were skipped."
     )
@@ -166,13 +165,15 @@ def test_command_filters_aips_by_location_uuid(
 
 
 @pytest.mark.django_db
-@mock.patch("os.path.getmtime", side_effect=OSError("no such file or directory"))
+@mock.patch(
+    "pathlib.Path.stat", side_effect=FileNotFoundError("no such file or directory")
+)
 @mock.patch("common.management.commands.StorageServiceCommand.error")
 @mock.patch("common.management.commands.StorageServiceCommand.success")
 def test_command_logs_error_when_it_cannot_read_aip_file(
     success: mock.Mock,
     error: mock.Mock,
-    getmtime: mock.Mock,
+    stat: mock.Mock,
     secondary_aip_uploaded_fs_location: models.Package,
     secondary_aip_storage_fs_location: models.Location,
 ) -> None:
@@ -182,7 +183,6 @@ def test_command_logs_error_when_it_cannot_read_aip_file(
         secondary_aip_storage_fs_location.uuid,
     )
 
-    getmtime.assert_called_once_with(secondary_aip_uploaded_fs_location.full_path)
     success.assert_called_once_with(
         "Complete. Datestamps for 0 of 1 identified AIPs added. 0 AIPs that already have stored_dates were skipped."
     )

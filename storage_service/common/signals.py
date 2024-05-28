@@ -8,7 +8,6 @@ from django.dispatch import receiver
 from django_auth_ldap.backend import populate_user
 from django_cas_ng.signals import cas_user_authenticated
 
-
 LOGGER = logging.getLogger(__name__)
 
 

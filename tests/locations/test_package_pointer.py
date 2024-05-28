@@ -6,7 +6,6 @@ from django.test import TestCase
 from locations import models
 from metsrw.plugins import premisrw
 
-
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
 TEST_PREMIS_OBJECT_UUID = str(uuid4())

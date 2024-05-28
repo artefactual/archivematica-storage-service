@@ -15,7 +15,6 @@ from .managers import Enabled
 from .space import Space
 from .urlmixin import URLMixin
 
-
 __all__ = ("Pipeline",)
 
 LOGGER = logging.getLogger(__name__)
@@ -148,8 +147,8 @@ class Pipeline(URLMixin, models.Model):
         ]
         for p in purposes:
             defaults = utils.get_setting(p["default"], [])
-            for uuid in defaults:
-                if uuid == "new":
+            for location_uuid in defaults:
+                if location_uuid == "new":
                     # Create new location
                     new_location = utils.get_setting(p["new"])
                     location = Location.objects.create(
@@ -157,7 +156,7 @@ class Pipeline(URLMixin, models.Model):
                     )
                 else:
                     # Fetch existing location
-                    location = Location.objects.get(uuid=uuid)
+                    location = Location.objects.get(uuid=location_uuid)
                     assert location.purpose == p["purpose"]
                 location.default = True
                 location.save()

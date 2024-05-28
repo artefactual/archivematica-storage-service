@@ -17,7 +17,6 @@ from django.test import TestCase
 from django.urls import reverse
 from locations import models
 
-
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
 # Fixture files are not cleanly separated, with potential for
@@ -89,9 +88,7 @@ class TestPackage(TestCase):
         packages = models.Package.objects.all()
         assert (
             len(packages) == TOTAL_FIXTURE_PACKAGES
-        ), "Packages not loaded from fixtures correctly, got '{}' expected '{}'".format(
-            len(packages), TOTAL_FIXTURE_PACKAGES
-        )
+        ), f"Packages not loaded from fixtures correctly, got '{len(packages)}' expected '{TOTAL_FIXTURE_PACKAGES}'"
 
         self.package = packages[0]
         self.mets_path = os.path.normpath(os.path.join(__file__, "..", "fixtures"))

@@ -1,4 +1,5 @@
 """Common settings and globals."""
+
 import json
 import logging.config
 from os import environ
@@ -8,9 +9,9 @@ from sys import path
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
 
-from .components.s3 import *
-from storage_service.settings.helpers import get_env_variable
 from storage_service.settings.helpers import is_true
+
+from .components.s3 import *  # noqa: F403
 
 try:
     import ldap
@@ -184,7 +185,7 @@ TEMPLATES = [
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#authentication-backends
 AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
 
-from .components.auth import *
+from .components.auth import *  # noqa: E402, F403
 
 # ######### END AUTHENTICATION CONFIGURATION
 
@@ -433,17 +434,15 @@ if LDAP_AUTHENTICATION:
         elif require_cert == "try":
             AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_REQUIRE_CERT] = ldap.OPT_X_TLS_TRY
         elif require_cert == "demand":
-            AUTH_LDAP_GLOBAL_OPTIONS[
-                ldap.OPT_X_TLS_REQUIRE_CERT
-            ] = ldap.OPT_X_TLS_DEMAND
+            AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_REQUIRE_CERT] = (
+                ldap.OPT_X_TLS_DEMAND
+            )
         elif require_cert == "hard":
             AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_REQUIRE_CERT] = ldap.OPT_X_TLS_HARD
         else:
             raise ImproperlyConfigured(
-                (
-                    "Unexpected value for AUTH_LDAP_TLS_REQUIRE_CERT: {}. "
-                    "Supported values: 'never', 'allow', try', 'hard', or 'demand'."
-                ).format(require_cert)
+                f"Unexpected value for AUTH_LDAP_TLS_REQUIRE_CERT: {require_cert}. "
+                "Supported values: 'never', 'allow', try', 'hard', or 'demand'."
             )
     # Non-configurable sane defaults
     AUTH_LDAP_ALWAYS_UPDATE_USER = True
@@ -519,10 +518,8 @@ if CAS_AUTHENTICATION:
     CAS_VERSION = environ.get("AUTH_CAS_PROTOCOL_VERSION", "3")
     if CAS_VERSION not in ALLOWED_CAS_VERSION_VALUES:
         raise ImproperlyConfigured(
-            (
-                "Unexpected value for AUTH_CAS_PROTOCOL_VERSION: {}. "
-                "Supported values: '1', '2', '3', or 'CAS_2_SAML_1_0'."
-            ).format(CAS_VERSION)
+            f"Unexpected value for AUTH_CAS_PROTOCOL_VERSION: {CAS_VERSION}. "
+            "Supported values: '1', '2', '3', or 'CAS_2_SAML_1_0'."
         )
 
     CAS_CHECK_ADMIN_ATTRIBUTES = environ.get("AUTH_CAS_CHECK_ADMIN_ATTRIBUTES", False)
@@ -608,7 +605,10 @@ if OIDC_AUTHENTICATION:
     OIDC_RP_SIGN_ALGO = environ.get("OIDC_RP_SIGN_ALGO", "HS256")
 
     # Username is email address
-    OIDC_USERNAME_ALGO = lambda email: email
+    def _get_email(email):
+        return email
+
+    OIDC_USERNAME_ALGO = _get_email
 
     # map attributes from access token
     OIDC_ACCESS_ATTRIBUTE_MAP = {"given_name": "first_name", "family_name": "last_name"}

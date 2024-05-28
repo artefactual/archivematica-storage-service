@@ -1,14 +1,14 @@
 """
 PREMIS metadata generation.
 """
+
 import uuid
 
 import metsrw
-from common import utils
 from django.utils import timezone
 
+from common import utils
 from storage_service import __version__ as ss_version
-
 
 PREMIS_META = metsrw.plugins.premisrw.PREMIS_3_0_META
 SS_AGENT = metsrw.plugins.premisrw.PREMISAgent(
@@ -55,8 +55,8 @@ def create_replication_event(
 ):
     """Return a PREMISEvent for replication of an AIP."""
     outcome_detail_note = (
-        "Replicated Archival Information Package (AIP) {} by creating"
-        " replica {}.".format(original_package_uuid, replica_package_uuid)
+        f"Replicated Archival Information Package (AIP) {original_package_uuid} by creating"
+        f" replica {replica_package_uuid}."
     )
     if not agents:
         agents = [SS_AGENT]
@@ -96,12 +96,12 @@ def create_premis_aip_creation_event(
     """Return a PREMISEvent for creation of an AIP."""
     if master_aip_uuid:
         outcome_detail_note = (
-            "Created Archival Information Package (AIP) {} by replicating"
-            " previously created AIP {}".format(package_uuid, master_aip_uuid)
+            f"Created Archival Information Package (AIP) {package_uuid} by replicating"
+            f" previously created AIP {master_aip_uuid}"
         )
     else:
-        outcome_detail_note = "Created Archival Information Package (AIP) {}".format(
-            package_uuid
+        outcome_detail_note = (
+            f"Created Archival Information Package (AIP) {package_uuid}"
         )
     if not agents:
         agents = [SS_AGENT]
@@ -180,9 +180,7 @@ def create_replication_validation_event(
     outcome = success and "success" or "failure"
     detail = (
         "Validated the replication of Archival Information Package (AIP)"
-        " {master_aip_uuid} to replica AIP {replica_aip_uuid}".format(
-            master_aip_uuid=master_aip_uuid, replica_aip_uuid=replica_package_uuid
-        )
+        f" {master_aip_uuid} to replica AIP {replica_package_uuid}"
     )
     if fixity_report:
         detail += " by performing a BagIt fixity check and by comparing" " checksums"

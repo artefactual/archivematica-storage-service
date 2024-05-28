@@ -7,6 +7,7 @@ needed by both the GPG space and the administration view which can be used to
 manage (i.e., list, created, import, delete) GPG keys.
 
 """
+
 import logging
 from pathlib import Path
 from shutil import which

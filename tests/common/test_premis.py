@@ -4,7 +4,6 @@ from common import premis
 
 from storage_service import __version__ as ss_version
 
-
 FakeGPGRet = namedtuple("FakeGPGRet", "ok status stderr")
 GPG_VERSION = "1.4.16"
 SUCCESS_STATUS = "good times"

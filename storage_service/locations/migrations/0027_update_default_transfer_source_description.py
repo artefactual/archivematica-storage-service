@@ -1,7 +1,9 @@
 """Add description to default transfer source location."""
+
 import ast
 
 from django.db import migrations
+
 from locations.models import Location
 
 # We can't use apps.get_model for this model as we need to access class
