@@ -1,10 +1,12 @@
-# flake8: noqa
 """Development settings and globals."""
+
+from os import environ
 
 import dj_database_url
 
-from .base import *
+from storage_service.settings.helpers import get_env_variable
 
+from .base import *
 
 # ######## DATABASE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#databases
