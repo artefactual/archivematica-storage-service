@@ -1,8 +1,6 @@
-# flake8: noqa
 """Test settings and globals."""
 
 from .base import *
-
 
 # ######## IN-MEMORY TEST DATABASE
 DATABASES = {

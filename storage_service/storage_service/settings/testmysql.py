@@ -1,4 +1,3 @@
-# flake8: noqa
 import dj_database_url
 
 from .test import *

@@ -11,7 +11,7 @@ from django.utils.translation import gettext_lazy as _
 
 from storage_service.settings.helpers import is_true
 
-from .components.s3 import *  # noqa: F403
+from .components.s3 import *
 
 try:
     import ldap
@@ -185,7 +185,7 @@ TEMPLATES = [
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#authentication-backends
 AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
 
-from .components.auth import *  # noqa: E402, F403
+from .components.auth import *
 
 # ######### END AUTHENTICATION CONFIGURATION
 
@@ -641,7 +641,7 @@ CSP_ENABLED = is_true(environ.get("SS_CSP_ENABLED", ""))
 if CSP_ENABLED:
     MIDDLEWARE.insert(0, "csp.middleware.CSPMiddleware")
 
-    from .components.csp import *  # noqa
+    from .components.csp import *
 
     CSP_SETTINGS_FILE = environ.get("CSP_SETTINGS_FILE", "")
     if CSP_SETTINGS_FILE:

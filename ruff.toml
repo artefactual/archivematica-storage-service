@@ -18,6 +18,11 @@ ignore = [
 
 [lint.per-file-ignores]
 "{storage_service,tests}/locations/*" = ["PTH"]
+"storage_service/storage_service/settings/*" = [
+  "F403",
+  "F405",
+]
+"storage_service/storage_service/settings/base.py" = ["E402"]
 
 [lint.isort]
 force-single-line = true
