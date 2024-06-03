@@ -1,3 +1,4 @@
+raise Exception("nooo")
 CSP_DEFAULT_SRC = ["'none'"]
 CSP_SCRIPT_SRC = ["'self'", "'unsafe-inline'", "'unsafe-eval'"]
 CSP_STYLE_SRC = ["'self'", "'unsafe-inline'"]
