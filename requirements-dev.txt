@@ -12,9 +12,9 @@ asgiref==3.8.1
     #   django
 bagit==1.8.1
     # via -r requirements.txt
-boto3==1.34.109
+boto3==1.34.124
     # via -r requirements.txt
-botocore==1.34.109
+botocore==1.34.124
     # via
     #   -r requirements.txt
     #   boto3
@@ -25,7 +25,7 @@ build==1.2.1
     # via pip-tools
 cachetools==5.3.3
     # via tox
-certifi==2024.2.2
+certifi==2024.6.2
     # via
     #   -r requirements.txt
     #   requests
@@ -43,11 +43,11 @@ click==8.1.7
     # via pip-tools
 colorama==0.4.6
     # via tox
-coverage[toml]==7.5.1
+coverage[toml]==7.5.3
     # via
     #   -r requirements-dev.in
     #   pytest-cov
-cryptography==42.0.7
+cryptography==42.0.8
     # via
     #   -r requirements.txt
     #   josepy
@@ -61,7 +61,7 @@ debtcollector==3.0.0
     #   python-keystoneclient
 distlib==0.3.8
     # via virtualenv
-dj-database-url==2.1.0
+dj-database-url==2.2.0
     # via -r requirements.txt
 django==4.2.13
     # via
@@ -152,7 +152,7 @@ mysqlclient==2.2.4
     # via
     #   -r requirements.txt
     #   agentarchives
-netaddr==1.2.1
+netaddr==1.3.0
     # via
     #   -r requirements.txt
     #   oslo-config
@@ -184,7 +184,7 @@ oslo-utils==7.1.0
     #   -r requirements.txt
     #   oslo-serialization
     #   python-keystoneclient
-packaging==24.0
+packaging==24.1
     # via
     #   -r requirements.txt
     #   build
@@ -245,7 +245,7 @@ pyproject-hooks==1.1.0
     # via
     #   build
     #   pip-tools
-pytest==8.2.1
+pytest==8.2.2
     # via
     #   -r requirements-dev.in
     #   pytest-cov
@@ -281,14 +281,14 @@ python-mimeparse==1.6.0
     # via
     #   -r requirements.txt
     #   django-tastypie
-python-swiftclient==4.5.0
+python-swiftclient==4.6.0
     # via -r requirements.txt
 pyyaml==6.0.1
     # via
     #   -r requirements.txt
     #   oslo-config
     #   oslo-utils
-requests==2.32.1
+requests==2.32.3
     # via
     #   -r requirements.txt
     #   agentarchives
@@ -331,9 +331,9 @@ tomli==2.0.1
     #   pyproject-api
     #   pytest
     #   tox
-tox==4.15.0
+tox==4.15.1
     # via -r requirements-dev.in
-typing-extensions==4.11.0
+typing-extensions==4.12.2
     # via
     #   -r requirements.txt
     #   asgiref
@@ -358,7 +358,7 @@ wrapt==1.16.0
     # via
     #   -r requirements.txt
     #   debtcollector
-zipp==3.18.2
+zipp==3.19.2
     # via
     #   -r requirements.txt
     #   importlib-metadata
@@ -367,7 +367,7 @@ zope-event==5.0
     # via
     #   -r requirements.txt
     #   gevent
-zope-interface==6.4
+zope-interface==6.4.post2
     # via
     #   -r requirements.txt
     #   gevent
@@ -375,7 +375,7 @@ zope-interface==6.4
 # The following packages are considered to be unsafe in a requirements file:
 pip==24.0
     # via pip-tools
-setuptools==69.5.1
+setuptools==70.0.0
     # via
     #   -r requirements.txt
     #   pip-tools
