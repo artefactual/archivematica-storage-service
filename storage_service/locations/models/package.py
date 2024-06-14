@@ -494,6 +494,8 @@ class Package(models.Model):
         source_path = os.path.join(
             self.current_location.relative_path, self.current_path
         )
+        #get full path of origin for delete_path
+        source_delete_path = self.full_path
 
         destination_path = os.path.join(to_location.relative_path, self.current_path)
 
@@ -522,6 +524,8 @@ class Package(models.Model):
             destination_space.post_move_from_storage_service(
                 destination_path, destination_path
             )
+            #After everything is moved, delete the path at origin
+            origin_space.delete_path(source_delete_path)
 
         # If we get here everything went well, update with new location
         self.current_location = to_location
