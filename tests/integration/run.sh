@@ -16,6 +16,8 @@ docker compose run --rm archivematica-storage-service
 
 status=$?
 
-docker compose down --volumes
+if [ -z "${REUSE_TEST_ENV}" ]; then
+    docker compose down --volumes
+fi
 
 exit $status
