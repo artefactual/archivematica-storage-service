@@ -206,7 +206,7 @@ tzdata==2024.1
     # via
     #   oslo-serialization
     #   oslo-utils
-urllib3==1.26.18
+urllib3==1.26.19
     # via
     #   botocore
     #   requests

@@ -343,7 +343,7 @@ tzdata==2024.1
     #   -r requirements.txt
     #   oslo-serialization
     #   oslo-utils
-urllib3==1.26.18
+urllib3==1.26.19
     # via
     #   -r requirements.txt
     #   botocore
