@@ -10,9 +10,9 @@ asgiref==3.8.1
     # via django
 bagit==1.8.1
     # via -r requirements.in
-boto3==1.34.124
+boto3==1.34.128
     # via -r requirements.in
-botocore==1.34.124
+botocore==1.34.128
     # via
     #   boto3
     #   s3transfer
@@ -206,7 +206,7 @@ tzdata==2024.1
     # via
     #   oslo-serialization
     #   oslo-utils
-urllib3==1.26.18
+urllib3==1.26.19
     # via
     #   botocore
     #   requests
