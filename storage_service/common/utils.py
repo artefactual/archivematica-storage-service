@@ -597,7 +597,7 @@ def create_tar(path, extension=False):
     :param extension: Flag indicating whether to add .tar extension (bool)
     """
     path = pathlib.Path(path)
-    tarpath = path.with_suffix(TAR_EXTENSION)
+    tarpath = pathlib.Path(f"{path}{TAR_EXTENSION}")
     changedir = tarpath.parent
     source = path.name
     cmd = ["tar", "-C", changedir, "-cf", tarpath, source]
