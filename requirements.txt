@@ -18,7 +18,7 @@ botocore==1.34.128
     #   s3transfer
 brotli==1.1.0
     # via -r requirements.in
-certifi==2024.6.2
+certifi==2024.7.4
     # via requests
 cffi==1.16.0
     # via cryptography
