@@ -11,8 +11,8 @@ FROM ubuntu:${UBUNTU_VERSION} AS base-builder
 
 ARG PYENV_DIR=/pyenv
 
-ENV DEBIAN_FRONTEND noninteractive
-ENV PYTHONUNBUFFERED 1
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
 
 RUN set -ex \
 	&& apt-get update \
@@ -28,9 +28,9 @@ RUN set -ex \
 	&& rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
 RUN locale-gen en_US.UTF-8
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US:en
-ENV LC_ALL en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
 
 ENV PYENV_ROOT=${PYENV_DIR}/data
 ENV PATH=$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH
@@ -129,20 +129,20 @@ FROM base AS archivematica-storage-service
 
 WORKDIR /src/storage_service
 
-ENV DJANGO_SETTINGS_MODULE storage_service.settings.local
-ENV PYTHONPATH /src/storage_service
-ENV SS_GUNICORN_BIND 0.0.0.0:8000
-ENV SS_GUNICORN_CHDIR /src/storage_service
-ENV SS_GUNICORN_ACCESSLOG -
-ENV SS_GUNICORN_ERRORLOG -
-ENV FORWARDED_ALLOW_IPS *
+ENV DJANGO_SETTINGS_MODULE=storage_service.settings.local
+ENV PYTHONPATH=/src/storage_service
+ENV SS_GUNICORN_BIND=0.0.0.0:8000
+ENV SS_GUNICORN_CHDIR=/src/storage_service
+ENV SS_GUNICORN_ACCESSLOG=-
+ENV SS_GUNICORN_ERRORLOG=-
+ENV FORWARDED_ALLOW_IPS=*
 
 RUN set -ex \
 	&& export SS_DB_URL=mysql://ne:ver@min/d \
 	&& pyenv exec python3 ./manage.py collectstatic --noinput --clear \
 	&& pyenv exec python3 ./manage.py compilemessages
 
-ENV DJANGO_SETTINGS_MODULE storage_service.settings.production
+ENV DJANGO_SETTINGS_MODULE=storage_service.settings.production
 
 EXPOSE 8000
 
