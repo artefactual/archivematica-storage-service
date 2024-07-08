@@ -25,6 +25,7 @@ RUN set -ex \
 		libsasl2-dev \
 		libsqlite3-dev \
 		locales \
+		pkg-config \
 	&& rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
 RUN locale-gen en_US.UTF-8
