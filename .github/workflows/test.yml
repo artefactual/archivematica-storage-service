@@ -50,7 +50,7 @@ jobs:
       - name: "Set up buildx"
         uses: "docker/setup-buildx-action@v3"
       - name: "Build the archivematica-storage-service image"
-        uses: "docker/build-push-action@v5"
+        uses: "docker/build-push-action@v6"
         with:
           target: "archivematica-storage-service"
           build-args: |

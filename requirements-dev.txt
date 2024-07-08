@@ -12,9 +12,9 @@ asgiref==3.8.1
     #   django
 bagit==1.8.1
     # via -r requirements.txt
-boto3==1.34.128
+boto3==1.34.141
     # via -r requirements.txt
-botocore==1.34.128
+botocore==1.34.141
     # via
     #   -r requirements.txt
     #   boto3
@@ -25,7 +25,7 @@ build==1.2.1
     # via pip-tools
 cachetools==5.3.3
     # via tox
-certifi==2024.6.2
+certifi==2024.7.4
     # via
     #   -r requirements.txt
     #   requests
@@ -43,7 +43,7 @@ click==8.1.7
     # via pip-tools
 colorama==0.4.6
     # via tox
-coverage[toml]==7.5.3
+coverage[toml]==7.5.4
     # via
     #   -r requirements-dev.in
     #   pytest-cov
@@ -86,7 +86,7 @@ django-tastypie==0.14.7
     # via -r requirements.txt
 exceptiongroup==1.2.1
     # via pytest
-filelock==3.15.1
+filelock==3.15.4
     # via
     #   tox
     #   virtualenv
@@ -106,7 +106,7 @@ idna==3.7
     # via
     #   -r requirements.txt
     #   requests
-importlib-metadata==7.1.0
+importlib-metadata==8.0.0
     # via
     #   build
     #   pytest-randomly
@@ -130,7 +130,7 @@ josepy==1.14.0
     #   mozilla-django-oidc
 jsonfield==3.1.0
     # via -r requirements.txt
-keystoneauth1==5.6.0
+keystoneauth1==5.7.0
     # via
     #   -r requirements.txt
     #   python-keystoneclient
@@ -165,7 +165,7 @@ os-service-types==1.7.0
     # via
     #   -r requirements.txt
     #   keystoneauth1
-oslo-config==9.4.0
+oslo-config==9.5.0
     # via
     #   -r requirements.txt
     #   python-keystoneclient
@@ -179,7 +179,7 @@ oslo-serialization==5.4.0
     # via
     #   -r requirements.txt
     #   python-keystoneclient
-oslo-utils==7.1.0
+oslo-utils==7.2.0
     # via
     #   -r requirements.txt
     #   oslo-serialization
@@ -239,7 +239,7 @@ pyparsing==3.1.2
     #   -r requirements.txt
     #   httplib2
     #   oslo-utils
-pyproject-api==1.6.1
+pyproject-api==1.7.1
     # via tox
 pyproject-hooks==1.1.0
     # via
@@ -302,7 +302,7 @@ rfc3986==2.0.0
     # via
     #   -r requirements.txt
     #   oslo-config
-s3transfer==0.10.1
+s3transfer==0.10.2
     # via
     #   -r requirements.txt
     #   boto3
@@ -331,7 +331,7 @@ tomli==2.0.1
     #   pyproject-api
     #   pytest
     #   tox
-tox==4.15.1
+tox==4.16.0
     # via -r requirements-dev.in
 typing-extensions==4.12.2
     # via
@@ -348,11 +348,11 @@ urllib3==1.26.19
     #   -r requirements.txt
     #   botocore
     #   requests
-virtualenv==20.26.2
+virtualenv==20.26.3
     # via tox
 wheel==0.43.0
     # via pip-tools
-whitenoise==6.6.0
+whitenoise==6.7.0
     # via -r requirements.txt
 wrapt==1.16.0
     # via
@@ -373,9 +373,9 @@ zope-interface==6.4.post2
     #   gevent
 
 # The following packages are considered to be unsafe in a requirements file:
-pip==24.0
+pip==24.1.2
     # via pip-tools
-setuptools==70.0.0
+setuptools==70.2.0
     # via
     #   -r requirements.txt
     #   pip-tools
