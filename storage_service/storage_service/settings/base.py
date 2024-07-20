@@ -5,6 +5,9 @@ import logging.config
 from os import environ
 from pathlib import Path
 from sys import path
+from typing import Any
+from typing import Dict
+from typing import List
 
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
@@ -156,7 +159,7 @@ FIXTURE_DIRS = (str(SITE_ROOT / "fixtures"),)
 
 # ######## TEMPLATE CONFIGURATION
 
-TEMPLATES = [
+TEMPLATES: List[Dict[str, Any]] = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": [str(SITE_ROOT / "templates")],
@@ -250,7 +253,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 # ######## LOGIN REQUIRED MIDDLEWARE CONFIGURATION
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
-LOGIN_EXEMPT_URLS = (r"^api/", r"^admin/", r"^Shibboleth.sso/", r"^login/", r"^jsi18n/")
+LOGIN_EXEMPT_URLS = [r"^api/", r"^admin/", r"^Shibboleth.sso/", r"^login/", r"^jsi18n/"]
 # ######## END LOGIN REQUIRED MIDDLEWARE CONFIGURATION
 
 
@@ -426,7 +429,7 @@ if LDAP_AUTHENTICATION:
             "AUTH_LDAP_TLS_KEYFILE"
         )
     if environ.get("AUTH_LDAP_TLS_REQUIRE_CERT", None):
-        require_cert = environ.get("AUTH_LDAP_TLS_REQUIRE_CERT").lower()
+        require_cert = environ.get("AUTH_LDAP_TLS_REQUIRE_CERT", "").lower()
         if require_cert == "never":
             AUTH_LDAP_GLOBAL_OPTIONS[ldap.OPT_X_TLS_REQUIRE_CERT] = ldap.OPT_X_TLS_NEVER
         elif require_cert == "allow":
@@ -555,7 +558,7 @@ if CAS_AUTHENTICATION:
 
 # Fetch the CSRF_TRUSTED_ORIGINS environment variable, split by comma, or default to an empty list
 CSRF_TRUSTED_ORIGINS = (
-    environ.get("CSRF_TRUSTED_ORIGINS").split(",")
+    environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
     if environ.get("CSRF_TRUSTED_ORIGINS", "").strip()
     else []
 )
@@ -567,7 +570,7 @@ if OIDC_AUTHENTICATION:
     ALLOW_USER_EDITS = False
 
     AUTHENTICATION_BACKENDS += ["common.backends.CustomOIDCBackend"]
-    LOGIN_EXEMPT_URLS = LOGIN_EXEMPT_URLS + (r"^oidc",)
+    LOGIN_EXEMPT_URLS.append(r"^oidc")
     INSTALLED_APPS += ["mozilla_django_oidc"]
 
     # AUTH_SERVER = 'https://login.microsoftonline.com/common/v2.0/'
@@ -596,11 +599,11 @@ if OIDC_AUTHENTICATION:
         )
     else:
         OIDC_OP_AUTHORIZATION_ENDPOINT = environ.get(
-            "OIDC_OP_AUTHORIZATION_ENDPOINT", None
+            "OIDC_OP_AUTHORIZATION_ENDPOINT", ""
         )
-        OIDC_OP_TOKEN_ENDPOINT = environ.get("OIDC_OP_TOKEN_ENDPOINT", None)
-        OIDC_OP_USER_ENDPOINT = environ.get("OIDC_OP_USER_ENDPOINT", None)
-        OIDC_OP_JWKS_ENDPOINT = environ.get("OIDC_OP_JWKS_ENDPOINT", None)
+        OIDC_OP_TOKEN_ENDPOINT = environ.get("OIDC_OP_TOKEN_ENDPOINT", "")
+        OIDC_OP_USER_ENDPOINT = environ.get("OIDC_OP_USER_ENDPOINT", "")
+        OIDC_OP_JWKS_ENDPOINT = environ.get("OIDC_OP_JWKS_ENDPOINT", "")
 
     OIDC_RP_SIGN_ALGO = environ.get("OIDC_RP_SIGN_ALGO", "HS256")
 
@@ -655,4 +658,4 @@ if PROMETHEUS_ENABLED:
         + ["django_prometheus.middleware.PrometheusAfterMiddleware"]
     )
     INSTALLED_APPS = INSTALLED_APPS + ["django_prometheus"]
-    LOGIN_EXEMPT_URLS = LOGIN_EXEMPT_URLS + (r"^metrics$",)
+    LOGIN_EXEMPT_URLS.append(r"^metrics$")
