@@ -310,7 +310,7 @@ logging_config_path = Path(LOGGING_CONFIG_FILE)
 
 if logging_config_path.is_file():
     with logging_config_path.open() as f:
-        LOGGING = logging.config.dictConfig(json.load(f))
+        logging.config.dictConfig(json.load(f))
 else:
     logging.config.dictConfig(LOGGING)
 # ######## END LOGGING CONFIGURATION
