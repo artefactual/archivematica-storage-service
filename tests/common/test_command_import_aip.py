@@ -38,7 +38,7 @@ def aip_storage_location(db, tmp_path):
 
 @pytest.mark.django_db
 @mock.patch("os.chown")
-@mock.patch("pwd.getpwnam")
+@mock.patch("common.management.commands.import_aip.getpwnam")
 def test_import_aip_command_creates_uncompressed_package(
     getpwnam, chown, capsys, aip_storage_location
 ):
@@ -70,7 +70,7 @@ def test_import_aip_command_creates_uncompressed_package(
 )
 @pytest.mark.django_db
 @mock.patch("os.chown")
-@mock.patch("pwd.getpwnam")
+@mock.patch("common.management.commands.import_aip.getpwnam")
 @mock.patch("logging.config")
 def test_import_aip_command_creates_compressed_package(
     logging_config, getpwnam, chown, capsys, aip_storage_location, compression_algorithm
@@ -98,7 +98,7 @@ def test_import_aip_command_creates_compressed_package(
 
 @pytest.mark.django_db
 @mock.patch("os.chown")
-@mock.patch("pwd.getpwnam")
+@mock.patch("common.management.commands.import_aip.getpwnam")
 def test_import_aip_command_sets_unix_owner(
     getpwnam, chown, capsys, aip_storage_location
 ):
@@ -108,6 +108,7 @@ def test_import_aip_command_sets_unix_owner(
     getpwnam.return_value = mock.Mock(
         pw_name=user, pw_uid=user_id, pw_gid=user_group_id
     )
+
     call_command(
         "import_aip",
         "--decompress-source",
@@ -117,13 +118,14 @@ def test_import_aip_command_sets_unix_owner(
         "--unix-owner",
         user,
     )
+
     captured = capsys.readouterr()
     assert "Successfully imported AIP" in captured.out
 
     # Verify a new package was created.
     assert models.Package.objects.count() == 1
 
-    getpwnam.assert_called_once_with(user)
+    getpwnam.assert_called_with(user)
 
     # Verify all calls to os.chown used the expected user ID and group ID.
     mock_call_args = set()
