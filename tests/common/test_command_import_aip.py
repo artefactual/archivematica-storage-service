@@ -1,5 +1,6 @@
 import pathlib
 import uuid
+from unittest import mock
 
 import pytest
 from django.core.management import call_command
@@ -36,11 +37,11 @@ def aip_storage_location(db, tmp_path):
 
 
 @pytest.mark.django_db
+@mock.patch("os.chown")
+@mock.patch("pwd.getpwnam")
 def test_import_aip_command_creates_uncompressed_package(
-    mocker, capsys, aip_storage_location
+    getpwnam, chown, capsys, aip_storage_location
 ):
-    mocker.patch("os.chown")
-    mocker.patch("pwd.getpwnam")
     call_command(
         "import_aip",
         "--decompress-source",
@@ -68,12 +69,12 @@ def test_import_aip_command_creates_uncompressed_package(
     ],
 )
 @pytest.mark.django_db
+@mock.patch("os.chown")
+@mock.patch("pwd.getpwnam")
+@mock.patch("logging.config")
 def test_import_aip_command_creates_compressed_package(
-    mocker, capsys, aip_storage_location, compression_algorithm
+    logging_config, getpwnam, chown, capsys, aip_storage_location, compression_algorithm
 ):
-    mocker.patch("os.chown")
-    mocker.patch("pwd.getpwnam")
-    mocker.patch("logging.config")
     call_command(
         "import_aip",
         "--decompress-source",
