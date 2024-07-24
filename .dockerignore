@@ -1,0 +1,23 @@
+# Ignore everything
+**
+
+# Include
+!/install/**
+!/storage_service/**
+!/tests/**
+!/.coveragerc
+!/.markdownlint.jsonc
+!/.pre-commit-config.yaml
+!/CHANGELOG.md
+!/CODE_OF_CONDUCT.md
+!/CONTRIBUTING.md
+!/LICENSE
+!/Makefile
+!/README.md
+!/SECURITY.md
+!/mypy.ini
+!/pytest.ini
+!/requirements*
+!/ruff.toml
+!/setup.py
+!/tox.ini
