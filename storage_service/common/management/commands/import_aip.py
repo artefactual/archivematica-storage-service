@@ -44,7 +44,7 @@ via a pipeline? Should this be fixed by the import command?::
 
 """
 
-import logging
+import logging.config
 import os
 import pathlib
 import shlex
@@ -295,7 +295,7 @@ def fix_ownership(aip_path, unix_owner):
         for dir_ in dirs:
             os.chown(root_path / dir_, am_uid, am_gid)
         for file_ in files:
-            os.chown(root_path / file_, am_uid, am_uid)
+            os.chown(root_path / file_, am_uid, am_gid)
 
 
 def copy_aip_to_aip_storage_location(
