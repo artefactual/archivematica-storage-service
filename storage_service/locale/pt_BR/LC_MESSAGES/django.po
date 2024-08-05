@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2018-10-24 09:08-0700\n"
-"PO-Revision-Date: 2024-07-11 14:23+0000\n"
+"PO-Revision-Date: 2024-08-06 19:28+0000\n"
 "Last-Translator: Daniel Flores <dfloresbr@hotmail.com>\n"
 "Language-Team: Portuguese (Brazil) <https://translations.artefactual.com/"
 "projects/archivematica-test/storage-service-django-components/pt_BR/>\n"
@@ -70,7 +70,7 @@ msgstr ""
 
 #: administration/forms.py:104
 msgid "New Transfer Source:"
-msgstr ""
+msgstr "Nova origem de Transferências:"
 
 #: administration/forms.py:108
 msgid "Default AIP storage locations for new pipelines"
@@ -78,7 +78,7 @@ msgstr ""
 
 #: administration/forms.py:111
 msgid "New AIP Storage:"
-msgstr ""
+msgstr "Novo armazenamento de AIP:"
 
 #: administration/forms.py:115
 msgid "Default DIP storage locations for new pipelines"
