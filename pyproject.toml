@@ -2,3 +2,32 @@
 addopts = "--reuse-db -p no:cacheprovider"
 DJANGO_SETTINGS_MODULE = "storage_service.settings.test"
 norecursedirs = ".tox"
+
+[tool.ruff.lint]
+# Rule reference: https://docs.astral.sh/ruff/rules/
+select = [
+  "B",
+  "C4",
+  "E",
+  "F",
+  "I",
+  "PTH",
+  "UP",
+  "W",
+]
+ignore = [
+  "B904",
+  "E501",
+  "UP031",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"{storage_service,tests}/locations/*" = ["PTH"]
+"storage_service/storage_service/settings/*" = [
+  "F403",
+  "F405",
+]
+"storage_service/storage_service/settings/base.py" = ["E402"]
+
+[tool.ruff.lint.isort]
+force-single-line = true
