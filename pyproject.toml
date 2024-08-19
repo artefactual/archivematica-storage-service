@@ -1,0 +1,4 @@
+[tool.pytest.ini_options]
+addopts = "--reuse-db -p no:cacheprovider"
+DJANGO_SETTINGS_MODULE = "storage_service.settings.test"
+norecursedirs = ".tox"
