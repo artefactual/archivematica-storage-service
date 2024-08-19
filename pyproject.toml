@@ -3,6 +3,21 @@ addopts = "--reuse-db -p no:cacheprovider"
 DJANGO_SETTINGS_MODULE = "storage_service.settings.test"
 norecursedirs = ".tox"
 
+[tool.coverage.run]
+omit = [
+    "**/migrations/*",
+    "**/settings/*",
+    "**/wsgi.py",
+    "**/tests/*",
+    "**/wsgi.py",
+    "**/manage.py",
+    "setup.py",
+]
+source = [
+  "storage_service",
+]
+branch = true
+
 [tool.ruff.lint]
 # Rule reference: https://docs.astral.sh/ruff/rules/
 select = [
