@@ -75,7 +75,7 @@ jobs:
           PYTHON_VERSION: ${{ matrix.python-version }}
           COMPOSE_DOCKER_CLI_BUILD: 1
           DOCKER_BUILDKIT: 1
-          PYTEST_ADDOPTS: -vv --cov storage_service --cov-config=.coveragerc --cov-report xml:coverage.xml
+          PYTEST_ADDOPTS: -vv --cov --cov-config=pyproject.toml --cov-report xml:coverage.xml
       - name: "Upload coverage report"
         if: github.repository == 'artefactual/archivematica-storage-service'
         uses: "codecov/codecov-action@v4"

@@ -5,7 +5,7 @@
 !/install/**
 !/storage_service/**
 !/tests/**
-!/.coveragerc
+!/pyproject.toml
 !/.markdownlint.jsonc
 !/.pre-commit-config.yaml
 !/CHANGELOG.md
@@ -15,9 +15,5 @@
 !/Makefile
 !/README.md
 !/SECURITY.md
-!/mypy.ini
-!/pytest.ini
 !/requirements*
-!/ruff.toml
 !/setup.py
-!/tox.ini
