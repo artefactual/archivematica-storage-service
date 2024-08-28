@@ -13,7 +13,9 @@ from .base import *
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#databases
 DATABASES = {}
 if "SS_DB_URL" in environ:
-    DATABASES["default"] = dj_database_url.config(env="SS_DB_URL", conn_max_age=600)
+    DATABASES["default"] = dj_database_url.config(
+        env="SS_DB_URL", conn_max_age=600, conn_health_checks=True
+    )
 else:
     DATABASES["default"] = {
         "ENGINE": "django.db.backends.sqlite3",  # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
