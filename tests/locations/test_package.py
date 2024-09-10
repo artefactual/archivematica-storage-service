@@ -9,6 +9,7 @@ import uuid
 from collections import namedtuple
 from unittest import mock
 
+import metsrw
 import bagit
 import pytest
 from common import utils
@@ -16,6 +17,7 @@ from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
 from locations import models
+
 
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
@@ -1491,3 +1493,196 @@ class TestTransferPackage(TestCase):
         package.index_file_data_from_transfer_mets()
         files = models.File.objects.filter(package=package)
         assert files[0].name == "test2/data/objects/foobar.bmp"
+
+
+@pytest.mark.django_db
+def test_finish_reingest(tmp_path: pathlib.Path) -> None:
+    space_path = tmp_path / "space"
+    space_path.mkdir()
+
+    staging_path = tmp_path / "staging"
+    staging_path.mkdir()
+
+    space = models.Space.objects.create(
+        access_protocol=models.Space.LOCAL_FILESYSTEM,
+        path=str(space_path),
+        staging_path=str(staging_path),
+    )
+    models.LocalFilesystem.objects.create(space=space)
+
+    internal_location = models.Location.objects.create(
+        space=space,
+        purpose=models.Location.STORAGE_SERVICE_INTERNAL,
+        relative_path="internal",
+    )
+    internal_location_path = pathlib.Path(internal_location.full_path)
+    internal_location_path.mkdir(parents=True)
+
+    aipstore_path = space_path / "aips"
+    aipstore_path.mkdir()
+    aipstore_location = models.Location.objects.create(
+        space=space,
+        relative_path=str(aipstore_path.relative_to(space_path)),
+        purpose="AS",
+    )
+
+    pipeline = models.Pipeline.objects.create(uuid=str(uuid.uuid4()))
+    models.LocationPipeline.objects.get_or_create(
+        pipeline=pipeline, location=aipstore_location
+    )
+
+    package_path = aipstore_path / "package"
+    package_path.mkdir()
+
+    package_uuid = uuid.uuid4()
+    (package_path / f"METS.{str(package_uuid)}.xml").touch()
+    package_objects_path = package_path / "objects"
+    package_objects_path.mkdir()
+    (package_objects_path / "beach.jpeg").touch()
+    (package_objects_path / f"beach-{uuid.uuid4()}.tiff").touch()
+
+    bagit.make_bag(package_path)
+
+    package = models.Package.objects.create(
+        uuid=package_uuid,
+        current_location=aipstore_location,
+        current_path=package_path.relative_to(aipstore_path),
+        package_type="AIP",
+        status="Uploaded",
+        origin_pipeline=pipeline,
+        misc_attributes={"reingest_pipeline": str(pipeline.uuid)},
+    )
+
+    reingested_package_path = internal_location_path / "reingested"
+    reingested_package_path.mkdir()
+
+    (reingested_package_path / f"METS.{str(package_uuid)}.xml").touch()
+    reingested_package_objects_path = reingested_package_path / "objects"
+    reingested_package_objects_path.mkdir()
+    (reingested_package_objects_path / "beach.jpeg").touch()
+    file_id = uuid.uuid4()
+    (reingested_package_objects_path / f"beach-{file_id}.png").touch()
+
+    bagit.make_bag(reingested_package_path)
+
+    package.finish_reingest(
+        internal_location,
+        f"{reingested_package_path.relative_to(internal_location_path)}/",
+        aipstore_location,
+        package_path.relative_to(aipstore_path),
+    )
+
+    assert list(
+        e.name for e in (pathlib.Path(package.full_path) / "data" / "objects").iterdir()
+    ) == list(e.name for e in (reingested_package_path / "data" / "objects").iterdir())
+
+
+@pytest.mark.django_db
+@mock.patch(
+    "metsrw.METSDocument.fromfile",
+    spec=metsrw.METSDocument,
+    return_value=mock.Mock(
+        **{
+            "all_files.return_value": [
+                mock.Mock(
+                    type="Item",
+                    path="objects/abroadcranethoma00craniala_0014.jpg",
+                    spec=metsrw.FSEntry,
+                ),
+                mock.Mock(
+                    type="Item",
+                    path="objects/METS.xml",
+                    spec=metsrw.FSEntry,
+                ),
+                mock.Mock(
+                    type="Item",
+                    path="objects/abroadcranethoma00craniala_0014-b4aa349f-2dd1-4d29-b07a-a145c427699b.jpg",
+                    spec=metsrw.FSEntry,
+                ),
+            ]
+        }
+    ),
+)
+def test_finish_reingest_deletes_previous_derivative_file_based_on_structMap_METS_info(
+    fromfile: mock.Mock, tmp_path: pathlib.Path
+) -> None:
+    """The purpose of this test is to determine whether old preservative files
+    have been deleted based on a comparison of METS StructMap details."""
+    space_path = tmp_path / "space"
+    space_path.mkdir()
+
+    staging_path = tmp_path / "staging"
+    staging_path.mkdir()
+
+    space = models.Space.objects.create(
+        access_protocol=models.Space.LOCAL_FILESYSTEM,
+        path=str(space_path),
+        staging_path=str(staging_path),
+    )
+    models.LocalFilesystem.objects.create(space=space)
+
+    internal_location = models.Location.objects.create(
+        space=space,
+        purpose=models.Location.STORAGE_SERVICE_INTERNAL,
+        relative_path="internal",
+    )
+    internal_location_path = pathlib.Path(internal_location.full_path)
+    internal_location_path.mkdir(parents=True)
+
+    aipstore_path = space_path / "aips"
+    aipstore_path.mkdir()
+    aipstore_location = models.Location.objects.create(
+        space=space,
+        relative_path=str(aipstore_path.relative_to(space_path)),
+        purpose="AS",
+    )
+
+    pipeline = models.Pipeline.objects.create(uuid=str(uuid.uuid4()))
+    models.LocationPipeline.objects.get_or_create(
+        pipeline=pipeline, location=aipstore_location
+    )
+
+    package_path = aipstore_path / "package"
+    package_path.mkdir()
+    package_uuid = uuid.uuid4()
+
+    (package_path / f"METS.{str(package_uuid)}.xml").touch()
+    package_objects_path = package_path / "objects"
+    package_objects_path.mkdir()
+    (package_objects_path / "beach.jpeg").touch()
+    (package_objects_path / f"beach-{uuid.uuid4()}.tiff").touch()
+
+    bagit.make_bag(package_path)
+
+    package = models.Package.objects.create(
+        uuid=package_uuid,
+        current_location=aipstore_location,
+        current_path=package_path.relative_to(aipstore_path),
+        package_type="AIP",
+        status="Uploaded",
+        origin_pipeline=pipeline,
+        misc_attributes={"reingest_pipeline": str(pipeline.uuid)},
+    )
+
+    reingested_package_path = internal_location_path / "reingested"
+    reingested_package_path.mkdir()
+
+    (reingested_package_path / f"METS.{str(package_uuid)}.xml").touch()
+    reingested_package_objects_path = reingested_package_path / "objects"
+    reingested_package_objects_path.mkdir()
+    (reingested_package_objects_path / "beach.jpeg").touch()
+    file_id = uuid.uuid4()
+    (reingested_package_objects_path / f"beach-{file_id}.png").touch()
+
+    bagit.make_bag(reingested_package_path)
+
+    package.finish_reingest(
+        internal_location,
+        f"{reingested_package_path.relative_to(internal_location_path)}/",
+        aipstore_location,
+        package_path.relative_to(aipstore_path),
+    )
+
+    assert list(
+        e.name for e in (pathlib.Path(package.full_path) / "data" / "objects").iterdir()
+    ) == list(e.name for e in (reingested_package_path / "data" / "objects").iterdir())

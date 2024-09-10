@@ -4,6 +4,7 @@ import distutils.dir_util
 import json
 import logging
 import os
+import pathlib
 import re
 import shutil
 import subprocess
@@ -297,7 +298,9 @@ class Package(models.Model):
         try:
             return FixityLog.objects.filter(package=self).order_by(
                 "-datetime_reported"
-            )[0]  # limit 1
+            )[
+                0
+            ]  # limit 1
         except IndexError:
             return None
 
@@ -2516,15 +2519,23 @@ class Package(models.Model):
         _replace_old_metdata_with_reingested(
             rein_aip_internal_path, old_aip_internal_path
         )
+        # 4. REMOVE PRESERVATIVE DERIVATIVE
+        """In the future, this approach can be used to remove previous derivative files from AIP.
+        Since METS from pipeline has the information of files under objects directory of reingested AIP, 
+        this function compares METS' structMap details with the current reingested AIP file system.."""
+
+        removed_pres_der_paths = self._delete_old_preservation_derivative(
+            rein_aip_internal_path, old_aip_internal_path
+        )
 
         # 4. Copy preservation derivatives from the reingested AIP to the old
         #    AIP. Outdated preservation derivatives are deleted.
         #    ``removed_pres_der_paths`` is a list of paths (in the old AIP) of
         #    preservation derivatives that were deleted because they were made
         #    out-of-date by new derivatives in the newly re-ingested AIP.
-        removed_pres_der_paths = _replace_old_pres_ders_with_reingested(
-            rein_aip_internal_path, old_aip_internal_path
-        )
+        # removed_pres_der_paths = _replace_old_pres_ders_with_reingested(
+        #     rein_aip_internal_path, old_aip_internal_path
+        # )
 
         # 5. Create a new bag from the AIP at ``old_aip_internal_path`` and
         #    validate it.
@@ -2871,6 +2882,43 @@ class Package(models.Model):
     # ==========================================================================
     # END Private methods for ``finish_reingest``
     # ==========================================================================
+
+    def _delete_old_preservation_derivative(
+        self, rein_aip_internal_path, old_aip_internal_path
+    ):
+        """Delete old preservation derivative file path."""
+        # There is still work to be done on this function.
+
+        mets_path = os.path.join(old_aip_internal_path, "data", f"METS.{self.uuid}.xml")
+
+        mets_doc = metsrw.METSDocument.fromfile(mets_path)
+
+        mets_filesec_objects = [
+            entry.path for entry in mets_doc.all_files() if entry.type == "Item"
+        ]
+        old_preservative_file_directory = os.path.join(old_aip_internal_path, "data")
+
+        previous_derivative_to_be_delete = []
+
+        for dirpath, dirnames, filenames in os.walk(old_preservative_file_directory):
+            for file_path in filenames:
+                if file_path not in mets_filesec_objects:
+                    if pathlib.Path(
+                        file_path.relative_to(
+                            os.path.join(old_preservative_file_directory, "objects")
+                        )
+                    ):
+                        file_path_to_delete = os.path.join(
+                            old_preservative_file_directory, file_path
+                        )
+                        if os.path.isfile(file_path_to_delete):
+                            previous_derivative_to_be_delete.append(file_path_to_delete)
+                            os.remove(file_path_to_delete)
+                            LOGGER.info(f"Previous derivative file {file_path} deleted")
+                else:
+                    continue
+
+        return previous_derivative_to_be_delete
 
     def _get_transform_file_type(self, transform_file):
         """Get the type of a transform file entry.
