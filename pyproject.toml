@@ -57,7 +57,6 @@ module = [
     "locations.*",
     "setup",
     "storage_service.*",
-    "storage-service.gunicorn-config",
     "tests.*",
 ]
 ignore_errors = true
