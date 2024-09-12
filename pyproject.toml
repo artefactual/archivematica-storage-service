@@ -47,6 +47,22 @@ ignore = [
 [tool.ruff.lint.isort]
 force-single-line = true
 
+[tool.mypy]
+strict = true
+
+[[tool.mypy.overrides]]
+module = [
+    "administration.*",
+    "common.*",
+    "locations.*",
+    "make_key",
+    "setup",
+    "storage_service.*",
+    "storage-service.gunicorn-config",
+    "tests.*",
+]
+ignore_errors = true
+
 [tool.tox]
 legacy_tox_ini = """
     [tox]
