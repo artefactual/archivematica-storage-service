@@ -55,7 +55,6 @@ module = [
     "administration.*",
     "common.*",
     "locations.*",
-    "make_key",
     "setup",
     "storage_service.*",
     "storage-service.gunicorn-config",
