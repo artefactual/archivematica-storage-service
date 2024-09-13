@@ -4,6 +4,9 @@ import os
 import shutil
 import tempfile
 
+from gunicorn.arbiter import Arbiter
+from gunicorn.workers.base import Worker
+
 # http://docs.gunicorn.org/en/stable/settings.html#user
 user = os.environ.get("SS_GUNICORN_USER", "archivematica")
 
@@ -55,12 +58,12 @@ if os.environ.get("SS_PROMETHEUS_ENABLED") and workers != "1":
     prometheus_multiproc_dir = tempfile.mkdtemp(prefix="prometheus-stats")
     raw_env = [f"prometheus_multiproc_dir={prometheus_multiproc_dir}"]
 
-    def child_exit(server, worker):
+    def child_exit(server: Arbiter, worker: Worker) -> None:
         # Lazy import to avoid checking for the existance of
         # prometheus_multiproc_dir immediately
         from prometheus_client import multiprocess  # noqa
 
         multiprocess.mark_process_dead(worker.pid)
 
-    def on_exit(server):
+    def on_exit(server: Arbiter) -> None:
         shutil.rmtree(prometheus_multiproc_dir)

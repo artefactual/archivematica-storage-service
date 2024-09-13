@@ -1,3 +1,35 @@
+[build-system]
+requires = ["setuptools>=74", "wheel>=0.44"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name="archivematica-storage-service"
+description="Django based webapp for managing storage in an Archivematica installation"
+authors = [
+  {name = "Artefactual Systems Inc.", email = "info@artefactual.com"},
+]
+maintainers = [
+  {name = "Artefactual Systems Inc.", email = "info@artefactual.com"},
+]
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {file = "LICENSE"}
+dynamic = [
+  "version",
+]
+
+[project.urls]
+homepage = "https://github.com/artefacutal/archivematica-storage-service"
+documentation = "https://www.archivematica.org/en/docs/storage-service-latest/"
+repository = "https://github.com/artefacutal/archivematica-storage-service"
+issues = "https://github.com/archivematica/Issues/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include=["storage_service*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "storage_service.storage_service.__version__"}
+
 [tool.pytest.ini_options]
 addopts = "--reuse-db -p no:cacheprovider"
 DJANGO_SETTINGS_MODULE = "storage_service.settings.test"
@@ -11,7 +43,6 @@ omit = [
     "**/tests/*",
     "**/wsgi.py",
     "**/manage.py",
-    "setup.py",
 ]
 source = [
   "storage_service",
@@ -46,6 +77,19 @@ ignore = [
 
 [tool.ruff.lint.isort]
 force-single-line = true
+
+[tool.mypy]
+strict = true
+
+[[tool.mypy.overrides]]
+module = [
+    "administration.*",
+    "common.*",
+    "locations.*",
+    "storage_service.*",
+    "tests.*",
+]
+ignore_errors = true
 
 [tool.tox]
 legacy_tox_ini = """
