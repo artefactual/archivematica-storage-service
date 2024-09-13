@@ -2,6 +2,10 @@ import errno
 import logging
 import os
 import pathlib
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Union
 
 import django.core.exceptions
 from django.db import connection
@@ -13,12 +17,15 @@ from common import utils
 LOGGER = logging.getLogger(__name__)
 
 
-def startup():
+def startup(space_path: Optional[pathlib.Path] = None) -> None:
+    if space_path is None:
+        space_path = pathlib.Path(os.sep)
+
     LOGGER.info("Running startup")
 
     try:
         with PopulateLock():
-            populate_default_locations()
+            populate_default_locations(space_path)
     except PopulateLockError:
         LOGGER.warning("Another worker is initializing the database.")
 
@@ -57,7 +64,7 @@ class PopulateLock:
             cursor.execute("SELECT RELEASE_LOCK(%s)", (self.name,))
 
 
-def populate_default_locations():
+def populate_default_locations(space_path: pathlib.Path) -> None:
     """Create default local filesystem space and its locations."""
 
     BASE_PATH = pathlib.Path("var") / "archivematica"
@@ -65,8 +72,8 @@ def populate_default_locations():
     try:
         space, space_created = locations_models.Space.objects.get_or_create(
             access_protocol=locations_models.Space.LOCAL_FILESYSTEM,
-            path=os.sep,
-            defaults={"staging_path": os.sep / BASE_PATH / "storage_service"},
+            path=str(space_path),
+            defaults={"staging_path": space_path / BASE_PATH / "storage_service"},
         )
         if space_created:
             locations_models.LocalFilesystem.objects.create(space=space)
@@ -75,7 +82,7 @@ def populate_default_locations():
         LOGGER.info("Multiple default Spaces exist, done default setup.")
         return
 
-    default_locations = [
+    default_locations: List[Dict[str, Union[str, pathlib.Path, bool, None]]] = [
         {
             "purpose": locations_models.Location.TRANSFER_SOURCE,
             "relative_path": "home",

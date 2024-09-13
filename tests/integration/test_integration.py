@@ -127,8 +127,21 @@ def client(admin_client: TestClient) -> Client:
     return Client(admin_client)
 
 
+@pytest.fixture
+def working_directory_path(tmp_path: Path) -> Path:
+    result = tmp_path / "work"
+    result.mkdir()
+
+    # Similar to the internalDirs created in the Dockerfile.
+    (result / "home" / "archivematica").mkdir(parents=True)
+    (result / "var" / "archivematica" / "storage_service").mkdir(parents=True)
+    (result / "var" / "archivematica" / "sharedDirectory").mkdir(parents=True)
+
+    return result
+
+
 @pytest.fixture(scope="function")
-def startup() -> None:
+def startup(working_directory_path: Path) -> None:
     """Create default space and its locations.
 
     Storage Service provisions a default space and a number of locations when
@@ -148,7 +161,7 @@ def startup() -> None:
     """
     from common.startup import startup
 
-    startup()  # TODO: get rid of this!
+    startup(working_directory_path)  # TODO: get rid of this!
 
 
 def get_size(path: Path) -> int:
@@ -206,12 +219,15 @@ class StorageScenario:
         )
         self.compressed = compressed
 
-    def init(self, admin_client: TestClient) -> None:
+    def init(self, admin_client: TestClient, working_directory_path: Path) -> None:
         self.client = Client(admin_client)
+        self.shared_directory_path = (
+            working_directory_path / "var" / "archivematica" / "sharedDirectory"
+        )
         self.register_pipeline()
         self.register_aip_storage_location()
         self.register_aip_storage_replicator()
-        self.copy_fixture(Path("/var/archivematica/sharedDirectory"))
+        self.copy_fixture(self.shared_directory_path)
 
     def register_pipeline(self) -> None:
         resp = self.client.add_pipeline(
@@ -219,7 +235,7 @@ class StorageScenario:
                 "uuid": str(self.PIPELINE_UUID),
                 "description": "Beefy pipeline",
                 "create_default_locations": True,
-                "shared_path": "/var/archivematica/sharedDirectory",
+                "shared_path": str(self.shared_directory_path),
                 "remote_name": "http://127.0.0.1:65534",
                 "api_username": "test",
                 "api_key": "test",
@@ -227,11 +243,26 @@ class StorageScenario:
         )
         assert resp.status_code == 201
 
+    def _adjust_space_data(
+        self, data: Dict[str, Union[str, bool]]
+    ) -> Dict[str, Union[str, bool]]:
+        for attr in ["path", "staging_path"]:
+            if (
+                (value := data.get(attr) is not None)
+                and isinstance(value, str)
+                and value.startswith("/var/archivematica/sharedDirectory")
+            ):
+                data[attr] = value.replace(
+                    "/var/archivematica/sharedDirectory",
+                    str(self.shared_directory_path),
+                )
+        return data
+
     def register_aip_storage_location(self) -> None:
         """Register AIP Storage location."""
 
         # Add space.
-        resp = self.client.add_space(self.SPACES[self.src])
+        resp = self.client.add_space(self._adjust_space_data(self.SPACES[self.src]))
         assert resp.status_code == 201
         space = json.loads(resp.content)
 
@@ -301,7 +332,7 @@ class StorageScenario:
         """Register AIP Storage replicator."""
 
         # 1. Add space.
-        resp = self.client.add_space(self.SPACES[self.dst])
+        resp = self.client.add_space(self._adjust_space_data(self.SPACES[self.dst]))
         assert resp.status_code == 201
         space = json.loads(resp.content)
 
@@ -465,8 +496,11 @@ class StorageScenario:
 )
 @pytest.mark.django_db
 def test_main(
-    startup: None, storage_scenario: StorageScenario, admin_client: TestClient
+    startup: None,
+    storage_scenario: StorageScenario,
+    admin_client: TestClient,
+    working_directory_path: Path,
 ) -> None:
-    storage_scenario.init(admin_client)
+    storage_scenario.init(admin_client, working_directory_path)
     storage_scenario.store_aip()
     storage_scenario.assert_stored()
