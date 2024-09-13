@@ -201,6 +201,9 @@ class StorageScenario:
         self.src = src
         self.dst = dst
         self.pkg = pkg
+        self.pkg_name = (
+            f"foobar-{self.PACKAGE_UUID}{''.join(pkg.suffixes) if compressed else ''}"
+        )
         self.compressed = compressed
 
     def init(self, admin_client: TestClient) -> None:
@@ -208,7 +211,7 @@ class StorageScenario:
         self.register_pipeline()
         self.register_aip_storage_location()
         self.register_aip_storage_replicator()
-        self.copy_fixture()
+        self.copy_fixture(Path("/var/archivematica/sharedDirectory"))
 
     def register_pipeline(self) -> None:
         resp = self.client.add_pipeline(
@@ -327,16 +330,15 @@ class StorageScenario:
             Location.objects.get(uuid=as_location.uuid).replicators.all().count() == 1
         )
 
-    def copy_fixture(self) -> None:
-        cp_location_path = Path("/var/archivematica/sharedDirectory")
+    def copy_fixture(self, target_path: Path) -> None:
+        dst = target_path / self.pkg_name
         if self.pkg.is_dir():
-            dst = cp_location_path / self.pkg.name
             if not dst.exists():
-                shutil.copytree(str(FIXTURES_DIR / self.pkg), str(dst))
+                shutil.copytree(FIXTURES_DIR / self.pkg, dst)
             assert dst.is_dir()
         else:
-            shutil.copy(str(FIXTURES_DIR / self.pkg), str(cp_location_path))
-            assert (cp_location_path / self.pkg).is_file()
+            shutil.copy(FIXTURES_DIR / self.pkg, dst)
+            assert dst.is_file()
 
     def store_aip(self) -> None:
         resp = self.client.get_locations(
@@ -357,9 +359,9 @@ class StorageScenario:
             {
                 "uuid": str(self.PACKAGE_UUID),
                 "origin_location": cp_location["resource_uri"],
-                "origin_path": self.pkg.name,
+                "origin_path": self.pkg_name,
                 "current_location": as_location["resource_uri"],
-                "current_path": self.pkg.name,
+                "current_path": self.pkg_name,
                 "size": get_size(self.pkg),
                 "package_type": Package.AIP,
                 "aip_subtype": "Archival Information Package",
@@ -375,7 +377,7 @@ class StorageScenario:
         aip_path_parts = (
             [as_location["path"]]
             + [aip_id[i : i + 4] for i in range(0, len(aip_id), 4)]
-            + [self.pkg.name]
+            + [self.pkg_name]
         )
         aip_path = Path(*aip_path_parts)
         assert aip["uuid"] == str(self.PACKAGE_UUID)
