@@ -15,8 +15,14 @@ import os
 import shutil
 import uuid
 from pathlib import Path
+from typing import Dict
+from typing import List
+from typing import Tuple
+from typing import Union
 
 import pytest
+from django.http import HttpResponse
+from django.test import Client as TestClient
 from locations.models import Location
 from locations.models import Package
 from locations.models import Space
@@ -25,6 +31,29 @@ from metsrw.plugins import premisrw
 if "RUN_INTEGRATION_TESTS" not in os.environ:
     pytest.skip("Skipping integration tests", allow_module_level=True)
 
+TagName = str
+Attribute = str
+Value = str
+Element = Tuple[Attribute, Value]
+
+PremisAgent = Tuple[
+    TagName,
+    Dict[str, str],
+    Tuple[TagName, Element, Element],
+    Element,
+    Element,
+]
+
+PremisEvent = Tuple[
+    TagName,
+    Dict[str, str],
+    Tuple[TagName, Element, Element],
+    Element,
+    Element,
+    Element,
+    Tuple[TagName, Tuple[TagName, Element]],
+    Tuple[TagName, Element, Element],
+]
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -39,61 +68,67 @@ UNCOMPRESSED_PACKAGE = (
 class Client:
     """Slim API client."""
 
-    def __init__(self, admin_client):
+    def __init__(self, admin_client: TestClient) -> None:
         self.admin_client = admin_client
 
-    def add_space(self, data):
+    def add_space(self, data: Dict[str, Union[str, bool]]) -> HttpResponse:
         return self.admin_client.post(
             "/api/v2/space/", json.dumps(data), content_type="application/json"
         )
 
-    def add_pipeline(self, data):
+    def add_pipeline(self, data: Dict[str, Union[str, bool]]) -> HttpResponse:
         return self.admin_client.post(
             "/api/v2/pipeline/", json.dumps(data), content_type="application/json"
         )
 
-    def get_pipelines(self, data):
+    def get_pipelines(self, data: Dict[str, str]) -> HttpResponse:
         return self.admin_client.get("/api/v2/pipeline/", data)
 
-    def add_location(self, data):
+    def add_location(self, data: Dict[str, Union[str, List[str]]]) -> HttpResponse:
         return self.admin_client.post(
             "/api/v2/location/", json.dumps(data), content_type="application/json"
         )
 
-    def set_location(self, location_id, data):
+    def set_location(
+        self, location_id: uuid.UUID, data: Dict[str, str]
+    ) -> HttpResponse:
         return self.admin_client.post(
             f"/api/v2/location/{location_id}/",
             json.dumps(data),
             content_type="application/json",
         )
 
-    def get_locations(self, data):
+    def get_locations(self, data: Dict[str, str]) -> HttpResponse:
         return self.admin_client.get("/api/v2/location/", data)
 
-    def add_file(self, file_id, data):
+    def add_file(
+        self,
+        file_id: uuid.UUID,
+        data: Dict[str, Union[str, int, List[PremisEvent], List[PremisAgent]]],
+    ) -> HttpResponse:
         return self.admin_client.put(
             f"/api/v2/file/{file_id}/",
             json.dumps(data),
             content_type="application/json",
         )
 
-    def get_files(self):
+    def get_files(self) -> HttpResponse:
         return self.admin_client.get("/api/v2/file/")
 
-    def get_pointer_file(self, file_id):
+    def get_pointer_file(self, file_id: uuid.UUID) -> HttpResponse:
         return self.admin_client.get(f"/api/v2/file/{file_id}/pointer_file/")
 
-    def check_fixity(self, file_id):
+    def check_fixity(self, file_id: uuid.UUID) -> HttpResponse:
         return self.admin_client.get(f"/api/v2/file/{file_id}/check_fixity/")
 
 
-@pytest.fixture()
-def client(admin_client, scope="session"):
+@pytest.fixture(scope="session")
+def client(admin_client: TestClient) -> Client:
     return Client(admin_client)
 
 
-@pytest.fixture()
-def startup(scope="function"):
+@pytest.fixture(scope="function")
+def startup() -> None:
     """Create default space and its locations.
 
     Storage Service provisions a default space and a number of locations when
@@ -116,7 +151,7 @@ def startup(scope="function"):
     startup()  # TODO: get rid of this!
 
 
-def get_size(path):
+def get_size(path: Path) -> int:
     if path.is_file():
         return path.stat().st_size
     size = 0
@@ -133,7 +168,7 @@ class StorageScenario:
     PIPELINE_UUID = uuid.UUID("00000b87-1655-4b7e-bbf8-344b317da334")
     PACKAGE_UUID = uuid.UUID("5658e603-277b-4292-9b58-20bf261c8f88")
 
-    SPACES = {
+    SPACES: Dict[str, Dict[str, Union[str, bool]]] = {
         Space.S3: {
             "access_protocol": Space.S3,
             "path": "",
@@ -162,21 +197,20 @@ class StorageScenario:
         },
     }
 
-    def __init__(self, src, dst, pkg, compressed):
+    def __init__(self, src: str, dst: str, pkg: Path, compressed: bool) -> None:
         self.src = src
         self.dst = dst
         self.pkg = pkg
         self.compressed = compressed
-        self.client = None
 
-    def init(self, admin_client):
+    def init(self, admin_client: TestClient) -> None:
         self.client = Client(admin_client)
         self.register_pipeline()
         self.register_aip_storage_location()
         self.register_aip_storage_replicator()
         self.copy_fixture()
 
-    def register_pipeline(self):
+    def register_pipeline(self) -> None:
         resp = self.client.add_pipeline(
             {
                 "uuid": str(self.PIPELINE_UUID),
@@ -190,7 +224,7 @@ class StorageScenario:
         )
         assert resp.status_code == 201
 
-    def register_aip_storage_location(self):
+    def register_aip_storage_location(self) -> None:
         """Register AIP Storage location."""
 
         # Add space.
@@ -210,7 +244,7 @@ class StorageScenario:
         )
         assert resp.status_code == 201
 
-    def get_compression_event(self):
+    def get_compression_event(self) -> PremisEvent:
         return (
             "event",
             premisrw.PREMIS_META,
@@ -247,7 +281,7 @@ class StorageScenario:
             ),
         )
 
-    def get_agent(self):
+    def get_agent(self) -> PremisAgent:
         return (
             "agent",
             premisrw.PREMIS_3_0_META,
@@ -260,7 +294,7 @@ class StorageScenario:
             ("agent_type", "foobar"),
         )
 
-    def register_aip_storage_replicator(self):
+    def register_aip_storage_replicator(self) -> None:
         """Register AIP Storage replicator."""
 
         # 1. Add space.
@@ -293,7 +327,7 @@ class StorageScenario:
             Location.objects.get(uuid=as_location.uuid).replicators.all().count() == 1
         )
 
-    def copy_fixture(self):
+    def copy_fixture(self) -> None:
         cp_location_path = Path("/var/archivematica/sharedDirectory")
         if self.pkg.is_dir():
             dst = cp_location_path / self.pkg.name
@@ -304,7 +338,7 @@ class StorageScenario:
             shutil.copy(str(FIXTURES_DIR / self.pkg), str(cp_location_path))
             assert (cp_location_path / self.pkg).is_file()
 
-    def store_aip(self):
+    def store_aip(self) -> None:
         resp = self.client.get_locations(
             {
                 "pipeline_uuid": str(self.PIPELINE_UUID),
@@ -338,17 +372,17 @@ class StorageScenario:
 
         aip = json.loads(resp.content)
         aip_id = self.PACKAGE_UUID.hex
-        aip_path = (
+        aip_path_parts = (
             [as_location["path"]]
             + [aip_id[i : i + 4] for i in range(0, len(aip_id), 4)]
             + [self.pkg.name]
         )
-        aip_path = Path(*aip_path)
+        aip_path = Path(*aip_path_parts)
         assert aip["uuid"] == str(self.PACKAGE_UUID)
         assert aip["current_full_path"] == str(aip_path)
         assert get_size(aip_path) > 1
 
-    def assert_stored(self):
+    def assert_stored(self) -> None:
         # We have two packages, the original and a replica.
         resp = self.client.get_files()
         files = json.loads(resp.content)
@@ -428,7 +462,9 @@ class StorageScenario:
     ],
 )
 @pytest.mark.django_db
-def test_main(startup, storage_scenario, admin_client):
+def test_main(
+    startup: None, storage_scenario: StorageScenario, admin_client: TestClient
+) -> None:
     storage_scenario.init(admin_client)
     storage_scenario.store_aip()
     storage_scenario.assert_stored()

@@ -91,6 +91,12 @@ module = [
 ]
 ignore_errors = true
 
+[[tool.mypy.overrides]]
+module = [
+    "tests.integration.test_integration",
+]
+ignore_errors = false
+
 [tool.tox]
 legacy_tox_ini = """
     [tox]
