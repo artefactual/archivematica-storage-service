@@ -13,6 +13,7 @@ of Archivematica, etc...
 import json
 import os
 import shutil
+import tarfile
 import uuid
 from pathlib import Path
 from typing import Dict
@@ -21,8 +22,11 @@ from typing import Tuple
 from typing import Union
 
 import pytest
+from common import utils
 from django.http import HttpResponse
 from django.test import Client as TestClient
+from django.urls import reverse
+from locations.models import Event
 from locations.models import Location
 from locations.models import Package
 from locations.models import Space
@@ -120,6 +124,26 @@ class Client:
 
     def check_fixity(self, file_id: uuid.UUID) -> HttpResponse:
         return self.admin_client.get(f"/api/v2/file/{file_id}/check_fixity/")
+
+    def request_aip_recovery(
+        self, file_id: uuid.UUID, data: Dict[str, Union[str, int]]
+    ) -> HttpResponse:
+        return self.admin_client.post(
+            f"/api/v2/file/{file_id}/recover_aip/",
+            json.dumps(data),
+            content_type="application/json",
+        )
+
+    def approve_aip_recovery_request(self, event_id: int) -> HttpResponse:
+        # Not possible via API.
+        return self.admin_client.post(
+            reverse("locations:aip_recover_request"),
+            {"approve": "Approve", f"{event_id}-status_reason": "Approved!"},
+            follow=True,
+        )
+
+    def download_file(self, file_id: uuid.UUID) -> HttpResponse:
+        return self.admin_client.get(f"/api/v2/file/{file_id}/download/")
 
 
 @pytest.fixture(scope="session")
@@ -504,3 +528,158 @@ def test_main(
     storage_scenario.init(admin_client, working_directory_path)
     storage_scenario.store_aip()
     storage_scenario.assert_stored()
+
+
+class AIPRecoveryScenario(StorageScenario):
+    def corrupt_package(self) -> None:
+        # This will not work with remote spaces (S3, RClone, etc).
+        package = Package.objects.get(uuid=self.PACKAGE_UUID)
+        package_path = Path(package.full_path)
+        if self.compressed:
+            package_path.unlink()
+            package_path.touch()
+        else:
+            # The tagmanifest files are used in utils.generate_checksum.
+            for p in package_path.glob("**/tagmanifest*.txt"):
+                p.unlink()
+                p.touch()
+        package.save()
+
+        resp = self.client.check_fixity(self.PACKAGE_UUID)
+        assert resp.status_code == 200
+        assert not json.loads(resp.content)["success"]
+
+    def copy_fixture_to_aip_recovery_location(self) -> None:
+        resp = self.client.get_locations(
+            {"pipeline_uuid": str(self.PIPELINE_UUID), "purpose": Location.AIP_RECOVERY}
+        )
+        aip_recovery_location_path = Path(
+            json.loads(resp.content)["objects"][0]["path"]
+        )
+
+        # Clear recovery location.
+        shutil.rmtree(aip_recovery_location_path)
+        aip_recovery_location_path.mkdir()
+
+        self.copy_fixture(aip_recovery_location_path)
+
+    def recover_aip(self) -> None:
+        data: Dict[str, Union[str, int]] = {
+            "event_reason": "Delete please!",
+            "pipeline": str(self.PIPELINE_UUID),
+            "user_id": 1,
+            "user_email": "user@example.com",
+        }
+        resp = self.client.request_aip_recovery(self.PACKAGE_UUID, data)
+        assert resp.status_code == 202
+
+        assert Event.objects.count() == 1
+        event = Event.objects.get(
+            package=Package.objects.get(uuid=self.PACKAGE_UUID),
+            event_type=Event.RECOVER,
+            status=Event.SUBMITTED,
+            event_reason=data["event_reason"],
+            pipeline_id=data["pipeline"],
+            user_id=data["user_id"],
+            user_email=data["user_email"],
+        )
+
+        # Approve the recovery request.
+        resp = self.client.approve_aip_recovery_request(event.id)
+        assert resp.status_code == 200
+
+        assert "Request approved: AIP restored." in resp.content.decode()
+
+        assert Event.objects.count() == 1
+        assert (
+            Event.objects.filter(
+                package=Package.objects.get(uuid=self.PACKAGE_UUID),
+                event_type=Event.RECOVER,
+                status=Event.APPROVED,
+                event_reason=data["event_reason"],
+                pipeline_id=data["pipeline"],
+                user_id=data["user_id"],
+                user_email=data["user_email"],
+            ).count()
+            == 1
+        )
+
+        resp = self.client.check_fixity(self.PACKAGE_UUID)
+        assert resp.status_code == 200
+        assert json.loads(resp.content)["success"]
+
+    def assert_recovered(self, tmp_path: Path) -> None:
+        download_path = tmp_path / "download"
+
+        resp = self.client.download_file(self.PACKAGE_UUID)
+
+        download_path.write_bytes(b"".join(resp.streaming_content))
+
+        # Compare the downloaded package against the original fixtures.
+        if self.compressed:
+            assert (
+                utils.generate_checksum(download_path).hexdigest()
+                == utils.generate_checksum(self.pkg).hexdigest()
+            )
+        else:
+            assert tarfile.is_tarfile(download_path)
+            extracted_path = tmp_path / "extracted"
+            tarfile.TarFile(download_path).extractall(extracted_path)
+            assert (
+                utils.generate_checksum(extracted_path / self.pkg_name).hexdigest()
+                == utils.generate_checksum(self.pkg).hexdigest()
+            )
+
+
+@pytest.mark.parametrize(
+    "scenario,corrupt_package",
+    [
+        (
+            AIPRecoveryScenario(
+                src=Space.NFS, dst=Space.NFS, pkg=COMPRESSED_PACKAGE, compressed=True
+            ),
+            False,
+        ),
+        (
+            AIPRecoveryScenario(
+                src=Space.NFS, dst=Space.NFS, pkg=COMPRESSED_PACKAGE, compressed=True
+            ),
+            True,
+        ),
+        (
+            AIPRecoveryScenario(
+                src=Space.NFS, dst=Space.NFS, pkg=UNCOMPRESSED_PACKAGE, compressed=False
+            ),
+            False,
+        ),
+        (
+            AIPRecoveryScenario(
+                src=Space.NFS, dst=Space.NFS, pkg=UNCOMPRESSED_PACKAGE, compressed=False
+            ),
+            True,
+        ),
+    ],
+    ids=[
+        "compressed_original",
+        "compressed_corrupted",
+        "uncompressed_original",
+        "uncompressed_corrupted",
+    ],
+)
+@pytest.mark.django_db
+def test_aip_recovery(
+    startup: None,
+    scenario: AIPRecoveryScenario,
+    corrupt_package: bool,
+    admin_client: TestClient,
+    working_directory_path: Path,
+    tmp_path: Path,
+) -> None:
+    scenario.init(admin_client, working_directory_path)
+    scenario.store_aip()
+    scenario.assert_stored()
+    if corrupt_package:
+        scenario.corrupt_package()
+    scenario.copy_fixture_to_aip_recovery_location()
+    scenario.recover_aip()
+    scenario.assert_recovered(tmp_path)
