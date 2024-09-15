@@ -174,7 +174,7 @@ def aip_recover_request(request):
             )
         except StorageException:
             recover_path = os.path.join(
-                recover_location.full_path(), os.path.basename(aip.full_path())
+                recover_location.full_path, os.path.basename(aip.full_path)
             )
             message = _("error accessing restore files at %(path)s") % {
                 "path": recover_path
