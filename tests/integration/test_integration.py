@@ -563,6 +563,12 @@ class AIPRecoveryScenario(StorageScenario):
 
         self.copy_fixture(aip_recovery_location_path)
 
+    def request_aip_recovery(self, data: Dict[str, Union[str, int]]) -> HttpResponse:
+        return self.client.request_aip_recovery(self.PACKAGE_UUID, data)
+
+    def approve_aip_recovery_request(self, event_id: int) -> HttpResponse:
+        return self.client.approve_aip_recovery_request(event_id)
+
     def recover_aip(self) -> None:
         data: Dict[str, Union[str, int]] = {
             "event_reason": "Delete please!",
@@ -570,10 +576,11 @@ class AIPRecoveryScenario(StorageScenario):
             "user_id": 1,
             "user_email": "user@example.com",
         }
-        resp = self.client.request_aip_recovery(self.PACKAGE_UUID, data)
+        resp = self.request_aip_recovery(data)
         assert resp.status_code == 202
 
         assert Event.objects.count() == 1
+
         event = Event.objects.get(
             package=Package.objects.get(uuid=self.PACKAGE_UUID),
             event_type=Event.RECOVER,
@@ -585,7 +592,7 @@ class AIPRecoveryScenario(StorageScenario):
         )
 
         # Approve the recovery request.
-        resp = self.client.approve_aip_recovery_request(event.id)
+        resp = self.approve_aip_recovery_request(event.id)
         assert resp.status_code == 200
 
         assert "Request approved: AIP restored." in resp.content.decode()
@@ -683,3 +690,48 @@ def test_aip_recovery(
     scenario.copy_fixture_to_aip_recovery_location()
     scenario.recover_aip()
     scenario.assert_recovered(tmp_path)
+
+
+@pytest.mark.django_db
+def test_aip_recovery_handles_recovery_copy_setup_error(
+    startup: None,
+    admin_client: TestClient,
+    working_directory_path: Path,
+) -> None:
+    # This represents an scenario where the user does not place the recovery
+    # copy in the recovery location directory, creates the recovery request
+    # and approves it.
+    scenario = AIPRecoveryScenario(
+        src=Space.NFS, dst=Space.NFS, pkg=COMPRESSED_PACKAGE, compressed=True
+    )
+    scenario.init(admin_client, working_directory_path)
+    scenario.store_aip()
+    scenario.assert_stored()
+    scenario.corrupt_package()
+
+    data: Dict[str, Union[str, int]] = {
+        "event_reason": "Delete please!",
+        "pipeline": str(scenario.PIPELINE_UUID),
+        "user_id": 1,
+        "user_email": "user@example.com",
+    }
+    resp = scenario.request_aip_recovery(data)
+    assert resp.status_code == 202
+
+    assert Event.objects.count() == 1
+    event = Event.objects.get(
+        package=Package.objects.get(uuid=scenario.PACKAGE_UUID),
+        event_type=Event.RECOVER,
+        status=Event.SUBMITTED,
+        event_reason=data["event_reason"],
+        pipeline_id=data["pipeline"],
+        user_id=data["user_id"],
+        user_email=data["user_email"],
+    )
+
+    resp = scenario.approve_aip_recovery_request(event.id)
+    assert resp.status_code == 200
+
+    content = resp.content.decode()
+    assert "AIP restore failed: error accessing restore files" in content
+    assert "Please contact an administrator or see logs for details" in content
