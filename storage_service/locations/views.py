@@ -169,7 +169,7 @@ def aip_recover_request(request):
         ).location
 
         try:
-            (success, _, message) = aip.recover_aip(
+            (success, failures, message) = aip.recover_aip(
                 recover_location, os.path.basename(aip.current_path)
             )
         except StorageException:
