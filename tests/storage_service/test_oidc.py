@@ -28,7 +28,7 @@ class TestOIDC(TestCase):
         assert user.last_name == "User"
         assert user.email == "test@example.com"
         assert user.username == "test@example.com"
-        assert user.get_role() == roles.USER_ROLE_MANAGER
+        assert user.get_role() == roles.USER_ROLE_READER
 
     @override_settings(DEFAULT_USER_ROLE=roles.USER_ROLE_REVIEWER)
     def test_create_demoted_user(self):
