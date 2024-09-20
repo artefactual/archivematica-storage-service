@@ -12,16 +12,16 @@ asgiref==3.8.1
     #   django
 bagit==1.8.1
     # via -r requirements.txt
-boto3==1.35.12
+boto3==1.35.23
     # via -r requirements.txt
-botocore==1.35.12
+botocore==1.35.23
     # via
     #   -r requirements.txt
     #   boto3
     #   s3transfer
 brotli==1.1.0
     # via -r requirements.txt
-build==1.2.1
+build==1.2.2
     # via pip-tools
 cachetools==5.5.0
     # via tox
@@ -86,13 +86,13 @@ django-tastypie==0.14.7
     # via -r requirements.txt
 exceptiongroup==1.2.2
     # via pytest
-filelock==3.15.4
+filelock==3.16.1
     # via
     #   tox
     #   virtualenv
 gevent==24.2.1
     # via -r requirements.txt
-greenlet==3.0.3
+greenlet==3.1.0
     # via
     #   -r requirements.txt
     #   gevent
@@ -102,15 +102,15 @@ httplib2==0.22.0
     # via
     #   -r requirements.txt
     #   sword2
-idna==3.8
+idna==3.10
     # via
     #   -r requirements.txt
     #   requests
-importlib-metadata==8.4.0
+importlib-metadata==8.5.0
     # via
     #   build
     #   pytest-randomly
-importlib-resources==6.4.4
+importlib-resources==6.4.5
     # via -r requirements.txt
 iniconfig==2.0.0
     # via pytest
@@ -144,7 +144,7 @@ metsrw==0.5.1
     # via -r requirements.txt
 mozilla-django-oidc==4.0.1
     # via -r requirements.txt
-msgpack==1.0.8
+msgpack==1.1.0
     # via
     #   -r requirements.txt
     #   oslo-serialization
@@ -205,7 +205,7 @@ pbr==6.1.0
     #   stevedore
 pip-tools==7.4.1
     # via -r requirements-dev.in
-platformdirs==4.2.2
+platformdirs==4.3.6
     # via
     #   tox
     #   virtualenv
@@ -217,12 +217,12 @@ prometheus-client==0.20.0
     # via
     #   -r requirements.txt
     #   django-prometheus
-pyasn1==0.6.0
+pyasn1==0.6.1
     # via
     #   -r requirements.txt
     #   pyasn1-modules
     #   python-ldap
-pyasn1-modules==0.4.0
+pyasn1-modules==0.4.1
     # via
     #   -r requirements.txt
     #   python-ldap
@@ -239,13 +239,13 @@ pyparsing==3.1.4
     #   -r requirements.txt
     #   httplib2
     #   oslo-utils
-pyproject-api==1.7.1
+pyproject-api==1.8.0
     # via tox
 pyproject-hooks==1.1.0
     # via
     #   build
     #   pip-tools
-pytest==8.3.2
+pytest==8.3.3
     # via
     #   -r requirements-dev.in
     #   pytest-cov
@@ -331,7 +331,7 @@ tomli==2.0.1
     #   pyproject-api
     #   pytest
     #   tox
-tox==4.18.0
+tox==4.20.0
     # via -r requirements-dev.in
 typing-extensions==4.12.2
     # via
@@ -348,7 +348,7 @@ urllib3==1.26.20
     #   -r requirements.txt
     #   botocore
     #   requests
-virtualenv==20.26.3
+virtualenv==20.26.5
     # via tox
 wheel==0.44.0
     # via pip-tools
@@ -358,7 +358,7 @@ wrapt==1.16.0
     # via
     #   -r requirements.txt
     #   debtcollector
-zipp==3.20.1
+zipp==3.20.2
     # via
     #   -r requirements.txt
     #   importlib-metadata
@@ -375,7 +375,7 @@ zope-interface==7.0.3
 # The following packages are considered to be unsafe in a requirements file:
 pip==24.2
     # via pip-tools
-setuptools==74.1.2
+setuptools==75.1.0
     # via
     #   -r requirements.txt
     #   pip-tools

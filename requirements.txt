@@ -10,9 +10,9 @@ asgiref==3.8.1
     # via django
 bagit==1.8.1
     # via -r requirements.in
-boto3==1.35.12
+boto3==1.35.23
     # via -r requirements.in
-botocore==1.35.12
+botocore==1.35.23
     # via
     #   boto3
     #   s3transfer
@@ -59,15 +59,15 @@ django-tastypie==0.14.7
     # via -r requirements.in
 gevent==24.2.1
     # via -r requirements.in
-greenlet==3.0.3
+greenlet==3.1.0
     # via gevent
 gunicorn==23.0.0
     # via -r requirements.in
 httplib2==0.22.0
     # via sword2
-idna==3.8
+idna==3.10
     # via requests
-importlib-resources==6.4.4
+importlib-resources==6.4.5
     # via -r requirements.in
 iso8601==2.1.0
     # via
@@ -93,7 +93,7 @@ metsrw==0.5.1
     # via -r requirements.in
 mozilla-django-oidc==4.0.1
     # via -r requirements.in
-msgpack==1.0.8
+msgpack==1.1.0
     # via oslo-serialization
 mysqlclient==2.2.4
     # via agentarchives
@@ -135,11 +135,11 @@ prometheus-client==0.20.0
     # via
     #   -r requirements.in
     #   django-prometheus
-pyasn1==0.6.0
+pyasn1==0.6.1
     # via
     #   pyasn1-modules
     #   python-ldap
-pyasn1-modules==0.4.0
+pyasn1-modules==0.4.1
     # via python-ldap
 pycparser==2.22
     # via cffi
@@ -214,7 +214,7 @@ whitenoise==6.7.0
     # via -r requirements.in
 wrapt==1.16.0
     # via debtcollector
-zipp==3.20.1
+zipp==3.20.2
     # via importlib-resources
 zope-event==5.0
     # via gevent
@@ -222,7 +222,7 @@ zope-interface==7.0.3
     # via gevent
 
 # The following packages are considered to be unsafe in a requirements file:
-setuptools==74.1.2
+setuptools==75.1.0
     # via
     #   zope-event
     #   zope-interface
