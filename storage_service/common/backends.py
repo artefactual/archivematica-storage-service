@@ -60,11 +60,11 @@ class CustomOIDCBackend(OIDCAuthenticationBackend):
         self.set_user_role(user)
         return user
 
-    def update_user(self, user, user_info):
+    def update_user(self, user: User, user_info: Dict[str, Any]) -> User:
         self.set_user_role(user)
         return user
 
-    def set_user_role(self, user):
+    def set_user_role(self, user: User) -> None:
         # TODO: use user claims accessible via user's authentication tokens.
         role = roles.promoted_role(roles.USER_ROLE_READER)
         user.set_role(role)

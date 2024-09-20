@@ -2,6 +2,7 @@ import pytest
 import pytest_django
 from administration import roles
 from common.backends import CustomOIDCBackend
+from django.contrib.auth.models import User
 
 
 @pytest.fixture
@@ -70,3 +71,27 @@ def test_get_userinfo(settings: pytest_django.fixtures.SettingsWrapper) -> None:
     assert info["email"] == "test@example.com"
     assert info["first_name"] == "Test"
     assert info["last_name"] == "User"
+
+
+@pytest.mark.django_db
+def test_update_user(settings: pytest_django.fixtures.SettingsWrapper) -> None:
+    """The role given to a new user is based on ``DEFAULT_USER_ROLE``.
+
+    In this test, we're ensuring that updating a user promotes it to a new role.
+    """
+
+    user = User.objects.create(
+        first_name="Foo", last_name="Bar", username="foobar", email="foobar@example.com"
+    )
+    # User has been given the DEFAULT_USER_ROLE on creation.
+    assert user.get_role() == roles.USER_ROLE_READER
+    backend = CustomOIDCBackend()
+
+    # Promote the role in the DEFAULT_USER_ROLE setting.
+    settings.DEFAULT_USER_ROLE = roles.USER_ROLE_ADMIN
+
+    backend.update_user(user, {})
+
+    user.refresh_from_db()
+    # User has been promoted to the new role on update.
+    assert user.get_role() == roles.USER_ROLE_ADMIN
