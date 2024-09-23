@@ -583,7 +583,7 @@ class Package(models.Model):
         # Copy recovery files to storage service staging
         source_path = os.path.join(temp_aip.current_location.relative_path, origin_path)
         destination_path = os.path.join(
-            self.current_location.relative_path, os.path.dirname(self.current_path)
+            self.current_location.relative_path, os.path.dirname(self.current_path), ""
         )
 
         origin_space.move_to_storage_service(

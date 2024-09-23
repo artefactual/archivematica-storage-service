@@ -13,10 +13,20 @@ of Archivematica, etc...
 import json
 import os
 import shutil
+import tarfile
 import uuid
 from pathlib import Path
+from typing import Dict
+from typing import List
+from typing import Tuple
+from typing import Union
 
 import pytest
+from common import utils
+from django.http import HttpResponse
+from django.test import Client as TestClient
+from django.urls import reverse
+from locations.models import Event
 from locations.models import Location
 from locations.models import Package
 from locations.models import Space
@@ -25,6 +35,29 @@ from metsrw.plugins import premisrw
 if "RUN_INTEGRATION_TESTS" not in os.environ:
     pytest.skip("Skipping integration tests", allow_module_level=True)
 
+TagName = str
+Attribute = str
+Value = str
+Element = Tuple[Attribute, Value]
+
+PremisAgent = Tuple[
+    TagName,
+    Dict[str, str],
+    Tuple[TagName, Element, Element],
+    Element,
+    Element,
+]
+
+PremisEvent = Tuple[
+    TagName,
+    Dict[str, str],
+    Tuple[TagName, Element, Element],
+    Element,
+    Element,
+    Element,
+    Tuple[TagName, Tuple[TagName, Element]],
+    Tuple[TagName, Element, Element],
+]
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -39,61 +72,100 @@ UNCOMPRESSED_PACKAGE = (
 class Client:
     """Slim API client."""
 
-    def __init__(self, admin_client):
+    def __init__(self, admin_client: TestClient) -> None:
         self.admin_client = admin_client
 
-    def add_space(self, data):
+    def add_space(self, data: Dict[str, Union[str, bool]]) -> HttpResponse:
         return self.admin_client.post(
             "/api/v2/space/", json.dumps(data), content_type="application/json"
         )
 
-    def add_pipeline(self, data):
+    def add_pipeline(self, data: Dict[str, Union[str, bool]]) -> HttpResponse:
         return self.admin_client.post(
             "/api/v2/pipeline/", json.dumps(data), content_type="application/json"
         )
 
-    def get_pipelines(self, data):
+    def get_pipelines(self, data: Dict[str, str]) -> HttpResponse:
         return self.admin_client.get("/api/v2/pipeline/", data)
 
-    def add_location(self, data):
+    def add_location(self, data: Dict[str, Union[str, List[str]]]) -> HttpResponse:
         return self.admin_client.post(
             "/api/v2/location/", json.dumps(data), content_type="application/json"
         )
 
-    def set_location(self, location_id, data):
+    def set_location(
+        self, location_id: uuid.UUID, data: Dict[str, str]
+    ) -> HttpResponse:
         return self.admin_client.post(
             f"/api/v2/location/{location_id}/",
             json.dumps(data),
             content_type="application/json",
         )
 
-    def get_locations(self, data):
+    def get_locations(self, data: Dict[str, str]) -> HttpResponse:
         return self.admin_client.get("/api/v2/location/", data)
 
-    def add_file(self, file_id, data):
+    def add_file(
+        self,
+        file_id: uuid.UUID,
+        data: Dict[str, Union[str, int, List[PremisEvent], List[PremisAgent]]],
+    ) -> HttpResponse:
         return self.admin_client.put(
             f"/api/v2/file/{file_id}/",
             json.dumps(data),
             content_type="application/json",
         )
 
-    def get_files(self):
+    def get_files(self) -> HttpResponse:
         return self.admin_client.get("/api/v2/file/")
 
-    def get_pointer_file(self, file_id):
+    def get_pointer_file(self, file_id: uuid.UUID) -> HttpResponse:
         return self.admin_client.get(f"/api/v2/file/{file_id}/pointer_file/")
 
-    def check_fixity(self, file_id):
+    def check_fixity(self, file_id: uuid.UUID) -> HttpResponse:
         return self.admin_client.get(f"/api/v2/file/{file_id}/check_fixity/")
 
+    def request_aip_recovery(
+        self, file_id: uuid.UUID, data: Dict[str, Union[str, int]]
+    ) -> HttpResponse:
+        return self.admin_client.post(
+            f"/api/v2/file/{file_id}/recover_aip/",
+            json.dumps(data),
+            content_type="application/json",
+        )
 
-@pytest.fixture()
-def client(admin_client, scope="session"):
+    def approve_aip_recovery_request(self, event_id: int) -> HttpResponse:
+        # Not possible via API.
+        return self.admin_client.post(
+            reverse("locations:aip_recover_request"),
+            {"approve": "Approve", f"{event_id}-status_reason": "Approved!"},
+            follow=True,
+        )
+
+    def download_file(self, file_id: uuid.UUID) -> HttpResponse:
+        return self.admin_client.get(f"/api/v2/file/{file_id}/download/")
+
+
+@pytest.fixture(scope="session")
+def client(admin_client: TestClient) -> Client:
     return Client(admin_client)
 
 
-@pytest.fixture()
-def startup(scope="function"):
+@pytest.fixture
+def working_directory_path(tmp_path: Path) -> Path:
+    result = tmp_path / "work"
+    result.mkdir()
+
+    # Similar to the internalDirs created in the Dockerfile.
+    (result / "home" / "archivematica").mkdir(parents=True)
+    (result / "var" / "archivematica" / "storage_service").mkdir(parents=True)
+    (result / "var" / "archivematica" / "sharedDirectory").mkdir(parents=True)
+
+    return result
+
+
+@pytest.fixture(scope="function")
+def startup(working_directory_path: Path) -> None:
     """Create default space and its locations.
 
     Storage Service provisions a default space and a number of locations when
@@ -113,10 +185,10 @@ def startup(scope="function"):
     """
     from common.startup import startup
 
-    startup()  # TODO: get rid of this!
+    startup(working_directory_path)  # TODO: get rid of this!
 
 
-def get_size(path):
+def get_size(path: Path) -> int:
     if path.is_file():
         return path.stat().st_size
     size = 0
@@ -133,7 +205,7 @@ class StorageScenario:
     PIPELINE_UUID = uuid.UUID("00000b87-1655-4b7e-bbf8-344b317da334")
     PACKAGE_UUID = uuid.UUID("5658e603-277b-4292-9b58-20bf261c8f88")
 
-    SPACES = {
+    SPACES: Dict[str, Dict[str, Union[str, bool]]] = {
         Space.S3: {
             "access_protocol": Space.S3,
             "path": "",
@@ -162,27 +234,32 @@ class StorageScenario:
         },
     }
 
-    def __init__(self, src, dst, pkg, compressed):
+    def __init__(self, src: str, dst: str, pkg: Path, compressed: bool) -> None:
         self.src = src
         self.dst = dst
         self.pkg = pkg
+        self.pkg_name = (
+            f"foobar-{self.PACKAGE_UUID}{''.join(pkg.suffixes) if compressed else ''}"
+        )
         self.compressed = compressed
-        self.client = None
 
-    def init(self, admin_client):
+    def init(self, admin_client: TestClient, working_directory_path: Path) -> None:
         self.client = Client(admin_client)
+        self.shared_directory_path = (
+            working_directory_path / "var" / "archivematica" / "sharedDirectory"
+        )
         self.register_pipeline()
         self.register_aip_storage_location()
         self.register_aip_storage_replicator()
-        self.copy_fixture()
+        self.copy_fixture(self.shared_directory_path)
 
-    def register_pipeline(self):
+    def register_pipeline(self) -> None:
         resp = self.client.add_pipeline(
             {
                 "uuid": str(self.PIPELINE_UUID),
                 "description": "Beefy pipeline",
                 "create_default_locations": True,
-                "shared_path": "/var/archivematica/sharedDirectory",
+                "shared_path": str(self.shared_directory_path),
                 "remote_name": "http://127.0.0.1:65534",
                 "api_username": "test",
                 "api_key": "test",
@@ -190,11 +267,26 @@ class StorageScenario:
         )
         assert resp.status_code == 201
 
-    def register_aip_storage_location(self):
+    def _adjust_space_data(
+        self, data: Dict[str, Union[str, bool]]
+    ) -> Dict[str, Union[str, bool]]:
+        for attr in ["path", "staging_path"]:
+            if (
+                (value := data.get(attr) is not None)
+                and isinstance(value, str)
+                and value.startswith("/var/archivematica/sharedDirectory")
+            ):
+                data[attr] = value.replace(
+                    "/var/archivematica/sharedDirectory",
+                    str(self.shared_directory_path),
+                )
+        return data
+
+    def register_aip_storage_location(self) -> None:
         """Register AIP Storage location."""
 
         # Add space.
-        resp = self.client.add_space(self.SPACES[self.src])
+        resp = self.client.add_space(self._adjust_space_data(self.SPACES[self.src]))
         assert resp.status_code == 201
         space = json.loads(resp.content)
 
@@ -210,7 +302,7 @@ class StorageScenario:
         )
         assert resp.status_code == 201
 
-    def get_compression_event(self):
+    def get_compression_event(self) -> PremisEvent:
         return (
             "event",
             premisrw.PREMIS_META,
@@ -247,7 +339,7 @@ class StorageScenario:
             ),
         )
 
-    def get_agent(self):
+    def get_agent(self) -> PremisAgent:
         return (
             "agent",
             premisrw.PREMIS_3_0_META,
@@ -260,11 +352,11 @@ class StorageScenario:
             ("agent_type", "foobar"),
         )
 
-    def register_aip_storage_replicator(self):
+    def register_aip_storage_replicator(self) -> None:
         """Register AIP Storage replicator."""
 
         # 1. Add space.
-        resp = self.client.add_space(self.SPACES[self.dst])
+        resp = self.client.add_space(self._adjust_space_data(self.SPACES[self.dst]))
         assert resp.status_code == 201
         space = json.loads(resp.content)
 
@@ -293,18 +385,17 @@ class StorageScenario:
             Location.objects.get(uuid=as_location.uuid).replicators.all().count() == 1
         )
 
-    def copy_fixture(self):
-        cp_location_path = Path("/var/archivematica/sharedDirectory")
+    def copy_fixture(self, target_path: Path) -> None:
+        dst = target_path / self.pkg_name
         if self.pkg.is_dir():
-            dst = cp_location_path / self.pkg.name
             if not dst.exists():
-                shutil.copytree(str(FIXTURES_DIR / self.pkg), str(dst))
+                shutil.copytree(FIXTURES_DIR / self.pkg, dst)
             assert dst.is_dir()
         else:
-            shutil.copy(str(FIXTURES_DIR / self.pkg), str(cp_location_path))
-            assert (cp_location_path / self.pkg).is_file()
+            shutil.copy(FIXTURES_DIR / self.pkg, dst)
+            assert dst.is_file()
 
-    def store_aip(self):
+    def store_aip(self) -> None:
         resp = self.client.get_locations(
             {
                 "pipeline_uuid": str(self.PIPELINE_UUID),
@@ -323,9 +414,9 @@ class StorageScenario:
             {
                 "uuid": str(self.PACKAGE_UUID),
                 "origin_location": cp_location["resource_uri"],
-                "origin_path": self.pkg.name,
+                "origin_path": self.pkg_name,
                 "current_location": as_location["resource_uri"],
-                "current_path": self.pkg.name,
+                "current_path": self.pkg_name,
                 "size": get_size(self.pkg),
                 "package_type": Package.AIP,
                 "aip_subtype": "Archival Information Package",
@@ -338,17 +429,17 @@ class StorageScenario:
 
         aip = json.loads(resp.content)
         aip_id = self.PACKAGE_UUID.hex
-        aip_path = (
+        aip_path_parts = (
             [as_location["path"]]
             + [aip_id[i : i + 4] for i in range(0, len(aip_id), 4)]
-            + [self.pkg.name]
+            + [self.pkg_name]
         )
-        aip_path = Path(*aip_path)
+        aip_path = Path(*aip_path_parts)
         assert aip["uuid"] == str(self.PACKAGE_UUID)
         assert aip["current_full_path"] == str(aip_path)
         assert get_size(aip_path) > 1
 
-    def assert_stored(self):
+    def assert_stored(self) -> None:
         # We have two packages, the original and a replica.
         resp = self.client.get_files()
         files = json.loads(resp.content)
@@ -428,7 +519,219 @@ class StorageScenario:
     ],
 )
 @pytest.mark.django_db
-def test_main(startup, storage_scenario, admin_client):
-    storage_scenario.init(admin_client)
+def test_main(
+    startup: None,
+    storage_scenario: StorageScenario,
+    admin_client: TestClient,
+    working_directory_path: Path,
+) -> None:
+    storage_scenario.init(admin_client, working_directory_path)
     storage_scenario.store_aip()
     storage_scenario.assert_stored()
+
+
+class AIPRecoveryScenario(StorageScenario):
+    def corrupt_package(self) -> None:
+        # This will not work with remote spaces (S3, RClone, etc).
+        package = Package.objects.get(uuid=self.PACKAGE_UUID)
+        package_path = Path(package.full_path)
+        if self.compressed:
+            package_path.unlink()
+            package_path.touch()
+        else:
+            # The tagmanifest files are used in utils.generate_checksum.
+            for p in package_path.glob("**/tagmanifest*.txt"):
+                p.unlink()
+                p.touch()
+        package.save()
+
+        resp = self.client.check_fixity(self.PACKAGE_UUID)
+        assert resp.status_code == 200
+        assert not json.loads(resp.content)["success"]
+
+    def copy_fixture_to_aip_recovery_location(self) -> None:
+        resp = self.client.get_locations(
+            {"pipeline_uuid": str(self.PIPELINE_UUID), "purpose": Location.AIP_RECOVERY}
+        )
+        aip_recovery_location_path = Path(
+            json.loads(resp.content)["objects"][0]["path"]
+        )
+
+        # Clear recovery location.
+        shutil.rmtree(aip_recovery_location_path)
+        aip_recovery_location_path.mkdir()
+
+        self.copy_fixture(aip_recovery_location_path)
+
+    def request_aip_recovery(self, data: Dict[str, Union[str, int]]) -> HttpResponse:
+        return self.client.request_aip_recovery(self.PACKAGE_UUID, data)
+
+    def approve_aip_recovery_request(self, event_id: int) -> HttpResponse:
+        return self.client.approve_aip_recovery_request(event_id)
+
+    def recover_aip(self) -> None:
+        data: Dict[str, Union[str, int]] = {
+            "event_reason": "Delete please!",
+            "pipeline": str(self.PIPELINE_UUID),
+            "user_id": 1,
+            "user_email": "user@example.com",
+        }
+        resp = self.request_aip_recovery(data)
+        assert resp.status_code == 202
+
+        assert Event.objects.count() == 1
+
+        event = Event.objects.get(
+            package=Package.objects.get(uuid=self.PACKAGE_UUID),
+            event_type=Event.RECOVER,
+            status=Event.SUBMITTED,
+            event_reason=data["event_reason"],
+            pipeline_id=data["pipeline"],
+            user_id=data["user_id"],
+            user_email=data["user_email"],
+        )
+
+        # Approve the recovery request.
+        resp = self.approve_aip_recovery_request(event.id)
+        assert resp.status_code == 200
+
+        assert "Request approved: AIP restored." in resp.content.decode()
+
+        assert Event.objects.count() == 1
+        assert (
+            Event.objects.filter(
+                package=Package.objects.get(uuid=self.PACKAGE_UUID),
+                event_type=Event.RECOVER,
+                status=Event.APPROVED,
+                event_reason=data["event_reason"],
+                pipeline_id=data["pipeline"],
+                user_id=data["user_id"],
+                user_email=data["user_email"],
+            ).count()
+            == 1
+        )
+
+        resp = self.client.check_fixity(self.PACKAGE_UUID)
+        assert resp.status_code == 200
+        assert json.loads(resp.content)["success"]
+
+    def assert_recovered(self, tmp_path: Path) -> None:
+        download_path = tmp_path / "download"
+
+        resp = self.client.download_file(self.PACKAGE_UUID)
+
+        download_path.write_bytes(b"".join(resp.streaming_content))
+
+        # Compare the downloaded package against the original fixtures.
+        if self.compressed:
+            assert (
+                utils.generate_checksum(download_path).hexdigest()
+                == utils.generate_checksum(self.pkg).hexdigest()
+            )
+        else:
+            assert tarfile.is_tarfile(download_path)
+            extracted_path = tmp_path / "extracted"
+            tarfile.TarFile(download_path).extractall(extracted_path)
+            assert (
+                utils.generate_checksum(extracted_path / self.pkg_name).hexdigest()
+                == utils.generate_checksum(self.pkg).hexdigest()
+            )
+
+
+@pytest.mark.parametrize(
+    "scenario,corrupt_package",
+    [
+        (
+            AIPRecoveryScenario(
+                src=Space.NFS, dst=Space.NFS, pkg=COMPRESSED_PACKAGE, compressed=True
+            ),
+            False,
+        ),
+        (
+            AIPRecoveryScenario(
+                src=Space.NFS, dst=Space.NFS, pkg=COMPRESSED_PACKAGE, compressed=True
+            ),
+            True,
+        ),
+        (
+            AIPRecoveryScenario(
+                src=Space.NFS, dst=Space.NFS, pkg=UNCOMPRESSED_PACKAGE, compressed=False
+            ),
+            False,
+        ),
+        (
+            AIPRecoveryScenario(
+                src=Space.NFS, dst=Space.NFS, pkg=UNCOMPRESSED_PACKAGE, compressed=False
+            ),
+            True,
+        ),
+    ],
+    ids=[
+        "compressed_original",
+        "compressed_corrupted",
+        "uncompressed_original",
+        "uncompressed_corrupted",
+    ],
+)
+@pytest.mark.django_db
+def test_aip_recovery(
+    startup: None,
+    scenario: AIPRecoveryScenario,
+    corrupt_package: bool,
+    admin_client: TestClient,
+    working_directory_path: Path,
+    tmp_path: Path,
+) -> None:
+    scenario.init(admin_client, working_directory_path)
+    scenario.store_aip()
+    scenario.assert_stored()
+    if corrupt_package:
+        scenario.corrupt_package()
+    scenario.copy_fixture_to_aip_recovery_location()
+    scenario.recover_aip()
+    scenario.assert_recovered(tmp_path)
+
+
+@pytest.mark.django_db
+def test_aip_recovery_handles_recovery_copy_setup_error(
+    startup: None,
+    admin_client: TestClient,
+    working_directory_path: Path,
+) -> None:
+    # This represents an scenario where the user does not place the recovery
+    # copy in the recovery location directory, creates the recovery request
+    # and approves it.
+    scenario = AIPRecoveryScenario(
+        src=Space.NFS, dst=Space.NFS, pkg=COMPRESSED_PACKAGE, compressed=True
+    )
+    scenario.init(admin_client, working_directory_path)
+    scenario.store_aip()
+    scenario.assert_stored()
+    scenario.corrupt_package()
+
+    data: Dict[str, Union[str, int]] = {
+        "event_reason": "Delete please!",
+        "pipeline": str(scenario.PIPELINE_UUID),
+        "user_id": 1,
+        "user_email": "user@example.com",
+    }
+    resp = scenario.request_aip_recovery(data)
+    assert resp.status_code == 202
+
+    assert Event.objects.count() == 1
+    event = Event.objects.get(
+        package=Package.objects.get(uuid=scenario.PACKAGE_UUID),
+        event_type=Event.RECOVER,
+        status=Event.SUBMITTED,
+        event_reason=data["event_reason"],
+        pipeline_id=data["pipeline"],
+        user_id=data["user_id"],
+        user_email=data["user_email"],
+    )
+
+    resp = scenario.approve_aip_recovery_request(event.id)
+    assert resp.status_code == 200
+
+    content = resp.content.decode()
+    assert "AIP restore failed: error accessing restore files" in content
+    assert "Please contact an administrator or see logs for details" in content

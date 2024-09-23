@@ -1500,7 +1500,7 @@ class PackageResource(ModelResource):
 
             package_dir = os.path.join(tmpdir, basedir)
         else:
-            package_dir = package.full_path()
+            package_dir = package.full_path
             tmpdir = None
 
         safe_files = ("bag-info.txt", "manifest-sha512.txt", "bagit.txt")
