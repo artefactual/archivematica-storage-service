@@ -565,13 +565,65 @@ CSRF_TRUSTED_ORIGINS = (
 
 USE_X_FORWARDED_HOST = is_true(environ.get("USE_X_FORWARDED_HOST", ""))
 
+######### OIDC CONFIGURATION #########
 OIDC_AUTHENTICATION = is_true(environ.get("SS_OIDC_AUTHENTICATION", ""))
 if OIDC_AUTHENTICATION:
+
+    def get_oidc_secondary_providers(oidc_secondary_provider_names):
+        providers = {}
+
+        for provider_name in oidc_secondary_provider_names:
+            provider_name = provider_name.strip()
+            client_id = environ.get(f"OIDC_RP_CLIENT_ID_{provider_name.upper()}")
+            client_secret = environ.get(
+                f"OIDC_RP_CLIENT_SECRET_{provider_name.upper()}"
+            )
+            authorization_endpoint = environ.get(
+                f"OIDC_OP_AUTHORIZATION_ENDPOINT_{provider_name.upper()}", ""
+            )
+            token_endpoint = environ.get(
+                f"OIDC_OP_TOKEN_ENDPOINT_{provider_name.upper()}", ""
+            )
+            user_endpoint = environ.get(
+                f"OIDC_OP_USER_ENDPOINT_{provider_name.upper()}", ""
+            )
+            jwks_endpoint = environ.get(
+                f"OIDC_OP_JWKS_ENDPOINT_{provider_name.upper()}", ""
+            )
+            logout_endpoint = environ.get(
+                f"OIDC_OP_LOGOUT_ENDPOINT_{provider_name.upper()}", ""
+            )
+
+            if client_id and client_secret:
+                providers[provider_name] = {
+                    "OIDC_RP_CLIENT_ID": client_id,
+                    "OIDC_RP_CLIENT_SECRET": client_secret,
+                    "OIDC_OP_AUTHORIZATION_ENDPOINT": authorization_endpoint,
+                    "OIDC_OP_TOKEN_ENDPOINT": token_endpoint,
+                    "OIDC_OP_USER_ENDPOINT": user_endpoint,
+                    "OIDC_OP_JWKS_ENDPOINT": jwks_endpoint,
+                    "OIDC_OP_LOGOUT_ENDPOINT": logout_endpoint,
+                }
+
+        return providers
+
     ALLOW_USER_EDITS = False
+    INSTALLED_APPS += ["mozilla_django_oidc"]
+
+    OIDC_STORE_ID_TOKEN = True
+    OIDC_AUTHENTICATE_CLASS = (
+        "storage_service.views.CustomOIDCAuthenticationRequestView"
+    )
+    OIDC_CALLBACK_CLASS = "storage_service.views.CustomOIDCAuthenticationCallbackView"
 
     AUTHENTICATION_BACKENDS += ["common.backends.CustomOIDCBackend"]
     LOGIN_EXEMPT_URLS.append(r"^oidc")
-    INSTALLED_APPS += ["mozilla_django_oidc"]
+
+    # Insert OIDC before the redirect to LOGIN_URL
+    MIDDLEWARE.insert(
+        MIDDLEWARE.index("django.contrib.auth.middleware.AuthenticationMiddleware") + 1,
+        "common.middleware.OidcCaptureQueryParamMiddleware",
+    )
 
     # AUTH_SERVER = 'https://login.microsoftonline.com/common/v2.0/'
     OIDC_RP_CLIENT_ID = environ.get("OIDC_RP_CLIENT_ID", "")
@@ -581,6 +633,7 @@ if OIDC_AUTHENTICATION:
     OIDC_OP_TOKEN_ENDPOINT = ""
     OIDC_OP_USER_ENDPOINT = ""
     OIDC_OP_JWKS_ENDPOINT = ""
+    OIDC_OP_LOGOUT_ENDPOINT = ""
 
     AZURE_TENANT_ID = environ.get("AZURE_TENANT_ID", "")
     if AZURE_TENANT_ID:
@@ -604,6 +657,18 @@ if OIDC_AUTHENTICATION:
         OIDC_OP_TOKEN_ENDPOINT = environ.get("OIDC_OP_TOKEN_ENDPOINT", "")
         OIDC_OP_USER_ENDPOINT = environ.get("OIDC_OP_USER_ENDPOINT", "")
         OIDC_OP_JWKS_ENDPOINT = environ.get("OIDC_OP_JWKS_ENDPOINT", "")
+        OIDC_OP_LOGOUT_ENDPOINT = environ.get("OIDC_OP_LOGOUT_ENDPOINT", "")
+
+    OIDC_SECONDARY_PROVIDER_NAMES = environ.get(
+        "OIDC_SECONDARY_PROVIDER_NAMES", ""
+    ).split(",")
+    OIDC_PROVIDER_QUERY_PARAM_NAME = environ.get(
+        "OIDC_PROVIDER_QUERY_PARAM_NAME", "secondary"
+    )
+    OIDC_PROVIDERS = get_oidc_secondary_providers(OIDC_SECONDARY_PROVIDER_NAMES)
+
+    if OIDC_OP_LOGOUT_ENDPOINT:
+        OIDC_OP_LOGOUT_URL_METHOD = "storage_service.views.get_oidc_logout_url"
 
     OIDC_RP_SIGN_ALGO = environ.get("OIDC_RP_SIGN_ALGO", "HS256")
 
@@ -618,6 +683,8 @@ if OIDC_AUTHENTICATION:
 
     # map attributes from id token
     OIDC_ID_ATTRIBUTE_MAP = {"email": "email"}
+
+######### END OIDC CONFIGURATION #########
 
 # WARNING: if Gunicorn is being used to serve the Storage Service and its
 # worker class is set to `gevent`, then BagIt validation must use 1 process.
