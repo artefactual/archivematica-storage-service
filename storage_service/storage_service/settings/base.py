@@ -625,6 +625,13 @@ if OIDC_AUTHENTICATION:
         "common.middleware.OidcCaptureQueryParamMiddleware",
     )
 
+    OIDC_ALLOW_LOCAL_AUTHENTICATION = environ.get(
+        "SS_OIDC_ALLOW_LOCAL_AUTHENTICATION", True
+    )
+
+    if not OIDC_ALLOW_LOCAL_AUTHENTICATION:
+        LOGIN_URL = "oidc_authentication_init"
+
     # AUTH_SERVER = 'https://login.microsoftonline.com/common/v2.0/'
     OIDC_RP_CLIENT_ID = environ.get("OIDC_RP_CLIENT_ID", "")
     OIDC_RP_CLIENT_SECRET = environ.get("OIDC_RP_CLIENT_SECRET", "")

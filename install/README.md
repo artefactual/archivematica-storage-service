@@ -538,6 +538,11 @@ If `SS_OIDC_AUTHENTICATION` is false, none of the other ones are used.
   - **Type:** `boolean`
   - **Default:** `false`
 
+- **`SS_OIDC_ALLOW_LOCAL_AUTHENTICATION`**:
+  - **Description:** Allows local authentication and authentication via OIDC.
+  - **Type:** `boolean`
+  - **Default:** `true`
+
 - **`OIDC_RP_CLIENT_ID`**:
   - **Description:** OIDC client ID
   - **Type:** `string`
