@@ -121,12 +121,14 @@ RUN set -ex \
 USER archivematica
 
 COPY --chown=${USER_ID}:${GROUP_ID} --from=pyenv-builder --link ${PYENV_DIR} ${PYENV_DIR}
-COPY --link ./install/storage-service.gunicorn-config.py /etc/archivematica/storage-service.gunicorn-config.py
-COPY --chown=${USER_ID}:${GROUP_ID} --link . /src/
+COPY --chown=${USER_ID}:${GROUP_ID} --link ./install/storage-service.gunicorn-config.py /etc/archivematica/storage-service.gunicorn-config.py
 
 # -----------------------------------------------------------------------------
 
 FROM base AS archivematica-storage-service
+
+ARG USER_ID=1000
+ARG GROUP_ID=1000
 
 WORKDIR /src/storage_service
 
@@ -138,6 +140,8 @@ ENV SS_GUNICORN_ACCESSLOG=-
 ENV SS_GUNICORN_ERRORLOG=-
 ENV FORWARDED_ALLOW_IPS=*
 
+COPY --chown=${USER_ID}:${GROUP_ID} --link . /src/
+
 RUN set -ex \
 	&& export SS_DB_URL=mysql://ne:ver@min/d \
 	&& pyenv exec python3 ./manage.py collectstatic --noinput --clear \
@@ -148,3 +152,30 @@ ENV DJANGO_SETTINGS_MODULE=storage_service.settings.production
 EXPOSE 8000
 
 ENTRYPOINT ["pyenv", "exec", "python3", "-m", "gunicorn", "--config=/etc/archivematica/storage-service.gunicorn-config.py", "storage_service.wsgi:application"]
+
+# -----------------------------------------------------------------------------
+
+FROM base AS archivematica-storage-service-tests
+
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+
+USER root
+
+RUN set -ex \
+	&& python3 -m playwright install-deps firefox \
+	&& mkdir -p /var/archivematica/.cache/ms-playwright \
+	&& chown -R archivematica:archivematica /var/archivematica/
+
+USER archivematica
+
+RUN set -ex \
+	&& python3 -m playwright install firefox
+
+ENV PYTHONPATH=/src/storage_service
+
+COPY --chown=${USER_ID}:${GROUP_ID} --link . /src/
+
+# -----------------------------------------------------------------------------
+
+FROM ${TARGET}

@@ -10,9 +10,9 @@ asgiref==3.8.1
     # via django
 bagit==1.8.1
     # via -r requirements.in
-boto3==1.35.23
+boto3==1.35.29
     # via -r requirements.in
-botocore==1.35.23
+botocore==1.35.29
     # via
     #   boto3
     #   s3transfer
@@ -59,7 +59,7 @@ django-tastypie==0.14.7
     # via -r requirements.in
 gevent==24.2.1
     # via -r requirements.in
-greenlet==3.1.0
+greenlet==3.1.1
     # via gevent
 gunicorn==23.0.0
     # via -r requirements.in
@@ -131,7 +131,7 @@ pbr==6.1.0
     #   oslo-serialization
     #   python-keystoneclient
     #   stevedore
-prometheus-client==0.20.0
+prometheus-client==0.21.0
     # via
     #   -r requirements.in
     #   django-prometheus
@@ -155,7 +155,7 @@ python-dateutil==2.9.0.post0
     # via
     #   botocore
     #   django-tastypie
-python-gnupg==0.5.2
+python-gnupg==0.5.3
     # via -r requirements.in
 python-keystoneclient==5.5.0
     # via -r requirements.in
@@ -202,7 +202,7 @@ typing-extensions==4.12.2
     # via
     #   asgiref
     #   dj-database-url
-tzdata==2024.1
+tzdata==2024.2
     # via
     #   oslo-serialization
     #   oslo-utils

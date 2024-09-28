@@ -8,16 +8,20 @@ services:
       context: "../../"
       dockerfile: "Dockerfile"
       args:
+        TARGET: "archivematica-storage-service-tests"
         USER_ID: ${USER_ID:-1000}
         GROUP_ID: ${GROUP_ID:-1000}
         UBUNTU_VERSION: ${UBUNTU_VERSION:-22.04}
         PYTHON_VERSION: ${PYTHON_VERSION:-3.9}
     entrypoint: ""
     working_dir: "/src"
-    command: ["pytest"]
+    command: ["pytest", "--browser", "firefox"]
+    hostname: "archivematica-storage-service"
     environment:
       PYTEST_ADDOPTS: ${PYTEST_ADDOPTS:-}
       RUN_INTEGRATION_TESTS: "true"
+      DJANGO_LIVE_TEST_SERVER_ADDRESS: "archivematica-storage-service:8000"
+      DJANGO_ALLOW_ASYNC_UNSAFE: true
       FORWARDED_ALLOW_IPS: "*"
       SS_GUNICORN_ACCESSLOG: "/dev/null"
       DJANGO_SETTINGS_MODULE: "storage_service.settings.testmysql"
@@ -28,6 +32,15 @@ services:
       RCLONE_CONFIG_MYS3_ACCESS_KEY_ID: "minio"
       RCLONE_CONFIG_MYS3_SECRET_ACCESS_KEY: "minio123"
       RCLONE_CONFIG_MYS3_REGION: "planet-earth"
+      SS_OIDC_AUTHENTICATION: "true"
+      OIDC_RP_CLIENT_ID: "am-storage-service"
+      OIDC_RP_CLIENT_SECRET: "example-secret"
+      OIDC_OP_AUTHORIZATION_ENDPOINT: "http://keycloak:8080/realms/demo/protocol/openid-connect/auth"
+      OIDC_OP_TOKEN_ENDPOINT: "http://keycloak:8080/realms/demo/protocol/openid-connect/token"
+      OIDC_OP_USER_ENDPOINT: "http://keycloak:8080/realms/demo/protocol/openid-connect/userinfo"
+      OIDC_OP_JWKS_ENDPOINT: "http://keycloak:8080/realms/demo/protocol/openid-connect/certs"
+      OIDC_OP_LOGOUT_ENDPOINT: "http://keycloak:8080/realms/demo/protocol/openid-connect/logout"
+      OIDC_RP_SIGN_ALGO: "RS256"
     volumes:
       - "../../:/src"
     depends_on:
@@ -36,6 +49,7 @@ services:
     links:
       - "minio"
       - "mysql"
+      - "keycloak"
 
   minio:
     image: "minio/minio:RELEASE.2024-01-31T20-20-33Z"
@@ -62,3 +76,17 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+
+  keycloak:
+    image: "quay.io/keycloak/keycloak:latest"
+    command: ["start-dev", "--import-realm"]
+    restart: "unless-stopped"
+    environment:
+      KEYCLOAK_ADMIN: "admin"
+      KEYCLOAK_ADMIN_PASSWORD: "admin"
+      KC_METRICS_ENABLED: true
+      KC_LOG_LEVEL: "INFO"
+    ports:
+      - 8080:8080
+    volumes:
+      - "./etc/keycloak/realm.json:/opt/keycloak/data/import/realm.json:ro"
