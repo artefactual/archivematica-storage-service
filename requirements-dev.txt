@@ -12,9 +12,9 @@ asgiref==3.8.1
     #   django
 bagit==1.8.1
     # via -r requirements.txt
-boto3==1.35.23
+boto3==1.35.29
     # via -r requirements.txt
-botocore==1.35.23
+botocore==1.35.29
     # via
     #   -r requirements.txt
     #   boto3
@@ -92,10 +92,11 @@ filelock==3.16.1
     #   virtualenv
 gevent==24.2.1
     # via -r requirements.txt
-greenlet==3.1.0
+greenlet==3.1.1
     # via
     #   -r requirements.txt
     #   gevent
+    #   playwright
 gunicorn==23.0.0
     # via -r requirements.txt
 httplib2==0.22.0
@@ -209,11 +210,15 @@ platformdirs==4.3.6
     # via
     #   tox
     #   virtualenv
+playwright @ git+https://github.com/microsoft/playwright-python.git@d9cdfbb1e178b6770625e9f857139aff77516af0
+    # via
+    #   -r requirements-dev.in
+    #   pytest-playwright
 pluggy==1.5.0
     # via
     #   pytest
     #   tox
-prometheus-client==0.20.0
+prometheus-client==0.21.0
     # via
     #   -r requirements.txt
     #   django-prometheus
@@ -230,6 +235,8 @@ pycparser==2.22
     # via
     #   -r requirements.txt
     #   cffi
+pyee==12.0.0
+    # via playwright
 pyopenssl==24.2.1
     # via
     #   -r requirements.txt
@@ -248,15 +255,21 @@ pyproject-hooks==1.1.0
 pytest==8.3.3
     # via
     #   -r requirements-dev.in
+    #   pytest-base-url
     #   pytest-cov
     #   pytest-django
     #   pytest-mock
+    #   pytest-playwright
     #   pytest-randomly
+pytest-base-url==2.1.0
+    # via pytest-playwright
 pytest-cov==5.0.0
     # via -r requirements-dev.in
 pytest-django==4.9.0
     # via -r requirements-dev.in
 pytest-mock==3.14.0
+    # via -r requirements-dev.in
+pytest-playwright==0.5.2
     # via -r requirements-dev.in
 pytest-randomly==3.15.0
     # via -r requirements-dev.in
@@ -269,7 +282,7 @@ python-dateutil==2.9.0.post0
     #   -r requirements.txt
     #   botocore
     #   django-tastypie
-python-gnupg==0.5.2
+python-gnupg==0.5.3
     # via -r requirements.txt
 python-keystoneclient==5.5.0
     # via -r requirements.txt
@@ -281,6 +294,8 @@ python-mimeparse==2.0.0
     # via
     #   -r requirements.txt
     #   django-tastypie
+python-slugify==8.0.4
+    # via pytest-playwright
 python-swiftclient==4.6.0
     # via -r requirements.txt
 pyyaml==6.0.2
@@ -295,6 +310,7 @@ requests==2.32.3
     #   keystoneauth1
     #   mozilla-django-oidc
     #   oslo-config
+    #   pytest-base-url
     #   python-cas
     #   python-keystoneclient
     #   python-swiftclient
@@ -323,6 +339,8 @@ stevedore==5.3.0
     #   python-keystoneclient
 sword2 @ git+https://github.com/artefactual-labs/python-client-sword2.git@619ee44467dcdb2ab75fab16864ea2e4ded7ffe4
     # via -r requirements.txt
+text-unidecode==1.3
+    # via python-slugify
 tomli==2.0.1
     # via
     #   build
@@ -338,7 +356,8 @@ typing-extensions==4.12.2
     #   -r requirements.txt
     #   asgiref
     #   dj-database-url
-tzdata==2024.1
+    #   pyee
+tzdata==2024.2
     # via
     #   -r requirements.txt
     #   oslo-serialization
@@ -348,7 +367,7 @@ urllib3==1.26.20
     #   -r requirements.txt
     #   botocore
     #   requests
-virtualenv==20.26.5
+virtualenv==20.26.6
     # via tox
 wheel==0.44.0
     # via pip-tools
