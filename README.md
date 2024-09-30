@@ -65,7 +65,7 @@ For more projects in the Archivematica ecosystem, see the [getting started] page
 [LICENSE]: LICENSE
 [Production installation]: https://www.archivematica.org/docs/latest/admin-manual/installation-setup/installation/installation/#installation
 [Development installation]: https://github.com/artefactual/archivematica/tree/qa/1.x/hack
-[Wiki]: https://www.archivematica.org/wiki/Development
+[Wiki]: https://wiki.archivematica.org/Development
 [Issues]: https://github.com/archivematica/Issues
 [User Google Group]: https://groups.google.com/forum/#!forum/archivematica
 [Paid support]: https://www.artefactual.com/services/

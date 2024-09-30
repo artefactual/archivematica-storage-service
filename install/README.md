@@ -698,7 +698,7 @@ services.
 [DB_HOST]: https://docs.djangoproject.com/en/1.8/ref/settings/#host
 [#813]: https://github.com/artefactual/archivematica/pull/813
 [USER]: http://docs.gunicorn.org/en/stable/settings.html#user
-[GROUP]: http://docs.gunicorn.org/en/styable/settings.html#group
+[GROUP]: http://docs.gunicorn.org/en/stable/settings.html#group
 [BIND]: http://docs.gunicorn.org/en/stable/settings.html#bind
 [WORKERS]: http://docs.gunicorn.org/en/stable/settings.html#workers
 [WORKER-CLASS]: http://docs.gunicorn.org/en/stable/settings.html#worker-class
