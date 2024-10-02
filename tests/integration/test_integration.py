@@ -185,7 +185,7 @@ def startup(working_directory_path: Path) -> None:
     """
     from common.startup import startup
 
-    startup(working_directory_path)  # TODO: get rid of this!
+    startup(working_directory_path, start_async=False)  # TODO: get rid of this!
 
 
 def get_size(path: Path) -> int:

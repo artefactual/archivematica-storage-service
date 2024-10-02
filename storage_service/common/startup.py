@@ -17,7 +17,9 @@ from common import utils
 LOGGER = logging.getLogger(__name__)
 
 
-def startup(space_path: Optional[pathlib.Path] = None) -> None:
+def startup(
+    space_path: Optional[pathlib.Path] = None, start_async: bool = True
+) -> None:
     if space_path is None:
         space_path = pathlib.Path(os.sep)
 
@@ -29,7 +31,8 @@ def startup(space_path: Optional[pathlib.Path] = None) -> None:
     except PopulateLockError:
         LOGGER.warning("Another worker is initializing the database.")
 
-    start_async_manager()
+    if start_async:
+        start_async_manager()
 
 
 class PopulateLockError(Exception):
