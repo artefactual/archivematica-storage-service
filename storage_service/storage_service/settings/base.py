@@ -625,8 +625,8 @@ if OIDC_AUTHENTICATION:
         "common.middleware.OidcCaptureQueryParamMiddleware",
     )
 
-    OIDC_ALLOW_LOCAL_AUTHENTICATION = environ.get(
-        "SS_OIDC_ALLOW_LOCAL_AUTHENTICATION", True
+    OIDC_ALLOW_LOCAL_AUTHENTICATION = is_true(
+        environ.get("SS_OIDC_ALLOW_LOCAL_AUTHENTICATION", "true")
     )
 
     if not OIDC_ALLOW_LOCAL_AUTHENTICATION:
