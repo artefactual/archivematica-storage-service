@@ -614,7 +614,6 @@ if OIDC_AUTHENTICATION:
     OIDC_AUTHENTICATE_CLASS = (
         "storage_service.views.CustomOIDCAuthenticationRequestView"
     )
-    OIDC_CALLBACK_CLASS = "storage_service.views.CustomOIDCAuthenticationCallbackView"
 
     AUTHENTICATION_BACKENDS += ["common.backends.CustomOIDCBackend"]
     LOGIN_EXEMPT_URLS.append(r"^oidc")
