@@ -631,6 +631,11 @@ if OIDC_AUTHENTICATION:
 
     if not OIDC_ALLOW_LOCAL_AUTHENTICATION:
         LOGIN_URL = "oidc_authentication_init"
+        AUTHENTICATION_BACKENDS = [
+            backend
+            for backend in AUTHENTICATION_BACKENDS
+            if backend != "django.contrib.auth.backends.ModelBackend"
+        ]
 
     # AUTH_SERVER = 'https://login.microsoftonline.com/common/v2.0/'
     OIDC_RP_CLIENT_ID = environ.get("OIDC_RP_CLIENT_ID", "")
