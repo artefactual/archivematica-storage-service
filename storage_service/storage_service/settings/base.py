@@ -630,7 +630,7 @@ if OIDC_AUTHENTICATION:
     )
 
     if not OIDC_ALLOW_LOCAL_AUTHENTICATION:
-        LOGIN_URL = "oidc_authentication_init"
+        LOGIN_URL = "/oidc/authenticate/"
         AUTHENTICATION_BACKENDS = [
             backend
             for backend in AUTHENTICATION_BACKENDS
