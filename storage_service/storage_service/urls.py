@@ -35,7 +35,6 @@ if "django_cas_ng" in settings.INSTALLED_APPS:
     ]
 
 elif "mozilla_django_oidc" in settings.INSTALLED_APPS:
-    # from storage_service.views import CustomOIDCLoginView
     from storage_service.views import CustomOIDCLogoutView
 
     urlpatterns += [
