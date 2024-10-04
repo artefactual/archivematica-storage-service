@@ -106,3 +106,23 @@ class ForceDefaultLanguageMiddleware(MiddlewareMixin):
     def process_request(self, request):
         if "accept-language" in request.headers:
             del request.META["HTTP_ACCEPT_LANGUAGE"]
+
+
+class OidcCaptureQueryParamMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if not request.user.is_authenticated:
+            # Capture query parameter value and store it in the session.
+            provider_name = request.GET.get(
+                settings.OIDC_PROVIDER_QUERY_PARAM_NAME, ""
+            ).upper()
+
+            if provider_name and provider_name in settings.OIDC_PROVIDERS:
+                request.session["providername"] = provider_name
+
+        # Continue processing the request.
+        response = self.get_response(request)
+
+        return response
