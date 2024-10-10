@@ -10,9 +10,9 @@ asgiref==3.8.1
     # via django
 bagit==1.8.1
     # via -r requirements.in
-boto3==1.35.34
+boto3==1.35.37
     # via -r requirements.in
-botocore==1.35.34
+botocore==1.35.37
     # via
     #   boto3
     #   s3transfer
@@ -22,7 +22,7 @@ certifi==2024.8.30
     # via requests
 cffi==1.17.1
     # via cryptography
-charset-normalizer==3.3.2
+charset-normalizer==3.4.0
     # via requests
 cryptography==43.0.1
     # via
@@ -45,7 +45,7 @@ django==4.2.16
     #   django-csp
     #   jsonfield
     #   mozilla-django-oidc
-django-auth-ldap==4.8.0
+django-auth-ldap==5.0.0
     # via -r requirements.in
 django-cas-ng==5.0.1
     # via -r requirements.in
@@ -183,7 +183,7 @@ requests==2.32.3
     #   python-swiftclient
 rfc3986==2.0.0
     # via oslo-config
-s3transfer==0.10.2
+s3transfer==0.10.3
     # via boto3
 six==1.16.0
     # via
@@ -218,7 +218,7 @@ zipp==3.20.2
     # via importlib-resources
 zope-event==5.0
     # via gevent
-zope-interface==7.0.3
+zope-interface==7.1.0
     # via gevent
 
 # The following packages are considered to be unsafe in a requirements file:

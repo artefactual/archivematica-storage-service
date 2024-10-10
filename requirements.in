@@ -6,7 +6,6 @@ Django>=4.2,<5
 django-csp
 django-tastypie
 dj-database-url
-gevent
 gunicorn
 importlib_resources
 jsonfield
@@ -32,3 +31,6 @@ django-cas-ng
 
 # Required for OpenID Connect authentication
 mozilla-django-oidc
+
+# gevent 24.10.1 dropped support for Python 3.8, so pinning it for now.
+gevent==24.2.1
