@@ -93,7 +93,9 @@ ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = [
+    "common.helpers",
     "tests.integration.*",
+    "tests.storage_service.test_helpers",
     "tests.storage_service.test_oidc",
 ]
 ignore_errors = false

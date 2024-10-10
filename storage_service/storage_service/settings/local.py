@@ -3,8 +3,7 @@
 from os import environ
 
 import dj_database_url
-
-from storage_service.settings.helpers import get_env_variable
+from common.helpers import get_env_variable
 
 from .base import *
 
