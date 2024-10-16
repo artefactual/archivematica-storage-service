@@ -20,7 +20,7 @@
     <dt>{% trans "Actions" %}</dt>
       <dd>
         <ul>
-          <li><a href="{% url 'administration:key_delete' key.fingerprint %}?next={{ request.path }}">{% trans "Delete" %}</a></li>
+          <li><a href="{% url 'administration:key_delete' key.fingerprint %}?next={% url 'administration:key_list' %}">{% trans "Delete" %}</a></li>
         </ul>
       </dd>
   </dl>
