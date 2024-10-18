@@ -1204,3 +1204,55 @@ def test_s3_space_deletes_temporary_files_after_extracting_file(
 
     # Verify there are no temporary files left in the internal processing location.
     assert list(pathlib.Path(internal_processing_location.full_path).iterdir()) == []
+
+
+@pytest.fixture
+def space(tmp_path: pathlib.Path) -> models.Space:
+    space_path = tmp_path / "space"
+    space_path.mkdir()
+
+    return models.Space.objects.create(
+        access_protocol=models.Space.LOCAL_FILESYSTEM, path=str(space_path)
+    )
+
+
+@pytest.fixture
+def secondary_aip_location(space: models.Space) -> models.Location:
+    space_path = pathlib.Path(space.path)
+    secondary_aip_location_path = space_path / "aips"
+    secondary_aip_location_path.mkdir()
+
+    return models.Location.objects.create(
+        space=space,
+        purpose=models.Location.AIP_STORAGE,
+        relative_path=str(secondary_aip_location_path.relative_to(space_path)),
+    )
+
+
+@pytest.fixture
+def package(aip_storage_location: models.Location) -> models.Package:
+    return models.Package.objects.create(
+        current_location=aip_storage_location,
+        package_type=models.Package.AIP,
+        current_path="bag.zip",
+        status=models.Package.MOVING,
+    )
+
+
+@pytest.mark.django_db
+def test_move_request_fails_if_package_is_in_unexpected_state(
+    admin_client, package, secondary_aip_location
+):
+    response = admin_client.post(
+        reverse(
+            "move_request",
+            kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+        ),
+        {"location_uuid": secondary_aip_location.uuid},
+    )
+
+    assert response.status_code == 400
+    assert json.loads(response.content.decode()) == {
+        "error": True,
+        "message": f"The file must be in an {models.Package.UPLOADED} state to be moved. Current state: {package.status}",
+    }
