@@ -1671,9 +1671,7 @@ class PackageResource(ModelResource):
         if location == package.current_location:
             response = {
                 "error": True,
-                "message": _(
-                    "New location must be different " "to the current location"
-                ),
+                "message": _("New location must be different to the current location"),
             }
             return self.create_response(
                 request, response, response_class=http.HttpBadRequest

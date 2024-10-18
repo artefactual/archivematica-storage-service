@@ -1236,7 +1236,7 @@ def package(aip_storage_location: models.Location) -> models.Package:
         current_location=aip_storage_location,
         package_type=models.Package.AIP,
         current_path="bag.zip",
-        status=models.Package.MOVING,
+        status=models.Package.UPLOADED,
     )
 
 
@@ -1246,6 +1246,9 @@ def test_move_request_fails_if_package_is_in_unexpected_state(
     package: models.Package,
     secondary_aip_location: models.Location,
 ) -> None:
+    package.status = models.Package.MOVING
+    package.save()
+
     response = admin_client.post(
         reverse(
             "move_request",
@@ -1265,9 +1268,6 @@ def test_move_request_fails_if_package_is_in_unexpected_state(
 def test_move_request_fails_if_location_uuid_is_missing(
     admin_client: Client, package: models.Package
 ) -> None:
-    package.status = models.Package.UPLOADED
-    package.save()
-
     response = admin_client.post(
         reverse(
             "move_request",
@@ -1286,8 +1286,6 @@ def test_move_request_fails_if_location_uuid_is_missing(
 def test_move_request_fails_if_target_location_does_not_exist(
     admin_client: Client, package: models.Package
 ) -> None:
-    package.status = models.Package.UPLOADED
-    package.save()
     location_uuid = uuid.uuid4()
 
     response = admin_client.post(
@@ -1302,4 +1300,47 @@ def test_move_request_fails_if_target_location_does_not_exist(
     assert json.loads(response.content.decode()) == {
         "error": True,
         "message": f"Location UUID {location_uuid} failed to return a location",
+    }
+
+
+@pytest.mark.django_db
+def test_move_request_fails_if_target_location_is_origin_location(
+    admin_client: Client, package: models.Package
+) -> None:
+    response = admin_client.post(
+        reverse(
+            "move_request",
+            kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+        ),
+        {"location_uuid": package.current_location.uuid},
+    )
+
+    assert response.status_code == 400
+    assert json.loads(response.content.decode()) == {
+        "error": True,
+        "message": "New location must be different to the current location",
+    }
+
+
+@pytest.mark.django_db
+def test_move_request_fails_if_target_location_purpose_does_not_match(
+    admin_client: Client,
+    package: models.Package,
+    secondary_aip_location: models.Location,
+) -> None:
+    secondary_aip_location.purpose = models.Location.BACKLOG
+    secondary_aip_location.save()
+
+    response = admin_client.post(
+        reverse(
+            "move_request",
+            kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+        ),
+        {"location_uuid": secondary_aip_location.uuid},
+    )
+
+    assert response.status_code == 400
+    assert json.loads(response.content.decode()) == {
+        "error": True,
+        "message": f"New location must have the same purpose as the current location - {package.current_location.purpose}",
     }
