@@ -1368,3 +1368,30 @@ def test_move_request_fails_if_updating_package_status_fails(
         "message": f"The package must be in an {models.Package.UPLOADED} state to be moved. Current state: {package.status}",
     }
     update.assert_called_once_with(status=models.Package.MOVING)
+
+
+@pytest.mark.django_db
+@mock.patch("locations.models.async_manager.AsyncManager.run_task")
+def test_move_request_returns_asyncronous_task_url_in_response_headers(
+    run_task: mock.Mock,
+    admin_client: Client,
+    package: models.Package,
+    secondary_aip_location: models.Location,
+) -> None:
+    task_id = 1
+    run_task.return_value = mock.Mock(id=task_id)
+
+    response = admin_client.post(
+        reverse(
+            "move_request",
+            kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+        ),
+        {"location_uuid": secondary_aip_location.uuid},
+    )
+    assert response.status_code == 202
+
+    assert response.content == b""
+    assert response.headers["Location"] == reverse(
+        "api_dispatch_detail",
+        kwargs={"api_name": "v2", "resource_name": "async", "id": task_id},
+    )
