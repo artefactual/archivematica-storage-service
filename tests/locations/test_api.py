@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 import pytest
 from administration import roles
 from django.contrib.auth.models import User
+from django.test import Client
 from django.test import TestCase
 from django.urls import reverse
 from locations import models
@@ -1241,8 +1242,10 @@ def package(aip_storage_location: models.Location) -> models.Package:
 
 @pytest.mark.django_db
 def test_move_request_fails_if_package_is_in_unexpected_state(
-    admin_client, package, secondary_aip_location
-):
+    admin_client: Client,
+    package: models.Package,
+    secondary_aip_location: models.Location,
+) -> None:
     response = admin_client.post(
         reverse(
             "move_request",
@@ -1256,3 +1259,24 @@ def test_move_request_fails_if_package_is_in_unexpected_state(
         "error": True,
         "message": f"The file must be in an {models.Package.UPLOADED} state to be moved. Current state: {package.status}",
     }
+
+
+@pytest.mark.django_db
+def test_move_request_fails_if_location_uuid_is_missing(
+    admin_client: Client, package: models.Package
+) -> None:
+    package.status = models.Package.UPLOADED
+    package.save()
+
+    response = admin_client.post(
+        reverse(
+            "move_request",
+            kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+        )
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.content.decode()
+        == "All of these fields must be provided: location_uuid"
+    )

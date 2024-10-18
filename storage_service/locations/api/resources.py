@@ -1653,7 +1653,7 @@ class PackageResource(ModelResource):
 
         if not location_uuid:
             return http.HttpBadRequest(
-                _("All of these fields must be provided: " "location_uuid")
+                _("All of these fields must be provided: location_uuid")
             )
 
         try:
