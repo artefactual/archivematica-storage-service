@@ -1637,8 +1637,8 @@ class PackageResource(ModelResource):
             response = {
                 "error": True,
                 "message": _(
-                    "The file must be in an %(expected_state) state to be moved. "
-                    "Current state: %(current_state)"
+                    "The file must be in an %(expected_state)s state to be moved. "
+                    "Current state: %(current_state)s"
                 )
                 % {
                     "expected_state": Package.UPLOADED,
