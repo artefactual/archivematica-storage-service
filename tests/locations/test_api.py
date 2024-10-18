@@ -1280,3 +1280,26 @@ def test_move_request_fails_if_location_uuid_is_missing(
         response.content.decode()
         == "All of these fields must be provided: location_uuid"
     )
+
+
+@pytest.mark.django_db
+def test_move_request_fails_if_target_location_does_not_exist(
+    admin_client: Client, package: models.Package
+) -> None:
+    package.status = models.Package.UPLOADED
+    package.save()
+    location_uuid = uuid.uuid4()
+
+    response = admin_client.post(
+        reverse(
+            "move_request",
+            kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+        ),
+        {"location_uuid": location_uuid},
+    )
+
+    assert response.status_code == 400
+    assert json.loads(response.content.decode()) == {
+        "error": True,
+        "message": f"Location UUID {location_uuid} failed to return a location",
+    }

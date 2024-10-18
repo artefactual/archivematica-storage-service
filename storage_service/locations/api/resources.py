@@ -1661,10 +1661,7 @@ class PackageResource(ModelResource):
         except (Location.DoesNotExist, Location.MultipleObjectsReturned):
             response = {
                 "error": True,
-                "message": _(
-                    "Location UUID %(uuid)s \
-                failed to return a location"
-                )
+                "message": _("Location UUID %(uuid)s failed to return a location")
                 % {"uuid": location_uuid},
             }
             return self.create_response(
