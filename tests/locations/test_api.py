@@ -1344,3 +1344,27 @@ def test_move_request_fails_if_target_location_purpose_does_not_match(
         "error": True,
         "message": f"New location must have the same purpose as the current location - {package.current_location.purpose}",
     }
+
+
+@pytest.mark.django_db
+@mock.patch("django.db.models.query.QuerySet.update", return_value=0)
+def test_move_request_fails_if_updating_package_status_fails(
+    update: mock.Mock,
+    admin_client: Client,
+    package: models.Package,
+    secondary_aip_location: models.Location,
+) -> None:
+    response = admin_client.post(
+        reverse(
+            "move_request",
+            kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+        ),
+        {"location_uuid": secondary_aip_location.uuid},
+    )
+
+    assert response.status_code == 400
+    assert json.loads(response.content.decode()) == {
+        "error": True,
+        "message": f"The package must be in an {models.Package.UPLOADED} state to be moved. Current state: {package.status}",
+    }
+    update.assert_called_once_with(status=models.Package.MOVING)
