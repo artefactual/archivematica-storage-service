@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 import pytest
 from administration import roles
 from django.contrib.auth.models import User
+from django.test import Client
 from django.test import TestCase
 from django.urls import reverse
 from locations import models
@@ -1204,3 +1205,193 @@ def test_s3_space_deletes_temporary_files_after_extracting_file(
 
     # Verify there are no temporary files left in the internal processing location.
     assert list(pathlib.Path(internal_processing_location.full_path).iterdir()) == []
+
+
+@pytest.fixture
+def space(tmp_path: pathlib.Path) -> models.Space:
+    space_path = tmp_path / "space"
+    space_path.mkdir()
+
+    return models.Space.objects.create(
+        access_protocol=models.Space.LOCAL_FILESYSTEM, path=str(space_path)
+    )
+
+
+@pytest.fixture
+def secondary_aip_location(space: models.Space) -> models.Location:
+    space_path = pathlib.Path(space.path)
+    secondary_aip_location_path = space_path / "aips"
+    secondary_aip_location_path.mkdir()
+
+    return models.Location.objects.create(
+        space=space,
+        purpose=models.Location.AIP_STORAGE,
+        relative_path=str(secondary_aip_location_path.relative_to(space_path)),
+    )
+
+
+@pytest.fixture
+def package(aip_storage_location: models.Location) -> models.Package:
+    return models.Package.objects.create(
+        current_location=aip_storage_location,
+        package_type=models.Package.AIP,
+        current_path="bag.zip",
+        status=models.Package.UPLOADED,
+    )
+
+
+@pytest.mark.django_db
+def test_move_request_fails_if_package_is_in_unexpected_state(
+    admin_client: Client,
+    package: models.Package,
+    secondary_aip_location: models.Location,
+) -> None:
+    package.status = models.Package.MOVING
+    package.save()
+
+    response = admin_client.post(
+        reverse(
+            "move_request",
+            kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+        ),
+        {"location_uuid": secondary_aip_location.uuid},
+    )
+
+    assert response.status_code == 400
+    assert json.loads(response.content.decode()) == {
+        "error": True,
+        "message": f"The file must be in an {models.Package.UPLOADED} state to be moved. Current state: {package.status}",
+    }
+
+
+@pytest.mark.django_db
+def test_move_request_fails_if_location_uuid_is_missing(
+    admin_client: Client, package: models.Package
+) -> None:
+    response = admin_client.post(
+        reverse(
+            "move_request",
+            kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+        )
+    )
+
+    assert response.status_code == 400
+    assert (
+        response.content.decode()
+        == "All of these fields must be provided: location_uuid"
+    )
+
+
+@pytest.mark.django_db
+def test_move_request_fails_if_target_location_does_not_exist(
+    admin_client: Client, package: models.Package
+) -> None:
+    location_uuid = uuid.uuid4()
+
+    response = admin_client.post(
+        reverse(
+            "move_request",
+            kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+        ),
+        {"location_uuid": location_uuid},
+    )
+
+    assert response.status_code == 400
+    assert json.loads(response.content.decode()) == {
+        "error": True,
+        "message": f"Location UUID {location_uuid} failed to return a location",
+    }
+
+
+@pytest.mark.django_db
+def test_move_request_fails_if_target_location_is_origin_location(
+    admin_client: Client, package: models.Package
+) -> None:
+    response = admin_client.post(
+        reverse(
+            "move_request",
+            kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+        ),
+        {"location_uuid": package.current_location.uuid},
+    )
+
+    assert response.status_code == 400
+    assert json.loads(response.content.decode()) == {
+        "error": True,
+        "message": "New location must be different to the current location",
+    }
+
+
+@pytest.mark.django_db
+def test_move_request_fails_if_target_location_purpose_does_not_match(
+    admin_client: Client,
+    package: models.Package,
+    secondary_aip_location: models.Location,
+) -> None:
+    secondary_aip_location.purpose = models.Location.BACKLOG
+    secondary_aip_location.save()
+
+    response = admin_client.post(
+        reverse(
+            "move_request",
+            kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+        ),
+        {"location_uuid": secondary_aip_location.uuid},
+    )
+
+    assert response.status_code == 400
+    assert json.loads(response.content.decode()) == {
+        "error": True,
+        "message": f"New location must have the same purpose as the current location - {package.current_location.purpose}",
+    }
+
+
+@pytest.mark.django_db
+@mock.patch("django.db.models.query.QuerySet.update", return_value=0)
+def test_move_request_fails_if_updating_package_status_fails(
+    update: mock.Mock,
+    admin_client: Client,
+    package: models.Package,
+    secondary_aip_location: models.Location,
+) -> None:
+    response = admin_client.post(
+        reverse(
+            "move_request",
+            kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+        ),
+        {"location_uuid": secondary_aip_location.uuid},
+    )
+
+    assert response.status_code == 400
+    assert json.loads(response.content.decode()) == {
+        "error": True,
+        "message": f"The package must be in an {models.Package.UPLOADED} state to be moved. Current state: {package.status}",
+    }
+    update.assert_called_once_with(status=models.Package.MOVING)
+
+
+@pytest.mark.django_db
+@mock.patch("locations.models.async_manager.AsyncManager.run_task")
+def test_move_request_returns_asyncronous_task_url_in_response_headers(
+    run_task: mock.Mock,
+    admin_client: Client,
+    package: models.Package,
+    secondary_aip_location: models.Location,
+) -> None:
+    task_id = 1
+    run_task.return_value = mock.Mock(id=task_id)
+
+    response = admin_client.post(
+        reverse(
+            "move_request",
+            kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+        ),
+        {"location_uuid": secondary_aip_location.uuid},
+    )
+    assert response.status_code == 202
+
+    assert response.content == b""
+    assert response.headers["Location"] == reverse(
+        "api_dispatch_detail",
+        kwargs={"api_name": "v2", "resource_name": "async", "id": task_id},
+    )

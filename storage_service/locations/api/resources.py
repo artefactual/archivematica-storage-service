@@ -1637,8 +1637,8 @@ class PackageResource(ModelResource):
             response = {
                 "error": True,
                 "message": _(
-                    "The file must be in an %(expected_state) state to be moved. "
-                    "Current state: %(current_state)"
+                    "The file must be in an %(expected_state)s state to be moved. "
+                    "Current state: %(current_state)s"
                 )
                 % {
                     "expected_state": Package.UPLOADED,
@@ -1653,7 +1653,7 @@ class PackageResource(ModelResource):
 
         if not location_uuid:
             return http.HttpBadRequest(
-                _("All of these fields must be provided: " "location_uuid")
+                _("All of these fields must be provided: location_uuid")
             )
 
         try:
@@ -1661,10 +1661,7 @@ class PackageResource(ModelResource):
         except (Location.DoesNotExist, Location.MultipleObjectsReturned):
             response = {
                 "error": True,
-                "message": _(
-                    "Location UUID %(uuid)s \
-                failed to return a location"
-                )
+                "message": _("Location UUID %(uuid)s failed to return a location")
                 % {"uuid": location_uuid},
             }
             return self.create_response(
@@ -1674,9 +1671,7 @@ class PackageResource(ModelResource):
         if location == package.current_location:
             response = {
                 "error": True,
-                "message": _(
-                    "New location must be different " "to the current location"
-                ),
+                "message": _("New location must be different to the current location"),
             }
             return self.create_response(
                 request, response, response_class=http.HttpBadRequest
@@ -1704,8 +1699,8 @@ class PackageResource(ModelResource):
             response = {
                 "error": True,
                 "message": _(
-                    "The package must be in an %(expected_state) state to be moved. "
-                    "Current state: %(current_state)"
+                    "The package must be in an %(expected_state)s state to be moved. "
+                    "Current state: %(current_state)s"
                 )
                 % {
                     "expected_state": Package.UPLOADED,
