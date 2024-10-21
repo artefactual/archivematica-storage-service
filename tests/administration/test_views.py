@@ -4,6 +4,8 @@ from unittest import mock
 import pytest
 from administration.views import get_git_commit
 from django.urls import reverse
+from locations.models import Location
+from locations.models import Space
 
 
 @pytest.mark.parametrize(
@@ -23,8 +25,29 @@ def test_get_git_commit(check_output, expected_result, mocker):
     assert get_git_commit() == expected_result
 
 
+@pytest.fixture
+def space(tmp_path):
+    space_dir = tmp_path / "space"
+    space_dir.mkdir()
+
+    return Space.objects.create(path=str(space_dir))
+
+
+@pytest.fixture
+def ss_internal_location(space):
+    return Location.objects.create(
+        space=space,
+        relative_path="storage_service",
+        purpose=Location.STORAGE_SERVICE_INTERNAL,
+    )
+
+
+@pytest.mark.django_db
+@mock.patch("gnupg.GPG.export_keys", return_value="")
 @mock.patch("gnupg.GPG.list_keys")
-def test_deleting_key_from_detail_view_redirects_to_key_list(list_keys, admin_client):
+def test_deleting_key_from_detail_view_redirects_to_key_list(
+    list_keys, export_keys, admin_client, ss_internal_location
+):
     key_fingerprint = "3173C7395C551A6647656A5065C0718327F7B2C7"
     list_keys.return_value = mock.Mock(
         key_map={
