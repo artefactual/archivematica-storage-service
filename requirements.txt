@@ -10,9 +10,9 @@ asgiref==3.8.1
     # via django
 bagit==1.8.1
     # via -r requirements.in
-boto3==1.35.37
+boto3==1.35.45
     # via -r requirements.in
-botocore==1.35.37
+botocore==1.35.45
     # via
     #   boto3
     #   s3transfer
@@ -24,7 +24,7 @@ cffi==1.17.1
     # via cryptography
 charset-normalizer==3.4.0
     # via requests
-cryptography==43.0.1
+cryptography==43.0.3
     # via
     #   josepy
     #   mozilla-django-oidc
@@ -95,7 +95,7 @@ mozilla-django-oidc==4.0.1
     # via -r requirements.in
 msgpack==1.1.0
     # via oslo-serialization
-mysqlclient==2.2.4
+mysqlclient==2.2.5
     # via agentarchives
 netaddr==1.3.0
     # via
@@ -147,6 +147,7 @@ pyopenssl==24.2.1
     # via josepy
 pyparsing==3.1.4
     # via
+    #   -r requirements.in
     #   httplib2
     #   oslo-utils
 python-cas==1.6.0
@@ -222,7 +223,7 @@ zope-interface==7.1.0
     # via gevent
 
 # The following packages are considered to be unsafe in a requirements file:
-setuptools==75.1.0
+setuptools==75.2.0
     # via
     #   zope-event
     #   zope-interface

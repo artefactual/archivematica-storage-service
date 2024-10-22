@@ -24,7 +24,6 @@ django-prometheus
 
 # LDAP support
 python-ldap
-django-auth-ldap
 
 # CAS authentication
 django-cas-ng
@@ -33,4 +32,6 @@ django-cas-ng
 mozilla-django-oidc
 
 # gevent 24.10.1 dropped support for Python 3.8, so pinning it for now.
+django-auth-ldap==5.0.0
 gevent==24.2.1
+pyparsing==3.1.4
