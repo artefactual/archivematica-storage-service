@@ -12,9 +12,9 @@ asgiref==3.8.1
     #   django
 bagit==1.8.1
     # via -r requirements.txt
-boto3==1.35.37
+boto3==1.35.45
     # via -r requirements.txt
-botocore==1.35.37
+botocore==1.35.45
     # via
     #   -r requirements.txt
     #   boto3
@@ -47,7 +47,7 @@ coverage[toml]==7.6.1
     # via
     #   -r requirements-dev.in
     #   pytest-cov
-cryptography==43.0.1
+cryptography==43.0.3
     # via
     #   -r requirements.txt
     #   josepy
@@ -149,7 +149,7 @@ msgpack==1.1.0
     # via
     #   -r requirements.txt
     #   oslo-serialization
-mysqlclient==2.2.4
+mysqlclient==2.2.5
     # via
     #   -r requirements.txt
     #   agentarchives
@@ -349,7 +349,7 @@ tomli==2.0.2
     #   pyproject-api
     #   pytest
     #   tox
-tox==4.21.2
+tox==4.23.2
     # via -r requirements-dev.in
 typing-extensions==4.12.2
     # via
@@ -368,7 +368,7 @@ urllib3==1.26.20
     #   -r requirements.txt
     #   botocore
     #   requests
-virtualenv==20.26.6
+virtualenv==20.27.0
     # via tox
 wheel==0.44.0
     # via pip-tools
@@ -395,7 +395,7 @@ zope-interface==7.1.0
 # The following packages are considered to be unsafe in a requirements file:
 pip==24.2
     # via pip-tools
-setuptools==75.1.0
+setuptools==75.2.0
     # via
     #   -r requirements.txt
     #   pip-tools
