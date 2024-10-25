@@ -9,7 +9,7 @@ from locations.models import Space
 
 
 @pytest.mark.parametrize(
-    "check_output,expected_result",
+    "output,expected_result",
     [
         (
             b"d9c93f388a770287cf6337d4f9bcbbe60c25fdb8\n",
@@ -19,8 +19,9 @@ from locations.models import Space
     ],
     ids=["success", "error"],
 )
-def test_get_git_commit(check_output, expected_result, mocker):
-    mocker.patch("subprocess.check_output", side_effect=[check_output])
+@mock.patch("subprocess.check_output")
+def test_get_git_commit(check_output, output, expected_result):
+    check_output.side_effect = [output]
 
     assert get_git_commit() == expected_result
 

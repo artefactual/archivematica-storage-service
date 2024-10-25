@@ -143,7 +143,7 @@ class TestPackage(TestCase):
         # once for our source object.
         with mock.patch("locations.models.Space.delete_path") as mocked_delete:
             package.delete_from_storage()
-            assert mocked_delete.called
+            mocked_delete.assert_called()
 
         # Ensure that location properties are updated reflecting the
         # size remaining.
@@ -176,7 +176,7 @@ class TestPackage(TestCase):
         # measured three times per our test parameters.
         with mock.patch("locations.models.Space.delete_path") as mocked_delete:
             package.delete_from_storage()
-            assert mocked_delete.called
+            mocked_delete.assert_called()
             assert mocked_delete.call_count == 3
 
         # Ensure locations sizes are updated to reflect the size
@@ -217,7 +217,7 @@ class TestPackage(TestCase):
             "locations.models.Space.delete_path", side_effect=NotImplementedError
         ) as mocked_delete:
             package.delete_from_storage()
-            assert mocked_delete.called
+            mocked_delete.assert_called()
             assert mocked_delete.call_count == 1
 
         # Ensure locations sizes are the same as they were because no

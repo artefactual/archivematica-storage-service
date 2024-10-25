@@ -3,6 +3,7 @@ import shutil
 import subprocess
 from os import makedirs
 from os import scandir
+from unittest import mock
 
 import pytest
 from locations.models import LocalFilesystem
@@ -55,12 +56,10 @@ def tree(tmpdir):
     return result
 
 
+@mock.patch("common.utils.get_setting", return_value=False)
 def test_path2browse_dict_object_counting_ignores_read_protected_directories(
-    tree, mocker
+    get_setting, tree
 ):
-    # Enable object counting in spaces.
-    mocker.patch("common.utils.get_setting", return_value=False)
-
     # Count objects in the tree without access restrictions.
     result = path2browse_dict(str(tree))
     assert result == {
@@ -76,63 +75,63 @@ def test_path2browse_dict_object_counting_ignores_read_protected_directories(
     }
 
     # Restrict read access to the "empty" directory.
-    mocker.patch("os.scandir", side_effect=_restrict_access_to(tree.join("empty")))
-    assert path2browse_dict(str(tree)) == {
-        "directories": ["empty", "first", "second"],
-        "entries": ["empty", "error.txt", "first", "second", "tree_a.txt"],
-        "properties": {
-            "empty": {"object count": 0},
-            "error.txt": {"size": 8},
-            "first": {"object count": 2},
-            "second": {"object count": 2},
-            "tree_a.txt": {"size": 6},
-        },
-    }
+    with mock.patch("os.scandir", side_effect=_restrict_access_to(tree.join("empty"))):
+        assert path2browse_dict(str(tree)) == {
+            "directories": ["empty", "first", "second"],
+            "entries": ["empty", "error.txt", "first", "second", "tree_a.txt"],
+            "properties": {
+                "empty": {"object count": 0},
+                "error.txt": {"size": 8},
+                "first": {"object count": 2},
+                "second": {"object count": 2},
+                "tree_a.txt": {"size": 6},
+            },
+        }
 
     # Restrict read access to the "first" directory.
-    mocker.patch("os.scandir", side_effect=_restrict_access_to(tree.join("first")))
-    assert path2browse_dict(str(tree)) == {
-        "directories": ["empty", "first", "second"],
-        "entries": ["empty", "error.txt", "first", "second", "tree_a.txt"],
-        "properties": {
-            "empty": {"object count": 0},
-            "error.txt": {"size": 8},
-            "first": {"object count": 0},
-            "second": {"object count": 2},
-            "tree_a.txt": {"size": 6},
-        },
-    }
+    with mock.patch("os.scandir", side_effect=_restrict_access_to(tree.join("first"))):
+        assert path2browse_dict(str(tree)) == {
+            "directories": ["empty", "first", "second"],
+            "entries": ["empty", "error.txt", "first", "second", "tree_a.txt"],
+            "properties": {
+                "empty": {"object count": 0},
+                "error.txt": {"size": 8},
+                "first": {"object count": 0},
+                "second": {"object count": 2},
+                "tree_a.txt": {"size": 6},
+            },
+        }
 
     # Restrict read access to the "second" directory.
-    mocker.patch("os.scandir", side_effect=_restrict_access_to(tree.join("second")))
-    assert path2browse_dict(str(tree)) == {
-        "directories": ["empty", "first", "second"],
-        "entries": ["empty", "error.txt", "first", "second", "tree_a.txt"],
-        "properties": {
-            "empty": {"object count": 0},
-            "error.txt": {"size": 8},
-            "first": {"object count": 2},
-            "second": {"object count": 0},
-            "tree_a.txt": {"size": 6},
-        },
-    }
+    with mock.patch("os.scandir", side_effect=_restrict_access_to(tree.join("second"))):
+        assert path2browse_dict(str(tree)) == {
+            "directories": ["empty", "first", "second"],
+            "entries": ["empty", "error.txt", "first", "second", "tree_a.txt"],
+            "properties": {
+                "empty": {"object count": 0},
+                "error.txt": {"size": 8},
+                "first": {"object count": 2},
+                "second": {"object count": 0},
+                "tree_a.txt": {"size": 6},
+            },
+        }
 
     # Restrict read access to the "third" directory (child of the "second" directory).
-    mocker.patch(
+    with mock.patch(
         "os.scandir",
         side_effect=_restrict_access_to(tree.join("second").join("third")),
-    )
-    assert path2browse_dict(str(tree)) == {
-        "directories": ["empty", "first", "second"],
-        "entries": ["empty", "error.txt", "first", "second", "tree_a.txt"],
-        "properties": {
-            "empty": {"object count": 0},
-            "error.txt": {"size": 8},
-            "first": {"object count": 2},
-            "second": {"object count": 1},
-            "tree_a.txt": {"size": 6},
-        },
-    }
+    ):
+        assert path2browse_dict(str(tree)) == {
+            "directories": ["empty", "first", "second"],
+            "entries": ["empty", "error.txt", "first", "second", "tree_a.txt"],
+            "properties": {
+                "empty": {"object count": 0},
+                "error.txt": {"size": 8},
+                "first": {"object count": 2},
+                "second": {"object count": 1},
+                "tree_a.txt": {"size": 6},
+            },
+        }
 
 
 # AIP store directory structure with components of the quad structure
@@ -281,7 +280,7 @@ def aipstore_compressed(tmpdir):
     ],
 )
 def test_delete_compressed_path_local(
-    aipstore_compressed, path, aip_name, mocker, remaining_directory, deleted_directory
+    aipstore_compressed, path, aip_name, remaining_directory, deleted_directory
 ):
     """Test that local compressed or packaged paths e.g. tar.gz are
     deleted as expected.
@@ -293,14 +292,13 @@ def test_delete_compressed_path_local(
 
     # rmtree is used to delete directories, we want to make sure we
     # don't call it from the delete function.
-    mocker.patch("shutil.rmtree", side_effect=shutil.rmtree)
+    with mock.patch("shutil.rmtree") as rmtree:
+        # Make sure there is something to delete and delete it.
+        assert os.path.exists(path_to_delete)
+        sp._delete_path_local(path_to_delete)
 
-    # Make sure there is something to delete and delete it.
-    assert os.path.exists(path_to_delete)
-    sp._delete_path_local(path_to_delete)
-
-    # Verify that we called shutil was not called to remove a file.
-    shutil.rmtree.assert_not_called()
+        # Verify that we called shutil was not called to remove a file.
+        rmtree.assert_not_called()
 
     # Make sure the path is gone.
     assert not os.path.exists(path_to_delete)
@@ -450,7 +448,6 @@ def test_delete_uncompressed_path_local(
     aip_name,
     remaining_directory,
     deleted_directory,
-    mocker,
 ):
     """Test that local uncompressed paths are deleted as expected."""
 
@@ -460,14 +457,13 @@ def test_delete_uncompressed_path_local(
 
     # rmtree is used to delete directories, we want to make sure we
     # do call it from the delete function.
-    mocker.patch("shutil.rmtree", side_effect=shutil.rmtree)
+    with mock.patch("shutil.rmtree", side_effect=shutil.rmtree) as rmtree:
+        # Make sure there is something to delete and delete it.
+        assert os.path.exists(path_to_delete)
+        sp._delete_path_local(path_to_delete)
 
-    # Make sure there is something to delete and delete it.
-    assert os.path.exists(path_to_delete)
-    sp._delete_path_local(path_to_delete)
-
-    # Verify that we called shutil to remove a directory, not a file.
-    shutil.rmtree.assert_called_with(path_to_delete)
+        # Verify that we called shutil to remove a directory, not a file.
+        rmtree.assert_called_with(path_to_delete)
 
     # Make sure the path is gone.
     assert not os.path.exists(path_to_delete)
@@ -522,13 +518,13 @@ def test_delete_non_existant_path_local(tmpdir, aipstore_uncompressed):
         assert os.path.exists(remaining_aip)
 
 
-def test_move_rsync_command_decodes_paths(mocker):
-    popen = mocker.patch(
-        "subprocess.Popen",
-        return_value=mocker.Mock(
-            **{"communicate.return_value": ("command output", None), "returncode": 0}
-        ),
-    )
+@mock.patch(
+    "subprocess.Popen",
+    return_value=mock.Mock(
+        **{"communicate.return_value": ("command output", None), "returncode": 0}
+    ),
+)
+def test_move_rsync_command_decodes_paths(popen):
     space = Space()
     space.move_rsync("source_dir", "destination_dir")
 
@@ -549,20 +545,21 @@ def test_move_rsync_command_decodes_paths(mocker):
     )
 
 
-def test_create_rsync_directory_commands_decode_paths(tmp_path, mocker):
+@mock.patch("tempfile.mkdtemp")
+@mock.patch("subprocess.check_call")
+def test_create_rsync_directory_commands_decode_paths(check_call, mkdtemp, tmp_path):
     temp_dir = tmp_path / "tmp"
     temp_dir.mkdir()
     dest_dir = "/a/mock/path/"
 
-    check_call = mocker.patch("subprocess.check_call")
-    mocker.patch("tempfile.mkdtemp", return_value=str(temp_dir))
+    mkdtemp.return_value = str(temp_dir)
 
     space = Space()
     space.create_rsync_directory(dest_dir, "user", "host")
 
     check_call.assert_has_calls(
         [
-            mocker.call(
+            mock.call(
                 [
                     "rsync",
                     "-vv",
@@ -573,7 +570,7 @@ def test_create_rsync_directory_commands_decode_paths(tmp_path, mocker):
                     "user@host:/",
                 ]
             ),
-            mocker.call(
+            mock.call(
                 [
                     "rsync",
                     "-vv",
@@ -584,7 +581,7 @@ def test_create_rsync_directory_commands_decode_paths(tmp_path, mocker):
                     "user@host:/a/",
                 ]
             ),
-            mocker.call(
+            mock.call(
                 [
                     "rsync",
                     "-vv",
@@ -595,7 +592,7 @@ def test_create_rsync_directory_commands_decode_paths(tmp_path, mocker):
                     "user@host:/a/mock/",
                 ]
             ),
-            mocker.call(
+            mock.call(
                 [
                     "rsync",
                     "-vv",

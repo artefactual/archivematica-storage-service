@@ -1,3 +1,5 @@
+from unittest import mock
+
 import pytest
 import requests
 from locations.models import Duracloud
@@ -18,27 +20,33 @@ def test_duraspace_url(space):
 
 
 @pytest.mark.django_db
-def test_browse(space, mocker):
-    page1 = """
-    <space id="self.durastore">
-        <item>/foo/</item>
-        <item>/foo/bar/bar-a.zip</item>
-        <item>/foo/bar/bar-b.zip</item>
-        <item>/foo/foo-a.zip</item>
-        <item>/baz/</item>
-    </space>
-    """
-    page2 = """
-    <space id="self.durastore">
-    </space>
-    """
-    mocker.patch(
-        "requests.Session.get",
-        side_effect=[
-            mocker.Mock(status_code=200, content=page1, spec=requests.Response),
-            mocker.Mock(status_code=200, content=page2, spec=requests.Response),
-        ],
-    )
+@mock.patch(
+    "requests.Session.get",
+    side_effect=[
+        mock.Mock(
+            status_code=200,
+            content="""
+                <space id="self.durastore">
+                    <item>/foo/</item>
+                    <item>/foo/bar/bar-a.zip</item>
+                    <item>/foo/bar/bar-b.zip</item>
+                    <item>/foo/foo-a.zip</item>
+                    <item>/baz/</item>
+                </space>
+            """,
+            spec=requests.Response,
+        ),
+        mock.Mock(
+            status_code=200,
+            content="""
+                <space id="self.durastore">
+                </space>
+            """,
+            spec=requests.Response,
+        ),
+    ],
+)
+def test_browse(get, space):
     d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
 
     result = d.browse("/foo")
@@ -51,30 +59,36 @@ def test_browse(space, mocker):
 
 
 @pytest.mark.django_db
-def test_browse_strips_manifest_and_chunk_suffixes(space, mocker):
-    page1 = """
-    <space id="self.durastore">
-        <item>/foo/</item>
-        <item>/foo/bar/bar-a.zip</item>
-        <item>/foo/bar/bar-b.zip.dura-manifest</item>
-        <item>/foo/bar/bar-b.zip.dura-chunk-0000</item>
-        <item>/foo/foo-a.zip</item>
-        <item>/foo/foo-b.zip.dura-manifest</item>
-        <item>/foo/foo-b.zip.dura-chunk-0000</item>
-        <item>/baz/</item>
-    </space>
-    """
-    page2 = """
-    <space id="self.durastore">
-    </space>
-    """
-    mocker.patch(
-        "requests.Session.get",
-        side_effect=[
-            mocker.Mock(status_code=200, content=page1, spec=requests.Response),
-            mocker.Mock(status_code=200, content=page2, spec=requests.Response),
-        ],
-    )
+@mock.patch(
+    "requests.Session.get",
+    side_effect=[
+        mock.Mock(
+            status_code=200,
+            content="""
+                <space id="self.durastore">
+                    <item>/foo/</item>
+                    <item>/foo/bar/bar-a.zip</item>
+                    <item>/foo/bar/bar-b.zip.dura-manifest</item>
+                    <item>/foo/bar/bar-b.zip.dura-chunk-0000</item>
+                    <item>/foo/foo-a.zip</item>
+                    <item>/foo/foo-b.zip.dura-manifest</item>
+                    <item>/foo/foo-b.zip.dura-chunk-0000</item>
+                    <item>/baz/</item>
+                </space>
+            """,
+            spec=requests.Response,
+        ),
+        mock.Mock(
+            status_code=200,
+            content="""
+                <space id="self.durastore">
+                </space>
+            """,
+            spec=requests.Response,
+        ),
+    ],
+)
+def test_browse_strips_manifest_and_chunk_suffixes(get, space):
     d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
 
     result = d.browse("/foo")
@@ -87,11 +101,11 @@ def test_browse_strips_manifest_and_chunk_suffixes(space, mocker):
 
 
 @pytest.mark.django_db
-def test_browse_fails_if_it_cannot_retrieve_files_initially(space, mocker):
-    mocker.patch(
-        "requests.Session.get",
-        side_effect=[mocker.Mock(status_code=503, spec=requests.Response)],
-    )
+@mock.patch(
+    "requests.Session.get",
+    side_effect=[mock.Mock(status_code=503, spec=requests.Response)],
+)
+def test_browse_fails_if_it_cannot_retrieve_files_initially(get, space):
     d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
 
     with pytest.raises(StorageException, match="Unable to get list of files in /foo/"):
@@ -99,23 +113,26 @@ def test_browse_fails_if_it_cannot_retrieve_files_initially(space, mocker):
 
 
 @pytest.mark.django_db
-def test_browse_fails_if_it_cannot_retrieve_additional_files(space, mocker):
-    page1 = """
-    <space id="self.durastore">
-        <item>/foo/</item>
-        <item>/foo/bar/bar-a.zip</item>
-        <item>/foo/bar/bar-b.zip</item>
-        <item>/foo/foo-a.zip</item>
-        <item>/baz/</item>
-    </space>
-    """
-    mocker.patch(
-        "requests.Session.get",
-        side_effect=[
-            mocker.Mock(status_code=200, content=page1, spec=requests.Response),
-            mocker.Mock(status_code=503, spec=requests.Response),
-        ],
-    )
+@mock.patch(
+    "requests.Session.get",
+    side_effect=[
+        mock.Mock(
+            status_code=200,
+            content="""
+                <space id="self.durastore">
+                    <item>/foo/</item>
+                    <item>/foo/bar/bar-a.zip</item>
+                    <item>/foo/bar/bar-b.zip</item>
+                    <item>/foo/foo-a.zip</item>
+                    <item>/baz/</item>
+                </space>
+            """,
+            spec=requests.Response,
+        ),
+        mock.Mock(status_code=503, spec=requests.Response),
+    ],
+)
+def test_browse_fails_if_it_cannot_retrieve_additional_files(get, space):
     d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
 
     with pytest.raises(
@@ -125,103 +142,99 @@ def test_browse_fails_if_it_cannot_retrieve_additional_files(space, mocker):
 
 
 @pytest.mark.django_db
-def test_delete_path_deletes_file(space, mocker):
-    delete = mocker.patch(
-        "requests.Session.delete",
-        side_effect=[mocker.Mock(status_code=200, spec=requests.Response)],
-    )
+@mock.patch(
+    "requests.Session.delete",
+    side_effect=[mock.Mock(status_code=200, spec=requests.Response)],
+)
+def test_delete_path_deletes_file(delete, space):
     d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
 
     d.delete_path("some/file.zip")
 
     assert delete.mock_calls == [
-        mocker.call("https://duracloud.org/durastore/myspace/some/file.zip")
+        mock.call("https://duracloud.org/durastore/myspace/some/file.zip")
     ]
 
 
 @pytest.mark.django_db
-def test_delete_path_deletes_chunked_file(space, mocker):
-    delete = mocker.patch(
-        "requests.Session.delete",
-        side_effect=[
-            mocker.Mock(status_code=404, spec=requests.Response),
-            mocker.Mock(status_code=200, spec=requests.Response),
-        ],
-    )
-    get = mocker.patch(
-        "requests.Session.get",
-        side_effect=[
-            mocker.Mock(
-                status_code=200,
-                content=b"""\
+@mock.patch(
+    "requests.Session.delete",
+    side_effect=[
+        mock.Mock(status_code=404, spec=requests.Response),
+        mock.Mock(status_code=200, spec=requests.Response),
+    ],
+)
+@mock.patch(
+    "requests.Session.get",
+    side_effect=[
+        mock.Mock(
+            status_code=200,
+            content=b"""\
                     <chunks>
                         <chunk chunkId="some/file.zip.dura-chunk-0001">
                             <byteSize>8084</byteSize>
                             <md5>dcbfdd6ff7f78194e1084f900514a194</md5>
                         </chunk>
                     </chunks>
-                """,
-                spec=requests.Response,
-            )
-        ],
-    )
+            """,
+            spec=requests.Response,
+        )
+    ],
+)
+def test_delete_path_deletes_chunked_file(get, delete, space):
     d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
 
     d.delete_path("some/file.zip")
 
     assert delete.mock_calls == [
-        mocker.call("https://duracloud.org/durastore/myspace/some/file.zip"),
-        mocker.call(
+        mock.call("https://duracloud.org/durastore/myspace/some/file.zip"),
+        mock.call(
             "https://duracloud.org/durastore/myspace/some/file.zip.dura-manifest"
         ),
     ]
     assert get.mock_calls == [
-        mocker.call(
-            "https://duracloud.org/durastore/myspace/some/file.zip.dura-manifest"
-        )
+        mock.call("https://duracloud.org/durastore/myspace/some/file.zip.dura-manifest")
     ]
 
 
 @pytest.mark.django_db
-def test_delete_path_deletes_folder(space, mocker):
-    delete = mocker.patch(
-        "requests.Session.delete",
-        side_effect=[
-            mocker.Mock(status_code=404, spec=requests.Response),
-            mocker.Mock(status_code=200, spec=requests.Response),
-            mocker.Mock(status_code=200, spec=requests.Response),
-        ],
-    )
-    get = mocker.patch(
-        "requests.Session.get",
-        side_effect=[mocker.Mock(status_code=404, ok=False, spec=requests.Response)],
-    )
-    mocker.patch(
-        "locations.models.duracloud.Duracloud._get_files_list",
-        side_effect=[["some/folder/a.zip", "some/folder/b.zip"]],
-    )
+@mock.patch(
+    "requests.Session.delete",
+    side_effect=[
+        mock.Mock(status_code=404, spec=requests.Response),
+        mock.Mock(status_code=200, spec=requests.Response),
+        mock.Mock(status_code=200, spec=requests.Response),
+    ],
+)
+@mock.patch(
+    "requests.Session.get",
+    side_effect=[mock.Mock(status_code=404, ok=False, spec=requests.Response)],
+)
+@mock.patch(
+    "locations.models.duracloud.Duracloud._get_files_list",
+    side_effect=[["some/folder/a.zip", "some/folder/b.zip"]],
+)
+def test_delete_path_deletes_folder(_get_files_list, get, delete, space):
     d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
 
     d.delete_path("some/folder")
 
     assert delete.mock_calls == [
-        mocker.call("https://duracloud.org/durastore/myspace/some/folder"),
-        mocker.call("https://duracloud.org/durastore/myspace/some/folder/a.zip"),
-        mocker.call("https://duracloud.org/durastore/myspace/some/folder/b.zip"),
+        mock.call("https://duracloud.org/durastore/myspace/some/folder"),
+        mock.call("https://duracloud.org/durastore/myspace/some/folder/a.zip"),
+        mock.call("https://duracloud.org/durastore/myspace/some/folder/b.zip"),
     ]
     assert get.mock_calls == [
-        mocker.call("https://duracloud.org/durastore/myspace/some/folder.dura-manifest")
+        mock.call("https://duracloud.org/durastore/myspace/some/folder.dura-manifest")
     ]
 
 
 @pytest.mark.django_db
-def test_move_to_storage_service_downloads_file(space, mocker, tmp_path):
-    mocker.patch(
-        "requests.Session.send",
-        side_effect=[
-            mocker.Mock(status_code=200, content=b"a file", spec=requests.Response)
-        ],
-    )
+@mock.patch(
+    "requests.Session.send",
+    side_effect=[mock.Mock(status_code=200, content=b"a file", spec=requests.Response)],
+)
+def test_move_to_storage_service_downloads_file(send, space, tmp_path):
     d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
     dst = tmp_path / "dst" / "file.txt"
 
@@ -231,21 +244,20 @@ def test_move_to_storage_service_downloads_file(space, mocker, tmp_path):
 
 
 @pytest.mark.django_db
-def test_move_to_storage_service_downloads_chunked_file(space, mocker, tmp_path):
-    mocker.patch(
-        "requests.Session.send",
-        side_effect=[
-            mocker.Mock(status_code=404, spec=requests.Response),
-            mocker.Mock(status_code=200, content=b"a ch", spec=requests.Response),
-            mocker.Mock(status_code=200, content=b"unked file", spec=requests.Response),
-        ],
-    )
-    mocker.patch(
-        "requests.Session.get",
-        side_effect=[
-            mocker.Mock(
-                status_code=200,
-                content=b"""\
+@mock.patch(
+    "requests.Session.send",
+    side_effect=[
+        mock.Mock(status_code=404, spec=requests.Response),
+        mock.Mock(status_code=200, content=b"a ch", spec=requests.Response),
+        mock.Mock(status_code=200, content=b"unked file", spec=requests.Response),
+    ],
+)
+@mock.patch(
+    "requests.Session.get",
+    side_effect=[
+        mock.Mock(
+            status_code=200,
+            content=b"""\
                     <dur>
                         <header>
                             <sourceContent>
@@ -266,11 +278,12 @@ def test_move_to_storage_service_downloads_chunked_file(space, mocker, tmp_path)
                             </chunk>
                         </chunks>
                     </dur>
-                """,
-                spec=requests.Response,
-            ),
-        ],
-    )
+            """,
+            spec=requests.Response,
+        ),
+    ],
+)
+def test_move_to_storage_service_downloads_chunked_file(get, send, space, tmp_path):
     d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
     dst = tmp_path / "dst" / "file.txt"
 
@@ -280,23 +293,25 @@ def test_move_to_storage_service_downloads_chunked_file(space, mocker, tmp_path)
 
 
 @pytest.mark.django_db
-def test_move_to_storage_service_downloads_folder(space, mocker, tmp_path):
-    mocker.patch(
-        "requests.Session.send",
-        side_effect=[
-            mocker.Mock(status_code=404, spec=requests.Response),
-            mocker.Mock(status_code=200, content=b"file A", spec=requests.Response),
-            mocker.Mock(status_code=200, content=b"file B", spec=requests.Response),
-        ],
-    )
-    mocker.patch(
-        "requests.Session.get",
-        side_effect=[mocker.Mock(status_code=404, ok=False, spec=requests.Response)],
-    )
-    mocker.patch(
-        "locations.models.duracloud.Duracloud._get_files_list",
-        side_effect=[["some/folder/a.txt", "some/folder/b.txt"]],
-    )
+@mock.patch(
+    "requests.Session.send",
+    side_effect=[
+        mock.Mock(status_code=404, spec=requests.Response),
+        mock.Mock(status_code=200, content=b"file A", spec=requests.Response),
+        mock.Mock(status_code=200, content=b"file B", spec=requests.Response),
+    ],
+)
+@mock.patch(
+    "requests.Session.get",
+    side_effect=[mock.Mock(status_code=404, ok=False, spec=requests.Response)],
+)
+@mock.patch(
+    "locations.models.duracloud.Duracloud._get_files_list",
+    side_effect=[["some/folder/a.txt", "some/folder/b.txt"]],
+)
+def test_move_to_storage_service_downloads_folder(
+    _get_files_list, get, send, space, tmp_path
+):
     d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
     dst = tmp_path / "dst"
 
@@ -309,13 +324,13 @@ def test_move_to_storage_service_downloads_folder(space, mocker, tmp_path):
 
 
 @pytest.mark.django_db
+@mock.patch(
+    "requests.Session.send",
+    side_effect=[mock.Mock(status_code=503, spec=requests.Response)],
+)
 def test_move_to_storage_service_fails_if_it_cannot_download_file(
-    space, mocker, tmp_path
+    send, space, tmp_path
 ):
-    mocker.patch(
-        "requests.Session.send",
-        side_effect=[mocker.Mock(status_code=503, spec=requests.Response)],
-    )
     d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
     dst = tmp_path / "dst" / "file.txt"
 
@@ -327,24 +342,21 @@ def test_move_to_storage_service_fails_if_it_cannot_download_file(
 
 
 @pytest.mark.django_db
-def test_move_to_storage_service_retries_after_chunk_download_errors(
-    space, mocker, tmp_path
-):
-    send = mocker.patch(
-        "requests.Session.send",
-        side_effect=[
-            mocker.Mock(status_code=404, spec=requests.Response),
-            mocker.Mock(status_code=200, content=b"a", spec=requests.Response),
-            mocker.Mock(status_code=200, content=b"a ch", spec=requests.Response),
-            mocker.Mock(status_code=200, content=b"unked file", spec=requests.Response),
-        ],
-    )
-    mocker.patch(
-        "requests.Session.get",
-        side_effect=[
-            mocker.Mock(
-                status_code=200,
-                content=b"""\
+@mock.patch(
+    "requests.Session.send",
+    side_effect=[
+        mock.Mock(status_code=404, spec=requests.Response),
+        mock.Mock(status_code=200, content=b"a", spec=requests.Response),
+        mock.Mock(status_code=200, content=b"a ch", spec=requests.Response),
+        mock.Mock(status_code=200, content=b"unked file", spec=requests.Response),
+    ],
+)
+@mock.patch(
+    "requests.Session.get",
+    side_effect=[
+        mock.Mock(
+            status_code=200,
+            content=b"""\
                     <dur>
                         <header>
                             <sourceContent>
@@ -365,11 +377,14 @@ def test_move_to_storage_service_retries_after_chunk_download_errors(
                             </chunk>
                         </chunks>
                     </dur>
-                """,
-                spec=requests.Response,
-            ),
-        ],
-    )
+            """,
+            spec=requests.Response,
+        ),
+    ],
+)
+def test_move_to_storage_service_retries_after_chunk_download_errors(
+    get, send, space, tmp_path
+):
     d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
     dst = tmp_path / "dst" / "file.txt"
 
@@ -382,26 +397,23 @@ def test_move_to_storage_service_retries_after_chunk_download_errors(
 
 
 @pytest.mark.django_db
-def test_move_to_storage_service_fails_if_chunk_size_does_not_match(
-    space, mocker, tmp_path
-):
-    send = mocker.patch(
-        "requests.Session.send",
-        side_effect=[
-            mocker.Mock(status_code=404, spec=requests.Response),
-            # Fail all the download retry attempts.
-            mocker.Mock(status_code=200, content=b"ERRORERROR", spec=requests.Response),
-            mocker.Mock(status_code=200, content=b"ERRORERROR", spec=requests.Response),
-            mocker.Mock(status_code=200, content=b"ERRORERROR", spec=requests.Response),
-            mocker.Mock(status_code=200, content=b"unked file", spec=requests.Response),
-        ],
-    )
-    mocker.patch(
-        "requests.Session.get",
-        side_effect=[
-            mocker.Mock(
-                status_code=200,
-                content=b"""\
+@mock.patch(
+    "requests.Session.send",
+    side_effect=[
+        mock.Mock(status_code=404, spec=requests.Response),
+        # Fail all the download retry attempts.
+        mock.Mock(status_code=200, content=b"ERRORERROR", spec=requests.Response),
+        mock.Mock(status_code=200, content=b"ERRORERROR", spec=requests.Response),
+        mock.Mock(status_code=200, content=b"ERRORERROR", spec=requests.Response),
+        mock.Mock(status_code=200, content=b"unked file", spec=requests.Response),
+    ],
+)
+@mock.patch(
+    "requests.Session.get",
+    side_effect=[
+        mock.Mock(
+            status_code=200,
+            content=b"""\
                     <dur>
                         <header>
                             <sourceContent>
@@ -423,10 +435,13 @@ def test_move_to_storage_service_fails_if_chunk_size_does_not_match(
                         </chunks>
                     </dur>
                 """,
-                spec=requests.Response,
-            ),
-        ],
-    )
+            spec=requests.Response,
+        ),
+    ],
+)
+def test_move_to_storage_service_fails_if_chunk_size_does_not_match(
+    get, send, space, tmp_path
+):
     d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
     dst = tmp_path / "dst" / "file.txt"
 
@@ -449,23 +464,20 @@ def test_move_to_storage_service_fails_if_chunk_size_does_not_match(
 
 
 @pytest.mark.django_db
-def test_move_to_storage_service_fails_if_chunk_checksum_does_not_match(
-    space, mocker, tmp_path
-):
-    send = mocker.patch(
-        "requests.Session.send",
-        side_effect=[
-            mocker.Mock(status_code=404, spec=requests.Response),
-            mocker.Mock(status_code=200, content=b"a ch", spec=requests.Response),
-            mocker.Mock(status_code=200, content=b"unked file", spec=requests.Response),
-        ],
-    )
-    mocker.patch(
-        "requests.Session.get",
-        side_effect=[
-            mocker.Mock(
-                status_code=200,
-                content=b"""\
+@mock.patch(
+    "requests.Session.send",
+    side_effect=[
+        mock.Mock(status_code=404, spec=requests.Response),
+        mock.Mock(status_code=200, content=b"a ch", spec=requests.Response),
+        mock.Mock(status_code=200, content=b"unked file", spec=requests.Response),
+    ],
+)
+@mock.patch(
+    "requests.Session.get",
+    side_effect=[
+        mock.Mock(
+            status_code=200,
+            content=b"""\
                     <dur>
                         <header>
                             <sourceContent>
@@ -487,10 +499,13 @@ def test_move_to_storage_service_fails_if_chunk_checksum_does_not_match(
                         </chunks>
                     </dur>
                 """,
-                spec=requests.Response,
-            ),
-        ],
-    )
+            spec=requests.Response,
+        ),
+    ],
+)
+def test_move_to_storage_service_fails_if_chunk_checksum_does_not_match(
+    get, send, space, tmp_path
+):
     d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
     dst = tmp_path / "dst" / "file.txt"
 
@@ -515,11 +530,11 @@ def test_move_to_storage_service_fails_if_chunk_checksum_does_not_match(
 
 
 @pytest.mark.django_db
-def test_move_from_storage_service_uploads_file(space, mocker, tmp_path):
-    put = mocker.patch(
-        "requests.Session.put",
-        side_effect=[mocker.Mock(status_code=201, spec=requests.Response)],
-    )
+@mock.patch(
+    "requests.Session.put",
+    side_effect=[mock.Mock(status_code=201, spec=requests.Response)],
+)
+def test_move_from_storage_service_uploads_file(put, space, tmp_path):
     d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
     src = tmp_path / "src"
     src.mkdir()
@@ -529,9 +544,9 @@ def test_move_from_storage_service_uploads_file(space, mocker, tmp_path):
     d.move_from_storage_service(f.as_posix(), "some/file.txt")
 
     assert put.mock_calls == [
-        mocker.call(
+        mock.call(
             "https://duracloud.org/durastore/myspace/some/file.txt",
-            data=mocker.ANY,
+            data=mock.ANY,
             headers={
                 "Content-MD5": "d6d0c756fb8abfb33e652a20e85b70bc",
                 "Content-Type": "text/plain",
@@ -541,15 +556,15 @@ def test_move_from_storage_service_uploads_file(space, mocker, tmp_path):
 
 
 @pytest.mark.django_db
-def test_move_from_storage_service_uploads_chunked_file(space, mocker, tmp_path):
-    put = mocker.patch(
-        "requests.Session.put",
-        side_effect=[
-            mocker.Mock(status_code=201, spec=requests.Response),
-            mocker.Mock(status_code=201, spec=requests.Response),
-            mocker.Mock(status_code=201, spec=requests.Response),
-        ],
-    )
+@mock.patch(
+    "requests.Session.put",
+    side_effect=[
+        mock.Mock(status_code=201, spec=requests.Response),
+        mock.Mock(status_code=201, spec=requests.Response),
+        mock.Mock(status_code=201, spec=requests.Response),
+    ],
+)
+def test_move_from_storage_service_uploads_chunked_file(put, space, tmp_path):
     d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
     d.CHUNK_SIZE = 4
     d.BUFFER_SIZE = 2
@@ -561,33 +576,33 @@ def test_move_from_storage_service_uploads_chunked_file(space, mocker, tmp_path)
     d.move_from_storage_service(f.as_posix(), "some/file.txt")
 
     assert put.mock_calls == [
-        mocker.call(
+        mock.call(
             "https://duracloud.org/durastore/myspace/some/file.txt.dura-chunk-0000",
-            data=mocker.ANY,
+            data=mock.ANY,
             headers={"Content-MD5": "417a095d4148cb184601f536fb626765"},
         ),
-        mocker.call(
+        mock.call(
             "https://duracloud.org/durastore/myspace/some/file.txt.dura-chunk-0001",
-            data=mocker.ANY,
+            data=mock.ANY,
             headers={"Content-MD5": "d9180594744f870aeefb086982e980bb"},
         ),
-        mocker.call(
+        mock.call(
             "https://duracloud.org/durastore/myspace/some/file.txt.dura-manifest",
-            data=mocker.ANY,
+            data=mock.ANY,
             headers={"Content-MD5": "59e5f62e5ed85ba339e73db5756e57c7"},
         ),
     ]
 
 
 @pytest.mark.django_db
-def test_move_from_storage_service_uploads_folder_contents(space, mocker, tmp_path):
-    put = mocker.patch(
-        "requests.Session.put",
-        side_effect=[
-            mocker.Mock(status_code=201, spec=requests.Response),
-            mocker.Mock(status_code=201, spec=requests.Response),
-        ],
-    )
+@mock.patch(
+    "requests.Session.put",
+    side_effect=[
+        mock.Mock(status_code=201, spec=requests.Response),
+        mock.Mock(status_code=201, spec=requests.Response),
+    ],
+)
+def test_move_from_storage_service_uploads_folder_contents(put, space, tmp_path):
     d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
     src = tmp_path / "src"
     src.mkdir()
@@ -598,17 +613,17 @@ def test_move_from_storage_service_uploads_folder_contents(space, mocker, tmp_pa
 
     put.assert_has_calls(
         [
-            mocker.call(
+            mock.call(
                 "https://duracloud.org/durastore/myspace/some/folder//a.txt",
-                data=mocker.ANY,
+                data=mock.ANY,
                 headers={
                     "Content-MD5": "31d97c4d04593b21b399ace73b061c34",
                     "Content-Type": "text/plain",
                 },
             ),
-            mocker.call(
+            mock.call(
                 "https://duracloud.org/durastore/myspace/some/folder//b.txt",
-                data=mocker.ANY,
+                data=mock.ANY,
                 headers={
                     "Content-MD5": "1651d570b74339e94cace90cde7d3147",
                     "Content-Type": "text/plain",
@@ -620,13 +635,13 @@ def test_move_from_storage_service_uploads_folder_contents(space, mocker, tmp_pa
 
 
 @pytest.mark.django_db
+@mock.patch(
+    "requests.Session.put",
+    side_effect=mock.Mock(status_code=503, spec=requests.Response),
+)
 def test_move_from_storage_service_fails_uploading_after_exceeding_retries(
-    space, mocker, tmp_path
+    put, space, tmp_path
 ):
-    put = mocker.patch(
-        "requests.Session.put",
-        side_effect=mocker.Mock(status_code=503, spec=requests.Response),
-    )
     d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
     src = tmp_path / "src"
     src.mkdir()
@@ -641,11 +656,11 @@ def test_move_from_storage_service_fails_uploading_after_exceeding_retries(
 
 
 @pytest.mark.django_db
-def test_move_from_storage_service_reraises_requests_exception(space, mocker, tmp_path):
-    put = mocker.patch(
-        "requests.Session.put",
-        side_effect=requests.exceptions.ConnectionError(),
-    )
+@mock.patch(
+    "requests.Session.put",
+    side_effect=requests.exceptions.ConnectionError(),
+)
+def test_move_from_storage_service_reraises_requests_exception(put, space, tmp_path):
     d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
     src = tmp_path / "src"
     src.mkdir()
@@ -671,11 +686,11 @@ def test_move_from_storage_service_fails_if_source_file_does_not_exist(space, tm
 
 
 @pytest.mark.django_db
+@mock.patch("os.path.exists", return_value=True)
 def test_move_from_storage_service_fails_if_source_file_cannot_be_determined(
-    space, mocker, tmp_path
+    exists, space, tmp_path
 ):
     # Mocking exists like this forces all move_from_storage_service conditions to fail.
-    mocker.patch("os.path.exists", return_value=True)
     d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
     src = tmp_path / "src"
     src.mkdir()

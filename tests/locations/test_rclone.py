@@ -1,4 +1,5 @@
 import uuid
+from unittest import mock
 
 import pytest
 from locations import models
@@ -91,37 +92,36 @@ def rclone_aip_no_container(db):
     return aip
 
 
-def test_rclone_delete(mocker, rclone_aip):
+@mock.patch("locations.models.rclone.RClone._execute_rclone_subcommand")
+@mock.patch(
+    "locations.models.rclone.RClone.remote_prefix",
+    return_value="testremote:",
+    new_callable=mock.PropertyMock,
+)
+@mock.patch("locations.models.rclone.RClone._ensure_container_exists")
+def test_rclone_delete(
+    _ensure_container_exists, remote_prefix, _execute_rclone_subcommand, rclone_aip
+):
     """Mock method call and assert correctness of rclone command."""
-    delete_path = mocker.patch(
-        "locations.models.rclone.RClone._execute_rclone_subcommand"
-    )
-    mocker.patch(
-        "locations.models.rclone.RClone.remote_prefix",
-        return_value="testremote:",
-        new_callable=mocker.PropertyMock,
-    )
-    mocker.patch("locations.models.rclone.RClone._ensure_container_exists")
-
     rclone_aip.delete_from_storage()
-    delete_path.assert_called_with(
+    _execute_rclone_subcommand.assert_called_with(
         ["delete", "testremote:testcontainer/test/fixtures/small_compressed_bag.zip"]
     )
 
 
-def test_rclone_delete_no_container(mocker, rclone_aip_no_container):
+@mock.patch("locations.models.rclone.RClone._execute_rclone_subcommand")
+@mock.patch(
+    "locations.models.rclone.RClone.remote_prefix",
+    return_value="testremote:",
+    new_callable=mock.PropertyMock,
+)
+def test_rclone_delete_no_container(
+    remote_prefix, _execute_rclone_subcommand, rclone_aip_no_container
+):
     """Mock method call and assert correctness of rclone command."""
-    delete_path = mocker.patch(
-        "locations.models.rclone.RClone._execute_rclone_subcommand"
-    )
-    mocker.patch(
-        "locations.models.rclone.RClone.remote_prefix",
-        return_value="testremote:",
-        new_callable=mocker.PropertyMock,
-    )
 
     rclone_aip_no_container.delete_from_storage()
-    delete_path.assert_called_with(
+    _execute_rclone_subcommand.assert_called_with(
         ["delete", "testremote:test/fixtures/small_compressed_bag.zip"]
     )
 
@@ -135,18 +135,19 @@ def test_rclone_delete_no_container(mocker, rclone_aip_no_container):
         (1, True),
     ],
 )
+@mock.patch(
+    "locations.models.rclone.RClone.remote_prefix",
+    return_value="testremote:",
+    new_callable=mock.PropertyMock,
+)
+@mock.patch("locations.models.rclone.subprocess")
 def test_rclone_ensure_container_exists(
-    mocker,
+    subprocess,
+    remote_prefix,
     rclone_space,
     subprocess_return_code,
     raises_storage_exception,
 ):
-    mocker.patch(
-        "locations.models.rclone.RClone.remote_prefix",
-        return_value="testremote:",
-        new_callable=mocker.PropertyMock,
-    )
-    subprocess = mocker.patch("locations.models.rclone.subprocess")
     subprocess.Popen.return_value.returncode = subprocess_return_code
     subprocess.Popen.return_value.communicate.return_value = ("stdout", "stderr")
 
@@ -169,15 +170,15 @@ def test_rclone_ensure_container_exists(
         ("another-remote:\nnon-matching-remote:\n", None, 1, True),
     ],
 )
+@mock.patch("locations.models.rclone.subprocess")
 def test_rclone_remote_prefix(
-    mocker,
+    subprocess,
     rclone_space,
     listremotes_return,
     expected_return,
     subprocess_return_code,
     raises_storage_exception,
 ):
-    subprocess = mocker.patch("locations.models.rclone.subprocess")
     subprocess.Popen.return_value.communicate.return_value = (listremotes_return, "")
     subprocess.Popen.return_value.returncode = subprocess_return_code
 
@@ -198,8 +199,9 @@ def test_rclone_remote_prefix(
         (("", ""), 1, True),
     ],
 )
+@mock.patch("locations.models.rclone.subprocess")
 def test_rclone_execute_rclone_subcommand(
-    mocker,
+    subprocess,
     rclone_space,
     subprocess_communicate_return,
     subprocess_return_code,
@@ -207,7 +209,6 @@ def test_rclone_execute_rclone_subcommand(
 ):
     subcommand = ["listremotes"]
 
-    subprocess = mocker.patch("locations.models.rclone.subprocess")
     subprocess.Popen.return_value.communicate.return_value = (
         subprocess_communicate_return
     )
@@ -221,7 +222,7 @@ def test_rclone_execute_rclone_subcommand(
 
 
 @pytest.mark.parametrize(
-    "package_is_file, expected_subcommand",
+    "package_is_file_result, expected_subcommand",
     [
         # Package is file, expect "copyto" subcommand
         (
@@ -243,21 +244,26 @@ def test_rclone_execute_rclone_subcommand(
         ),
     ],
 )
+@mock.patch("common.utils.package_is_file")
+@mock.patch("locations.models.rclone.RClone._ensure_container_exists")
+@mock.patch(
+    "locations.models.rclone.RClone.remote_prefix",
+    return_value="testremote:",
+    new_callable=mock.PropertyMock,
+)
+@mock.patch("locations.models.rclone.RClone._execute_rclone_subcommand")
 def test_rclone_move_to_storage_service(
-    mocker, rclone_space, package_is_file, expected_subcommand
+    _execute_rclone_subcommand,
+    remote_prefix,
+    _ensure_container_exists,
+    package_is_file,
+    rclone_space,
+    package_is_file_result,
+    expected_subcommand,
 ):
-    exec_subprocess = mocker.patch(
-        "locations.models.rclone.RClone._execute_rclone_subcommand"
-    )
-    mocker.patch(
-        "locations.models.rclone.RClone.remote_prefix",
-        return_value="testremote:",
-        new_callable=mocker.PropertyMock,
-    )
-    mocker.patch("locations.models.rclone.RClone._ensure_container_exists")
-    mocker.patch("common.utils.package_is_file", return_value=package_is_file)
+    package_is_file.return_value = package_is_file_result
 
-    if package_is_file:
+    if package_is_file_result:
         rclone_space.move_to_storage_service(
             COMPRESSED_SRC_PATH, COMPRESSED_DEST_PATH, rclone_space
         )
@@ -265,11 +271,11 @@ def test_rclone_move_to_storage_service(
         rclone_space.move_to_storage_service(
             UNCOMPRESSED_SRC_PATH, UNCOMPRESSED_DEST_PATH, rclone_space
         )
-    exec_subprocess.assert_called_with(expected_subcommand)
+    _execute_rclone_subcommand.assert_called_with(expected_subcommand)
 
 
 @pytest.mark.parametrize(
-    "package_is_file, expected_subcommand",
+    "package_is_file_result, expected_subcommand",
     [
         # Package is file, expect "copyto" subcommand
         (
@@ -291,20 +297,24 @@ def test_rclone_move_to_storage_service(
         ),
     ],
 )
+@mock.patch("common.utils.package_is_file")
+@mock.patch(
+    "locations.models.rclone.RClone.remote_prefix",
+    return_value="testremote:",
+    new_callable=mock.PropertyMock,
+)
+@mock.patch("locations.models.rclone.RClone._execute_rclone_subcommand")
 def test_rclone_move_to_storage_service_no_container(
-    mocker, rclone_space_no_container, package_is_file, expected_subcommand
+    _execute_rclone_subcommand,
+    remote_prefix,
+    package_is_file,
+    rclone_space_no_container,
+    package_is_file_result,
+    expected_subcommand,
 ):
-    exec_subprocess = mocker.patch(
-        "locations.models.rclone.RClone._execute_rclone_subcommand"
-    )
-    mocker.patch(
-        "locations.models.rclone.RClone.remote_prefix",
-        return_value="testremote:",
-        new_callable=mocker.PropertyMock,
-    )
-    mocker.patch("common.utils.package_is_file", return_value=package_is_file)
+    package_is_file.return_value = package_is_file_result
 
-    if package_is_file:
+    if package_is_file_result:
         rclone_space_no_container.move_to_storage_service(
             COMPRESSED_SRC_PATH, COMPRESSED_DEST_PATH, rclone_space
         )
@@ -312,11 +322,11 @@ def test_rclone_move_to_storage_service_no_container(
         rclone_space_no_container.move_to_storage_service(
             UNCOMPRESSED_SRC_PATH, UNCOMPRESSED_DEST_PATH, rclone_space
         )
-    exec_subprocess.assert_called_with(expected_subcommand)
+    _execute_rclone_subcommand.assert_called_with(expected_subcommand)
 
 
 @pytest.mark.parametrize(
-    "package_is_file, expected_subcommand",
+    "package_is_file_result, expected_subcommand",
     [
         # Package is file, expect "copyto" subcommand
         (
@@ -340,22 +350,28 @@ def test_rclone_move_to_storage_service_no_container(
         ),
     ],
 )
+@mock.patch("locations.models.Space.create_local_directory")
+@mock.patch("common.utils.package_is_file")
+@mock.patch("locations.models.rclone.RClone._ensure_container_exists")
+@mock.patch(
+    "locations.models.rclone.RClone.remote_prefix",
+    return_value="testremote:",
+    new_callable=mock.PropertyMock,
+)
+@mock.patch("locations.models.rclone.RClone._execute_rclone_subcommand")
 def test_rclone_move_from_storage_service(
-    mocker, rclone_space, package_is_file, expected_subcommand
+    _execute_rclone_subcommand,
+    remote_prefix,
+    _ensure_container_exists,
+    package_is_file,
+    create_local_directory,
+    rclone_space,
+    package_is_file_result,
+    expected_subcommand,
 ):
-    exec_subprocess = mocker.patch(
-        "locations.models.rclone.RClone._execute_rclone_subcommand"
-    )
-    mocker.patch(
-        "locations.models.rclone.RClone.remote_prefix",
-        return_value="testremote:",
-        new_callable=mocker.PropertyMock,
-    )
-    mocker.patch("locations.models.rclone.RClone._ensure_container_exists")
-    mocker.patch("common.utils.package_is_file", return_value=package_is_file)
-    mocker.patch("locations.models.Space.create_local_directory")
+    package_is_file.return_value = package_is_file_result
 
-    if package_is_file:
+    if package_is_file_result:
         rclone_space.move_from_storage_service(
             COMPRESSED_SRC_PATH, COMPRESSED_DEST_PATH, rclone_space
         )
@@ -363,11 +379,11 @@ def test_rclone_move_from_storage_service(
         rclone_space.move_from_storage_service(
             UNCOMPRESSED_SRC_PATH, UNCOMPRESSED_DEST_PATH, rclone_space
         )
-    exec_subprocess.assert_called_with(expected_subcommand)
+    _execute_rclone_subcommand.assert_called_with(expected_subcommand)
 
 
 @pytest.mark.parametrize(
-    "package_is_file, expected_subcommand",
+    "package_is_file_result, expected_subcommand",
     [
         # Package is file, expect "copyto" subcommand
         (
@@ -389,21 +405,26 @@ def test_rclone_move_from_storage_service(
         ),
     ],
 )
+@mock.patch("locations.models.Space.create_local_directory")
+@mock.patch("common.utils.package_is_file")
+@mock.patch(
+    "locations.models.rclone.RClone.remote_prefix",
+    return_value="testremote:",
+    new_callable=mock.PropertyMock,
+)
+@mock.patch("locations.models.rclone.RClone._execute_rclone_subcommand")
 def test_rclone_move_from_storage_service_no_container(
-    mocker, rclone_space_no_container, package_is_file, expected_subcommand
+    _execute_rclone_subcommand,
+    remote_prefix,
+    package_is_file,
+    create_local_directory,
+    rclone_space_no_container,
+    package_is_file_result,
+    expected_subcommand,
 ):
-    exec_subprocess = mocker.patch(
-        "locations.models.rclone.RClone._execute_rclone_subcommand"
-    )
-    mocker.patch(
-        "locations.models.rclone.RClone.remote_prefix",
-        return_value="testremote:",
-        new_callable=mocker.PropertyMock,
-    )
-    mocker.patch("common.utils.package_is_file", return_value=package_is_file)
-    mocker.patch("locations.models.Space.create_local_directory")
+    package_is_file.return_value = package_is_file_result
 
-    if package_is_file:
+    if package_is_file_result:
         rclone_space_no_container.move_from_storage_service(
             COMPRESSED_SRC_PATH, COMPRESSED_DEST_PATH, rclone_space
         )
@@ -411,7 +432,7 @@ def test_rclone_move_from_storage_service_no_container(
         rclone_space_no_container.move_from_storage_service(
             UNCOMPRESSED_SRC_PATH, UNCOMPRESSED_DEST_PATH, rclone_space
         )
-    exec_subprocess.assert_called_with(expected_subcommand)
+    _execute_rclone_subcommand.assert_called_with(expected_subcommand)
 
 
 @pytest.mark.parametrize(
@@ -440,23 +461,23 @@ def test_rclone_move_from_storage_service_no_container(
         (b"", None, True),
     ],
 )
+@mock.patch("locations.models.rclone.RClone._ensure_container_exists")
+@mock.patch(
+    "locations.models.rclone.RClone.remote_prefix",
+    return_value="testremote:",
+    new_callable=mock.PropertyMock,
+)
+@mock.patch("locations.models.rclone.RClone._execute_rclone_subcommand")
 def test_rclone_browse(
-    mocker,
+    _execute_rclone_subcommand,
+    remote_prefix,
+    _ensure_container_exists,
     rclone_space,
     subprocess_return,
     expected_properties,
     raises_storage_exception,
 ):
-    exec_subprocess = mocker.patch(
-        "locations.models.rclone.RClone._execute_rclone_subcommand"
-    )
-    exec_subprocess.return_value = subprocess_return
-    mocker.patch(
-        "locations.models.rclone.RClone.remote_prefix",
-        return_value="testremote:",
-        new_callable=mocker.PropertyMock,
-    )
-    mocker.patch("locations.models.rclone.RClone._ensure_container_exists")
+    _execute_rclone_subcommand.return_value = subprocess_return
 
     if not raises_storage_exception:
         return_value = rclone_space.browse("/")
@@ -499,22 +520,21 @@ def test_rclone_browse(
         (b"", None, True),
     ],
 )
+@mock.patch(
+    "locations.models.rclone.RClone.remote_prefix",
+    return_value="testremote:",
+    new_callable=mock.PropertyMock,
+)
+@mock.patch("locations.models.rclone.RClone._execute_rclone_subcommand")
 def test_rclone_browse_no_container(
-    mocker,
+    _execute_rclone_subcommand,
+    remote_prefix,
     rclone_space_no_container,
     subprocess_return,
     expected_properties,
     raises_storage_exception,
 ):
-    exec_subprocess = mocker.patch(
-        "locations.models.rclone.RClone._execute_rclone_subcommand"
-    )
-    exec_subprocess.return_value = subprocess_return
-    mocker.patch(
-        "locations.models.rclone.RClone.remote_prefix",
-        return_value="testremote:",
-        new_callable=mocker.PropertyMock,
-    )
+    _execute_rclone_subcommand.return_value = subprocess_return
 
     if not raises_storage_exception:
         return_value = rclone_space_no_container.browse("/")
