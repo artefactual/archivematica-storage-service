@@ -264,7 +264,7 @@ def test_pipeline_detail_view_shows_pipeline_fields(
     assert f"<dd>{pipeline.uuid}</dd>" in content
     assert f"<dd>{pipeline.description}</dd>" in content
     assert f"<dd>{pipeline.remote_name}</dd>" in content
-    assert f"<dd> {pipeline.api_username} / {pipeline.api_key}</dd>" in content
+    assert f"<dd>{pipeline.api_username}</dd>" in content
     assert "No locations currently exist" in content
 
 

@@ -10,7 +10,7 @@
     <dt>{% trans "UUID" %}</dt> <dd>{{ pipeline.uuid }}</dd>
     <dt>{% trans "Description" %}</dt> <dd>{{ pipeline.description|default:_("&lt;None&gt;") }}</dd>
     <dt>{% trans "Remote name" %}</dt> <dd>{{ pipeline.remote_name|default:_("&lt;None&gt;") }}</dd>
-    <dt>{% trans "API Username / Key" %}</dt> <dd> {{ pipeline.api_username|default:_("&lt;None&gt;") }} / {{ pipeline.api_key|default:_("&lt;None&gt;") }}</dd>
+    <dt>{% trans "API Username" %}</dt> <dd>{{ pipeline.api_username|default:_("&lt;None&gt;") }}</dd>
     <dt>{% trans "Enabled" %}</dt> <dd>{{ pipeline.enabled|yesno:_("Enabled,Disabled") }}</dd>
     {% if perms.locations.change_pipeline %}
       <dt>{% trans "Actions" %}</dt> <dd>
