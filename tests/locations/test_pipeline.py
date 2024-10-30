@@ -221,6 +221,37 @@ def test_view_edit_pipeline_post(
     assert str(messages[0]) == "Pipeline saved."
 
 
+def test_view_edit_pipeline_post_updates_fields_when_api_key_is_not_set(
+    admin_client: Client, pipeline: models.Pipeline
+) -> None:
+    url = reverse("locations:pipeline_edit", args=[pipeline.uuid])
+    description = "Pipeline 3ebf"
+    remote_name = "localhost"
+    api_username = "newapiusername"
+    old_api_key = pipeline.api_key
+
+    resp = admin_client.post(
+        url,
+        follow=True,
+        data={
+            "uuid": str(pipeline.uuid),
+            "description": description,
+            "remote_name": remote_name,
+            "api_username": api_username,
+        },
+    )
+    messages = list(resp.context["messages"])
+
+    pipeline.refresh_from_db()
+    assert pipeline.description == description
+    assert pipeline.remote_name == remote_name
+    assert pipeline.api_username == api_username
+    assert str(messages[0]) == "Pipeline saved."
+
+    # The existing API key value was not modified.
+    assert pipeline.api_key == old_api_key
+
+
 def test_pipeline_detail_view_shows_pipeline_fields(
     admin_client: Client, pipeline: models.Pipeline
 ) -> None:

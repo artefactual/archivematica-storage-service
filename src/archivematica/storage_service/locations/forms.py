@@ -56,6 +56,13 @@ class PipelineForm(forms.ModelForm):
         help_text=_("Enabled if default locations should be created for this pipeline"),
     )
 
+    api_key = forms.CharField(
+        label=_("API key"),
+        help_text=_("API key to use when making API calls to the pipeline."),
+        required=False,
+        widget=forms.PasswordInput,
+    )
+
     class Meta:
         model = models.Pipeline
         fields = (
@@ -66,6 +73,13 @@ class PipelineForm(forms.ModelForm):
             "api_key",
             "enabled",
         )
+
+    def save(self, *args, **kwargs):
+        if not self.cleaned_data["api_key"]:
+            # If the API key was not provided, remove it from the cleaned data
+            # to avoid overwriting its existing stored value.
+            del self.cleaned_data["api_key"]
+        return super().save(*args, **kwargs)
 
 
 class SpaceForm(forms.ModelForm):
