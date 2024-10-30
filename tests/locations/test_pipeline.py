@@ -169,8 +169,14 @@ def test_view_edit_pipeline(admin_client: Client, pipeline: models.Pipeline) -> 
     resp = admin_client.get(url, follow=True)
     form = resp.context["form"]
 
-    assert form.initial["enabled"] is True
-    assert "create_default_locations" not in form.initial
+    assert form.initial == {
+        "uuid": pipeline.uuid,
+        "description": pipeline.description,
+        "remote_name": pipeline.remote_name,
+        "api_username": pipeline.api_username,
+        "api_key": pipeline.api_key,
+        "enabled": pipeline.enabled,
+    }
 
 
 def test_view_edit_pipeline_invalid_post(
@@ -188,20 +194,29 @@ def test_view_edit_pipeline_post(
     admin_client: Client, pipeline: models.Pipeline
 ) -> None:
     url = reverse("locations:pipeline_edit", args=[pipeline.uuid])
+    description = "Pipeline 3ebf"
+    remote_name = "localhost"
+    api_username = "newapiusername"
+    api_key = "newapikey"
 
     resp = admin_client.post(
         url,
         follow=True,
         data={
             "uuid": str(pipeline.uuid),
-            "description": "Pipeline 3ebf",
+            "description": description,
+            "remote_name": remote_name,
+            "api_username": api_username,
+            "api_key": api_key,
         },
     )
     messages = list(resp.context["messages"])
 
-    assert (
-        models.Pipeline.objects.get(uuid=pipeline.uuid).description == "Pipeline 3ebf"
-    )
+    pipeline.refresh_from_db()
+    assert pipeline.description == description
+    assert pipeline.remote_name == remote_name
+    assert pipeline.api_username == api_username
+    assert pipeline.api_key == api_key
     assert str(messages[0]) == "Pipeline saved."
 
 
