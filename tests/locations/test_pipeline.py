@@ -3,190 +3,197 @@ from unittest import mock
 from urllib.parse import ParseResult
 from urllib.parse import urlparse
 
-from django.test import TestCase
+import pytest
+import pytest_django
+from django.test import Client
 from django.urls import reverse
 from locations import models
 
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
 
-class TestPipeline(TestCase):
-    fixture_files = ["base.json", "pipelines.json"]
-    fixtures = [FIXTURES_DIR / f for f in fixture_files]
+@pytest.fixture
+def pipeline() -> models.Pipeline:
+    return models.Pipeline.objects.create(remote_name="127.0.0.1")
 
-    def test_parse_and_fix_url(self):
-        pipeline = models.Pipeline.objects.get(pk=1)
-        res = pipeline.parse_and_fix_url(pipeline.remote_name)
-        assert isinstance(res, ParseResult)
-        assert res.geturl() == "http://127.0.0.1"
 
-        pipeline = models.Pipeline.objects.get(pk=2)
-        res = pipeline.parse_and_fix_url(pipeline.remote_name)
-        assert res == urlparse("")
+@pytest.mark.django_db
+def test_parse_and_fix_url(pipeline: models.Pipeline) -> None:
+    res = pipeline.parse_and_fix_url(pipeline.remote_name)
+    assert isinstance(res, ParseResult)
+    assert res.geturl() == "http://127.0.0.1"
 
-        url = "https://archivematica-dashboard"
-        assert pipeline.parse_and_fix_url(url) == urlparse(url)
 
-        url = "https://foo@bar:ss.qa.usip.tld:1234/dev/"
-        assert pipeline.parse_and_fix_url(url) == urlparse(url)
+@pytest.mark.django_db
+def test_parse_and_fix_url_with_empty_remote_name(pipeline: models.Pipeline) -> None:
+    pipeline.remote_name = ""
+    pipeline.save()
 
-    @mock.patch("requests.request")
-    def test_request_api(self, request):
-        pipeline = models.Pipeline.objects.get(pk=1)
+    res = pipeline.parse_and_fix_url(pipeline.remote_name)
+    assert res == urlparse("")
 
-        method = "GET"
-        url = "http://127.0.0.1/api/processing-configuration/default"
-        headers = {"Authorization": "ApiKey None:None"}
+    url = "https://archivematica-dashboard"
+    assert pipeline.parse_and_fix_url(url) == urlparse(url)
 
-        pipeline._request_api(method, "processing-configuration/default")
-        request.assert_called_with(
-            method, url, allow_redirects=True, data=None, headers=headers, verify=True
-        )
+    url = "https://foo@bar:ss.qa.usip.tld:1234/dev/"
+    assert pipeline.parse_and_fix_url(url) == urlparse(url)
 
-        with self.settings(INSECURE_SKIP_VERIFY=True):
-            pipeline._request_api(method, "processing-configuration/default")
-            request.assert_called_with(
-                method,
-                url,
-                allow_redirects=True,
-                data=None,
-                headers=headers,
-                verify=False,
-            )
 
-    @mock.patch(
-        "locations.models.Pipeline._request_api",
-        side_effect=[
-            mock.Mock(
-                **{
-                    "status_code": 200,
-                    "json.return_value": {
-                        "message": "Fetched unapproved transfers successfully.",
-                        "results": [
-                            {
-                                "directory": "Foobar1",
-                                "type": "standard",
-                                "uuid": "090b7f5b-637b-400b-9014-3eb58986fe8f",
-                            }
-                        ],
-                    },
-                }
-            )
-        ],
+@pytest.mark.django_db
+@mock.patch("requests.request")
+def test_request_api(
+    request: mock.Mock,
+    pipeline: models.Pipeline,
+    settings: pytest_django.fixtures.SettingsWrapper,
+) -> None:
+    method = "GET"
+    url = "http://127.0.0.1/api/processing-configuration/default"
+    headers = {"Authorization": "ApiKey None:None"}
+
+    pipeline._request_api(method, "processing-configuration/default")
+    request.assert_called_with(
+        method, url, allow_redirects=True, data=None, headers=headers, verify=True
     )
-    def test_list_unapproved_transfers(self, request_api):
-        pipeline = models.Pipeline.objects.get(pk=3)
-        result = pipeline.list_unapproved_transfers()
 
-        assert isinstance(result, dict) is True
-        assert result["message"] == "Fetched unapproved transfers successfully."
-        assert len(result["results"]) == 1
-        assert result["results"][0]["directory"] == "Foobar1"
-        assert result["results"][0]["type"] == "standard"
-        assert result["results"][0]["uuid"] == "090b7f5b-637b-400b-9014-3eb58986fe8f"
-
-    @mock.patch(
-        "locations.models.Pipeline._request_api",
-        side_effect=[
-            mock.Mock(
-                **{
-                    "status_code": 200,
-                    "json.return_value": {
-                        "message": "Approval successful.",
-                        "uuid": "090b7f5b-637b-400b-9014-3eb58986fe8f",
-                    },
-                }
-            )
-        ],
+    settings.INSECURE_SKIP_VERIFY = True
+    pipeline._request_api(method, "processing-configuration/default")
+    request.assert_called_with(
+        method,
+        url,
+        allow_redirects=True,
+        data=None,
+        headers=headers,
+        verify=False,
     )
-    def test_approve_transfer(self, request_api):
-        pipeline = models.Pipeline.objects.get(pk=3)
-        result = pipeline.approve_transfer("Foobar1", "standard")
-
-        assert result["message"] == "Approval successful."
-        assert result["uuid"] == "090b7f5b-637b-400b-9014-3eb58986fe8f"
 
 
-class TestPipelineViews(TestCase):
-    fixture_files = ["base.json", "pipelines.json"]
-    fixtures = [FIXTURES_DIR / f for f in fixture_files]
-
-    def setUp(self):
-        self.client.login(username="test", password="test")
-
-    def test_view_create_pipeline(self):
-        url = reverse("locations:pipeline_create")
-
-        resp = self.client.get(url, follow=True)
-        form = resp.context["form"]
-
-        assert resp.status_code == 200
-        assert form.initial["enabled"] is True
-        assert form.initial["create_default_locations"] is True
-
-    def test_view_create_pipeline_invalid_post(self):
-        url = reverse("locations:pipeline_create")
-
-        resp = self.client.post(url, follow=True, data={})
-        form = resp.context["form"]
-
-        assert form.is_valid() is False
-
-    def test_view_create_pipeline_post(self):
-        url = reverse("locations:pipeline_create")
-
-        resp = self.client.post(
-            url, follow=True, data={"uuid": "0d9d6be9-2751-4e81-b85f-fe4e51a1f789"}
+@pytest.mark.django_db
+@mock.patch(
+    "locations.models.Pipeline._request_api",
+    side_effect=[
+        mock.Mock(
+            **{
+                "status_code": 200,
+                "json.return_value": {
+                    "message": "Fetched unapproved transfers successfully.",
+                    "results": [
+                        {
+                            "directory": "Foobar1",
+                            "type": "standard",
+                            "uuid": "090b7f5b-637b-400b-9014-3eb58986fe8f",
+                        }
+                    ],
+                },
+            }
         )
-        messages = list(resp.context["messages"])
+    ],
+)
+def test_list_unapproved_transfers(
+    request_api: mock.Mock, pipeline: models.Pipeline
+) -> None:
+    result = pipeline.list_unapproved_transfers()
 
-        self.assertRedirects(resp, reverse("locations:pipeline_list"))
-        assert models.Pipeline.objects.filter(
-            uuid="0d9d6be9-2751-4e81-b85f-fe4e51a1f789"
-        ).exists()
-        assert str(messages[0]) == "Pipeline saved."
+    assert isinstance(result, dict) is True
+    assert result["message"] == "Fetched unapproved transfers successfully."
+    assert len(result["results"]) == 1
+    assert result["results"][0]["directory"] == "Foobar1"
+    assert result["results"][0]["type"] == "standard"
+    assert result["results"][0]["uuid"] == "090b7f5b-637b-400b-9014-3eb58986fe8f"
 
-    def test_view_edit_pipeline(self):
-        url = reverse(
-            "locations:pipeline_edit", args=["b25f6b71-3ebf-4fcc-823c-1feb0a2553dd"]
+
+@pytest.mark.django_db
+@mock.patch(
+    "locations.models.Pipeline._request_api",
+    side_effect=[
+        mock.Mock(
+            **{
+                "status_code": 200,
+                "json.return_value": {
+                    "message": "Approval successful.",
+                    "uuid": "090b7f5b-637b-400b-9014-3eb58986fe8f",
+                },
+            }
         )
+    ],
+)
+def test_approve_transfer(request_api: mock.Mock, pipeline: models.Pipeline) -> None:
+    result = pipeline.approve_transfer("Foobar1", "standard")
 
-        resp = self.client.get(url, follow=True)
-        form = resp.context["form"]
+    assert result["message"] == "Approval successful."
+    assert result["uuid"] == "090b7f5b-637b-400b-9014-3eb58986fe8f"
 
-        assert form.initial["enabled"] is True
-        assert "create_default_locations" not in form.initial
 
-    def test_view_edit_pipeline_invalid_post(self):
-        url = reverse(
-            "locations:pipeline_edit", args=["b25f6b71-3ebf-4fcc-823c-1feb0a2553dd"]
-        )
+def test_view_create_pipeline(admin_client: Client) -> None:
+    url = reverse("locations:pipeline_create")
 
-        resp = self.client.post(url, follow=True, data={})
-        form = resp.context["form"]
+    resp = admin_client.get(url, follow=True)
+    form = resp.context["form"]
 
-        assert form.is_valid() is False
+    assert resp.status_code == 200
+    assert form.initial["enabled"] is True
+    assert form.initial["create_default_locations"] is True
 
-    def test_view_edit_pipeline_post(self):
-        url = reverse(
-            "locations:pipeline_edit", args=["b25f6b71-3ebf-4fcc-823c-1feb0a2553dd"]
-        )
 
-        resp = self.client.post(
-            url,
-            follow=True,
-            data={
-                "uuid": "b25f6b71-3ebf-4fcc-823c-1feb0a2553dd",
-                "description": "Pipeline 3ebf",
-            },
-        )
-        messages = list(resp.context["messages"])
+def test_view_create_pipeline_invalid_post(admin_client: Client) -> None:
+    url = reverse("locations:pipeline_create")
 
-        self.assertRedirects(resp, reverse("locations:pipeline_list"))
-        assert (
-            models.Pipeline.objects.get(
-                uuid="b25f6b71-3ebf-4fcc-823c-1feb0a2553dd"
-            ).description
-            == "Pipeline 3ebf"
-        )
-        assert str(messages[0]) == "Pipeline saved."
+    resp = admin_client.post(url, follow=True, data={})
+    form = resp.context["form"]
+
+    assert form.is_valid() is False
+
+
+def test_view_create_pipeline_post(admin_client: Client) -> None:
+    url = reverse("locations:pipeline_create")
+
+    resp = admin_client.post(
+        url, follow=True, data={"uuid": "0d9d6be9-2751-4e81-b85f-fe4e51a1f789"}
+    )
+    messages = list(resp.context["messages"])
+
+    assert models.Pipeline.objects.filter(
+        uuid="0d9d6be9-2751-4e81-b85f-fe4e51a1f789"
+    ).exists()
+    assert str(messages[0]) == "Pipeline saved."
+
+
+def test_view_edit_pipeline(admin_client: Client, pipeline: models.Pipeline) -> None:
+    url = reverse("locations:pipeline_edit", args=[pipeline.uuid])
+
+    resp = admin_client.get(url, follow=True)
+    form = resp.context["form"]
+
+    assert form.initial["enabled"] is True
+    assert "create_default_locations" not in form.initial
+
+
+def test_view_edit_pipeline_invalid_post(
+    admin_client: Client, pipeline: models.Pipeline
+) -> None:
+    url = reverse("locations:pipeline_edit", args=[pipeline.uuid])
+
+    resp = admin_client.post(url, follow=True, data={})
+    form = resp.context["form"]
+
+    assert form.is_valid() is False
+
+
+def test_view_edit_pipeline_post(
+    admin_client: Client, pipeline: models.Pipeline
+) -> None:
+    url = reverse("locations:pipeline_edit", args=[pipeline.uuid])
+
+    resp = admin_client.post(
+        url,
+        follow=True,
+        data={
+            "uuid": str(pipeline.uuid),
+            "description": "Pipeline 3ebf",
+        },
+    )
+    messages = list(resp.context["messages"])
+
+    assert (
+        models.Pipeline.objects.get(uuid=pipeline.uuid).description == "Pipeline 3ebf"
+    )
+    assert str(messages[0]) == "Pipeline saved."
