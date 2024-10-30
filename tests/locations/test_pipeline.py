@@ -1,4 +1,5 @@
 import pathlib
+import uuid
 from unittest import mock
 from urllib.parse import ParseResult
 from urllib.parse import urlparse
@@ -14,7 +15,12 @@ FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
 @pytest.fixture
 def pipeline() -> models.Pipeline:
-    return models.Pipeline.objects.create(remote_name="127.0.0.1")
+    return models.Pipeline.objects.create(
+        description="My pipeline",
+        remote_name="127.0.0.1",
+        api_username="user",
+        api_key="key",
+    )
 
 
 @pytest.mark.django_db
@@ -48,7 +54,7 @@ def test_request_api(
 ) -> None:
     method = "GET"
     url = "http://127.0.0.1/api/processing-configuration/default"
-    headers = {"Authorization": "ApiKey None:None"}
+    headers = {"Authorization": f"ApiKey {pipeline.api_username}:{pipeline.api_key}"}
 
     pipeline._request_api(method, "processing-configuration/default")
     request.assert_called_with(
@@ -197,3 +203,33 @@ def test_view_edit_pipeline_post(
         models.Pipeline.objects.get(uuid=pipeline.uuid).description == "Pipeline 3ebf"
     )
     assert str(messages[0]) == "Pipeline saved."
+
+
+def test_pipeline_detail_view_shows_pipeline_fields(
+    admin_client: Client, pipeline: models.Pipeline
+) -> None:
+    response = admin_client.get(
+        reverse("locations:pipeline_detail", kwargs={"uuid": pipeline.uuid})
+    )
+    assert response.status_code == 200
+
+    content = response.content.decode()
+    assert f"<dd>{pipeline.uuid}</dd>" in content
+    assert f"<dd>{pipeline.description}</dd>" in content
+    assert f"<dd>{pipeline.remote_name}</dd>" in content
+    assert f"<dd> {pipeline.api_username} / {pipeline.api_key}</dd>" in content
+    assert "No locations currently exist" in content
+
+
+def test_pipeline_detail_view_warns_if_pipeline_does_not_exist(
+    admin_client: Client, pipeline: models.Pipeline
+) -> None:
+    pipeline_uuid = uuid.uuid4()
+    response = admin_client.get(
+        reverse("locations:pipeline_detail", kwargs={"uuid": pipeline_uuid}),
+        follow=True,
+    )
+    assert response.status_code == 200
+
+    content = response.content.decode()
+    assert f"Pipeline {pipeline_uuid} does not exist." in content
