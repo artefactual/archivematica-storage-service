@@ -1,4 +1,8 @@
+import hmac
+import uuid
+from hashlib import sha1
 from typing import Type
+from unittest import mock
 
 import pytest
 import pytest_django
@@ -6,6 +10,7 @@ from administration import roles
 from django.contrib.auth.models import User
 from django.test import Client
 from django.urls import reverse
+from tastypie.models import ApiKey
 
 
 def as_reader(user: User) -> None:
@@ -81,18 +86,22 @@ def test_create_user_as_non_admin(
     assert not User.objects.filter(username="demo").exists()
 
 
+@pytest.fixture
+def user(django_user_model: Type[User]) -> User:
+    return django_user_model.objects.create_user(
+        username="test", password="ck61Qc873.KxoZ5G", email="test@example.com"
+    )
+
+
 @pytest.mark.django_db
 def test_edit_user_promote_as_manager(
     admin_client: Client,
     settings: pytest_django.fixtures.SettingsWrapper,
-    django_user_model: Type[User],
+    user: User,
 ) -> None:
     """Only administrators are allowed to promote/demote users."""
-    test = django_user_model.objects.create_user(
-        username="test", password="ck61Qc873.KxoZ5G", email="test@example.com"
-    )
     resp = admin_client.post(
-        reverse("administration:user_edit", kwargs={"id": test.pk}),
+        reverse("administration:user_edit", kwargs={"id": user.pk}),
         {
             "user": "Edit User",
             "username": "test",
@@ -104,8 +113,8 @@ def test_edit_user_promote_as_manager(
     assert resp.status_code == 200
 
     assert list(resp.context["messages"])[0].message == "User information saved."
-    test.refresh_from_db()
-    assert test.get_role() == roles.USER_ROLE_MANAGER
+    user.refresh_from_db()
+    assert user.get_role() == roles.USER_ROLE_MANAGER
 
 
 @pytest.mark.django_db
@@ -113,15 +122,13 @@ def test_edit_user_promotion_requires_admin(
     admin_client: Client,
     settings: pytest_django.fixtures.SettingsWrapper,
     django_user_model: Type[User],
+    user: User,
 ) -> None:
     """Only administrators are allowed to promote/demote users."""
     as_manager(django_user_model.objects.get(username="admin"))
-    test = django_user_model.objects.create_user(
-        username="test", password="ck61Qc873.KxoZ5G", email="test@example.com"
-    )
 
     resp = admin_client.post(
-        reverse("administration:user_edit", kwargs={"id": test.pk}),
+        reverse("administration:user_edit", kwargs={"id": user.pk}),
         {
             "user": "Edit User",
             "username": "test",
@@ -132,5 +139,70 @@ def test_edit_user_promotion_requires_admin(
     )
     assert resp.status_code == 200
 
-    test.refresh_from_db()
-    assert test.get_role() == roles.USER_ROLE_READER
+    user.refresh_from_db()
+    assert user.get_role() == roles.USER_ROLE_READER
+
+
+@pytest.fixture
+def admin_user_apikey(admin_client: Client, django_user_model: Type[User]) -> ApiKey:
+    return ApiKey.objects.create(user=django_user_model.objects.get(username="admin"))
+
+
+@pytest.mark.django_db
+def test_user_edit_view_updates_password(
+    admin_client: Client,
+    settings: pytest_django.fixtures.SettingsWrapper,
+    django_user_model: Type[User],
+    admin_user_apikey: ApiKey,
+) -> None:
+    user = django_user_model.objects.get(username="admin")
+    assert user.check_password("password")
+    new_password = "ck61Qc873.KxoZ5G"
+
+    response = admin_client.post(
+        reverse("administration:user_edit", kwargs={"id": user.pk}),
+        {
+            "new_password1": new_password,
+            "new_password2": new_password,
+            "password": "1",
+        },
+        follow=True,
+    )
+    assert response.status_code == 200
+
+    user.refresh_from_db()
+    assert user.check_password(new_password)
+    assert "Password changed" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_user_edit_view_regenerates_api_key(
+    admin_client: Client,
+    settings: pytest_django.fixtures.SettingsWrapper,
+    django_user_model: Type[User],
+    admin_user_apikey: ApiKey,
+) -> None:
+    user = django_user_model.objects.get(username="admin")
+    assert user.check_password("password")
+    new_password = "ck61Qc873.KxoZ5G"
+    expected_uuid = uuid.uuid4()
+    expected_key = hmac.new(expected_uuid.bytes, digestmod=sha1).hexdigest()
+
+    with mock.patch("uuid.uuid4", return_value=expected_uuid):
+        response = admin_client.post(
+            reverse("administration:user_edit", kwargs={"id": user.pk}),
+            {
+                "new_password1": new_password,
+                "new_password2": new_password,
+                "password": "1",
+            },
+            follow=True,
+        )
+        assert response.status_code == 200
+
+    user.refresh_from_db()
+    assert user.check_password(new_password)
+    assert "Password changed" in response.content.decode()
+
+    admin_user_apikey.refresh_from_db()
+    assert admin_user_apikey.key == expected_key
