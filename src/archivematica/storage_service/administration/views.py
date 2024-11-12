@@ -93,7 +93,9 @@ def user_edit(request, id):
     user_form = settings_forms.UserChangeForm(
         request.POST or None, instance=edit_user, current_user=request.user
     )
-    password_form = SetPasswordForm(data=request.POST or None, user=edit_user)
+    password_form = SetPasswordForm(
+        data=request.POST if "password" in request.POST else None, user=edit_user
+    )
     if "user" in request.POST and user_form.is_valid():
         if user_form.cleaned_data["regenerate_api_key"]:
             api_key = ApiKey.objects.get(user=edit_user)
@@ -101,11 +103,11 @@ def user_edit(request, id):
             api_key.save()
         user_form.save()
         messages.success(request, _("User information saved."))
-        return redirect("administration:user_list")
+        return redirect("administration:user_edit", id=edit_user.pk)
     elif "password" in request.POST and password_form.is_valid():
         password_form.save()
         messages.success(request, _("Password changed."))
-        return redirect("administration:user_list")
+        return redirect("administration:user_edit", id=edit_user.pk)
     elif "password":
         # Ensure user form information still displays after an invalid
         # password change attempt.
