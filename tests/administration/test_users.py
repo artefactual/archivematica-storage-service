@@ -183,8 +183,6 @@ def test_user_edit_view_regenerates_api_key(
     admin_user_apikey: ApiKey,
 ) -> None:
     user = django_user_model.objects.get(username="admin")
-    assert user.check_password("password")
-    new_password = "ck61Qc873.KxoZ5G"
     expected_uuid = uuid.uuid4()
     expected_key = hmac.new(expected_uuid.bytes, digestmod=sha1).hexdigest()
 
@@ -192,17 +190,15 @@ def test_user_edit_view_regenerates_api_key(
         response = admin_client.post(
             reverse("administration:user_edit", kwargs={"id": user.pk}),
             {
-                "new_password1": new_password,
-                "new_password2": new_password,
-                "password": "1",
+                "user": "Edit User",
+                "username": user.username,
+                "regenerate_api_key": True,
             },
             follow=True,
         )
         assert response.status_code == 200
 
-    user.refresh_from_db()
-    assert user.check_password(new_password)
-    assert "Password changed" in response.content.decode()
+    assert "User information saved." in response.content.decode()
 
     admin_user_apikey.refresh_from_db()
     assert admin_user_apikey.key == expected_key

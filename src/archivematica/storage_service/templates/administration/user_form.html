@@ -13,6 +13,11 @@
     {% endif %}
       {% csrf_token %}
       {{ user_form.as_p }}
+      {% if edit_user and edit_user.api_key %}
+      <p>
+        <code>{{ edit_user.api_key.key }}</code>
+      </p>
+      {% endif %}
       <input type="submit" name='user' value="{{ action }}" class='btn btn-primary' />
     </form>
 
@@ -20,16 +25,9 @@
     <form action="{% url 'administration:user_edit' edit_user.id %}" method="post">
       {% csrf_token %}
       {{ password_form.as_p }}
-      <p>{% trans "Note: if you change your password, your API key will also be changed to a new, randomly generated one." %}</p>
       <input type="submit" name='password' value="{% trans "Change Password" %}" class='btn btn-primary' />
     </form>
     {% endif %}
 
-    {% if edit_user and edit_user.api_key %}
-    <p>
-      <label>{% trans "API key" %}:</label>
-      <code>{{ edit_user.api_key.key }}</code>
-    </p>
-    {% endif %}
 </div>
 {% endblock %}

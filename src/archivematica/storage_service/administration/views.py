@@ -95,14 +95,15 @@ def user_edit(request, id):
     )
     password_form = SetPasswordForm(data=request.POST or None, user=edit_user)
     if "user" in request.POST and user_form.is_valid():
+        if user_form.cleaned_data["regenerate_api_key"]:
+            api_key = ApiKey.objects.get(user=edit_user)
+            api_key.key = api_key.generate_key()
+            api_key.save()
         user_form.save()
         messages.success(request, _("User information saved."))
         return redirect("administration:user_list")
     elif "password" in request.POST and password_form.is_valid():
         password_form.save()
-        api_key = ApiKey.objects.get(user=edit_user)
-        api_key.key = api_key.generate_key()
-        api_key.save()
         messages.success(request, _("Password changed."))
         return redirect("administration:user_list")
     elif "password":

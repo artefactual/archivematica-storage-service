@@ -291,6 +291,11 @@ class UserChangeForm(auth.forms.UserChangeForm):
         choices=roles.USER_ROLES,
         help_text=ROLE_FIELD_HELP_TEXT,
     )
+    regenerate_api_key = forms.BooleanField(
+        widget=forms.CheckboxInput,
+        label="Regenerate API key (shown below)?",
+        required=False,
+    )
 
     class Meta:
         model = auth.get_user_model()
