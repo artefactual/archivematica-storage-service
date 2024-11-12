@@ -293,7 +293,7 @@ class UserChangeForm(auth.forms.UserChangeForm):
     )
     regenerate_api_key = forms.BooleanField(
         widget=forms.CheckboxInput,
-        label="Regenerate API key (shown below)?",
+        label="Regenerate API key?",
         required=False,
     )
 
