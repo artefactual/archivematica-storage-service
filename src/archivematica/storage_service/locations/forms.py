@@ -185,10 +185,7 @@ class DSpaceRESTForm(forms.ModelForm):
 
 
 def get_gpg_key_choices():
-    return [
-        (key["fingerprint"], ", ".join(key["uids"]))
-        for key in gpgutils.get_gpg_key_list()
-    ]
+    return [(key["fingerprint"], key["keyid"]) for key in gpgutils.get_gpg_key_list()]
 
 
 class GPGForm(forms.ModelForm):
