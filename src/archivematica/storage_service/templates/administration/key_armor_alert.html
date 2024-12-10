@@ -1,0 +1,14 @@
+{% load i18n %}
+<p>{% trans "Make sure to copy the Private Key ASCII Armor now as you will not be able to see it again." %}</p>
+{% trans 'Copy' as label_copy %}
+{% trans 'Copied!' as label_copied %}
+<div class="input-prepend">
+  <button id="copy-key-armor-button" class="btn"
+      title="{{ label_copy }}"
+      data-label-original="{{ label_copy }}"
+      data-label-clicked="{{ label_copied }}"
+      data-placement="bottom" style="margin: 0 -1px 0 0;">
+      <i id="copy-key-armor-button-icon" class="icon-share" data-icon-original-class="icon-share" data-icon-clicked-class="icon-ok"></i>
+  </button>
+  <textarea id="key-armor" class="input-xxlarge uneditable-input" disabled style="cursor: default; resize: vertical; height: 100px;">{{ armor }}</textarea>
+</div>

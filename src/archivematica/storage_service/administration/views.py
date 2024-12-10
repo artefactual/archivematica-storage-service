@@ -212,6 +212,16 @@ def key_detail(request, key_fingerprint):
     return render(request, "administration/key_detail.html", locals())
 
 
+def _show_private_key_alert(request, fingerprint):
+    _, private_armor = gpgutils.export_gpg_key(fingerprint)
+    messages.success(
+        request,
+        render_to_string(
+            "administration/key_armor_alert.html", {"armor": private_armor}, request
+        ),
+    )
+
+
 @permission_required("administration.change_settings", raise_exception=True)
 def key_create(request):
     """Create a new key using the POST params; currently these are just the
@@ -231,8 +241,11 @@ def key_create(request):
                     % {"fingerprint": key.fingerprint}
                 ),
             )
+            _show_private_key_alert(request, key.fingerprint)
             LOGGER.debug('created new GPG key for "%s"', cd["name_real"])
-            return redirect("administration:key_list")
+            return redirect(
+                "administration:key_detail", key_fingerprint=key.fingerprint
+            )
         else:
             messages.warning(
                 request,
