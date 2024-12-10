@@ -11,7 +11,7 @@
   <table class="datatable">
     <thead>
       <tr>
-        <th>{% trans "User ID(s)" %}</th>
+        <th>{% trans "Keyid" %}</th>
         <th>{% trans "Fingerprint" %}</th>
         <th>{% trans "Actions" %}</th>
       </tr>
@@ -19,7 +19,7 @@
     {% for key_display in keys %}
       <tr>
         <td><a href="{% url 'administration:key_detail' key_display.fingerprint %}"
-               >{{ key_display.uids|join:", " }}</a></td>
+               >{{ key_display.keyid }}</a></td>
         <td>{{ key_display.fingerprint }}</td>
         <td><a href="{% url 'administration:key_delete' key_display.fingerprint %}?next={{ request.path }}">{% trans "Delete" %}</a></td>
       </tr>
