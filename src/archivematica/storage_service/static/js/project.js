@@ -272,4 +272,41 @@ $(document).ready(function () {
     // Append modified clone after last header
     $last_header.after($clone);
   });
+
+  // Set up the button which allows users to copy the API key to the clipboard.
+  $("#copy-api-key-button")
+    .tooltip()
+    .click(function () {
+      var $button = $(this);
+      navigator.clipboard
+        .writeText($("#api-key").val())
+        .then(function () {
+          var $button_icon = $("#copy-button-icon");
+          var $icon_original_class = $button_icon.data("icon-original-class");
+          var $icon_clicked_class = $button_icon.data("icon-clicked-class");
+
+          // Update the button icon.
+          $button_icon
+            .removeClass($icon_original_class)
+            .addClass($icon_clicked_class);
+
+          // Update the button tooltip.
+          $button
+            .attr("data-original-title", $button.data("label-clicked"))
+            .tooltip("show");
+
+          // Reset the button after 2 seconds.
+          setTimeout(function () {
+            $button_icon
+              .removeClass($icon_clicked_class)
+              .addClass($icon_original_class);
+            $button
+              .attr("data-original-title", $button.data("label-original"))
+              .tooltip("hide");
+          }, 2000);
+        })
+        .catch(function (err) {
+          console.error("Failed to copy API key to clipboard: ", err);
+        });
+    });
 });
