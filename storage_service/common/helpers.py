@@ -1,7 +1,6 @@
+from collections.abc import Iterable
 from os import environ
 from typing import Any
-from typing import Dict
-from typing import Iterable
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -21,7 +20,7 @@ def is_true(env_str: str) -> bool:
 
 def get_oidc_secondary_providers(
     oidc_secondary_provider_names: Iterable[str],
-) -> Dict[str, Dict[str, str]]:
+) -> dict[str, dict[str, str]]:
     providers = {}
 
     for provider_name in oidc_secondary_provider_names:

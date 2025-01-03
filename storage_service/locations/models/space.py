@@ -8,7 +8,6 @@ import stat
 import subprocess
 import tempfile
 import uuid
-from typing import Set
 
 from common import fields
 from common import utils
@@ -113,7 +112,7 @@ class Space(models.Model):
     GPG = "GPG"
     S3 = "S3"
     # These will not be displayed in the Space Create GUI (see locations/forms.py)
-    BETA_PROTOCOLS: Set[str] = set()
+    BETA_PROTOCOLS: set[str] = set()
     OBJECT_STORAGE = {
         ARCHIPELAGO,
         DATAVERSE,

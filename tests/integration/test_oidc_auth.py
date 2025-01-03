@@ -1,6 +1,5 @@
 import os
-from typing import Generator
-from typing import Type
+from collections.abc import Generator
 
 import pytest
 from django.contrib.auth.models import Group
@@ -33,7 +32,7 @@ def recreate_user_groups(
 
 
 @pytest.fixture
-def user(django_user_model: Type[User]) -> User:
+def user(django_user_model: type[User]) -> User:
     user = django_user_model.objects.create(
         username="foobar",
         email="foobar@example.com",
@@ -50,7 +49,7 @@ def user(django_user_model: Type[User]) -> User:
 def test_oidc_backend_creates_local_user(
     page: Page,
     live_server: LiveServer,
-    django_user_model: Type[User],
+    django_user_model: type[User],
 ) -> None:
     page.goto(live_server.url)
 

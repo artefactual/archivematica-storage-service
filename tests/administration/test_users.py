@@ -1,7 +1,6 @@
 import hmac
 import uuid
 from hashlib import sha1
-from typing import Type
 from unittest import mock
 
 import pytest
@@ -64,7 +63,7 @@ def test_create_user_as_admin(
 def test_create_user_as_non_admin(
     admin_client: Client,
     settings: pytest_django.fixtures.SettingsWrapper,
-    django_user_model: Type[User],
+    django_user_model: type[User],
 ) -> None:
     """Only administrators are allowed to create new users."""
     as_reader(django_user_model.objects.get(username="admin"))
@@ -87,7 +86,7 @@ def test_create_user_as_non_admin(
 
 
 @pytest.fixture
-def user(django_user_model: Type[User]) -> User:
+def user(django_user_model: type[User]) -> User:
     return django_user_model.objects.create_user(
         username="test", password="ck61Qc873.KxoZ5G", email="test@example.com"
     )
@@ -121,7 +120,7 @@ def test_edit_user_promote_as_manager(
 def test_edit_user_promotion_requires_admin(
     admin_client: Client,
     settings: pytest_django.fixtures.SettingsWrapper,
-    django_user_model: Type[User],
+    django_user_model: type[User],
     user: User,
 ) -> None:
     """Only administrators are allowed to promote/demote users."""
@@ -144,7 +143,7 @@ def test_edit_user_promotion_requires_admin(
 
 
 @pytest.fixture
-def admin_user_apikey(admin_client: Client, django_user_model: Type[User]) -> ApiKey:
+def admin_user_apikey(admin_client: Client, django_user_model: type[User]) -> ApiKey:
     return ApiKey.objects.create(user=django_user_model.objects.get(username="admin"))
 
 
@@ -152,7 +151,7 @@ def admin_user_apikey(admin_client: Client, django_user_model: Type[User]) -> Ap
 def test_user_edit_view_updates_password(
     admin_client: Client,
     settings: pytest_django.fixtures.SettingsWrapper,
-    django_user_model: Type[User],
+    django_user_model: type[User],
     admin_user_apikey: ApiKey,
 ) -> None:
     user = django_user_model.objects.get(username="admin")
@@ -179,7 +178,7 @@ def test_user_edit_view_updates_password(
 def test_user_edit_view_regenerates_api_key(
     admin_client: Client,
     settings: pytest_django.fixtures.SettingsWrapper,
-    django_user_model: Type[User],
+    django_user_model: type[User],
     admin_user_apikey: ApiKey,
 ) -> None:
     user = django_user_model.objects.get(username="admin")

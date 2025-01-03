@@ -4,7 +4,6 @@ import os
 import pathlib
 from collections import namedtuple
 from typing import Any
-from typing import Dict
 from unittest import mock
 
 import pytest
@@ -40,7 +39,7 @@ TEST_AGENTS = [
         )
     )
 ]
-BROWSE_FAIL_DICT: Dict[str, Any] = {"directories": [], "entries": [], "properties": {}}
+BROWSE_FAIL_DICT: dict[str, Any] = {"directories": [], "entries": [], "properties": {}}
 
 
 FakeGPGRet = namedtuple("FakeGPGRet", "ok status stderr")

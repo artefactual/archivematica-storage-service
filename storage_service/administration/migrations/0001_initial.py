@@ -1,12 +1,9 @@
-from typing import List
-from typing import Tuple
-
 from django.db import migrations
 from django.db import models
 
 
 class Migration(migrations.Migration):
-    dependencies: List[Tuple[str, str]] = []
+    dependencies: list[tuple[str, str]] = []
 
     operations = [
         migrations.CreateModel(

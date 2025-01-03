@@ -6,8 +6,6 @@ from os import environ
 from pathlib import Path
 from sys import path
 from typing import Any
-from typing import Dict
-from typing import List
 
 from common.helpers import get_oidc_secondary_providers
 from common.helpers import is_true
@@ -159,7 +157,7 @@ FIXTURE_DIRS = (str(SITE_ROOT / "fixtures"),)
 
 # ######## TEMPLATE CONFIGURATION
 
-TEMPLATES: List[Dict[str, Any]] = [
+TEMPLATES: list[dict[str, Any]] = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": [str(SITE_ROOT / "templates")],

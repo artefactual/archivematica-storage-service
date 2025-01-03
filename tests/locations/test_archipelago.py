@@ -31,19 +31,17 @@ def test_move_from_storage_service(archipelago_space):
     destination_path = "/path/to/destination"
     package = Mock(uuid="package_uuid")
 
-    with patch("os.path.basename") as mock_basename, patch(
-        "os.path.exists"
-    ) as mock_exists, patch(
-        "locations.models.Archipelago._get_metadata"
-    ) as mock_get_metadata, patch(
-        "locations.models.Archipelago.extract_title_from_mets_xml"
-    ) as mock_extract_title, patch(
-        "locations.models.Archipelago._upload_file"
-    ) as mock_upload_file, patch(
-        "locations.models.Archipelago.get_dc_metadata"
-    ) as mock_get_dc_metadata, patch(
-        "locations.models.Archipelago._upload_metadata"
-    ) as mock_upload_metadata:
+    with (
+        patch("os.path.basename") as mock_basename,
+        patch("os.path.exists") as mock_exists,
+        patch("locations.models.Archipelago._get_metadata") as mock_get_metadata,
+        patch(
+            "locations.models.Archipelago.extract_title_from_mets_xml"
+        ) as mock_extract_title,
+        patch("locations.models.Archipelago._upload_file") as mock_upload_file,
+        patch("locations.models.Archipelago.get_dc_metadata") as mock_get_dc_metadata,
+        patch("locations.models.Archipelago._upload_metadata") as mock_upload_metadata,
+    ):
         mock_basename.return_value = "filename"
         mock_exists.return_value = True
         mock_get_metadata.return_value = "mets_xml"
@@ -70,17 +68,16 @@ def test_move_from_storage_service_no_source(archipelago_space):
     package = Mock(uuid="package_uuid")
     expected_result = None
 
-    with patch("os.path.basename") as mock_basename, patch(
-        "os.path.exists"
-    ) as mock_exists, patch(
-        "locations.models.Archipelago._get_metadata"
-    ) as mock_get_metadata, patch(
-        "locations.models.Archipelago.extract_title_from_mets_xml"
-    ) as mock_extract_title, patch(
-        "locations.models.Archipelago._upload_file"
-    ) as mock_upload_file, patch(
-        "locations.models.Archipelago.get_dc_metadata"
-    ) as mock_get_dc_metadata:
+    with (
+        patch("os.path.basename") as mock_basename,
+        patch("os.path.exists") as mock_exists,
+        patch("locations.models.Archipelago._get_metadata") as mock_get_metadata,
+        patch(
+            "locations.models.Archipelago.extract_title_from_mets_xml"
+        ) as mock_extract_title,
+        patch("locations.models.Archipelago._upload_file") as mock_upload_file,
+        patch("locations.models.Archipelago.get_dc_metadata") as mock_get_dc_metadata,
+    ):
         mock_basename.return_value = "filename"
         mock_exists.return_value = False
         mock_get_metadata.return_value = "mets_xml"
@@ -100,8 +97,9 @@ def test_upload_file(archipelago_space):
     source_path = "/path/to/test.zip"
     expected_fid = "12345"
 
-    with patch("requests.post") as mock_post, patch(
-        "builtins.open", mock_open(read_data="data")
+    with (
+        patch("requests.post") as mock_post,
+        patch("builtins.open", mock_open(read_data="data")),
     ):
         mock_response = mock_post.return_value
         mock_response.status_code = 201
@@ -131,8 +129,9 @@ def test_upload_file_error(archipelago_space):
     filename = "test.zip"
     source_path = "/path/to/test.zip"
 
-    with patch("requests.post") as mock_post, patch(
-        "builtins.open", mock_open(read_data="data")
+    with (
+        patch("requests.post") as mock_post,
+        patch("builtins.open", mock_open(read_data="data")),
     ):
         mock_response = mock_post.return_value
         mock_response.status_code = 500
@@ -212,9 +211,10 @@ def test_upload_metadata(archipelago_space):
     strawberry = '{"key": "value"}'
     title = "Test Title"
 
-    with patch("requests.post") as mock_post, patch(
-        "locations.models.archipelago.LOGGER.info"
-    ) as mock_logger_info:
+    with (
+        patch("requests.post") as mock_post,
+        patch("locations.models.archipelago.LOGGER.info") as mock_logger_info,
+    ):
         mock_response = mock_post.return_value
         mock_response.status_code = 201
         mock_response.raise_for_status.return_value = None
@@ -268,9 +268,10 @@ def test_upload_metadata_error(archipelago_space):
     archipelago_user = "username"
     archipelago_password = "password"
 
-    with patch("requests.post") as mock_post, patch(
-        "locations.models.archipelago.LOGGER.error"
-    ) as mock_logger_error:
+    with (
+        patch("requests.post") as mock_post,
+        patch("locations.models.archipelago.LOGGER.error") as mock_logger_error,
+    ):
         mock_response = mock_post.return_value
         mock_response.status_code = 500
         mock_response.text = "Internal Server Error"

@@ -16,9 +16,6 @@ import shutil
 import tarfile
 import uuid
 from pathlib import Path
-from typing import Dict
-from typing import List
-from typing import Tuple
 from typing import Union
 
 import pytest
@@ -38,25 +35,25 @@ if "RUN_INTEGRATION_TESTS" not in os.environ:
 TagName = str
 Attribute = str
 Value = str
-Element = Tuple[Attribute, Value]
+Element = tuple[Attribute, Value]
 
-PremisAgent = Tuple[
+PremisAgent = tuple[
     TagName,
-    Dict[str, str],
-    Tuple[TagName, Element, Element],
+    dict[str, str],
+    tuple[TagName, Element, Element],
     Element,
     Element,
 ]
 
-PremisEvent = Tuple[
+PremisEvent = tuple[
     TagName,
-    Dict[str, str],
-    Tuple[TagName, Element, Element],
+    dict[str, str],
+    tuple[TagName, Element, Element],
     Element,
     Element,
     Element,
-    Tuple[TagName, Tuple[TagName, Element]],
-    Tuple[TagName, Element, Element],
+    tuple[TagName, tuple[TagName, Element]],
+    tuple[TagName, Element, Element],
 ]
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
@@ -75,26 +72,26 @@ class Client:
     def __init__(self, admin_client: TestClient) -> None:
         self.admin_client = admin_client
 
-    def add_space(self, data: Dict[str, Union[str, bool]]) -> HttpResponse:
+    def add_space(self, data: dict[str, Union[str, bool]]) -> HttpResponse:
         return self.admin_client.post(
             "/api/v2/space/", json.dumps(data), content_type="application/json"
         )
 
-    def add_pipeline(self, data: Dict[str, Union[str, bool]]) -> HttpResponse:
+    def add_pipeline(self, data: dict[str, Union[str, bool]]) -> HttpResponse:
         return self.admin_client.post(
             "/api/v2/pipeline/", json.dumps(data), content_type="application/json"
         )
 
-    def get_pipelines(self, data: Dict[str, str]) -> HttpResponse:
+    def get_pipelines(self, data: dict[str, str]) -> HttpResponse:
         return self.admin_client.get("/api/v2/pipeline/", data)
 
-    def add_location(self, data: Dict[str, Union[str, List[str]]]) -> HttpResponse:
+    def add_location(self, data: dict[str, Union[str, list[str]]]) -> HttpResponse:
         return self.admin_client.post(
             "/api/v2/location/", json.dumps(data), content_type="application/json"
         )
 
     def set_location(
-        self, location_id: uuid.UUID, data: Dict[str, str]
+        self, location_id: uuid.UUID, data: dict[str, str]
     ) -> HttpResponse:
         return self.admin_client.post(
             f"/api/v2/location/{location_id}/",
@@ -102,13 +99,13 @@ class Client:
             content_type="application/json",
         )
 
-    def get_locations(self, data: Dict[str, str]) -> HttpResponse:
+    def get_locations(self, data: dict[str, str]) -> HttpResponse:
         return self.admin_client.get("/api/v2/location/", data)
 
     def add_file(
         self,
         file_id: uuid.UUID,
-        data: Dict[str, Union[str, int, List[PremisEvent], List[PremisAgent]]],
+        data: dict[str, Union[str, int, list[PremisEvent], list[PremisAgent]]],
     ) -> HttpResponse:
         return self.admin_client.put(
             f"/api/v2/file/{file_id}/",
@@ -126,7 +123,7 @@ class Client:
         return self.admin_client.get(f"/api/v2/file/{file_id}/check_fixity/")
 
     def request_aip_recovery(
-        self, file_id: uuid.UUID, data: Dict[str, Union[str, int]]
+        self, file_id: uuid.UUID, data: dict[str, Union[str, int]]
     ) -> HttpResponse:
         return self.admin_client.post(
             f"/api/v2/file/{file_id}/recover_aip/",
@@ -205,7 +202,7 @@ class StorageScenario:
     PIPELINE_UUID = uuid.UUID("00000b87-1655-4b7e-bbf8-344b317da334")
     PACKAGE_UUID = uuid.UUID("5658e603-277b-4292-9b58-20bf261c8f88")
 
-    SPACES: Dict[str, Dict[str, Union[str, bool]]] = {
+    SPACES: dict[str, dict[str, Union[str, bool]]] = {
         Space.S3: {
             "access_protocol": Space.S3,
             "path": "",
@@ -268,8 +265,8 @@ class StorageScenario:
         assert resp.status_code == 201
 
     def _adjust_space_data(
-        self, data: Dict[str, Union[str, bool]]
-    ) -> Dict[str, Union[str, bool]]:
+        self, data: dict[str, Union[str, bool]]
+    ) -> dict[str, Union[str, bool]]:
         for attr in ["path", "staging_path"]:
             if (
                 (value := data.get(attr) is not None)
@@ -563,14 +560,14 @@ class AIPRecoveryScenario(StorageScenario):
 
         self.copy_fixture(aip_recovery_location_path)
 
-    def request_aip_recovery(self, data: Dict[str, Union[str, int]]) -> HttpResponse:
+    def request_aip_recovery(self, data: dict[str, Union[str, int]]) -> HttpResponse:
         return self.client.request_aip_recovery(self.PACKAGE_UUID, data)
 
     def approve_aip_recovery_request(self, event_id: int) -> HttpResponse:
         return self.client.approve_aip_recovery_request(event_id)
 
     def recover_aip(self) -> None:
-        data: Dict[str, Union[str, int]] = {
+        data: dict[str, Union[str, int]] = {
             "event_reason": "Delete please!",
             "pipeline": str(self.PIPELINE_UUID),
             "user_id": 1,
@@ -709,7 +706,7 @@ def test_aip_recovery_handles_recovery_copy_setup_error(
     scenario.assert_stored()
     scenario.corrupt_package()
 
-    data: Dict[str, Union[str, int]] = {
+    data: dict[str, Union[str, int]] = {
         "event_reason": "Delete please!",
         "pipeline": str(scenario.PIPELINE_UUID),
         "user_id": 1,

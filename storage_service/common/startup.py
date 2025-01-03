@@ -2,8 +2,6 @@ import errno
 import logging
 import os
 import pathlib
-from typing import Dict
-from typing import List
 from typing import Optional
 from typing import Union
 
@@ -85,7 +83,7 @@ def populate_default_locations(space_path: pathlib.Path) -> None:
         LOGGER.info("Multiple default Spaces exist, done default setup.")
         return
 
-    default_locations: List[Dict[str, Union[str, pathlib.Path, bool, None]]] = [
+    default_locations: list[dict[str, Union[str, pathlib.Path, bool, None]]] = [
         {
             "purpose": locations_models.Location.TRANSFER_SOURCE,
             "relative_path": "home",

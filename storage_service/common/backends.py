@@ -1,6 +1,5 @@
 import json
 from typing import Any
-from typing import Dict
 
 from administration import roles
 from django.conf import settings
@@ -66,8 +65,8 @@ class CustomOIDCBackend(OIDCAuthenticationBackend):
         return super().authenticate(request, **kwargs)
 
     def get_userinfo(
-        self, access_token: str, id_token: str, verified_id: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, access_token: str, id_token: str, verified_id: dict[str, Any]
+    ) -> dict[str, Any]:
         """Extract user details from JSON web tokens.
 
         It returns a dict of user details that will be applied directly to the
@@ -82,7 +81,7 @@ class CustomOIDCBackend(OIDCAuthenticationBackend):
         access_info = decode_token(access_token)
         id_info = decode_token(id_token)
 
-        info: Dict[str, Any] = {}
+        info: dict[str, Any] = {}
 
         for oidc_attr, user_attr in settings.OIDC_ACCESS_ATTRIBUTE_MAP.items():
             if oidc_attr in access_info:
@@ -94,14 +93,14 @@ class CustomOIDCBackend(OIDCAuthenticationBackend):
 
         return info
 
-    def create_user(self, user_info: Dict[str, Any]) -> User:
+    def create_user(self, user_info: dict[str, Any]) -> User:
         user = super().create_user(user_info)
         for attr, value in user_info.items():
             setattr(user, attr, value)
         self.set_user_role(user)
         return user
 
-    def update_user(self, user: User, user_info: Dict[str, Any]) -> User:
+    def update_user(self, user: User, user_info: dict[str, Any]) -> User:
         self.set_user_role(user)
         return user
 
