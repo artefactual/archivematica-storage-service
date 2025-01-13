@@ -506,8 +506,7 @@ class TestGPG(TestCase):
     def test__encr_path2key_fingerprint(self):
         package = Package.objects.get(pk=8)
         exp_curr_path = (
-            "some/relative/path/to/"
-            "images-transfer-abcdabcd-97dd-48e0-8417-03be78359531"
+            "some/relative/path/to/images-transfer-abcdabcd-97dd-48e0-8417-03be78359531"
         )
         assert package.current_path == exp_curr_path
         assert package.encryption_key_fingerprint == EXP_FINGERPRINT

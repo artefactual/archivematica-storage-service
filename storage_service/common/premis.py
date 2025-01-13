@@ -183,7 +183,7 @@ def create_replication_validation_event(
         f" {master_aip_uuid} to replica AIP {replica_package_uuid}"
     )
     if fixity_report:
-        detail += " by performing a BagIt fixity check and by comparing" " checksums"
+        detail += " by performing a BagIt fixity check and by comparing checksums"
         outcome_detail_note = "{}\n{}".format(
             fixity_report["message"], checksum_report["message"]
         )

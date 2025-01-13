@@ -103,8 +103,7 @@ class Package(models.Model):
         null=True,
         default=None,
         help_text=_(
-            "The fingerprint of the GPG key used to encrypt the"
-            " package, if applicable"
+            "The fingerprint of the GPG key used to encrypt the package, if applicable"
         ),
     )
     replicated_package = models.ForeignKey(
@@ -800,8 +799,7 @@ class Package(models.Model):
         if not ret:
             if not isfile:
                 LOGGER.info(
-                    "Package should not have a pointer file because %s"
-                    " is not a file",
+                    "Package should not have a pointer file because %s is not a file",
                     package_full_path,
                 )
             if not isaip:
@@ -2655,12 +2653,12 @@ class Package(models.Model):
             "reingest_pipeline"
         ):
             LOGGER.info(
-                "Reingest: Received pipeline %s did not match expected" " pipeline %s",
+                "Reingest: Received pipeline %s did not match expected pipeline %s",
                 self.origin_pipeline.uuid,
                 self.misc_attributes.get("reingest_pipeline"),
             )
             raise Exception(
-                _("%(uuid)s did not match the pipeline this AIP was reingested" " on.")
+                _("%(uuid)s did not match the pipeline this AIP was reingested on.")
                 % {"uuid": self.origin_pipeline.uuid}
             )
         self.misc_attributes.update({"reingest_pipeline": None})
@@ -2839,7 +2837,7 @@ class Package(models.Model):
         # Delete old copy of AIP if different
         if self.current_path != dest_path or self.current_location != reingest_location:
             LOGGER.info(
-                "Old copy of reingested AIP is at a different location." " Deleting %s",
+                "Old copy of reingested AIP is at a different location. Deleting %s",
                 self.full_path,
             )
             self.current_location.space.delete_path(self.full_path)
@@ -3020,7 +3018,7 @@ def _extract_rein_aip(internal_location, rein_aip_internal_path):
         except (subprocess.CalledProcessError, ValueError):
             bname = os.path.splitext(os.path.basename(rein_aip_internal_path))[0]
             LOGGER.warning(
-                "Unable to parse base directory from package," " using basename %s",
+                "Unable to parse base directory from package, using basename %s",
                 bname,
             )
         else:

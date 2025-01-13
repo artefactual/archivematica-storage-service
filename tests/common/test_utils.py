@@ -46,9 +46,9 @@ def test_get_compression(pronom, algorithm, compression):
         "</mets:mets>"
     ) % (pronom, algorithm)
 
-    assert (
-        utils.get_compression(StringIO(xml)) == compression
-    ), f"Incorrect compression value: {compression} returned for XML (pointer file) input"
+    assert utils.get_compression(StringIO(xml)) == compression, (
+        f"Incorrect compression value: {compression} returned for XML (pointer file) input"
+    )
 
 
 @pytest.mark.parametrize(
@@ -81,9 +81,9 @@ def test_get_compress_command(compression, command):
     cmd, _ = utils.get_compress_command(
         compression, "/extract/", "filename", "/full/path"
     )
-    assert (
-        " ".join(cmd) == command
-    ), f"Incorrect compression command: {cmd} returned for compression input {compression}"
+    assert " ".join(cmd) == command, (
+        f"Incorrect compression command: {cmd} returned for compression input {compression}"
+    )
 
 
 @pytest.mark.parametrize(
@@ -117,9 +117,9 @@ def test_get_compress_command(compression, command):
 )
 def test_get_tool_info_command(compression, command):
     cmd = utils.get_tool_info_command(compression)
-    assert (
-        cmd == command
-    ), f"Incorrect tool info: {cmd} returned for compression input {compression}"
+    assert cmd == command, (
+        f"Incorrect tool info: {cmd} returned for compression input {compression}"
+    )
 
 
 @pytest.mark.parametrize(
@@ -165,9 +165,9 @@ def test_get_compression_event_detail(
     check_output.return_value = cmd_output.encode("utf8")
     detail = utils.get_compression_event_detail(compression)
 
-    assert (
-        detail == expected_detail
-    ), f"Incorrect detail: {detail} returned for compression input {compression}"
+    assert detail == expected_detail, (
+        f"Incorrect detail: {detail} returned for compression input {compression}"
+    )
 
 
 @pytest.mark.parametrize(

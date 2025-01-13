@@ -243,7 +243,7 @@ def _gpg_encrypt(path, key_fingerprint):
         if tar_created:
             utils.extract_tar(path)
         fail_msg = _(
-            "An error occured when attempting to encrypt" " %(path)s" % {"path": path}
+            "An error occured when attempting to encrypt %(path)s" % {"path": path}
         )
         LOGGER.error(fail_msg)
         raise GPGException(fail_msg)
@@ -263,14 +263,10 @@ def _encr_path2key_fingerprint(encr_path):
     model must have a GPG fingerprint.
     """
     sql = (
-        "SELECT * FROM locations_package WHERE %s LIKE CONCAT('%%',"
-        " current_path, '%%')"
+        "SELECT * FROM locations_package WHERE %s LIKE CONCAT('%%', current_path, '%%')"
     )
     if _db_engine() == "sqlite":
-        sql = (
-            'SELECT * FROM locations_package WHERE %s LIKE "%" ||'
-            ' current_path || "%"'
-        )
+        sql = 'SELECT * FROM locations_package WHERE %s LIKE "%" || current_path || "%"'
     matches = list(Package.objects.raw(sql, [encr_path]))
     try:
         return matches[0].encryption_key_fingerprint

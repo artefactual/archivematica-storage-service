@@ -28,8 +28,7 @@ class Dataverse(URLMixin, models.Model):
         max_length=50,
         verbose_name=_("API key"),
         help_text=_(
-            "API key for Dataverse instance. Eg. "
-            "b84d6b87-7b1e-4a30-a374-87191dbbbe2d"
+            "API key for Dataverse instance. Eg. b84d6b87-7b1e-4a30-a374-87191dbbbe2d"
         ),
     )
     agent_name = models.CharField(
@@ -46,7 +45,7 @@ class Dataverse(URLMixin, models.Model):
         max_length=256,
         verbose_name=_("Agent identifier"),
         help_text=_(
-            "URI agent identifier for premis:agentIdentifierValue " "in Archivematica"
+            "URI agent identifier for premis:agentIdentifierValue in Archivematica"
         ),
     )
     # FIXME disallow string in space.path
@@ -198,7 +197,7 @@ class Dataverse(URLMixin, models.Model):
         # Verify src_path has to be a number
         if not src_path.isdigit():
             storage_err = _(
-                "Invalid value for src_path: %(value)s. Must be a numeric " "entity_id"
+                "Invalid value for src_path: %(value)s. Must be a numeric entity_id"
             ) % {"value": src_path}
             raise StorageException(storage_err)
         # Fetch dataset info

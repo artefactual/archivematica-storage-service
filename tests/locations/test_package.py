@@ -86,9 +86,9 @@ class TestPackage(TestCase):
 
     def setUp(self):
         packages = models.Package.objects.all()
-        assert (
-            len(packages) == TOTAL_FIXTURE_PACKAGES
-        ), f"Packages not loaded from fixtures correctly, got '{len(packages)}' expected '{TOTAL_FIXTURE_PACKAGES}'"
+        assert len(packages) == TOTAL_FIXTURE_PACKAGES, (
+            f"Packages not loaded from fixtures correctly, got '{len(packages)}' expected '{TOTAL_FIXTURE_PACKAGES}'"
+        )
 
         self.package = packages[0]
         self.mets_path = os.path.normpath(os.path.join(__file__, "..", "fixtures"))
@@ -829,9 +829,9 @@ class TestPackage(TestCase):
         for subdir, _, files in os.walk(replica.current_location.full_path):
             for file_ in files:
                 found_structure.append(os.path.join(subdir, file_))
-        assert set(found_structure) == set(
-            expected_bagit_structure
-        ), "unexpected bag structure found:"
+        assert set(found_structure) == set(expected_bagit_structure), (
+            "unexpected bag structure found:"
+        )
 
     def test_replicate_aip_when_file(self):
         """Ensure that a replica can be created and its resulting

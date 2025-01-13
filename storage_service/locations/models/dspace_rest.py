@@ -70,17 +70,13 @@ class DSpaceREST(models.Model):
     ds_dip_collection = models.CharField(
         max_length=64,
         verbose_name=_("Default DSpace DIP collection id"),
-        help_text=_(
-            "UUID of default DSpace collection for the DIP to be" " deposited to"
-        ),
+        help_text=_("UUID of default DSpace collection for the DIP to be deposited to"),
     )
 
     ds_aip_collection = models.CharField(
         max_length=64,
         verbose_name=_("Default DSpace AIP collection id"),
-        help_text=_(
-            "UUID of default DSpace collection for the AIP to be" " deposited to"
-        ),
+        help_text=_("UUID of default DSpace collection for the AIP to be deposited to"),
     )
 
     as_url = models.URLField(
@@ -126,7 +122,7 @@ class DSpaceREST(models.Model):
         blank=True,
         default=True,
         verbose_name=_("Verify SSL certificates?"),
-        help_text=_("If checked, HTTPS requests will verify the SSL" " certificates"),
+        help_text=_("If checked, HTTPS requests will verify the SSL certificates"),
     )
 
     upload_to_tsm = models.BooleanField(
@@ -208,8 +204,7 @@ class DSpaceREST(models.Model):
                 namespaces=utils.NSMAP,
             )
             other_metadata = mets_el.find(
-                f'mets:dmdSec[@ID="{dmdid}"]/mets:mdWrap[@MDTYPE="OTHER"]/'
-                "mets:xmlData",
+                f'mets:dmdSec[@ID="{dmdid}"]/mets:mdWrap[@MDTYPE="OTHER"]/mets:xmlData',
                 namespaces=utils.NSMAP,
             )
             if other_metadata is not None:
@@ -249,7 +244,7 @@ class DSpaceREST(models.Model):
             package_type, output_dir, input_path, dirname, aip_uuid
         )
         root_objects_el = mets_el.find(
-            "//mets:structMap[@TYPE='physical']" "/mets:div/mets:div[@LABEL='objects']",
+            "//mets:structMap[@TYPE='physical']/mets:div/mets:div[@LABEL='objects']",
             namespaces=utils.NSMAP,
         )
         if root_objects_el is None:
@@ -511,7 +506,7 @@ class DSpaceREST(models.Model):
 
     def move_from_storage_service(self, source_path, destination_path, package=None):
         LOGGER.info(
-            "source_path: %s, destination_path: %s, package: %s, verify" " SSL: %s",
+            "source_path: %s, destination_path: %s, package: %s, verify SSL: %s",
             source_path,
             destination_path,
             package,
