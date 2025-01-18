@@ -12,9 +12,9 @@ asgiref==3.8.1
     #   django
 bagit==1.8.1
     # via -r requirements.txt
-boto3==1.35.97
+boto3==1.36.2
     # via -r requirements.txt
-botocore==1.35.97
+botocore==1.36.2
     # via
     #   -r requirements.txt
     #   boto3
@@ -63,7 +63,7 @@ distlib==0.3.9
     # via virtualenv
 dj-database-url==2.3.0
     # via -r requirements.txt
-django==4.2.17
+django==4.2.18
     # via
     #   -r requirements.txt
     #   dj-database-url
@@ -315,7 +315,7 @@ rfc3986==2.0.0
     # via
     #   -r requirements.txt
     #   oslo-config
-s3transfer==0.10.4
+s3transfer==0.11.1
     # via
     #   -r requirements.txt
     #   boto3
@@ -367,13 +367,13 @@ urllib3==1.26.20
     #   -r requirements.txt
     #   botocore
     #   requests
-virtualenv==20.28.1
+virtualenv==20.29.1
     # via tox
 wheel==0.45.1
     # via pip-tools
 whitenoise==6.8.2
     # via -r requirements.txt
-wrapt==1.17.1
+wrapt==1.17.2
     # via
     #   -r requirements.txt
     #   debtcollector
