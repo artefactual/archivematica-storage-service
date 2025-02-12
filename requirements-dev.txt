@@ -12,9 +12,9 @@ asgiref==3.8.1
     #   django
 bagit==1.8.1
     # via -r requirements.txt
-boto3==1.36.2
+boto3==1.36.18
     # via -r requirements.txt
-botocore==1.36.2
+botocore==1.36.18
     # via
     #   -r requirements.txt
     #   boto3
@@ -23,9 +23,9 @@ brotli==1.1.0
     # via -r requirements.txt
 build==1.2.2.post1
     # via pip-tools
-cachetools==5.5.0
+cachetools==5.5.1
     # via tox
-certifi==2024.12.14
+certifi==2025.1.31
     # via
     #   -r requirements.txt
     #   requests
@@ -43,16 +43,15 @@ click==8.1.8
     # via pip-tools
 colorama==0.4.6
     # via tox
-coverage[toml]==7.6.10
+coverage[toml]==7.6.12
     # via
     #   -r requirements-dev.in
     #   pytest-cov
-cryptography==44.0.0
+cryptography==44.0.1
     # via
     #   -r requirements.txt
     #   josepy
     #   mozilla-django-oidc
-    #   pyopenssl
 debtcollector==3.0.0
     # via
     #   -r requirements.txt
@@ -63,7 +62,7 @@ distlib==0.3.9
     # via virtualenv
 dj-database-url==2.3.0
     # via -r requirements.txt
-django==4.2.18
+django==4.2.19
     # via
     #   -r requirements.txt
     #   dj-database-url
@@ -86,7 +85,7 @@ django-tastypie==0.15.0
     # via -r requirements.txt
 exceptiongroup==1.2.2
     # via pytest
-filelock==3.16.1
+filelock==3.17.0
     # via
     #   tox
     #   virtualenv
@@ -107,7 +106,7 @@ idna==3.10
     # via
     #   -r requirements.txt
     #   requests
-importlib-metadata==8.5.0
+importlib-metadata==8.6.1
     # via
     #   build
     #   pytest-randomly
@@ -125,7 +124,7 @@ jmespath==1.0.1
     #   -r requirements.txt
     #   boto3
     #   botocore
-josepy==1.14.0
+josepy==2.0.0
     # via
     #   -r requirements.txt
     #   mozilla-django-oidc
@@ -135,7 +134,7 @@ keystoneauth1==5.9.1
     # via
     #   -r requirements.txt
     #   python-keystoneclient
-lxml==5.3.0
+lxml==5.3.1
     # via
     #   -r requirements.txt
     #   metsrw
@@ -191,7 +190,7 @@ packaging==24.2
     #   pytest
     #   python-keystoneclient
     #   tox
-pbr==6.1.0
+pbr==6.1.1
     # via
     #   -r requirements.txt
     #   keystoneauth1
@@ -237,16 +236,12 @@ pycparser==2.22
     #   cffi
 pyee==12.0.0
     # via playwright
-pyopenssl==25.0.0
-    # via
-    #   -r requirements.txt
-    #   josepy
 pyparsing==3.2.1
     # via
     #   -r requirements.txt
     #   httplib2
     #   oslo-utils
-pyproject-api==1.8.0
+pyproject-api==1.9.0
     # via tox
 pyproject-hooks==1.2.0
     # via
@@ -264,9 +259,9 @@ pytest-base-url==2.1.0
     # via pytest-playwright
 pytest-cov==6.0.0
     # via -r requirements-dev.in
-pytest-django==4.9.0
+pytest-django==4.10.0
     # via -r requirements-dev.in
-pytest-playwright==0.6.2
+pytest-playwright==0.7.0
     # via -r requirements-dev.in
 pytest-randomly==3.16.0
     # via -r requirements-dev.in
@@ -315,7 +310,7 @@ rfc3986==2.0.0
     # via
     #   -r requirements.txt
     #   oslo-config
-s3transfer==0.11.1
+s3transfer==0.11.2
     # via
     #   -r requirements.txt
     #   boto3
@@ -346,7 +341,7 @@ tomli==2.2.1
     #   pyproject-api
     #   pytest
     #   tox
-tox==4.23.2
+tox==4.24.1
     # via -r requirements-dev.in
 typing-extensions==4.12.2
     # via
@@ -355,9 +350,8 @@ typing-extensions==4.12.2
     #   dj-database-url
     #   keystoneauth1
     #   pyee
-    #   pyopenssl
     #   tox
-tzdata==2024.2
+tzdata==2025.1
     # via
     #   -r requirements.txt
     #   oslo-serialization
@@ -367,11 +361,11 @@ urllib3==1.26.20
     #   -r requirements.txt
     #   botocore
     #   requests
-virtualenv==20.29.1
+virtualenv==20.29.2
     # via tox
 wheel==0.45.1
     # via pip-tools
-whitenoise==6.8.2
+whitenoise==6.9.0
     # via -r requirements.txt
 wrapt==1.17.2
     # via
@@ -392,11 +386,12 @@ zope-interface==7.2
     #   gevent
 
 # The following packages are considered to be unsafe in a requirements file:
-pip==24.3.1
+pip==25.0.1
     # via pip-tools
 setuptools==75.8.0
     # via
     #   -r requirements.txt
+    #   pbr
     #   pip-tools
     #   zope-event
     #   zope-interface

@@ -10,25 +10,24 @@ asgiref==3.8.1
     # via django
 bagit==1.8.1
     # via -r requirements.in
-boto3==1.36.2
+boto3==1.36.18
     # via -r requirements.in
-botocore==1.36.2
+botocore==1.36.18
     # via
     #   boto3
     #   s3transfer
 brotli==1.1.0
     # via -r requirements.in
-certifi==2024.12.14
+certifi==2025.1.31
     # via requests
 cffi==1.17.1
     # via cryptography
 charset-normalizer==3.4.1
     # via requests
-cryptography==44.0.0
+cryptography==44.0.1
     # via
     #   josepy
     #   mozilla-django-oidc
-    #   pyopenssl
 debtcollector==3.0.0
     # via
     #   oslo-config
@@ -36,7 +35,7 @@ debtcollector==3.0.0
     #   python-keystoneclient
 dj-database-url==2.3.0
     # via -r requirements.in
-django==4.2.18
+django==4.2.19
     # via
     #   -r requirements.in
     #   dj-database-url
@@ -77,13 +76,13 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-josepy==1.14.0
+josepy==2.0.0
     # via mozilla-django-oidc
 jsonfield==3.1.0
     # via -r requirements.in
 keystoneauth1==5.9.1
     # via python-keystoneclient
-lxml==5.3.0
+lxml==5.3.1
     # via
     #   -r requirements.in
     #   metsrw
@@ -121,7 +120,7 @@ packaging==24.2
     #   gunicorn
     #   oslo-utils
     #   python-keystoneclient
-pbr==6.1.0
+pbr==6.1.1
     # via
     #   keystoneauth1
     #   os-service-types
@@ -143,8 +142,6 @@ pyasn1-modules==0.4.1
     # via python-ldap
 pycparser==2.22
     # via cffi
-pyopenssl==25.0.0
-    # via josepy
 pyparsing==3.2.1
     # via
     #   httplib2
@@ -183,7 +180,7 @@ requests==2.32.3
     #   python-swiftclient
 rfc3986==2.0.0
     # via oslo-config
-s3transfer==0.11.1
+s3transfer==0.11.2
     # via boto3
 six==1.17.0
     # via
@@ -203,8 +200,7 @@ typing-extensions==4.12.2
     #   asgiref
     #   dj-database-url
     #   keystoneauth1
-    #   pyopenssl
-tzdata==2024.2
+tzdata==2025.1
     # via
     #   oslo-serialization
     #   oslo-utils
@@ -212,7 +208,7 @@ urllib3==1.26.20
     # via
     #   botocore
     #   requests
-whitenoise==6.8.2
+whitenoise==6.9.0
     # via -r requirements.in
 wrapt==1.17.2
     # via debtcollector
@@ -226,5 +222,6 @@ zope-interface==7.2
 # The following packages are considered to be unsafe in a requirements file:
 setuptools==75.8.0
     # via
+    #   pbr
     #   zope-event
     #   zope-interface
