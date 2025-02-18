@@ -165,14 +165,29 @@ def test_get_tool_info_fails_if_compression_algorithm_is_not_implemented():
             'program="7z"; version="p7zip Version 3.0"',
         ),
         (
+            utils.COMPRESSION_7Z_BZIP,
+            "\n7-Zip 23.01 (x64)\n 64-bit locale=C.UTF-8\nsomething else",
+            'program="7z"; version="7-Zip 23.01 (x64) 64-bit locale=C.UTF-8"',
+        ),
+        (
             utils.COMPRESSION_7Z_LZMA,
             "\n7z command\np7zip Version 3.0\nsomething else",
             'program="7z"; version="p7zip Version 3.0"',
         ),
         (
+            utils.COMPRESSION_7Z_LZMA,
+            "\n7-Zip 23.01 (x64)\n 64-bit locale=C.UTF-8\nsomething else",
+            'program="7z"; version="7-Zip 23.01 (x64) 64-bit locale=C.UTF-8"',
+        ),
+        (
             utils.COMPRESSION_7Z_COPY,
             "\n7z command\np7zip Version 3.0\nsomething else",
             'program="7z"; version="p7zip Version 3.0"',
+        ),
+        (
+            utils.COMPRESSION_7Z_COPY,
+            "\n7-Zip 23.01 (x64)\n 64-bit locale=C.UTF-8\nsomething else",
+            'program="7z"; version="7-Zip 23.01 (x64) 64-bit locale=C.UTF-8"',
         ),
         (
             utils.COMPRESSION_TAR,
