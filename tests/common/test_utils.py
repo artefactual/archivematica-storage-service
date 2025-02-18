@@ -88,39 +88,72 @@ def test_get_compress_command(compression, command):
 
 
 @pytest.mark.parametrize(
-    "compression,command",
+    "compression,expected_program,expected_algorithm",
     [
-        (
-            utils.COMPRESSION_7Z_BZIP,
-            '#!/bin/bash\necho program="7z"\\; algorithm="bzip2"\\; version="`7z | grep Version`"',
-        ),
+        (utils.COMPRESSION_7Z_BZIP, "7z", utils.COMPRESS_ALGO_BZIP2),
         (
             utils.COMPRESSION_7Z_LZMA,
-            '#!/bin/bash\necho program="7z"\\; algorithm="lzma"\\; version="`7z | grep Version`"',
+            "7z",
+            utils.COMPRESS_ALGO_LZMA,
         ),
         (
             utils.COMPRESSION_7Z_COPY,
-            '#!/bin/bash\necho program="7z"\\; algorithm="copy"\\; version="`7z | grep Version`"',
+            "7z",
+            utils.COMPRESS_ALGO_7Z_COPY,
         ),
         (
             utils.COMPRESSION_TAR,
-            'echo program="tar"\\; algorithm=""\\; version="`tar --version | grep tar`"',
+            "tar",
+            "",
         ),
         (
             utils.COMPRESSION_TAR_GZIP,
-            'echo program="tar"\\; algorithm="-z"\\; version="`tar --version | grep tar`"',
+            "tar",
+            "-z",
         ),
         (
             utils.COMPRESSION_TAR_BZIP2,
-            'echo program="tar"\\; algorithm="-j"\\; version="`tar --version | grep tar`"',
+            "tar",
+            "-j",
         ),
     ],
 )
-def test_get_tool_info_command(compression, command):
-    cmd = utils.get_tool_info_command(compression)
-    assert cmd == command, (
-        f"Incorrect tool info: {cmd} returned for compression input {compression}"
+@mock.patch("subprocess.check_output")
+def test_get_tool_info(check_output, compression, expected_program, expected_algorithm):
+    if expected_program == "7z":
+        expected_version = "p7zip Version 16.02"
+        command_output = b"\n".join(
+            [
+                b"",
+                b"7-Zip [64] 16.02 : Copyright (c) 1999-2016 Igor Pavlov : 2016-05-21",
+                expected_version.encode(),
+            ]
+        )
+    elif expected_program == "tar":
+        expected_version = "tar (GNU tar) 1.35"
+        command_output = b"\n".join(
+            [
+                expected_version.encode(),
+                b"Copyright (C) 2023 Free Software Foundation, Inc.",
+            ]
+        )
+    else:
+        raise AssertionError(f"unexpected program {expected_program}")
+    check_output.return_value = command_output
+    expected_output = f"program={expected_program}; algorithm={expected_algorithm}; version={expected_version}"
+
+    output = utils.get_tool_info(compression)
+
+    assert output == expected_output, (
+        f"Incorrect tool info: {output} returned for compression input {compression}"
     )
+
+
+def test_get_tool_info_fails_if_compression_algorithm_is_not_implemented():
+    with pytest.raises(
+        NotImplementedError, match="Algorithm unknown and random not implemented"
+    ):
+        utils.get_tool_info("unknown and random")
 
 
 @pytest.mark.parametrize(

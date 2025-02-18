@@ -1700,32 +1700,25 @@ class Package(models.Model):
 
         LOGGER.info("Compressing package with: %s to %s", command, compressed_filename)
         if detailed_output:
-            tool_info_command = utils.get_tool_info_command(algorithm)
             p = subprocess.Popen(
                 command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
             stdout, stderr = p.communicate()
             rc = p.returncode
             LOGGER.debug("Compress package RC: %s", rc)
-
-            with tempfile.NamedTemporaryFile(
-                encoding="utf-8", mode="wt", delete=False
-            ) as tmpfile:
-                os.chmod(tmpfile.name, 0o770)
-                tmpfile.write(tool_info_command)
-                tmpfile.close()
-                tic_cmd = [tmpfile.name]
-                p = subprocess.Popen(
-                    tic_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-                )
-                tic_stdout, tic_stderr = p.communicate()
-                os.unlink(tmpfile.name)
+            tic_stdout = ""
+            tic_stderr = ""
+            try:
+                tic_stdout = utils.get_tool_info(algorithm)
+            except subprocess.CalledProcessError as e:
+                tic_stderr = e.stderr.decode()
+            except Exception as e:
+                tic_stderr = str(e)
             LOGGER.debug("Tool info stdout")
-            LOGGER.debug(tool_info_command)
             LOGGER.debug(tic_stdout)
             LOGGER.debug(tic_stderr)
             details = {
-                "event_detail": tic_stdout.decode("utf-8"),
+                "event_detail": tic_stdout,
                 "event_outcome_detail_note": 'Standard Output="{}"; Standard Error="{}"'.format(
                     stdout.decode("utf-8"), stderr.decode("utf-8")
                 ),

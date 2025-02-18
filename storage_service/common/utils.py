@@ -430,40 +430,31 @@ def get_compressed_package_checksum(pointer_path):
     return (checksum, checksum_algorithm)
 
 
-def get_tool_info_command(compression):
-    """Return command for outputting compression tool details
+def get_tool_info(compression):
+    """Return compression tool details
 
     :param compression: one of the constants in ``COMPRESSION_ALGORITHMS``.
-    :returns: command in string format
+    :returns: tool details in string format
     """
     if compression in (COMPRESSION_TAR, COMPRESSION_TAR_BZIP2, COMPRESSION_TAR_GZIP):
+        program = "tar"
         algo = {COMPRESSION_TAR_BZIP2: "-j", COMPRESSION_TAR_GZIP: "-z"}.get(
             compression, ""
         )
-
-        tool_info_command = (
-            'echo program="tar"\\; '
-            f'algorithm="{algo}"\\; '
-            'version="`tar --version | grep tar`"'
-        )
+        version = get_tar_version()
     elif compression in (COMPRESSION_7Z_BZIP, COMPRESSION_7Z_LZMA, COMPRESSION_7Z_COPY):
+        program = "7z"
         algo = {
             COMPRESSION_7Z_BZIP: COMPRESS_ALGO_BZIP2,
             COMPRESSION_7Z_LZMA: COMPRESS_ALGO_LZMA,
             COMPRESSION_7Z_COPY: COMPRESS_ALGO_7Z_COPY,
         }.get(compression, "")
-        tool_info_command = (
-            "#!/bin/bash\n"
-            'echo program="7z"\\; '
-            f'algorithm="{algo}"\\; '
-            'version="`7z | grep Version`"'
-        )
+        version = get_7z_version()
     else:
         raise NotImplementedError(
             _("Algorithm %(algorithm)s not implemented") % {"algorithm": compression}
         )
-
-    return tool_info_command
+    return f"program={program}; algorithm={algo}; version={version}"
 
 
 def get_7z_version():
