@@ -128,18 +128,18 @@ def test_get_tool_info_command(compression, command):
     [
         (
             utils.COMPRESSION_7Z_BZIP,
-            "7z command\nVersion 3.0\nsomething else",
-            'program="7z"; version="Version 3.0"',
+            "\n7z command\np7zip Version 3.0\nsomething else",
+            'program="7z"; version="p7zip Version 3.0"',
         ),
         (
             utils.COMPRESSION_7Z_LZMA,
-            "7z command\nVersion 3.0\nsomething else",
-            'program="7z"; version="Version 3.0"',
+            "\n7z command\np7zip Version 3.0\nsomething else",
+            'program="7z"; version="p7zip Version 3.0"',
         ),
         (
             utils.COMPRESSION_7Z_COPY,
-            "7z command\nVersion 3.0\nsomething else",
-            'program="7z"; version="Version 3.0"',
+            "\n7z command\np7zip Version 3.0\nsomething else",
+            'program="7z"; version="p7zip Version 3.0"',
         ),
         (
             utils.COMPRESSION_TAR,

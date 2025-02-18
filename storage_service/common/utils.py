@@ -467,11 +467,13 @@ def get_tool_info_command(compression):
 
 
 def get_7z_version():
-    return [
-        line
-        for line in subprocess.check_output("7z").splitlines()
-        if b"Version" in line
-    ][0].decode("utf8")
+    lines = subprocess.check_output("7z").decode().splitlines()
+    if lines[2].startswith("p7zip Version"):
+        # 7-Zip 16.02: return only version line.
+        return lines[2]
+    else:
+        # 7-Zip 23.01: merge and return copyright and architecture lines.
+        return "".join(lines[1:3])
 
 
 def get_tar_version():
