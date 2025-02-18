@@ -1,4 +1,5 @@
 import pathlib
+import re
 import shutil
 import tarfile
 from collections import namedtuple
@@ -13,9 +14,9 @@ TEST_DIR = pathlib.Path(__file__).resolve().parent
 FIXTURES_DIR = TEST_DIR / "fixtures"
 
 # Until further work is done to bring compression into its own module we can
-# use these constants for this test, but we can do better.
-PROG_VERS_7Z = "7z"
-PROG_VERS_TAR = "tar"
+# use these regular expression patterns for this test, but we can do better.
+PROG_VERS_7Z = r"(p7zip|7-Zip)"
+PROG_VERS_TAR = r"tar"
 
 # Specifically string types for the tuple we create.
 COMPRESS_ORDER_ONE = "1"
@@ -171,7 +172,7 @@ def test_get_compression_event_detail(
 
 
 @pytest.mark.parametrize(
-    "compression, version,extension,program_name,transform",
+    "compression,version,extension,program_name,transform",
     [
         (
             utils.COMPRESSION_7Z_BZIP,
@@ -256,7 +257,7 @@ def test_get_format_info(compression, version, extension, program_name, transfor
     """
     fsentry = FSEntry()
     vers, ext, prog_name = utils.set_compression_transforms(fsentry, compression, 1)
-    assert version in vers
+    assert re.search(version, vers) is not None
     assert ext == extension
     assert program_name in prog_name
     assert fsentry.transform_files == transform
