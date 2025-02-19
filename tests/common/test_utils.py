@@ -1,4 +1,5 @@
 import pathlib
+import re
 import shutil
 import subprocess
 import tarfile
@@ -14,9 +15,9 @@ TEST_DIR = pathlib.Path(__file__).resolve().parent
 FIXTURES_DIR = TEST_DIR / "fixtures"
 
 # Until further work is done to bring compression into its own module we can
-# use these constants for this test, but we can do better.
-PROG_VERS_7Z = "7z"
-PROG_VERS_TAR = "tar"
+# use these regular expression patterns for this test, but we can do better.
+PROG_VERS_7Z = r"(p7zip|7-Zip)"
+PROG_VERS_TAR = r"tar"
 
 # Specifically string types for the tuple we create.
 COMPRESS_ORDER_ONE = "1"
@@ -92,41 +93,72 @@ def test_get_compress_command(compression, command):
 
 
 @pytest.mark.parametrize(
-    "compression,command",
+    "compression,expected_program,expected_algorithm",
     [
-        (
-            utils.COMPRESSION_7Z_BZIP,
-            '#!/bin/bash\necho program="7z"\\; algorithm="bzip2"\\; version="`7z | grep Version`"',
-        ),
+        (utils.COMPRESSION_7Z_BZIP, "7z", utils.COMPRESS_ALGO_BZIP2),
         (
             utils.COMPRESSION_7Z_LZMA,
-            '#!/bin/bash\necho program="7z"\\; algorithm="lzma"\\; version="`7z | grep Version`"',
+            "7z",
+            utils.COMPRESS_ALGO_LZMA,
         ),
         (
             utils.COMPRESSION_7Z_COPY,
-            '#!/bin/bash\necho program="7z"\\; algorithm="copy"\\; version="`7z | grep Version`"',
+            "7z",
+            utils.COMPRESS_ALGO_7Z_COPY,
         ),
         (
             utils.COMPRESSION_TAR,
-            'echo program="tar"\\; algorithm=""\\; version="`tar --version | grep tar`"',
+            "tar",
+            "",
         ),
         (
             utils.COMPRESSION_TAR_GZIP,
-            'echo program="tar"\\; algorithm="-z"\\; version="`tar --version | grep tar`"',
+            "tar",
+            "-z",
         ),
         (
             utils.COMPRESSION_TAR_BZIP2,
-            'echo program="tar"\\; algorithm="-j"\\; version="`tar --version | grep tar`"',
+            "tar",
+            "-j",
         ),
     ],
 )
-def test_get_tool_info_command(compression, command):
-    cmd = utils.get_tool_info_command(compression)
+@mock.patch("subprocess.check_output")
+def test_get_tool_info(check_output, compression, expected_program, expected_algorithm):
+    if expected_program == "7z":
+        expected_version = "p7zip Version 16.02"
+        command_output = b"\n".join(
+            [
+                b"",
+                b"7-Zip [64] 16.02 : Copyright (c) 1999-2016 Igor Pavlov : 2016-05-21",
+                expected_version.encode(),
+            ]
+        )
+    elif expected_program == "tar":
+        expected_version = "tar (GNU tar) 1.35"
+        command_output = b"\n".join(
+            [
+                expected_version.encode(),
+                b"Copyright (C) 2023 Free Software Foundation, Inc.",
+            ]
+        )
+    else:
+        raise AssertionError(f"unexpected program {expected_program}")
+    check_output.return_value = command_output
+    expected_output = f"program={expected_program}; algorithm={expected_algorithm}; version={expected_version}"
+
+    output = utils.get_tool_info(compression)
+
     assert (
-        cmd == command
-    ), "Incorrect tool info: {} returned for compression input {}".format(
-        cmd, compression
-    )
+        output == expected_output
+    ), f"Incorrect tool info: {output} returned for compression input {compression}"
+
+
+def test_get_tool_info_fails_if_compression_algorithm_is_not_implemented():
+    with pytest.raises(
+        NotImplementedError, match="Algorithm unknown and random not implemented"
+    ):
+        utils.get_tool_info("unknown and random")
 
 
 @pytest.mark.parametrize(
@@ -134,18 +166,33 @@ def test_get_tool_info_command(compression, command):
     [
         (
             utils.COMPRESSION_7Z_BZIP,
-            "7z command\nVersion 3.0\nsomething else",
-            'program="7z"; version="Version 3.0"',
+            "\n7z command\np7zip Version 3.0\nsomething else",
+            'program="7z"; version="p7zip Version 3.0"',
+        ),
+        (
+            utils.COMPRESSION_7Z_BZIP,
+            "\n7-Zip 23.01 (x64)\n 64-bit locale=C.UTF-8\nsomething else",
+            'program="7z"; version="7-Zip 23.01 (x64) 64-bit locale=C.UTF-8"',
         ),
         (
             utils.COMPRESSION_7Z_LZMA,
-            "7z command\nVersion 3.0\nsomething else",
-            'program="7z"; version="Version 3.0"',
+            "\n7z command\np7zip Version 3.0\nsomething else",
+            'program="7z"; version="p7zip Version 3.0"',
+        ),
+        (
+            utils.COMPRESSION_7Z_LZMA,
+            "\n7-Zip 23.01 (x64)\n 64-bit locale=C.UTF-8\nsomething else",
+            'program="7z"; version="7-Zip 23.01 (x64) 64-bit locale=C.UTF-8"',
         ),
         (
             utils.COMPRESSION_7Z_COPY,
-            "7z command\nVersion 3.0\nsomething else",
-            'program="7z"; version="Version 3.0"',
+            "\n7z command\np7zip Version 3.0\nsomething else",
+            'program="7z"; version="p7zip Version 3.0"',
+        ),
+        (
+            utils.COMPRESSION_7Z_COPY,
+            "\n7-Zip 23.01 (x64)\n 64-bit locale=C.UTF-8\nsomething else",
+            'program="7z"; version="7-Zip 23.01 (x64) 64-bit locale=C.UTF-8"',
         ),
         (
             utils.COMPRESSION_TAR,
@@ -180,7 +227,7 @@ def test_get_compression_event_detail(
 
 
 @pytest.mark.parametrize(
-    "compression, version,extension,program_name,transform",
+    "compression,version,extension,program_name,transform",
     [
         (
             utils.COMPRESSION_7Z_BZIP,
@@ -265,7 +312,7 @@ def test_get_format_info(compression, version, extension, program_name, transfor
     """
     fsentry = FSEntry()
     vers, ext, prog_name = utils.set_compression_transforms(fsentry, compression, 1)
-    assert version in vers
+    assert re.search(version, vers) is not None
     assert ext == extension
     assert program_name in prog_name
     assert fsentry.transform_files == transform

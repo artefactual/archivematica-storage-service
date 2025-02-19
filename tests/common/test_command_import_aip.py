@@ -2,8 +2,10 @@ import pathlib
 import uuid
 
 import pytest
+from common import utils
 from django.core.management import call_command
 from locations import models
+from lxml import etree
 
 TEST_DIR = pathlib.Path(__file__).resolve().parent
 FIXTURES_DIR = TEST_DIR / "fixtures"
@@ -61,19 +63,28 @@ def test_import_aip_command_creates_uncompressed_package(
 
 
 @pytest.mark.parametrize(
-    "compression_algorithm",
+    "compression_algorithm,expected_event_detail_algorithm",
     [
-        ("7z with bzip"),
-        ("7z without compression"),
+        ("7z with bzip", utils.COMPRESS_ALGO_BZIP2),
+        ("7z without compression", utils.COMPRESS_ALGO_7Z_COPY),
     ],
 )
 @pytest.mark.django_db
 def test_import_aip_command_creates_compressed_package(
-    mocker, capsys, aip_storage_location, compression_algorithm
+    mocker,
+    capsys,
+    aip_storage_location,
+    compression_algorithm,
+    expected_event_detail_algorithm,
 ):
     mocker.patch("os.chown")
     mocker.patch("pwd.getpwnam")
     mocker.patch("logging.config")
+    expected_event_detail_version = "p7zip Version 3.0"
+    mocker.patch(
+        "common.utils.get_7z_version", return_value=expected_event_detail_version
+    )
+
     call_command(
         "import_aip",
         "--decompress-source",
@@ -93,3 +104,16 @@ def test_import_aip_command_creates_compressed_package(
     package = models.Package.objects.first()
 
     assert package.is_compressed
+
+    # Verify the pointer file contains the compression event.
+    assert package.full_pointer_file_path is not None
+    root = etree.parse(package.full_pointer_file_path)
+    event_details = root.xpath(
+        ".//premis3:eventType[text()='compression']/../premis3:eventDetailInformation/premis3:eventDetail",
+        namespaces=utils.NSMAP,
+    )
+    assert len(event_details) == 1
+    assert (
+        event_details[0].text.strip()
+        == f"program=7z; algorithm={expected_event_detail_algorithm}; version={expected_event_detail_version}"
+    )
