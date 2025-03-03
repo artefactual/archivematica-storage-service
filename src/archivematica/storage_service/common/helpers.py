@@ -34,6 +34,10 @@ def get_oidc_secondary_providers(
         user_endpoint = environ.get(f"OIDC_OP_USER_ENDPOINT_{provider_name}", "")
         jwks_endpoint = environ.get(f"OIDC_OP_JWKS_ENDPOINT_{provider_name}", "")
         logout_endpoint = environ.get(f"OIDC_OP_LOGOUT_ENDPOINT_{provider_name}", "")
+        set_roles_from_claims = environ.get(
+            f"OIDC_OP_SET_ROLES_FROM_CLAIMS_{provider_name}", True
+        )
+        role_claim_path = environ.get(f"OIDC_OP_ROLE_CLAIM_PATH_{provider_name}", "")
 
         if client_id and client_secret:
             providers[provider_name] = {
@@ -44,6 +48,8 @@ def get_oidc_secondary_providers(
                 "OIDC_OP_USER_ENDPOINT": user_endpoint,
                 "OIDC_OP_JWKS_ENDPOINT": jwks_endpoint,
                 "OIDC_OP_LOGOUT_ENDPOINT": logout_endpoint,
+                "OIDC_OP_SET_ROLES_FROM_CLAIMS": set_roles_from_claims,
+                "OIDC_OP_ROLE_CLAIM_PATH": role_claim_path,
             }
 
     return providers

@@ -18,6 +18,8 @@ def settings(
         "given_name": "first_name",
         "family_name": "last_name",
     }
+    settings.OIDC_OP_SET_ROLES_FROM_CLAIMS = True
+    settings.OIDC_OP_ROLE_CLAIM_PATH = "realm_access.roles"
     settings.OIDC_ID_ATTRIBUTE_MAP = {"email": "email"}
     settings.OIDC_USERNAME_ALGO = lambda email: email
 
@@ -25,7 +27,51 @@ def settings(
 
 
 @pytest.mark.django_db
-def test_create_user(settings: pytest_django.fixtures.SettingsWrapper) -> None:
+def test_create_user_set_roles_from_default_role(
+    settings: pytest_django.fixtures.SettingsWrapper,
+) -> None:
+    settings.OIDC_OP_SET_ROLES_FROM_CLAIMS = False
+    backend = CustomOIDCBackend()
+
+    user = backend.create_user(
+        {"email": "test@example.com", "first_name": "Test", "last_name": "User"}
+    )
+
+    user.refresh_from_db()
+    assert user.first_name == "Test"
+    assert user.last_name == "User"
+    assert user.email == "test@example.com"
+    assert user.username == "test@example.com"
+    assert user.get_role() == roles.USER_ROLE_READER
+
+
+@pytest.mark.django_db
+def test_create_user_set_roles_from_claims(
+    settings: pytest_django.fixtures.SettingsWrapper,
+) -> None:
+    backend = CustomOIDCBackend()
+
+    user = backend.create_user(
+        {
+            "email": "test@example.com",
+            "first_name": "Test",
+            "last_name": "User",
+            "realm_access": {"roles": ["admin", "editor"]},
+        }
+    )
+
+    user.refresh_from_db()
+    assert user.first_name == "Test"
+    assert user.last_name == "User"
+    assert user.email == "test@example.com"
+    assert user.username == "test@example.com"
+    assert user.get_role() == roles.USER_ROLE_ADMIN
+
+
+@pytest.mark.django_db
+def test_create_user_set_roles_from_missing_claims(
+    settings: pytest_django.fixtures.SettingsWrapper,
+) -> None:
     backend = CustomOIDCBackend()
 
     user = backend.create_user(
