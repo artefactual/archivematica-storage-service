@@ -25,7 +25,7 @@ class CustomCASBackend(CASBackend):
 class CustomOIDCBackend(OIDCAuthenticationBackend):
     """Provide OpenID Connect authentication."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         # Store additional settings as instance attributes.
         self.OIDC_OP_SET_ROLES_FROM_CLAIMS = getattr(
@@ -38,7 +38,7 @@ class CustomOIDCBackend(OIDCAuthenticationBackend):
         # Extract valid role keys from USER_ROLES.
         self.VALID_ROLES = {role[0] for role in roles.USER_ROLES}
 
-    def get_settings(self, attr, *args):
+    def get_settings(self, attr, *args) -> any:
         if attr in [
             "OIDC_RP_CLIENT_ID",
             "OIDC_RP_CLIENT_SECRET",
@@ -70,7 +70,7 @@ class CustomOIDCBackend(OIDCAuthenticationBackend):
         # not in the list, call the superclass's get_settings method.
         return OIDCAuthenticationBackend.get_settings(attr, *args)
 
-    def authenticate(self, request, **kwargs):
+    def authenticate(self, request, **kwargs) -> any:
         self.request = request
         self.OIDC_RP_CLIENT_ID = self.get_settings("OIDC_RP_CLIENT_ID")
         self.OIDC_RP_CLIENT_SECRET = self.get_settings("OIDC_RP_CLIENT_SECRET")
