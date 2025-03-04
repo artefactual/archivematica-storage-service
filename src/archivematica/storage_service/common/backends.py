@@ -29,7 +29,7 @@ class CustomOIDCBackend(OIDCAuthenticationBackend):
         super().__init__(*args, **kwargs)
         # Store additional settings as instance attributes.
         self.OIDC_OP_SET_ROLES_FROM_CLAIMS = getattr(
-            settings, "OIDC_OP_SET_ROLES_FROM_CLAIMS", True
+            settings, "OIDC_OP_SET_ROLES_FROM_CLAIMS", False
         )
         self.OIDC_OP_ROLE_CLAIM_PATH = getattr(
             settings, "OIDC_OP_ROLE_CLAIM_PATH", "realm_access.roles"

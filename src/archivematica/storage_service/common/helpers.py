@@ -36,9 +36,9 @@ def get_oidc_secondary_providers(
         jwks_endpoint = environ.get(f"OIDC_OP_JWKS_ENDPOINT_{provider_name}", "")
         logout_endpoint = environ.get(f"OIDC_OP_LOGOUT_ENDPOINT_{provider_name}", "")
         set_roles_from_claims = environ.get(
-            f"OIDC_OP_SET_ROLES_FROM_CLAIMS_{provider_name}", True
+            f"OIDC_OP_SET_ROLES_FROM_CLAIMS_{provider_name}", False
         )
-        role_claim_path = environ.get(f"OIDC_OP_ROLE_CLAIM_PATH_{provider_name}", "")
+        role_claim_path = environ.get(f"OIDC_OP_ROLE_CLAIM_PATH_{provider_name}", "realm_access.roles")
 
         if client_id and client_secret:
             providers[provider_name] = {

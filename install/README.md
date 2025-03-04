@@ -582,7 +582,7 @@ If `SS_OIDC_AUTHENTICATION` is false, none of the other ones are used.
 - **`OIDC_OP_SET_ROLES_FROM_CLAIMS`**:
   - **Description:** Set user roles from OIDC token claims
   - **Type:** `boolean`
-  - **Default:** `True`
+  - **Default:** `False`
 
 - **`OIDC_OP_ROLE_CLAIM_PATH`**:
   - **Description:** Set OIDC token path for extracting role info

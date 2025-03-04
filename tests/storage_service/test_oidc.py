@@ -18,7 +18,7 @@ def settings(
         "given_name": "first_name",
         "family_name": "last_name",
     }
-    settings.OIDC_OP_SET_ROLES_FROM_CLAIMS = True
+    settings.OIDC_OP_SET_ROLES_FROM_CLAIMS = False
     settings.OIDC_OP_ROLE_CLAIM_PATH = "realm_access.roles"
     settings.OIDC_ID_ATTRIBUTE_MAP = {"email": "email"}
     settings.OIDC_USERNAME_ALGO = lambda email: email
@@ -30,7 +30,6 @@ def settings(
 def test_create_user_set_roles_from_default_role(
     settings: pytest_django.fixtures.SettingsWrapper,
 ) -> None:
-    settings.OIDC_OP_SET_ROLES_FROM_CLAIMS = False
     backend = CustomOIDCBackend()
 
     user = backend.create_user(
@@ -49,6 +48,7 @@ def test_create_user_set_roles_from_default_role(
 def test_create_user_set_role_from_claim(
     settings: pytest_django.fixtures.SettingsWrapper,
 ) -> None:
+    settings.OIDC_OP_SET_ROLES_FROM_CLAIMS = True
     settings.OIDC_OP_ROLE_CLAIM_PATH = "realm_access.roles"
     backend = CustomOIDCBackend()
 
@@ -73,6 +73,7 @@ def test_create_user_set_role_from_claim(
 def test_create_user_role_from_claims(
     settings: pytest_django.fixtures.SettingsWrapper,
 ) -> None:
+    settings.OIDC_OP_SET_ROLES_FROM_CLAIMS = True
     settings.OIDC_OP_ROLE_CLAIM_PATH = "realm_access.roles"
     backend = CustomOIDCBackend()
 
@@ -97,6 +98,7 @@ def test_create_user_role_from_claims(
 def test_create_user_role_from_claims_alt_path(
     settings: pytest_django.fixtures.SettingsWrapper,
 ) -> None:
+    settings.OIDC_OP_SET_ROLES_FROM_CLAIMS = True
     settings.OIDC_OP_ROLE_CLAIM_PATH = "custom_claims.user_roles"
     backend = CustomOIDCBackend()
 
@@ -121,6 +123,7 @@ def test_create_user_role_from_claims_alt_path(
 def test_create_user_role_from_claims_simple_role(
     settings: pytest_django.fixtures.SettingsWrapper,
 ) -> None:
+    settings.OIDC_OP_SET_ROLES_FROM_CLAIMS = True
     settings.OIDC_OP_ROLE_CLAIM_PATH = "role"
     backend = CustomOIDCBackend()
 
@@ -196,11 +199,13 @@ def test_get_userinfo(settings: pytest_django.fixtures.SettingsWrapper) -> None:
 
 
 @pytest.mark.django_db
-def test_update_user(settings: pytest_django.fixtures.SettingsWrapper) -> None:
+def test_update_user_role_from_claims(settings: pytest_django.fixtures.SettingsWrapper) -> None:
     """The role given to a new user is based on ``DEFAULT_USER_ROLE``.
 
     In this test, we're ensuring that updating a user promotes it to a new role.
     """
+    settings.OIDC_OP_SET_ROLES_FROM_CLAIMS = True
+    settings.OIDC_OP_ROLE_CLAIM_PATH = "realm_access.roles"
 
     user = User.objects.create(
         first_name="Foo", last_name="Bar", username="foobar", email="foobar@example.com"
