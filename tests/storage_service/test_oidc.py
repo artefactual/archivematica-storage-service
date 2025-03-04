@@ -129,7 +129,7 @@ def test_create_user_role_from_claims_simple_role(
             "email": "test@example.com",
             "first_name": "Test",
             "last_name": "User",
-            "role": "admin"
+            "role": "admin",
         }
     )
 
