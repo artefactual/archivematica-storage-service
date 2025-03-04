@@ -199,7 +199,9 @@ def test_get_userinfo(settings: pytest_django.fixtures.SettingsWrapper) -> None:
 
 
 @pytest.mark.django_db
-def test_update_user_role_from_claims(settings: pytest_django.fixtures.SettingsWrapper) -> None:
+def test_update_user_role_from_claims(
+    settings: pytest_django.fixtures.SettingsWrapper,
+) -> None:
     """The role given to a new user is based on ``DEFAULT_USER_ROLE``.
 
     In this test, we're ensuring that updating a user promotes it to a new role.
