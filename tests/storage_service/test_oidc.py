@@ -145,7 +145,7 @@ def test_create_user_role_from_claims_simple_role(
 
 
 @pytest.mark.django_db
-def test_create_user_role_from_claims_no_claims_in_token(
+def test_create_user_failure_no_claims_in_token(
     settings: pytest_django.fixtures.SettingsWrapper,
 ) -> None:
     settings.OIDC_OP_SET_ROLES_FROM_CLAIMS = True
@@ -156,12 +156,7 @@ def test_create_user_role_from_claims_no_claims_in_token(
         {"email": "test@example.com", "first_name": "Test", "last_name": "User"}
     )
 
-    user.refresh_from_db()
-    assert user.first_name == "Test"
-    assert user.last_name == "User"
-    assert user.email == "test@example.com"
-    assert user.username == "test@example.com"
-    assert user.get_role() == roles.USER_ROLE_READER
+    assert user is None
 
 
 @pytest.mark.django_db
@@ -204,7 +199,7 @@ def test_update_user_role_from_claims(
 ) -> None:
     """The role given to a new user is based on ``DEFAULT_USER_ROLE``.
 
-    In this test, we're ensuring that updating a user promotes it to a new role.
+    In this test, we're ensuring that updating a user promotes it to the new role from the token.
     """
     settings.OIDC_OP_SET_ROLES_FROM_CLAIMS = True
     settings.OIDC_OP_ROLE_CLAIM_PATH = "realm_access.roles"
@@ -219,7 +214,15 @@ def test_update_user_role_from_claims(
     # Promote the role in the DEFAULT_USER_ROLE setting.
     settings.DEFAULT_USER_ROLE = roles.USER_ROLE_ADMIN
 
-    backend.update_user(user, {})
+    backend.update_user(
+        user,
+        {
+            "email": "foobar@example.com",
+            "first_name": "Foo",
+            "last_name": "Bar",
+            "realm_access": {"roles": ["admin"]},
+        },
+    )
 
     user.refresh_from_db()
     # User has been promoted to the new role on update.

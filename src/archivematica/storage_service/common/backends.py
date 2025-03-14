@@ -1,5 +1,6 @@
 import json
 from typing import Any
+from typing import Optional
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -114,19 +115,27 @@ class CustomOIDCBackend(OIDCAuthenticationBackend):
         return info
 
     def create_user(self, user_info: dict[str, Any]) -> User:
+        """Create a new user when authentication was successful."""
+        role = self.get_user_role(user_info)
+        if role is None:
+            return None
+
         user = super().create_user(user_info)
         for attr, value in user_info.items():
             setattr(user, attr, value)
-        self.set_user_role(user, user_info)
+        user.set_role(role)
         return user
 
     def update_user(self, user: User, user_info: dict[str, Any]) -> User:
         """Updates the user's role only if the setting allows roles to be set from OIDC claims."""
         if self.OIDC_OP_SET_ROLES_FROM_CLAIMS:
-            self.set_user_role(user, user_info)
+            role = self.get_user_role(user_info)
+            if role is None:
+                return None
+            user.set_role(role)
         return user
 
-    def set_user_role(self, user: User, user_info: dict[str, Any]) -> None:
+    def get_user_role(self, user_info: dict[str, Any]) -> Optional[str]:
         """
         Assigns the user's role based on OIDC token claims if enabled in settings.
         Otherwise, assigns the default role.
@@ -148,8 +157,8 @@ class CustomOIDCBackend(OIDCAuthenticationBackend):
                 role = role[0]
 
             if role and role in self.VALID_ROLES:
-                user.set_role(roles.promoted_role(role))
+                return roles.promoted_role(role)
             else:
-                user.set_role(roles.promoted_role(settings.DEFAULT_USER_ROLE))
+                return None
         else:
-            user.set_role(roles.promoted_role(settings.DEFAULT_USER_ROLE))
+            return roles.promoted_role(settings.DEFAULT_USER_ROLE)
