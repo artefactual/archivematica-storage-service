@@ -1,13 +1,13 @@
-from common import utils
 from django import forms
 from django.contrib import auth
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from locations.models import Location
-from locations.models import Space
 
-from . import roles
+from archivematica.storage_service.administration import roles
+from archivematica.storage_service.common import utils
+from archivematica.storage_service.locations.models import Location
+from archivematica.storage_service.locations.models import Space
 
 # ######################## CUSTOM FIELDS/WIDGETS ##########################
 

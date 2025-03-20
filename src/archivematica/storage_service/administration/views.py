@@ -1,9 +1,6 @@
 import logging
 import subprocess
 
-from common import decorators
-from common import gpgutils
-from common import utils
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
@@ -16,13 +13,15 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.utils.translation import get_language
 from django.utils.translation import gettext as _
-from locations.models import GPG
-from locations.models import Package
 from tastypie.models import ApiKey
 
-from storage_service import __version__ as ss_version
-
-from . import forms as settings_forms
+from archivematica.storage_service.administration import forms as settings_forms
+from archivematica.storage_service.common import decorators
+from archivematica.storage_service.common import gpgutils
+from archivematica.storage_service.common import utils
+from archivematica.storage_service.locations.models import GPG
+from archivematica.storage_service.locations.models import Package
+from archivematica.storage_service.storage_service import __version__ as ss_version
 
 LOGGER = logging.getLogger(__name__)
 

@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 
 class AdministrationAppConfig(AppConfig):
     default_auto_field = "django.db.models.AutoField"
-    name = "administration"
+    name = "archivematica.storage_service.administration"
 
     def ready(self):
         from . import roles
