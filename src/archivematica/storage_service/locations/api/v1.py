@@ -1,6 +1,5 @@
-from tastypie import fields
-
 import locations.api.resources as resources
+from tastypie import fields
 
 
 class PipelineResource(resources.PipelineResource):

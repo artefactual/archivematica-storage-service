@@ -1,7 +1,6 @@
 from collections import namedtuple
 
 from common import premis
-
 from storage_service import __version__ as ss_version
 
 FakeGPGRet = namedtuple("FakeGPGRet", "ok status stderr")

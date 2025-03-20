@@ -25,11 +25,11 @@ repository = "https://github.com/artefacutal/archivematica-storage-service"
 issues = "https://github.com/archivematica/Issues/issues"
 
 [tool.setuptools.packages.find]
-where = ["."]
-include=["storage_service*"]
+where = ["src"]
+include=["archivematica.storage_service*"]
 
 [tool.setuptools.dynamic]
-version = {attr = "storage_service.storage_service.__version__"}
+version = {attr = "archivematica.storage_service.storage_service.__version__"}
 
 [tool.pytest.ini_options]
 addopts = "--reuse-db -p no:cacheprovider"
@@ -46,7 +46,7 @@ omit = [
     "**/manage.py",
 ]
 source = [
-  "storage_service",
+  "archivematica.storage_service",
 ]
 branch = true
 
@@ -69,32 +69,33 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"{storage_service,tests}/locations/*" = ["PTH"]
-"storage_service/storage_service/settings/*" = [
+"{src/archivematica/storage_service,tests}/locations/*" = ["PTH"]
+"src/archivematica/storage_service/storage_service/settings/*" = [
   "F403",
   "F405",
 ]
-"storage_service/storage_service/settings/base.py" = ["E402"]
+"src/archivematica/storage_service/storage_service/settings/base.py" = ["E402"]
 
 [tool.ruff.lint.isort]
 force-single-line = true
 
 [tool.mypy]
 strict = true
+explicit_package_bases = true
 
 [[tool.mypy.overrides]]
 module = [
-    "administration.*",
-    "common.*",
-    "locations.*",
-    "storage_service.*",
+    "src.archivematica.storage_service.administration.*",
+    "src.archivematica.storage_service.common.*",
+    "src.archivematica.storage_service.locations.*",
+    "src.archivematica.storage_service.storage_service.*",
     "tests.*",
 ]
 ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = [
-    "common.helpers",
+    "src.archivematica.storage_service.common.helpers",
     "tests.administration.test_users",
     "tests.integration.*",
     "tests.storage_service.test_helpers",

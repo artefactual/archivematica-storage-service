@@ -22,3 +22,6 @@
 
 # tox working directory
 .tox/
+
+# setuptools build
+**/*.egg-info

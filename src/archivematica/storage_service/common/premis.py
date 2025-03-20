@@ -5,9 +5,9 @@ PREMIS metadata generation.
 import uuid
 
 import metsrw
+from common import utils
 from django.utils import timezone
 
-from common import utils
 from storage_service import __version__ as ss_version
 
 PREMIS_META = metsrw.plugins.premisrw.PREMIS_3_0_META

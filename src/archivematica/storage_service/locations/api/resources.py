@@ -22,6 +22,8 @@ from django.http import HttpResponseRedirect
 from django.urls import re_path
 from django.urls import reverse
 from django.utils.translation import gettext as _
+from locations import signals
+from locations.api.sword import views as sword_views
 from tastypie import fields
 from tastypie import http
 from tastypie.authentication import ApiKeyAuthentication
@@ -34,9 +36,6 @@ from tastypie.resources import ALL_WITH_RELATIONS
 from tastypie.resources import ModelResource
 from tastypie.utils import trailing_slash
 from tastypie.validation import CleanedDataFormValidation
-
-from locations import signals
-from locations.api.sword import views as sword_views
 
 from ..constants import PROTOCOL
 from ..forms import SpaceForm

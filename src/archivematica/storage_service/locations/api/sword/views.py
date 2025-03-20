@@ -9,9 +9,8 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
-from lxml import etree as etree
-
 from locations import models
+from lxml import etree as etree
 
 from . import helpers
 

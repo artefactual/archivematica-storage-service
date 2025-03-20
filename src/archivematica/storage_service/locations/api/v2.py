@@ -1,8 +1,7 @@
 import base64
 
-from tastypie import fields
-
 import locations.api.resources as resources
+from tastypie import fields
 
 
 def b64encode_string(data):
