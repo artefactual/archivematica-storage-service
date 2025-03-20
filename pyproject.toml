@@ -105,7 +105,6 @@ ignore_errors = false
 [tool.tox]
 legacy_tox_ini = """
     [tox]
-    skipsdist = True
     envlist = linting, py{39,310,311,312}, migrations
     skip_missing_interpreters = true
 
@@ -122,7 +121,7 @@ legacy_tox_ini = """
     commands = pre-commit run --all-files --show-diff-on-failure
 
     [testenv]
-    skip_install = true
+    package = editable
     deps = -r {toxinidir}/requirements-dev.txt
     commands =
         py.test {posargs}
