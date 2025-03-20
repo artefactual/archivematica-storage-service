@@ -5,10 +5,10 @@ PREMIS metadata generation.
 import uuid
 
 import metsrw
-from common import utils
 from django.utils import timezone
 
-from storage_service import __version__ as ss_version
+from archivematica.storage_service.common import utils
+from archivematica.storage_service.storage_service import __version__ as ss_version
 
 PREMIS_META = metsrw.plugins.premisrw.PREMIS_3_0_META
 SS_AGENT = metsrw.plugins.premisrw.PREMISAgent(

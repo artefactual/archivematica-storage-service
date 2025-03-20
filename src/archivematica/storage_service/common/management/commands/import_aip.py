@@ -56,12 +56,13 @@ import uuid
 from pwd import getpwnam
 
 import bagit
-from administration.models import Settings
-from common import premis
-from common import utils
 from django.core.management.base import BaseCommand
 from django.db.utils import IntegrityError
-from locations import models
+
+from archivematica.storage_service.administration.models import Settings
+from archivematica.storage_service.common import premis
+from archivematica.storage_service.common import utils
+from archivematica.storage_service.locations import models
 
 # Suppress the logging from models/package.py
 logging.config.dictConfig({"version": 1, "disable_existing_loggers": True})

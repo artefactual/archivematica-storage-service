@@ -16,11 +16,14 @@ Execution example:
 
 import pathlib
 
-from common import utils
-from common.management.commands import StorageServiceCommand
 from django.core.management.base import CommandError
-from locations.models.package import Package
-from locations.models.package import Space
+
+from archivematica.storage_service.common import utils
+from archivematica.storage_service.common.management.commands import (
+    StorageServiceCommand,
+)
+from archivematica.storage_service.locations.models.package import Package
+from archivematica.storage_service.locations.models.package import Space
 
 
 class Command(StorageServiceCommand):

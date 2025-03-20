@@ -6,10 +6,13 @@ from typing import Optional
 from typing import Union
 
 import django.core.exceptions
-from common import utils
 from django.db import connection
-from locations import models as locations_models
-from locations.models.async_manager import start_async_manager
+
+from archivematica.storage_service.common import utils
+from archivematica.storage_service.locations import models as locations_models
+from archivematica.storage_service.locations.models.async_manager import (
+    start_async_manager,
+)
 
 LOGGER = logging.getLogger(__name__)
 

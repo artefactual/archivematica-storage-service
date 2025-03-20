@@ -14,10 +14,13 @@ Execution example:
 
 import logging
 
-from administration.models import Settings
-from common.management.commands import StorageServiceCommand
 from django.core.management.base import CommandError
-from locations.models.package import Package
+
+from archivematica.storage_service.administration.models import Settings
+from archivematica.storage_service.common.management.commands import (
+    StorageServiceCommand,
+)
+from archivematica.storage_service.locations.models.package import Package
 
 # Suppress the logging from models/package.py.
 logging.config.dictConfig({"version": 1, "disable_existing_loggers": True})

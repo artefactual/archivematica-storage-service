@@ -13,11 +13,14 @@ import logging
 import pathlib
 from datetime import datetime
 
-from common.management.commands import StorageServiceCommand
 from django.core.management.base import CommandError
 from django.utils.timezone import get_current_timezone
-from locations.models.package import Package
-from locations.models.package import Space
+
+from archivematica.storage_service.common.management.commands import (
+    StorageServiceCommand,
+)
+from archivematica.storage_service.locations.models.package import Package
+from archivematica.storage_service.locations.models.package import Space
 
 # Suppress the logging from models/package.py.
 logging.config.dictConfig({"version": 1, "disable_existing_loggers": True})

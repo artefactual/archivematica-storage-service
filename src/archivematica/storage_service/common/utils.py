@@ -15,14 +15,14 @@ from collections import namedtuple
 from typing import Any
 from typing import Union
 
-from administration import models
 from django import http
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import gettext as _
 from lxml import etree
 from lxml.builder import ElementMaker
 
-from storage_service import __version__ as ss_version
+from archivematica.storage_service.administration import models
+from archivematica.storage_service.storage_service import __version__ as ss_version
 
 LOGGER = logging.getLogger(__name__)
 

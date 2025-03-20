@@ -1,11 +1,12 @@
 from re import compile
 from urllib.parse import quote
 
-from administration import roles
 from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.utils.deprecation import MiddlewareMixin
 from shibboleth.middleware import ShibbolethRemoteUserMiddleware
+
+from archivematica.storage_service.administration import roles
 
 # Login required code from https://gist.github.com/ryanwitt/130583
 # With modifications from comments on

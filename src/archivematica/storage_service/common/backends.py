@@ -1,13 +1,14 @@
 import json
 from typing import Any
 
-from administration import roles
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
 from django_cas_ng.backends import CASBackend
 from josepy.jws import JWS
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
+
+from archivematica.storage_service.administration import roles
 
 
 class CustomCASBackend(CASBackend):
