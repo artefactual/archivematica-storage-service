@@ -117,8 +117,8 @@ RUN set -ex \
 RUN set -ex \
 	&& internalDirs=' \
 		/home/archivematica \
-		/src/storage_service/assets \
-		/src/storage_service/locations/fixtures \
+		/src/archivematica/storage_service/assets \
+		/src/archivematica/storage_service/locations/fixtures \
 		/var/archivematica/storage_service \
 		/var/archivematica/sharedDirectory \
 	' \
@@ -130,6 +130,8 @@ USER archivematica
 COPY --chown=${USER_ID}:${GROUP_ID} --from=pyenv-builder --link ${PYENV_DIR} ${PYENV_DIR}
 COPY --chown=${USER_ID}:${GROUP_ID} --link ./install/storage-service.gunicorn-config.py /etc/archivematica/storage-service.gunicorn-config.py
 
+ENV PYTHONPATH=/src/src
+
 # -----------------------------------------------------------------------------
 
 FROM base AS archivematica-storage-service
@@ -137,12 +139,9 @@ FROM base AS archivematica-storage-service
 ARG USER_ID=1000
 ARG GROUP_ID=1000
 
-WORKDIR /src/storage_service
-
-ENV DJANGO_SETTINGS_MODULE=storage_service.settings.local
-ENV PYTHONPATH=/src/storage_service
+ENV DJANGO_SETTINGS_MODULE=archivematica.storage_service.storage_service.settings.local
 ENV SS_GUNICORN_BIND=0.0.0.0:8000
-ENV SS_GUNICORN_CHDIR=/src/storage_service
+ENV SS_GUNICORN_CHDIR=/src/src/archivematica/storage_service
 ENV SS_GUNICORN_ACCESSLOG=-
 ENV SS_GUNICORN_ERRORLOG=-
 ENV FORWARDED_ALLOW_IPS=*
@@ -151,14 +150,14 @@ COPY --chown=${USER_ID}:${GROUP_ID} --link . /src/
 
 RUN set -ex \
 	&& export SS_DB_URL=mysql://ne:ver@min/d \
-	&& pyenv exec python3 ./manage.py collectstatic --noinput --clear \
-	&& pyenv exec python3 ./manage.py compilemessages
+	&& pyenv exec python3 -m archivematica.storage_service.manage collectstatic --noinput --clear \
+	&& pyenv exec python3 -m archivematica.storage_service.manage compilemessages
 
-ENV DJANGO_SETTINGS_MODULE=storage_service.settings.production
+ENV DJANGO_SETTINGS_MODULE=archivematica.storage_service.storage_service.settings.production
 
 EXPOSE 8000
 
-ENTRYPOINT ["pyenv", "exec", "python3", "-m", "gunicorn", "--config=/etc/archivematica/storage-service.gunicorn-config.py", "storage_service.wsgi:application"]
+ENTRYPOINT ["pyenv", "exec", "python3", "-m", "gunicorn", "--config=/etc/archivematica/storage-service.gunicorn-config.py", "archivematica.storage_service.storage_service.wsgi:application"]
 
 # -----------------------------------------------------------------------------
 
@@ -178,8 +177,6 @@ USER archivematica
 
 RUN set -ex \
 	&& python3 -m playwright install firefox
-
-ENV PYTHONPATH=/src/storage_service
 
 COPY --chown=${USER_ID}:${GROUP_ID} --link . /src/
 
