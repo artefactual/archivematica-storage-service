@@ -6,14 +6,14 @@ import shutil
 import subprocess
 
 import sword2
-from common import utils
 from django.db import models
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from lxml import etree
 
-from .location import Location
-from .package import Package
+from archivematica.storage_service.common import utils
+from archivematica.storage_service.locations.models.location import Location
+from archivematica.storage_service.locations.models.package import Package
 
 LOGGER = logging.getLogger(__name__)
 

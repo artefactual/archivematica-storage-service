@@ -9,9 +9,9 @@ import requests
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from . import StorageException
-from .location import Location
-from .urlmixin import URLMixin
+from archivematica.storage_service.locations.models import StorageException
+from archivematica.storage_service.locations.models.location import Location
+from archivematica.storage_service.locations.models.urlmixin import URLMixin
 
 LOGGER = logging.getLogger(__name__)
 

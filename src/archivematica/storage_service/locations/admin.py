@@ -1,12 +1,12 @@
 from django.contrib import admin
 
-from .models import NFS
-from .models import Event
-from .models import LocalFilesystem
-from .models import Location
-from .models import Package
-from .models import Pipeline
-from .models import Space
+from archivematica.storage_service.locations.models import NFS
+from archivematica.storage_service.locations.models import Event
+from archivematica.storage_service.locations.models import LocalFilesystem
+from archivematica.storage_service.locations.models import Location
+from archivematica.storage_service.locations.models import Package
+from archivematica.storage_service.locations.models import Pipeline
+from archivematica.storage_service.locations.models import Space
 
 admin.site.register(Event)
 admin.site.register(Package)

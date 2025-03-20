@@ -1,6 +1,7 @@
-import common.fields
 from django.db import migrations
 from django.db import models
+
+from archivematica.storage_service.common.fields import UUIDField
 
 
 class Migration(migrations.Migration):
@@ -132,7 +133,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="file",
             name="origin",
-            field=common.fields.UUIDField(
+            field=UUIDField(
                 default=None,
                 help_text=b"Unique identifier of originating Archivematica dashboard",
                 max_length=36,

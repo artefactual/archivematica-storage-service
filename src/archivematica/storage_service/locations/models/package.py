@@ -17,25 +17,27 @@ import importlib_resources
 import jsonfield
 import metsrw
 import requests
-from common import fields
-from common import premis
-from common import utils
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from locations import signals
 from lxml import etree
 from metsrw.plugins import premisrw
 
-from . import StorageException
-from .event import Callback
-from .event import CallbackError
-from .event import File
-from .fixity_log import FixityLog
-from .location import Location
-from .space import PosixMoveUnsupportedError
-from .space import Space
+from archivematica.storage_service.common import fields
+from archivematica.storage_service.common import premis
+from archivematica.storage_service.common import utils
+from archivematica.storage_service.locations import signals
+from archivematica.storage_service.locations.models import StorageException
+from archivematica.storage_service.locations.models.event import Callback
+from archivematica.storage_service.locations.models.event import CallbackError
+from archivematica.storage_service.locations.models.event import File
+from archivematica.storage_service.locations.models.fixity_log import FixityLog
+from archivematica.storage_service.locations.models.location import Location
+from archivematica.storage_service.locations.models.space import (
+    PosixMoveUnsupportedError,
+)
+from archivematica.storage_service.locations.models.space import Space
 
 __all__ = ("Package",)
 
@@ -1449,7 +1451,9 @@ class Package(models.Model):
 
         # Use local XML schemas for validation.
         os.environ["XML_CATALOG_FILES"] = str(
-            importlib_resources.files("common") / "assets" / "catalog.xml"
+            importlib_resources.files("archivematica.storage_service.common")
+            / "assets"
+            / "catalog.xml"
         )
 
         compression_event = _find_compression_event(premis_events)

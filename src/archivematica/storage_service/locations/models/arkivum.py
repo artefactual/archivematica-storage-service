@@ -6,16 +6,16 @@ import urllib.parse
 import dateutil.parser
 import django.core.mail
 import requests
-from common import utils
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from lxml import etree
 
-from . import StorageException
-from .location import Location
-from .package import Package
+from archivematica.storage_service.common import utils
+from archivematica.storage_service.locations.models import StorageException
+from archivematica.storage_service.locations.models.location import Location
+from archivematica.storage_service.locations.models.package import Package
 
 LOGGER = logging.getLogger(__name__)
 

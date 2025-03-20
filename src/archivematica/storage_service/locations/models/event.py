@@ -3,12 +3,12 @@ from collections import OrderedDict
 from uuid import uuid4
 
 import requests
-from common import fields
 from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from . import StorageException
+from archivematica.storage_service.common import fields
+from archivematica.storage_service.locations.models import StorageException
 
 __all__ = ("Event", "Callback", "File", "CallbackError")
 

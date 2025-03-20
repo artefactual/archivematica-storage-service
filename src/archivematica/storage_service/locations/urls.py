@@ -1,5 +1,6 @@
 from django.urls import path
-from locations import views
+
+from archivematica.storage_service.locations import views
 
 app_name = "locations"
 urlpatterns = [

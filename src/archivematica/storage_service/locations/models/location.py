@@ -2,13 +2,13 @@ import logging
 import os
 import uuid
 
-from administration.models import Settings
-from common import fields
 from django.db import models
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 
-from .managers import Enabled
+from archivematica.storage_service.administration.models import Settings
+from archivematica.storage_service.common import fields
+from archivematica.storage_service.locations.models.managers import Enabled
 
 __all__ = ("Location", "LocationPipeline")
 

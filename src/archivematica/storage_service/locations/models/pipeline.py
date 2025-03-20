@@ -2,18 +2,20 @@ import logging
 import uuid
 
 import requests
-from common import fields
-from common import utils
 from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from .local_filesystem import LocalFilesystem
-from .location import Location
-from .location import LocationPipeline
-from .managers import Enabled
-from .space import Space
-from .urlmixin import URLMixin
+from archivematica.storage_service.common import fields
+from archivematica.storage_service.common import utils
+from archivematica.storage_service.locations.models.local_filesystem import (
+    LocalFilesystem,
+)
+from archivematica.storage_service.locations.models.location import Location
+from archivematica.storage_service.locations.models.location import LocationPipeline
+from archivematica.storage_service.locations.models.managers import Enabled
+from archivematica.storage_service.locations.models.space import Space
+from archivematica.storage_service.locations.models.urlmixin import URLMixin
 
 __all__ = ("Pipeline",)
 

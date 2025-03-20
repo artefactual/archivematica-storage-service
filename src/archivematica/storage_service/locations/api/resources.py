@@ -12,8 +12,6 @@ from pathlib import Path
 
 import bagit
 import tastypie.exceptions
-from administration.models import Settings
-from common import utils
 from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned
 from django.core.exceptions import ObjectDoesNotExist
@@ -22,8 +20,6 @@ from django.http import HttpResponseRedirect
 from django.urls import re_path
 from django.urls import reverse
 from django.utils.translation import gettext as _
-from locations import signals
-from locations.api.sword import views as sword_views
 from tastypie import fields
 from tastypie import http
 from tastypie.authentication import ApiKeyAuthentication
@@ -37,21 +33,25 @@ from tastypie.resources import ModelResource
 from tastypie.utils import trailing_slash
 from tastypie.validation import CleanedDataFormValidation
 
-from ..constants import PROTOCOL
-from ..forms import SpaceForm
-from ..models import Async
-from ..models import Callback
-from ..models import CallbackError
-from ..models import Event
-from ..models import File
-from ..models import Location
-from ..models import LocationPipeline
-from ..models import Package
-from ..models import Pipeline
-from ..models import PosixMoveUnsupportedError
-from ..models import Space
-from ..models import StorageException
-from ..models.async_manager import AsyncManager
+from archivematica.storage_service.administration.models import Settings
+from archivematica.storage_service.common import utils
+from archivematica.storage_service.locations import signals
+from archivematica.storage_service.locations.api.sword import views as sword_views
+from archivematica.storage_service.locations.constants import PROTOCOL
+from archivematica.storage_service.locations.forms import SpaceForm
+from archivematica.storage_service.locations.models import Async
+from archivematica.storage_service.locations.models import Callback
+from archivematica.storage_service.locations.models import CallbackError
+from archivematica.storage_service.locations.models import Event
+from archivematica.storage_service.locations.models import File
+from archivematica.storage_service.locations.models import Location
+from archivematica.storage_service.locations.models import LocationPipeline
+from archivematica.storage_service.locations.models import Package
+from archivematica.storage_service.locations.models import Pipeline
+from archivematica.storage_service.locations.models import PosixMoveUnsupportedError
+from archivematica.storage_service.locations.models import Space
+from archivematica.storage_service.locations.models import StorageException
+from archivematica.storage_service.locations.models.async_manager import AsyncManager
 
 LOGGER = logging.getLogger(__name__)
 

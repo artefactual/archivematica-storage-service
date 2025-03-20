@@ -1,7 +1,8 @@
-import common.fields
-import locations.models.space
 from django.db import migrations
 from django.db import models
+
+from archivematica.storage_service.common.fields import UUIDField
+from archivematica.storage_service.locations.models.space import validate_space_path
 
 
 class Migration(migrations.Migration):
@@ -389,7 +390,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="pipeline",
             name="uuid",
-            field=common.fields.UUIDField(
+            field=UUIDField(
                 help_text="Identifier for the Archivematica pipeline",
                 unique=True,
                 verbose_name="UUID",
@@ -472,7 +473,7 @@ class Migration(migrations.Migration):
             field=models.TextField(
                 help_text="Absolute path to a staging area.  Must be UNIX filesystem compatible, preferably on the same filesystem as the path.",
                 verbose_name="Staging path",
-                validators=[locations.models.space.validate_space_path],
+                validators=[validate_space_path],
             ),
         ),
         migrations.AlterField(

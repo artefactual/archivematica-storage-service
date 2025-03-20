@@ -3,16 +3,16 @@ import logging
 import os
 import tarfile
 
-from common import gpgutils
-from common import premis
-from common import utils
 from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from . import space
-from .location import Location
-from .package import Package
+from archivematica.storage_service.common import gpgutils
+from archivematica.storage_service.common import premis
+from archivematica.storage_service.common import utils
+from archivematica.storage_service.locations.models import space
+from archivematica.storage_service.locations.models.location import Location
+from archivematica.storage_service.locations.models.package import Package
 
 LOGGER = logging.getLogger(__name__)
 

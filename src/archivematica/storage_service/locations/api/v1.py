@@ -1,5 +1,6 @@
-import locations.api.resources as resources
 from tastypie import fields
+
+import archivematica.storage_service.locations.api.resources as resources
 
 
 class PipelineResource(resources.PipelineResource):

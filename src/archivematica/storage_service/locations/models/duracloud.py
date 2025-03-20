@@ -5,13 +5,13 @@ import shutil
 import urllib.parse
 
 import requests
-from common import utils
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from lxml import etree
 
-from . import StorageException
-from .location import Location
+from archivematica.storage_service.common import utils
+from archivematica.storage_service.locations.models import StorageException
+from archivematica.storage_service.locations.models.location import Location
 
 LOGGER = logging.getLogger(__name__)
 

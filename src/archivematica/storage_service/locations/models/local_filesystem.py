@@ -4,7 +4,7 @@ import os
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from .location import Location
+from archivematica.storage_service.locations.models.location import Location
 
 
 class LocalFilesystem(models.Model):

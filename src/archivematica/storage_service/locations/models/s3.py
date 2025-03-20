@@ -7,13 +7,13 @@ from urllib.parse import urlparse
 
 import boto3
 import botocore
-from common import utils
 from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from . import StorageException
-from .location import Location
+from archivematica.storage_service.common import utils
+from archivematica.storage_service.locations.models import StorageException
+from archivematica.storage_service.locations.models.location import Location
 
 LOGGER = logging.getLogger(__name__)
 

@@ -3,16 +3,16 @@ import os
 import shutil
 import traceback
 
-from common import utils
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
-from locations import models
 from lxml import etree as etree
 
-from . import helpers
+from archivematica.storage_service.common import utils
+from archivematica.storage_service.locations import models
+from archivematica.storage_service.locations.api.sword import helpers
 
 LOGGER = logging.getLogger(__name__)
 

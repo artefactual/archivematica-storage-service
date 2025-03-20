@@ -2,11 +2,11 @@ import datetime
 import os
 import uuid
 
-from common import fields
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from .location import Location
+from archivematica.storage_service.common import fields
+from archivematica.storage_service.locations.models.location import Location
 
 
 class Fedora(models.Model):

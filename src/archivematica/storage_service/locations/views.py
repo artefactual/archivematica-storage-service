@@ -3,9 +3,6 @@ import logging
 import os
 
 import requests
-from common import decorators
-from common import gpgutils
-from common import utils
 from django.contrib import auth
 from django.contrib import messages
 from django.contrib.auth.context_processors import PermWrapper
@@ -23,19 +20,22 @@ from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
 from tastypie.models import ApiKey
 
-from . import datatable_utils
-from . import forms
-from .constants import PROTOCOL
-from .models import GPG
-from .models import Callback
-from .models import Event
-from .models import FixityLog
-from .models import Location
-from .models import LocationPipeline
-from .models import Package
-from .models import Pipeline
-from .models import Space
-from .models import StorageException
+from archivematica.storage_service.common import decorators
+from archivematica.storage_service.common import gpgutils
+from archivematica.storage_service.common import utils
+from archivematica.storage_service.locations import datatable_utils
+from archivematica.storage_service.locations import forms
+from archivematica.storage_service.locations.constants import PROTOCOL
+from archivematica.storage_service.locations.models import GPG
+from archivematica.storage_service.locations.models import Callback
+from archivematica.storage_service.locations.models import Event
+from archivematica.storage_service.locations.models import FixityLog
+from archivematica.storage_service.locations.models import Location
+from archivematica.storage_service.locations.models import LocationPipeline
+from archivematica.storage_service.locations.models import Package
+from archivematica.storage_service.locations.models import Pipeline
+from archivematica.storage_service.locations.models import Space
+from archivematica.storage_service.locations.models import StorageException
 
 LOGGER = logging.getLogger(__name__)
 

@@ -1,9 +1,10 @@
 from django.urls import include
 from django.urls import path
-from locations.api import v1
-from locations.api import v2
-from locations.api.sword import views
 from tastypie.api import Api
+
+from archivematica.storage_service.locations.api import v1
+from archivematica.storage_service.locations.api import v2
+from archivematica.storage_service.locations.api.sword import views
 
 v1_api = Api(api_name="v1")
 v1_api.register(v1.SpaceResource())

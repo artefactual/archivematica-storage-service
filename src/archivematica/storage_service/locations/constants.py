@@ -1,5 +1,5 @@
-from . import forms
-from . import models
+from archivematica.storage_service.locations import forms
+from archivematica.storage_service.locations import models
 
 # ######################## SPACES ##########################
 

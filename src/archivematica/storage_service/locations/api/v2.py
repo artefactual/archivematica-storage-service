@@ -1,7 +1,8 @@
 import base64
 
-import locations.api.resources as resources
 from tastypie import fields
+
+import archivematica.storage_service.locations.api.resources as resources
 
 
 def b64encode_string(data):

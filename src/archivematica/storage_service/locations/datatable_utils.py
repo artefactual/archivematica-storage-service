@@ -14,8 +14,8 @@ import uuid
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import FixityLog
-from .models import Package
+from archivematica.storage_service.locations.models import FixityLog
+from archivematica.storage_service.locations.models import Package
 
 
 class PackageDataTable:

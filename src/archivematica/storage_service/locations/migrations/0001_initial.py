@@ -1,10 +1,11 @@
 import uuid
 
-import common.fields
-import locations.models
 from django.conf import settings
 from django.db import migrations
 from django.db import models
+
+from archivematica.storage_service.common.fields import UUIDField
+from archivematica.storage_service.locations.models.space import validate_space_path
 
 
 class Migration(migrations.Migration):
@@ -87,7 +88,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "uuid",
-                    common.fields.UUIDField(
+                    UUIDField(
                         help_text=b"Unique identifier",
                         unique=True,
                         max_length=36,
@@ -224,7 +225,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "uuid",
-                    common.fields.UUIDField(
+                    UUIDField(
                         help_text=b"Unique identifier",
                         unique=True,
                         max_length=36,
@@ -292,7 +293,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "uuid",
-                    common.fields.UUIDField(
+                    UUIDField(
                         editable=False,
                         max_length=36,
                         blank=True,
@@ -366,7 +367,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "uuid",
-                    common.fields.UUIDField(
+                    UUIDField(
                         help_text=b"Unique identifier",
                         unique=True,
                         max_length=36,
@@ -406,7 +407,7 @@ class Migration(migrations.Migration):
                     "path",
                     models.TextField(
                         help_text=b"Absolute path to the space on the storage service machine.",
-                        validators=[locations.models.space.validate_space_path],
+                        validators=[validate_space_path],
                     ),
                 ),
                 (

@@ -17,8 +17,8 @@ import traceback
 
 from django.utils import timezone
 
-from .. import metrics
-from .asynchronous import Async
+from archivematica.storage_service.locations import metrics
+from archivematica.storage_service.locations.models.asynchronous import Async
 
 LOGGER = logging.getLogger(__name__)
 

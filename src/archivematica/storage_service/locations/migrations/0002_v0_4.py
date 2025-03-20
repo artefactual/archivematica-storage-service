@@ -1,7 +1,8 @@
 import jsonfield.fields
-import locations.models
 from django.db import migrations
 from django.db import models
+
+from archivematica.storage_service.locations.models.space import validate_space_path
 
 
 class Migration(migrations.Migration):
@@ -116,7 +117,7 @@ class Migration(migrations.Migration):
             field=models.TextField(
                 default="/var/archivematica/storage_service/",
                 help_text=b"Absolute path to a staging area.  Must be UNIX filesystem compatible, preferably on the same filesystem as the path.",
-                validators=[locations.models.space.validate_space_path],
+                validators=[validate_space_path],
             ),
             preserve_default=False,
         ),

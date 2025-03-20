@@ -1,8 +1,9 @@
 import uuid
 
-import common.fields
 from django.db import migrations
 from django.db import models
+
+from archivematica.storage_service.common.fields import UUIDField
 
 
 class Migration(migrations.Migration):
@@ -23,7 +24,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "uuid",
-                    common.fields.UUIDField(
+                    UUIDField(
                         max_length=36, editable=False, blank=True, default=uuid.uuid4
                     ),
                 ),
@@ -180,7 +181,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "uuid",
-                    common.fields.UUIDField(
+                    UUIDField(
                         help_text=b"Unique identifier",
                         unique=True,
                         max_length=36,
@@ -211,7 +212,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "uuid",
-                    common.fields.UUIDField(
+                    UUIDField(
                         help_text=b"Unique identifier",
                         unique=True,
                         max_length=36,
@@ -252,7 +253,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "uuid",
-                    common.fields.UUIDField(
+                    UUIDField(
                         help_text=b"Unique identifier",
                         unique=True,
                         max_length=36,

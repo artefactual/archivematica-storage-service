@@ -9,13 +9,13 @@ import subprocess
 import tempfile
 import uuid
 
-from common import fields
-from common import utils
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from . import StorageException
+from archivematica.storage_service.common import fields
+from archivematica.storage_service.common import utils
+from archivematica.storage_service.locations.models import StorageException
 
 LOGGER = logging.getLogger(__name__)
 
