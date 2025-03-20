@@ -1,21 +1,21 @@
-import administration.urls
 import django.contrib.auth.views
-import locations.api.urls
-import locations.urls
 from django.conf import settings
 from django.contrib import admin
 from django.urls import include
 from django.urls import path
 from django.views.generic import TemplateView
 
-from storage_service import views
+import archivematica.storage_service.administration.urls
+import archivematica.storage_service.locations.api.urls
+import archivematica.storage_service.locations.urls
+from archivematica.storage_service.storage_service import views
 
 urlpatterns = [
     path("", TemplateView.as_view(template_name="index.html")),
     path("admin/", admin.site.urls),
-    path("", include(locations.urls)),
-    path("administration/", include(administration.urls)),
-    path("api/", include(locations.api.urls)),
+    path("", include(archivematica.storage_service.locations.urls)),
+    path("administration/", include(archivematica.storage_service.administration.urls)),
+    path("api/", include(archivematica.storage_service.locations.api.urls)),
     path(
         "jsi18n/",
         views.cached_javascript_catalog,
@@ -35,7 +35,7 @@ if "django_cas_ng" in settings.INSTALLED_APPS:
     ]
 
 elif "mozilla_django_oidc" in settings.INSTALLED_APPS:
-    from storage_service.views import CustomOIDCLogoutView
+    from archivematica.storage_service.storage_service.views import CustomOIDCLogoutView
 
     urlpatterns += [
         path(

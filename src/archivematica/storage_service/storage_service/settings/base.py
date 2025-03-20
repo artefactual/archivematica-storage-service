@@ -7,12 +7,12 @@ from pathlib import Path
 from sys import path
 from typing import Any
 
-from common.helpers import get_oidc_secondary_providers
-from common.helpers import is_true
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
 
-from .components.s3 import *
+from archivematica.storage_service.common.helpers import get_oidc_secondary_providers
+from archivematica.storage_service.common.helpers import is_true
+from archivematica.storage_service.storage_service.settings.components.s3 import *
 
 try:
     import ldap
@@ -172,7 +172,7 @@ TEMPLATES: list[dict[str, Any]] = [
                 "django.template.context_processors.tz",
                 "django.template.context_processors.request",
                 "django.contrib.messages.context_processors.messages",
-                "common.context_processors.auth_methods",
+                "archivematica.storage_service.common.context_processors.auth_methods",
             ],
             "debug": DEBUG,
         },
@@ -186,7 +186,7 @@ TEMPLATES: list[dict[str, Any]] = [
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#authentication-backends
 AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend"]
 
-from .components.auth import *
+from archivematica.storage_service.storage_service.settings.components.auth import *
 
 # ######### END AUTHENTICATION CONFIGURATION
 
@@ -199,25 +199,27 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     # Automatic language selection is disabled.
     # See #723 for more details.
-    "common.middleware.ForceDefaultLanguageMiddleware",
+    "archivematica.storage_service.common.middleware.ForceDefaultLanguageMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "common.middleware.LoginRequiredMiddleware",
+    "archivematica.storage_service.common.middleware.LoginRequiredMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
 AUDIT_LOG_MIDDLEWARE = is_true(environ.get("SS_AUDIT_LOG_MIDDLEWARE", "false"))
 if AUDIT_LOG_MIDDLEWARE:
-    MIDDLEWARE.append("common.middleware.AuditLogMiddleware")
+    MIDDLEWARE.append(
+        "archivematica.storage_service.common.middleware.AuditLogMiddleware"
+    )
 # ######## END MIDDLEWARE CONFIGURATION
 
 
 # ######## URL CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#root-urlconf
-ROOT_URLCONF = "%s.urls" % SITE_NAME
+ROOT_URLCONF = "archivematica.storage_service.storage_service.urls"
 # ######## END URL CONFIGURATION
 
 
@@ -241,7 +243,11 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = ["tastypie"]  # REST framework
 
 # Apps specific for this project go here.
-LOCAL_APPS = ["administration.apps.AdministrationAppConfig", "common", "locations"]
+LOCAL_APPS = [
+    "archivematica.storage_service.administration.apps.AdministrationAppConfig",
+    "archivematica.storage_service.common",
+    "archivematica.storage_service.locations",
+]
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -297,9 +303,9 @@ LOGGING = {
             "propagate": True,
         },
         "django.request.tastypie": {"level": "ERROR"},
-        "administration": {"level": "DEBUG"},
-        "common": {"level": "DEBUG"},
-        "locations": {"level": "DEBUG"},
+        "archivematica.storage_service.administration": {"level": "DEBUG"},
+        "archivematica.storage_service.common": {"level": "DEBUG"},
+        "archivematica.storage_service.locations": {"level": "DEBUG"},
         "sword2": {"level": "INFO"},
         "boto3": {"level": "INFO"},
         "botocore": {"level": "INFO"},
@@ -325,7 +331,7 @@ SESSION_COOKIE_NAME = "storageapi_sessionid"
 
 # ######## WSGI CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#wsgi-application
-WSGI_APPLICATION = "%s.wsgi.application" % SITE_NAME
+WSGI_APPLICATION = "archivematia.storage_service.storage_service.wsgi.application"
 # ######## END WSGI CONFIGURATION
 
 ALLOW_USER_EDITS = True
@@ -486,7 +492,7 @@ if SHIBBOLETH_AUTHENTICATION:
     # Insert Shibboleth after the authentication middleware
     MIDDLEWARE.insert(
         MIDDLEWARE.index("django.contrib.auth.middleware.AuthenticationMiddleware") + 1,
-        "common.middleware.CustomShibbolethRemoteUserMiddleware",
+        "archivematica.storage_service.common.middleware.CustomShibbolethRemoteUserMiddleware",
     )
 
     INSTALLED_APPS += ["shibboleth"]
@@ -540,7 +546,9 @@ if CAS_AUTHENTICATION:
     CAS_LOGIN_URL_NAME = "login"
     CAS_LOGOUT_URL_NAME = "logout"
 
-    AUTHENTICATION_BACKENDS += ["common.backends.CustomCASBackend"]
+    AUTHENTICATION_BACKENDS += [
+        "archivematica.storage_service.common.backends.CustomCASBackend"
+    ]
 
     # Insert CAS after the authentication middleware
     MIDDLEWARE.insert(
@@ -570,17 +578,17 @@ if OIDC_AUTHENTICATION:
     INSTALLED_APPS += ["mozilla_django_oidc"]
 
     OIDC_STORE_ID_TOKEN = True
-    OIDC_AUTHENTICATE_CLASS = (
-        "storage_service.views.CustomOIDCAuthenticationRequestView"
-    )
+    OIDC_AUTHENTICATE_CLASS = "archivematica.storage_service.storage_service.views.CustomOIDCAuthenticationRequestView"
 
-    AUTHENTICATION_BACKENDS += ["common.backends.CustomOIDCBackend"]
+    AUTHENTICATION_BACKENDS += [
+        "archivematica.storage_service.common.backends.CustomOIDCBackend"
+    ]
     LOGIN_EXEMPT_URLS.append(r"^oidc")
 
     # Insert OIDC before the redirect to LOGIN_URL
     MIDDLEWARE.insert(
         MIDDLEWARE.index("django.contrib.auth.middleware.AuthenticationMiddleware") + 1,
-        "common.middleware.OidcCaptureQueryParamMiddleware",
+        "archivematica.storage_service.common.middleware.OidcCaptureQueryParamMiddleware",
     )
 
     OIDC_ALLOW_LOCAL_AUTHENTICATION = is_true(
@@ -638,7 +646,9 @@ if OIDC_AUTHENTICATION:
     OIDC_PROVIDERS = get_oidc_secondary_providers(OIDC_SECONDARY_PROVIDER_NAMES)
 
     if OIDC_OP_LOGOUT_ENDPOINT:
-        OIDC_OP_LOGOUT_URL_METHOD = "storage_service.views.get_oidc_logout_url"
+        OIDC_OP_LOGOUT_URL_METHOD = (
+            "archivematica.storage_service.storage_service.views.get_oidc_logout_url"
+        )
 
     OIDC_RP_SIGN_ALGO = environ.get("OIDC_RP_SIGN_ALGO", "HS256")
 
@@ -681,7 +691,7 @@ CSP_ENABLED = is_true(environ.get("SS_CSP_ENABLED", ""))
 if CSP_ENABLED:
     MIDDLEWARE.insert(0, "csp.middleware.CSPMiddleware")
 
-    from .components.csp import *
+    from archivematica.storage_service.storage_service.settings.components.csp import *
 
     CSP_SETTINGS_FILE = environ.get("CSP_SETTINGS_FILE", "")
     if CSP_SETTINGS_FILE:

@@ -2,7 +2,7 @@
 
 from os import environ
 
-from common.helpers import is_true
+from archivematica.storage_service.common.helpers import is_true
 
 PASSWORD_MINIMUM_LENGTH = 8
 try:
@@ -39,5 +39,7 @@ if not is_true(
 
 if not is_true(environ.get("SS_AUTH_PASSWORD_DISABLE_COMPLEXITY_VALIDATION", "false")):
     AUTH_PASSWORD_VALIDATORS.append(
-        {"NAME": "administration.validators.PasswordComplexityValidator"}
+        {
+            "NAME": "archivematica.storage_service.administration.validators.PasswordComplexityValidator"
+        }
     )

@@ -32,7 +32,10 @@ path.append(SITE_ROOT)
 # if running multiple sites in the same mod_wsgi process. To fix this, use
 # mod_wsgi daemon mode with each site in its own daemon process, or use
 # os.environ["DJANGO_SETTINGS_MODULE"] = "jajaja.settings"
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "storage_service.settings.production")
+os.environ.setdefault(
+    "DJANGO_SETTINGS_MODULE",
+    "archivematica.storage_service.storage_service.settings.production",
+)
 
 startup()
 

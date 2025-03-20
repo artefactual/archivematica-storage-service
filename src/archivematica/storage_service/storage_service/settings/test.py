@@ -1,6 +1,6 @@
 """Test settings and globals."""
 
-from .base import *
+from archivematica.storage_service.storage_service.settings.base import *
 
 # ######## IN-MEMORY TEST DATABASE
 DATABASES = {

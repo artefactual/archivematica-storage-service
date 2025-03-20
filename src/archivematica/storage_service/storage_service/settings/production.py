@@ -3,10 +3,10 @@
 from os import environ
 
 import dj_database_url
-from common.helpers import get_env_variable
-from common.helpers import is_true
 
-from .base import *
+from archivematica.storage_service.common.helpers import get_env_variable
+from archivematica.storage_service.common.helpers import is_true
+from archivematica.storage_service.storage_service.settings.base import *
 
 # ######## DATABASE CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#databases
