@@ -40,7 +40,7 @@ class TestCallbacksViews(TestCase):
             self.assertNotContains(response, header, html=True)
 
     @mock.patch(
-        "locations.models.event.fields.UUIDField.get_default",
+        "archivematica.storage_service.locations.models.event.fields.UUIDField.get_default",
         mock.Mock(side_effect=mock_uuid),
     )
     def _create_callback(self):

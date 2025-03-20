@@ -2,8 +2,9 @@ import pathlib
 
 import pytest
 from django.test import TestCase
-from locations import forms
-from locations import models
+
+from archivematica.storage_service.locations import forms
+from archivematica.storage_service.locations import models
 
 CALLBACK_FIXTURE = pathlib.Path(__file__).parent / "fixtures" / "callback.json"
 

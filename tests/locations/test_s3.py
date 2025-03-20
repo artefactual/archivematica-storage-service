@@ -2,7 +2,8 @@ from unittest import mock
 
 import botocore
 import pytest
-from locations import models
+
+from archivematica.storage_service.locations import models
 
 
 @pytest.fixture

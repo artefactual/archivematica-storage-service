@@ -6,7 +6,8 @@ from unittest import mock
 import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
-from locations import models
+
+from archivematica.storage_service.locations import models
 
 
 @pytest.fixture
@@ -115,8 +116,12 @@ def test_command_fails_when_there_are_no_uploaded_aips(
 
 
 @pytest.mark.django_db
-@mock.patch("common.management.commands.StorageServiceCommand.error")
-@mock.patch("common.management.commands.StorageServiceCommand.success")
+@mock.patch(
+    "archivematica.storage_service.common.management.commands.StorageServiceCommand.error"
+)
+@mock.patch(
+    "archivematica.storage_service.common.management.commands.StorageServiceCommand.success"
+)
 def test_command_completes_when_location_does_not_contain_aips(
     success: mock.Mock,
     error: mock.Mock,
@@ -135,8 +140,12 @@ def test_command_completes_when_location_does_not_contain_aips(
 
 @pytest.mark.django_db
 @mock.patch("pathlib.Path.stat", side_effect=[mock.Mock(st_mtime=1710831600)])
-@mock.patch("common.management.commands.StorageServiceCommand.error")
-@mock.patch("common.management.commands.StorageServiceCommand.success")
+@mock.patch(
+    "archivematica.storage_service.common.management.commands.StorageServiceCommand.error"
+)
+@mock.patch(
+    "archivematica.storage_service.common.management.commands.StorageServiceCommand.success"
+)
 def test_command_filters_aips_by_location_uuid(
     success: mock.Mock,
     error: mock.Mock,
@@ -168,8 +177,12 @@ def test_command_filters_aips_by_location_uuid(
 @mock.patch(
     "pathlib.Path.stat", side_effect=FileNotFoundError("no such file or directory")
 )
-@mock.patch("common.management.commands.StorageServiceCommand.error")
-@mock.patch("common.management.commands.StorageServiceCommand.success")
+@mock.patch(
+    "archivematica.storage_service.common.management.commands.StorageServiceCommand.error"
+)
+@mock.patch(
+    "archivematica.storage_service.common.management.commands.StorageServiceCommand.success"
+)
 def test_command_logs_error_when_it_cannot_read_aip_file(
     success: mock.Mock,
     error: mock.Mock,
@@ -192,8 +205,12 @@ def test_command_logs_error_when_it_cannot_read_aip_file(
 
 
 @pytest.mark.django_db
-@mock.patch("common.management.commands.StorageServiceCommand.error")
-@mock.patch("common.management.commands.StorageServiceCommand.success")
+@mock.patch(
+    "archivematica.storage_service.common.management.commands.StorageServiceCommand.error"
+)
+@mock.patch(
+    "archivematica.storage_service.common.management.commands.StorageServiceCommand.success"
+)
 def test_command_skips_aips_with_stored_dates(
     success: mock.Mock,
     error: mock.Mock,

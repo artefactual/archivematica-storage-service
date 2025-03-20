@@ -1,14 +1,15 @@
 from unittest import mock
 
 import pytest
-from administration import roles
-from common.backends import CustomCASBackend
-from common.signals import _cas_user_role
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import RequestFactory
 from django.test import TestCase
 from django.test.client import Client
+
+from archivematica.storage_service.administration import roles
+from archivematica.storage_service.common.backends import CustomCASBackend
+from archivematica.storage_service.common.signals import _cas_user_role
 
 TEST_CAS_USER = "casuser"
 TEST_CAS_ADMIN_ATTRIBUTE = "usertype"

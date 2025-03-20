@@ -3,8 +3,9 @@ from uuid import uuid4
 
 import metsrw
 from django.test import TestCase
-from locations import models
 from metsrw.plugins import premisrw
+
+from archivematica.storage_service.locations import models
 
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 

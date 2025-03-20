@@ -14,7 +14,9 @@ class AuditLogMiddlewareTestCase(TestCase):
     def test_audit_log_middleware_adds_username(self):
         """Test that X-Username is added for authenticated users."""
         with self.modify_settings(
-            MIDDLEWARE={"append": "common.middleware.AuditLogMiddleware"}
+            MIDDLEWARE={
+                "append": "archivematica.storage_service.common.middleware.AuditLogMiddleware"
+            }
         ):
             response = self.client.get("/")
             self.assertTrue(response.has_header("X-Username"))
@@ -28,7 +30,9 @@ class AuditLogMiddlewareTestCase(TestCase):
         an unauthenticated user.
         """
         with self.modify_settings(
-            MIDDLEWARE={"append": "common.middleware.AuditLogMiddleware"}
+            MIDDLEWARE={
+                "append": "archivematica.storage_service.common.middleware.AuditLogMiddleware"
+            }
         ):
             self.client.logout()
 

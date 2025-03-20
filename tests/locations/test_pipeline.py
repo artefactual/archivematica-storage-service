@@ -8,7 +8,8 @@ import pytest
 import pytest_django
 from django.test import Client
 from django.urls import reverse
-from locations import models
+
+from archivematica.storage_service.locations import models
 
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
@@ -75,7 +76,7 @@ def test_request_api(
 
 @pytest.mark.django_db
 @mock.patch(
-    "locations.models.Pipeline._request_api",
+    "archivematica.storage_service.locations.models.Pipeline._request_api",
     side_effect=[
         mock.Mock(
             **{
@@ -109,7 +110,7 @@ def test_list_unapproved_transfers(
 
 @pytest.mark.django_db
 @mock.patch(
-    "locations.models.Pipeline._request_api",
+    "archivematica.storage_service.locations.models.Pipeline._request_api",
     side_effect=[
         mock.Mock(
             **{

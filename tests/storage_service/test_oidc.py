@@ -1,8 +1,9 @@
 import pytest
 import pytest_django
-from administration import roles
-from common.backends import CustomOIDCBackend
 from django.contrib.auth.models import User
+
+from archivematica.storage_service.administration import roles
+from archivematica.storage_service.common.backends import CustomOIDCBackend
 
 
 @pytest.fixture

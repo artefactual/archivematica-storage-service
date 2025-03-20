@@ -6,9 +6,10 @@ from os import scandir
 from unittest import mock
 
 import pytest
-from locations.models import LocalFilesystem
-from locations.models import Space
-from locations.models.space import path2browse_dict
+
+from archivematica.storage_service.locations.models import LocalFilesystem
+from archivematica.storage_service.locations.models import Space
+from archivematica.storage_service.locations.models.space import path2browse_dict
 
 
 def _restrict_access_to(restricted_path):
@@ -56,7 +57,9 @@ def tree(tmpdir):
     return result
 
 
-@mock.patch("common.utils.get_setting", return_value=False)
+@mock.patch(
+    "archivematica.storage_service.common.utils.get_setting", return_value=False
+)
 def test_path2browse_dict_object_counting_ignores_read_protected_directories(
     get_setting, tree
 ):

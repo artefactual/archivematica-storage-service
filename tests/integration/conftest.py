@@ -1,3 +1,4 @@
 import sys
 
-sys.path.append("/src/storage_service")
+# XXX delete?
+sys.path.append("/src/archivematica/storage_service")

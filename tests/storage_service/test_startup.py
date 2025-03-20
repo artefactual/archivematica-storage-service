@@ -1,6 +1,7 @@
-from common.startup import startup
 from django.test import TestCase
-from locations import models
+
+from archivematica.storage_service.common.startup import startup
+from archivematica.storage_service.locations import models
 
 
 class TestStartup(TestCase):

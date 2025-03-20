@@ -8,13 +8,16 @@ from unittest import mock
 from urllib.parse import urlparse
 
 import pytest
-from administration import roles
 from django.contrib.auth.models import User
 from django.test import Client
 from django.test import TestCase
 from django.urls import reverse
-from locations import models
-from locations.api.sword.views import _parse_name_and_content_urls_from_mets_file
+
+from archivematica.storage_service.administration import roles
+from archivematica.storage_service.locations import models
+from archivematica.storage_service.locations.api.sword.views import (
+    _parse_name_and_content_urls_from_mets_file,
+)
 
 from . import TempDirMixin
 
@@ -1371,7 +1374,9 @@ def test_move_request_fails_if_updating_package_status_fails(
 
 
 @pytest.mark.django_db
-@mock.patch("locations.models.async_manager.AsyncManager.run_task")
+@mock.patch(
+    "archivematica.storage_service.locations.models.async_manager.AsyncManager.run_task"
+)
 def test_move_request_returns_asyncronous_task_url_in_response_headers(
     run_task: mock.Mock,
     admin_client: Client,

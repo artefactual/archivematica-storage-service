@@ -1,7 +1,7 @@
 from collections import namedtuple
 
-from common import premis
-from storage_service import __version__ as ss_version
+from archivematica.storage_service.common import premis
+from archivematica.storage_service.storage_service import __version__ as ss_version
 
 FakeGPGRet = namedtuple("FakeGPGRet", "ok status stderr")
 GPG_VERSION = "1.4.16"

@@ -7,8 +7,9 @@ from io import StringIO
 from unittest import mock
 
 import pytest
-from common import utils
 from metsrw import FSEntry
+
+from archivematica.storage_service.common import utils
 
 TEST_DIR = pathlib.Path(__file__).resolve().parent
 FIXTURES_DIR = TEST_DIR / "fixtures"
@@ -557,7 +558,7 @@ def test_find_tagmanifest(iterdir, tmp_path, dir_listing, tagmanifest_file):
     assert utils.find_tagmanifest(file_path) is None
 
 
-@mock.patch("common.utils.find_tagmanifest")
+@mock.patch("archivematica.storage_service.common.utils.find_tagmanifest")
 @mock.patch("pathlib.Path.is_dir", return_value=True)
 def test_generate_checksum_uncompressed_aip(is_dir, find_tag_manifest, tmp_path):
     aip_path = tmp_path / "aip"

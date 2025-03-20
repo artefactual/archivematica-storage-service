@@ -3,10 +3,11 @@ import uuid
 from unittest import mock
 
 import pytest
-from common import utils
 from django.core.management import call_command
-from locations import models
 from lxml import etree
+
+from archivematica.storage_service.common import utils
+from archivematica.storage_service.locations import models
 
 TEST_DIR = pathlib.Path(__file__).resolve().parent
 FIXTURES_DIR = TEST_DIR / "fixtures"
@@ -40,7 +41,9 @@ def aip_storage_location(db, tmp_path):
 
 @pytest.mark.django_db
 @mock.patch("os.chown")
-@mock.patch("common.management.commands.import_aip.getpwnam")
+@mock.patch(
+    "archivematica.storage_service.common.management.commands.import_aip.getpwnam"
+)
 def test_import_aip_command_creates_uncompressed_package(
     getpwnam, chown, capsys, aip_storage_location
 ):
@@ -72,9 +75,11 @@ def test_import_aip_command_creates_uncompressed_package(
 )
 @pytest.mark.django_db
 @mock.patch("os.chown")
-@mock.patch("common.management.commands.import_aip.getpwnam")
+@mock.patch(
+    "archivematica.storage_service.common.management.commands.import_aip.getpwnam"
+)
 @mock.patch("logging.config")
-@mock.patch("common.utils.get_7z_version")
+@mock.patch("archivematica.storage_service.common.utils.get_7z_version")
 def test_import_aip_command_creates_compressed_package(
     get_7z_version,
     logging_config,
@@ -124,7 +129,9 @@ def test_import_aip_command_creates_compressed_package(
 
 @pytest.mark.django_db
 @mock.patch("os.chown")
-@mock.patch("common.management.commands.import_aip.getpwnam")
+@mock.patch(
+    "archivematica.storage_service.common.management.commands.import_aip.getpwnam"
+)
 def test_import_aip_command_sets_unix_owner(
     getpwnam, chown, capsys, aip_storage_location
 ):

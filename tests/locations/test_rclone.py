@@ -2,7 +2,8 @@ import uuid
 from unittest import mock
 
 import pytest
-from locations import models
+
+from archivematica.storage_service.locations import models
 
 RCLONE_SPACE_UUID = str(uuid.uuid4())
 RCLONE_AS_LOCATION_UUID = str(uuid.uuid4())
@@ -92,13 +93,17 @@ def rclone_aip_no_container(db):
     return aip
 
 
-@mock.patch("locations.models.rclone.RClone._execute_rclone_subcommand")
 @mock.patch(
-    "locations.models.rclone.RClone.remote_prefix",
+    "archivematica.storage_service.locations.models.rclone.RClone._execute_rclone_subcommand"
+)
+@mock.patch(
+    "archivematica.storage_service.locations.models.rclone.RClone.remote_prefix",
     return_value="testremote:",
     new_callable=mock.PropertyMock,
 )
-@mock.patch("locations.models.rclone.RClone._ensure_container_exists")
+@mock.patch(
+    "archivematica.storage_service.locations.models.rclone.RClone._ensure_container_exists"
+)
 def test_rclone_delete(
     _ensure_container_exists, remote_prefix, _execute_rclone_subcommand, rclone_aip
 ):
@@ -109,9 +114,11 @@ def test_rclone_delete(
     )
 
 
-@mock.patch("locations.models.rclone.RClone._execute_rclone_subcommand")
 @mock.patch(
-    "locations.models.rclone.RClone.remote_prefix",
+    "archivematica.storage_service.locations.models.rclone.RClone._execute_rclone_subcommand"
+)
+@mock.patch(
+    "archivematica.storage_service.locations.models.rclone.RClone.remote_prefix",
     return_value="testremote:",
     new_callable=mock.PropertyMock,
 )
@@ -136,11 +143,11 @@ def test_rclone_delete_no_container(
     ],
 )
 @mock.patch(
-    "locations.models.rclone.RClone.remote_prefix",
+    "archivematica.storage_service.locations.models.rclone.RClone.remote_prefix",
     return_value="testremote:",
     new_callable=mock.PropertyMock,
 )
-@mock.patch("locations.models.rclone.subprocess")
+@mock.patch("archivematica.storage_service.locations.models.rclone.subprocess")
 def test_rclone_ensure_container_exists(
     subprocess,
     remote_prefix,
@@ -170,7 +177,7 @@ def test_rclone_ensure_container_exists(
         ("another-remote:\nnon-matching-remote:\n", None, 1, True),
     ],
 )
-@mock.patch("locations.models.rclone.subprocess")
+@mock.patch("archivematica.storage_service.locations.models.rclone.subprocess")
 def test_rclone_remote_prefix(
     subprocess,
     rclone_space,
@@ -199,7 +206,7 @@ def test_rclone_remote_prefix(
         (("", ""), 1, True),
     ],
 )
-@mock.patch("locations.models.rclone.subprocess")
+@mock.patch("archivematica.storage_service.locations.models.rclone.subprocess")
 def test_rclone_execute_rclone_subcommand(
     subprocess,
     rclone_space,
@@ -244,14 +251,18 @@ def test_rclone_execute_rclone_subcommand(
         ),
     ],
 )
-@mock.patch("common.utils.package_is_file")
-@mock.patch("locations.models.rclone.RClone._ensure_container_exists")
+@mock.patch("archivematica.storage_service.common.utils.package_is_file")
 @mock.patch(
-    "locations.models.rclone.RClone.remote_prefix",
+    "archivematica.storage_service.locations.models.rclone.RClone._ensure_container_exists"
+)
+@mock.patch(
+    "archivematica.storage_service.locations.models.rclone.RClone.remote_prefix",
     return_value="testremote:",
     new_callable=mock.PropertyMock,
 )
-@mock.patch("locations.models.rclone.RClone._execute_rclone_subcommand")
+@mock.patch(
+    "archivematica.storage_service.locations.models.rclone.RClone._execute_rclone_subcommand"
+)
 def test_rclone_move_to_storage_service(
     _execute_rclone_subcommand,
     remote_prefix,
@@ -297,13 +308,15 @@ def test_rclone_move_to_storage_service(
         ),
     ],
 )
-@mock.patch("common.utils.package_is_file")
+@mock.patch("archivematica.storage_service.common.utils.package_is_file")
 @mock.patch(
-    "locations.models.rclone.RClone.remote_prefix",
+    "archivematica.storage_service.locations.models.rclone.RClone.remote_prefix",
     return_value="testremote:",
     new_callable=mock.PropertyMock,
 )
-@mock.patch("locations.models.rclone.RClone._execute_rclone_subcommand")
+@mock.patch(
+    "archivematica.storage_service.locations.models.rclone.RClone._execute_rclone_subcommand"
+)
 def test_rclone_move_to_storage_service_no_container(
     _execute_rclone_subcommand,
     remote_prefix,
@@ -350,15 +363,21 @@ def test_rclone_move_to_storage_service_no_container(
         ),
     ],
 )
-@mock.patch("locations.models.Space.create_local_directory")
-@mock.patch("common.utils.package_is_file")
-@mock.patch("locations.models.rclone.RClone._ensure_container_exists")
 @mock.patch(
-    "locations.models.rclone.RClone.remote_prefix",
+    "archivematica.storage_service.locations.models.Space.create_local_directory"
+)
+@mock.patch("archivematica.storage_service.common.utils.package_is_file")
+@mock.patch(
+    "archivematica.storage_service.locations.models.rclone.RClone._ensure_container_exists"
+)
+@mock.patch(
+    "archivematica.storage_service.locations.models.rclone.RClone.remote_prefix",
     return_value="testremote:",
     new_callable=mock.PropertyMock,
 )
-@mock.patch("locations.models.rclone.RClone._execute_rclone_subcommand")
+@mock.patch(
+    "archivematica.storage_service.locations.models.rclone.RClone._execute_rclone_subcommand"
+)
 def test_rclone_move_from_storage_service(
     _execute_rclone_subcommand,
     remote_prefix,
@@ -405,14 +424,18 @@ def test_rclone_move_from_storage_service(
         ),
     ],
 )
-@mock.patch("locations.models.Space.create_local_directory")
-@mock.patch("common.utils.package_is_file")
 @mock.patch(
-    "locations.models.rclone.RClone.remote_prefix",
+    "archivematica.storage_service.locations.models.Space.create_local_directory"
+)
+@mock.patch("archivematica.storage_service.common.utils.package_is_file")
+@mock.patch(
+    "archivematica.storage_service.locations.models.rclone.RClone.remote_prefix",
     return_value="testremote:",
     new_callable=mock.PropertyMock,
 )
-@mock.patch("locations.models.rclone.RClone._execute_rclone_subcommand")
+@mock.patch(
+    "archivematica.storage_service.locations.models.rclone.RClone._execute_rclone_subcommand"
+)
 def test_rclone_move_from_storage_service_no_container(
     _execute_rclone_subcommand,
     remote_prefix,
@@ -461,13 +484,17 @@ def test_rclone_move_from_storage_service_no_container(
         (b"", None, True),
     ],
 )
-@mock.patch("locations.models.rclone.RClone._ensure_container_exists")
 @mock.patch(
-    "locations.models.rclone.RClone.remote_prefix",
+    "archivematica.storage_service.locations.models.rclone.RClone._ensure_container_exists"
+)
+@mock.patch(
+    "archivematica.storage_service.locations.models.rclone.RClone.remote_prefix",
     return_value="testremote:",
     new_callable=mock.PropertyMock,
 )
-@mock.patch("locations.models.rclone.RClone._execute_rclone_subcommand")
+@mock.patch(
+    "archivematica.storage_service.locations.models.rclone.RClone._execute_rclone_subcommand"
+)
 def test_rclone_browse(
     _execute_rclone_subcommand,
     remote_prefix,
@@ -521,11 +548,13 @@ def test_rclone_browse(
     ],
 )
 @mock.patch(
-    "locations.models.rclone.RClone.remote_prefix",
+    "archivematica.storage_service.locations.models.rclone.RClone.remote_prefix",
     return_value="testremote:",
     new_callable=mock.PropertyMock,
 )
-@mock.patch("locations.models.rclone.RClone._execute_rclone_subcommand")
+@mock.patch(
+    "archivematica.storage_service.locations.models.rclone.RClone._execute_rclone_subcommand"
+)
 def test_rclone_browse_no_container(
     _execute_rclone_subcommand,
     remote_prefix,

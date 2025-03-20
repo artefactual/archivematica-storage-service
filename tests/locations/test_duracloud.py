@@ -2,9 +2,10 @@ from unittest import mock
 
 import pytest
 import requests
-from locations.models import Duracloud
-from locations.models import Space
-from locations.models import StorageException
+
+from archivematica.storage_service.locations.models import Duracloud
+from archivematica.storage_service.locations.models import Space
+from archivematica.storage_service.locations.models import StorageException
 
 
 @pytest.fixture
@@ -211,7 +212,7 @@ def test_delete_path_deletes_chunked_file(get, delete, space):
     side_effect=[mock.Mock(status_code=404, ok=False, spec=requests.Response)],
 )
 @mock.patch(
-    "locations.models.duracloud.Duracloud._get_files_list",
+    "archivematica.storage_service.locations.models.duracloud.Duracloud._get_files_list",
     side_effect=[["some/folder/a.zip", "some/folder/b.zip"]],
 )
 def test_delete_path_deletes_folder(_get_files_list, get, delete, space):
@@ -306,7 +307,7 @@ def test_move_to_storage_service_downloads_chunked_file(get, send, space, tmp_pa
     side_effect=[mock.Mock(status_code=404, ok=False, spec=requests.Response)],
 )
 @mock.patch(
-    "locations.models.duracloud.Duracloud._get_files_list",
+    "archivematica.storage_service.locations.models.duracloud.Duracloud._get_files_list",
     side_effect=[["some/folder/a.txt", "some/folder/b.txt"]],
 )
 def test_move_to_storage_service_downloads_folder(

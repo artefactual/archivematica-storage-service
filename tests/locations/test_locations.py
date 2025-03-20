@@ -1,8 +1,9 @@
 import pathlib
 
 from django.test import TestCase
-from locations import forms
-from locations import models
+
+from archivematica.storage_service.locations import forms
+from archivematica.storage_service.locations import models
 
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 

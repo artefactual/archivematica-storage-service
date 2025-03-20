@@ -19,15 +19,16 @@ from pathlib import Path
 from typing import Union
 
 import pytest
-from common import utils
 from django.http import HttpResponse
 from django.test import Client as TestClient
 from django.urls import reverse
-from locations.models import Event
-from locations.models import Location
-from locations.models import Package
-from locations.models import Space
 from metsrw.plugins import premisrw
+
+from archivematica.storage_service.common import utils
+from archivematica.storage_service.locations.models import Event
+from archivematica.storage_service.locations.models import Location
+from archivematica.storage_service.locations.models import Package
+from archivematica.storage_service.locations.models import Space
 
 if "RUN_INTEGRATION_TESTS" not in os.environ:
     pytest.skip("Skipping integration tests", allow_module_level=True)
@@ -180,7 +181,7 @@ def startup(working_directory_path: Path) -> None:
     From the list above, CURRENTLY_PROCESSING is missing but that's later added
     when a pipeline is registered.
     """
-    from common.startup import startup
+    from archivematica.storage_service.common.startup import startup
 
     startup(working_directory_path, start_async=False)  # TODO: get rid of this!
 

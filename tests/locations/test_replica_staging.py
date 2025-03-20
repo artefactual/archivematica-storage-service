@@ -5,8 +5,9 @@ import uuid
 
 import pytest
 from django.test import TestCase
-from locations import models
 from metsrw.plugins import premisrw
+
+from archivematica.storage_service.locations import models
 
 from . import TempDirMixin
 

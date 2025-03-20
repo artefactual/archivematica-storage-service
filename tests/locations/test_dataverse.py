@@ -3,7 +3,8 @@ import pathlib
 from unittest import mock
 
 from django.test import TestCase
-from locations import models
+
+from archivematica.storage_service.locations import models
 
 from . import TempDirMixin
 

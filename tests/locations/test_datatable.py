@@ -4,8 +4,9 @@ import pathlib
 import uuid
 
 from django.test import TestCase
-from locations import datatable_utils
-from locations import models
+
+from archivematica.storage_service.locations import datatable_utils
+from archivematica.storage_service.locations import models
 
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 

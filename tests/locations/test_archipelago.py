@@ -8,10 +8,11 @@ from unittest.mock import patch
 
 import pytest
 import requests
-from locations.models import Archipelago
-from locations.models import Space
 from lxml import etree
 from requests.exceptions import HTTPError
+
+from archivematica.storage_service.locations.models import Archipelago
+from archivematica.storage_service.locations.models import Space
 
 LOGGER = logging.getLogger(__name__)
 
@@ -34,13 +35,21 @@ def test_move_from_storage_service(archipelago_space):
     with (
         patch("os.path.basename") as mock_basename,
         patch("os.path.exists") as mock_exists,
-        patch("locations.models.Archipelago._get_metadata") as mock_get_metadata,
         patch(
-            "locations.models.Archipelago.extract_title_from_mets_xml"
+            "archivematica.storage_service.locations.models.Archipelago._get_metadata"
+        ) as mock_get_metadata,
+        patch(
+            "archivematica.storage_service.locations.models.Archipelago.extract_title_from_mets_xml"
         ) as mock_extract_title,
-        patch("locations.models.Archipelago._upload_file") as mock_upload_file,
-        patch("locations.models.Archipelago.get_dc_metadata") as mock_get_dc_metadata,
-        patch("locations.models.Archipelago._upload_metadata") as mock_upload_metadata,
+        patch(
+            "archivematica.storage_service.locations.models.Archipelago._upload_file"
+        ) as mock_upload_file,
+        patch(
+            "archivematica.storage_service.locations.models.Archipelago.get_dc_metadata"
+        ) as mock_get_dc_metadata,
+        patch(
+            "archivematica.storage_service.locations.models.Archipelago._upload_metadata"
+        ) as mock_upload_metadata,
     ):
         mock_basename.return_value = "filename"
         mock_exists.return_value = True
@@ -71,12 +80,18 @@ def test_move_from_storage_service_no_source(archipelago_space):
     with (
         patch("os.path.basename") as mock_basename,
         patch("os.path.exists") as mock_exists,
-        patch("locations.models.Archipelago._get_metadata") as mock_get_metadata,
         patch(
-            "locations.models.Archipelago.extract_title_from_mets_xml"
+            "archivematica.storage_service.locations.models.Archipelago._get_metadata"
+        ) as mock_get_metadata,
+        patch(
+            "archivematica.storage_service.locations.models.Archipelago.extract_title_from_mets_xml"
         ) as mock_extract_title,
-        patch("locations.models.Archipelago._upload_file") as mock_upload_file,
-        patch("locations.models.Archipelago.get_dc_metadata") as mock_get_dc_metadata,
+        patch(
+            "archivematica.storage_service.locations.models.Archipelago._upload_file"
+        ) as mock_upload_file,
+        patch(
+            "archivematica.storage_service.locations.models.Archipelago.get_dc_metadata"
+        ) as mock_get_dc_metadata,
     ):
         mock_basename.return_value = "filename"
         mock_exists.return_value = False
@@ -213,7 +228,9 @@ def test_upload_metadata(archipelago_space):
 
     with (
         patch("requests.post") as mock_post,
-        patch("locations.models.archipelago.LOGGER.info") as mock_logger_info,
+        patch(
+            "archivematica.storage_service.locations.models.archipelago.LOGGER.info"
+        ) as mock_logger_info,
     ):
         mock_response = mock_post.return_value
         mock_response.status_code = 201
@@ -270,7 +287,9 @@ def test_upload_metadata_error(archipelago_space):
 
     with (
         patch("requests.post") as mock_post,
-        patch("locations.models.archipelago.LOGGER.error") as mock_logger_error,
+        patch(
+            "archivematica.storage_service.locations.models.archipelago.LOGGER.error"
+        ) as mock_logger_error,
     ):
         mock_response = mock_post.return_value
         mock_response.status_code = 500

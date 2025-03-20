@@ -5,7 +5,8 @@ from unittest import mock
 import pytest
 import swiftclient
 from django.test import TestCase
-from locations import models
+
+from archivematica.storage_service.locations import models
 
 from . import TempDirMixin
 

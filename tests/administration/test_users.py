@@ -5,11 +5,12 @@ from unittest import mock
 
 import pytest
 import pytest_django
-from administration import roles
 from django.contrib.auth.models import User
 from django.test import Client
 from django.urls import reverse
 from tastypie.models import ApiKey
+
+from archivematica.storage_service.administration import roles
 
 
 def as_reader(user: User) -> None:

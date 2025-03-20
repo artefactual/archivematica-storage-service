@@ -2,10 +2,11 @@ import subprocess
 from unittest import mock
 
 import pytest
-from administration.views import get_git_commit
 from django.urls import reverse
-from locations.models import Location
-from locations.models import Space
+
+from archivematica.storage_service.administration.views import get_git_commit
+from archivematica.storage_service.locations.models import Location
+from archivematica.storage_service.locations.models import Space
 
 
 @pytest.mark.parametrize(

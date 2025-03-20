@@ -5,12 +5,13 @@ from unittest import mock
 import pytest
 from django.contrib.auth.models import User
 from django.utils import timezone
-from locations import models
-from locations import signals
+
+from archivematica.storage_service.locations import models
+from archivematica.storage_service.locations import signals
 
 
 @pytest.mark.django_db
-@mock.patch("locations.signals._notify_users")
+@mock.patch("archivematica.storage_service.locations.signals._notify_users")
 def test_report_failed_fixity_check(_notify_users: mock.Mock):
     package = models.Package.objects.create(
         current_location=models.Location.objects.create(

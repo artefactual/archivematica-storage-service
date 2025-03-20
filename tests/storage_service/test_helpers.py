@@ -1,6 +1,7 @@
 import pytest
-from common import helpers
 from django.core.exceptions import ImproperlyConfigured
+
+from archivematica.storage_service.common import helpers
 
 
 @pytest.mark.parametrize(
