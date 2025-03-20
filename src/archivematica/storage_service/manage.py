@@ -3,7 +3,10 @@ import os
 import sys
 
 if __name__ == "__main__":
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "storage_service.settings.local")
+    os.environ.setdefault(
+        "DJANGO_SETTINGS_MODULE",
+        "archivematica.storage_service.storage_service.settings.local",
+    )
 
     from django.core.management import execute_from_command_line
 
