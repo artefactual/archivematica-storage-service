@@ -16,3 +16,7 @@
 !/README.md
 !/SECURITY.md
 !/requirements*
+
+# Exclude
+**/*~
+**/*.egg-info
