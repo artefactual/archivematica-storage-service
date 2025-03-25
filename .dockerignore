@@ -3,7 +3,7 @@
 
 # Include
 !/install/**
-!/storage_service/**
+!/src/**
 !/tests/**
 !/pyproject.toml
 !/.markdownlint.jsonc
