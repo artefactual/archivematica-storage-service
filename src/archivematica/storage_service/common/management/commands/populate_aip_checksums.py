@@ -110,7 +110,7 @@ class Command(StorageServiceCommand):
 
         for aip in uncompressed_aips:
             local_path = aip.fetch_local_path()
-            tagmanifest_path = utils.find_tag_manifest(local_path)
+            tagmanifest_path = utils.find_tagmanifest(local_path)
 
             checksum = utils.generate_checksum(
                 tagmanifest_path, Package.DEFAULT_CHECKSUM_ALGORITHM

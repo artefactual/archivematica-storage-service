@@ -679,6 +679,7 @@ def find_tagmanifest(file_path):
     If there are multiple, return the first of sha512, sha256, or md5,
     respecting the BagIt spec's preference for sha512 or sha256, respectively.
     """
+    file_path = pathlib.Path(file_path)
     if not file_path.is_dir():
         return
 
