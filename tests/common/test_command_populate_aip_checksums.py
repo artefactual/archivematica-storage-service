@@ -190,7 +190,7 @@ def test_command_updates_checksum_for_uncompressed_aip(
 
 @pytest.mark.django_db
 @mock.patch("archivematica.storage_service.common.utils.generate_checksum")
-def test_command_updates_checksum_for_download_aips(
+def test_command_updates_checksum_for_aip_downloaded_remotely(
     generate_checksum: mock.Mock,
     capsys: pytest.CaptureFixture[str],
     compressed_package: models.Package,
@@ -228,7 +228,7 @@ def test_command_updates_checksum_for_download_aips(
 
 @pytest.mark.django_db
 @mock.patch("archivematica.storage_service.common.utils.generate_checksum")
-def test_command_fails_when_checksum_is_missing_for_uncompressed_aips(
+def test_command_fails_when_checksum_is_missing_for_uncompressed_aip(
     generate_checksum: mock.Mock,
     capsys: pytest.CaptureFixture[str],
     compressed_package: models.Package,
