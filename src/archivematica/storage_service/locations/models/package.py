@@ -1,6 +1,7 @@
 import codecs
 import copy
 import distutils.dir_util
+import importlib.resources
 import json
 import logging
 import os
@@ -13,7 +14,6 @@ from pathlib import Path
 from uuid import uuid4
 
 import bagit
-import importlib_resources
 import jsonfield
 import metsrw
 import requests
@@ -1451,7 +1451,7 @@ class Package(models.Model):
 
         # Use local XML schemas for validation.
         os.environ["XML_CATALOG_FILES"] = str(
-            importlib_resources.files("archivematica.storage_service.common")
+            importlib.resources.files("archivematica.storage_service.common")
             / "assets"
             / "catalog.xml"
         )
