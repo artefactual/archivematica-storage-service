@@ -8,7 +8,6 @@ django-tastypie
 dj-database-url
 gevent
 gunicorn
-importlib_resources
 jsonfield
 lxml
 metsrw

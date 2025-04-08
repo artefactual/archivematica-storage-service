@@ -110,8 +110,6 @@ importlib-metadata==8.6.1
     # via
     #   build
     #   pytest-randomly
-importlib-resources==6.5.2
-    # via -r /src/requirements.txt
 iniconfig==2.0.0
     # via pytest
 iso8601==2.1.0
@@ -372,10 +370,7 @@ wrapt==1.17.2
     #   -r /src/requirements.txt
     #   debtcollector
 zipp==3.21.0
-    # via
-    #   -r /src/requirements.txt
-    #   importlib-metadata
-    #   importlib-resources
+    # via importlib-metadata
 zope-event==5.0
     # via
     #   -r /src/requirements.txt

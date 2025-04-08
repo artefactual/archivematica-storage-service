@@ -66,8 +66,6 @@ httplib2==0.22.0
     # via sword2
 idna==3.10
     # via requests
-importlib-resources==6.5.2
-    # via -r requirements.in
 iso8601==2.1.0
     # via
     #   keystoneauth1
@@ -212,8 +210,6 @@ whitenoise==6.9.0
     # via -r requirements.in
 wrapt==1.17.2
     # via debtcollector
-zipp==3.21.0
-    # via importlib-resources
 zope-event==5.0
     # via gevent
 zope-interface==7.2
