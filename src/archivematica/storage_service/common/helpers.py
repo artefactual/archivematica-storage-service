@@ -1,7 +1,6 @@
 from collections.abc import Iterable
 from os import environ
 from typing import Any
-from typing import Union
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -21,7 +20,7 @@ def is_true(env_str: str) -> bool:
 
 def get_oidc_secondary_providers(
     oidc_secondary_provider_names: Iterable[str],
-) -> dict[str, dict[str, Union[str, bool]]]:
+) -> dict[str, dict[str, object]]:
     providers = {}
 
     for provider_name in oidc_secondary_provider_names:
@@ -35,8 +34,8 @@ def get_oidc_secondary_providers(
         user_endpoint = environ.get(f"OIDC_OP_USER_ENDPOINT_{provider_name}", "")
         jwks_endpoint = environ.get(f"OIDC_OP_JWKS_ENDPOINT_{provider_name}", "")
         logout_endpoint = environ.get(f"OIDC_OP_LOGOUT_ENDPOINT_{provider_name}", "")
-        set_roles_from_claims = environ.get(
-            f"OIDC_OP_SET_ROLES_FROM_CLAIMS_{provider_name}", False
+        set_roles_from_claims = is_true(
+            environ.get(f"OIDC_OP_SET_ROLES_FROM_CLAIMS_{provider_name}", "")
         )
         role_claim_path = environ.get(
             f"OIDC_OP_ROLE_CLAIM_PATH_{provider_name}", "realm_access.roles"

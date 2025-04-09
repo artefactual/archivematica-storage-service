@@ -637,7 +637,9 @@ if OIDC_AUTHENTICATION:
         OIDC_OP_JWKS_ENDPOINT = environ.get("OIDC_OP_JWKS_ENDPOINT", "")
         OIDC_OP_LOGOUT_ENDPOINT = environ.get("OIDC_OP_LOGOUT_ENDPOINT", "")
 
-    OIDC_OP_SET_ROLES_FROM_CLAIMS = environ.get("OIDC_OP_SET_ROLES_FROM_CLAIMS", False)
+    OIDC_OP_SET_ROLES_FROM_CLAIMS = is_true(
+        environ.get("OIDC_OP_SET_ROLES_FROM_CLAIMS", "")
+    )
     OIDC_OP_ROLE_CLAIM_PATH = environ.get(
         "OIDC_OP_ROLE_CLAIM_PATH", "realm_access.roles"
     )
