@@ -33,6 +33,8 @@ services:
       RCLONE_CONFIG_MYS3_SECRET_ACCESS_KEY: "minio123"
       RCLONE_CONFIG_MYS3_REGION: "planet-earth"
       SS_OIDC_AUTHENTICATION: "true"
+      OIDC_ACCESS_ATTRIBUTE_MAP: >
+        {"given_name": "first_name", "family_name": "last_name", "realm_access": "realm_access"}
       OIDC_RP_CLIENT_ID: "am-storage-service"
       OIDC_RP_CLIENT_SECRET: "example-secret"
       OIDC_OP_AUTHORIZATION_ENDPOINT: "http://keycloak:8080/realms/demo/protocol/openid-connect/auth"
@@ -40,7 +42,8 @@ services:
       OIDC_OP_USER_ENDPOINT: "http://keycloak:8080/realms/demo/protocol/openid-connect/userinfo"
       OIDC_OP_JWKS_ENDPOINT: "http://keycloak:8080/realms/demo/protocol/openid-connect/certs"
       OIDC_OP_LOGOUT_ENDPOINT: "http://keycloak:8080/realms/demo/protocol/openid-connect/logout"
-      OIDC_OP_SET_ROLES_FROM_CLAIMS: "false"
+      OIDC_OP_SET_ROLES_FROM_CLAIMS: "true"
+      OIDC_OP_ROLE_CLAIM_PATH: "realm_access.roles"
       OIDC_SECONDARY_PROVIDER_NAMES: "secondary"
       OIDC_RP_CLIENT_ID_SECONDARY: "am-storage-service-secondary"
       OIDC_RP_CLIENT_SECRET_SECONDARY: "example-secret-secondary"
@@ -49,7 +52,8 @@ services:
       OIDC_OP_USER_ENDPOINT_SECONDARY: "http://keycloak:8080/realms/secondary/protocol/openid-connect/userinfo"
       OIDC_OP_JWKS_ENDPOINT_SECONDARY: "http://keycloak:8080/realms/secondary/protocol/openid-connect/certs"
       OIDC_OP_LOGOUT_ENDPOINT_SECONDARY: "http://keycloak:8080/realms/secondary/protocol/openid-connect/logout"
-      OIDC_OP_SET_ROLES_FROM_CLAIMS_SECONDARY: "false"
+      OIDC_OP_SET_ROLES_FROM_CLAIMS_SECONDARY: "true"
+      OIDC_OP_ROLE_CLAIMS_PATH_SECONDARY: "realm_access.roles"
       OIDC_RP_SIGN_ALGO: "RS256"
     volumes:
       - "../../:/src"

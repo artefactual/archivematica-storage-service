@@ -137,14 +137,14 @@ class CustomOIDCBackend(OIDCAuthenticationBackend):
 
     def get_user_role(self, user_info: dict[str, Any]) -> Optional[str]:
         """
-        Assigns the user's role based on OIDC token claims if enabled in settings.
-        Otherwise, assigns the default role.
+        Returns a promoted role if one of the OIDC token claims matches a valid role.
+        Returns None if no valid role is found.
         """
         if self.OIDC_OP_SET_ROLES_FROM_CLAIMS:
-            # Get the role claim path from settings (e.g. "realm_access.roles").
-            claim_path = self.OIDC_OP_ROLE_CLAIM_PATH.split(".")  # Convert to a list
-
+            claim_path = self.OIDC_OP_ROLE_CLAIM_PATH.split(".")
             role = user_info
+
+            # Traverse nested claim path to get role(s)
             for key in claim_path:
                 if isinstance(role, dict):
                     role = role.get(key)
@@ -152,13 +152,16 @@ class CustomOIDCBackend(OIDCAuthenticationBackend):
                     role = None
                     break
 
-            # If role is a list, pick the first one.
-            if isinstance(role, list) and role:
-                role = role[0]
+            # If role is a list, find the first valid one
+            if isinstance(role, list):
+                for r in role:
+                    if r in self.VALID_ROLES:
+                        return roles.promoted_role(r)
+                return None  # No valid role found in list
 
-            if role and role in self.VALID_ROLES:
+            # If role is a single string
+            if isinstance(role, str) and role in self.VALID_ROLES:
                 return roles.promoted_role(role)
-            else:
-                return None
+            return None  # Role not valid
         else:
             return roles.promoted_role(settings.DEFAULT_USER_ROLE)

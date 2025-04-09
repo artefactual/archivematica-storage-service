@@ -11,6 +11,18 @@
     "attributes": {
       "adminEventsExpiration": "900"
     },
+    "roles": {
+      "realm": [
+        {
+          "name": "admin",
+          "description": "Administrator role"
+        },
+        {
+          "name": "reader",
+          "description": "Reader role"
+        }
+      ]
+    },
     "clients": [
       {
         "id": "am-storage-service",
@@ -45,6 +57,9 @@
             "type": "password",
             "value": "demo"
           }
+        ],
+        "realmRoles": [
+          "reader"
         ]
       }
     ]
@@ -60,6 +75,18 @@
     "adminEventsDetailsEnabled": true,
     "attributes": {
       "adminEventsExpiration": "900"
+    },
+    "roles": {
+      "realm": [
+        {
+          "name": "admin",
+          "description": "Administrator role"
+        },
+        {
+          "name": "reader",
+          "description": "Reader role"
+        }
+      ]
     },
     "clients": [
       {
@@ -95,6 +122,9 @@
             "type": "password",
             "value": "support"
           }
+        ],
+        "realmRoles": [
+          "reader"
         ]
       }
     ]
