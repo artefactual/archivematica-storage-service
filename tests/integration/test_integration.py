@@ -232,9 +232,15 @@ class StorageScenario:
         },
     }
 
-    def __init__(self, src: str, dst: str, pkg: Path, compressed: bool) -> None:
-        self.src = src
-        self.dst = dst
+    def __init__(
+        self,
+        storage_protocol: str,
+        replication_protocol: str,
+        pkg: Path,
+        compressed: bool,
+    ) -> None:
+        self.storage_protocol = storage_protocol
+        self.replication_protocol = replication_protocol
         self.pkg = pkg
         self.pkg_name = (
             f"foobar-{self.PACKAGE_UUID}{''.join(pkg.suffixes) if compressed else ''}"
@@ -284,7 +290,9 @@ class StorageScenario:
         """Register AIP Storage location."""
 
         # Add space.
-        resp = self.client.add_space(self._adjust_space_data(self.SPACES[self.src]))
+        resp = self.client.add_space(
+            self._adjust_space_data(self.SPACES[self.storage_protocol])
+        )
         assert resp.status_code == 201
         space = json.loads(resp.content)
 
@@ -354,7 +362,9 @@ class StorageScenario:
         """Register AIP Storage replicator."""
 
         # 1. Add space.
-        resp = self.client.add_space(self._adjust_space_data(self.SPACES[self.dst]))
+        resp = self.client.add_space(
+            self._adjust_space_data(self.SPACES[self.replication_protocol])
+        )
         assert resp.status_code == 201
         space = json.loads(resp.content)
 
@@ -462,41 +472,74 @@ class StorageScenario:
     "storage_scenario",
     [
         StorageScenario(
-            src=Space.NFS, dst=Space.S3, pkg=COMPRESSED_PACKAGE, compressed=True
+            storage_protocol=Space.NFS,
+            replication_protocol=Space.S3,
+            pkg=COMPRESSED_PACKAGE,
+            compressed=True,
         ),
         StorageScenario(
-            src=Space.NFS, dst=Space.S3, pkg=UNCOMPRESSED_PACKAGE, compressed=False
+            storage_protocol=Space.NFS,
+            replication_protocol=Space.S3,
+            pkg=UNCOMPRESSED_PACKAGE,
+            compressed=False,
         ),
         StorageScenario(
-            src=Space.NFS, dst=Space.RCLONE, pkg=COMPRESSED_PACKAGE, compressed=True
+            storage_protocol=Space.NFS,
+            replication_protocol=Space.RCLONE,
+            pkg=COMPRESSED_PACKAGE,
+            compressed=True,
         ),
         StorageScenario(
-            src=Space.NFS, dst=Space.RCLONE, pkg=UNCOMPRESSED_PACKAGE, compressed=False
+            storage_protocol=Space.NFS,
+            replication_protocol=Space.RCLONE,
+            pkg=UNCOMPRESSED_PACKAGE,
+            compressed=False,
         ),
         StorageScenario(
-            src=Space.S3, dst=Space.NFS, pkg=COMPRESSED_PACKAGE, compressed=True
+            storage_protocol=Space.S3,
+            replication_protocol=Space.NFS,
+            pkg=COMPRESSED_PACKAGE,
+            compressed=True,
         ),
         StorageScenario(
-            src=Space.S3, dst=Space.NFS, pkg=UNCOMPRESSED_PACKAGE, compressed=False
+            storage_protocol=Space.S3,
+            replication_protocol=Space.NFS,
+            pkg=UNCOMPRESSED_PACKAGE,
+            compressed=False,
         ),
         StorageScenario(
-            src=Space.RCLONE, dst=Space.NFS, pkg=COMPRESSED_PACKAGE, compressed=True
+            storage_protocol=Space.RCLONE,
+            replication_protocol=Space.NFS,
+            pkg=COMPRESSED_PACKAGE,
+            compressed=True,
         ),
         StorageScenario(
-            src=Space.RCLONE, dst=Space.NFS, pkg=UNCOMPRESSED_PACKAGE, compressed=False
+            storage_protocol=Space.RCLONE,
+            replication_protocol=Space.NFS,
+            pkg=UNCOMPRESSED_PACKAGE,
+            compressed=False,
         ),
         StorageScenario(
-            src=Space.S3, dst=Space.S3, pkg=COMPRESSED_PACKAGE, compressed=True
+            storage_protocol=Space.S3,
+            replication_protocol=Space.S3,
+            pkg=COMPRESSED_PACKAGE,
+            compressed=True,
         ),
         StorageScenario(
-            src=Space.S3, dst=Space.S3, pkg=UNCOMPRESSED_PACKAGE, compressed=False
+            storage_protocol=Space.S3,
+            replication_protocol=Space.S3,
+            pkg=UNCOMPRESSED_PACKAGE,
+            compressed=False,
         ),
         StorageScenario(
-            src=Space.RCLONE, dst=Space.RCLONE, pkg=COMPRESSED_PACKAGE, compressed=True
+            storage_protocol=Space.RCLONE,
+            replication_protocol=Space.RCLONE,
+            pkg=COMPRESSED_PACKAGE,
+            compressed=True,
         ),
         StorageScenario(
-            src=Space.RCLONE,
-            dst=Space.RCLONE,
+            storage_protocol=Space.RCLONE,
+            replication_protocol=Space.RCLONE,
             pkg=UNCOMPRESSED_PACKAGE,
             compressed=False,
         ),
@@ -641,25 +684,37 @@ class AIPRecoveryScenario(StorageScenario):
     [
         (
             AIPRecoveryScenario(
-                src=Space.NFS, dst=Space.NFS, pkg=COMPRESSED_PACKAGE, compressed=True
+                storage_protocol=Space.NFS,
+                replication_protocol=Space.NFS,
+                pkg=COMPRESSED_PACKAGE,
+                compressed=True,
             ),
             False,
         ),
         (
             AIPRecoveryScenario(
-                src=Space.NFS, dst=Space.NFS, pkg=COMPRESSED_PACKAGE, compressed=True
+                storage_protocol=Space.NFS,
+                replication_protocol=Space.NFS,
+                pkg=COMPRESSED_PACKAGE,
+                compressed=True,
             ),
             True,
         ),
         (
             AIPRecoveryScenario(
-                src=Space.NFS, dst=Space.NFS, pkg=UNCOMPRESSED_PACKAGE, compressed=False
+                storage_protocol=Space.NFS,
+                replication_protocol=Space.NFS,
+                pkg=UNCOMPRESSED_PACKAGE,
+                compressed=False,
             ),
             False,
         ),
         (
             AIPRecoveryScenario(
-                src=Space.NFS, dst=Space.NFS, pkg=UNCOMPRESSED_PACKAGE, compressed=False
+                storage_protocol=Space.NFS,
+                replication_protocol=Space.NFS,
+                pkg=UNCOMPRESSED_PACKAGE,
+                compressed=False,
             ),
             True,
         ),
@@ -700,7 +755,10 @@ def test_aip_recovery_handles_recovery_copy_setup_error(
     # copy in the recovery location directory, creates the recovery request
     # and approves it.
     scenario = AIPRecoveryScenario(
-        src=Space.NFS, dst=Space.NFS, pkg=COMPRESSED_PACKAGE, compressed=True
+        storage_protocol=Space.NFS,
+        replication_protocol=Space.NFS,
+        pkg=COMPRESSED_PACKAGE,
+        compressed=True,
     )
     scenario.init(admin_client, working_directory_path)
     scenario.store_aip()
