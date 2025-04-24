@@ -70,11 +70,11 @@ services:
       - "keycloak"
 
   minio:
-    image: "minio/minio:RELEASE.2024-01-31T20-20-33Z"
+    image: "minio/minio:RELEASE.2025-04-22T22-12-26Z"
     command: "server /data"
     environment:
-      MINIO_ACCESS_KEY: "minio"
-      MINIO_SECRET_KEY: "minio123"
+      MINIO_ROOT_USER: "minio"
+      MINIO_ROOT_PASSWORD: "minio123"
       MINIO_REGION_NAME: "planet-earth"
       MINIO_BROWSER: "off"
     expose:
