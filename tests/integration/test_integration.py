@@ -236,7 +236,7 @@ class StorageScenario:
         self,
         *,
         storage_protocol: str,
-        replication_protocol: str,
+        replication_protocol: str = "",
         pkg: Path,
         compressed: bool,
     ) -> None:
