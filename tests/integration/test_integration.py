@@ -14,8 +14,10 @@ import json
 import os
 import shutil
 import tarfile
+import time
 import uuid
 from pathlib import Path
+from typing import Any
 from typing import Union
 
 import pytest
@@ -862,3 +864,91 @@ def test_aip_recovery_handles_recovery_copy_setup_error(
     content = resp.content.decode()
     assert "AIP restore failed: error accessing restore files" in content
     assert "Please contact an administrator or see logs for details" in content
+
+
+class MoveAIPScenario(StorageScenario):
+    def __init__(
+        self,
+        *,
+        storage_protocol: str,
+        pkg: Path,
+        compressed: bool,
+        move_target_protocol: str,
+    ) -> None:
+        super().__init__(
+            storage_protocol=storage_protocol, pkg=pkg, compressed=compressed
+        )
+        self.move_target_protocol = move_target_protocol
+
+    def register_move_target_aip_storage_location(self) -> uuid.UUID:
+        # Add space.
+        resp = self.client.add_space(
+            self._adjust_space_data(self.SPACES[self.move_target_protocol])
+        )
+        assert resp.status_code == 201
+        space = json.loads(resp.content)
+
+        # Add location.
+        resp = self.client.add_location(
+            {
+                "relative_path": "moved-aips",
+                "staging_path": "",
+                "purpose": Location.AIP_STORAGE,
+                "space": space["resource_uri"],
+                "pipeline": [f"/api/v2/pipeline/{self.PIPELINE_UUID}/"],
+            }
+        )
+        assert resp.status_code == 201
+        location = json.loads(resp.content)
+
+        return uuid.UUID(location["uuid"])
+
+    def move_aip(self, location_uuid: uuid.UUID) -> None:
+        resp = self.client.move_file(
+            self.PACKAGE_UUID, {"location_uuid": str(location_uuid)}
+        )
+        assert resp.status_code == 202
+
+        async_task_url = resp.headers["Location"]
+
+        # TODO: This might become unresponsive. Use tenacity retries.
+        async_task: dict[str, Any] = {}
+        while not async_task.get("completed"):
+            time.sleep(1)
+            resp = self.client.get_async_task(async_task_url)
+            async_task = json.loads(resp.content)
+
+        assert async_task["completed"]
+        assert async_task["result"] == "Package moved successfully"
+
+    def assert_moved(self, tmp_path: Path, location_uuid: uuid.UUID) -> None:
+        resp = self.client.get_file(self.PACKAGE_UUID)
+        assert resp.status_code == 200
+
+        aip = json.loads(resp.content)
+        assert aip["status"] == Package.UPLOADED
+
+        resp = self.client.get_locations({"uuid": str(location_uuid)})
+        assert resp.status_code == 200
+
+        location = json.loads(resp.content)["objects"][0]
+        assert aip["current_location"] == location["resource_uri"]
+
+        download_path = tmp_path / "download"
+        resp = self.client.download_file(self.PACKAGE_UUID)
+        download_path.write_bytes(b"".join(resp.streaming_content))
+
+        # Compare the downloaded package against the original fixtures.
+        if self.compressed:
+            assert (
+                utils.generate_checksum(download_path).hexdigest()
+                == utils.generate_checksum(self.pkg).hexdigest()
+            )
+        else:
+            assert tarfile.is_tarfile(download_path)
+            extracted_path = tmp_path / "extracted"
+            tarfile.TarFile(download_path).extractall(extracted_path)
+            assert (
+                utils.generate_checksum(extracted_path / self.pkg_name).hexdigest()
+                == utils.generate_checksum(self.pkg).hexdigest()
+            )
