@@ -230,6 +230,11 @@ class StorageScenario:
             "remote_path": "???",
             "version": "nfs4",
         },
+        Space.LOCAL_FILESYSTEM: {
+            "access_protocol": Space.LOCAL_FILESYSTEM,
+            "path": "/var/archivematica/sharedDirectory/tmp/local_fs",
+            "staging_path": "/var/archivematica/sharedDirectory/tmp/local_fs_staging_path",
+        },
     }
 
     def __init__(
