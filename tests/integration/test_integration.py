@@ -234,6 +234,7 @@ class StorageScenario:
 
     def __init__(
         self,
+        *,
         storage_protocol: str,
         replication_protocol: str,
         pkg: Path,
