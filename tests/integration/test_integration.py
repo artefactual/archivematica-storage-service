@@ -186,6 +186,13 @@ def startup(working_directory_path: Path) -> None:
     startup(working_directory_path, start_async=False)  # TODO: get rid of this!
 
 
+@pytest.fixture(scope="function")
+def startup_async(working_directory_path: Path) -> None:
+    from archivematica.storage_service.common.startup import startup
+
+    startup(working_directory_path, start_async=True)
+
+
 def get_size(path: Path) -> int:
     if path.is_file():
         return path.stat().st_size
