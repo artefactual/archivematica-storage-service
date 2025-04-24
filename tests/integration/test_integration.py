@@ -952,3 +952,103 @@ class MoveAIPScenario(StorageScenario):
                 utils.generate_checksum(extracted_path / self.pkg_name).hexdigest()
                 == utils.generate_checksum(self.pkg).hexdigest()
             )
+
+
+@pytest.mark.parametrize(
+    "scenario",
+    [
+        pytest.param(
+            MoveAIPScenario(
+                storage_protocol=Space.NFS,
+                pkg=COMPRESSED_PACKAGE,
+                compressed=True,
+                move_target_protocol=Space.NFS,
+            ),
+            id="move_compressed_from_nfs_to_nfs",
+        ),
+        pytest.param(
+            MoveAIPScenario(
+                storage_protocol=Space.NFS,
+                pkg=UNCOMPRESSED_PACKAGE,
+                compressed=False,
+                move_target_protocol=Space.NFS,
+            ),
+            id="move_uncompressed_from_nfs_to_nfs",
+        ),
+        pytest.param(
+            MoveAIPScenario(
+                storage_protocol=Space.NFS,
+                pkg=COMPRESSED_PACKAGE,
+                compressed=True,
+                move_target_protocol=Space.S3,
+            ),
+            id="move_compressed_from_nfs_to_s3",
+        ),
+        pytest.param(
+            MoveAIPScenario(
+                storage_protocol=Space.NFS,
+                pkg=UNCOMPRESSED_PACKAGE,
+                compressed=False,
+                move_target_protocol=Space.S3,
+            ),
+            id="move_uncompressed_from_nfs_to_s3",
+            marks=pytest.mark.xfail(
+                reason="Fails because of https://github.com/archivematica/Issues/issues/1742"
+            ),
+        ),
+        pytest.param(
+            MoveAIPScenario(
+                storage_protocol=Space.LOCAL_FILESYSTEM,
+                pkg=COMPRESSED_PACKAGE,
+                compressed=True,
+                move_target_protocol=Space.LOCAL_FILESYSTEM,
+            ),
+            id="move_compressed_from_local_fs_to_local_fs",
+        ),
+        pytest.param(
+            MoveAIPScenario(
+                storage_protocol=Space.LOCAL_FILESYSTEM,
+                pkg=UNCOMPRESSED_PACKAGE,
+                compressed=False,
+                move_target_protocol=Space.LOCAL_FILESYSTEM,
+            ),
+            id="move_uncompressed_from_local_fs_to_local_fs",
+        ),
+        pytest.param(
+            MoveAIPScenario(
+                storage_protocol=Space.LOCAL_FILESYSTEM,
+                pkg=COMPRESSED_PACKAGE,
+                compressed=True,
+                move_target_protocol=Space.S3,
+            ),
+            id="move_compressed_from_local_fs_to_s3",
+        ),
+        pytest.param(
+            MoveAIPScenario(
+                storage_protocol=Space.LOCAL_FILESYSTEM,
+                pkg=UNCOMPRESSED_PACKAGE,
+                compressed=False,
+                move_target_protocol=Space.S3,
+            ),
+            id="move_uncompressed_from_local_fs_to_s3",
+            marks=pytest.mark.xfail(
+                reason="Fails because of https://github.com/archivematica/Issues/issues/1742"
+            ),
+        ),
+    ],
+)
+@pytest.mark.django_db(transaction=True)
+def test_move_aip(
+    startup_async: None,
+    scenario: MoveAIPScenario,
+    admin_client: TestClient,
+    working_directory_path: Path,
+    tmp_path: Path,
+) -> None:
+    scenario.init(admin_client, working_directory_path)
+    scenario.store_aip()
+    scenario.assert_stored()
+
+    move_target_location_uuid = scenario.register_move_target_aip_storage_location()
+    scenario.move_aip(move_target_location_uuid)
+    scenario.assert_moved(tmp_path, move_target_location_uuid)
