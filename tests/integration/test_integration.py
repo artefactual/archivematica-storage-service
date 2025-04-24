@@ -255,7 +255,8 @@ class StorageScenario:
         )
         self.register_pipeline()
         self.register_aip_storage_location()
-        self.register_aip_storage_replicator()
+        if self.replication_protocol:
+            self.register_aip_storage_replicator()
         self.copy_fixture(self.shared_directory_path)
 
     def register_pipeline(self) -> None:
@@ -449,19 +450,26 @@ class StorageScenario:
         assert get_size(aip_path) > 1
 
     def assert_stored(self) -> None:
-        # We have two packages, the original and a replica.
+        if self.replication_protocol:
+            # We have two packages, the original and a replica.
+            expected_files_count = 2
+        else:
+            expected_files_count = 1
+
         resp = self.client.get_files()
         files = json.loads(resp.content)
-        assert files["meta"]["total_count"] == 2
-        assert len(files["objects"]) == 2
+        assert files["meta"]["total_count"] == expected_files_count
+        assert len(files["objects"]) == expected_files_count
 
         # Fixity checks.
         resp = self.client.check_fixity(files["objects"][0]["uuid"])
         assert resp.status_code == 200
         assert json.loads(resp.content)["success"] is True
-        resp = self.client.check_fixity(files["objects"][1]["uuid"])
-        assert resp.status_code == 200
-        assert json.loads(resp.content)["success"] is True
+
+        if self.replication_protocol:
+            resp = self.client.check_fixity(files["objects"][1]["uuid"])
+            assert resp.status_code == 200
+            assert json.loads(resp.content)["success"] is True
 
         # We have a pointer file (not for uncompressed AIPs yet).
         if self.compressed:
