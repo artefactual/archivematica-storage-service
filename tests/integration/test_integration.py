@@ -693,37 +693,25 @@ class AIPRecoveryScenario(StorageScenario):
     [
         (
             AIPRecoveryScenario(
-                storage_protocol=Space.NFS,
-                replication_protocol=Space.NFS,
-                pkg=COMPRESSED_PACKAGE,
-                compressed=True,
+                storage_protocol=Space.NFS, pkg=COMPRESSED_PACKAGE, compressed=True
             ),
             False,
         ),
         (
             AIPRecoveryScenario(
-                storage_protocol=Space.NFS,
-                replication_protocol=Space.NFS,
-                pkg=COMPRESSED_PACKAGE,
-                compressed=True,
+                storage_protocol=Space.NFS, pkg=COMPRESSED_PACKAGE, compressed=True
             ),
             True,
         ),
         (
             AIPRecoveryScenario(
-                storage_protocol=Space.NFS,
-                replication_protocol=Space.NFS,
-                pkg=UNCOMPRESSED_PACKAGE,
-                compressed=False,
+                storage_protocol=Space.NFS, pkg=UNCOMPRESSED_PACKAGE, compressed=False
             ),
             False,
         ),
         (
             AIPRecoveryScenario(
-                storage_protocol=Space.NFS,
-                replication_protocol=Space.NFS,
-                pkg=UNCOMPRESSED_PACKAGE,
-                compressed=False,
+                storage_protocol=Space.NFS, pkg=UNCOMPRESSED_PACKAGE, compressed=False
             ),
             True,
         ),
@@ -764,10 +752,7 @@ def test_aip_recovery_handles_recovery_copy_setup_error(
     # copy in the recovery location directory, creates the recovery request
     # and approves it.
     scenario = AIPRecoveryScenario(
-        storage_protocol=Space.NFS,
-        replication_protocol=Space.NFS,
-        pkg=COMPRESSED_PACKAGE,
-        compressed=True,
+        storage_protocol=Space.NFS, pkg=COMPRESSED_PACKAGE, compressed=True
     )
     scenario.init(admin_client, working_directory_path)
     scenario.store_aip()
