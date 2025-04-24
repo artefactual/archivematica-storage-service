@@ -207,7 +207,7 @@ class StorageScenario:
         Space.S3: {
             "access_protocol": Space.S3,
             "path": "",
-            "staging_path": "/var/archivematica/sharedDirectory/tmp/rp_staging_path",
+            "staging_path": "/var/archivematica/sharedDirectory/tmp/s3_staging_path",
             "endpoint_url": "http://minio:9000",
             "access_key_id": "minio",
             "secret_access_key": "minio123",
@@ -217,14 +217,14 @@ class StorageScenario:
         Space.RCLONE: {
             "access_protocol": Space.RCLONE,
             "path": "",
-            "staging_path": "/var/archivematica/sharedDirectory/tmp/rp_staging_path",
+            "staging_path": "/var/archivematica/sharedDirectory/tmp/rclone_staging_path",
             "remote_name": "mys3",
             "container": "mybucket",
         },
         Space.NFS: {
             "access_protocol": Space.NFS,
             "path": "/var/archivematica/sharedDirectory/tmp/nfs_mount",
-            "staging_path": "/var/archivematica/sharedDirectory/tmp/rp_staging_path",
+            "staging_path": "/var/archivematica/sharedDirectory/tmp/nfs_staging_path",
             "manually_mounted": False,
             "remote_name": "nfs-server",
             "remote_path": "???",
