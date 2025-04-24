@@ -143,6 +143,15 @@ class Client:
     def download_file(self, file_id: uuid.UUID) -> HttpResponse:
         return self.admin_client.get(f"/api/v2/file/{file_id}/download/")
 
+    def get_file(self, file_id: uuid.UUID) -> HttpResponse:
+        return self.admin_client.get(f"/api/v2/file/{file_id}/")
+
+    def move_file(self, file_id: uuid.UUID, data: dict[str, str]) -> HttpResponse:
+        return self.admin_client.post(f"/api/v2/file/{file_id}/move/", data)
+
+    def get_async_task(self, async_task_url: str) -> HttpResponse:
+        return self.admin_client.get(async_task_url)
+
 
 @pytest.fixture(scope="session")
 def client(admin_client: TestClient) -> Client:
