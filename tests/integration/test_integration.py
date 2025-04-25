@@ -998,6 +998,27 @@ class MoveAIPScenario(StorageScenario):
         ),
         pytest.param(
             MoveAIPScenario(
+                storage_protocol=Space.NFS,
+                pkg=COMPRESSED_PACKAGE,
+                compressed=True,
+                move_target_protocol=Space.RCLONE,
+            ),
+            id="move_compressed_from_nfs_to_rclone",
+        ),
+        pytest.param(
+            MoveAIPScenario(
+                storage_protocol=Space.NFS,
+                pkg=UNCOMPRESSED_PACKAGE,
+                compressed=False,
+                move_target_protocol=Space.RCLONE,
+            ),
+            id="move_uncompressed_from_nfs_to_rclone",
+            marks=pytest.mark.xfail(
+                reason="Fails because of https://github.com/archivematica/Issues/issues/1742"
+            ),
+        ),
+        pytest.param(
+            MoveAIPScenario(
                 storage_protocol=Space.LOCAL_FILESYSTEM,
                 pkg=COMPRESSED_PACKAGE,
                 compressed=True,
@@ -1031,6 +1052,27 @@ class MoveAIPScenario(StorageScenario):
                 move_target_protocol=Space.S3,
             ),
             id="move_uncompressed_from_local_fs_to_s3",
+            marks=pytest.mark.xfail(
+                reason="Fails because of https://github.com/archivematica/Issues/issues/1742"
+            ),
+        ),
+        pytest.param(
+            MoveAIPScenario(
+                storage_protocol=Space.LOCAL_FILESYSTEM,
+                pkg=COMPRESSED_PACKAGE,
+                compressed=True,
+                move_target_protocol=Space.RCLONE,
+            ),
+            id="move_compressed_from_local_fs_to_rclone",
+        ),
+        pytest.param(
+            MoveAIPScenario(
+                storage_protocol=Space.LOCAL_FILESYSTEM,
+                pkg=UNCOMPRESSED_PACKAGE,
+                compressed=False,
+                move_target_protocol=Space.RCLONE,
+            ),
+            id="move_uncompressed_from_local_fs_to_rclone",
             marks=pytest.mark.xfail(
                 reason="Fails because of https://github.com/archivematica/Issues/issues/1742"
             ),
