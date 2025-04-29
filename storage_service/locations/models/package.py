@@ -501,6 +501,13 @@ class Package(models.Model):
 
         destination_path = os.path.join(to_location.relative_path, self.current_path)
 
+        # Workaround for https://github.com/archivematica/Issues/issues/1742
+        if not self.is_compressed and destination_space.access_protocol in [
+            Space.S3,
+            Space.RCLONE,
+        ]:
+            destination_path = os.path.dirname(destination_path)
+
         try:
             origin_space.posix_move(
                 source_path=source_path,
