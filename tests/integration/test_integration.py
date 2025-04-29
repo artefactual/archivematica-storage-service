@@ -16,15 +16,18 @@ import shutil
 import tarfile
 import time
 import uuid
+from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 from typing import Union
 
 import pytest
+from django.contrib.auth.models import Group
 from django.http import HttpResponse
 from django.test import Client as TestClient
 from django.urls import reverse
 from metsrw.plugins import premisrw
+from pytest_django.plugin import DjangoDbBlocker
 
 from archivematica.storage_service.common import utils
 from archivematica.storage_service.locations.models import Event
@@ -202,6 +205,22 @@ def startup_async(working_directory_path: Path) -> None:
     from archivematica.storage_service.common.startup import startup
 
     startup(working_directory_path, start_async=True)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def recreate_user_groups(
+    django_db_setup: None, django_db_blocker: DjangoDbBlocker
+) -> Generator[None, None, None]:
+    """Recreate user groups added during the 0030_user_groups migration.
+
+    This ensures that tests dependent on these user groups can execute
+    correctly after transactional rollbacks executed by the test_move_aip test.
+    """
+    yield
+
+    with django_db_blocker.unblock():
+        Group.objects.get_or_create(name="Managers")
+        Group.objects.get_or_create(name="Reviewers")
 
 
 def get_size(path: Path) -> int:
