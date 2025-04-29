@@ -238,7 +238,6 @@ class StorageScenario:
     """Storage test scenario."""
 
     PIPELINE_UUID = uuid.UUID("00000b87-1655-4b7e-bbf8-344b317da334")
-    PACKAGE_UUID = uuid.UUID("5658e603-277b-4292-9b58-20bf261c8f88")
 
     SPACES: dict[str, dict[str, Union[str, bool]]] = {
         Space.S3: {
@@ -282,6 +281,7 @@ class StorageScenario:
         pkg: Path,
         compressed: bool,
     ) -> None:
+        self.PACKAGE_UUID = uuid.uuid4()
         self.storage_protocol = storage_protocol
         self.replication_protocol = replication_protocol
         self.pkg = pkg
