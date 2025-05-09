@@ -12,9 +12,9 @@ asgiref==3.8.1
     #   django
 bagit==1.8.1
     # via -r /src/requirements.txt
-boto3==1.37.8
+boto3==1.38.12
     # via -r /src/requirements.txt
-botocore==1.37.8
+botocore==1.38.12
     # via
     #   -r /src/requirements.txt
     #   boto3
@@ -25,7 +25,7 @@ build==1.2.2.post1
     # via pip-tools
 cachetools==5.5.2
     # via tox
-certifi==2025.1.31
+certifi==2025.4.26
     # via
     #   -r /src/requirements.txt
     #   requests
@@ -35,7 +35,7 @@ cffi==1.17.1
     #   cryptography
 chardet==5.2.0
     # via tox
-charset-normalizer==3.4.1
+charset-normalizer==3.4.2
     # via
     #   -r /src/requirements.txt
     #   requests
@@ -43,11 +43,11 @@ click==8.1.8
     # via pip-tools
 colorama==0.4.6
     # via tox
-coverage[toml]==7.6.12
+coverage[toml]==7.8.0
     # via
     #   -r requirements-dev.in
     #   pytest-cov
-cryptography==44.0.2
+cryptography==44.0.3
     # via
     #   -r /src/requirements.txt
     #   josepy
@@ -62,7 +62,7 @@ distlib==0.3.9
     # via virtualenv
 dj-database-url==2.3.0
     # via -r /src/requirements.txt
-django==4.2.20
+django==4.2.21
     # via
     #   -r /src/requirements.txt
     #   dj-database-url
@@ -71,11 +71,11 @@ django==4.2.20
     #   django-csp
     #   jsonfield
     #   mozilla-django-oidc
-django-auth-ldap==5.1.0
+django-auth-ldap==5.2.0
     # via -r /src/requirements.txt
 django-cas-ng==5.0.1
     # via -r /src/requirements.txt
-django-csp==3.8
+django-csp==4.0
     # via -r /src/requirements.txt
 django-prometheus==2.3.1
     # via -r /src/requirements.txt
@@ -85,13 +85,13 @@ django-tastypie==0.15.1
     # via -r /src/requirements.txt
 exceptiongroup==1.2.2
     # via pytest
-filelock==3.17.0
+filelock==3.18.0
     # via
     #   tox
     #   virtualenv
-gevent==24.11.1
+gevent==25.4.2
     # via -r /src/requirements.txt
-greenlet==3.1.1
+greenlet==3.2.2
     # via
     #   -r /src/requirements.txt
     #   gevent
@@ -106,11 +106,11 @@ idna==3.10
     # via
     #   -r /src/requirements.txt
     #   requests
-importlib-metadata==8.6.1
+importlib-metadata==8.7.0
     # via
     #   build
     #   pytest-randomly
-iniconfig==2.0.0
+iniconfig==2.1.0
     # via pytest
 iso8601==2.1.0
     # via
@@ -132,7 +132,7 @@ keystoneauth1==5.10.0
     # via
     #   -r /src/requirements.txt
     #   python-keystoneclient
-lxml==5.3.1
+lxml==5.4.0
     # via
     #   -r /src/requirements.txt
     #   metsrw
@@ -178,10 +178,11 @@ oslo-utils==8.2.0
     #   -r /src/requirements.txt
     #   oslo-serialization
     #   python-keystoneclient
-packaging==24.2
+packaging==25.0
     # via
     #   -r /src/requirements.txt
     #   build
+    #   django-csp
     #   gunicorn
     #   oslo-utils
     #   pyproject-api
@@ -199,11 +200,11 @@ pbr==6.1.1
     #   stevedore
 pip-tools==7.4.1
     # via -r requirements-dev.in
-platformdirs==4.3.6
+platformdirs==4.3.8
     # via
     #   tox
     #   virtualenv
-playwright @ git+https://github.com/microsoft/playwright-python.git@d9cdfbb1e178b6770625e9f857139aff77516af0
+playwright==1.52.0
     # via
     #   -r requirements-dev.in
     #   pytest-playwright
@@ -224,7 +225,7 @@ pyasn1==0.6.1
     #   -r /src/requirements.txt
     #   pyasn1-modules
     #   python-ldap
-pyasn1-modules==0.4.1
+pyasn1-modules==0.4.2
     # via
     #   -r /src/requirements.txt
     #   python-ldap
@@ -232,9 +233,9 @@ pycparser==2.22
     # via
     #   -r /src/requirements.txt
     #   cffi
-pyee==12.0.0
+pyee==13.0.0
     # via playwright
-pyparsing==3.2.1
+pyparsing==3.2.3
     # via
     #   -r /src/requirements.txt
     #   httplib2
@@ -255,9 +256,9 @@ pytest==8.3.5
     #   pytest-randomly
 pytest-base-url==2.1.0
     # via pytest-playwright
-pytest-cov==6.0.0
+pytest-cov==6.1.1
     # via -r requirements-dev.in
-pytest-django==4.10.0
+pytest-django==4.11.1
     # via -r requirements-dev.in
 pytest-playwright==0.7.0
     # via -r requirements-dev.in
@@ -308,7 +309,7 @@ rfc3986==2.0.0
     # via
     #   -r /src/requirements.txt
     #   oslo-config
-s3transfer==0.11.4
+s3transfer==0.12.0
     # via
     #   -r /src/requirements.txt
     #   boto3
@@ -339,9 +340,9 @@ tomli==2.2.1
     #   pyproject-api
     #   pytest
     #   tox
-tox==4.24.1
+tox==4.25.0
     # via -r requirements-dev.in
-typing-extensions==4.12.2
+typing-extensions==4.13.2
     # via
     #   -r /src/requirements.txt
     #   asgiref
@@ -349,7 +350,7 @@ typing-extensions==4.12.2
     #   keystoneauth1
     #   pyee
     #   tox
-tzdata==2025.1
+tzdata==2025.2
     # via
     #   -r /src/requirements.txt
     #   oslo-serialization
@@ -359,7 +360,7 @@ urllib3==1.26.20
     #   -r /src/requirements.txt
     #   botocore
     #   requests
-virtualenv==20.29.3
+virtualenv==20.31.2
     # via tox
 wheel==0.45.1
     # via pip-tools
@@ -381,9 +382,9 @@ zope-interface==7.2
     #   gevent
 
 # The following packages are considered to be unsafe in a requirements file:
-pip==25.0.1
+pip==25.1.1
     # via pip-tools
-setuptools==75.8.2
+setuptools==80.3.1
     # via
     #   -r /src/requirements.txt
     #   pbr
