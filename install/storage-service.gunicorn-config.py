@@ -1,11 +1,14 @@
 # Documentation: http://docs.gunicorn.org/en/stable/configure.html
 # Example: https://github.com/benoitc/gunicorn/blob/master/examples/example_config.py
+import importlib.resources
 import os
 import shutil
 import tempfile
 
 from gunicorn.arbiter import Arbiter
 from gunicorn.workers.base import Worker
+
+storage_service_path = str(importlib.resources.files("archivematica.storage_service"))
 
 # http://docs.gunicorn.org/en/stable/settings.html#user
 user = os.environ.get("SS_GUNICORN_USER", "archivematica")
@@ -36,7 +39,7 @@ reload = os.environ.get("SS_GUNICORN_RELOAD", "false")
 reload_engine = os.environ.get("SS_GUNICORN_RELOAD_ENGINE", "auto")
 
 # http://docs.gunicorn.org/en/stable/settings.html#chdir
-chdir = os.environ.get("SS_GUNICORN_CHDIR", "/usr/lib/archivematica/storage-service")
+chdir = os.environ.get("SS_GUNICORN_CHDIR", storage_service_path)
 
 # http://docs.gunicorn.org/en/stable/settings.html#accesslog
 accesslog = os.environ.get("SS_GUNICORN_ACCESSLOG", None)

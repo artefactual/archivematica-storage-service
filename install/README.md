@@ -298,9 +298,11 @@ This is the current list of strings supported:
   - **Default:** `auto`
 
 - **`SS_GUNICORN_CHDIR`**:
-  - **Description:** directory to load apps from. See [CHDIR].
+  - **Description:** directory to load apps from. See [CHDIR]. If this is
+    empty, Archivematica will load apps from the top level directory of the
+    `archivematica.storage_service` package.
   - **Type:** `string`
-  - **Default:** `/usr/lib/archivematica/storage-service`
+  - **Default:** `""`
 
 - **`SS_GUNICORN_ACCESSLOG`**:
   - **Description:** location to write access log to. See [ACCESSLOG].

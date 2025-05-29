@@ -141,7 +141,6 @@ ARG GROUP_ID=1000
 
 ENV DJANGO_SETTINGS_MODULE=archivematica.storage_service.storage_service.settings.local
 ENV SS_GUNICORN_BIND=0.0.0.0:8000
-ENV SS_GUNICORN_CHDIR=/src/src/archivematica/storage_service
 ENV SS_GUNICORN_ACCESSLOG=-
 ENV SS_GUNICORN_ERRORLOG=-
 ENV FORWARDED_ALLOW_IPS=*
