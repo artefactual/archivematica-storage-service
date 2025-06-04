@@ -2,7 +2,7 @@ name: "Push images to Docker Hub"
 on: workflow_dispatch
 jobs:
   build:
-    name: "Builds images and push them to Docker Hub"
+    name: "Build and push images"
     runs-on: "ubuntu-24.04"
     steps:
       - name: "Check out repository"
