@@ -14,7 +14,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
-      - name: "Build and Push Storage Service"
+      - name: "Build and push Storage Service"
         uses: docker/build-push-action@v6
         with:
           context: .
