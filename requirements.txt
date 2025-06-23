@@ -8,23 +8,23 @@ agentarchives==0.10.0
     # via -r requirements.in
 asgiref==3.8.1
     # via django
-bagit==1.8.1
+bagit==1.9.0
     # via -r requirements.in
-boto3==1.38.32
+boto3==1.38.41
     # via -r requirements.in
-botocore==1.38.32
+botocore==1.38.41
     # via
     #   boto3
     #   s3transfer
 brotli==1.1.0
     # via -r requirements.in
-certifi==2025.4.26
+certifi==2025.6.15
     # via requests
 cffi==1.17.1
     # via cryptography
 charset-normalizer==3.4.2
     # via requests
-cryptography==45.0.3
+cryptography==45.0.4
     # via
     #   josepy
     #   mozilla-django-oidc
@@ -35,7 +35,7 @@ debtcollector==3.0.0
     #   python-keystoneclient
 dj-database-url==3.0.0
     # via -r requirements.in
-django==4.2.22
+django==4.2.23
     # via
     #   -r requirements.in
     #   dj-database-url
@@ -50,7 +50,7 @@ django-cas-ng==5.0.1
     # via -r requirements.in
 django-csp==4.0
     # via -r requirements.in
-django-prometheus==2.3.1
+django-prometheus==2.4.0
     # via -r requirements.in
 django-shibboleth-remoteuser @ git+https://github.com/artefactual-labs/django-shibboleth-remoteuser.git@f08a7864d6130416c352981ccf318fff0fd5be58
     # via -r requirements.in
@@ -78,7 +78,7 @@ josepy==2.0.0
     # via mozilla-django-oidc
 jsonfield==3.1.0
     # via -r requirements.in
-keystoneauth1==5.11.0
+keystoneauth1==5.11.1
     # via python-keystoneclient
 lxml==5.4.0
     # via
@@ -90,7 +90,7 @@ metsrw==0.6.1
     # via -r requirements.in
 mozilla-django-oidc==4.0.1
     # via -r requirements.in
-msgpack==1.1.0
+msgpack==1.1.1
     # via oslo-serialization
 mysqlclient==2.2.7
     # via agentarchives
@@ -167,7 +167,7 @@ pyyaml==6.0.2
     # via
     #   oslo-config
     #   oslo-utils
-requests==2.32.3
+requests==2.32.4
     # via
     #   -r requirements.in
     #   agentarchives

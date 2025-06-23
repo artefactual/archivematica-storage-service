@@ -10,11 +10,11 @@ asgiref==3.8.1
     # via
     #   -r /src/requirements.txt
     #   django
-bagit==1.8.1
+bagit==1.9.0
     # via -r /src/requirements.txt
-boto3==1.38.32
+boto3==1.38.41
     # via -r /src/requirements.txt
-botocore==1.38.32
+botocore==1.38.41
     # via
     #   -r /src/requirements.txt
     #   boto3
@@ -23,9 +23,9 @@ brotli==1.1.0
     # via -r /src/requirements.txt
 build==1.2.2.post1
     # via pip-tools
-cachetools==6.0.0
+cachetools==6.1.0
     # via tox
-certifi==2025.4.26
+certifi==2025.6.15
     # via
     #   -r /src/requirements.txt
     #   requests
@@ -43,11 +43,11 @@ click==8.1.8
     # via pip-tools
 colorama==0.4.6
     # via tox
-coverage[toml]==7.8.2
+coverage[toml]==7.9.1
     # via
     #   -r requirements-dev.in
     #   pytest-cov
-cryptography==45.0.3
+cryptography==45.0.4
     # via
     #   -r /src/requirements.txt
     #   josepy
@@ -62,7 +62,7 @@ distlib==0.3.9
     # via virtualenv
 dj-database-url==3.0.0
     # via -r /src/requirements.txt
-django==4.2.22
+django==4.2.23
     # via
     #   -r /src/requirements.txt
     #   dj-database-url
@@ -77,7 +77,7 @@ django-cas-ng==5.0.1
     # via -r /src/requirements.txt
 django-csp==4.0
     # via -r /src/requirements.txt
-django-prometheus==2.3.1
+django-prometheus==2.4.0
     # via -r /src/requirements.txt
 django-shibboleth-remoteuser @ git+https://github.com/artefactual-labs/django-shibboleth-remoteuser.git@f08a7864d6130416c352981ccf318fff0fd5be58
     # via -r /src/requirements.txt
@@ -128,7 +128,7 @@ josepy==2.0.0
     #   mozilla-django-oidc
 jsonfield==3.1.0
     # via -r /src/requirements.txt
-keystoneauth1==5.11.0
+keystoneauth1==5.11.1
     # via
     #   -r /src/requirements.txt
     #   python-keystoneclient
@@ -142,7 +142,7 @@ metsrw==0.6.1
     # via -r /src/requirements.txt
 mozilla-django-oidc==4.0.1
     # via -r /src/requirements.txt
-msgpack==1.1.0
+msgpack==1.1.1
     # via
     #   -r /src/requirements.txt
     #   oslo-serialization
@@ -211,6 +211,7 @@ playwright==1.52.0
 pluggy==1.6.0
     # via
     #   pytest
+    #   pytest-cov
     #   tox
 prometheus-client==0.22.1
     # via
@@ -235,7 +236,7 @@ pycparser==2.22
     #   cffi
 pyee==13.0.0
     # via playwright
-pygments==2.19.1
+pygments==2.19.2
     # via pytest
 pyparsing==3.2.3
     # via
@@ -248,7 +249,7 @@ pyproject-hooks==1.2.0
     # via
     #   build
     #   pip-tools
-pytest==8.4.0
+pytest==8.4.1
     # via
     #   -r requirements-dev.in
     #   pytest-base-url
@@ -258,7 +259,7 @@ pytest==8.4.0
     #   pytest-randomly
 pytest-base-url==2.1.0
     # via pytest-playwright
-pytest-cov==6.1.1
+pytest-cov==6.2.1
     # via -r requirements-dev.in
 pytest-django==4.11.1
     # via -r requirements-dev.in
@@ -296,7 +297,7 @@ pyyaml==6.0.2
     #   -r /src/requirements.txt
     #   oslo-config
     #   oslo-utils
-requests==2.32.3
+requests==2.32.4
     # via
     #   -r /src/requirements.txt
     #   agentarchives
@@ -342,7 +343,7 @@ tomli==2.2.1
     #   pyproject-api
     #   pytest
     #   tox
-tox==4.26.0
+tox==4.27.0
     # via -r requirements-dev.in
 typing-extensions==4.14.0
     # via
@@ -373,7 +374,7 @@ wrapt==1.17.2
     # via
     #   -r /src/requirements.txt
     #   debtcollector
-zipp==3.22.0
+zipp==3.23.0
     # via importlib-metadata
 zope-event==5.0
     # via
