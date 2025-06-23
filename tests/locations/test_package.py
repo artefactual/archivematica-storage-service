@@ -509,7 +509,7 @@ class TestPackage(TestCase):
         assert success is False
         assert len(failures) == 1
         assert isinstance(failures[0], bagit.FileMissing)
-        assert message == "Bag validation failed"
+        assert message == "Bag is incomplete"
         assert timestamp is None
 
     def test_fixity_package_type(self):
