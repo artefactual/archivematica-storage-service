@@ -668,7 +668,7 @@ def get_child_space_value(value, field, child):
     """
     if field == "key" and isinstance(child, GPG):
         key = gpgutils.get_gpg_key(value)
-        return " ".join(key["uids"][0].split()[:-1])
+        return key["keyid"]
     return value
 
 
