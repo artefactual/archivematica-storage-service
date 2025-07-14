@@ -604,7 +604,9 @@ If `SS_OIDC_AUTHENTICATION` is false, none of the other ones are used.
 
 - **`OIDC_ACCESS_ATTRIBUTE_MAP`**
   - **Description:** Set OIDC token details to extract. This string should be
-    JSON-decodable.
+    JSON-decodable. If `OIDC_OP_SET_ROLES_FROM_CLAIMS` is set to `True` then
+    `"realm_access": "realm_access"` must be added to the default config for
+    this setting.
   - **Type:** `string`
   - **Default:** `{"given_name": "first_name", "family_name": "last_name"}`
 
