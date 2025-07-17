@@ -119,26 +119,18 @@ class RClone(models.Model):
         raise StorageException("rclone remote matching %s not found", self.remote_name)
 
     def _ensure_container_exists(self):
-        """Ensure that the S3 bucket or other container exists by asking it
-        something about itself. If we cannot retrieve metadata about it then
-        we attempt to create the bucket, else, we raise a StorageException.
+        """Ensure that the S3 bucket or other container exists by creating it if it doesn't.
+        If the creation attempt fails, we raise a StorageException.
         """
-        LOGGER.debug("Test that container '%s' exists", self.container)
+        LOGGER.debug("Create container '%s' if it doesn't exist", self.container)
         prefixed_container_name = f"{self.remote_prefix}{self.container}"
-        cmd = ["ls", prefixed_container_name]
+        create_container_cmd = ["mkdir", prefixed_container_name]
         try:
-            self._execute_rclone_subcommand(cmd)
+            self._execute_rclone_subcommand(create_container_cmd)
         except StorageException:
-            LOGGER.info("Creating container '%s'", self.container)
-            create_container_cmd = ["mkdir", prefixed_container_name]
-            try:
-                self._execute_rclone_subcommand(create_container_cmd)
-            except StorageException:
-                err_msg = (
-                    f"Unable to find or create container {prefixed_container_name}"
-                )
-                LOGGER.error(err_msg)
-                raise StorageException(err_msg)
+            err_msg = f"Unable to find or create container {prefixed_container_name}"
+            LOGGER.error(err_msg)
+            raise StorageException(err_msg)
 
     def browse(self, path):
         """Browse RClone location."""
