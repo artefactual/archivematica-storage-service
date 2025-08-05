@@ -6,34 +6,33 @@
 #
 agentarchives==0.10.0
     # via -r requirements.in
-asgiref==3.8.1
+asgiref==3.9.1
     # via django
 bagit==1.9.0
     # via -r requirements.in
-boto3==1.38.41
+boto3==1.40.11
     # via -r requirements.in
-botocore==1.38.41
+botocore==1.40.11
     # via
     #   boto3
     #   s3transfer
 brotli==1.1.0
     # via -r requirements.in
-certifi==2025.6.15
+certifi==2025.8.3
     # via requests
 cffi==1.17.1
     # via cryptography
-charset-normalizer==3.4.2
+charset-normalizer==3.4.3
     # via requests
-cryptography==45.0.4
+cryptography==45.0.6
     # via
     #   josepy
     #   mozilla-django-oidc
 debtcollector==3.0.0
     # via
-    #   oslo-config
     #   oslo-utils
     #   python-keystoneclient
-dj-database-url==3.0.0
+dj-database-url==3.0.1
     # via -r requirements.in
 django==4.2.23
     # via
@@ -42,6 +41,7 @@ django==4.2.23
     #   django-auth-ldap
     #   django-cas-ng
     #   django-csp
+    #   django-prometheus
     #   jsonfield
     #   mozilla-django-oidc
 django-auth-ldap==5.2.0
@@ -50,7 +50,7 @@ django-cas-ng==5.0.1
     # via -r requirements.in
 django-csp==4.0
     # via -r requirements.in
-django-prometheus==2.4.0
+django-prometheus==2.4.1
     # via -r requirements.in
 django-shibboleth-remoteuser @ git+https://github.com/artefactual-labs/django-shibboleth-remoteuser.git@f08a7864d6130416c352981ccf318fff0fd5be58
     # via -r requirements.in
@@ -58,7 +58,7 @@ django-tastypie==0.15.1
     # via -r requirements.in
 gevent==25.5.1
     # via -r requirements.in
-greenlet==3.2.3
+greenlet==3.2.4
     # via gevent
 gunicorn==23.0.0
     # via -r requirements.in
@@ -74,13 +74,13 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-josepy==2.0.0
+josepy==2.1.0
     # via mozilla-django-oidc
 jsonfield==3.1.0
     # via -r requirements.in
 keystoneauth1==5.11.1
     # via python-keystoneclient
-lxml==5.4.0
+lxml==6.0.0
     # via
     #   -r requirements.in
     #   metsrw
@@ -100,7 +100,7 @@ netaddr==1.3.0
     #   oslo-utils
 os-service-types==1.7.0
     # via keystoneauth1
-oslo-config==9.8.0
+oslo-config==10.0.0
     # via python-keystoneclient
 oslo-i18n==6.5.1
     # via
@@ -119,7 +119,7 @@ packaging==25.0
     #   gunicorn
     #   oslo-utils
     #   python-keystoneclient
-pbr==6.1.1
+pbr==7.0.0
     # via
     #   keystoneauth1
     #   os-service-types
@@ -151,7 +151,7 @@ python-dateutil==2.9.0.post0
     # via
     #   botocore
     #   django-tastypie
-python-gnupg==0.5.4
+python-gnupg==0.5.5
     # via -r requirements.in
 python-keystoneclient==5.6.0
     # via -r requirements.in
@@ -179,7 +179,7 @@ requests==2.32.4
     #   python-swiftclient
 rfc3986==2.0.0
     # via oslo-config
-s3transfer==0.13.0
+s3transfer==0.13.1
     # via boto3
 six==1.17.0
     # via
@@ -194,10 +194,9 @@ stevedore==5.4.1
     #   python-keystoneclient
 sword2 @ git+https://github.com/artefactual-labs/python-client-sword2.git@619ee44467dcdb2ab75fab16864ea2e4ded7ffe4
     # via -r requirements.in
-typing-extensions==4.14.0
+typing-extensions==4.14.1
     # via
     #   asgiref
-    #   dj-database-url
     #   keystoneauth1
 tzdata==2025.2
     # via
@@ -209,9 +208,9 @@ urllib3==1.26.20
     #   requests
 whitenoise==6.9.0
     # via -r requirements.in
-wrapt==1.17.2
+wrapt==1.17.3
     # via debtcollector
-zope-event==5.0
+zope-event==5.1.1
     # via gevent
 zope-interface==7.2
     # via gevent
