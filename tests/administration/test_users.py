@@ -155,13 +155,15 @@ def test_user_edit_view_updates_password(
     django_user_model: type[User],
     admin_user_apikey: ApiKey,
 ) -> None:
+    current_password = "password"
     user = django_user_model.objects.get(username="admin")
-    assert user.check_password("password")
+    assert user.check_password(current_password)
     new_password = "ck61Qc873.KxoZ5G"
 
     response = admin_client.post(
         reverse("administration:user_edit", kwargs={"id": user.pk}),
         {
+            "current_password": current_password,
             "new_password1": new_password,
             "new_password2": new_password,
             "password": "1",
@@ -202,3 +204,31 @@ def test_user_edit_view_regenerates_api_key(
 
     admin_user_apikey.refresh_from_db()
     assert admin_user_apikey.key == expected_key
+
+
+@pytest.mark.django_db
+def test_user_edit_view_validates_current_password(
+    admin_client: Client,
+    settings: pytest_django.fixtures.SettingsWrapper,
+    django_user_model: type[User],
+) -> None:
+    current_password = "password"
+    user = django_user_model.objects.get(username="admin")
+    assert user.check_password(current_password)
+    new_password = "ck61Qc873.KxoZ5G"
+
+    response = admin_client.post(
+        reverse("administration:user_edit", kwargs={"id": user.pk}),
+        {
+            "current_password": f"wrong {current_password}",
+            "new_password1": new_password,
+            "new_password2": new_password,
+            "password": "1",
+        },
+        follow=True,
+    )
+    assert response.status_code == 200
+
+    user.refresh_from_db()
+    assert user.check_password(current_password)
+    assert "Your current password is incorrect." in response.content.decode()

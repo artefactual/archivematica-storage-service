@@ -5,7 +5,6 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import permission_required
-from django.contrib.auth.forms import SetPasswordForm
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
@@ -103,8 +102,10 @@ def user_edit(request, id):
     user_form = settings_forms.UserChangeForm(
         request.POST or None, instance=edit_user, current_user=request.user
     )
-    password_form = SetPasswordForm(
-        data=request.POST if "password" in request.POST else None, user=edit_user
+    password_form = settings_forms.SetPasswordForm(
+        data=request.POST if "password" in request.POST else None,
+        user=edit_user,
+        requesting_user=request.user,
     )
     if "user" in request.POST and user_form.is_valid():
         if user_form.cleaned_data["regenerate_api_key"]:

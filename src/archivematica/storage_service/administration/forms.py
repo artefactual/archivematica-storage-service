@@ -338,6 +338,35 @@ class UserChangeForm(auth.forms.UserChangeForm):
         super().save(commit)
 
 
+class SetPasswordForm(auth.forms.SetPasswordForm):
+    def __init__(self, *args, **kwargs):
+        self.requesting_user = kwargs.pop("requesting_user", None)
+        super().__init__(*args, **kwargs)
+        self.error_messages["current_password_incorrect"] = _(
+            "Your current password is incorrect."
+        )
+
+    current_password = forms.CharField(
+        widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
+        label=_("Your current password"),
+    )
+
+    field_order = [
+        "current_password",
+        "new_password1",
+        "new_password2",
+    ]
+
+    def clean_current_password(self):
+        current_password = self.cleaned_data.get("current_password")
+        if not self.requesting_user.check_password(current_password):
+            raise ValidationError(
+                self.error_messages["current_password_incorrect"],
+                code="current_password_incorrect",
+            )
+        return current_password
+
+
 # ######################### KEYS ##########################
 
 
