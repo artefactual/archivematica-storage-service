@@ -119,7 +119,7 @@ def user_edit(request, id):
         password_form.save()
         messages.success(request, _("Password changed."))
         return redirect("administration:user_edit", id=edit_user.pk)
-    elif "password":
+    else:
         # Ensure user form information still displays after an invalid
         # password change attempt.
         user_form = settings_forms.UserChangeForm(
