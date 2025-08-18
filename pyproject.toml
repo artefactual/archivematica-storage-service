@@ -17,6 +17,50 @@ license = {file = "LICENSE"}
 dynamic = [
   "version",
 ]
+dependencies = [
+  "bagit",
+  "boto3",
+  "brotli",
+  "Django>=4.2,<5",
+  "django-csp",
+  "django-tastypie",
+  "dj-database-url",
+  "gevent",
+  "gunicorn",
+  "jsonfield",
+  "lxml",
+  "metsrw",
+  "python-gnupg",
+  "python-keystoneclient",
+  "python-swiftclient",
+  "requests",
+  "sword2 @ git+https://github.com/artefactual-labs/python-client-sword2.git@619ee44467dcdb2ab75fab16864ea2e4ded7ffe4",
+  "whitenoise",
+  "agentarchives",
+  "django-shibboleth-remoteuser @ git+https://github.com/artefactual-labs/django-shibboleth-remoteuser.git@f08a7864d6130416c352981ccf318fff0fd5be58",
+  "prometheus_client",
+  "django-prometheus",
+  # LDAP support
+  "python-ldap",
+  "django-auth-ldap",
+  # CAS authentication
+  "django-cas-ng",
+  # Required for OpenID Connect authentication
+  "mozilla-django-oidc",
+]
+
+[project.optional-dependencies]
+dev = [
+  "coverage[toml]",
+  "pip-tools",
+  "playwright",
+  "pytest-cov",
+  "pytest-django",
+  "pytest-playwright",
+  "pytest-randomly",
+  "pytest",
+  "tox",
+]
 
 [project.urls]
 homepage = "https://github.com/artefacutal/archivematica-storage-service"
