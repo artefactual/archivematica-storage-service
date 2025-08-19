@@ -98,6 +98,42 @@ of these settings or provide values to mandatory fields.
   - **Type:** `string`
   - :red_circle: **Mandatory!**
 
+- **`SESSION_COOKIE_SECURE`**:
+  - **Description:** determines if session cookies should only be sent over
+    HTTPS connections.
+  - **Type:** `boolean`
+  - **Default:** `true`
+
+- **`SESSION_COOKIE_HTTPONLY`**:
+  - **Description:** determines if session cookies should be accessible only
+    via HTTP and not via JavaScript.
+  - **Type:** `boolean`
+  - **Default:** `true`
+
+- **`SESSION_COOKIE_SAMESITE`**:
+  - **Description:** controls when session cookies are sent with cross-site
+    requests. Options are "Strict", "Lax", or "None".
+  - **Type:** `string`
+  - **Default:** `"Strict"`
+
+- **`CSRF_COOKIE_SECURE`**:
+  - **Description:** determines if CSRF cookies should only be sent over HTTPS
+    connections.
+  - **Type:** `boolean`
+  - **Default:** `true`
+
+- **`CSRF_COOKIE_HTTPONLY`**:
+  - **Description:** determines if CSRF cookies should be accessible only via
+    HTTP and not via JavaScript.
+  - **Type:** `boolean`
+  - **Default:** `true`
+
+- **`CSRF_COOKIE_SAMESITE`**:
+  - **Description:** controls when CSRF cookies are sent with cross-site
+    requests. Options are "Strict", "Lax", or "None".
+  - **Type:** `string`
+  - **Default:** `"Strict "`
+
 - **`SS_AUTH_PASSWORD_MINIMUM_LENGTH`**:
   - **Description:** sets minimum length for user passwords.
   - **Type:** `integer`

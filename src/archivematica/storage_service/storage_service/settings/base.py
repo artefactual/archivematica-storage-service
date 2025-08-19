@@ -341,6 +341,13 @@ ALLOW_USER_EDITS = True
 # values in `administration.roles.USER_ROLES`.
 DEFAULT_USER_ROLE = environ.get("SS_AUTH_DEFAULT_USER_ROLE", "reader")
 
+SESSION_COOKIE_SECURE = is_true(environ.get("SESSION_COOKIE_SECURE", "true"))
+SESSION_COOKIE_HTTPONLY = is_true(environ.get("SESSION_COOKIE_HTTPONLY", "true"))
+SESSION_COOKIE_SAMESITE = environ.get("SESSION_COOKIE_SAMESITE", "Strict")
+CSRF_COOKIE_SECURE = is_true(environ.get("CSRF_COOKIE_SECURE", "true"))
+CSRF_COOKIE_HTTPONLY = is_true(environ.get("CSRF_COOKIE_HTTPONLY", "true"))
+CSRF_COOKIE_SAMESITE = environ.get("CSRF_COOKIE_SAMESITE", "Strict")
+
 ######### LDAP CONFIGURATION #########
 LDAP_AUTHENTICATION = is_true(environ.get("SS_LDAP_AUTHENTICATION", ""))
 if LDAP_AUTHENTICATION:
