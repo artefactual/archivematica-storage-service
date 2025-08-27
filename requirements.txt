@@ -10,9 +10,9 @@ asgiref==3.9.1
     # via django
 bagit==1.9.0
     # via archivematica-storage-service (pyproject.toml)
-boto3==1.40.11
+boto3==1.40.19
     # via archivematica-storage-service (pyproject.toml)
-botocore==1.40.11
+botocore==1.40.19
     # via
     #   boto3
     #   s3transfer
@@ -80,7 +80,7 @@ jsonfield==3.1.0
     # via archivematica-storage-service (pyproject.toml)
 keystoneauth1==5.11.1
     # via python-keystoneclient
-lxml==6.0.0
+lxml==6.0.1
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   metsrw
@@ -102,14 +102,14 @@ os-service-types==1.7.0
     # via keystoneauth1
 oslo-config==10.0.0
     # via python-keystoneclient
-oslo-i18n==6.5.1
+oslo-i18n==6.6.0
     # via
     #   oslo-config
     #   oslo-utils
     #   python-keystoneclient
-oslo-serialization==5.7.0
+oslo-serialization==5.8.0
     # via python-keystoneclient
-oslo-utils==9.0.0
+oslo-utils==9.1.0
     # via
     #   oslo-serialization
     #   python-keystoneclient
@@ -119,14 +119,13 @@ packaging==25.0
     #   gunicorn
     #   oslo-utils
     #   python-keystoneclient
-pbr==7.0.0
+pbr==7.0.1
     # via
     #   keystoneauth1
     #   os-service-types
     #   oslo-i18n
     #   oslo-utils
     #   python-keystoneclient
-    #   stevedore
 prometheus-client==0.22.1
     # via
     #   archivematica-storage-service (pyproject.toml)
@@ -167,7 +166,7 @@ pyyaml==6.0.2
     # via
     #   oslo-config
     #   oslo-utils
-requests==2.32.4
+requests==2.32.5
     # via
     #   agentarchives
     #   archivematica-storage-service (pyproject.toml)
@@ -187,14 +186,14 @@ six==1.17.0
     #   python-dateutil
 sqlparse==0.5.3
     # via django
-stevedore==5.4.1
+stevedore==5.5.0
     # via
     #   keystoneauth1
     #   oslo-config
     #   python-keystoneclient
 sword2 @ git+https://github.com/artefactual-labs/python-client-sword2.git@619ee44467dcdb2ab75fab16864ea2e4ded7ffe4
     # via archivematica-storage-service (pyproject.toml)
-typing-extensions==4.14.1
+typing-extensions==4.15.0
     # via
     #   asgiref
     #   keystoneauth1
