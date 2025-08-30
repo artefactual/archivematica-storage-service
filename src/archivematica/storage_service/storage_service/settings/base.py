@@ -736,6 +736,7 @@ INSECURE_SKIP_VERIFY = is_true(environ.get("SS_INSECURE_SKIP_VERIFY", ""))
 
 CSP_ENABLED = is_true(environ.get("SS_CSP_ENABLED", ""))
 if CSP_ENABLED:
+    INSTALLED_APPS.append("csp")
     MIDDLEWARE.insert(0, "csp.middleware.CSPMiddleware")
 
     from archivematica.storage_service.storage_service.settings.components.csp import *
