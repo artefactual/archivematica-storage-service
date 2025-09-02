@@ -14,13 +14,6 @@ ARG PYENV_DIR=/pyenv
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 
-# Ubuntu 24.04 and later Docker images include a default user with UID (1000)
-# and GID (1000). Remove this user to prevent conflicts with the USER_ID and
-# GROUP_ID build arguments.
-RUN set -ex \
-	&& id -u ubuntu >/dev/null 2>&1 \
-	&& userdel --remove ubuntu || true
-
 RUN set -ex \
 	&& apt-get update \
 	&& apt-get install -y --no-install-recommends \
@@ -83,8 +76,8 @@ RUN set -ex \
 
 FROM base-builder AS base
 
-ARG USER_ID=1000
-ARG GROUP_ID=1000
+ARG USER_ID
+ARG GROUP_ID
 ARG PYENV_DIR=/pyenv
 
 RUN set -ex \
@@ -110,7 +103,16 @@ RUN set -ex \
 		unar \
 	&& rm -rf /var/lib/apt/lists/*
 
+# Ensure the requested UID/GID do not clash with defaults in the Ubuntu base
+# image. We look up any existing user/group that already uses such identifiers
+# and remove them to avoid conflicts before creating the archivematica account.
 RUN set -ex \
+	&& { \
+		grp=$(getent group "${GROUP_ID}" | cut -d: -f1 || true); \
+		if [ -n "${grp}" ]; then groupdel --force "${grp}"; fi; \
+		usr=$(getent passwd "${USER_ID}" | cut -d: -f1 || true); \
+		if [ -n "${usr}" ]; then userdel --remove "${usr}"; fi; \
+	} \
 	&& groupadd --gid ${GROUP_ID} --system archivematica \
 	&& useradd --uid ${USER_ID} --gid ${GROUP_ID} --home-dir /var/archivematica --system archivematica
 
@@ -136,8 +138,8 @@ ENV PYTHONPATH=/src/src
 
 FROM base AS archivematica-storage-service
 
-ARG USER_ID=1000
-ARG GROUP_ID=1000
+ARG USER_ID
+ARG GROUP_ID
 
 ENV DJANGO_SETTINGS_MODULE=archivematica.storage_service.storage_service.settings.local
 ENV SS_GUNICORN_BIND=0.0.0.0:8000
@@ -162,8 +164,8 @@ ENTRYPOINT ["pyenv", "exec", "python3", "-m", "gunicorn", "--config=/etc/archive
 
 FROM base AS archivematica-storage-service-tests
 
-ARG USER_ID=1000
-ARG GROUP_ID=1000
+ARG USER_ID
+ARG GROUP_ID
 
 USER root
 
