@@ -754,6 +754,3 @@ if PROMETHEUS_ENABLED:
     )
     INSTALLED_APPS = INSTALLED_APPS + ["django_prometheus"]
     LOGIN_EXEMPT_URLS.append(r"^metrics$")
-
-# Remove models.W042 warning
-DEFAULT_AUTO_FIELD = "django.db.models.AutoField"

@@ -79,3 +79,6 @@ CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"
 # Note: This key should only be used for development and testing.
 SECRET_KEY = get_env_variable("DJANGO_SECRET_KEY")
 # ######## END SECRET CONFIGURATION
+
+# Remove warning about autocreated primary keys.
+SILENCED_SYSTEM_CHECKS = ["models.W042"]
