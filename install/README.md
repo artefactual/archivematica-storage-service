@@ -223,6 +223,12 @@ of these settings or provide values to mandatory fields.
   - **Type:** `integer`
   - **Default:** `900`
 
+- **`SS_SILENCED_SYSTEM_CHECKS`**:
+  - **Description:**  comma-separated list of ignored system checks.
+    e.g. mysql.W002,models.W042
+  - **Type:** `string`
+  - **Default:** `None`
+
 The configuration of the database is also declared via environment variables.
 Storage Service looks up the `SS_DB_URL` environment string. If defined, its
 value is expected to follow the form described in the [dj-database-url docs],
