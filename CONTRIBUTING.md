@@ -242,7 +242,7 @@ the CONTRIBUTING.md in the [Archivematica project].
 [Line comment]: https://i.imgur.com/FsWppGN.png
 [code review guidelines]: https://github.com/artefactual/archivematica/blob/qa/1.x/code_review.md
 [interactive rebase feature]: https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History
-[Contributor's Agreement]: https://drive.google.com/file/d/1rX_BIeToUpa0jJ69jLdxsvyKd3R-L6p4/view?usp=sharing
+[Contributor's Agreement]: https://drive.google.com/file/d/1z7D2pK7ts82qLNcqUDENA8_ETNuaSADR/view?usp=sharing
 [Apache Foundation]: http://apache.org
 [contributor license]: http://www.apache.org/licenses/icla.txt
 [Artefactual Systems]: http://artefactual.com
