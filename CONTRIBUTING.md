@@ -46,7 +46,9 @@ issues for any work they do on the Archivematica project.
 
 You can also post in our [user] mailing list. A post to the mailing
 list is always welcome, especially if you're unsure if it's a bug
-or a local problem! If it is confirmed as a bug, please log an issue in GitHub as we only triage issues reported in the [Archivematica issues repo].
+or a local problem! If it is confirmed as a bug, please log an
+issue in GitHub as we only triage issues reported in the
+[Archivematica issues repo].
 
 Useful questions to answer if you're having problems include:
 
