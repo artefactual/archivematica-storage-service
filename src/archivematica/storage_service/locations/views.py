@@ -667,13 +667,9 @@ def get_child_space_label(child, field):
 
 
 def get_child_space_value(value, field, child):
-    """If the child space ``child`` is a GPG instance, and the field is key, we
-    return a human-readable representation of the GPG key instead of its
-    fingerprint: the name of the first user in its uids list.
-    """
     if field == "key" and isinstance(child, GPG):
         key = gpgutils.get_gpg_key(value)
-        return key["keyid"]
+        return key["keyid"] if key is not None else _("Keyid not found")
     return value
 
 
