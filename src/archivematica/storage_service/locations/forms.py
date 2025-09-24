@@ -193,7 +193,9 @@ class GPGForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         system_key = gpgutils.get_default_gpg_key(gpgutils.get_gpg_key_list())
         self.fields["key"] = forms.ChoiceField(
-            choices=get_gpg_key_choices(), initial=system_key["fingerprint"]
+            choices=get_gpg_key_choices(),
+            initial=system_key["fingerprint"],
+            label=_("Keyid"),
         )
 
     class Meta:
