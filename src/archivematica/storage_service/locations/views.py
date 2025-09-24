@@ -629,12 +629,7 @@ def space_list(request):
         child_dict_raw = model_to_dict(
             child, PROTOCOL[space.access_protocol]["fields"] or [""]
         )
-        child_dict = {
-            child._meta.get_field(field).verbose_name: get_child_space_value(
-                value, field, child
-            )
-            for field, value in child_dict_raw.items()
-        }
+        child_dict = get_child_space_dict(child, child_dict_raw)
         space.child = child_dict
 
     list(map(add_child, spaces))
@@ -652,15 +647,23 @@ def space_detail(request, uuid):
     child_dict_raw = model_to_dict(
         child, PROTOCOL[space.access_protocol]["fields"] or [""]
     )
-    child_dict = {
-        child._meta.get_field(field).verbose_name: get_child_space_value(
-            value, field, child
-        )
-        for field, value in child_dict_raw.items()
-    }
+    child_dict = get_child_space_dict(child, child_dict_raw)
     space.child = child_dict
     locations = Location.objects.filter(space=space)
     return render(request, "locations/space_detail.html", locals())
+
+
+def get_child_space_dict(child, child_dict_raw):
+    return {
+        get_child_space_label(child, field): get_child_space_value(value, field, child)
+        for field, value in child_dict_raw.items()
+    }
+
+
+def get_child_space_label(child, field):
+    if field == "key" and isinstance(child, GPG):
+        return _("Keyid")
+    return child._meta.get_field(field).verbose_name
 
 
 def get_child_space_value(value, field, child):
