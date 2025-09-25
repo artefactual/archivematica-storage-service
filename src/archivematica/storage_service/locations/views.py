@@ -667,9 +667,10 @@ def get_child_space_label(child, field):
 
 
 def get_child_space_value(value, field, child):
+    """Show shorter Key ID instead of full fingerprint for GPG keys."""
     if field == "key" and isinstance(child, GPG):
         key = gpgutils.get_gpg_key(value)
-        return key["keyid"] if key is not None else _("Keyid not found")
+        return (key or {}).get("keyid", _("Keyid not found"))
     return value
 
 
