@@ -35,16 +35,20 @@ Archivematica itself.
 
 ## Submitting bugs
 
-If you find a security vulnerability, do NOT open an issue. Email
-<info@artefactual.com> instead.
+If you find a security vulnerability, do NOT open an issue. Please follow
+the instructions in [SECURITY.md].
 
-Issues can be filed using GitHub Issues in the [Archivematica Issues repo].
+Issues can be filed using GitHub Issues in the
+[Archivematica Issues repo] by following these [guidelines].
 It is recommended to file issues there rather than in any of the
 Archivematica-related code repositories. Artefactual staff also use GitHub
 issues for any work they do on the Archivematica project.
 
-You can also post in our [user] mailing list. A post to the mailing list is
-always welcome, especially if you're unsure if it's a bug or a local problem!
+You can also post in our [user] mailing list. A post to the mailing
+list is always welcome, especially if you're unsure if it's a bug
+or a local problem! If it is confirmed as a bug, please log an
+issue in GitHub as we only triage issues reported in the
+[Archivematica issues repo].
 
 Useful questions to answer if you're having problems include:
 
@@ -65,10 +69,8 @@ new features in the [Archivematica Issues repo]. This is also where Artefactual
 staff record upcoming enhancements when they have been sponsored for inclusion
 either by Artefactual Systems or by a client.
 
-Please feel free also to use the [Issues repo wiki] as a space for gathering and
-collaborating on ideas. If you are not already a member of the
-Archivematica repo (required for editing the wiki), file an issue there with
-the title "Request membership."
+Please feel free also to use the [Archivematica Issues repo] as a space for
+gathering and collaborating on ideas.
 
 ## Submitting code changes
 
@@ -111,6 +113,17 @@ submitted as a pull request to the appropriate repository. A branch being
 submitted for code review should contain commits covering a related section of
 code. Try not to bundle unrelated changes together in one branch; it makes
 review harder.
+
+When naming branches, Artefactual uses the following naming format:
+`dev/issue-####-short-description`
+
+- `dev/` marks it as being a development branch, not for QA integration or
+  a stable release
+
+- `issue-####` is the issue that the work is mostly related to
+
+- `short-description` is a description of the branch in a few words, to make it
+  easier to remember what the topic is. Example: `dev/issue-8161-ubuntu-24.04`
 
 If you're not familiar with forking repositories and creating branches in
 GitHub, consult their [guide].
@@ -205,32 +218,33 @@ Alternatively, you may send a printed, signed agreement to:
 
 ```text
 Artefactual Systems Inc.
-201 - 301 Sixth Street
-New Westminster BC  V3L 3A7
+#2 - 10138 Whalley Blvd.
+Surrey BC  V3T 4H4
 Canada
 ```
 
 ## Contribution standards
 
-For more information on contribution guidelines and standards, see the
-CONTRIBUTING.md in the [Archivematica project].
+For more information on contribution guidelines and standards, see
+the CONTRIBUTING.md in the [Archivematica project].
 
 [documentation]: https://github.com/artefactual/archivematica-storage-service-docs/
 [mailing list]: https://groups.google.com/forum/#!forum/archivematica
 [Archivematica Issues repo]: https://github.com/archivematica/Issues
 [user]: https://groups.google.com/forum/#!forum/archivematica
-[Issues repo wiki]: https://github.com/archivematica/Issues/wiki
 [files]: https://help.github.com/articles/getting-permanent-links-to-files/
 [code snippets]: https://help.github.com/articles/creating-a-permanent-link-to-a-code-snippet/
-[development installation]: https://wiki.archivematica.org/Getting_started#Installation
+[development installation]: https://github.com/artefactual/archivematica/blob/qa/1.x/hack/README.md
 [GitHub]: https://github.com/
 [guide]: https://help.github.com/articles/fork-a-repo
+[guidelines]: https://github.com/archivematica/Issues/blob/main/CONTRIBUTING.md
 [excellent]: https://help.github.com/articles/using-pull-requests
 [Line comment]: https://i.imgur.com/FsWppGN.png
 [code review guidelines]: https://github.com/artefactual/archivematica/blob/qa/1.x/code_review.md
 [interactive rebase feature]: https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History
-[Contributor's Agreement]: https://wiki.archivematica.org/images/e/e6/Archivematica-CLA-firstname-lastname-YYYY.pdf
+[Contributor's Agreement]: https://drive.google.com/file/d/1z7D2pK7ts82qLNcqUDENA8_ETNuaSADR/view?usp=sharing
 [Apache Foundation]: http://apache.org
 [contributor license]: http://www.apache.org/licenses/icla.txt
 [Artefactual Systems]: http://artefactual.com
 [Archivematica project]: https://github.com/artefactual/archivematica
+[SECURITY.md]: SECURITY.md
