@@ -115,7 +115,7 @@ code. Try not to bundle unrelated changes together in one branch; it makes
 review harder.
 
 When naming branches, Artefactual uses the following naming format:
-`dev/issue-####-short-decscription`
+`dev/issue-####-short-description`
 
 - `dev/` marks it as being a development branch, not for QA integration or
   a stable release
