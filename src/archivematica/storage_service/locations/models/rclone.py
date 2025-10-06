@@ -151,7 +151,7 @@ class RClone(models.Model):
             container = os.path.join(self.container, "")
 
         prefixed_path = f"{self.remote_prefix}{container}{path}"
-        cmd = ["lsjson", prefixed_path]
+        cmd = ["lsjson", "--max-depth=1", prefixed_path]
         stdout = self._execute_rclone_subcommand(cmd)
 
         directories = set()
