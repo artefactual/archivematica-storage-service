@@ -214,20 +214,48 @@ def test_ensure_bucket_exists_works_with_any_region(resource, s3_space):
     "boto3.resource",
     return_value=mock.Mock(
         **{
-            "Bucket.return_value.objects.filter.return_value": [
-                mock.Mock(
-                    key="/aips/myaips/myaip.7z",
-                    size=1024,
-                    last_modified="2024-01-01 00:00:00",
-                    e_tag="2b5fbc705df14fd1c4fb022acfb4b3ca",
-                ),
-                mock.Mock(
-                    key="/aips/other/other.7z",
-                    size=512,
-                    last_modified="2023-01-01 00:00:00",
-                    e_tag="9f11c93c2583100d80612e46db1c3bd5",
-                ),
-            ]
+            "meta.client.get_paginator.return_value": mock.Mock(
+                **{
+                    "paginate.side_effect": [
+                        [{"Contents": [], "CommonPrefixes": [{"Prefix": "aips/"}]}],
+                        [
+                            {
+                                "Contents": [],
+                                "CommonPrefixes": [
+                                    {"Prefix": "aips/myaips/"},
+                                    {"Prefix": "aips/other/"},
+                                ],
+                            }
+                        ],
+                        [
+                            {
+                                "Contents": [
+                                    {
+                                        "Key": "aips/myaips/myaip.7z",
+                                        "Size": 1024,
+                                        "LastModified": "2024-01-01 00:00:00",
+                                        "ETag": "2b5fbc705df14fd1c4fb022acfb4b3ca",
+                                    }
+                                ],
+                                "CommonPrefixes": [{"Prefix": "aips/myaips/aips/"}],
+                            }
+                        ],
+                        [
+                            {
+                                "Contents": [
+                                    {
+                                        "Key": "aips/other/other.7z",
+                                        "Size": 512,
+                                        "LastModified": "2023-01-01 00:00:00",
+                                        "ETag": "9f11c93c2583100d80612e46db1c3bd5",
+                                    }
+                                ],
+                                "CommonPrefixes": [{"Prefix": "aips/other/aips/"}],
+                            }
+                        ],
+                    ]
+                }
+            )
         }
     ),
 )

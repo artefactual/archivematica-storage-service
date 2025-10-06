@@ -148,27 +148,33 @@ class S3(models.Model):
         if path != "":
             path = path.rstrip("/") + "/"
 
-        objects = self.resource.Bucket(self.bucket_name).objects.filter(Prefix=path)
-
         directories = set()
         entries = set()
         properties = {}
 
-        for objectSummary in objects:
-            relative_key = objectSummary.key.replace(path, "", 1).lstrip("/")
+        client = self.resource.meta.client
+        paginator = client.get_paginator("list_objects_v2")
+        for page in paginator.paginate(
+            Bucket=self.bucket_name,
+            Prefix=path,
+            Delimiter="/",
+        ):
+            for obj in page.get("Contents", []):
+                relative_key = obj["Key"].replace(path, "", 1).lstrip("/")
+                if relative_key:
+                    entries.add(relative_key)
+                    properties[relative_key] = {
+                        "size": obj["Size"],
+                        "timestamp": obj["LastModified"],
+                        "e_tag": obj["ETag"],
+                    }
 
-            if "/" in relative_key:
+            for cp in page.get("CommonPrefixes", []):
+                relative_key = cp["Prefix"].replace(path, "", 1).lstrip("/")
                 directory_name = re.sub("/.*", "", relative_key)
                 if directory_name:
                     directories.add(directory_name)
                     entries.add(directory_name)
-            elif relative_key != "":
-                entries.add(relative_key)
-                properties[relative_key] = {
-                    "size": objectSummary.size,
-                    "timestamp": objectSummary.last_modified,
-                    "e_tag": objectSummary.e_tag,
-                }
 
         return {
             "directories": list(directories),
