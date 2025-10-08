@@ -6,25 +6,25 @@
 #
 agentarchives==0.10.0
     # via archivematica-storage-service (pyproject.toml)
-asgiref==3.9.1
+asgiref==3.10.0
     # via django
 bagit==1.9.0
     # via archivematica-storage-service (pyproject.toml)
-boto3==1.40.24
+boto3==1.40.47
     # via archivematica-storage-service (pyproject.toml)
-botocore==1.40.24
+botocore==1.40.47
     # via
     #   boto3
     #   s3transfer
 brotli==1.1.0
     # via archivematica-storage-service (pyproject.toml)
-certifi==2025.8.3
+certifi==2025.10.5
     # via requests
-cffi==1.17.1
+cffi==2.0.0
     # via cryptography
 charset-normalizer==3.4.3
     # via requests
-cryptography==45.0.7
+cryptography==46.0.2
     # via
     #   josepy
     #   mozilla-django-oidc
@@ -34,7 +34,7 @@ debtcollector==3.0.0
     #   python-keystoneclient
 dj-database-url==3.0.1
     # via archivematica-storage-service (pyproject.toml)
-django==4.2.24
+django==4.2.25
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   dj-database-url
@@ -56,13 +56,13 @@ django-shibboleth-remoteuser @ git+https://github.com/artefactual-labs/django-sh
     # via archivematica-storage-service (pyproject.toml)
 django-tastypie==0.15.1
     # via archivematica-storage-service (pyproject.toml)
-gevent==25.8.2
+gevent==25.9.1
     # via archivematica-storage-service (pyproject.toml)
 greenlet==3.2.4
     # via gevent
 gunicorn==23.0.0
     # via archivematica-storage-service (pyproject.toml)
-httplib2==0.30.0
+httplib2==0.31.0
     # via sword2
 idna==3.10
     # via requests
@@ -80,7 +80,7 @@ jsonfield==3.1.0
     # via archivematica-storage-service (pyproject.toml)
 keystoneauth1==5.11.1
     # via python-keystoneclient
-lxml==6.0.1
+lxml==6.0.2
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   metsrw
@@ -90,7 +90,7 @@ metsrw==0.6.1
     # via archivematica-storage-service (pyproject.toml)
 mozilla-django-oidc==4.0.1
     # via archivematica-storage-service (pyproject.toml)
-msgpack==1.1.1
+msgpack==1.1.2
     # via oslo-serialization
 mysqlclient==2.2.7
     # via agentarchives
@@ -126,11 +126,11 @@ pbr==7.0.1
     #   oslo-i18n
     #   oslo-utils
     #   python-keystoneclient
-prometheus-client==0.22.1
+prometheus-client==0.23.1
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   django-prometheus
-psutil==7.0.0
+psutil==7.1.0
     # via oslo-utils
 pyasn1==0.6.1
     # via
@@ -138,9 +138,9 @@ pyasn1==0.6.1
     #   python-ldap
 pyasn1-modules==0.4.2
     # via python-ldap
-pycparser==2.22
+pycparser==2.23
     # via cffi
-pyparsing==3.2.3
+pyparsing==3.2.5
     # via
     #   httplib2
     #   oslo-utils
@@ -162,7 +162,7 @@ python-mimeparse==2.0.0
     # via django-tastypie
 python-swiftclient==4.8.0
     # via archivematica-storage-service (pyproject.toml)
-pyyaml==6.0.2
+pyyaml==6.0.3
     # via
     #   oslo-config
     #   oslo-utils
@@ -178,7 +178,7 @@ requests==2.32.5
     #   python-swiftclient
 rfc3986==2.0.0
     # via oslo-config
-s3transfer==0.13.1
+s3transfer==0.14.0
     # via boto3
 six==1.17.0
     # via
@@ -196,6 +196,7 @@ sword2 @ git+https://github.com/artefactual-labs/python-client-sword2.git@619ee4
 typing-extensions==4.15.0
     # via
     #   asgiref
+    #   cryptography
     #   keystoneauth1
 tzdata==2025.2
     # via
@@ -205,13 +206,13 @@ urllib3==1.26.20
     # via
     #   botocore
     #   requests
-whitenoise==6.9.0
+whitenoise==6.11.0
     # via archivematica-storage-service (pyproject.toml)
 wrapt==1.17.3
     # via debtcollector
-zope-event==5.1.1
+zope-event==6.0
     # via gevent
-zope-interface==7.2
+zope-interface==8.0.1
     # via gevent
 
 # The following packages are considered to be unsafe in a requirements file:
@@ -219,4 +220,3 @@ setuptools==80.9.0
     # via
     #   pbr
     #   zope-event
-    #   zope-interface
