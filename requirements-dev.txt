@@ -10,9 +10,9 @@ asgiref==3.10.0
     # via django
 bagit==1.9.0
     # via archivematica-storage-service (pyproject.toml)
-boto3==1.40.47
+boto3==1.40.52
     # via archivematica-storage-service (pyproject.toml)
-botocore==1.40.47
+botocore==1.40.52
     # via
     #   boto3
     #   s3transfer
@@ -20,7 +20,7 @@ brotli==1.1.0
     # via archivematica-storage-service (pyproject.toml)
 build==1.3.0
     # via pip-tools
-cachetools==6.2.0
+cachetools==6.2.1
     # via tox
 certifi==2025.10.5
     # via requests
@@ -28,7 +28,7 @@ cffi==2.0.0
     # via cryptography
 chardet==5.2.0
     # via tox
-charset-normalizer==3.4.3
+charset-normalizer==3.4.4
     # via requests
 click==8.1.8
     # via pip-tools
@@ -88,7 +88,7 @@ gunicorn==23.0.0
     # via archivematica-storage-service (pyproject.toml)
 httplib2==0.31.0
     # via sword2
-idna==3.10
+idna==3.11
     # via requests
 importlib-metadata==8.7.0
     # via
@@ -104,7 +104,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-josepy==2.1.0
+josepy==2.2.0
     # via mozilla-django-oidc
 jsonfield==3.1.0
     # via archivematica-storage-service (pyproject.toml)
@@ -231,7 +231,7 @@ python-gnupg==0.5.5
     # via archivematica-storage-service (pyproject.toml)
 python-keystoneclient==5.6.0
     # via archivematica-storage-service (pyproject.toml)
-python-ldap==3.4.4
+python-ldap==3.4.5
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   django-auth-ldap
@@ -275,7 +275,7 @@ sword2 @ git+https://github.com/artefactual-labs/python-client-sword2.git@619ee4
     # via archivematica-storage-service (pyproject.toml)
 text-unidecode==1.3
     # via python-slugify
-tomli==2.2.1
+tomli==2.3.0
     # via
     #   build
     #   coverage
@@ -302,7 +302,7 @@ urllib3==1.26.20
     # via
     #   botocore
     #   requests
-virtualenv==20.34.0
+virtualenv==20.35.3
     # via tox
 wheel==0.45.1
     # via pip-tools

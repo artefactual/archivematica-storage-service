@@ -10,9 +10,9 @@ asgiref==3.10.0
     # via django
 bagit==1.9.0
     # via archivematica-storage-service (pyproject.toml)
-boto3==1.40.47
+boto3==1.40.52
     # via archivematica-storage-service (pyproject.toml)
-botocore==1.40.47
+botocore==1.40.52
     # via
     #   boto3
     #   s3transfer
@@ -22,7 +22,7 @@ certifi==2025.10.5
     # via requests
 cffi==2.0.0
     # via cryptography
-charset-normalizer==3.4.3
+charset-normalizer==3.4.4
     # via requests
 cryptography==46.0.2
     # via
@@ -64,7 +64,7 @@ gunicorn==23.0.0
     # via archivematica-storage-service (pyproject.toml)
 httplib2==0.31.0
     # via sword2
-idna==3.10
+idna==3.11
     # via requests
 iso8601==2.1.0
     # via
@@ -74,7 +74,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-josepy==2.1.0
+josepy==2.2.0
     # via mozilla-django-oidc
 jsonfield==3.1.0
     # via archivematica-storage-service (pyproject.toml)
@@ -154,7 +154,7 @@ python-gnupg==0.5.5
     # via archivematica-storage-service (pyproject.toml)
 python-keystoneclient==5.6.0
     # via archivematica-storage-service (pyproject.toml)
-python-ldap==3.4.4
+python-ldap==3.4.5
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   django-auth-ldap
