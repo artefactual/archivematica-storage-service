@@ -20,6 +20,7 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 from typing import Callable
+from typing import Optional
 from typing import Union
 
 import boto3
@@ -895,6 +896,60 @@ class KeyRecordingCollection:
         return getattr(self._collection, name)
 
 
+class KeyRecordingPaginator:
+    """Wrap paginator so iterated pages append the keys they expose."""
+
+    def __init__(self, paginator: Any, seen_keys: list[str]) -> None:
+        self._paginator = paginator
+        self._seen_keys = seen_keys
+
+    def paginate(self, *args: Any, **kwargs: Any) -> Iterator[Any]:
+        for page in self._paginator.paginate(*args, **kwargs):
+            for obj in page.get("Contents", []):
+                key = obj.get("Key")
+                if key:
+                    self._seen_keys.append(key)
+            yield page
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._paginator, name)
+
+
+class KeyRecordingClient:
+    """Client wrapper that returns key-recording paginators."""
+
+    def __init__(self, client: Any, seen_keys: list[str]) -> None:
+        self._client = client
+        self._seen_keys = seen_keys
+
+    def get_paginator(self, name: str) -> KeyRecordingPaginator:
+        paginator = self._client.get_paginator(name)
+        return KeyRecordingPaginator(paginator, self._seen_keys)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._client, name)
+
+
+class KeyRecordingMeta:
+    """Meta wrapper ensuring the client records keys."""
+
+    def __init__(self, meta: Any, seen_keys: list[str]) -> None:
+        self._meta = meta
+        self._seen_keys = seen_keys
+        self._client_wrapper: Optional[KeyRecordingClient] = None
+
+    @property
+    def client(self) -> KeyRecordingClient:
+        if self._client_wrapper is None:
+            self._client_wrapper = KeyRecordingClient(
+                self._meta.client, self._seen_keys
+            )
+        return self._client_wrapper
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._meta, name)
+
+
 class KeyRecordingBucket:
     """Expose a bucket whose object collections add accessed keys to the log."""
 
@@ -917,12 +972,19 @@ class KeyRecordingResource:
     def __init__(self, resource: ServiceResource, seen_keys: list[str]) -> None:
         self._resource = resource
         self._seen_keys = seen_keys
+        self._meta_wrapper: Optional[KeyRecordingMeta] = None
 
     def Bucket(self, name: str) -> KeyRecordingBucket:
         bucket = self._resource.Bucket(name)
         if not isinstance(bucket, ServiceResource):
             raise TypeError("Expected ServiceResource bucket")
         return KeyRecordingBucket(bucket, self._seen_keys)
+
+    @property
+    def meta(self) -> KeyRecordingMeta:
+        if self._meta_wrapper is None:
+            self._meta_wrapper = KeyRecordingMeta(self._resource.meta, self._seen_keys)
+        return self._meta_wrapper
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self._resource, name)
