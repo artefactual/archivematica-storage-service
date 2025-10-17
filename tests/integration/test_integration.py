@@ -1124,13 +1124,7 @@ def test_browsing_a_s3_transfer_source_location_loads_path_level_results_only(
     assert directories == {"subdir1", "subdir2"}
 
     # Verify the keys the browse API endpoint iterated through.
-    #
-    # Due to issue #1755 the API endpoint iterated the full nested layout even
-    # though the response only exposes the top-level entries.
     assert set(s3_recorded_keys) == {
         "ts/dir2/file4.txt",
         "ts/dir2/file5.txt",
-        "ts/dir2/subdir1/file6.txt",
-        "ts/dir2/subdir2/file7.txt",
-        "ts/dir2/subdir2/subdir3/file8.txt",
     }
