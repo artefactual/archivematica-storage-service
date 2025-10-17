@@ -10,15 +10,22 @@ Missing: encryption, multiple replicators, packages generated with older version
 of Archivematica, etc...
 """
 
+import base64
 import json
 import os
 import shutil
 import tarfile
 import uuid
+from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
+from typing import Callable
 from typing import Union
 
+import boto3
 import pytest
+from boto3.resources.base import ServiceResource
+from boto3.resources.collection import ResourceCollection
 from django.http import HttpResponse
 from django.test import Client as TestClient
 from django.urls import reverse
@@ -102,6 +109,11 @@ class Client:
 
     def get_locations(self, data: dict[str, str]) -> HttpResponse:
         return self.admin_client.get("/api/v2/location/", data)
+
+    def browse_location(
+        self, location_id: uuid.UUID, data: dict[str, str]
+    ) -> HttpResponse:
+        return self.admin_client.get(f"/api/v2/location/{location_id}/browse/", data)
 
     def add_file(
         self,
@@ -846,3 +858,217 @@ def test_aip_recovery_handles_recovery_copy_setup_error(
     content = resp.content.decode()
     assert "AIP restore failed: error accessing restore files" in content
     assert "Please contact an administrator or see logs for details" in content
+
+
+class KeyRecordingIterable:
+    """Proxy iterable that appends each yielded S3 key to the tracking list."""
+
+    def __init__(self, collection: Any, seen_keys: list[str]) -> None:
+        self._collection = collection
+        self._seen_keys = seen_keys
+
+    def __iter__(self) -> Iterator[Any]:
+        for obj in self._collection:
+            self._seen_keys.append(obj.key)
+            yield obj
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._collection, name)
+
+
+class KeyRecordingCollection:
+    """Proxy iterable that appends each yielded S3 key to the tracking list."""
+
+    def __init__(self, collection: ResourceCollection, seen_keys: list[str]) -> None:
+        self._collection = collection
+        self._seen_keys = seen_keys
+
+    def filter(self, *args: Any, **kwargs: Any) -> KeyRecordingIterable:
+        filtered = self._collection.filter(*args, **kwargs)
+        return KeyRecordingIterable(filtered, self._seen_keys)
+
+    def all(self) -> KeyRecordingIterable:
+        everything = self._collection.all()
+        return KeyRecordingIterable(everything, self._seen_keys)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._collection, name)
+
+
+class KeyRecordingBucket:
+    """Expose a bucket whose object collections add accessed keys to the log."""
+
+    def __init__(self, bucket: ServiceResource, seen_keys: list[str]) -> None:
+        self._bucket = bucket
+        self._seen_keys = seen_keys
+
+    @property
+    def objects(self) -> KeyRecordingCollection:
+        original_collection = self._bucket.objects
+        return KeyRecordingCollection(original_collection, self._seen_keys)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._bucket, name)
+
+
+class KeyRecordingResource:
+    """Resource wrapper that yields key-recording buckets."""
+
+    def __init__(self, resource: ServiceResource, seen_keys: list[str]) -> None:
+        self._resource = resource
+        self._seen_keys = seen_keys
+
+    def Bucket(self, name: str) -> KeyRecordingBucket:
+        bucket = self._resource.Bucket(name)
+        if not isinstance(bucket, ServiceResource):
+            raise TypeError("Expected ServiceResource bucket")
+        return KeyRecordingBucket(bucket, self._seen_keys)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._resource, name)
+
+
+def make_key_recording_resource_factory(
+    recorded_keys: list[str], original_factory: Callable[..., ServiceResource]
+) -> Callable[..., KeyRecordingResource]:
+    def factory(*args: Any, **kwargs: Any) -> KeyRecordingResource:
+        resource = original_factory(*args, **kwargs)
+        return KeyRecordingResource(resource, recorded_keys)
+
+    return factory
+
+
+@pytest.fixture
+def s3_recorded_keys(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """Override boto3.resource so each key bubbled through the wrappers lands in this list."""
+    recorded_keys: list[str] = []
+    original_boto3_resource = boto3.resource
+    tracking_factory = make_key_recording_resource_factory(
+        recorded_keys, original_boto3_resource
+    )
+    monkeypatch.setattr(boto3, "resource", tracking_factory)
+    return recorded_keys
+
+
+@pytest.fixture
+def s3_resource(s3_recorded_keys: list[str]) -> ServiceResource:
+    """Return a boto3 resource connected to the test MinIO instance."""
+    del s3_recorded_keys  # Ensure tracking fixture executes before resource creation.
+    return boto3.resource(
+        "s3",
+        endpoint_url="http://minio:9000",
+        aws_access_key_id="minio",
+        aws_secret_access_key="minio123",
+        region_name="planet-earth",
+    )
+
+
+@pytest.fixture
+def s3_browse_bucket(s3_resource: ServiceResource) -> Iterator[str]:
+    """Provision a bucket with a nested structure for browse tests."""
+    bucket_name = f"storage-service-browse-{uuid.uuid4().hex}"
+    s3_resource.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "planet-earth"},
+    )
+
+    objects = [
+        "ts/file1.txt",
+        "ts/file2.txt",
+        "ts/dir1/file3.txt",
+        "ts/dir2/file4.txt",
+        "ts/dir2/file5.txt",
+        "ts/dir2/subdir1/file6.txt",
+        "ts/dir2/subdir2/file7.txt",
+        "ts/dir2/subdir2/subdir3/file8.txt",
+    ]
+    for key in objects:
+        s3_resource.Object(bucket_name, key).put(Body=b"content")
+
+    yield bucket_name
+
+    bucket = s3_resource.Bucket(bucket_name)
+    bucket.objects.all().delete()
+    bucket.delete()
+
+
+@pytest.mark.django_db
+def test_browsing_a_s3_transfer_source_location_loads_path_level_results_only(
+    admin_client: TestClient,
+    s3_resource: ServiceResource,
+    s3_browse_bucket: str,
+    s3_recorded_keys: list[str],
+    tmp_path: Path,
+) -> None:
+    client = Client(admin_client)
+    shared_directory = tmp_path / "var" / "archivematica" / "sharedDirectory"
+    shared_directory.mkdir(parents=True, exist_ok=True)
+
+    # Create pipeline.
+    resp = client.add_pipeline(
+        {
+            "uuid": str(uuid.uuid4()),
+            "description": "My pipeline",
+            "create_default_locations": False,
+            "shared_path": str(shared_directory),
+            "remote_name": "http://127.0.0.1:65534",
+            "api_username": "test",
+            "api_key": "test",
+        }
+    )
+    assert resp.status_code == 201
+    pipeline = json.loads(resp.content)
+
+    # Create space.
+    resp = client.add_space(
+        {
+            "access_protocol": Space.S3,
+            "path": "/",
+            "staging_path": "/var/archivematica/storage_service",
+            "endpoint_url": "http://minio:9000",
+            "access_key_id": "minio",
+            "secret_access_key": "minio123",
+            "region": "planet-earth",
+            "bucket": s3_browse_bucket,
+        }
+    )
+    assert resp.status_code == 201
+    space = json.loads(resp.content)
+
+    # Create transfer source location.
+    resp = client.add_location(
+        {
+            "relative_path": "ts",
+            "purpose": Location.TRANSFER_SOURCE,
+            "space": space["resource_uri"],
+            "pipeline": [pipeline["resource_uri"]],
+        }
+    )
+    assert resp.status_code == 201
+    location = json.loads(resp.content)
+
+    resp = client.browse_location(
+        uuid.UUID(location["uuid"]), {"path": base64.b64encode(b"/ts/dir2").decode()}
+    )
+    assert resp.status_code == 200
+    browse_result = json.loads(resp.content)
+
+    entries = {base64.b64decode(entry).decode() for entry in browse_result["entries"]}
+    directories = {
+        base64.b64decode(directory).decode()
+        for directory in browse_result["directories"]
+    }
+    assert entries == {"file4.txt", "file5.txt", "subdir1", "subdir2"}
+    assert directories == {"subdir1", "subdir2"}
+
+    # Verify the keys the browse API endpoint iterated through.
+    #
+    # Due to issue #1755 the API endpoint iterated the full nested layout even
+    # though the response only exposes the top-level entries.
+    assert set(s3_recorded_keys) == {
+        "ts/dir2/file4.txt",
+        "ts/dir2/file5.txt",
+        "ts/dir2/subdir1/file6.txt",
+        "ts/dir2/subdir2/file7.txt",
+        "ts/dir2/subdir2/subdir3/file8.txt",
+    }
