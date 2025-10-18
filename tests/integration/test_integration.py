@@ -10,15 +10,19 @@ Missing: encryption, multiple replicators, packages generated with older version
 of Archivematica, etc...
 """
 
+import base64
 import json
 import os
 import shutil
 import tarfile
 import uuid
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Union
 
+import boto3
 import pytest
+from boto3.resources.base import ServiceResource
 from django.http import HttpResponse
 from django.test import Client as TestClient
 from django.urls import reverse
@@ -92,7 +96,7 @@ class Client:
         )
 
     def set_location(
-        self, location_id: uuid.UUID, data: dict[str, str]
+        self, location_id: uuid.UUID, data: dict[str, Union[str, list[dict[str, str]]]]
     ) -> HttpResponse:
         return self.admin_client.post(
             f"/api/v2/location/{location_id}/",
@@ -102,6 +106,11 @@ class Client:
 
     def get_locations(self, data: dict[str, str]) -> HttpResponse:
         return self.admin_client.get("/api/v2/location/", data)
+
+    def browse_location(
+        self, location_id: uuid.UUID, data: dict[str, str]
+    ) -> HttpResponse:
+        return self.admin_client.get(f"/api/v2/location/{location_id}/browse/", data)
 
     def add_file(
         self,
@@ -846,3 +855,258 @@ def test_aip_recovery_handles_recovery_copy_setup_error(
     content = resp.content.decode()
     assert "AIP restore failed: error accessing restore files" in content
     assert "Please contact an administrator or see logs for details" in content
+
+
+@pytest.fixture
+def s3_resource(s3_recorded_keys: list[str]) -> ServiceResource:
+    """Return a boto3 resource connected to the test MinIO instance."""
+    del s3_recorded_keys  # Ensure tracking fixture executes before resource creation.
+    return boto3.resource(
+        "s3",
+        endpoint_url="http://minio:9000",
+        aws_access_key_id="minio",
+        aws_secret_access_key="minio123",
+        region_name="planet-earth",
+    )
+
+
+@pytest.fixture
+def s3_browse_bucket(s3_resource: ServiceResource) -> Iterator[str]:
+    """Provision a bucket with a nested structure for browse tests."""
+    bucket_name = f"storage-service-browse-{uuid.uuid4().hex}"
+    s3_resource.create_bucket(
+        Bucket=bucket_name,
+        CreateBucketConfiguration={"LocationConstraint": "planet-earth"},
+    )
+
+    objects = [
+        "ts/file1.txt",
+        "ts/file2.txt",
+        "ts/dir1/file3.txt",
+        "ts/dir2/file4.txt",
+        "ts/dir2/file5.txt",
+        "ts/dir2/subdir1/file6.txt",
+        "ts/dir2/subdir2/file7.txt",
+        "ts/dir2/subdir2/subdir3/file8.txt",
+    ]
+    for key in objects:
+        s3_resource.Object(bucket_name, key).put(Body=b"content")
+
+    yield bucket_name
+
+    bucket = s3_resource.Bucket(bucket_name)
+    bucket.objects.all().delete()
+    bucket.delete()
+
+
+@pytest.mark.django_db
+def test_browsing_a_s3_transfer_source_location_loads_path_level_results_only(
+    admin_client: TestClient,
+    s3_browse_bucket: str,
+    s3_recorded_keys: list[str],
+    tmp_path: Path,
+) -> None:
+    client = Client(admin_client)
+    shared_directory = tmp_path / "var" / "archivematica" / "sharedDirectory"
+    shared_directory.mkdir(parents=True, exist_ok=True)
+
+    # Create pipeline.
+    resp = client.add_pipeline(
+        {
+            "uuid": str(uuid.uuid4()),
+            "description": "My pipeline",
+            "create_default_locations": False,
+            "shared_path": str(shared_directory),
+            "remote_name": "http://127.0.0.1:65534",
+            "api_username": "test",
+            "api_key": "test",
+        }
+    )
+    assert resp.status_code == 201
+    pipeline = json.loads(resp.content)
+
+    # Create space.
+    resp = client.add_space(
+        {
+            "access_protocol": Space.S3,
+            "path": "/",
+            "staging_path": "/var/archivematica/storage_service",
+            "endpoint_url": "http://minio:9000",
+            "access_key_id": "minio-user",
+            "secret_access_key": "minio-password",
+            "region": "planet-earth",
+            "bucket": s3_browse_bucket,
+        }
+    )
+    assert resp.status_code == 201
+    space = json.loads(resp.content)
+
+    # Create transfer source location.
+    resp = client.add_location(
+        {
+            "relative_path": "ts",
+            "purpose": Location.TRANSFER_SOURCE,
+            "space": space["resource_uri"],
+            "pipeline": [pipeline["resource_uri"]],
+        }
+    )
+    assert resp.status_code == 201
+    location = json.loads(resp.content)
+
+    resp = client.browse_location(
+        uuid.UUID(location["uuid"]), {"path": base64.b64encode(b"/ts/dir2").decode()}
+    )
+    assert resp.status_code == 200
+    browse_result = json.loads(resp.content)
+
+    entries = {base64.b64decode(entry).decode() for entry in browse_result["entries"]}
+    directories = {
+        base64.b64decode(directory).decode()
+        for directory in browse_result["directories"]
+    }
+    assert entries == {"file4.txt", "file5.txt", "subdir1", "subdir2"}
+    assert directories == {"subdir1", "subdir2"}
+
+    # Verify the keys the browse API endpoint iterated through.
+    assert set(s3_recorded_keys) == {
+        "ts/dir2/file4.txt",
+        "ts/dir2/file5.txt",
+    }
+
+
+@pytest.mark.django_db
+def test_browsing_an_rclone_transfer_source_location_works_with_limited_permissions(
+    admin_client: TestClient,
+    s3_browse_bucket: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RCLONE_CONFIG_MYS3_ACCESS_KEY_ID", "minio-user")
+    monkeypatch.setenv("RCLONE_CONFIG_MYS3_SECRET_ACCESS_KEY", "minio-password")
+
+    client = Client(admin_client)
+    shared_directory = tmp_path / "var" / "archivematica" / "sharedDirectory"
+    shared_directory.mkdir(parents=True, exist_ok=True)
+
+    # Create pipeline.
+    resp = client.add_pipeline(
+        {
+            "uuid": str(uuid.uuid4()),
+            "description": "My pipeline",
+            "create_default_locations": False,
+            "shared_path": str(shared_directory),
+            "remote_name": "http://127.0.0.1:65534",
+            "api_username": "test",
+            "api_key": "test",
+        }
+    )
+    assert resp.status_code == 201
+    pipeline = json.loads(resp.content)
+
+    # Create space.
+    resp = client.add_space(
+        {
+            "access_protocol": Space.RCLONE,
+            "path": "/",
+            "staging_path": "/var/archivematica/storage_service",
+            "remote_name": "mys3",
+            "container": s3_browse_bucket,
+        }
+    )
+    assert resp.status_code == 201
+    space = json.loads(resp.content)
+
+    # Create transfer source location.
+    resp = client.add_location(
+        {
+            "relative_path": "ts",
+            "purpose": Location.TRANSFER_SOURCE,
+            "space": space["resource_uri"],
+            "pipeline": [pipeline["resource_uri"]],
+        }
+    )
+    assert resp.status_code == 201
+    location = json.loads(resp.content)
+
+    resp = client.browse_location(
+        uuid.UUID(location["uuid"]), {"path": base64.b64encode(b"/ts/dir2").decode()}
+    )
+    assert resp.status_code == 200
+    browse_result = json.loads(resp.content)
+
+    entries = {base64.b64decode(entry).decode() for entry in browse_result["entries"]}
+    directories = {
+        base64.b64decode(directory).decode()
+        for directory in browse_result["directories"]
+    }
+    assert entries == {"file4.txt", "file5.txt", "subdir1", "subdir2"}
+    assert directories == {"subdir1", "subdir2"}
+
+    # The rest simulates the start of the Archivematica transfer process, where
+    # the pipeline requests the Storage Service to copy files from the transfer
+    # source location to the currently processing location directory.
+
+    # Create a local file system space.
+    fs_space_path = shared_directory / "tmp" / "local_fs"
+    fs_space_staging_path = shared_directory / "tmp" / "local_fs_staging_path"
+    fs_space_path.mkdir(parents=True)
+    fs_space_staging_path.mkdir(parents=True)
+    resp = client.add_space(
+        {
+            "access_protocol": Space.LOCAL_FILESYSTEM,
+            "path": str(fs_space_path),
+            "staging_path": str(fs_space_staging_path),
+        }
+    )
+    assert resp.status_code == 201
+    fs_space = json.loads(resp.content)
+
+    # Add a currently processing location.
+    resp = client.add_location(
+        {
+            "relative_path": "currentlyProcessing",
+            "purpose": Location.CURRENTLY_PROCESSING,
+            "space": fs_space["resource_uri"],
+            "pipeline": [pipeline["resource_uri"]],
+        }
+    )
+    assert resp.status_code == 201
+    fs_location = json.loads(resp.content)
+    fs_location_path = Path(fs_location["path"])
+    fs_location_path.mkdir(parents=True)
+
+    # Copy one file from the transfer source location to the currently
+    # processing location using the API.
+    source_file_name = "file1.txt"
+    transfer_name = "my-transfer"
+    transfer_dir = fs_location_path / transfer_name
+    transfer_dir.mkdir()
+    resp = client.set_location(
+        uuid.UUID(fs_location["uuid"]),
+        {
+            "origin_location": location["resource_uri"],
+            "pipeline": pipeline["resource_uri"],
+            "files": [{"source": source_file_name, "destination": transfer_name}],
+        },
+    )
+    assert resp.status_code == 200
+
+    # Browse the processing location and ensure the file was copied.
+    resp = client.browse_location(
+        uuid.UUID(fs_location["uuid"]),
+        {"path": base64.b64encode(transfer_name.encode()).decode()},
+    )
+    assert resp.status_code == 200
+    fs_browse_result = json.loads(resp.content)
+
+    entries = {
+        base64.b64decode(entry).decode() for entry in fs_browse_result["entries"]
+    }
+    directories = {
+        base64.b64decode(directory).decode()
+        for directory in fs_browse_result["directories"]
+    }
+    assert entries == {source_file_name}
+    assert directories == set()
+    # File content is set in the s3_browse_bucket fixture.
+    assert (transfer_dir / source_file_name).read_text() == "content"

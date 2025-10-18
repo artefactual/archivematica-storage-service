@@ -75,6 +75,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      minio-setup:
+        condition: service_completed_successfully
     links:
       - "minio"
       - "mysql"
@@ -90,6 +92,38 @@ services:
       MINIO_BROWSER: "off"
     expose:
       - "9000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/minio/health/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  minio-setup:
+    image: "minio/mc:RELEASE.2025-08-13T08-35-41Z"
+    entrypoint: []
+    command:
+      - "/bin/sh"
+      - "-c"
+      - |
+        set -e
+        until mc alias set minio http://minio:9000 minio minio123 >/dev/null 2>&1; do
+          sleep 1
+        done
+        #
+        # The resource name used in the statement of this policy file
+        # matches the bucket naming convention of the s3_browse_bucket fixture.
+        #
+        mc admin policy info minio ss-user >/dev/null 2>&1 || mc admin policy create minio ss-user /config/policies/user.json
+        if ! mc admin user info minio minio-user >/dev/null 2>&1; then
+          mc admin user add minio minio-user minio-password
+        fi
+        mc admin policy attach minio ss-user --user minio-user
+    depends_on:
+      minio:
+        condition: service_healthy
+    volumes:
+      - "./etc/minio:/config:ro"
 
   mysql:
     image: "percona/percona-server:8.0.43-34"
