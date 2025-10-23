@@ -553,53 +553,53 @@ class Package(models.Model):
             temp_aip.delete()
             return (success, failures, message)
 
-        origin_space = temp_aip.current_location.space
-        destination_space = self.current_location.space
+        storage_space = self.current_location.space
+        recovery_space = origin_location.space
 
-        # Copy corrupt files to storage service staging
+        # Copy corrupt files to recovery backup directory via recovery staging.
         source_path = os.path.join(
             self.current_location.relative_path, self.current_path
         )
-        destination_path = os.path.join(origin_location.relative_path, "backup")
+        backup_destination_path = os.path.join(origin_location.relative_path, "backup")
 
-        origin_space.move_to_storage_service(
+        storage_space.move_to_storage_service(
             source_path=source_path,
-            destination_path=destination_path,
-            destination_space=destination_space,
+            destination_path=backup_destination_path,
+            destination_space=recovery_space,
         )
-        origin_space.post_move_to_storage_service()
+        storage_space.post_move_to_storage_service()
 
-        # Copy corrupt files from staging to backup directory
-        destination_space.move_from_storage_service(
-            source_path=destination_path,
-            destination_path=destination_path,
+        recovery_space.move_from_storage_service(
+            source_path=backup_destination_path,
+            destination_path=backup_destination_path,
             package=self,
         )
-        destination_space.post_move_from_storage_service(
-            staging_path=None, destination_path=None
+        recovery_space.post_move_from_storage_service(
+            staging_path=None, destination_path=None, package=self
         )
 
-        # Copy recovery files to storage service staging
-        source_path = os.path.join(temp_aip.current_location.relative_path, origin_path)
-        destination_path = os.path.join(
+        # Copy recovery files to storage space via storage staging.
+        recovery_source_path = os.path.join(
+            temp_aip.current_location.relative_path, origin_path
+        )
+        storage_destination_path = os.path.join(
             self.current_location.relative_path, os.path.dirname(self.current_path), ""
         )
 
-        origin_space.move_to_storage_service(
-            source_path=source_path,
-            destination_path=destination_path,
-            destination_space=destination_space,
+        recovery_space.move_to_storage_service(
+            source_path=recovery_source_path,
+            destination_path=storage_destination_path,
+            destination_space=storage_space,
         )
-        origin_space.post_move_to_storage_service()
+        recovery_space.post_move_to_storage_service()
 
-        # Copy recovery files from staging to AIP store
-        destination_space.move_from_storage_service(
-            source_path=destination_path,
-            destination_path=destination_path,
+        storage_space.move_from_storage_service(
+            source_path=storage_destination_path,
+            destination_path=storage_destination_path,
             package=self,
         )
-        destination_space.post_move_from_storage_service(
-            staging_path=None, destination_path=None
+        storage_space.post_move_from_storage_service(
+            staging_path=None, destination_path=None, package=self
         )
 
         temp_aip.delete()
