@@ -16,6 +16,7 @@ import os
 import shutil
 import tarfile
 import uuid
+from collections.abc import Iterable
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Optional
@@ -26,6 +27,7 @@ from typing import Union
 import boto3
 import pytest
 from boto3.resources.base import ServiceResource
+from botocore.exceptions import ClientError
 from django.http import StreamingHttpResponse
 from django.test import Client as TestClient
 from django.urls import reverse
@@ -303,12 +305,21 @@ class StorageScenario:
             f"foobar-{self.PACKAGE_UUID}{''.join(pkg.suffixes) if compressed else ''}"
         )
         self.compressed = compressed
+        self._object_storage_bucket_name: Optional[str] = None
 
-    def init(self, admin_client: TestClient, working_directory_path: Path) -> None:
+    def init(
+        self,
+        admin_client: TestClient,
+        working_directory_path: Path,
+        *,
+        s3_bucket: Optional[str] = None,
+    ) -> None:
         self.client = Client(admin_client)
         self.shared_directory_path = (
             working_directory_path / "var" / "archivematica" / "sharedDirectory"
         )
+        if s3_bucket is not None:
+            self._object_storage_bucket_name = s3_bucket
         self.register_pipeline()
         self.register_aip_storage_location()
         if self.replication_protocol:
@@ -332,25 +343,23 @@ class StorageScenario:
     def _adjust_space_data(
         self, data: dict[str, Union[str, bool]]
     ) -> dict[str, Union[str, bool]]:
+        adjusted = data.copy()
         for attr in ["path", "staging_path"]:
-            if (
-                (value := data.get(attr) is not None)
-                and isinstance(value, str)
-                and value.startswith("/var/archivematica/sharedDirectory")
+            value = adjusted.get(attr)
+            if isinstance(value, str) and value.startswith(
+                "/var/archivematica/sharedDirectory"
             ):
-                data[attr] = value.replace(
+                adjusted[attr] = value.replace(
                     "/var/archivematica/sharedDirectory",
                     str(self.shared_directory_path),
                 )
-        return data
+        return adjusted
 
     def register_aip_storage_location(self) -> None:
         """Register AIP Storage location."""
 
         # Add space.
-        resp = self.client.add_space(
-            self._adjust_space_data(self.SPACES[self.storage_protocol])
-        )
+        resp = self.client.add_space(self._space_definition(self.storage_protocol))
         assert resp.status_code == 201
         space = json.loads(resp.content)
 
@@ -421,9 +430,7 @@ class StorageScenario:
         """Register AIP Storage replicator."""
 
         # 1. Add space.
-        resp = self.client.add_space(
-            self._adjust_space_data(self.SPACES[self.replication_protocol])
-        )
+        resp = self.client.add_space(self._space_definition(self.replication_protocol))
         assert resp.status_code == 201
         space = json.loads(resp.content)
 
@@ -471,6 +478,9 @@ class StorageScenario:
         assert self.aip_storage_location_attrs is not None
         as_location = self.aip_storage_location_attrs
 
+        aip_id = self.PACKAGE_UUID.hex
+        aip_id_chunks = [aip_id[i : i + 4] for i in range(0, len(aip_id), 4)]
+
         resp = self.client.add_file(
             self.PACKAGE_UUID,
             {
@@ -490,12 +500,7 @@ class StorageScenario:
         assert resp.status_code == 201
 
         aip = json.loads(resp.content)
-        aip_id = self.PACKAGE_UUID.hex
-        aip_path_parts = (
-            [as_location["path"]]
-            + [aip_id[i : i + 4] for i in range(0, len(aip_id), 4)]
-            + [self.pkg_name]
-        )
+        aip_path_parts = [as_location["path"], *aip_id_chunks, self.pkg_name]
         aip_path = Path(*aip_path_parts)
         assert aip["uuid"] == str(self.PACKAGE_UUID)
         assert aip["current_full_path"] == str(aip_path)
@@ -504,6 +509,26 @@ class StorageScenario:
             assert stored_size == get_size(self.pkg)
         else:
             assert get_size(aip_path) > 1
+
+    def _space_definition(self, protocol: str) -> dict[str, Union[str, bool]]:
+        data = self._adjust_space_data(self.SPACES[protocol])
+        bucket_key = self._object_storage_bucket_key(protocol)
+        if bucket_key:
+            bucket_name = self._object_storage_bucket_name
+            if not bucket_name:
+                raise RuntimeError(
+                    "Object storage spaces require the s3_browse_bucket fixture to be "
+                    "passed into StorageScenario.init()."
+                )
+            data[bucket_key] = bucket_name
+        return data
+
+    def _object_storage_bucket_key(self, protocol: str) -> str:
+        if protocol == Space.S3:
+            return "bucket"
+        if protocol == Space.RCLONE:
+            return "container"
+        return ""
 
     def assert_stored(self) -> None:
         if self.replication_protocol:
@@ -686,8 +711,13 @@ def test_main(
     storage_scenario: StorageScenario,
     admin_client: TestClient,
     working_directory_path: Path,
+    s3_browse_bucket: str,
 ) -> None:
-    storage_scenario.init(admin_client, working_directory_path)
+    storage_scenario.init(
+        admin_client,
+        working_directory_path,
+        s3_bucket=s3_browse_bucket,
+    )
     storage_scenario.store_aip()
     storage_scenario.assert_stored()
 
@@ -843,9 +873,14 @@ def test_aip_recovery(
     corrupt_package: bool,
     admin_client: TestClient,
     working_directory_path: Path,
+    s3_browse_bucket: str,
     tmp_path: Path,
 ) -> None:
-    scenario.init(admin_client, working_directory_path)
+    scenario.init(
+        admin_client,
+        working_directory_path,
+        s3_bucket=s3_browse_bucket,
+    )
     scenario.store_aip()
     scenario.assert_stored()
     if corrupt_package:
@@ -860,6 +895,7 @@ def test_aip_recovery_handles_recovery_copy_setup_error(
     startup: None,
     admin_client: TestClient,
     working_directory_path: Path,
+    s3_browse_bucket: str,
 ) -> None:
     # This represents an scenario where the user does not place the recovery
     # copy in the recovery location directory, creates the recovery request
@@ -867,7 +903,11 @@ def test_aip_recovery_handles_recovery_copy_setup_error(
     scenario = AIPRecoveryScenario(
         storage_protocol=Space.NFS, pkg=COMPRESSED_PACKAGE, compressed=True
     )
-    scenario.init(admin_client, working_directory_path)
+    scenario.init(
+        admin_client,
+        working_directory_path,
+        s3_bucket=s3_browse_bucket,
+    )
     scenario.store_aip()
     scenario.assert_stored()
     scenario.corrupt_package()
@@ -913,27 +953,46 @@ def s3_resource(s3_recorded_keys: list[str]) -> ServiceResource:
     )
 
 
-@pytest.fixture
-def s3_browse_bucket(s3_resource: ServiceResource) -> Iterator[str]:
-    """Provision a bucket with a nested structure for browse tests."""
-    bucket_name = f"storage-service-browse-{uuid.uuid4().hex}"
-    s3_resource.create_bucket(
-        Bucket=bucket_name,
-        CreateBucketConfiguration={"LocationConstraint": "planet-earth"},
-    )
+def _provision_s3_bucket(
+    s3_resource: ServiceResource,
+    *,
+    region: str,
+    name_prefix: str,
+    object_keys: Optional[Iterable[str]] = None,
+) -> str:
+    bucket_name = f"{name_prefix}{uuid.uuid4().hex}"
+    try:
+        if region.lower() == "us-east-1":
+            s3_resource.create_bucket(Bucket=bucket_name)
+        else:
+            s3_resource.create_bucket(
+                Bucket=bucket_name,
+                CreateBucketConfiguration={"LocationConstraint": region},
+            )
+    except ClientError as exc:
+        error_code = (exc.response.get("Error") or {}).get("Code")
+        if error_code not in {"BucketAlreadyOwnedByYou", "BucketAlreadyExists"}:
+            raise
 
-    objects = [
-        "ts/file1.txt",
-        "ts/file2.txt",
-        "ts/dir1/file3.txt",
-        "ts/dir2/file4.txt",
-        "ts/dir2/file5.txt",
-        "ts/dir2/subdir1/file6.txt",
-        "ts/dir2/subdir2/file7.txt",
-        "ts/dir2/subdir2/subdir3/file8.txt",
-    ]
-    for key in objects:
-        s3_resource.Object(bucket_name, key).put(Body=b"content")
+    if object_keys:
+        for key in object_keys:
+            s3_resource.Object(bucket_name, key).put(Body=b"content")
+
+    return bucket_name
+
+
+@pytest.fixture
+def s3_browse_bucket(
+    request: pytest.FixtureRequest, s3_resource: ServiceResource
+) -> Iterator[str]:
+    """Provision a bucket backed by the MinIO test service."""
+    object_keys = getattr(request, "param", None)
+    bucket_name = _provision_s3_bucket(
+        s3_resource,
+        region="planet-earth",
+        name_prefix="storage-service-browse-",
+        object_keys=object_keys,
+    )
 
     yield bucket_name
 
@@ -942,7 +1001,24 @@ def s3_browse_bucket(s3_resource: ServiceResource) -> Iterator[str]:
     bucket.delete()
 
 
+_BROWSE_BUCKET_OBJECTS = [
+    "ts/file1.txt",
+    "ts/file2.txt",
+    "ts/dir1/file3.txt",
+    "ts/dir2/file4.txt",
+    "ts/dir2/file5.txt",
+    "ts/dir2/subdir1/file6.txt",
+    "ts/dir2/subdir2/file7.txt",
+    "ts/dir2/subdir2/subdir3/file8.txt",
+]
+
+
 @pytest.mark.django_db
+@pytest.mark.parametrize(
+    "s3_browse_bucket",
+    [_BROWSE_BUCKET_OBJECTS],
+    indirect=True,
+)
 def test_browsing_a_s3_transfer_source_location_loads_path_level_results_only(
     admin_client: TestClient,
     s3_browse_bucket: str,
@@ -1018,6 +1094,11 @@ def test_browsing_a_s3_transfer_source_location_loads_path_level_results_only(
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize(
+    "s3_browse_bucket",
+    [_BROWSE_BUCKET_OBJECTS],
+    indirect=True,
+)
 def test_browsing_an_rclone_transfer_source_location_works_with_limited_permissions(
     admin_client: TestClient,
     s3_browse_bucket: str,
@@ -1225,10 +1306,7 @@ class AIPDeletionScenario(StorageScenario):
 
         if self.storage_protocol in self.OBJECT_STORAGE_PROTOCOLS:
             assert s3_resource is not None
-            if self.storage_protocol == Space.S3:
-                bucket_name = self.SPACES[self.storage_protocol].get("bucket")
-            else:
-                bucket_name = self.SPACES[self.storage_protocol].get("container")
+            bucket_name = self._object_storage_bucket_name
             assert bucket_name
             prefix = package_full_path.lstrip(os.sep)
             bucket = s3_resource.Bucket(bucket_name)
@@ -1288,9 +1366,14 @@ def test_aip_deletion(
     scenario: AIPDeletionScenario,
     admin_client: TestClient,
     working_directory_path: Path,
+    s3_browse_bucket: str,
     s3_resource: ServiceResource,
 ) -> None:
-    scenario.init(admin_client, working_directory_path)
+    scenario.init(
+        admin_client,
+        working_directory_path,
+        s3_bucket=s3_browse_bucket,
+    )
     scenario.store_aip()
     scenario.assert_stored()
     package_full_path = scenario.delete_aip()
