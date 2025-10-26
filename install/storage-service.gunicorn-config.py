@@ -64,9 +64,9 @@ if os.environ.get("SS_PROMETHEUS_ENABLED") and workers != "1":
     def child_exit(server: Arbiter, worker: Worker) -> None:
         # Lazy import to avoid checking for the existance of
         # prometheus_multiproc_dir immediately
-        from prometheus_client import multiprocess  # noqa
+        from prometheus_client import multiprocess
 
-        multiprocess.mark_process_dead(worker.pid)
+        multiprocess.mark_process_dead(worker.pid)  # type: ignore[no-untyped-call]
 
     def on_exit(server: Arbiter) -> None:
         shutil.rmtree(prometheus_multiproc_dir)

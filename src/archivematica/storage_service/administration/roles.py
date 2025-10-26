@@ -5,7 +5,11 @@ An administrator uses the `is_superuser` flag. Managers and reviewers are
 implemented as Django groups.
 """
 
+from typing import Protocol
+from typing import cast
+
 from django.conf import settings
+from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.models import Group
 from django.db import transaction
 from django.utils.translation import gettext as _
@@ -32,7 +36,7 @@ USER_ROLES = [
 ]
 
 
-def get_user_role(user):
+def get_user_role(user: AbstractUser) -> str:
     """Retrieve the user role codename of a User."""
     if user.is_superuser:
         return USER_ROLE_ADMIN
@@ -43,7 +47,7 @@ def get_user_role(user):
     return USER_ROLE_READER
 
 
-def is_admin(user):
+def is_admin(user: AbstractUser) -> bool:
     """Return whether a user has the administrator role.
 
     Equivalent to a ``is_superuser`` look-up, but it is named after the user
@@ -52,13 +56,13 @@ def is_admin(user):
     return get_user_role(user) == USER_ROLE_ADMIN
 
 
-def get_user_role_label(user):
+def get_user_role_label(user: AbstractUser) -> str:
     """Retrieve the user role label of a User."""
     return dict(USER_ROLES)[get_user_role(user)]
 
 
 @transaction.atomic
-def set_user_role(user, role: str):
+def set_user_role(user: AbstractUser, role: str) -> None:
     """Assign a new role to a User given the role codename."""
     # Only users with the admin role are Django superusers.
     user.is_superuser = role == USER_ROLE_ADMIN
@@ -79,7 +83,7 @@ def set_user_role(user, role: str):
         user.groups.clear()
 
 
-def promoted_role(role: str):
+def promoted_role(role: str) -> str:
     """Return a new role that replaces a reader.
 
     This is used to promote a reader to a role with more permissions, based on
@@ -87,7 +91,21 @@ def promoted_role(role: str):
     """
     if role != USER_ROLE_READER:
         return role
-    suggested = settings.DEFAULT_USER_ROLE
+    suggested = str(settings.DEFAULT_USER_ROLE)
     if dict(USER_ROLES).get(suggested):
         return suggested
     return role
+
+
+# AdministrationAppConfig.ready() dynamically patches the User model to add
+# role-based behavior. This ensures that during tests, type checks correctly
+# recognize the patched model as providing role functionality.
+class RoleUser(Protocol):
+    def get_role(self) -> str: ...
+    def get_role_label(self) -> str: ...
+    def set_role(self, role: str) -> None: ...
+    def is_admin(self) -> bool: ...
+
+
+def role_user(user: AbstractUser) -> RoleUser:
+    return cast(RoleUser, user)

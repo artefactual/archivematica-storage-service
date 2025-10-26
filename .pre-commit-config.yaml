@@ -43,9 +43,23 @@ repos:
   hooks:
   - id: mypy
     additional_dependencies:
-    - types-requests
-    - types-python-dateutil
+    # Most of these dependencies are necessary because django-stubs initializes
+    # Django's runtime to extract information about the models.
+    - agentarchives
+    - bagit
+    - boto3
+    - django-auth-ldap
+    - django-cas-ng
+    - django-stubs-ext
+    - django-stubs[compatible-mypy]
+    - django-tastypie
+    - jsonfield
+    - metsrw
+    - prometheus-client
     - pytest
+    - python-gnupg
+    - python-swiftclient
+    - sword2 @ git+https://github.com/artefactual-labs/python-client-sword2.git@619ee44467dcdb2ab75fab16864ea2e4ded7ffe4
 - repo: https://github.com/tcort/markdown-link-check
   rev: v3.14.1
   hooks:

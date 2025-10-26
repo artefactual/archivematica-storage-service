@@ -14,11 +14,11 @@ from archivematica.storage_service.administration import roles
 
 
 def as_reader(user: User) -> None:
-    user.set_role(roles.USER_ROLE_READER)
+    roles.role_user(user).set_role(roles.USER_ROLE_READER)
 
 
 def as_manager(user: User) -> None:
-    user.set_role(roles.USER_ROLE_MANAGER)
+    roles.role_user(user).set_role(roles.USER_ROLE_MANAGER)
 
 
 @pytest.mark.django_db
@@ -114,7 +114,7 @@ def test_edit_user_promote_as_manager(
 
     assert list(resp.context["messages"])[0].message == "User information saved."
     user.refresh_from_db()
-    assert user.get_role() == roles.USER_ROLE_MANAGER
+    assert roles.role_user(user).get_role() == roles.USER_ROLE_MANAGER
 
 
 @pytest.mark.django_db
@@ -140,7 +140,7 @@ def test_edit_user_promotion_requires_admin(
     assert resp.status_code == 200
 
     user.refresh_from_db()
-    assert user.get_role() == roles.USER_ROLE_READER
+    assert roles.role_user(user).get_role() == roles.USER_ROLE_READER
 
 
 @pytest.fixture

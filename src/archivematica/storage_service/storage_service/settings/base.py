@@ -7,6 +7,7 @@ from pathlib import Path
 from sys import path
 from typing import Any
 
+import django_stubs_ext
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext_lazy as _
 
@@ -19,6 +20,8 @@ try:
     from django_auth_ldap import config as ldap_config
 except ImportError:
     ldap, ldap_config = None, None
+
+django_stubs_ext.monkeypatch()
 
 
 def _get_settings_from_file(path):
