@@ -18,12 +18,13 @@ import tarfile
 import uuid
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Protocol
 from typing import Union
 
 import boto3
 import pytest
 from boto3.resources.base import ServiceResource
-from django.http import HttpResponse
+from django.http import StreamingHttpResponse
 from django.test import Client as TestClient
 from django.urls import reverse
 from metsrw.plugins import premisrw
@@ -69,6 +70,11 @@ COMPRESSED_PACKAGE = (
 UNCOMPRESSED_PACKAGE = (
     FIXTURES_DIR / "20200513060703-828c44bb-e631-4137-8638-bda4434218dc"
 )
+
+
+class HttpResponse(Protocol):
+    status_code: int
+    content: bytes
 
 
 class Client:
@@ -740,6 +746,7 @@ class AIPRecoveryScenario(StorageScenario):
 
         resp = self.client.download_file(self.PACKAGE_UUID)
 
+        assert isinstance(resp, StreamingHttpResponse)
         download_path.write_bytes(b"".join(resp.streaming_content))
 
         # Compare the downloaded package against the original fixtures.

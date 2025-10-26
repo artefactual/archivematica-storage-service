@@ -22,9 +22,10 @@ dependencies = [
   "boto3",
   "brotli",
   "Django>=4.2,<5",
-  "django-csp",
-  "django-tastypie",
   "dj-database-url",
+  "django-csp",
+  "django-stubs-ext",
+  "django-tastypie",
   "gevent",
   "gunicorn",
   "jsonfield",
@@ -52,6 +53,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "coverage[toml]",
+  "django-stubs[compatible-mypy]",
+  "mypy",
   "pip-tools",
   "playwright",
   "pytest-cov",
@@ -126,26 +129,43 @@ force-single-line = true
 [tool.mypy]
 strict = true
 explicit_package_bases = true
+mypy_path = ["src"]
+plugins = ["mypy_django_plugin.main"]
 
 [[tool.mypy.overrides]]
 module = [
-    "src.archivematica.storage_service.administration.*",
-    "src.archivematica.storage_service.common.*",
-    "src.archivematica.storage_service.locations.*",
-    "src.archivematica.storage_service.storage_service.*",
+    "archivematica.storage_service.administration.*",
+    "archivematica.storage_service.common.*",
+    "archivematica.storage_service.locations.*",
+    "archivematica.storage_service.storage_service.*",
     "tests.*",
 ]
 ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = [
-    "src.archivematica.storage_service.common.helpers",
+    "archivematica.storage_service.administration.roles",
+    "archivematica.storage_service.common.helpers",
     "tests.administration.test_users",
     "tests.integration.*",
     "tests.storage_service.test_helpers",
     "tests.storage_service.test_oidc",
 ]
 ignore_errors = false
+
+[[tool.mypy.overrides]]
+module = [
+    "boto3.*",
+    "gunicorn.*",
+    "metsrw.*",
+    "playwright.*",
+    "prometheus_client.*",
+    "tastypie.*",
+]
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "archivematica.storage_service.storage_service.settings.test"
 
 [tool.tox]
 legacy_tox_ini = """
@@ -154,6 +174,7 @@ legacy_tox_ini = """
     skip_missing_interpreters = true
 
     [testenv:linting]
+    skip_install = true
     basepython = python3
     deps = pre-commit
     commands = pre-commit run --all-files --show-diff-on-failure

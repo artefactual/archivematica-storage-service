@@ -1,6 +1,5 @@
 import codecs
 import copy
-import distutils.dir_util
 import importlib.resources
 import json
 import logging
@@ -3119,7 +3118,7 @@ def _replace_old_metdata_with_reingested(rein_aip_internal_path, old_aip_interna
         internal_metadata_dir,
     )
     if os.path.isdir(internal_metadata_dir):
-        distutils.dir_util.copy_tree(internal_metadata_dir, this_metadata_dir)
+        shutil.copytree(internal_metadata_dir, this_metadata_dir, dirs_exist_ok=True)
 
 
 def _find_compression_event(events):

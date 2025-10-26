@@ -13,8 +13,9 @@ from archivematica.storage_service.administration import roles
 # http://onecreativeblog.com/post/59051248/django-login-required-middleware
 
 EXEMPT_URLS = [compile(settings.LOGIN_URL.lstrip("/"))]
-if hasattr(settings, "LOGIN_EXEMPT_URLS"):
-    EXEMPT_URLS += [compile(expr) for expr in settings.LOGIN_EXEMPT_URLS]
+LOGIN_EXEMPT_URLS = getattr(settings, "LOGIN_EXEMPT_URLS", None)
+if LOGIN_EXEMPT_URLS:
+    EXEMPT_URLS += [compile(expr) for expr in LOGIN_EXEMPT_URLS]
 
 
 class AuditLogMiddleware:

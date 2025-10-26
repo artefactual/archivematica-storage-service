@@ -39,13 +39,14 @@ def test_create_user_set_roles_from_default_role(
     user = backend.create_user(
         {"email": "test@example.com", "first_name": "Test", "last_name": "User"}
     )
+    assert user is not None
 
     user.refresh_from_db()
     assert user.first_name == "Test"
     assert user.last_name == "User"
     assert user.email == "test@example.com"
     assert user.username == "test@example.com"
-    assert user.get_role() == roles.USER_ROLE_READER
+    assert roles.role_user(user).get_role() == roles.USER_ROLE_READER
 
 
 @pytest.mark.django_db
@@ -69,13 +70,14 @@ def test_create_user_set_role_from_claim(
             "realm_access": {"roles": ["manager"]},
         }
     )
+    assert user is not None
 
     user.refresh_from_db()
     assert user.first_name == "Test"
     assert user.last_name == "User"
     assert user.email == "test@example.com"
     assert user.username == "test@example.com"
-    assert user.get_role() == roles.USER_ROLE_MANAGER
+    assert roles.role_user(user).get_role() == roles.USER_ROLE_MANAGER
 
 
 @pytest.mark.django_db
@@ -105,13 +107,14 @@ def test_create_user_role_from_claims(
             "realm_access": {"roles": ["admin", "editor"]},
         }
     )
+    assert user is not None
 
     user.refresh_from_db()
     assert user.first_name == "Test"
     assert user.last_name == "User"
     assert user.email == "test@example.com"
     assert user.username == "test@example.com"
-    assert user.get_role() == roles.USER_ROLE_ADMIN
+    assert roles.role_user(user).get_role() == roles.USER_ROLE_ADMIN
 
 
 @pytest.mark.django_db
@@ -141,13 +144,14 @@ def test_create_user_role_from_claims_reverese_token_role_order(
             "realm_access": {"roles": ["editor", "admin"]},
         }
     )
+    assert user is not None
 
     user.refresh_from_db()
     assert user.first_name == "Test"
     assert user.last_name == "User"
     assert user.email == "test@example.com"
     assert user.username == "test@example.com"
-    assert user.get_role() == roles.USER_ROLE_ADMIN
+    assert roles.role_user(user).get_role() == roles.USER_ROLE_ADMIN
 
 
 @pytest.mark.django_db
@@ -171,13 +175,14 @@ def test_create_user_role_from_claims_alt_path(
             "custom_claims": {"user_roles": ["admin"]},
         }
     )
+    assert user is not None
 
     user.refresh_from_db()
     assert user.first_name == "Test"
     assert user.last_name == "User"
     assert user.email == "test@example.com"
     assert user.username == "test@example.com"
-    assert user.get_role() == roles.USER_ROLE_ADMIN
+    assert roles.role_user(user).get_role() == roles.USER_ROLE_ADMIN
 
 
 @pytest.mark.django_db
@@ -201,13 +206,14 @@ def test_create_user_role_from_claims_simple_role(
             "role": "admin",
         }
     )
+    assert user is not None
 
     user.refresh_from_db()
     assert user.first_name == "Test"
     assert user.last_name == "User"
     assert user.email == "test@example.com"
     assert user.username == "test@example.com"
-    assert user.get_role() == roles.USER_ROLE_ADMIN
+    assert roles.role_user(user).get_role() == roles.USER_ROLE_ADMIN
 
 
 @pytest.mark.django_db
@@ -232,13 +238,14 @@ def test_create_user_set_admin_from_alternate_token_value(
             "realm_access": {"roles": ["test"]},
         }
     )
+    assert user is not None
 
     user.refresh_from_db()
     assert user.first_name == "Test"
     assert user.last_name == "User"
     assert user.email == "test@example.com"
     assert user.username == "test@example.com"
-    assert user.get_role() == roles.USER_ROLE_ADMIN
+    assert roles.role_user(user).get_role() == roles.USER_ROLE_ADMIN
 
 
 @pytest.mark.django_db
@@ -275,9 +282,10 @@ def test_create_demoted_user(settings: pytest_django.fixtures.SettingsWrapper) -
     user = backend.create_user(
         {"email": "test@example.com", "first_name": "Test", "last_name": "User"}
     )
+    assert user is not None
 
     user.refresh_from_db()
-    assert user.get_role() == roles.USER_ROLE_REVIEWER
+    assert roles.role_user(user).get_role() == roles.USER_ROLE_REVIEWER
 
 
 @pytest.mark.django_db
@@ -317,7 +325,7 @@ def test_update_user_role_from_claims(
         first_name="Foo", last_name="Bar", username="foobar", email="foobar@example.com"
     )
     # User has been given the DEFAULT_USER_ROLE on creation.
-    assert user.get_role() == roles.USER_ROLE_READER
+    assert roles.role_user(user).get_role() == roles.USER_ROLE_READER
     backend = CustomOIDCBackend()
 
     # Promote the role in the DEFAULT_USER_ROLE setting.
@@ -335,4 +343,4 @@ def test_update_user_role_from_claims(
 
     user.refresh_from_db()
     # User has been promoted to the new role on update.
-    assert user.get_role() == roles.USER_ROLE_ADMIN
+    assert roles.role_user(user).get_role() == roles.USER_ROLE_ADMIN
