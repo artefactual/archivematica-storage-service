@@ -15,6 +15,7 @@ from django.urls import reverse
 
 from archivematica.storage_service.administration import roles
 from archivematica.storage_service.locations import models
+from archivematica.storage_service.locations import package_request
 from archivematica.storage_service.locations.api.sword.views import (
     _parse_name_and_content_urls_from_mets_file,
 )
@@ -1261,7 +1262,7 @@ def test_move_request_fails_if_package_is_in_unexpected_state(
     )
 
     assert response.status_code == 400
-    assert json.loads(response.content.decode()) == {
+    assert json.loads(response.content) == {
         "error": True,
         "message": f"The file must be in an {models.Package.UPLOADED} state to be moved. Current state: {package.status}",
     }
@@ -1300,7 +1301,7 @@ def test_move_request_fails_if_target_location_does_not_exist(
     )
 
     assert response.status_code == 400
-    assert json.loads(response.content.decode()) == {
+    assert json.loads(response.content) == {
         "error": True,
         "message": f"Location UUID {location_uuid} failed to return a location",
     }
@@ -1319,7 +1320,7 @@ def test_move_request_fails_if_target_location_is_origin_location(
     )
 
     assert response.status_code == 400
-    assert json.loads(response.content.decode()) == {
+    assert json.loads(response.content) == {
         "error": True,
         "message": "New location must be different to the current location",
     }
@@ -1343,7 +1344,7 @@ def test_move_request_fails_if_target_location_purpose_does_not_match(
     )
 
     assert response.status_code == 400
-    assert json.loads(response.content.decode()) == {
+    assert json.loads(response.content) == {
         "error": True,
         "message": f"New location must have the same purpose as the current location - {package.current_location.purpose}",
     }
@@ -1366,7 +1367,7 @@ def test_move_request_fails_if_updating_package_status_fails(
     )
 
     assert response.status_code == 400
-    assert json.loads(response.content.decode()) == {
+    assert json.loads(response.content) == {
         "error": True,
         "message": f"The package must be in an {models.Package.UPLOADED} state to be moved. Current state: {package.status}",
     }
@@ -1400,3 +1401,410 @@ def test_move_request_returns_asyncronous_task_url_in_response_headers(
         "api_dispatch_detail",
         kwargs={"api_name": "v2", "resource_name": "async", "id": task_id},
     )
+
+
+@pytest.mark.django_db
+def test_review_aip_deletion_requires_permission(
+    client: Client, django_user_model: type[User], package: models.Package
+) -> None:
+    user = django_user_model.objects.create_user(
+        username="limited",
+        password="test-password",
+        email="limited@example.com",
+    )
+    client.force_login(user)
+    pipeline = models.Pipeline.objects.create(description="Pipeline")
+    event = models.Event.objects.create(
+        package=package,
+        event_type=models.Event.DELETE,
+        event_reason="Deletion requested",
+        pipeline=pipeline,
+        user_id=1,
+        user_email="requester@example.com",
+        status=models.Event.SUBMITTED,
+        store_data=package.status,
+    )
+    url = reverse(
+        "review_aip_deletion_request",
+        kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+    )
+    data = {
+        "decision": package_request.PackageRequestDecision.APPROVE.value,
+        "reason": "ok",
+        "event_id": event.id,
+    }
+
+    resp = client.post(url, data=json.dumps(data), content_type="application/json")
+    assert resp.status_code == 403
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("decision", "reason", "expected_status", "expected_message", "expect_delete_call"),
+    [
+        (
+            package_request.PackageRequestDecision.APPROVE.value,
+            "Approved for deletion",
+            models.Event.APPROVED,
+            "Request approved: Package deleted successfully.",
+            True,
+        ),
+        (
+            package_request.PackageRequestDecision.REJECT.value,
+            "Not this time",
+            models.Event.REJECTED,
+            "Request rejected, package still stored.",
+            False,
+        ),
+    ],
+    ids=["approve decision removes package", "reject decision leaves package stored"],
+)
+def test_review_aip_deletion_request(
+    admin_client: Client,
+    package: models.Package,
+    decision: str,
+    reason: str,
+    expected_status: str,
+    expected_message: str,
+    expect_delete_call: bool,
+) -> None:
+    pipeline = models.Pipeline.objects.create(description="Pipeline")
+    original_package_status = package.status
+    event = models.Event.objects.create(
+        package=package,
+        event_type=models.Event.DELETE,
+        event_reason="Deletion requested",
+        pipeline=pipeline,
+        user_id=1,
+        user_email="requester@example.com",
+        status=models.Event.SUBMITTED,
+        store_data=original_package_status,
+    )
+    package.status = models.Package.DEL_REQ
+    package.save()
+    url = reverse(
+        "review_aip_deletion_request",
+        kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+    )
+
+    with mock.patch.object(
+        models.Package, "delete_from_storage", return_value=(True, None)
+    ) as delete_from_storage:
+        resp = admin_client.post(
+            url,
+            data=json.dumps(
+                {"decision": decision, "reason": reason, "event_id": event.id}
+            ),
+            content_type="application/json",
+        )
+        assert resp.status_code == 200
+        assert json.loads(resp.content) == {"message": expected_message}
+
+        if expect_delete_call:
+            delete_from_storage.assert_called_once()
+        else:
+            delete_from_storage.assert_not_called()
+
+        event.refresh_from_db()
+        package.refresh_from_db()
+        assert event.status == expected_status
+        assert event.status_reason == reason
+
+        if expect_delete_call:
+            assert package.status == models.Package.DELETED
+        else:
+            assert package.status == original_package_status
+
+
+@pytest.mark.django_db
+def test_review_aip_deletion_request_reports_success_with_warning(
+    admin_client: Client, package: models.Package
+) -> None:
+    pipeline = models.Pipeline.objects.create(description="Pipeline")
+    original_package_status = package.status
+    event = models.Event.objects.create(
+        package=package,
+        event_type=models.Event.DELETE,
+        event_reason="Deletion requested",
+        pipeline=pipeline,
+        user_id=1,
+        user_email="requester@example.com",
+        status=models.Event.SUBMITTED,
+        store_data=original_package_status,
+    )
+    package.status = models.Package.DEL_REQ
+    package.save()
+    url = reverse(
+        "review_aip_deletion_request",
+        kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+    )
+    data = {
+        "decision": package_request.PackageRequestDecision.APPROVE.value,
+        "reason": "Proceed with deletion",
+        "event_id": event.id,
+    }
+
+    with mock.patch.object(
+        models.Package, "delete_from_storage", return_value=(True, "LOCKSS warning")
+    ) as delete_from_storage:
+        resp = admin_client.post(
+            url, data=json.dumps(data), content_type="application/json"
+        )
+
+    assert resp.status_code == 200
+    assert json.loads(resp.content) == {
+        "message": "Request approved: Package deleted successfully.",
+        "detail": "LOCKSS warning",
+    }
+
+    delete_from_storage.assert_called_once()
+
+    event.refresh_from_db()
+    package.refresh_from_db()
+    assert event.status == models.Event.APPROVED
+    assert event.status_reason == data["reason"]
+    assert package.status == models.Package.DELETED
+
+
+@pytest.mark.django_db
+def test_review_aip_deletion_request_reports_failure(
+    admin_client: Client, package: models.Package
+) -> None:
+    pipeline = models.Pipeline.objects.create(description="Pipeline")
+    original_package_status = package.status
+    event = models.Event.objects.create(
+        package=package,
+        event_type=models.Event.DELETE,
+        event_reason="Deletion requested",
+        pipeline=pipeline,
+        user_id=1,
+        user_email="requester@example.com",
+        status=models.Event.SUBMITTED,
+        store_data=original_package_status,
+    )
+    package.status = models.Package.DEL_REQ
+    package.save()
+    url = reverse(
+        "review_aip_deletion_request",
+        kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+    )
+    data = {
+        "decision": package_request.PackageRequestDecision.APPROVE.value,
+        "reason": "Understood. Deleting!",
+        "event_id": event.id,
+    }
+
+    with mock.patch.object(
+        models.Package, "delete_from_storage", return_value=(False, "Disk error")
+    ) as delete_from_storage:
+        resp = admin_client.post(
+            url, data=json.dumps(data), content_type="application/json"
+        )
+        assert resp.status_code == 200
+        assert json.loads(resp.content) == {
+            "error_message": "Package was not deleted from disk correctly: Disk error. Please contact an administrator or see logs for details."
+        }
+
+        delete_from_storage.assert_called_once()
+
+        # Event and package statuses remain unchanged because of the error.
+        # The reason and administrator have been recorded.
+        event.refresh_from_db()
+        package.refresh_from_db()
+        assert event.status == models.Event.SUBMITTED
+        assert package.status == models.Package.DEL_REQ
+        assert event.status_reason == data["reason"]
+        assert event.admin_id is not None
+
+
+@pytest.mark.django_db
+def test_review_aip_deletion_request_allows_retry_after_failure(
+    admin_client: Client, package: models.Package
+) -> None:
+    pipeline = models.Pipeline.objects.create(description="Pipeline")
+    original_package_status = package.status
+    event = models.Event.objects.create(
+        package=package,
+        event_type=models.Event.DELETE,
+        event_reason="Deletion requested",
+        pipeline=pipeline,
+        user_id=1,
+        user_email="requester@example.com",
+        status=models.Event.SUBMITTED,
+        store_data=original_package_status,
+    )
+    package.status = models.Package.DEL_REQ
+    package.save()
+    url = reverse(
+        "review_aip_deletion_request",
+        kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+    )
+    data = {
+        "decision": package_request.PackageRequestDecision.APPROVE.value,
+        "reason": "Sure! Deleting...",
+        "event_id": event.id,
+    }
+
+    with mock.patch.object(
+        models.Package,
+        "delete_from_storage",
+        side_effect=[(False, "Disk error"), (True, None)],
+    ) as delete_from_storage:
+        # This is the first attempt at approving the deletion request.
+        resp = admin_client.post(
+            url, data=json.dumps(data), content_type="application/json"
+        )
+        assert resp.status_code == 200
+        assert json.loads(resp.content) == {
+            "error_message": "Package was not deleted from disk correctly: Disk error. Please contact an administrator or see logs for details."
+        }
+
+        # Event and package statuses remain unchanged because of the error.
+        # The reason and administrator have been recorded.
+        event.refresh_from_db()
+        package.refresh_from_db()
+        assert event.status == models.Event.SUBMITTED
+        assert package.status == models.Package.DEL_REQ
+        assert event.status_reason == data["reason"]
+        assert event.admin_id is not None
+
+        # Try the approval again.
+        second_response = admin_client.post(
+            url,
+            data=json.dumps(data),
+            content_type="application/json",
+        )
+        assert second_response.status_code == 200
+        assert json.loads(second_response.content) == {
+            "message": "Request approved: Package deleted successfully.",
+        }
+
+        # The event and package statuses have been updated.
+        event.refresh_from_db()
+        package.refresh_from_db()
+        assert event.status == models.Event.APPROVED
+        assert event.status_reason == data["reason"]
+        assert package.status == models.Package.DELETED
+
+        # Ensure that the execution logic was called twice.
+        delete_from_storage.assert_called()
+        assert delete_from_storage.call_count == 2
+
+
+@pytest.mark.django_db
+def test_review_aip_deletion_request_retry_success_includes_warning(
+    admin_client: Client, package: models.Package
+) -> None:
+    pipeline = models.Pipeline.objects.create(description="Pipeline")
+    original_package_status = package.status
+    event = models.Event.objects.create(
+        package=package,
+        event_type=models.Event.DELETE,
+        event_reason="Deletion requested",
+        pipeline=pipeline,
+        user_id=1,
+        user_email="requester@example.com",
+        status=models.Event.SUBMITTED,
+        store_data=original_package_status,
+    )
+    package.status = models.Package.DEL_REQ
+    package.save()
+    url = reverse(
+        "review_aip_deletion_request",
+        kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+    )
+    data = {
+        "decision": package_request.PackageRequestDecision.APPROVE.value,
+        "reason": "Retry deletion",
+        "event_id": event.id,
+    }
+
+    with mock.patch.object(
+        models.Package,
+        "delete_from_storage",
+        side_effect=[(False, "Disk error"), (True, "LOCKSS warning")],
+    ) as delete_from_storage:
+        # The first attempt fails.
+        resp = admin_client.post(
+            url, data=json.dumps(data), content_type="application/json"
+        )
+        assert resp.status_code == 200
+        assert json.loads(resp.content) == {
+            "error_message": "Package was not deleted from disk correctly: Disk error. Please contact an administrator or see logs for details."
+        }
+
+        event.refresh_from_db()
+        package.refresh_from_db()
+        assert event.status == models.Event.SUBMITTED
+        assert package.status == models.Package.DEL_REQ
+        assert event.status_reason == data["reason"]
+
+        # The retry succeeds and returns the warning detail.
+        second_resp = admin_client.post(
+            url, data=json.dumps(data), content_type="application/json"
+        )
+        assert second_resp.status_code == 200
+        assert json.loads(second_resp.content) == {
+            "message": "Request approved: Package deleted successfully.",
+            "detail": "LOCKSS warning",
+        }
+
+        delete_from_storage.assert_called()
+        assert delete_from_storage.call_count == 2
+
+        event.refresh_from_db()
+        package.refresh_from_db()
+        assert event.status == models.Event.APPROVED
+        assert event.status_reason == data["reason"]
+        assert package.status == models.Package.DELETED
+
+
+@pytest.mark.django_db
+def test_review_aip_deletion_request_cannot_be_reviewed_twice(
+    admin_client: Client, package: models.Package
+) -> None:
+    pipeline = models.Pipeline.objects.create(description="Pipeline")
+    original_package_status = package.status
+    event = models.Event.objects.create(
+        package=package,
+        event_type=models.Event.DELETE,
+        event_reason="Deletion requested",
+        pipeline=pipeline,
+        user_id=1,
+        user_email="requester@example.com",
+        status=models.Event.SUBMITTED,
+        store_data=original_package_status,
+    )
+    url = reverse(
+        "review_aip_deletion_request",
+        kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
+    )
+    data = {
+        "decision": package_request.PackageRequestDecision.REJECT.value,
+        "reason": "We cannot delete it. Sorry",
+        "event_id": event.id,
+    }
+
+    # The deletion request is rejected.
+    resp = admin_client.post(
+        url, data=json.dumps(data), content_type="application/json"
+    )
+    assert resp.status_code == 200
+    assert json.loads(resp.content) == {
+        "message": "Request rejected, package still stored."
+    }
+
+    # The event status has been updated, but the package status is unchanged.
+    event.refresh_from_db()
+    package.refresh_from_db()
+    assert event.status == models.Event.REJECTED
+    assert package.status == original_package_status
+
+    # Attempt to reject the request again.
+    resp = admin_client.post(
+        url, data=json.dumps(data), content_type="application/json"
+    )
+    assert resp.status_code == 400
+    assert json.loads(resp.content) == {
+        "error_message": "This request is not pending review."
+    }

@@ -34,6 +34,7 @@ from django.urls import reverse
 from metsrw.plugins import premisrw
 
 from archivematica.storage_service.common import utils
+from archivematica.storage_service.locations import package_request
 from archivematica.storage_service.locations.models import Event
 from archivematica.storage_service.locations.models import Location
 from archivematica.storage_service.locations.models import Package
@@ -183,12 +184,13 @@ class Client:
             content_type="application/json",
         )
 
-    def approve_aip_deletion_request(self, event_id: int) -> HttpResponse:
-        # Not possible via API.
+    def review_aip_deletion(
+        self, file_id: uuid.UUID, data: dict[str, Union[str, int]]
+    ) -> HttpResponse:
         return self.admin_client.post(
-            reverse("locations:package_delete_request"),
-            {"approve": "Approve", f"{event_id}-status_reason": "Approved!"},
-            follow=True,
+            f"/api/v2/file/{file_id}/review_aip_deletion/",
+            json.dumps(data),
+            content_type="application/json",
         )
 
     def download_file(self, file_id: uuid.UUID) -> HttpResponse:
@@ -1240,8 +1242,10 @@ class AIPDeletionScenario(StorageScenario):
     def request_aip_deletion(self, data: dict[str, Union[str, int]]) -> HttpResponse:
         return self.client.request_aip_deletion(self.PACKAGE_UUID, data)
 
-    def approve_aip_deletion_request(self, event_id: int) -> HttpResponse:
-        return self.client.approve_aip_deletion_request(event_id)
+    def review_aip_deletion(
+        self, file_uuid: uuid.UUID, data: dict[str, Union[str, int]]
+    ) -> HttpResponse:
+        return self.client.review_aip_deletion(file_uuid, data)
 
     def delete_aip(self) -> str:
         data: dict[str, Union[str, int]] = {
@@ -1272,10 +1276,20 @@ class AIPDeletionScenario(StorageScenario):
         if self.storage_protocol not in self.OBJECT_STORAGE_PROTOCOLS:
             assert Path(package_full_path).exists()
 
-        resp = self.approve_aip_deletion_request(event.id)
+        reason = "Deleting!"
+        resp = self.review_aip_deletion(
+            self.PACKAGE_UUID,
+            {
+                "reason": reason,
+                "decision": package_request.PackageRequestDecision.APPROVE,
+                "event_id": event.id,
+            },
+        )
         assert resp.status_code == 200
-        content = resp.content.decode()
-        assert "Request approved: Package deleted successfully." in content
+        response_payload = json.loads(resp.content)
+        assert response_payload == {
+            "message": "Request approved: Package deleted successfully.",
+        }
 
         assert Event.objects.count() == 1
         assert (

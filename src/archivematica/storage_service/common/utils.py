@@ -104,7 +104,7 @@ def get_all_settings():
     return settings
 
 
-def get_setting(setting, default=None):
+def get_setting(setting: str, default: Any = None) -> Any:
     """Returns the value of 'setting' from models.Settings, 'default' if not found."""
     try:
         setting = models.Settings.objects.get(name=setting)
