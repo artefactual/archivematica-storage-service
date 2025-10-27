@@ -60,6 +60,7 @@ repos:
     - python-gnupg
     - python-swiftclient
     - sword2 @ git+https://github.com/artefactual-labs/python-client-sword2.git@619ee44467dcdb2ab75fab16864ea2e4ded7ffe4
+    - types-requests
 - repo: https://github.com/tcort/markdown-link-check
   rev: v3.14.1
   hooks:

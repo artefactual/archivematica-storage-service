@@ -1,14 +1,12 @@
 import json
 import logging
-import os
 
-import requests
-from django.contrib import auth
 from django.contrib import messages
 from django.contrib.auth.context_processors import PermWrapper
 from django.contrib.auth.decorators import permission_required
 from django.db.models import Q
 from django.forms.models import model_to_dict
+from django.http import HttpRequest
 from django.http import HttpResponse
 from django.middleware.csrf import get_token
 from django.shortcuts import get_object_or_404
@@ -25,6 +23,7 @@ from archivematica.storage_service.common import gpgutils
 from archivematica.storage_service.common import utils
 from archivematica.storage_service.locations import datatable_utils
 from archivematica.storage_service.locations import forms
+from archivematica.storage_service.locations import package_request
 from archivematica.storage_service.locations.constants import PROTOCOL
 from archivematica.storage_service.locations.models import GPG
 from archivematica.storage_service.locations.models import Callback
@@ -35,7 +34,6 @@ from archivematica.storage_service.locations.models import LocationPipeline
 from archivematica.storage_service.locations.models import Package
 from archivematica.storage_service.locations.models import Pipeline
 from archivematica.storage_service.locations.models import Space
-from archivematica.storage_service.locations.models import StorageException
 
 LOGGER = logging.getLogger(__name__)
 
@@ -148,48 +146,11 @@ def fixity_logs_ajax(request):
     )
 
 
-class PackageRequestHandlerConfig:
-    event_type = ""  # Event type being handled
-    approved_status = ""  # Event status, if approved
-    reject_message = ""  # Message returned if not approved
-    execution_success_message = ""  # Message returned if execution success
-    execution_fail_message = ""  # Message returned if execution failed
-
-    def execution_logic(package):  # Logic performed on package if approved
-        pass
-
-
 @permission_required("locations.change_package", raise_exception=True)
 def aip_recover_request(request):
     """Lists existing AIP recover requests."""
 
-    def execution_logic(aip):
-        recover_location = LocationPipeline.objects.get(
-            pipeline=aip.origin_pipeline, location__purpose=Location.AIP_RECOVERY
-        ).location
-
-        try:
-            (success, failures, message) = aip.recover_aip(
-                recover_location, os.path.basename(aip.current_path)
-            )
-        except StorageException:
-            recover_path = os.path.join(
-                recover_location.full_path, os.path.basename(aip.full_path)
-            )
-            message = _("error accessing restore files at %(path)s") % {
-                "path": recover_path
-            }
-            success = False
-
-        return (success, message)
-
-    config = PackageRequestHandlerConfig()
-    config.event_type = Event.RECOVER
-    config.approved_status = Package.UPLOADED
-    config.reject_message = _("AIP restore rejected.")
-    config.execution_success_message = _("AIP restored.")
-    config.execution_fail_message = _("AIP restore failed")
-    config.execution_logic = execution_logic
+    config = package_request.PackageRecoveryRequestHandlerConfig()
 
     return _handle_package_request(request, config, "locations:aip_recover_request")
 
@@ -238,21 +199,16 @@ def package_delete(request, uuid):
 
 @permission_required("locations.approve_package_deletion", raise_exception=True)
 def package_delete_request(request):
-    def execution_logic(package):
-        return package.delete_from_storage()
-
-    config = PackageRequestHandlerConfig()
-    config.event_type = Event.DELETE
-    config.approved_status = Package.DELETED
-    config.reject_message = _("Request rejected, package still stored.")
-    config.execution_success_message = _("Package deleted successfully.")
-    config.execution_fail_message = _("Package was not deleted from disk correctly")
-    config.execution_logic = execution_logic
+    config = package_request.PackageDeletionRequestHandlerConfig()
 
     return _handle_package_request(request, config, "locations:package_delete_request")
 
 
-def _handle_package_request(request, config, view_name):
+def _handle_package_request(
+    request: HttpRequest,
+    config: package_request.PackageRequestHandlerConfig,
+    view_name: str,
+) -> HttpResponse:
     request_events = Event.objects.filter(status=Event.SUBMITTED).filter(
         event_type=config.event_type
     )
@@ -265,61 +221,40 @@ def _handle_package_request(request, config, view_name):
                 request.POST, prefix=str(req.id), instance=req
             )
             if req.form.is_valid():
-                event = req.form.save()
-                event.status_reason = req.form.cleaned_data["status_reason"]
-                event.admin_id = auth.get_user(request)
-                # Handle administrator decision and optionally notify remote REST endpoint
-                if "reject" in request.POST:
-                    event.status = Event.REJECTED
-                    # Request is rejected so the package status set back to
-                    # what it was stored as previously.
-                    event.package.status = event.store_data
-                    notification_message = (
-                        _handle_package_request_remote_result_notification(
-                            config, event, False
+                event = req.form.save(commit=False)
+                decision_value = request.POST.get("decision")
+
+                if decision_value is None:
+                    if "approve" in request.POST:
+                        decision_value = (
+                            package_request.PackageRequestDecision.APPROVE.value
                         )
-                    )
-                    if notification_message:
-                        config.reject_message += " " + notification_message
-                    messages.success(request, config.reject_message)
-                elif "approve" in request.POST:
-                    event.status = Event.APPROVED
-                    success, err_msg = config.execution_logic(event.package)
-                    if not success:
-                        error_message = "{}: {}. {}".format(
-                            config.execution_fail_message,
-                            err_msg,
-                            _(
-                                "Please contact an administrator or see logs for details."
-                            ),
+                    elif "reject" in request.POST:
+                        decision_value = (
+                            package_request.PackageRequestDecision.REJECT.value
                         )
-                        notification_message = (
-                            _handle_package_request_remote_result_notification(
-                                config, event, False
-                            )
-                        )
-                        if notification_message:
-                            error_message += " " + notification_message
-                        messages.error(request, error_message)
                     else:
-                        # Package deletion was a success so update the package
-                        # status per the event.
-                        event.package.status = config.approved_status
-                        approval_message = _("Request approved: %(message)s") % {
-                            "message": config.execution_success_message
-                        }
-                        notification_message = (
-                            _handle_package_request_remote_result_notification(
-                                config, event, True
-                            )
-                        )
-                        if notification_message:
-                            approval_message += " " + notification_message
-                        messages.success(request, approval_message)
-                        if err_msg:
-                            messages.info(request, err_msg)
-                event.save()
-                event.package.save()
+                        continue
+
+                try:
+                    decision, reason = package_request.parse_decision_and_reason(
+                        decision_value, req.form.cleaned_data["status_reason"]
+                    )
+                except package_request.PackageRequestValidationError as error:
+                    messages.error(request, str(error.message))
+                    continue
+
+                result = package_request.process_package_request_decision(
+                    config, event, decision, reason=reason, admin=request.user
+                )
+
+                message_payload = result.message
+                message_method = getattr(messages, message_payload.level, None)
+                if message_method is not None:
+                    message_method(request, message_payload.content)
+                if result.message.detail:
+                    messages.info(request, result.message.detail)
+
                 return redirect(view_name)
     else:
         for req in request_events:
@@ -330,59 +265,6 @@ def _handle_package_request(request, config, view_name):
     )
 
     return render(request, "locations/package_request.html", locals())
-
-
-def _handle_package_request_remote_result_notification(config, event, success):
-    response_message = None
-
-    # Setting name is determined using event type
-    setting_prefix = f"{config.event_type.lower()}_request_notification"
-    request_notification_url = utils.get_setting(f"{setting_prefix}_url")
-
-    # If notification is configured, attempt
-    if request_notification_url is not None:
-        headers = {"Content-type": "application/json"}
-
-        # Status reported may be approved, yet failed during execution
-        status_to_report = event.status
-        if event.status == Event.APPROVED and not success:
-            status_to_report += " (failed)"
-
-        # Serialize payload
-        payload = json.dumps(
-            {
-                "event_id": event.id,
-                "message": f"{status_to_report}: {event.status_reason}",
-                "success": success,
-            }
-        )
-
-        # Specify basic authentication, if configured
-        request_notification_auth_username = utils.get_setting(
-            f"{setting_prefix}_auth_username"
-        )
-        request_notification_auth_password = utils.get_setting(
-            f"{setting_prefix}_auth_password"
-        )
-
-        if request_notification_auth_username is not None:
-            auth = requests.auth.HTTPBasicAuth(
-                request_notification_auth_username, request_notification_auth_password
-            )
-        else:
-            auth = None
-
-        # Make request and set response message, if included in notification request response body
-        notification_response = requests.post(
-            request_notification_url, auth=auth, data=payload, headers=headers
-        )
-        try:
-            responseData = json.loads(notification_response.content)
-            response_message = responseData["message"]
-        except ValueError:
-            pass
-
-    return response_message
 
 
 @permission_required("locations.change_package", raise_exception=True)

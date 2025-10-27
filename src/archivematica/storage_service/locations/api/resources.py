@@ -3,12 +3,12 @@
 import json
 import logging
 import os
-import pprint
 import re
 import shutil
 import urllib.parse
 import uuid
 from pathlib import Path
+from typing import Any
 
 import bagit
 import tastypie.exceptions
@@ -16,6 +16,8 @@ from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned
 from django.core.exceptions import ObjectDoesNotExist
 from django.forms.models import model_to_dict
+from django.http import HttpRequest
+from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.urls import re_path
 from django.urls import reverse
@@ -27,6 +29,7 @@ from tastypie.authentication import BasicAuthentication
 from tastypie.authentication import MultiAuthentication
 from tastypie.authentication import SessionAuthentication
 from tastypie.authorization import DjangoAuthorization
+from tastypie.bundle import Bundle
 from tastypie.resources import ALL
 from tastypie.resources import ALL_WITH_RELATIONS
 from tastypie.resources import ModelResource
@@ -35,6 +38,7 @@ from tastypie.validation import CleanedDataFormValidation
 
 from archivematica.storage_service.administration.models import Settings
 from archivematica.storage_service.common import utils
+from archivematica.storage_service.locations import package_request
 from archivematica.storage_service.locations import signals
 from archivematica.storage_service.locations.api.sword import views as sword_views
 from archivematica.storage_service.locations.constants import PROTOCOL
@@ -813,6 +817,16 @@ class PackageResource(ModelResource):
                 name="recover_aip_request",
             ),
             re_path(
+                r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/review_aip_deletion%s$"
+                % (
+                    self._meta.resource_name,
+                    self._meta.detail_uri_name,
+                    trailing_slash(),
+                ),
+                self.wrap_view("review_aip_deletion_request"),
+                name="review_aip_deletion_request",
+            ),
+            re_path(
                 r"^(?P<resource_name>%s)/(?P<%s>\w[\w/-]*)/extract_file%s$"
                 % (
                     self._meta.resource_name,
@@ -1246,8 +1260,9 @@ class PackageResource(ModelResource):
                 response_json, content_type="application/json"
             )
 
+        config = package_request.PackageDeletionRequestHandlerConfig()
         (status_code, response) = self._attempt_package_request_event(
-            package, request_info, Event.DELETE, Package.DEL_REQ
+            package, request_info, config
         )
 
         if status_code == 202:
@@ -1284,14 +1299,122 @@ class PackageResource(ModelResource):
                 response_json, content_type="application/json"
             )
 
+        config = package_request.PackageRecoveryRequestHandlerConfig()
         (status_code, response) = self._attempt_package_request_event(
-            package, request_info, Event.RECOVER, Package.RECOVER_REQ
+            package, request_info, config
         )
 
         self.log_throttled_access(request)
         response_json = json.dumps(response)
         return http.HttpResponse(
             status=status_code, content=response_json, content_type="application/json"
+        )
+
+    @_custom_endpoint(
+        expected_methods=["post"], required_fields=("event_id", "decision", "reason")
+    )
+    def review_aip_deletion_request(
+        self, request: HttpRequest, bundle: Bundle, **kwargs: Any
+    ) -> HttpResponse:
+        config = package_request.PackageDeletionRequestHandlerConfig()
+
+        return self._review_package_request(
+            request=request,
+            bundle=bundle,
+            config=config,
+            required_permission="locations.approve_package_deletion",
+        )
+
+    def _review_package_request(
+        self,
+        *,
+        request: HttpRequest,
+        bundle: Bundle,
+        config: package_request.PackageRequestHandlerConfig,
+        required_permission: str,
+    ) -> HttpResponse:
+        user = getattr(request, "user", None)
+        if not user or not user.has_perm(required_permission):
+            return http.HttpForbidden()
+
+        package: Package = bundle.obj
+        data = bundle.data
+
+        event_id_value: Any = data.get("event_id")
+        if event_id_value is None:
+            return self._bad_request_response(_("An event id must be provided."))
+
+        try:
+            event_id = int(event_id_value)
+        except (TypeError, ValueError):
+            return self._bad_request_response(_("Event id must be an integer."))
+        if event_id < 1:
+            return self._bad_request_response(_("Event id must be a positive integer."))
+
+        try:
+            decision_value, reason = package_request.parse_decision_and_reason(
+                data.get("decision"), data.get("reason")
+            )
+        except package_request.PackageRequestValidationError as error:
+            return self._bad_request_response(error.message)
+
+        event_type = config.event_type
+        if event_type is None:
+            raise ValueError("Package request event type is not configured.")
+
+        try:
+            event = Event.objects.select_related("package").get(
+                id=event_id,
+                package=package,
+                event_type=event_type,
+            )
+        except Event.DoesNotExist:
+            response_data = {
+                "error_message": _(
+                    "No pending request matches this package and event id."
+                )
+            }
+
+            return http.HttpNotFound(
+                json.dumps(response_data), content_type="application/json"
+            )
+
+        if event.status != Event.SUBMITTED:
+            return self._bad_request_response(_("This request is not pending review."))
+
+        result = package_request.process_package_request_decision(
+            config,
+            event,
+            decision_value,
+            reason=reason,
+            admin=user,
+        )
+
+        status_code = 200
+        message = str(result.message.content)
+        if result.message.level == "error":
+            response_payload = {"error_message": message}
+        else:
+            response_payload = {"message": message}
+
+        if result.message.detail:
+            # The response surfaces the successful deletion warning details (for
+            # example from LOCKSS) alongside the primary message.
+            response_payload["detail"] = str(result.message.detail)
+
+        self.log_throttled_access(request)
+
+        return http.HttpResponse(
+            json.dumps(response_payload),
+            content_type="application/json",
+            status=status_code,
+        )
+
+    def _bad_request_response(self, message: Any) -> HttpResponse:
+        response_data = {"error_message": str(message)}
+
+        return http.HttpBadRequest(
+            json.dumps(response_data), content_type="application/json"
         )
 
     @_custom_endpoint(expected_methods=["get", "head"])
@@ -1757,46 +1880,24 @@ class PackageResource(ModelResource):
         return sword_views.deposit_state(request, package or kwargs["uuid"])
 
     def _attempt_package_request_event(
-        self, package, request_info, event_type, event_status
-    ):
-        """Generic package request handler, e.g. package recovery: RECOVER_REQ,
-        or package deletion: DEL_REQ.
-        """
-        LOGGER.info(
-            f"Package event: '{event_type}' requested, with package status: '{event_status}'"
+        self,
+        package: Package,
+        request_info: dict[str, Any],
+        config: package_request.PackageRequestHandlerConfig,
+    ) -> tuple[int, dict[str, Any]]:
+        """Generic package request handler (e.g. recover or delete)."""
+
+        submission_result = package_request.submit_package_request_event(
+            config, package, request_info=request_info
         )
-        LOGGER.debug(pprint.pformat(request_info))
 
-        pipeline = Pipeline.objects.get(uuid=request_info["pipeline"])
-        request_description = event_type.replace("_", " ").lower()
-
-        # See if an event already exists
-        existing_requests = Event.objects.filter(
-            package=package, event_type=event_type, status=Event.SUBMITTED
-        ).count()
-        if existing_requests < 1:
-            request_event = Event(
-                package=package,
-                event_type=event_type,
-                status=Event.SUBMITTED,
-                event_reason=request_info["event_reason"],
-                pipeline=pipeline,
-                user_id=request_info["user_id"],
-                user_email=request_info["user_email"],
-                store_data=package.status,
-            )
-
-            # Update package status
-            package.status = event_status
-            package.save()
-
-            request_event.save()
+        request_description = config.request_description
+        if submission_result.created and submission_result.event is not None:
             response = {
                 "message": _("%(event_type)s request created successfully.")
                 % {"event_type": request_description.title()},
-                "id": request_event.id,
+                "id": submission_result.event.id,
             }
-
             status_code = 202
         else:
             response = {

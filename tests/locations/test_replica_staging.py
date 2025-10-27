@@ -38,7 +38,7 @@ class TestOfflineReplicaStaging(TempDirMixin, TestCase):
         """Test that package in Space isn't deleted."""
         success, err = self.replica.delete_from_storage()
         assert success is False
-        assert isinstance(err, NotImplementedError)
+        assert err == "Write-Only Offline Staging does not implement deletion"
 
     def test_check_fixity(self):
         """Test that fixity check raises NotImplementedError."""
