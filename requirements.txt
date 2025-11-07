@@ -10,13 +10,13 @@ asgiref==3.10.0
     # via django
 bagit==1.9.0
     # via archivematica-storage-service (pyproject.toml)
-boto3==1.40.59
+boto3==1.40.68
     # via archivematica-storage-service (pyproject.toml)
-botocore==1.40.59
+botocore==1.40.68
     # via
     #   boto3
     #   s3transfer
-brotli==1.1.0
+brotli==1.2.0
     # via archivematica-storage-service (pyproject.toml)
 certifi==2025.10.5
     # via requests
@@ -34,7 +34,7 @@ debtcollector==3.0.0
     #   python-keystoneclient
 dj-database-url==3.0.1
     # via archivematica-storage-service (pyproject.toml)
-django==4.2.25
+django==4.2.26
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   dj-database-url
@@ -122,7 +122,7 @@ packaging==25.0
     #   gunicorn
     #   oslo-utils
     #   python-keystoneclient
-pbr==7.0.1
+pbr==7.0.3
     # via
     #   keystoneauth1
     #   os-service-types
@@ -133,7 +133,7 @@ prometheus-client==0.23.1
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   django-prometheus
-psutil==7.1.2
+psutil==7.1.3
     # via oslo-utils
 pyasn1==0.6.1
     # via
@@ -212,7 +212,7 @@ urllib3==1.26.20
     #   requests
 whitenoise==6.11.0
     # via archivematica-storage-service (pyproject.toml)
-wrapt==2.0.0
+wrapt==2.0.1
     # via debtcollector
 zope-event==6.0
     # via gevent
