@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name="archivematica-storage-service"
 description="Django based webapp for managing storage in an Archivematica installation"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
   {name = "Artefactual Systems Inc.", email = "info@artefactual.com"},
 ]
