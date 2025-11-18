@@ -11,7 +11,6 @@ import tempfile
 from collections import namedtuple
 from pathlib import Path
 from typing import Any
-from typing import Optional
 from uuid import uuid4
 
 import bagit
@@ -533,7 +532,7 @@ class Package(models.Model):
 
     def recover_aip(
         self, origin_location, origin_path
-    ) -> tuple[Optional[bool], list[Any], StrOrPromise]:
+    ) -> tuple[bool | None, list[Any], StrOrPromise]:
         """Recovers an AIP using files at a given location.
 
         Creates a temporary package associated with recovery AIP files within
@@ -1924,7 +1923,7 @@ class Package(models.Model):
         force_local: bool = False,
         delete_after: bool = True,
         verify_correct_package: bool = True,
-    ) -> tuple[Optional[bool], list[Any], StrOrPromise, Optional[str]]:
+    ) -> tuple[bool | None, list[Any], StrOrPromise, str | None]:
         """Scans the package to verify its checksums.
 
         This will check if the Space can run a fixity and use that. If not, it will run fixity locally.
@@ -2163,7 +2162,7 @@ class Package(models.Model):
                     replica_error,
                 )
 
-    def delete_from_storage(self) -> tuple[bool, Optional[StrOrPromise]]:
+    def delete_from_storage(self) -> tuple[bool, StrOrPromise | None]:
         """Deletes the package from filesystem and updates metadata.
         Returns (True, None) on success, and (False, error_msg) on failure.
         """
@@ -2173,7 +2172,7 @@ class Package(models.Model):
             True if self.replicated_package else False,
         )
 
-        error: Optional[StrOrPromise] = None
+        error: StrOrPromise | None = None
         location = self.current_location
         space = location.space
 

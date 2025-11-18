@@ -19,10 +19,8 @@ import uuid
 from collections.abc import Iterable
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Optional
 from typing import Protocol
 from typing import TypedDict
-from typing import Union
 
 import boto3
 import pytest
@@ -69,12 +67,12 @@ PremisEvent = tuple[
 
 
 class LocationResponseResult(TypedDict):
-    description: Optional[str]
+    description: str | None
     enabled: bool
     path: str
     pipeline: list[str]
     purpose: str
-    quota: Optional[int]
+    quota: int | None
     relative_path: str
     resource_uri: str
     space: str
@@ -103,12 +101,12 @@ class Client:
     def __init__(self, admin_client: TestClient) -> None:
         self.admin_client = admin_client
 
-    def add_space(self, data: dict[str, Union[str, bool]]) -> HttpResponse:
+    def add_space(self, data: dict[str, str | bool]) -> HttpResponse:
         return self.admin_client.post(
             "/api/v2/space/", json.dumps(data), content_type="application/json"
         )
 
-    def add_pipeline(self, data: dict[str, Union[str, bool]]) -> HttpResponse:
+    def add_pipeline(self, data: dict[str, str | bool]) -> HttpResponse:
         return self.admin_client.post(
             "/api/v2/pipeline/", json.dumps(data), content_type="application/json"
         )
@@ -116,13 +114,13 @@ class Client:
     def get_pipelines(self, data: dict[str, str]) -> HttpResponse:
         return self.admin_client.get("/api/v2/pipeline/", data)
 
-    def add_location(self, data: dict[str, Union[str, list[str]]]) -> HttpResponse:
+    def add_location(self, data: dict[str, str | list[str]]) -> HttpResponse:
         return self.admin_client.post(
             "/api/v2/location/", json.dumps(data), content_type="application/json"
         )
 
     def set_location(
-        self, location_id: uuid.UUID, data: dict[str, Union[str, list[dict[str, str]]]]
+        self, location_id: uuid.UUID, data: dict[str, str | list[dict[str, str]]]
     ) -> HttpResponse:
         return self.admin_client.post(
             f"/api/v2/location/{location_id}/",
@@ -141,7 +139,7 @@ class Client:
     def add_file(
         self,
         file_id: uuid.UUID,
-        data: dict[str, Union[str, int, list[PremisEvent], list[PremisAgent]]],
+        data: dict[str, str | int | list[PremisEvent] | list[PremisAgent]],
     ) -> HttpResponse:
         return self.admin_client.put(
             f"/api/v2/file/{file_id}/",
@@ -159,7 +157,7 @@ class Client:
         return self.admin_client.get(f"/api/v2/file/{file_id}/check_fixity/")
 
     def request_aip_recovery(
-        self, file_id: uuid.UUID, data: dict[str, Union[str, int]]
+        self, file_id: uuid.UUID, data: dict[str, str | int]
     ) -> HttpResponse:
         return self.admin_client.post(
             f"/api/v2/file/{file_id}/recover_aip/",
@@ -176,7 +174,7 @@ class Client:
         )
 
     def request_aip_deletion(
-        self, file_id: uuid.UUID, data: dict[str, Union[str, int]]
+        self, file_id: uuid.UUID, data: dict[str, str | int]
     ) -> HttpResponse:
         return self.admin_client.post(
             f"/api/v2/file/{file_id}/delete_aip/",
@@ -185,7 +183,7 @@ class Client:
         )
 
     def review_aip_deletion(
-        self, file_id: uuid.UUID, data: dict[str, Union[str, int]]
+        self, file_id: uuid.UUID, data: dict[str, str | int]
     ) -> HttpResponse:
         return self.admin_client.post(
             f"/api/v2/file/{file_id}/review_aip_deletion/",
@@ -257,7 +255,7 @@ class StorageScenario:
     PACKAGE_UUID = uuid.UUID("5658e603-277b-4292-9b58-20bf261c8f88")
     OBJECT_STORAGE_PROTOCOLS = {Space.S3, Space.RCLONE}
 
-    SPACES: dict[str, dict[str, Union[str, bool]]] = {
+    SPACES: dict[str, dict[str, str | bool]] = {
         Space.S3: {
             "access_protocol": Space.S3,
             "path": "",
@@ -300,21 +298,21 @@ class StorageScenario:
         compressed: bool,
     ) -> None:
         self.storage_protocol = storage_protocol
-        self.aip_storage_location_attrs: Optional[LocationResponseResult] = None
+        self.aip_storage_location_attrs: LocationResponseResult | None = None
         self.replication_protocol = replication_protocol
         self.pkg = pkg
         self.pkg_name = (
             f"foobar-{self.PACKAGE_UUID}{''.join(pkg.suffixes) if compressed else ''}"
         )
         self.compressed = compressed
-        self._object_storage_bucket_name: Optional[str] = None
+        self._object_storage_bucket_name: str | None = None
 
     def init(
         self,
         admin_client: TestClient,
         working_directory_path: Path,
         *,
-        s3_bucket: Optional[str] = None,
+        s3_bucket: str | None = None,
     ) -> None:
         self.client = Client(admin_client)
         self.shared_directory_path = (
@@ -342,9 +340,7 @@ class StorageScenario:
         )
         assert resp.status_code == 201
 
-    def _adjust_space_data(
-        self, data: dict[str, Union[str, bool]]
-    ) -> dict[str, Union[str, bool]]:
+    def _adjust_space_data(self, data: dict[str, str | bool]) -> dict[str, str | bool]:
         adjusted = data.copy()
         for attr in ["path", "staging_path"]:
             value = adjusted.get(attr)
@@ -512,7 +508,7 @@ class StorageScenario:
         else:
             assert get_size(aip_path) > 1
 
-    def _space_definition(self, protocol: str) -> dict[str, Union[str, bool]]:
+    def _space_definition(self, protocol: str) -> dict[str, str | bool]:
         data = self._adjust_space_data(self.SPACES[protocol])
         bucket_key = self._object_storage_bucket_key(protocol)
         if bucket_key:
@@ -757,14 +753,14 @@ class AIPRecoveryScenario(StorageScenario):
 
         self.copy_fixture(aip_recovery_location_path)
 
-    def request_aip_recovery(self, data: dict[str, Union[str, int]]) -> HttpResponse:
+    def request_aip_recovery(self, data: dict[str, str | int]) -> HttpResponse:
         return self.client.request_aip_recovery(self.PACKAGE_UUID, data)
 
     def approve_aip_recovery_request(self, event_id: int) -> HttpResponse:
         return self.client.approve_aip_recovery_request(event_id)
 
     def recover_aip(self) -> None:
-        data: dict[str, Union[str, int]] = {
+        data: dict[str, str | int] = {
             "event_reason": "Delete please!",
             "pipeline": str(self.PIPELINE_UUID),
             "user_id": 1,
@@ -914,7 +910,7 @@ def test_aip_recovery_handles_recovery_copy_setup_error(
     scenario.assert_stored()
     scenario.corrupt_package()
 
-    data: dict[str, Union[str, int]] = {
+    data: dict[str, str | int] = {
         "event_reason": "Delete please!",
         "pipeline": str(scenario.PIPELINE_UUID),
         "user_id": 1,
@@ -960,7 +956,7 @@ def _provision_s3_bucket(
     *,
     region: str,
     name_prefix: str,
-    object_keys: Optional[Iterable[str]] = None,
+    object_keys: Iterable[str] | None = None,
 ) -> str:
     bucket_name = f"{name_prefix}{uuid.uuid4().hex}"
     try:
@@ -1239,16 +1235,16 @@ def test_browsing_an_rclone_transfer_source_location_works_with_limited_permissi
 
 
 class AIPDeletionScenario(StorageScenario):
-    def request_aip_deletion(self, data: dict[str, Union[str, int]]) -> HttpResponse:
+    def request_aip_deletion(self, data: dict[str, str | int]) -> HttpResponse:
         return self.client.request_aip_deletion(self.PACKAGE_UUID, data)
 
     def review_aip_deletion(
-        self, file_uuid: uuid.UUID, data: dict[str, Union[str, int]]
+        self, file_uuid: uuid.UUID, data: dict[str, str | int]
     ) -> HttpResponse:
         return self.client.review_aip_deletion(file_uuid, data)
 
     def delete_aip(self) -> str:
-        data: dict[str, Union[str, int]] = {
+        data: dict[str, str | int] = {
             "event_reason": "Delete please!",
             "pipeline": str(self.PIPELINE_UUID),
             "user_id": 1,
@@ -1313,7 +1309,7 @@ class AIPDeletionScenario(StorageScenario):
     def assert_deleted(
         self,
         package_full_path: str,
-        s3_resource: Optional[ServiceResource],
+        s3_resource: ServiceResource | None,
     ) -> None:
         package = Package.objects.get(uuid=self.PACKAGE_UUID)
         assert package.status == Package.DELETED

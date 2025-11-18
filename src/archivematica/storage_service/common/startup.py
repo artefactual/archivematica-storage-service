@@ -2,8 +2,6 @@ import errno
 import logging
 import os
 import pathlib
-from typing import Optional
-from typing import Union
 
 import django.core.exceptions
 from django.db import connection
@@ -17,9 +15,7 @@ from archivematica.storage_service.locations.models.async_manager import (
 LOGGER = logging.getLogger(__name__)
 
 
-def startup(
-    space_path: Optional[pathlib.Path] = None, start_async: bool = True
-) -> None:
+def startup(space_path: pathlib.Path | None = None, start_async: bool = True) -> None:
     if space_path is None:
         space_path = pathlib.Path(os.sep)
 
@@ -85,7 +81,7 @@ def populate_default_locations(space_path: pathlib.Path) -> None:
         LOGGER.info("Multiple default Spaces exist, done default setup.")
         return
 
-    default_locations: list[dict[str, Union[str, pathlib.Path, bool, None]]] = [
+    default_locations: list[dict[str, str | pathlib.Path | bool | None]] = [
         {
             "purpose": locations_models.Location.TRANSFER_SOURCE,
             "relative_path": "home",

@@ -44,7 +44,9 @@ class DefaultLocationWidget(forms.MultiWidget):
     def get_context(self, *args, **kwargs):
         labels = (_("Space"), _("Relative Path"), _("Description"), _("Quota"))
         result = super().get_context(*args, **kwargs)
-        result["labeled_widgets"] = zip(labels, result["widget"]["subwidgets"])
+        result["labeled_widgets"] = zip(
+            labels, result["widget"]["subwidgets"], strict=False
+        )
         return result
 
 

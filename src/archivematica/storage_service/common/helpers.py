@@ -2,7 +2,6 @@ import json
 from collections.abc import Iterable
 from os import environ
 from typing import Any
-from typing import Union
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -20,7 +19,7 @@ def is_true(env_str: str) -> bool:
     return env_str.lower() in ["true", "yes", "on", "1"]
 
 
-ProviderConfig = dict[str, Union[str, bool]]
+ProviderConfig = dict[str, str | bool]
 
 
 def get_oidc_secondary_providers(

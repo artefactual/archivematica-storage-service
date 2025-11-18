@@ -1,7 +1,6 @@
+from collections.abc import Callable
 from collections.abc import Iterator
 from typing import Any
-from typing import Callable
-from typing import Optional
 
 import boto3
 import pytest
@@ -84,7 +83,7 @@ class KeyRecordingMeta:
     def __init__(self, meta: Any, seen_keys: list[str]) -> None:
         self._meta = meta
         self._seen_keys = seen_keys
-        self._client_wrapper: Optional[KeyRecordingClient] = None
+        self._client_wrapper: KeyRecordingClient | None = None
 
     @property
     def client(self) -> KeyRecordingClient:
@@ -120,7 +119,7 @@ class KeyRecordingResource:
     def __init__(self, resource: ServiceResource, seen_keys: list[str]) -> None:
         self._resource = resource
         self._seen_keys = seen_keys
-        self._meta_wrapper: Optional[KeyRecordingMeta] = None
+        self._meta_wrapper: KeyRecordingMeta | None = None
 
     def Bucket(self, name: str) -> KeyRecordingBucket:
         bucket = self._resource.Bucket(name)

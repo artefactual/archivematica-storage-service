@@ -16,8 +16,6 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 from typing import Literal
-from typing import Optional
-from typing import Union
 
 import requests
 from django.utils.translation import gettext as _
@@ -35,16 +33,14 @@ LOGGER = logging.getLogger(__name__)
 
 
 class PackageRequestHandlerConfig:
-    event_type: Optional[str] = None  # Event type being handled.
-    pending_status: Optional[str] = (
-        None  # Package status while request is pending review.
-    )
-    approved_status: Optional[str] = None  # Package status after approval.
-    reject_message: Union[StrOrPromise, str] = ""  # Message returned if not approved.
-    execution_success_message: Union[StrOrPromise, str] = (
+    event_type: str | None = None  # Event type being handled.
+    pending_status: str | None = None  # Package status while request is pending review.
+    approved_status: str | None = None  # Package status after approval.
+    reject_message: StrOrPromise | str = ""  # Message returned if not approved.
+    execution_success_message: StrOrPromise | str = (
         ""  # Message returned if execution succeeds.
     )
-    execution_fail_message: Union[StrOrPromise, str] = (
+    execution_fail_message: StrOrPromise | str = (
         ""  # Message returned if execution fails.
     )
 
@@ -127,7 +123,7 @@ PackageRequestMessageLevel = Literal["success", "error"]
 class PackageRequestMessage:
     level: PackageRequestMessageLevel
     content: StrOrPromise
-    detail: Optional[StrOrPromise] = None
+    detail: StrOrPromise | None = None
 
 
 @dataclass
@@ -139,7 +135,7 @@ class PackageRequestProcessingResult:
 
 @dataclass
 class PackageRequestSubmissionResult:
-    event: Optional[Event]
+    event: Event | None
     created: bool
 
 
@@ -316,8 +312,8 @@ def process_package_request_decision(
     event: Event,
     decision: PackageRequestDecision,
     *,
-    reason: Optional[StrOrPromise] = None,
-    admin: Optional[Any] = None,
+    reason: StrOrPromise | None = None,
+    admin: Any | None = None,
 ) -> PackageRequestProcessingResult:
     """Apply an approval or rejection decision to a package request event.
 
@@ -328,8 +324,8 @@ def process_package_request_decision(
 
     decision_value = PackageRequestDecision.from_value(decision)
 
-    result_message: Optional[PackageRequestMessage] = None
-    execution_succeeded: Optional[bool] = None
+    result_message: PackageRequestMessage | None = None
+    execution_succeeded: bool | None = None
 
     status_reason = str(reason) if reason is not None else None
 
@@ -372,7 +368,7 @@ def process_package_request_decision(
             approval_message = _("Request approved: %(message)s") % {
                 "message": config.execution_success_message
             }
-            detail_message: Optional[StrOrPromise] = None
+            detail_message: StrOrPromise | None = None
             if err_msg:
                 err_text = str(err_msg).strip()
                 if err_text:
