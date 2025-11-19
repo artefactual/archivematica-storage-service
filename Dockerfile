@@ -2,7 +2,7 @@ ARG TARGET=archivematica-storage-service
 ARG UBUNTU_VERSION=24.04
 ARG USER_ID=1000
 ARG GROUP_ID=1000
-ARG PYTHON_VERSION=3.9
+ARG PYTHON_VERSION=3.10
 ARG PYENV_DIR=/pyenv
 
 # -----------------------------------------------------------------------------
@@ -40,7 +40,7 @@ ENV PATH=$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH
 
 FROM base-builder AS pyenv-builder
 
-ARG PYTHON_VERSION=3.9
+ARG PYTHON_VERSION
 
 RUN set -ex \
 	&& apt-get update \

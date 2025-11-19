@@ -13,7 +13,6 @@ import uuid
 from collections import deque
 from collections import namedtuple
 from typing import Any
-from typing import Union
 
 from django import http
 from django.core.exceptions import ObjectDoesNotExist
@@ -649,9 +648,7 @@ def extract_tar(tarpath):
 # ########### OTHER ############
 
 
-def generate_checksum(
-    file_path: Union[str, pathlib.Path], checksum_type: str = "md5"
-) -> Any:
+def generate_checksum(file_path: str | pathlib.Path, checksum_type: str = "md5") -> Any:
     """
     Returns checksum object for `file_path` using `checksum_type`.
 

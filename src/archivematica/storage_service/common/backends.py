@@ -1,6 +1,5 @@
 import json
 from typing import Any
-from typing import Optional
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -139,7 +138,7 @@ class CustomOIDCBackend(OIDCAuthenticationBackend):
 
         return info
 
-    def create_user(self, user_info: dict[str, Any]) -> Optional[User]:
+    def create_user(self, user_info: dict[str, Any]) -> User | None:
         """Create a new user when authentication was successful."""
         role = self.get_user_role(user_info)
         if role is None:
@@ -151,7 +150,7 @@ class CustomOIDCBackend(OIDCAuthenticationBackend):
         roles.set_user_role(user, role)
         return user
 
-    def update_user(self, user: User, user_info: dict[str, Any]) -> Optional[User]:
+    def update_user(self, user: User, user_info: dict[str, Any]) -> User | None:
         """
         Updates the user's role only if the setting allows roles to be set from OIDC claims.
         If the setting is False roles are being managed by an admin so do not update the role.
@@ -163,7 +162,7 @@ class CustomOIDCBackend(OIDCAuthenticationBackend):
             roles.set_user_role(user, role)
         return user
 
-    def get_user_role(self, user_info: dict[str, Any]) -> Optional[str]:
+    def get_user_role(self, user_info: dict[str, Any]) -> str | None:
         """
         Returns the highest-permission valid role found in the OIDC token claims.
         Returns the default user role if the setting is False.

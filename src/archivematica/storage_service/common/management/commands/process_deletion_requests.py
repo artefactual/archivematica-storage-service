@@ -11,7 +11,6 @@ pending deletion requests without taking any action.
 
 from argparse import ArgumentParser
 from typing import Any
-from typing import Optional
 from typing import cast
 
 from django.contrib.auth import get_user_model
@@ -59,7 +58,7 @@ class Command(StorageServiceCommand):
         ).select_related("package")
 
         approve_all = bool(options.get("approve_all", False))
-        approve_uuid = cast(Optional[str], options.get("approve"))
+        approve_uuid = cast(str | None, options.get("approve"))
         admin_id_option = options.get("admin_id")
 
         if approve_all:
