@@ -1421,7 +1421,6 @@ class TestPackage(TestCase):
 
 
 @pytest.fixture
-@pytest.mark.django_db
 def space(tmp_path):
     space_dir = tmp_path / "space"
     space_dir.mkdir()
@@ -1439,7 +1438,6 @@ def space(tmp_path):
 
 
 @pytest.fixture
-@pytest.mark.django_db
 def location(space):
     aipstore = models.Location.objects.create(
         space=space,
@@ -1451,7 +1449,6 @@ def location(space):
 
 
 @pytest.fixture
-@pytest.mark.django_db
 def internal_location(space):
     return models.Location.objects.create(
         space=space, purpose=models.Location.STORAGE_SERVICE_INTERNAL, relative_path=""
@@ -1459,7 +1456,6 @@ def internal_location(space):
 
 
 @pytest.fixture
-@pytest.mark.django_db
 def package(location):
     result = models.Package.objects.create(
         current_location=location,
