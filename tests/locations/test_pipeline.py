@@ -260,7 +260,7 @@ def test_pipeline_detail_view_shows_pipeline_fields(
     )
     assert response.status_code == 200
 
-    content = response.content.decode()
+    content = response.text
     assert f"<dd>{pipeline.uuid}</dd>" in content
     assert f"<dd>{pipeline.description}</dd>" in content
     assert f"<dd>{pipeline.remote_name}</dd>" in content
@@ -278,5 +278,5 @@ def test_pipeline_detail_view_warns_if_pipeline_does_not_exist(
     )
     assert response.status_code == 200
 
-    content = response.content.decode()
+    content = response.text
     assert f"Pipeline {pipeline_uuid} does not exist." in content

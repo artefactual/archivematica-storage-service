@@ -95,7 +95,4 @@ def test_deleting_key_from_detail_view_redirects_to_key_list(
     )
     assert response.status_code == 200
 
-    assert (
-        f'<a href="{delete_url}?next={next_url}">Delete</a>'
-        in response.content.decode()
-    )
+    assert f'<a href="{delete_url}?next={next_url}">Delete</a>' in response.text
