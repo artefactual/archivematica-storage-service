@@ -244,7 +244,7 @@ class DSpaceREST(models.Model):
             package_type, output_dir, input_path, dirname, aip_uuid
         )
         root_objects_el = mets_el.find(
-            "//mets:structMap[@TYPE='physical']/mets:div/mets:div[@LABEL='objects']",
+            ".//mets:structMap[@TYPE='physical']/mets:div/mets:div[@LABEL='objects']",
             namespaces=utils.NSMAP,
         )
         if root_objects_el is None:

@@ -27,7 +27,7 @@ import pytest
 from boto3.resources.base import ServiceResource
 from botocore.exceptions import ClientError
 from django.http import StreamingHttpResponse
-from django.test import Client as TestClient
+from django.test import Client as DjangoTestClient
 from django.urls import reverse
 from metsrw.plugins import premisrw
 
@@ -101,7 +101,7 @@ class HttpResponse(Protocol):
 class Client:
     """Slim API client."""
 
-    def __init__(self, admin_client: TestClient) -> None:
+    def __init__(self, admin_client: DjangoTestClient) -> None:
         self.admin_client = admin_client
 
     def add_space(self, data: dict[str, str | bool]) -> HttpResponse:
@@ -199,7 +199,7 @@ class Client:
 
 
 @pytest.fixture(scope="session")
-def client(admin_client: TestClient) -> Client:
+def client(admin_client: DjangoTestClient) -> Client:
     return Client(admin_client)
 
 
@@ -312,7 +312,7 @@ class StorageScenario:
 
     def init(
         self,
-        admin_client: TestClient,
+        admin_client: DjangoTestClient,
         working_directory_path: Path,
         *,
         s3_bucket: str | None = None,
@@ -710,7 +710,7 @@ class StorageScenario:
 def test_main(
     startup: None,
     storage_scenario: StorageScenario,
-    admin_client: TestClient,
+    admin_client: DjangoTestClient,
     working_directory_path: Path,
     s3_browse_bucket: str,
 ) -> None:
@@ -870,7 +870,7 @@ def test_aip_recovery(
     startup: None,
     scenario: AIPRecoveryScenario,
     corrupt_package: bool,
-    admin_client: TestClient,
+    admin_client: DjangoTestClient,
     working_directory_path: Path,
     s3_browse_bucket: str,
     tmp_path: Path,
@@ -892,7 +892,7 @@ def test_aip_recovery(
 @pytest.mark.django_db
 def test_aip_recovery_handles_recovery_copy_setup_error(
     startup: None,
-    admin_client: TestClient,
+    admin_client: DjangoTestClient,
     working_directory_path: Path,
     s3_browse_bucket: str,
 ) -> None:
@@ -1019,7 +1019,7 @@ _BROWSE_BUCKET_OBJECTS = [
     indirect=True,
 )
 def test_browsing_a_s3_transfer_source_location_loads_path_level_results_only(
-    admin_client: TestClient,
+    admin_client: DjangoTestClient,
     s3_browse_bucket: str,
     s3_recorded_keys: list[str],
     tmp_path: Path,
@@ -1099,7 +1099,7 @@ def test_browsing_a_s3_transfer_source_location_loads_path_level_results_only(
     indirect=True,
 )
 def test_browsing_an_rclone_transfer_source_location_works_with_limited_permissions(
-    admin_client: TestClient,
+    admin_client: DjangoTestClient,
     s3_browse_bucket: str,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -1375,7 +1375,7 @@ class AIPDeletionScenario(StorageScenario):
 def test_aip_deletion(
     startup: None,
     scenario: AIPDeletionScenario,
-    admin_client: TestClient,
+    admin_client: DjangoTestClient,
     working_directory_path: Path,
     s3_browse_bucket: str,
     s3_resource: ServiceResource,
