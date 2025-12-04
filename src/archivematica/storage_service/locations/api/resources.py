@@ -60,12 +60,31 @@ from archivematica.storage_service.locations.models.async_manager import AsyncMa
 LOGGER = logging.getLogger(__name__)
 
 
-def _is_relative_path(path1, path2):
-    """Ensure path2 is relative to path1"""
+def _safe_resolve(path: Path) -> Path:
+    """Resolve a path for safety checks.
+
+    Tries strict resolution first to surface symlink loops or traversal outside
+    the tree. If the target does not exist (e.g., virtual/remote paths), falls
+    back to non-strict resolution for lexical normalization.
+    """
     try:
-        Path(path2).resolve().relative_to(Path(path1).resolve())
+        return path.resolve(strict=True)
+    except FileNotFoundError:
+        return path.resolve(strict=False)
+
+
+def _is_relative_path(path1: str, path2: str) -> bool:
+    """Ensure path2 is relative to path1.
+
+    Uses _safe_resolve to detect symlink loops or escaping via strict
+    resolution, but still supports nonexistent paths by normalizing them
+    non-strictly. Returns False on traversal outside path1, symlink loops, or
+    resolution errors.
+    """
+    try:
+        _safe_resolve(Path(path2)).relative_to(_safe_resolve(Path(path1)))
         return True
-    except (ValueError, RuntimeError):
+    except (ValueError, RuntimeError, OSError):
         return False
 
 
