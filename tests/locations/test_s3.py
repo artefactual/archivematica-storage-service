@@ -7,7 +7,6 @@ from archivematica.storage_service.locations import models
 
 
 @pytest.fixture
-@pytest.mark.django_db
 def space(tmp_path):
     space_dir = tmp_path / "space"
     space_dir.mkdir()
@@ -20,7 +19,6 @@ def space(tmp_path):
 
 
 @pytest.fixture
-@pytest.mark.django_db
 def s3_space(space):
     return models.S3.objects.create(
         space=space,
@@ -33,7 +31,6 @@ def s3_space(space):
 
 
 @pytest.fixture
-@pytest.mark.django_db
 def aip_storage_location(s3_space):
     return models.Location.objects.create(
         description="S3",
@@ -44,7 +41,6 @@ def aip_storage_location(s3_space):
 
 
 @pytest.fixture
-@pytest.mark.django_db
 def package(aip_storage_location):
     return models.Package.objects.create(
         current_location=aip_storage_location,

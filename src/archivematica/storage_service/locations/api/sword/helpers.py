@@ -1,10 +1,10 @@
-import cgi
 import datetime
 import logging
 import os
 import shutil
 import tempfile
 import time
+from email.message import EmailMessage
 
 import requests
 from django.conf import settings
@@ -64,8 +64,9 @@ def parse_filename_from_content_disposition(header):
 
     Return filename
     """
-    _, params = cgi.parse_header(header)
-    filename = params.get("filename", "")
+    msg = EmailMessage()
+    msg["Content-Disposition"] = header
+    filename = msg["Content-Disposition"].params.get("filename", "")
     return filename
 
 

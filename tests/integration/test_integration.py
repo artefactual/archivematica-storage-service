@@ -27,7 +27,7 @@ import pytest
 from boto3.resources.base import ServiceResource
 from botocore.exceptions import ClientError
 from django.http import StreamingHttpResponse
-from django.test import Client as TestClient
+from django.test import Client as DjangoTestClient
 from django.urls import reverse
 from metsrw.plugins import premisrw
 
@@ -94,11 +94,14 @@ class HttpResponse(Protocol):
     status_code: int
     content: bytes
 
+    @property
+    def text(self) -> str: ...
+
 
 class Client:
     """Slim API client."""
 
-    def __init__(self, admin_client: TestClient) -> None:
+    def __init__(self, admin_client: DjangoTestClient) -> None:
         self.admin_client = admin_client
 
     def add_space(self, data: dict[str, str | bool]) -> HttpResponse:
@@ -196,7 +199,7 @@ class Client:
 
 
 @pytest.fixture(scope="session")
-def client(admin_client: TestClient) -> Client:
+def client(admin_client: DjangoTestClient) -> Client:
     return Client(admin_client)
 
 
@@ -309,7 +312,7 @@ class StorageScenario:
 
     def init(
         self,
-        admin_client: TestClient,
+        admin_client: DjangoTestClient,
         working_directory_path: Path,
         *,
         s3_bucket: str | None = None,
@@ -359,7 +362,7 @@ class StorageScenario:
         # Add space.
         resp = self.client.add_space(self._space_definition(self.storage_protocol))
         assert resp.status_code == 201
-        space = json.loads(resp.content)
+        space = json.loads(resp.text)
 
         # Add location.
         resp = self.client.add_location(
@@ -372,7 +375,7 @@ class StorageScenario:
             }
         )
         assert resp.status_code == 201
-        self.aip_storage_location_attrs = json.loads(resp.content)
+        self.aip_storage_location_attrs = json.loads(resp.text)
 
     def get_compression_event(self) -> PremisEvent:
         return (
@@ -430,7 +433,7 @@ class StorageScenario:
         # 1. Add space.
         resp = self.client.add_space(self._space_definition(self.replication_protocol))
         assert resp.status_code == 201
-        space = json.loads(resp.content)
+        space = json.loads(resp.text)
 
         # 2. Add replicator location.
         resp = self.client.add_location(
@@ -443,7 +446,7 @@ class StorageScenario:
             }
         )
         assert resp.status_code == 201
-        rp_location = json.loads(resp.content)
+        rp_location = json.loads(resp.text)
 
         # 3. Install replicator (not possible via API).
         rp_location = Location.objects.get(uuid=rp_location["uuid"])
@@ -471,7 +474,7 @@ class StorageScenario:
                 "purpose": Location.CURRENTLY_PROCESSING,
             }
         )
-        cp_location = json.loads(resp.content)["objects"][0]
+        cp_location = json.loads(resp.text)["objects"][0]
 
         assert self.aip_storage_location_attrs is not None
         as_location = self.aip_storage_location_attrs
@@ -497,7 +500,7 @@ class StorageScenario:
         )
         assert resp.status_code == 201
 
-        aip = json.loads(resp.content)
+        aip = json.loads(resp.text)
         aip_path_parts = [as_location["path"], *aip_id_chunks, self.pkg_name]
         aip_path = Path(*aip_path_parts)
         assert aip["uuid"] == str(self.PACKAGE_UUID)
@@ -536,19 +539,19 @@ class StorageScenario:
             expected_files_count = 1
 
         resp = self.client.get_files()
-        files = json.loads(resp.content)
+        files = json.loads(resp.text)
         assert files["meta"]["total_count"] == expected_files_count
         assert len(files["objects"]) == expected_files_count
 
         # Fixity checks.
         resp = self.client.check_fixity(files["objects"][0]["uuid"])
         assert resp.status_code == 200
-        assert json.loads(resp.content)["success"] is True
+        assert json.loads(resp.text)["success"] is True
 
         if self.replication_protocol:
             resp = self.client.check_fixity(files["objects"][1]["uuid"])
             assert resp.status_code == 200
-            assert json.loads(resp.content)["success"] is True
+            assert json.loads(resp.text)["success"] is True
 
         # We have a pointer file (not for uncompressed AIPs yet).
         if self.compressed:
@@ -707,7 +710,7 @@ class StorageScenario:
 def test_main(
     startup: None,
     storage_scenario: StorageScenario,
-    admin_client: TestClient,
+    admin_client: DjangoTestClient,
     working_directory_path: Path,
     s3_browse_bucket: str,
 ) -> None:
@@ -737,15 +740,13 @@ class AIPRecoveryScenario(StorageScenario):
 
         resp = self.client.check_fixity(self.PACKAGE_UUID)
         assert resp.status_code == 200
-        assert not json.loads(resp.content)["success"]
+        assert not json.loads(resp.text)["success"]
 
     def copy_fixture_to_aip_recovery_location(self) -> None:
         resp = self.client.get_locations(
             {"pipeline_uuid": str(self.PIPELINE_UUID), "purpose": Location.AIP_RECOVERY}
         )
-        aip_recovery_location_path = Path(
-            json.loads(resp.content)["objects"][0]["path"]
-        )
+        aip_recovery_location_path = Path(json.loads(resp.text)["objects"][0]["path"])
 
         # Clear recovery location.
         shutil.rmtree(aip_recovery_location_path)
@@ -785,7 +786,7 @@ class AIPRecoveryScenario(StorageScenario):
         resp = self.approve_aip_recovery_request(event.id)
         assert resp.status_code == 200
 
-        assert "Request approved: AIP restored." in resp.content.decode()
+        assert "Request approved: AIP restored." in resp.text
 
         assert Event.objects.count() == 1
         assert (
@@ -803,7 +804,7 @@ class AIPRecoveryScenario(StorageScenario):
 
         resp = self.client.check_fixity(self.PACKAGE_UUID)
         assert resp.status_code == 200
-        assert json.loads(resp.content)["success"]
+        assert json.loads(resp.text)["success"]
 
     def assert_recovered(self, tmp_path: Path) -> None:
         download_path = tmp_path / "download"
@@ -869,7 +870,7 @@ def test_aip_recovery(
     startup: None,
     scenario: AIPRecoveryScenario,
     corrupt_package: bool,
-    admin_client: TestClient,
+    admin_client: DjangoTestClient,
     working_directory_path: Path,
     s3_browse_bucket: str,
     tmp_path: Path,
@@ -891,7 +892,7 @@ def test_aip_recovery(
 @pytest.mark.django_db
 def test_aip_recovery_handles_recovery_copy_setup_error(
     startup: None,
-    admin_client: TestClient,
+    admin_client: DjangoTestClient,
     working_directory_path: Path,
     s3_browse_bucket: str,
 ) -> None:
@@ -933,7 +934,7 @@ def test_aip_recovery_handles_recovery_copy_setup_error(
     resp = scenario.approve_aip_recovery_request(event.id)
     assert resp.status_code == 200
 
-    content = resp.content.decode()
+    content = resp.text
     assert "AIP restore failed: error accessing restore files" in content
     assert "Please contact an administrator or see logs for details" in content
 
@@ -1018,7 +1019,7 @@ _BROWSE_BUCKET_OBJECTS = [
     indirect=True,
 )
 def test_browsing_a_s3_transfer_source_location_loads_path_level_results_only(
-    admin_client: TestClient,
+    admin_client: DjangoTestClient,
     s3_browse_bucket: str,
     s3_recorded_keys: list[str],
     tmp_path: Path,
@@ -1040,7 +1041,7 @@ def test_browsing_a_s3_transfer_source_location_loads_path_level_results_only(
         }
     )
     assert resp.status_code == 201
-    pipeline = json.loads(resp.content)
+    pipeline = json.loads(resp.text)
 
     # Create space.
     resp = client.add_space(
@@ -1056,7 +1057,7 @@ def test_browsing_a_s3_transfer_source_location_loads_path_level_results_only(
         }
     )
     assert resp.status_code == 201
-    space = json.loads(resp.content)
+    space = json.loads(resp.text)
 
     # Create transfer source location.
     resp = client.add_location(
@@ -1068,13 +1069,13 @@ def test_browsing_a_s3_transfer_source_location_loads_path_level_results_only(
         }
     )
     assert resp.status_code == 201
-    location = json.loads(resp.content)
+    location = json.loads(resp.text)
 
     resp = client.browse_location(
         uuid.UUID(location["uuid"]), {"path": base64.b64encode(b"/ts/dir2").decode()}
     )
     assert resp.status_code == 200
-    browse_result = json.loads(resp.content)
+    browse_result = json.loads(resp.text)
 
     entries = {base64.b64decode(entry).decode() for entry in browse_result["entries"]}
     directories = {
@@ -1098,7 +1099,7 @@ def test_browsing_a_s3_transfer_source_location_loads_path_level_results_only(
     indirect=True,
 )
 def test_browsing_an_rclone_transfer_source_location_works_with_limited_permissions(
-    admin_client: TestClient,
+    admin_client: DjangoTestClient,
     s3_browse_bucket: str,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -1123,7 +1124,7 @@ def test_browsing_an_rclone_transfer_source_location_works_with_limited_permissi
         }
     )
     assert resp.status_code == 201
-    pipeline = json.loads(resp.content)
+    pipeline = json.loads(resp.text)
 
     # Create space.
     resp = client.add_space(
@@ -1136,7 +1137,7 @@ def test_browsing_an_rclone_transfer_source_location_works_with_limited_permissi
         }
     )
     assert resp.status_code == 201
-    space = json.loads(resp.content)
+    space = json.loads(resp.text)
 
     # Create transfer source location.
     resp = client.add_location(
@@ -1148,13 +1149,13 @@ def test_browsing_an_rclone_transfer_source_location_works_with_limited_permissi
         }
     )
     assert resp.status_code == 201
-    location = json.loads(resp.content)
+    location = json.loads(resp.text)
 
     resp = client.browse_location(
         uuid.UUID(location["uuid"]), {"path": base64.b64encode(b"/ts/dir2").decode()}
     )
     assert resp.status_code == 200
-    browse_result = json.loads(resp.content)
+    browse_result = json.loads(resp.text)
 
     entries = {base64.b64decode(entry).decode() for entry in browse_result["entries"]}
     directories = {
@@ -1181,7 +1182,7 @@ def test_browsing_an_rclone_transfer_source_location_works_with_limited_permissi
         }
     )
     assert resp.status_code == 201
-    fs_space = json.loads(resp.content)
+    fs_space = json.loads(resp.text)
 
     # Add a currently processing location.
     resp = client.add_location(
@@ -1193,7 +1194,7 @@ def test_browsing_an_rclone_transfer_source_location_works_with_limited_permissi
         }
     )
     assert resp.status_code == 201
-    fs_location = json.loads(resp.content)
+    fs_location = json.loads(resp.text)
     fs_location_path = Path(fs_location["path"])
     fs_location_path.mkdir(parents=True)
 
@@ -1219,7 +1220,7 @@ def test_browsing_an_rclone_transfer_source_location_works_with_limited_permissi
         {"path": base64.b64encode(transfer_name.encode()).decode()},
     )
     assert resp.status_code == 200
-    fs_browse_result = json.loads(resp.content)
+    fs_browse_result = json.loads(resp.text)
 
     entries = {
         base64.b64decode(entry).decode() for entry in fs_browse_result["entries"]
@@ -1282,7 +1283,7 @@ class AIPDeletionScenario(StorageScenario):
             },
         )
         assert resp.status_code == 200
-        response_payload = json.loads(resp.content)
+        response_payload = json.loads(resp.text)
         assert response_payload == {
             "message": "Request approved: Package deleted successfully.",
         }
@@ -1374,7 +1375,7 @@ class AIPDeletionScenario(StorageScenario):
 def test_aip_deletion(
     startup: None,
     scenario: AIPDeletionScenario,
-    admin_client: TestClient,
+    admin_client: DjangoTestClient,
     working_directory_path: Path,
     s3_browse_bucket: str,
     s3_resource: ServiceResource,

@@ -11,7 +11,6 @@ from archivematica.storage_service.locations import models
 
 
 @pytest.fixture
-@pytest.mark.django_db
 def fs_space(tmp_path: pathlib.Path) -> models.Location:
     space_dir = tmp_path / "space"
     space_dir.mkdir()
@@ -30,7 +29,6 @@ def fs_space(tmp_path: pathlib.Path) -> models.Location:
 
 
 @pytest.fixture
-@pytest.mark.django_db
 def aip_storage_fs_location(fs_space: models.Space) -> models.Location:
     return models.Location.objects.create(
         space=fs_space,
@@ -40,7 +38,6 @@ def aip_storage_fs_location(fs_space: models.Space) -> models.Location:
 
 
 @pytest.fixture
-@pytest.mark.django_db
 def aip_deleted_fs_location(aip_storage_fs_location: models.Location) -> models.Package:
     return models.Package.objects.create(
         package_type=models.Package.AIP,
@@ -51,7 +48,6 @@ def aip_deleted_fs_location(aip_storage_fs_location: models.Location) -> models.
 
 
 @pytest.fixture
-@pytest.mark.django_db
 def aip_uploaded_fs_location(
     aip_storage_fs_location: models.Location,
 ) -> models.Package:
@@ -64,7 +60,6 @@ def aip_uploaded_fs_location(
 
 
 @pytest.fixture
-@pytest.mark.django_db
 def secondary_fs_space(tmp_path: pathlib.Path) -> models.Location:
     space_dir = tmp_path / "secondary-space"
     space_dir.mkdir()
@@ -83,7 +78,6 @@ def secondary_fs_space(tmp_path: pathlib.Path) -> models.Location:
 
 
 @pytest.fixture
-@pytest.mark.django_db
 def secondary_aip_storage_fs_location(
     secondary_fs_space: models.Space,
 ) -> models.Location:
@@ -95,7 +89,6 @@ def secondary_aip_storage_fs_location(
 
 
 @pytest.fixture
-@pytest.mark.django_db
 def secondary_aip_uploaded_fs_location(
     secondary_aip_storage_fs_location: models.Location,
 ) -> models.Package:

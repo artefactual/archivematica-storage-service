@@ -52,7 +52,7 @@ class TestSpaceAPI(TempDirMixin, TestCase):
         ).decode("utf8")
         response = self.client.get("/api/v2/space/")
         assert response.status_code == 200
-        response_content = json.loads(response.content)
+        response_content = json.loads(response.text)
         assert len(response_content["objects"]) != 0
 
     def test_non_admins_can_read_detail(self):
@@ -65,7 +65,7 @@ class TestSpaceAPI(TempDirMixin, TestCase):
             "/api/v2/space/7d20c992-bc92-4f92-a794-7161ff2cc08b/"
         )
         assert response.status_code == 200
-        assert response.content
+        assert response.text
 
     def test_create_space(self):
         data = {
@@ -82,7 +82,7 @@ class TestSpaceAPI(TempDirMixin, TestCase):
         response = self.client.post(
             "/api/v2/space/", data=json.dumps(data), content_type="application/json"
         )
-        response_data = json.loads(response.content.decode("utf8"))
+        response_data = json.loads(response.text)
         assert response.status_code == 201
 
         protocol_model = models.S3.objects.get(space_id=response_data["uuid"])
@@ -102,10 +102,7 @@ class TestSpaceAPI(TempDirMixin, TestCase):
             {"path": "/home/foo/../../etc"},
         )
         assert response.status_code == 400
-        assert (
-            "The path parameter must be relative to the space path"
-            in response.content.decode("utf8")
-        )
+        assert "The path parameter must be relative to the space path" in response.text
 
     def test_browse_follow_symlinks(self):
         # Create a directory with two subdirectories and a file
@@ -139,7 +136,7 @@ class TestSpaceAPI(TempDirMixin, TestCase):
         assert response.status_code == 200
 
         # Assert we get the two top level child directories
-        response_content = json.loads(response.content)
+        response_content = json.loads(response.text)
         assert sorted(
             base64.b64decode(e).decode() for e in response_content["directories"]
         ) == ["child_1", "child_2"]
@@ -162,7 +159,7 @@ class TestSpaceAPI(TempDirMixin, TestCase):
         assert response.status_code == 200
 
         # Assert we get the inner text file
-        response_content = json.loads(response.content)
+        response_content = json.loads(response.text)
         assert response_content["directories"] == []
         assert sorted(
             base64.b64decode(e).decode() for e in response_content["entries"]
@@ -232,7 +229,7 @@ class TestLocationAPI(TempDirMixin, TestCase):
         ).decode("utf8")
         response = self.client.get("/api/v2/location/")
         assert response.status_code == 200
-        response_content = json.loads(response.content)
+        response_content = json.loads(response.text)
         assert len(response_content["objects"]) != 0
 
     def test_non_admins_can_read_detail(self):
@@ -245,7 +242,7 @@ class TestLocationAPI(TempDirMixin, TestCase):
             "/api/v2/location/213086c8-232e-4b9e-bb03-98fbc7a7966a/"
         )
         assert response.status_code == 200
-        assert response.content
+        assert response.text
 
     def test_non_admins_cannot_create_location(self):
         self.as_reader()
@@ -278,7 +275,7 @@ class TestLocationAPI(TempDirMixin, TestCase):
         assert response.status_code == 201
 
         # Verify content
-        body = json.loads(response.content.decode("utf8"))
+        body = json.loads(response.text)
         assert body["description"] == data["description"]
         assert body["purpose"] == data["purpose"]
         assert body["path"] == "{}{}".format(space.path, data["relative_path"])
@@ -323,7 +320,7 @@ class TestLocationAPI(TempDirMixin, TestCase):
             data=json.dumps(new_default_ts_location),
             content_type="application/json",
         )
-        body = json.loads(response.content.decode("utf8"))
+        body = json.loads(response.text)
 
         response = _get_default_ts()
         assert response.status_code == 302
@@ -342,7 +339,7 @@ class TestLocationAPI(TempDirMixin, TestCase):
         )
         # Verify error
         assert response.status_code == 404
-        assert "not a link to a valid Location" in response.content.decode("utf8")
+        assert "not a link to a valid Location" in response.text
 
     def test_cant_move_to_non_existant_locations(self):
         data = {
@@ -376,7 +373,7 @@ class TestLocationAPI(TempDirMixin, TestCase):
         )
         # Verify error
         assert response.status_code == 404
-        assert "not a link to a valid Location" in response.content.decode("utf8")
+        assert "not a link to a valid Location" in response.text
 
     def test_cant_move_to_disabled_locations(self):
         # Set posting to location disabled
@@ -421,8 +418,7 @@ class TestLocationAPI(TempDirMixin, TestCase):
         )
         assert response.status_code == 400
         assert (
-            "The path parameter must be relative to the location path"
-            in response.content.decode("utf8")
+            "The path parameter must be relative to the location path" in response.text
         )
 
     def test_browse_follow_symlinks(self):
@@ -472,7 +468,7 @@ class TestLocationAPI(TempDirMixin, TestCase):
         assert response.status_code == 200
 
         # Assert we get the two top level child directories
-        response_content = json.loads(response.content)
+        response_content = json.loads(response.text)
         assert sorted(
             base64.b64decode(e).decode() for e in response_content["directories"]
         ) == ["child_1", "child_2"]
@@ -499,7 +495,7 @@ class TestLocationAPI(TempDirMixin, TestCase):
         assert response.status_code == 200
 
         # Assert we get the inner text file
-        response_content = json.loads(response.content)
+        response_content = json.loads(response.text)
         assert response_content["directories"] == []
         assert sorted(
             base64.b64decode(e).decode() for e in response_content["entries"]
@@ -613,14 +609,14 @@ class TestPackageAPI(TempDirMixin, TestCase):
         self.as_reader()
         response = self.client.get("/api/v2/file/")
         assert response.status_code == 200
-        response_content = json.loads(response.content)
+        response_content = json.loads(response.text)
         assert len(response_content["objects"]) != 0
 
     def test_non_admins_can_read_detail(self):
         self.as_reader()
         response = self.client.get("/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/")
         assert response.status_code == 200
-        assert response.content
+        assert response.text
 
     def test_non_admins_cant_reindex(self):
         self.as_reader()
@@ -691,7 +687,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         response = self.client.get("/api/v2/file/metadata/", {"relative_path": path})
         assert response.status_code == 200
         assert response["content-type"] == "application/json"
-        body = json.loads(response.content.decode("utf8"))
+        body = json.loads(response.text)
         assert body[0]["relative_path"] == path
         assert body[0]["fileuuid"] == "86bfde11-e2a1-4ee7-b98d-9556b5f05198"
 
@@ -709,7 +705,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         )
         assert response.status_code == 200
         assert response["content-type"] == "application/json"
-        body = json.loads(response.content.decode("utf8"))
+        body = json.loads(response.text)
         assert body["success"] is True
         assert len(body["files"]) == 1
         assert body["files"][0]["name"] == "test_sip/objects/file.txt"
@@ -878,7 +874,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
             "/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/download/"
         )
         assert response.status_code == 202
-        j = json.loads(response.content.decode("utf8"))
+        j = json.loads(response.text)
         assert j["error"] is False
         assert (
             j["message"]
@@ -895,7 +891,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
             "/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/download/"
         )
         assert response.status_code == 502
-        j = json.loads(response.content.decode("utf8"))
+        j = json.loads(response.text)
         assert j["error"] is True
         assert "Error" in j["message"] and "Arkivum" in j["message"]
 
@@ -905,7 +901,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
             "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/extract_file/"
         )
         assert response.status_code == 400
-        assert "relative_path_to_file" in response.content.decode("utf8")
+        assert "relative_path_to_file" in response.text
 
     def test_download_file_from_compressed(self):
         """It should extract and return the file."""
@@ -951,7 +947,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
             data={"relative_path_to_file": "working_bag/data/test.txt"},
         )
         assert response.status_code == 202
-        j = json.loads(response.content.decode("utf8"))
+        j = json.loads(response.text)
         assert j["error"] is False
         assert (
             j["message"]
@@ -969,7 +965,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
             data={"relative_path_to_file": "working_bag/data/test.txt"},
         )
         assert response.status_code == 502
-        j = json.loads(response.content.decode("utf8"))
+        j = json.loads(response.text)
         assert j["error"] is True
         assert "Error" in j["message"] and "Arkivum" in j["message"]
 
@@ -1052,7 +1048,7 @@ class TestPipelineAPI(TestCase):
         self.as_reader()
         response = self.client.get("/api/v2/pipeline/")
         assert response.status_code == 200
-        response_content = json.loads(response.content)
+        response_content = json.loads(response.text)
         assert len(response_content["objects"]) != 0
 
     def test_non_admins_can_read_detail(self):
@@ -1066,7 +1062,7 @@ class TestPipelineAPI(TestCase):
             "/api/v2/pipeline/0cbf947a-1b19-4a01-a575-454078768fcd/"
         )
         assert response.status_code == 200
-        assert response.content
+        assert response.text
 
     def test_pipeline_create(self):
         data = {
@@ -1262,7 +1258,7 @@ def test_move_request_fails_if_package_is_in_unexpected_state(
     )
 
     assert response.status_code == 400
-    assert json.loads(response.content) == {
+    assert json.loads(response.text) == {
         "error": True,
         "message": f"The file must be in an {models.Package.UPLOADED} state to be moved. Current state: {package.status}",
     }
@@ -1280,10 +1276,7 @@ def test_move_request_fails_if_location_uuid_is_missing(
     )
 
     assert response.status_code == 400
-    assert (
-        response.content.decode()
-        == "All of these fields must be provided: location_uuid"
-    )
+    assert response.text == "All of these fields must be provided: location_uuid"
 
 
 @pytest.mark.django_db
@@ -1301,7 +1294,7 @@ def test_move_request_fails_if_target_location_does_not_exist(
     )
 
     assert response.status_code == 400
-    assert json.loads(response.content) == {
+    assert json.loads(response.text) == {
         "error": True,
         "message": f"Location UUID {location_uuid} failed to return a location",
     }
@@ -1320,7 +1313,7 @@ def test_move_request_fails_if_target_location_is_origin_location(
     )
 
     assert response.status_code == 400
-    assert json.loads(response.content) == {
+    assert json.loads(response.text) == {
         "error": True,
         "message": "New location must be different to the current location",
     }
@@ -1344,7 +1337,7 @@ def test_move_request_fails_if_target_location_purpose_does_not_match(
     )
 
     assert response.status_code == 400
-    assert json.loads(response.content) == {
+    assert json.loads(response.text) == {
         "error": True,
         "message": f"New location must have the same purpose as the current location - {package.current_location.purpose}",
     }
@@ -1367,7 +1360,7 @@ def test_move_request_fails_if_updating_package_status_fails(
     )
 
     assert response.status_code == 400
-    assert json.loads(response.content) == {
+    assert json.loads(response.text) == {
         "error": True,
         "message": f"The package must be in an {models.Package.UPLOADED} state to be moved. Current state: {package.status}",
     }
@@ -1396,7 +1389,7 @@ def test_move_request_returns_asyncronous_task_url_in_response_headers(
     )
     assert response.status_code == 202
 
-    assert response.content == b""
+    assert not response.text
     assert response.headers["Location"] == reverse(
         "api_dispatch_detail",
         kwargs={"api_name": "v2", "resource_name": "async", "id": task_id},
@@ -1498,7 +1491,7 @@ def test_review_aip_deletion_request(
             content_type="application/json",
         )
         assert resp.status_code == 200
-        assert json.loads(resp.content) == {"message": expected_message}
+        assert json.loads(resp.text) == {"message": expected_message}
 
         if expect_delete_call:
             delete_from_storage.assert_called_once()
@@ -1552,7 +1545,7 @@ def test_review_aip_deletion_request_reports_success_with_warning(
         )
 
     assert resp.status_code == 200
-    assert json.loads(resp.content) == {
+    assert json.loads(resp.text) == {
         "message": "Request approved: Package deleted successfully.",
         "detail": "LOCKSS warning",
     }
@@ -1601,7 +1594,7 @@ def test_review_aip_deletion_request_reports_failure(
             url, data=json.dumps(data), content_type="application/json"
         )
         assert resp.status_code == 200
-        assert json.loads(resp.content) == {
+        assert json.loads(resp.text) == {
             "error_message": "Package was not deleted from disk correctly: Disk error. Please contact an administrator or see logs for details."
         }
 
@@ -1655,7 +1648,7 @@ def test_review_aip_deletion_request_allows_retry_after_failure(
             url, data=json.dumps(data), content_type="application/json"
         )
         assert resp.status_code == 200
-        assert json.loads(resp.content) == {
+        assert json.loads(resp.text) == {
             "error_message": "Package was not deleted from disk correctly: Disk error. Please contact an administrator or see logs for details."
         }
 
@@ -1675,7 +1668,7 @@ def test_review_aip_deletion_request_allows_retry_after_failure(
             content_type="application/json",
         )
         assert second_response.status_code == 200
-        assert json.loads(second_response.content) == {
+        assert json.loads(second_response.text) == {
             "message": "Request approved: Package deleted successfully.",
         }
 
@@ -1729,7 +1722,7 @@ def test_review_aip_deletion_request_retry_success_includes_warning(
             url, data=json.dumps(data), content_type="application/json"
         )
         assert resp.status_code == 200
-        assert json.loads(resp.content) == {
+        assert json.loads(resp.text) == {
             "error_message": "Package was not deleted from disk correctly: Disk error. Please contact an administrator or see logs for details."
         }
 
@@ -1744,7 +1737,7 @@ def test_review_aip_deletion_request_retry_success_includes_warning(
             url, data=json.dumps(data), content_type="application/json"
         )
         assert second_resp.status_code == 200
-        assert json.loads(second_resp.content) == {
+        assert json.loads(second_resp.text) == {
             "message": "Request approved: Package deleted successfully.",
             "detail": "LOCKSS warning",
         }
@@ -1790,7 +1783,7 @@ def test_review_aip_deletion_request_cannot_be_reviewed_twice(
         url, data=json.dumps(data), content_type="application/json"
     )
     assert resp.status_code == 200
-    assert json.loads(resp.content) == {
+    assert json.loads(resp.text) == {
         "message": "Request rejected, package still stored."
     }
 
@@ -1805,6 +1798,6 @@ def test_review_aip_deletion_request_cannot_be_reviewed_twice(
         url, data=json.dumps(data), content_type="application/json"
     )
     assert resp.status_code == 400
-    assert json.loads(resp.content) == {
+    assert json.loads(resp.text) == {
         "error_message": "This request is not pending review."
     }
