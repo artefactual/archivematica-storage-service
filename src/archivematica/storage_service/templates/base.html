@@ -1,6 +1,7 @@
 {% load static %}
 {% load i18n %}
 {% load user %}
+{% logout_link as logout_url %}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -54,7 +55,12 @@
               <li {% if '/package' in request.path %}class="active"{% endif %}><a href="{% url 'locations:package_list' %}">{% trans "Packages" %}</a></li>
               <li {% if '/administration' in request.path or '/callbacks' in request.path %}class="active"{% endif %}><a href="{% url 'administration:index' %}">{% trans "Administration" %}</a></li>
               {% if user.is_authenticated %}
-              <li><a href="{% logout_link %}">{% trans "Log out" %}</a></li>
+              <li>
+                <form method="post" action="{{ logout_url }}">
+                  {% csrf_token %}
+                  <button type="submit">{% trans "Log out" %}</button>
+                </form>
+              </li>
               {% endif %}
             </ul>
           </div><!--/.nav-collapse -->
