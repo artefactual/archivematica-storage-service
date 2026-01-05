@@ -140,7 +140,9 @@ pyasn1-modules==0.4.2
 pycparser==2.23
     # via cffi
 pyjwt==2.10.1
-    # via mozilla-django-oidc
+    # via
+    #   archivematica-storage-service (pyproject.toml)
+    #   mozilla-django-oidc
 pyparsing==3.3.1
     # via
     #   httplib2

@@ -204,7 +204,9 @@ pyee==13.0.0
 pygments==2.19.2
     # via pytest
 pyjwt==2.10.1
-    # via mozilla-django-oidc
+    # via
+    #   archivematica-storage-service (pyproject.toml)
+    #   mozilla-django-oidc
 pyparsing==3.3.1
     # via
     #   httplib2
