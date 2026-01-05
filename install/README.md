@@ -493,7 +493,8 @@ These variables specify the behaviour of LDAP authentication. If
   - **Default:** `''`
 
 - **`AUTH_LDAP_TLS_KEYFILE`**:
-  - **Description:** Path to a custom LDAP key file (matching the cert given in `AUTH_LDAP_TLS_CERTFILE`).
+  - **Description:** Path to a custom LDAP key file (matching the cert given in
+    `AUTH_LDAP_TLS_CERTFILE`).
   - **Type:** `string`
   - **Default:** `''`
 
@@ -588,7 +589,8 @@ If `SS_OIDC_AUTHENTICATION` is false, none of the other ones are used.
 
 - **`SS_OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS`**:
   - **Description:** Time in seconds before reauthentication is required to
-    refresh the ID token. Should align with the token lifetime set by your OIDC Provider.
+    refresh the ID token. Should align with the token lifetime set by your OIDC
+    Provider.
   - **Type:** `integer`
   - **Default:** `900`
 
