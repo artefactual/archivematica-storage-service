@@ -178,7 +178,7 @@ def test_logging_out_logs_out_user_from_both_systems(
     assert page.url == f"{live_server.url}/"
 
     # Logging out redirects the user to the login url.
-    page.get_by_role("link", name="Log out").click()
+    page.get_by_role("button", name="Log out").click()
     assert page.url == f"{live_server.url}{reverse('login')}?next=/"
 
     # Logging in through the OIDC provider requires to authenticate again.
@@ -236,7 +236,7 @@ def test_logging_out_logs_out_user_from_secondary_provider_reader_role(
     assert page.url == f"{live_server.url}/"
 
     # Logging out redirects the user to the login url.
-    page.get_by_role("link", name="Log out").click()
+    page.get_by_role("button", name="Log out").click()
     assert page.url == f"{live_server.url}{reverse('login')}?next=/"
 
     # Logging in through the OIDC provider requires to authenticate again.
@@ -291,7 +291,7 @@ def test_logging_out_logs_out_user_from_secondary_provider_admin_role(
     assert page.url == f"{live_server.url}/"
 
     # Logging out redirects the user to the login url.
-    page.get_by_role("link", name="Log out").click()
+    page.get_by_role("button", name="Log out").click()
     assert page.url == f"{live_server.url}{reverse('login')}?next=/"
 
     # Logging in through the OIDC provider requires to authenticate again.
@@ -304,7 +304,6 @@ def test_logging_out_logs_out_user_from_secondary_provider_admin_role(
     )
 
 
-@pytest.mark.xfail(reason="Django 5.2 requires logout requests to be POST not GET.")
 @pytest.mark.django_db
 def test_logout_link_logs_out_user(
     page: Page, live_server: LiveServer, user: AbstractUser, user_apikey: ApiKey
@@ -318,6 +317,6 @@ def test_logout_link_logs_out_user(
 
     assert page.url == f"{live_server.url}/"
 
-    page.get_by_role("link", name="Log out").click()
+    page.get_by_role("button", name="Log out").click()
 
     assert page.url == f"{live_server.url}{reverse('login')}"
