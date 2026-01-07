@@ -628,6 +628,11 @@ if OIDC_AUTHENTICATION:
             if backend != "django.contrib.auth.backends.ModelBackend"
         ]
 
+    # mozilla-django-oidc 5.0.2 calls resolve_url(LOGOUT_REDIRECT_URL); Django
+    # defaults it to None, so we set '/' (the library's intended default) to
+    # avoid resolve_url(None) failing.
+    LOGOUT_REDIRECT_URL = environ.get("LOGOUT_REDIRECT_URL", "/")
+
     # AUTH_SERVER = 'https://login.microsoftonline.com/common/v2.0/'
     OIDC_RP_CLIENT_ID = environ.get("OIDC_RP_CLIENT_ID", "")
     OIDC_RP_CLIENT_SECRET = environ.get("OIDC_RP_CLIENT_SECRET", "")
