@@ -2,13 +2,14 @@ import os
 from collections.abc import Generator
 
 import pytest
+from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.models import Group
-from django.contrib.auth.models import User
 from django.urls import reverse
 from playwright.sync_api import Page
 from pytest_django.fixtures import SettingsWrapper
 from pytest_django.live_server_helper import LiveServer
 from pytest_django.plugin import DjangoDbBlocker
+from tastypie.models import ApiKey
 
 if "RUN_INTEGRATION_TESTS" not in os.environ:
     pytest.skip("Skipping integration tests", allow_module_level=True)
@@ -32,7 +33,7 @@ def recreate_user_groups(
 
 
 @pytest.fixture
-def user(django_user_model: type[User]) -> User:
+def user(django_user_model: type[AbstractUser]) -> AbstractUser:
     user = django_user_model.objects.create(
         username="foobar",
         email="foobar@example.com",
@@ -45,11 +46,16 @@ def user(django_user_model: type[User]) -> User:
     return user
 
 
+@pytest.fixture
+def user_apikey(user: AbstractUser) -> ApiKey:
+    return ApiKey.objects.create(user=user)
+
+
 @pytest.mark.django_db
 def test_oidc_backend_creates_local_user(
     page: Page,
     live_server: LiveServer,
-    django_user_model: type[User],
+    django_user_model: type[AbstractUser],
 ) -> None:
     page.goto(live_server.url)
 
@@ -85,7 +91,7 @@ def test_oidc_backend_creates_local_user(
 
 @pytest.mark.django_db
 def test_local_authentication_backend_authenticates_existing_user(
-    page: Page, live_server: LiveServer, user: User
+    page: Page, live_server: LiveServer, user: AbstractUser
 ) -> None:
     page.goto(live_server.url)
 
@@ -118,7 +124,7 @@ def test_local_authentication_backend_authenticates_existing_user(
 def test_removing_model_authentication_backend_disables_local_authentication(
     page: Page,
     live_server: LiveServer,
-    user: User,
+    user: AbstractUser,
     settings: SettingsWrapper,
 ) -> None:
     disabled_backends = ["django.contrib.auth.backends.ModelBackend"]
@@ -143,7 +149,7 @@ def test_removing_model_authentication_backend_disables_local_authentication(
 def test_setting_login_url_redirects_to_oidc_login_page(
     page: Page,
     live_server: LiveServer,
-    user: User,
+    user: AbstractUser,
     settings: SettingsWrapper,
 ) -> None:
     page.goto(live_server.url)
@@ -172,7 +178,7 @@ def test_logging_out_logs_out_user_from_both_systems(
     assert page.url == f"{live_server.url}/"
 
     # Logging out redirects the user to the login url.
-    page.get_by_role("link", name="Log out").click()
+    page.get_by_role("button", name="Log out").click()
     assert page.url == f"{live_server.url}{reverse('login')}?next=/"
 
     # Logging in through the OIDC provider requires to authenticate again.
@@ -230,7 +236,7 @@ def test_logging_out_logs_out_user_from_secondary_provider_reader_role(
     assert page.url == f"{live_server.url}/"
 
     # Logging out redirects the user to the login url.
-    page.get_by_role("link", name="Log out").click()
+    page.get_by_role("button", name="Log out").click()
     assert page.url == f"{live_server.url}{reverse('login')}?next=/"
 
     # Logging in through the OIDC provider requires to authenticate again.
@@ -285,7 +291,7 @@ def test_logging_out_logs_out_user_from_secondary_provider_admin_role(
     assert page.url == f"{live_server.url}/"
 
     # Logging out redirects the user to the login url.
-    page.get_by_role("link", name="Log out").click()
+    page.get_by_role("button", name="Log out").click()
     assert page.url == f"{live_server.url}{reverse('login')}?next=/"
 
     # Logging in through the OIDC provider requires to authenticate again.
@@ -296,3 +302,21 @@ def test_logging_out_logs_out_user_from_secondary_provider_admin_role(
     assert page.url.startswith(
         settings.OIDC_PROVIDERS["SECONDARY"]["OIDC_OP_AUTHORIZATION_ENDPOINT"]
     )
+
+
+@pytest.mark.django_db
+def test_logout_link_logs_out_user(
+    page: Page, live_server: LiveServer, user: AbstractUser, user_apikey: ApiKey
+) -> None:
+    page.goto(live_server.url)
+    assert page.url == f"{live_server.url}{reverse('login')}?next=/"
+
+    page.get_by_label("Username").fill("foobar")
+    page.get_by_label("Password").fill("foobar1A,")
+    page.get_by_text("Log in", exact=True).click()
+
+    assert page.url == f"{live_server.url}/"
+
+    page.get_by_role("button", name="Log out").click()
+
+    assert page.url == f"{live_server.url}{reverse('login')}"

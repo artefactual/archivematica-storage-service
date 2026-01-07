@@ -92,3 +92,27 @@ button.link:active {
 .callback-extended-description {
   margin-bottom: 20px;
 }
+
+.nav > li > form {
+  margin: 0;
+}
+
+.nav li > form > button {
+  background: none !important;
+  border: 0;
+  color: #999;
+  cursor: pointer;
+  font: inherit;
+  padding: 10px 15px 10px;
+  text-decoration: none;
+  text-shadow: 0 -1px 0 rgba(0,0,0,0.25);
+}
+
+.nav li > form > button:hover,
+.nav li > form > button:focus {
+  color: #fff;
+}
+
+.nav li > form > button:focus {
+  outline: none;
+}
