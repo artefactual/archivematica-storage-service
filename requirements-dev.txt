@@ -10,9 +10,9 @@ asgiref==3.11.0
     # via django
 bagit==1.9.0
     # via archivematica-storage-service (pyproject.toml)
-boto3==1.42.4
+boto3==1.42.23
     # via archivematica-storage-service (pyproject.toml)
-botocore==1.42.4
+botocore==1.42.23
     # via
     #   boto3
     #   s3transfer
@@ -20,9 +20,9 @@ brotli==1.2.0
     # via archivematica-storage-service (pyproject.toml)
 build==1.3.0
     # via pip-tools
-cachetools==6.2.2
+cachetools==6.2.4
     # via tox
-certifi==2025.11.12
+certifi==2026.1.4
     # via requests
 cffi==2.0.0
     # via cryptography
@@ -34,23 +34,21 @@ click==8.3.1
     # via pip-tools
 colorama==0.4.6
     # via tox
-coverage[toml]==7.12.0
+coverage[toml]==7.13.1
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   pytest-cov
 cryptography==46.0.3
-    # via
-    #   josepy
-    #   mozilla-django-oidc
+    # via mozilla-django-oidc
 debtcollector==3.0.0
     # via
     #   oslo-utils
     #   python-keystoneclient
 distlib==0.4.0
     # via virtualenv
-dj-database-url==3.0.1
+dj-database-url==3.1.0
     # via archivematica-storage-service (pyproject.toml)
-django==5.2.9
+django==5.2.10
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   dj-database-url
@@ -62,7 +60,7 @@ django==5.2.9
     #   django-stubs-ext
     #   jsonfield
     #   mozilla-django-oidc
-django-auth-ldap==5.2.0
+django-auth-ldap==5.3.0
     # via archivematica-storage-service (pyproject.toml)
 django-cas-ng==5.1.0
     # via archivematica-storage-service (pyproject.toml)
@@ -82,7 +80,7 @@ django-tastypie==0.15.1
     # via archivematica-storage-service (pyproject.toml)
 exceptiongroup==1.3.1
     # via pytest
-filelock==3.20.0
+filelock==3.20.2
     # via
     #   tox
     #   virtualenv
@@ -108,13 +106,11 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-josepy==2.2.0
-    # via mozilla-django-oidc
 jsonfield==3.2.0
     # via archivematica-storage-service (pyproject.toml)
 keystoneauth1==5.12.0
     # via python-keystoneclient
-librt==0.7.2
+librt==0.7.7
     # via mypy
 lxml==6.0.2
     # via
@@ -124,11 +120,11 @@ lxml==6.0.2
     #   sword2
 metsrw==0.6.1
     # via archivematica-storage-service (pyproject.toml)
-mozilla-django-oidc==4.0.1
+mozilla-django-oidc==5.0.2
     # via archivematica-storage-service (pyproject.toml)
 msgpack==1.1.2
     # via oslo-serialization
-mypy==1.19.0
+mypy==1.19.1
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   django-stubs
@@ -149,7 +145,7 @@ oslo-i18n==6.7.1
     #   oslo-config
     #   oslo-utils
     #   python-keystoneclient
-oslo-serialization==5.8.0
+oslo-serialization==5.9.0
     # via python-keystoneclient
 oslo-utils==9.2.0
     # via
@@ -165,7 +161,7 @@ packaging==25.0
     #   pytest
     #   python-keystoneclient
     #   tox
-pathspec==0.12.1
+pathspec==1.0.1
     # via mypy
 pbr==7.0.3
     # via
@@ -180,7 +176,7 @@ platformdirs==4.5.1
     # via
     #   tox
     #   virtualenv
-playwright==1.56.0
+playwright==1.57.0
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   pytest-playwright
@@ -193,7 +189,7 @@ prometheus-client==0.23.1
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   django-prometheus
-psutil==7.1.3
+psutil==7.2.1
     # via oslo-utils
 pyasn1==0.6.1
     # via
@@ -207,7 +203,11 @@ pyee==13.0.0
     # via playwright
 pygments==2.19.2
     # via pytest
-pyparsing==3.2.5
+pyjwt==2.10.1
+    # via
+    #   archivematica-storage-service (pyproject.toml)
+    #   mozilla-django-oidc
+pyparsing==3.3.1
     # via
     #   httplib2
     #   oslo-utils
@@ -217,7 +217,7 @@ pyproject-hooks==1.2.0
     # via
     #   build
     #   pip-tools
-pytest==9.0.1
+pytest==9.0.2
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   pytest-base-url
@@ -241,7 +241,7 @@ python-dateutil==2.9.0.post0
     # via
     #   botocore
     #   django-tastypie
-python-gnupg==0.5.5
+python-gnupg==0.5.6
     # via archivematica-storage-service (pyproject.toml)
 python-keystoneclient==5.7.0
     # via archivematica-storage-service (pyproject.toml)
@@ -276,7 +276,7 @@ s3transfer==0.16.0
     # via boto3
 six==1.17.0
     # via python-dateutil
-sqlparse==0.5.4
+sqlparse==0.5.5
     # via django
 stevedore==5.6.0
     # via
@@ -297,7 +297,7 @@ tomli==2.3.0
     #   pyproject-api
     #   pytest
     #   tox
-tox==4.32.0
+tox==4.33.0
     # via archivematica-storage-service (pyproject.toml)
 types-pyyaml==6.0.12.20250915
     # via django-stubs
@@ -314,15 +314,15 @@ typing-extensions==4.15.0
     #   pyee
     #   tox
     #   virtualenv
-tzdata==2025.2
+tzdata==2025.3
     # via
     #   oslo-serialization
     #   oslo-utils
-urllib3==2.6.0
+urllib3==2.6.3
     # via
     #   botocore
     #   requests
-virtualenv==20.35.4
+virtualenv==20.36.0
     # via tox
 wheel==0.45.1
     # via pip-tools

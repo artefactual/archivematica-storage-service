@@ -1,12 +1,11 @@
-import json
 from typing import Any
 
+import jwt
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpRequest
 from django_cas_ng.backends import CASBackend
-from josepy.jws import JWS
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 
 from archivematica.storage_service.administration import roles
@@ -119,9 +118,7 @@ class CustomOIDCBackend(OIDCAuthenticationBackend):
         """
 
         def decode_token(token: str) -> Any:
-            sig = JWS.from_compact(token.encode("utf-8"))
-            payload = sig.payload.decode("utf-8")
-            return json.loads(payload)
+            return jwt.decode(token, options={"verify_signature": False})
 
         access_info = decode_token(access_token)
         id_info = decode_token(id_token)
