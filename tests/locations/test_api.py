@@ -710,6 +710,34 @@ class TestPackageAPI(TempDirMixin, TestCase):
         assert len(body["files"]) == 1
         assert body["files"][0]["name"] == "test_sip/objects/file.txt"
 
+    def test_put_preserves_related_packages_when_omitted(self):
+        package = models.Package.objects.get(uuid="0d4e739b-bf60-4b87-bc20-67a379b28cea")
+        related = models.Package.objects.get(uuid="6aebdb24-1b6b-41ab-b4a3-df9a73726a34")
+        package.related_packages.add(related)
+
+        response = self.client.get(f"/api/v2/file/{package.uuid}/")
+        assert response.status_code == 200
+        body = json.loads(response.text)
+        body.pop("related_packages", None)
+        body.pop("resource_uri", None)
+        body.pop("replicas", None)
+        body.pop("replicated_package", None)
+        body.pop("current_full_path", None)
+        body.pop("encrypted", None)
+
+        response = self.client.put(
+            f"/api/v2/file/{package.uuid}/",
+            data=json.dumps(body),
+            content_type="application/json",
+        )
+        assert response.status_code == 200
+
+        package.refresh_from_db()
+        related_uuids = set(
+            package.related_packages.values_list("uuid", flat=True)
+        )
+        assert related.uuid in related_uuids
+
     def test_adding_package_files_returns_400_with_empty_post_body(self):
         response = self.client.put(
             "/api/v2/file/e0a41934-c1d7-45ba-9a95-a7531c063ed1/contents/",
