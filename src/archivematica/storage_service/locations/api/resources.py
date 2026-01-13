@@ -1175,6 +1175,10 @@ class PackageResource(ModelResource):
         """
         bundle_detail_data = self.get_bundle_detail_data(bundle) if bundle.obj else None
         arg_detail_data = kwargs.get(self._meta.detail_uri_name, None)
+        preserve_related_packages = (
+            bundle.request.method == "PUT" and "related_packages" not in bundle.data
+        )
+        original_related_packages = None
 
         if not bundle_detail_data or (
             arg_detail_data and bundle_detail_data != arg_detail_data
@@ -1194,10 +1198,15 @@ class PackageResource(ModelResource):
                         "A model instance matching the provided arguments could not be found."
                     )
                 )
+        if preserve_related_packages and bundle.obj is not None:
+            original_related_packages = list(bundle.obj.related_packages.all())
         bundle = self.full_hydrate(bundle)
         self.authorized_update_detail(self.get_object_list(bundle.request), bundle)
         bundle = self.obj_update_hook(bundle, **kwargs)
-        return self.save(bundle, skip_errors=skip_errors)
+        bundle = self.save(bundle, skip_errors=skip_errors)
+        if original_related_packages is not None:
+            bundle.obj.related_packages.set(original_related_packages)
+        return bundle
 
     def obj_update_hook(self, bundle, **kwargs):
         """
