@@ -711,8 +711,12 @@ class TestPackageAPI(TempDirMixin, TestCase):
         assert body["files"][0]["name"] == "test_sip/objects/file.txt"
 
     def test_put_preserves_related_packages_when_omitted(self):
-        package = models.Package.objects.get(uuid="0d4e739b-bf60-4b87-bc20-67a379b28cea")
-        related = models.Package.objects.get(uuid="6aebdb24-1b6b-41ab-b4a3-df9a73726a34")
+        package = models.Package.objects.get(
+            uuid="0d4e739b-bf60-4b87-bc20-67a379b28cea"
+        )
+        related = models.Package.objects.get(
+            uuid="6aebdb24-1b6b-41ab-b4a3-df9a73726a34"
+        )
         package.related_packages.add(related)
 
         response = self.client.get(f"/api/v2/file/{package.uuid}/")
@@ -733,9 +737,7 @@ class TestPackageAPI(TempDirMixin, TestCase):
         assert response.status_code == 200
 
         package.refresh_from_db()
-        related_uuids = set(
-            package.related_packages.values_list("uuid", flat=True)
-        )
+        related_uuids = set(package.related_packages.values_list("uuid", flat=True))
         assert related.uuid in related_uuids
 
     def test_adding_package_files_returns_400_with_empty_post_body(self):
