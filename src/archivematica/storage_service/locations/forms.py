@@ -303,8 +303,7 @@ class LocationForm(forms.ModelForm):
         Should be passed parameter 'space_protocol' which is the entry from
         Space.ACCESS_PROTOCOL_CHOICES that this Location belongs to.
         """
-        space_protocol = kwargs.get("space_protocol")
-        del kwargs["space_protocol"]
+        space_protocol = kwargs.pop("space_protocol")
         super().__init__(*args, **kwargs)
         # Disable purposes that aren't in the Space's allowlist
         all_ = {x[0] for x in models.Location.PURPOSE_CHOICES}
