@@ -191,7 +191,7 @@ prometheus-client==0.24.0
     #   django-prometheus
 psutil==7.2.1
     # via oslo-utils
-pyasn1==0.6.1
+pyasn1==0.6.2
     # via
     #   pyasn1-modules
     #   python-ldap
