@@ -324,7 +324,7 @@ urllib3==2.6.3
     #   requests
 virtualenv==20.36.1
     # via tox
-wheel==0.45.1
+wheel==0.46.2
     # via pip-tools
 whitenoise==6.11.0
     # via archivematica-storage-service (pyproject.toml)
