@@ -24,6 +24,7 @@ from collections.abc import Iterable
 from collections.abc import Iterator
 from pathlib import Path
 from typing import TYPE_CHECKING
+from typing import Any
 from typing import Protocol
 from typing import TypedDict
 from typing import cast
@@ -45,6 +46,7 @@ from archivematica.storage_service.locations import package_request
 from archivematica.storage_service.locations.models import Event
 from archivematica.storage_service.locations.models import Location
 from archivematica.storage_service.locations.models import Package
+from archivematica.storage_service.locations.models import Pipeline
 from archivematica.storage_service.locations.models import Space
 
 if TYPE_CHECKING:
@@ -198,6 +200,15 @@ class Client:
     ) -> HttpResponse:
         return self.admin_client.post(
             f"/api/v2/file/{file_id}/delete_aip/",
+            json.dumps(data),
+            content_type="application/json",
+        )
+
+    def request_reingest(
+        self, file_id: uuid.UUID, data: dict[str, str]
+    ) -> HttpResponse:
+        return self.admin_client.post(
+            f"/api/v2/file/{file_id}/reingest/",
             json.dumps(data),
             content_type="application/json",
         )
@@ -860,6 +871,262 @@ class AIPRecoveryScenario(StorageScenario):
                 utils.generate_checksum(extracted_path / self.pkg_name).hexdigest()
                 == utils.generate_checksum(self.pkg).hexdigest()
             )
+
+
+class ReingestScenario(StorageScenario):
+    REINGEST_MARKER = "reingest-marker"
+
+    def request_reingest(self, reingest_type: str) -> dict[str, Any]:
+        resp = self.client.request_reingest(
+            self.PACKAGE_UUID,
+            {
+                "pipeline": str(self.PIPELINE_UUID),
+                "reingest_type": reingest_type,
+            },
+        )
+        assert resp.status_code == 202
+        return cast(dict[str, Any], json.loads(resp.text))
+
+    def get_currently_processing_location(self) -> LocationResponseResult:
+        resp = self.client.get_locations(
+            {
+                "pipeline_uuid": str(self.PIPELINE_UUID),
+                "purpose": Location.CURRENTLY_PROCESSING,
+            }
+        )
+        assert resp.status_code == 200
+        return cast(LocationResponseResult, json.loads(resp.text)["objects"][0])
+
+    def prepare_reingested_aip(
+        self, relative_path: str, source_path: Path | None = None
+    ) -> Path:
+        cp_location = self.get_currently_processing_location()
+        reingest_path = Path(cp_location["path"]) / "tmp" / relative_path
+        if self.compressed:
+            reingest_path.parent.mkdir(parents=True, exist_ok=True)
+            if source_path is None:
+                source_path = FIXTURES_DIR / self.pkg
+            shutil.copy2(source_path, reingest_path)
+            return reingest_path
+        assert reingest_path.is_dir()
+        self._create_reingest_mets(reingest_path)
+        return reingest_path
+
+    def _create_reingest_mets(self, reingest_root: Path) -> Path:
+        data_dir = reingest_root / "data"
+        mets_files = list(data_dir.glob("METS.*.xml"))
+        assert mets_files
+        reingest_mets = data_dir / f"METS.{self.PACKAGE_UUID}.xml"
+        shutil.copy2(mets_files[0], reingest_mets)
+        content = reingest_mets.read_text()
+        marker = f"<!-- {self.REINGEST_MARKER} -->"
+        if marker not in content:
+            if "</mets:mets>" not in content:
+                raise AssertionError("METS closing tag not found")
+            content = content.replace("</mets:mets>", f"{marker}\n</mets:mets>", 1)
+            reingest_mets.write_text(content)
+        return reingest_mets
+
+    def finish_reingest(
+        self,
+        *,
+        origin_location: str,
+        origin_path: str,
+        current_location: str,
+        current_path: str,
+    ) -> HttpResponse:
+        data: dict[str, str | int | list[PremisEvent] | list[PremisAgent]] = {
+            "uuid": str(self.PACKAGE_UUID),
+            "origin_location": origin_location,
+            "origin_path": origin_path,
+            "current_location": current_location,
+            "current_path": current_path,
+            "size": Package.objects.get(uuid=self.PACKAGE_UUID).size,
+            "package_type": Package.AIP,
+            "aip_subtype": "Archival Information Package",
+            "origin_pipeline": f"/api/v2/pipeline/{self.PIPELINE_UUID}/",
+            "events": [self.get_compression_event()],
+            "agents": [self.get_agent()],
+            "reingest": True,
+        }
+        return self.client.add_file(self.PACKAGE_UUID, data)
+
+
+@pytest.mark.parametrize(
+    ("pkg", "compressed"),
+    [
+        (COMPRESSED_PACKAGE, True),
+        (UNCOMPRESSED_PACKAGE, False),
+    ],
+    ids=["compressed", "uncompressed"],
+)
+@pytest.mark.parametrize(
+    ("storage_protocol", "replication_protocol"),
+    [
+        (Space.S3, Space.S3),
+        (Space.S3, Space.RCLONE),
+        (Space.S3, Space.NFS),
+        (Space.S3, Space.LOCAL_FILESYSTEM),
+        (Space.RCLONE, Space.S3),
+        (Space.RCLONE, Space.RCLONE),
+        (Space.RCLONE, Space.NFS),
+        (Space.RCLONE, Space.LOCAL_FILESYSTEM),
+        (Space.NFS, Space.S3),
+        (Space.NFS, Space.RCLONE),
+        (Space.NFS, Space.NFS),
+        (Space.NFS, Space.LOCAL_FILESYSTEM),
+        (Space.LOCAL_FILESYSTEM, Space.S3),
+        (Space.LOCAL_FILESYSTEM, Space.RCLONE),
+        (Space.LOCAL_FILESYSTEM, Space.NFS),
+        (Space.LOCAL_FILESYSTEM, Space.LOCAL_FILESYSTEM),
+    ],
+    ids=[
+        "s3_to_s3",
+        "s3_to_rclone",
+        "s3_to_nfs",
+        "s3_to_local_fs",
+        "rclone_to_s3",
+        "rclone_to_rclone",
+        "rclone_to_nfs",
+        "rclone_to_local_fs",
+        "nfs_to_s3",
+        "nfs_to_rclone",
+        "nfs_to_nfs",
+        "nfs_to_local_fs",
+        "local_fs_to_s3",
+        "local_fs_to_rclone",
+        "local_fs_to_nfs",
+        "local_fs_to_local_fs",
+    ],
+)
+@pytest.mark.django_db
+def test_reingest_with_replicas(
+    startup: None,
+    admin_client: DjangoTestClient,
+    working_directory_path: Path,
+    s3_browse_bucket: str,
+    s3_resource: S3ServiceResource,
+    monkeypatch: pytest.MonkeyPatch,
+    pkg: Path,
+    compressed: bool,
+    storage_protocol: str,
+    replication_protocol: str,
+) -> None:
+    scenario = ReingestScenario(
+        storage_protocol=storage_protocol,
+        replication_protocol=replication_protocol,
+        pkg=pkg,
+        compressed=compressed,
+    )
+    scenario.init(
+        admin_client,
+        working_directory_path,
+        s3_bucket=s3_browse_bucket,
+    )
+    scenario.store_aip()
+    scenario.assert_stored()
+
+    cp_location = Location.objects.get(
+        pipeline__uuid=scenario.PIPELINE_UUID,
+        purpose=Location.CURRENTLY_PROCESSING,
+    )
+    cp_staging_path = (
+        working_directory_path
+        / "var"
+        / "archivematica"
+        / "sharedDirectory"
+        / "tmp"
+        / "reingest_staging"
+    )
+    cp_staging_path.mkdir(parents=True, exist_ok=True)
+    cp_location.space.staging_path = str(cp_staging_path)
+    cp_location.space.save()
+
+    package = Package.objects.get(uuid=scenario.PACKAGE_UUID)
+    current_path = package.current_path
+    original_replicas = list(Package.objects.filter(replicated_package=package.uuid))
+    original_replica_uuids = {replica.uuid for replica in original_replicas}
+    assert len(original_replicas) == 1
+
+    reingest_path: str | None = None
+
+    def fake_reingest(
+        self: Pipeline, name: str, _uuid: uuid.UUID, _target: str = "transfer"
+    ) -> dict[str, str]:
+        nonlocal reingest_path
+        reingest_path = name
+        return {"reingest_uuid": str(uuid.uuid4())}
+
+    monkeypatch.setattr(Pipeline, "reingest", fake_reingest)
+
+    scenario.request_reingest(Package.FULL)
+    assert reingest_path is not None
+
+    relative_path = Path(current_path)
+    if scenario.compressed:
+        relative_path_str = relative_path.as_posix()
+    else:
+        relative_path_str = reingest_path
+    source_path = Path(package.full_path)
+    if scenario.compressed and not source_path.exists():
+        package_any = cast(Any, package)
+        source_path = Path(package_any.fetch_local_path())
+    scenario.prepare_reingested_aip(relative_path_str, source_path=source_path)
+    package_any = cast(Any, package)
+    package_any.clear_local_tempdirs()
+    if scenario.compressed:
+        origin_path = (Path("tmp") / relative_path).as_posix()
+    else:
+        origin_path = f"tmp/{relative_path_str.rstrip('/')}/"
+
+    assert scenario.aip_storage_location_attrs is not None
+    resp = scenario.finish_reingest(
+        origin_location=scenario.get_currently_processing_location()["resource_uri"],
+        origin_path=origin_path,
+        current_location=scenario.aip_storage_location_attrs["resource_uri"],
+        current_path=current_path,
+    )
+    assert resp.status_code in {200, 202}
+
+    package.refresh_from_db()
+    if scenario.compressed:
+        assert package.full_pointer_file_path
+        assert Path(package.full_pointer_file_path).is_file()
+    else:
+        assert package.full_pointer_file_path is None
+
+    resp = scenario.client.check_fixity(package.uuid)
+    assert resp.status_code == 200
+    assert json.loads(resp.text)["success"] is True
+
+    replicas = list(Package.objects.filter(replicated_package=package.uuid))
+    deleted_replicas = [
+        replica for replica in replicas if replica.status == Package.DELETED
+    ]
+    uploaded_replicas = [
+        replica for replica in replicas if replica.status == Package.UPLOADED
+    ]
+    assert {replica.uuid for replica in deleted_replicas} == original_replica_uuids
+    assert len(uploaded_replicas) == 1
+    assert uploaded_replicas[0].uuid not in original_replica_uuids
+    for replica in uploaded_replicas:
+        if scenario.compressed:
+            assert replica.full_pointer_file_path
+            assert Path(replica.full_pointer_file_path).is_file()
+        else:
+            assert replica.full_pointer_file_path is None
+
+    if scenario.replication_protocol in scenario.OBJECT_STORAGE_PROTOCOLS:
+        bucket_name = scenario._object_storage_bucket_name
+        assert bucket_name
+        replica = uploaded_replicas[0]
+        prefix = (
+            Path(replica.current_location.relative_path) / replica.current_path
+        ).as_posix()
+        if not scenario.compressed:
+            prefix = f"{prefix}/"
+        matches = list(s3_resource.Bucket(bucket_name).objects.filter(Prefix=prefix))
+        assert matches
 
 
 @pytest.mark.parametrize(
