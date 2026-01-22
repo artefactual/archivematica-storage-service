@@ -876,12 +876,20 @@ class ReingestScenario(StorageScenario):
         assert resp.status_code == 200
         return cast(LocationResponseResult, json.loads(resp.text)["objects"][0])
 
-    def prepare_reingested_aip(self, relative_path: str) -> Path:
+    def prepare_reingested_aip(
+        self, relative_path: str, source_path: Path | None = None
+    ) -> Path:
         cp_location = self.get_currently_processing_location()
-        reingest_root = Path(cp_location["path"]) / "tmp" / relative_path
-        assert reingest_root.is_dir()
-        self._create_reingest_mets(reingest_root)
-        return reingest_root
+        reingest_path = Path(cp_location["path"]) / "tmp" / relative_path
+        if self.compressed:
+            reingest_path.parent.mkdir(parents=True, exist_ok=True)
+            if source_path is None:
+                source_path = FIXTURES_DIR / self.pkg
+            shutil.copy2(source_path, reingest_path)
+            return reingest_path
+        assert reingest_path.is_dir()
+        self._create_reingest_mets(reingest_path)
+        return reingest_path
 
     def _create_reingest_mets(self, reingest_root: Path) -> Path:
         data_dir = reingest_root / "data"
@@ -924,6 +932,14 @@ class ReingestScenario(StorageScenario):
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize(
+    "pkg,compressed",
+    [
+        (COMPRESSED_PACKAGE, True),
+        (UNCOMPRESSED_PACKAGE, False),
+    ],
+    ids=["compressed", "uncompressed"],
+)
 def test_reingest_with_replicas(
     startup: None,
     admin_client: DjangoTestClient,
@@ -931,12 +947,14 @@ def test_reingest_with_replicas(
     s3_browse_bucket: str,
     s3_resource: ServiceResource,
     monkeypatch: pytest.MonkeyPatch,
+    pkg: Path,
+    compressed: bool,
 ) -> None:
     scenario = ReingestScenario(
         storage_protocol=Space.NFS,
         replication_protocol=Space.S3,
-        pkg=UNCOMPRESSED_PACKAGE,
-        compressed=False,
+        pkg=pkg,
+        compressed=compressed,
     )
     scenario.init(
         admin_client,
@@ -965,7 +983,9 @@ def test_reingest_with_replicas(
     relative_path_str = relative_path.as_posix()
     if not scenario.compressed:
         relative_path_str = f"{relative_path_str}/"
-    scenario.prepare_reingested_aip(relative_path_str)
+    scenario.prepare_reingested_aip(
+        relative_path_str, source_path=Path(package.full_path)
+    )
     origin_path = (Path("tmp") / relative_path).as_posix()
     if not scenario.compressed:
         origin_path = f"{origin_path}/"
@@ -980,9 +1000,11 @@ def test_reingest_with_replicas(
     assert resp.status_code in {200, 202}
 
     package.refresh_from_db()
-    mets_path = Path(package.full_path) / "data" / f"METS.{package.uuid}.xml"
-    assert mets_path.is_file()
-    assert ReingestScenario.REINGEST_MARKER in mets_path.read_text()
+    if scenario.compressed:
+        assert package.full_pointer_file_path
+        assert Path(package.full_pointer_file_path).is_file()
+    else:
+        assert package.full_pointer_file_path is None
 
     resp = scenario.client.check_fixity(package.uuid)
     assert resp.status_code == 200
@@ -998,6 +1020,12 @@ def test_reingest_with_replicas(
     assert {replica.uuid for replica in deleted_replicas} == original_replica_uuids
     assert len(uploaded_replicas) == 1
     assert uploaded_replicas[0].uuid not in original_replica_uuids
+    for replica in uploaded_replicas:
+        if scenario.compressed:
+            assert replica.full_pointer_file_path
+            assert Path(replica.full_pointer_file_path).is_file()
+        else:
+            assert replica.full_pointer_file_path is None
 
     if scenario.replication_protocol in scenario.OBJECT_STORAGE_PROTOCOLS:
         bucket_name = scenario._object_storage_bucket_name
