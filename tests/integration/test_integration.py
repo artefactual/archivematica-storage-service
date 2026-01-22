@@ -1116,6 +1116,11 @@ def test_reingest_with_replicas(
     s3_resource: ServiceResource,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    if scenario.storage_protocol in scenario.OBJECT_STORAGE_PROTOCOLS:
+        pytest.xfail(
+            "Known reingest issue with object storage protocols; see "
+            "https://github.com/archivematica/Issues/issues/1342."
+        )
     scenario.init(
         admin_client,
         working_directory_path,
