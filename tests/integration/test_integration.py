@@ -964,6 +964,22 @@ def test_reingest_with_replicas(
     scenario.store_aip()
     scenario.assert_stored()
 
+    cp_location = Location.objects.get(
+        pipeline__uuid=scenario.PIPELINE_UUID,
+        purpose=Location.CURRENTLY_PROCESSING,
+    )
+    cp_staging_path = (
+        working_directory_path
+        / "var"
+        / "archivematica"
+        / "sharedDirectory"
+        / "tmp"
+        / "reingest_staging"
+    )
+    cp_staging_path.mkdir(parents=True, exist_ok=True)
+    cp_location.space.staging_path = str(cp_staging_path)
+    cp_location.space.save()
+
     package = Package.objects.get(uuid=scenario.PACKAGE_UUID)
     current_path = package.current_path
     original_replicas = list(Package.objects.filter(replicated_package=package.uuid))
