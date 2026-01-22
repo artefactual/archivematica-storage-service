@@ -933,29 +933,189 @@ class ReingestScenario(StorageScenario):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "pkg,compressed",
+    "scenario",
     [
-        (COMPRESSED_PACKAGE, True),
-        (UNCOMPRESSED_PACKAGE, False),
+        ReingestScenario(
+            storage_protocol=Space.LOCAL_FILESYSTEM,
+            replication_protocol=Space.NFS,
+            pkg=COMPRESSED_PACKAGE,
+            compressed=True,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.LOCAL_FILESYSTEM,
+            replication_protocol=Space.NFS,
+            pkg=UNCOMPRESSED_PACKAGE,
+            compressed=False,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.LOCAL_FILESYSTEM,
+            replication_protocol=Space.S3,
+            pkg=COMPRESSED_PACKAGE,
+            compressed=True,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.LOCAL_FILESYSTEM,
+            replication_protocol=Space.S3,
+            pkg=UNCOMPRESSED_PACKAGE,
+            compressed=False,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.LOCAL_FILESYSTEM,
+            replication_protocol=Space.RCLONE,
+            pkg=COMPRESSED_PACKAGE,
+            compressed=True,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.LOCAL_FILESYSTEM,
+            replication_protocol=Space.RCLONE,
+            pkg=UNCOMPRESSED_PACKAGE,
+            compressed=False,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.NFS,
+            replication_protocol=Space.LOCAL_FILESYSTEM,
+            pkg=COMPRESSED_PACKAGE,
+            compressed=True,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.NFS,
+            replication_protocol=Space.LOCAL_FILESYSTEM,
+            pkg=UNCOMPRESSED_PACKAGE,
+            compressed=False,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.NFS,
+            replication_protocol=Space.S3,
+            pkg=COMPRESSED_PACKAGE,
+            compressed=True,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.NFS,
+            replication_protocol=Space.S3,
+            pkg=UNCOMPRESSED_PACKAGE,
+            compressed=False,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.NFS,
+            replication_protocol=Space.RCLONE,
+            pkg=COMPRESSED_PACKAGE,
+            compressed=True,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.NFS,
+            replication_protocol=Space.RCLONE,
+            pkg=UNCOMPRESSED_PACKAGE,
+            compressed=False,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.S3,
+            replication_protocol=Space.LOCAL_FILESYSTEM,
+            pkg=COMPRESSED_PACKAGE,
+            compressed=True,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.S3,
+            replication_protocol=Space.LOCAL_FILESYSTEM,
+            pkg=UNCOMPRESSED_PACKAGE,
+            compressed=False,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.S3,
+            replication_protocol=Space.NFS,
+            pkg=COMPRESSED_PACKAGE,
+            compressed=True,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.S3,
+            replication_protocol=Space.NFS,
+            pkg=UNCOMPRESSED_PACKAGE,
+            compressed=False,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.S3,
+            replication_protocol=Space.S3,
+            pkg=COMPRESSED_PACKAGE,
+            compressed=True,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.S3,
+            replication_protocol=Space.S3,
+            pkg=UNCOMPRESSED_PACKAGE,
+            compressed=False,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.RCLONE,
+            replication_protocol=Space.LOCAL_FILESYSTEM,
+            pkg=COMPRESSED_PACKAGE,
+            compressed=True,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.RCLONE,
+            replication_protocol=Space.LOCAL_FILESYSTEM,
+            pkg=UNCOMPRESSED_PACKAGE,
+            compressed=False,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.RCLONE,
+            replication_protocol=Space.NFS,
+            pkg=COMPRESSED_PACKAGE,
+            compressed=True,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.RCLONE,
+            replication_protocol=Space.NFS,
+            pkg=UNCOMPRESSED_PACKAGE,
+            compressed=False,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.RCLONE,
+            replication_protocol=Space.RCLONE,
+            pkg=COMPRESSED_PACKAGE,
+            compressed=True,
+        ),
+        ReingestScenario(
+            storage_protocol=Space.RCLONE,
+            replication_protocol=Space.RCLONE,
+            pkg=UNCOMPRESSED_PACKAGE,
+            compressed=False,
+        ),
     ],
-    ids=["compressed", "uncompressed"],
+    ids=[
+        "local_fs_to_nfs_compressed",
+        "local_fs_to_nfs_uncompressed",
+        "local_fs_to_s3_compressed",
+        "local_fs_to_s3_uncompressed",
+        "local_fs_to_rclone_compressed",
+        "local_fs_to_rclone_uncompressed",
+        "nfs_to_local_fs_compressed",
+        "nfs_to_local_fs_uncompressed",
+        "nfs_to_s3_compressed",
+        "nfs_to_s3_uncompressed",
+        "nfs_to_rclone_compressed",
+        "nfs_to_rclone_uncompressed",
+        "s3_to_local_fs_compressed",
+        "s3_to_local_fs_uncompressed",
+        "s3_to_nfs_compressed",
+        "s3_to_nfs_uncompressed",
+        "s3_to_s3_compressed",
+        "s3_to_s3_uncompressed",
+        "rclone_to_local_fs_compressed",
+        "rclone_to_local_fs_uncompressed",
+        "rclone_to_nfs_compressed",
+        "rclone_to_nfs_uncompressed",
+        "rclone_to_rclone_compressed",
+        "rclone_to_rclone_uncompressed",
+    ],
 )
 def test_reingest_with_replicas(
     startup: None,
+    scenario: ReingestScenario,
     admin_client: DjangoTestClient,
     working_directory_path: Path,
     s3_browse_bucket: str,
     s3_resource: ServiceResource,
     monkeypatch: pytest.MonkeyPatch,
-    pkg: Path,
-    compressed: bool,
 ) -> None:
-    scenario = ReingestScenario(
-        storage_protocol=Space.NFS,
-        replication_protocol=Space.S3,
-        pkg=pkg,
-        compressed=compressed,
-    )
     scenario.init(
         admin_client,
         working_directory_path,
@@ -999,9 +1159,13 @@ def test_reingest_with_replicas(
     relative_path_str = relative_path.as_posix()
     if not scenario.compressed:
         relative_path_str = f"{relative_path_str}/"
-    scenario.prepare_reingested_aip(
-        relative_path_str, source_path=Path(package.full_path)
-    )
+    source_path = Path(package.full_path)
+    if scenario.compressed and not source_path.exists():
+        package_any = cast(Any, package)
+        source_path = Path(package_any.fetch_local_path())
+    scenario.prepare_reingested_aip(relative_path_str, source_path=source_path)
+    package_any = cast(Any, package)
+    package_any.clear_local_tempdirs()
     origin_path = (Path("tmp") / relative_path).as_posix()
     if not scenario.compressed:
         origin_path = f"{origin_path}/"
