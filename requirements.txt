@@ -10,9 +10,9 @@ asgiref==3.11.0
     # via django
 bagit==1.9.0
     # via archivematica-storage-service (pyproject.toml)
-boto3==1.42.30
+boto3==1.42.34
     # via archivematica-storage-service (pyproject.toml)
-botocore==1.42.30
+botocore==1.42.34
     # via
     #   boto3
     #   s3transfer
@@ -53,17 +53,17 @@ django-prometheus==2.4.1
     # via archivematica-storage-service (pyproject.toml)
 django-shibboleth-remoteuser @ git+https://github.com/artefactual-labs/django-shibboleth-remoteuser.git@f08a7864d6130416c352981ccf318fff0fd5be58
     # via archivematica-storage-service (pyproject.toml)
-django-stubs-ext==5.2.8
+django-stubs-ext==5.2.9
     # via archivematica-storage-service (pyproject.toml)
 django-tastypie==0.15.1
     # via archivematica-storage-service (pyproject.toml)
 gevent==25.9.1
     # via archivematica-storage-service (pyproject.toml)
-greenlet==3.3.0
+greenlet==3.3.1
     # via gevent
-gunicorn==23.0.0
+gunicorn==24.1.0
     # via archivematica-storage-service (pyproject.toml)
-httplib2==0.31.1
+httplib2==0.31.2
     # via sword2
 idna==3.11
     # via requests
@@ -71,7 +71,7 @@ iso8601==2.1.0
     # via
     #   keystoneauth1
     #   oslo-utils
-jmespath==1.0.1
+jmespath==1.1.0
     # via
     #   boto3
     #   botocore
@@ -112,7 +112,7 @@ oslo-utils==9.2.0
     # via
     #   oslo-serialization
     #   python-keystoneclient
-packaging==25.0
+packaging==26.0
     # via
     #   django-csp
     #   gunicorn
@@ -137,13 +137,13 @@ pyasn1==0.6.2
     #   python-ldap
 pyasn1-modules==0.4.2
     # via python-ldap
-pycparser==2.23
+pycparser==3.0
     # via cffi
 pyjwt==2.10.1
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   mozilla-django-oidc
-pyparsing==3.3.1
+pyparsing==3.3.2
     # via
     #   httplib2
     #   oslo-utils
@@ -219,5 +219,5 @@ zope-interface==8.2
     # via gevent
 
 # The following packages are considered to be unsafe in a requirements file:
-setuptools==80.9.0
+setuptools==80.10.1
     # via pbr
