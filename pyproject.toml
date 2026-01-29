@@ -147,6 +147,7 @@ ignore_errors = true
 module = [
     "archivematica.storage_service.administration.roles",
     "archivematica.storage_service.common.helpers",
+    "archivematica.storage_service.common.gpgutils",
     "archivematica.storage_service.locations.package_request",
     "tests.administration.test_users",
     "tests.integration.*",
