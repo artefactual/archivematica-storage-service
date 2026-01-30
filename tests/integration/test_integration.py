@@ -24,7 +24,6 @@ from typing import Protocol
 from typing import TypedDict
 
 import boto3
-import gnupg
 import pytest
 from boto3.resources.base import ServiceResource
 from botocore.exceptions import ClientError
@@ -1454,13 +1453,8 @@ class GPGStorageScenario(StorageScenario):
 
 _KEY_DETAIL_RE = re.compile(r"/keys/(?P<fingerprint>[^/]+)/detail")
 
-
-def _get_gpg_binary_path() -> str:
-    for candidate in ("gpg1", "gpg"):
-        path = shutil.which(candidate)
-        if path:
-            return path
-    raise RuntimeError("GnuPG binary not found in PATH.")
+_PASSPHRASED_PRIVATE_KEY_FINGERPRINT = "A1839A09DC72AA9D9127454DFA1B1E66E5DEDE22"
+_PASSPHRASED_PRIVATE_KEY_PATH = FIXTURES_DIR / "bbingo-passphrased.key"
 
 
 def _extract_key_fingerprint(location: str) -> str:
@@ -1484,21 +1478,20 @@ def _create_admin_gpg_key(
 def _generate_private_key_armor(
     tmp_path: Path, *, passphrase: str | None
 ) -> tuple[str, str]:
-    gpg_binary = _get_gpg_binary_path()
-    source_home = tmp_path / f"gnupg-source-{uuid.uuid4().hex}"
-    source_home.mkdir(parents=True, exist_ok=True)
-    gpg_source = gnupg.GPG(gnupghome=str(source_home), gpgbinary=gpg_binary)
-    key_input = gpg_source.gen_key_input(
-        key_type="RSA",
-        key_length=2048,
-        name_real="Import Test Key",
-        name_email="import-test@example.com",
-        passphrase=passphrase or "",
+    if passphrase is not None:
+        return (
+            _PASSPHRASED_PRIVATE_KEY_FINGERPRINT,
+            _PASSPHRASED_PRIVATE_KEY_PATH.read_text(encoding="utf-8"),
+        )
+    unique = uuid.uuid4().hex
+    key = gpgutils.generate_gpg_key(
+        name_real=f"Import Test Key {unique}",
+        name_email=f"import-test-{unique}@example.com",
     )
-    key = gpg_source.gen_key(key_input)
-    assert key
-    private_armor = gpg_source.export_keys(key.fingerprint, True)
+    assert key.fingerprint
+    _, private_armor = gpgutils.export_gpg_key(key.fingerprint)
     assert "BEGIN PGP PRIVATE KEY BLOCK" in private_armor
+    gpgutils.delete_gpg_key(key.fingerprint)
     return key.fingerprint, private_armor
 
 

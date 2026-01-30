@@ -107,7 +107,7 @@ class GPGDeleteResult(Protocol):
 
 class GPGClient(Protocol):
     gpgbinary: str
-    version: tuple[int, int, int] | None
+    version: tuple[int, ...] | None
 
     def list_keys(
         self,
@@ -205,9 +205,9 @@ class GPGBinaryPathError(Exception):
 
 
 class GPG:
-    # List of binaries in order of preference. In distros like Ubuntu 18.04,
-    # GnuPG v1 is only available via ``gpg1`` (package ``gnupg1``).
-    PREFERRED_GNUPG_BINARIES = ["gpg1", "gpg"]
+    # List of binaries in order of preference. In newer distros, GnuPG v2 is
+    # provided by ``gpg`` (package ``gnupg2``), with ``gpg2`` as an alternative.
+    PREFERRED_GNUPG_BINARIES = ["gpg", "gpg2", "gpg1"]
 
     def __init__(self) -> None:
         self._gpg: GPGClient | None = None
@@ -248,6 +248,52 @@ class GPG:
 
 
 gpg = GPG()
+
+
+_PASSPHRASE_STATUS_VALUES = {
+    "bad passphrase",
+    "missing passphrase",
+    "need passphrase",
+    "need passphrase pin",
+    "need symmetric passphrase",
+}
+
+_PASSPHRASE_STDERR_TOKENS = (
+    "BAD_PASSPHRASE",
+    "MISSING_PASSPHRASE",
+    "NEED_PASSPHRASE",
+    "NEED_PASSPHRASE_PIN",
+    "NEED_PASSPHRASE_SYM",
+)
+
+
+def _gpg_key_input_params(
+    *,
+    name_real: str,
+    name_email: str | None,
+    passphrase: str,
+) -> dict[str, str | int | bool]:
+    params: dict[str, str | int | bool] = {
+        "key_type": DFLT_KEY_TYPE,
+        "key_length": DFLT_KEY_LENGTH,
+        "name_real": name_real,
+    }
+    if name_email:
+        params["name_email"] = name_email
+    if passphrase:
+        params["passphrase"] = passphrase
+    else:
+        # GnuPG >= 2.1 requires explicit %no-protection for unprotected keys.
+        params["no_protection"] = True
+    return params
+
+
+def _decrypt_requires_passphrase(result: GPGCryptResult) -> bool:
+    status = (result.status or "").strip().lower()
+    if status in _PASSPHRASE_STATUS_VALUES:
+        return True
+    stderr = (result.stderr or "").upper()
+    return any(token in stderr for token in _PASSPHRASE_STDERR_TOKENS)
 
 
 def get_gpg_key(fingerprint: str) -> GPGKeyDict | None:
@@ -293,10 +339,11 @@ def generate_default_gpg_key() -> None:
     correctly configured, then GPG may take a long time to generate keys.
     """
     input_data = gpg().gen_key_input(
-        key_type=DFLT_KEY_TYPE,
-        key_length=DFLT_KEY_LENGTH,
-        name_real=DFLT_KEY_REAL_NAME,
-        passphrase=DFLT_KEY_PASSPHRASE,
+        **_gpg_key_input_params(
+            name_real=DFLT_KEY_REAL_NAME,
+            name_email=None,
+            passphrase=DFLT_KEY_PASSPHRASE,
+        )
     )
     LOGGER.info("Creating default AM SS key with name %s", DFLT_KEY_REAL_NAME)
     gpg().gen_key(input_data)
@@ -306,11 +353,11 @@ def generate_default_gpg_key() -> None:
 def generate_gpg_key(name_real: str, name_email: str) -> GPGKey:
     """Generate a GPG key."""
     input_data = gpg().gen_key_input(
-        key_type=DFLT_KEY_TYPE,
-        key_length=DFLT_KEY_LENGTH,
-        name_real=name_real,
-        name_email=name_email,
-        passphrase=DFLT_KEY_PASSPHRASE,
+        **_gpg_key_input_params(
+            name_real=name_real,
+            name_email=name_email,
+            passphrase=DFLT_KEY_PASSPHRASE,
+        )
     )
     key: GPGKey = gpg().gen_key(input_data)
     return key
@@ -358,26 +405,26 @@ def encryption_works(fingerprint: str) -> str:
     LOGGER.info("decrypt stderr: %s", decrypted_data.stderr)
     if decrypted_data.ok:
         return ENCR_WORKS
-    else:
-        # python-gnupg stopped reporting "need passphrase".
-        if (
-            decrypted_data.status == "need passphrase"
-            or "NEED_PASSPHRASE" in decrypted_data.stderr
-        ):
-            return PASSPHRASED
-        return ENCR_FAILS
+    if _decrypt_requires_passphrase(decrypted_data):
+        return PASSPHRASED
+    return ENCR_FAILS
 
 
 def export_gpg_key(fingerprint: str) -> tuple[str, str]:
     """Return the ASCII armor (string) representation of the private and public
     keys with fingerprint ``fingerprint``.
     """
-    return gpg().export_keys(fingerprint), gpg().export_keys(fingerprint, True)
+    return (
+        gpg().export_keys(fingerprint),
+        gpg().export_keys(fingerprint, secret=True, expect_passphrase=False),
+    )
 
 
 def delete_gpg_key(fingerprint: str) -> bool:
     """Delete the GPG key with fingerprint ``fingerprint``."""
-    result: GPGDeleteResult = gpg().delete_keys(fingerprint, True)
+    result: GPGDeleteResult = gpg().delete_keys(
+        fingerprint, secret=True, expect_passphrase=False
+    )
     try:
         assert str(result) == "ok"
         return True
