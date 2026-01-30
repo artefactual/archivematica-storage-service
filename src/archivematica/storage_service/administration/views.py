@@ -279,7 +279,7 @@ def key_import(request):
     armor in a form field. To get the ASCII armored private key with
     fingerprint ``fingerprint`` via Python GnuPG::
 
-        >>> gpg.export_keys(fingerprint, True)
+        >>> gpg.export_keys(fingerprint, True, expect_passphrase=False)
 
     From the shell::
 

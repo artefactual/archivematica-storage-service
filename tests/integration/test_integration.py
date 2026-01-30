@@ -1405,6 +1405,8 @@ def test_aip_deletion(
 def gnupg_home(tmp_path: Path, settings: SettingsWrapper) -> Iterator[Path]:
     home = tmp_path / "gnupg"
     home.mkdir(parents=True, exist_ok=True)
+    # GnuPG expects 0700 on the homedir.
+    home.chmod(0o700)
     original_gnupg_home = settings.GNUPG_HOME_PATH
     # Reset the singleton to ensure GNUPG_HOME_PATH isolation for this test.
     original_gpg_client = gpgutils.gpg._gpg
@@ -1416,8 +1418,10 @@ def gnupg_home(tmp_path: Path, settings: SettingsWrapper) -> Iterator[Path]:
 
 
 @pytest.fixture(scope="session")
-def require_gpg() -> None:
-    if not shutil.which("gpg"):
+def gpg_binary_path() -> str:
+    try:
+        return gpgutils.get_gpg_binary_path()
+    except gpgutils.GPGBinaryPathError:
         pytest.skip("GnuPG not available")
 
 
@@ -1455,14 +1459,6 @@ class GPGStorageScenario(StorageScenario):
 _KEY_DETAIL_RE = re.compile(r"/keys/(?P<fingerprint>[^/]+)/detail")
 
 
-def _get_gpg_binary_path() -> str:
-    for candidate in ("gpg1", "gpg"):
-        path = shutil.which(candidate)
-        if path:
-            return path
-    raise RuntimeError("GnuPG binary not found in PATH.")
-
-
 def _extract_key_fingerprint(location: str) -> str:
     match = _KEY_DETAIL_RE.search(location)
     if not match:
@@ -1482,18 +1478,18 @@ def _create_admin_gpg_key(
 
 
 def _generate_private_key_armor(
-    tmp_path: Path, *, passphrase: str | None
+    tmp_path: Path, *, passphrase: str | None, gpg_binary_path: str
 ) -> tuple[str, str]:
-    gpg_binary = _get_gpg_binary_path()
     source_home = tmp_path / f"gnupg-source-{uuid.uuid4().hex}"
     source_home.mkdir(parents=True, exist_ok=True)
-    gpg_source = gnupg.GPG(gnupghome=str(source_home), gpgbinary=gpg_binary)
+    gpg_source = gnupg.GPG(gnupghome=str(source_home), gpgbinary=gpg_binary_path)
     key_input = gpg_source.gen_key_input(
         key_type="RSA",
         key_length=2048,
         name_real="Import Test Key",
         name_email="import-test@example.com",
         passphrase=passphrase or "",
+        no_protection=True,
     )
     key = gpg_source.gen_key(key_input)
     assert key
@@ -1507,7 +1503,7 @@ def test_admin_key_lifecycle(
     admin_client: DjangoTestClient,
     gnupg_home: Path,
     monkeypatch: pytest.MonkeyPatch,
-    require_gpg: None,
+    gpg_binary_path: str,
 ) -> None:
     # Reduce default key length to avoid slow key generation in low-entropy CI.
     monkeypatch.setattr(gpgutils, "DFLT_KEY_LENGTH", 2048)
@@ -1543,9 +1539,11 @@ def test_admin_key_imports_unpassphrased_key(
     admin_client: DjangoTestClient,
     tmp_path: Path,
     gnupg_home: Path,
-    require_gpg: None,
+    gpg_binary_path: str,
 ) -> None:
-    fingerprint, private_armor = _generate_private_key_armor(tmp_path, passphrase=None)
+    fingerprint, private_armor = _generate_private_key_armor(
+        tmp_path, passphrase=None, gpg_binary_path=gpg_binary_path
+    )
     resp = admin_client.post(
         reverse("administration:key_import"),
         data={"ascii_armor": private_armor},
@@ -1567,10 +1565,10 @@ def test_admin_key_import_rejects_passphrased_key(
     admin_client: DjangoTestClient,
     tmp_path: Path,
     gnupg_home: Path,
-    require_gpg: None,
+    gpg_binary_path: str,
 ) -> None:
     fingerprint, private_armor = _generate_private_key_armor(
-        tmp_path, passphrase="secret"
+        tmp_path, passphrase="secret", gpg_binary_path=gpg_binary_path
     )
     resp = admin_client.post(
         reverse("administration:key_import"),
@@ -1595,7 +1593,7 @@ def test_gpg_space_encrypts_and_decrypts_aip(
     working_directory_path: Path,
     tmp_path: Path,
     gnupg_home: Path,
-    require_gpg: None,
+    gpg_binary_path: str,
 ) -> None:
     fingerprint = _create_admin_gpg_key(
         admin_client,
