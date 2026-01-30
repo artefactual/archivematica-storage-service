@@ -9,8 +9,15 @@ manage (i.e., list, created, import, delete) GPG keys.
 """
 
 import logging
+from collections.abc import Iterator
+from collections.abc import Sequence
 from pathlib import Path
 from shutil import which
+from typing import IO
+from typing import Literal
+from typing import Protocol
+from typing import TypedDict
+from typing import overload
 
 import gnupg
 from django.apps import apps
@@ -18,6 +25,166 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 
 LOGGER = logging.getLogger(__name__)
+
+
+class GPGKey(Protocol):
+    fingerprint: str
+    type: str | None
+    status: str | None
+
+
+class GPGKeyDictRequired(TypedDict):
+    type: str
+    trust: str
+    length: str
+    algo: str
+    keyid: str
+    date: str
+    expires: str
+    dummy: str
+    ownertrust: str
+    sig: str
+    cap: str
+    issuer: str
+    flag: str
+    token: str
+    hash: str
+    curve: str
+    compliance: str
+    updated: str
+    origin: str
+    keygrip: str
+    uids: list[str]
+    sigs: list[tuple[str, str, str]]
+    subkeys: list[list[str | None]]
+    fingerprint: str
+
+
+class GPGKeyDict(GPGKeyDictRequired, total=False):
+    subkey_info: dict[str, dict[str, str]]
+
+
+class GPGKeyList(Protocol):
+    key_map: dict[str, GPGKeyDict]
+    fingerprints: list[str]
+    uids: list[str]
+
+    def __iter__(self) -> Iterator[GPGKeyDict]: ...
+
+
+class GPGImportResult(Protocol):
+    count: int
+    no_user_id: int
+    imported: int
+    imported_rsa: int
+    unchanged: int
+    n_uids: int
+    n_subk: int
+    n_sigs: int
+    n_revoc: int
+    sec_read: int
+    sec_imported: int
+    sec_dups: int
+    not_imported: int
+    fingerprints: list[str]
+    results: list[dict[str, str | None]]
+
+
+class GPGCryptResult(Protocol):
+    ok: bool
+    status: str
+    status_detail: str
+    stderr: str
+    data: bytes | str
+    key_id: str | None
+
+
+class GPGDeleteResult(Protocol):
+    status: str
+
+    def __str__(self) -> str: ...
+
+
+class GPGClient(Protocol):
+    gpgbinary: str
+    version: tuple[int, int, int] | None
+
+    def list_keys(
+        self,
+        secret: bool = False,
+        keys: str | Sequence[str] | None = None,
+        sigs: bool = False,
+    ) -> GPGKeyList: ...
+
+    def gen_key_input(self, **kwargs: object) -> str: ...
+
+    def gen_key(self, input_data: str) -> GPGKey: ...
+
+    def import_keys(self, key_data: str | bytes) -> GPGImportResult: ...
+
+    def encrypt(
+        self,
+        data: str | bytes,
+        recipients: str | Sequence[str],
+        **kwargs: object,
+    ) -> GPGCryptResult: ...
+
+    def decrypt(self, data: str | bytes, **kwargs: object) -> GPGCryptResult: ...
+
+    @overload
+    def export_keys(
+        self,
+        keyids: str | Sequence[str],
+        secret: bool = False,
+        armor: Literal[True] = True,
+        minimal: bool = False,
+        passphrase: str | None = None,
+        expect_passphrase: bool = True,
+        output: str | None = None,
+    ) -> str: ...
+
+    @overload
+    def export_keys(
+        self,
+        keyids: str | Sequence[str],
+        secret: bool = False,
+        armor: Literal[False] = False,
+        minimal: bool = False,
+        passphrase: str | None = None,
+        expect_passphrase: bool = True,
+        output: str | None = None,
+    ) -> bytes: ...
+
+    def delete_keys(
+        self,
+        fingerprints: str | Sequence[str],
+        secret: bool = False,
+        passphrase: str | None = None,
+        expect_passphrase: bool = True,
+        exclamation_mode: bool = False,
+    ) -> GPGDeleteResult: ...
+
+    def decrypt_file(
+        self,
+        fileobj_or_path: str | IO[bytes],
+        always_trust: bool = False,
+        passphrase: str | None = None,
+        output: str | None = None,
+        extra_args: list[str] | None = None,
+    ) -> GPGCryptResult: ...
+
+    def encrypt_file(
+        self,
+        fileobj_or_path: str | IO[bytes],
+        recipients: str | Sequence[str],
+        sign: str | None = None,
+        always_trust: bool = False,
+        passphrase: str | None = None,
+        armor: bool = True,
+        output: str | None = None,
+        symmetric: bool | str = False,
+        extra_args: list[str] | None = None,
+    ) -> GPGCryptResult: ...
 
 
 # Defaults for the default AM SS GPG key
@@ -42,10 +209,10 @@ class GPG:
     # GnuPG v1 is only available via ``gpg1`` (package ``gnupg1``).
     PREFERRED_GNUPG_BINARIES = ["gpg1", "gpg"]
 
-    def __init__(self):
-        self._gpg = None
+    def __init__(self) -> None:
+        self._gpg: GPGClient | None = None
 
-    def __call__(self):
+    def __call__(self) -> GPGClient:
         if not self._gpg:
             gnupghome = self._get_gnupg_home_path()
             self._ensure_gnupg_home_exists(gnupghome)
@@ -54,7 +221,7 @@ class GPG:
             )
         return self._gpg
 
-    def _get_gnupg_home_path(self):
+    def _get_gnupg_home_path(self) -> str:
         """Find and return the home path for GnuPG to store its config."""
         gnupg_home_path = settings.GNUPG_HOME_PATH
         if not gnupg_home_path:
@@ -63,7 +230,7 @@ class GPG:
             gnupg_home_path = ss_internal.full_path
         return gnupg_home_path
 
-    def _get_gnupg_bin_path(self):
+    def _get_gnupg_bin_path(self) -> str:
         """Find and return the path of the preferred GnuPG binary."""
         for item in self.PREFERRED_GNUPG_BINARIES:
             ret = which(item)
@@ -75,7 +242,7 @@ class GPG:
         )
 
     @staticmethod
-    def _ensure_gnupg_home_exists(gnupghome):
+    def _ensure_gnupg_home_exists(gnupghome: str) -> None:
         """Ensure that GnuPG's home directory exists."""
         Path(gnupghome).mkdir(mode=0o700, parents=False, exist_ok=True)
 
@@ -83,19 +250,21 @@ class GPG:
 gpg = GPG()
 
 
-def get_gpg_key(fingerprint):
+def get_gpg_key(fingerprint: str) -> GPGKeyDict | None:
     """Return the GPG key with fingerprint ``fingerprint`` or None if there is
     no such key in the SS's GPG keyring.
     """
-    key_map = gpg().list_keys(True).key_map  # ``True`` means return private keys
+    key_map: dict[str, GPGKeyDict] = (
+        gpg().list_keys(True).key_map
+    )  # ``True`` means return private keys
     return key_map.get(fingerprint)
 
 
-def get_gpg_key_list():
+def get_gpg_key_list() -> GPGKeyList:
     """Return a list of all GPG keys as dicts. If the Storage Service default
     key does not exist, we create it here before returning the list.
     """
-    keys = gpg().list_keys(True)
+    keys: GPGKeyList = gpg().list_keys(True)
     default_key = get_default_gpg_key(keys)
     if not default_key:
         generate_default_gpg_key()
@@ -103,7 +272,7 @@ def get_gpg_key_list():
     return keys
 
 
-def get_default_gpg_key(keys):
+def get_default_gpg_key(keys: GPGKeyList) -> GPGKeyDict | None:
     """Find the default AM Storage Service key in the existing set of GPG keys
     or return ``None``.
     """
@@ -115,7 +284,7 @@ def get_default_gpg_key(keys):
     return None
 
 
-def generate_default_gpg_key():
+def generate_default_gpg_key() -> None:
     """Generate the default AM Storage Service key. Note that by supplying no
     expiration date, the key never expires. At present, this default key is
     generated the first time that ``get_gpg_key_list`` is called, which is
@@ -134,7 +303,7 @@ def generate_default_gpg_key():
     LOGGER.info("Finished creating default AM SS key with name %s", DFLT_KEY_REAL_NAME)
 
 
-def generate_gpg_key(name_real, name_email):
+def generate_gpg_key(name_real: str, name_email: str) -> GPGKey:
     """Generate a GPG key."""
     input_data = gpg().gen_key_input(
         key_type=DFLT_KEY_TYPE,
@@ -143,15 +312,16 @@ def generate_gpg_key(name_real, name_email):
         name_email=name_email,
         passphrase=DFLT_KEY_PASSPHRASE,
     )
-    return gpg().gen_key(input_data)
+    key: GPGKey = gpg().gen_key(input_data)
+    return key
 
 
-def import_gpg_key(ascii_armor):
+def import_gpg_key(ascii_armor: str) -> str:
     """Import a GPG private key, given its ASCII armor string and return the
     imported key's fingerprint, if successful; if unsuccessful, return a string
     indicating why and delete any key created in the process.
     """
-    import_result = gpg().import_keys(ascii_armor)
+    import_result: GPGImportResult = gpg().import_keys(ascii_armor)
     if import_result.count == 1:
         fingerprint = import_result.fingerprints[0]
         it_works = encryption_works(fingerprint)
@@ -165,13 +335,15 @@ def import_gpg_key(ascii_armor):
     return IMPORT_ERROR
 
 
-def encryption_works(fingerprint):
+def encryption_works(fingerprint: str) -> str:
     """Check whether we can encrypt and decrypt with the key with fingerprint
     ``fingerprint``. Return 'yes' if it does, 'no' if it doesn't and
     'passphrased' if it doesn't because a passphrase is required.
     """
     unencrypted_string = "secrets"
-    encrypted_data = gpg().encrypt(unencrypted_string, fingerprint, always_trust=True)
+    encrypted_data: GPGCryptResult = gpg().encrypt(
+        unencrypted_string, fingerprint, always_trust=True
+    )
     encrypted_string = str(encrypted_data)
     LOGGER.info("Checking encryption with key %s", fingerprint)
     LOGGER.info("encrypt ok: %s", encrypted_data.ok)
@@ -179,7 +351,7 @@ def encryption_works(fingerprint):
     LOGGER.info("encrypt stderr: %s", encrypted_data.stderr)
     if not encrypted_data.ok:
         return ENCR_FAILS  # unable to encrypt
-    decrypted_data = gpg().decrypt(encrypted_string)
+    decrypted_data: GPGCryptResult = gpg().decrypt(encrypted_string)
     LOGGER.info("Checking decryption with key %s", fingerprint)
     LOGGER.info("decrypt ok: %s", decrypted_data.ok)
     LOGGER.info("decrypt status: %s", decrypted_data.status)
@@ -196,16 +368,16 @@ def encryption_works(fingerprint):
         return ENCR_FAILS
 
 
-def export_gpg_key(fingerprint):
+def export_gpg_key(fingerprint: str) -> tuple[str, str]:
     """Return the ASCII armor (string) representation of the private and public
     keys with fingerprint ``fingerprint``.
     """
     return gpg().export_keys(fingerprint), gpg().export_keys(fingerprint, True)
 
 
-def delete_gpg_key(fingerprint):
+def delete_gpg_key(fingerprint: str) -> bool:
     """Delete the GPG key with fingerprint ``fingerprint``."""
-    result = gpg().delete_keys(fingerprint, True)
+    result: GPGDeleteResult = gpg().delete_keys(fingerprint, True)
     try:
         assert str(result) == "ok"
         return True
@@ -213,7 +385,7 @@ def delete_gpg_key(fingerprint):
         return False
 
 
-def gpg_decrypt_file(path, decr_path):
+def gpg_decrypt_file(path: str, decr_path: str) -> GPGCryptResult:
     """Use GPG to decrypt the file at ``path`` and save the decrypted file to
     ``decr_path``.
     """
@@ -221,7 +393,9 @@ def gpg_decrypt_file(path, decr_path):
         return gpg().decrypt_file(stream, output=decr_path)
 
 
-def gpg_encrypt_file(path, recipient_fingerprint):
+def gpg_encrypt_file(
+    path: str, recipient_fingerprint: str
+) -> tuple[str, GPGCryptResult]:
     """Use GPG to encrypt the file at ``path`` and make it decryptable only
     with the key with fingerprint ``recipient_fingerprint``. The encrypted file
     is given the .gpg extension and its path and the Python-GnuPG encryption

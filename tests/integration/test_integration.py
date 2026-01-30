@@ -13,6 +13,7 @@ of Archivematica, etc...
 import base64
 import json
 import os
+import re
 import shutil
 import tarfile
 import uuid
@@ -23,14 +24,18 @@ from typing import Protocol
 from typing import TypedDict
 
 import boto3
+import gnupg
 import pytest
 from boto3.resources.base import ServiceResource
 from botocore.exceptions import ClientError
+from django.contrib import messages
 from django.http import StreamingHttpResponse
 from django.test import Client as DjangoTestClient
 from django.urls import reverse
 from metsrw.plugins import premisrw
+from pytest_django.fixtures import SettingsWrapper
 
+from archivematica.storage_service.common import gpgutils
 from archivematica.storage_service.common import utils
 from archivematica.storage_service.locations import package_request
 from archivematica.storage_service.locations.models import Event
@@ -1393,4 +1398,237 @@ def test_aip_deletion(
         s3_resource
         if scenario.storage_protocol in scenario.OBJECT_STORAGE_PROTOCOLS
         else None,
+    )
+
+
+@pytest.fixture
+def gnupg_home(tmp_path: Path, settings: SettingsWrapper) -> Iterator[Path]:
+    home = tmp_path / "gnupg"
+    home.mkdir(parents=True, exist_ok=True)
+    original_gnupg_home = settings.GNUPG_HOME_PATH
+    # Reset the singleton to ensure GNUPG_HOME_PATH isolation for this test.
+    original_gpg_client = gpgutils.gpg._gpg
+    settings.GNUPG_HOME_PATH = str(home)
+    gpgutils.gpg._gpg = None
+    yield home
+    settings.GNUPG_HOME_PATH = original_gnupg_home
+    gpgutils.gpg._gpg = original_gpg_client
+
+
+@pytest.fixture(scope="session")
+def require_gpg() -> None:
+    if not shutil.which("gpg"):
+        pytest.skip("GnuPG not available")
+
+
+class GPGStorageScenario(StorageScenario):
+    SPACES = {
+        **StorageScenario.SPACES,
+        Space.GPG: {
+            "access_protocol": Space.GPG,
+            "path": "/var/archivematica/sharedDirectory/tmp/gpg_fs",
+            "staging_path": "/var/archivematica/sharedDirectory/tmp/gpg_staging_path",
+        },
+    }
+
+    def __init__(
+        self,
+        *,
+        gpg_fingerprint: str,
+        pkg: Path,
+        compressed: bool,
+    ) -> None:
+        super().__init__(
+            storage_protocol=Space.GPG,
+            pkg=pkg,
+            compressed=compressed,
+        )
+        self.gpg_fingerprint = gpg_fingerprint
+
+    def _space_definition(self, protocol: str) -> dict[str, str | bool]:
+        data = super()._space_definition(protocol)
+        if protocol == Space.GPG:
+            data["key"] = self.gpg_fingerprint
+        return data
+
+
+_KEY_DETAIL_RE = re.compile(r"/keys/(?P<fingerprint>[^/]+)/detail")
+
+
+def _get_gpg_binary_path() -> str:
+    for candidate in ("gpg1", "gpg"):
+        path = shutil.which(candidate)
+        if path:
+            return path
+    raise RuntimeError("GnuPG binary not found in PATH.")
+
+
+def _extract_key_fingerprint(location: str) -> str:
+    match = _KEY_DETAIL_RE.search(location)
+    if not match:
+        raise AssertionError(f"Unable to extract fingerprint from {location}")
+    return match.group("fingerprint")
+
+
+def _create_admin_gpg_key(
+    admin_client: DjangoTestClient, *, name_real: str, name_email: str
+) -> str:
+    resp = admin_client.post(
+        reverse("administration:key_create"),
+        data={"name_real": name_real, "name_email": name_email},
+    )
+    assert resp.status_code == 302
+    return _extract_key_fingerprint(resp.headers["Location"])
+
+
+def _generate_private_key_armor(
+    tmp_path: Path, *, passphrase: str | None
+) -> tuple[str, str]:
+    gpg_binary = _get_gpg_binary_path()
+    source_home = tmp_path / f"gnupg-source-{uuid.uuid4().hex}"
+    source_home.mkdir(parents=True, exist_ok=True)
+    gpg_source = gnupg.GPG(gnupghome=str(source_home), gpgbinary=gpg_binary)
+    key_input = gpg_source.gen_key_input(
+        key_type="RSA",
+        key_length=2048,
+        name_real="Import Test Key",
+        name_email="import-test@example.com",
+        passphrase=passphrase or "",
+    )
+    key = gpg_source.gen_key(key_input)
+    assert key
+    private_armor = gpg_source.export_keys(key.fingerprint, True)
+    assert "BEGIN PGP PRIVATE KEY BLOCK" in private_armor
+    return key.fingerprint, private_armor
+
+
+@pytest.mark.django_db
+def test_admin_key_lifecycle(
+    admin_client: DjangoTestClient,
+    gnupg_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    require_gpg: None,
+) -> None:
+    # Reduce default key length to avoid slow key generation in low-entropy CI.
+    monkeypatch.setattr(gpgutils, "DFLT_KEY_LENGTH", 2048)
+    resp = admin_client.get(reverse("administration:key_list"))
+    assert resp.status_code == 200
+
+    fingerprint = _create_admin_gpg_key(
+        admin_client,
+        name_real="Integration Test Key",
+        name_email="integration@example.com",
+    )
+
+    detail_url = reverse(
+        "administration:key_detail", kwargs={"key_fingerprint": fingerprint}
+    )
+    resp = admin_client.get(detail_url)
+    assert resp.status_code == 200
+    assert fingerprint in resp.text
+    assert "BEGIN PGP PUBLIC KEY BLOCK" in resp.text
+
+    delete_url = reverse(
+        "administration:key_delete", kwargs={"key_fingerprint": fingerprint}
+    )
+    resp = admin_client.post(delete_url, data={"__confirm__": "1"}, follow=True)
+    assert resp.status_code == 200
+
+    resp = admin_client.get(detail_url)
+    assert resp.status_code == 404
+
+
+@pytest.mark.django_db
+def test_admin_key_imports_unpassphrased_key(
+    admin_client: DjangoTestClient,
+    tmp_path: Path,
+    gnupg_home: Path,
+    require_gpg: None,
+) -> None:
+    fingerprint, private_armor = _generate_private_key_armor(tmp_path, passphrase=None)
+    resp = admin_client.post(
+        reverse("administration:key_import"),
+        data={"ascii_armor": private_armor},
+    )
+    assert resp.status_code == 302
+
+    list_resp = admin_client.get(reverse("administration:key_list"))
+    assert fingerprint in list_resp.text
+
+    delete_url = reverse(
+        "administration:key_delete", kwargs={"key_fingerprint": fingerprint}
+    )
+    resp = admin_client.post(delete_url, data={"__confirm__": "1"}, follow=True)
+    assert resp.status_code == 200
+
+
+@pytest.mark.django_db
+def test_admin_key_import_rejects_passphrased_key(
+    admin_client: DjangoTestClient,
+    tmp_path: Path,
+    gnupg_home: Path,
+    require_gpg: None,
+) -> None:
+    fingerprint, private_armor = _generate_private_key_armor(
+        tmp_path, passphrase="secret"
+    )
+    resp = admin_client.post(
+        reverse("administration:key_import"),
+        data={"ascii_armor": private_armor},
+    )
+    assert resp.status_code == 200
+    message_list = list(resp.context["messages"])
+    assert any(message.level == messages.ERROR for message in message_list)
+    assert (
+        "Import failed. The GPG key provided requires a passphrase. "
+        "GPG keys with passphrases cannot be imported" in resp.text
+    )
+
+    list_resp = admin_client.get(reverse("administration:key_list"))
+    assert fingerprint not in list_resp.text
+
+
+@pytest.mark.django_db
+def test_gpg_space_encrypts_and_decrypts_aip(
+    startup: None,
+    admin_client: DjangoTestClient,
+    working_directory_path: Path,
+    tmp_path: Path,
+    gnupg_home: Path,
+    require_gpg: None,
+) -> None:
+    fingerprint = _create_admin_gpg_key(
+        admin_client,
+        name_real="GPG Space Test",
+        name_email="gpg-space@example.com",
+    )
+
+    scenario = GPGStorageScenario(
+        gpg_fingerprint=fingerprint,
+        pkg=COMPRESSED_PACKAGE,
+        compressed=True,
+    )
+    scenario.init(
+        admin_client,
+        working_directory_path,
+    )
+    scenario.store_aip()
+    scenario.assert_stored()
+
+    package = Package.objects.get(uuid=scenario.PACKAGE_UUID)
+    assert package.encryption_key_fingerprint == fingerprint
+    encrypted_path = Path(package.full_path)
+    assert encrypted_path.is_file()
+    assert (
+        utils.generate_checksum(encrypted_path).hexdigest()
+        != utils.generate_checksum(scenario.pkg).hexdigest()
+    )
+
+    download_path = tmp_path / "downloaded.7z"
+    resp = scenario.client.download_file(scenario.PACKAGE_UUID)
+    assert isinstance(resp, StreamingHttpResponse)
+    download_path.write_bytes(b"".join(resp.streaming_content))
+    assert (
+        utils.generate_checksum(download_path).hexdigest()
+        == utils.generate_checksum(scenario.pkg).hexdigest()
     )
