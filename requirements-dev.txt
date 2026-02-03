@@ -337,7 +337,7 @@ zope-interface==8.2
     # via gevent
 
 # The following packages are considered to be unsafe in a requirements file:
-pip==25.3
+pip==26.0
     # via pip-tools
 setuptools==80.10.1
     # via
