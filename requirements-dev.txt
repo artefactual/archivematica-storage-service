@@ -6,13 +6,13 @@
 #
 agentarchives==0.10.0
     # via archivematica-storage-service (pyproject.toml)
-asgiref==3.11.0
+asgiref==3.11.1
     # via django
 bagit==1.9.0
     # via archivematica-storage-service (pyproject.toml)
-boto3==1.42.34
+boto3==1.42.40
     # via archivematica-storage-service (pyproject.toml)
-botocore==1.42.34
+botocore==1.42.40
     # via
     #   boto3
     #   s3transfer
@@ -20,7 +20,7 @@ brotli==1.2.0
     # via archivematica-storage-service (pyproject.toml)
 build==1.4.0
     # via pip-tools
-cachetools==6.2.4
+cachetools==7.0.0
     # via tox
 certifi==2026.1.4
     # via requests
@@ -34,11 +34,11 @@ click==8.3.1
     # via pip-tools
 colorama==0.4.6
     # via tox
-coverage[toml]==7.13.1
+coverage[toml]==7.13.3
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   pytest-cov
-cryptography==46.0.3
+cryptography==46.0.4
     # via mozilla-django-oidc
 debtcollector==3.0.0
     # via
@@ -48,7 +48,7 @@ distlib==0.4.0
     # via virtualenv
 dj-database-url==3.1.0
     # via archivematica-storage-service (pyproject.toml)
-django==5.2.10
+django==5.2.11
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   dj-database-url
@@ -90,7 +90,7 @@ greenlet==3.3.1
     # via
     #   gevent
     #   playwright
-gunicorn==24.1.0
+gunicorn==25.0.1
     # via archivematica-storage-service (pyproject.toml)
 httplib2==0.31.2
     # via sword2
@@ -162,7 +162,7 @@ packaging==26.0
     #   python-keystoneclient
     #   tox
     #   wheel
-pathspec==1.0.3
+pathspec==1.0.4
     # via mypy
 pbr==7.0.3
     # via
@@ -177,7 +177,7 @@ platformdirs==4.5.1
     # via
     #   tox
     #   virtualenv
-playwright==1.57.0
+playwright==1.58.0
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   pytest-playwright
@@ -190,7 +190,7 @@ prometheus-client==0.24.1
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   django-prometheus
-psutil==7.2.1
+psutil==7.2.2
     # via oslo-utils
 pyasn1==0.6.2
     # via
@@ -204,7 +204,7 @@ pyee==13.0.0
     # via playwright
 pygments==2.19.2
     # via pytest
-pyjwt==2.10.1
+pyjwt==2.11.0
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   mozilla-django-oidc
@@ -329,7 +329,7 @@ wheel==0.46.3
     # via pip-tools
 whitenoise==6.11.0
     # via archivematica-storage-service (pyproject.toml)
-wrapt==2.0.1
+wrapt==2.1.1
     # via debtcollector
 zope-event==6.1
     # via gevent
@@ -337,9 +337,9 @@ zope-interface==8.2
     # via gevent
 
 # The following packages are considered to be unsafe in a requirements file:
-pip==25.3
+pip==26.0
     # via pip-tools
-setuptools==80.10.1
+setuptools==80.10.2
     # via
     #   pbr
     #   pip-tools

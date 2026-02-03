@@ -11,7 +11,7 @@ repos:
   - id: django-upgrade
     args: [--target-version, "5.2"]
 - repo: https://github.com/pre-commit/mirrors-eslint
-  rev: v10.0.0-rc.0
+  rev: v10.0.0-rc.2
   hooks:
   - id: eslint
     files: ^src/archivematica/storage_service/static/js/(project|.*directory_picker|file-explorer).js
