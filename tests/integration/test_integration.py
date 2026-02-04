@@ -1490,11 +1490,16 @@ def _generate_private_key_armor(
         name_real="Import Test Key",
         name_email="import-test@example.com",
         passphrase=passphrase or "",
-        no_protection=True,
+        no_protection=not passphrase,
     )
     key = gpg_source.gen_key(key_input)
     assert key
-    private_armor = gpg_source.export_keys(key.fingerprint, True)
+    export_kwargs: dict[str, bool | str] = {"secret": True}
+    if passphrase is None:
+        export_kwargs["expect_passphrase"] = False
+    else:
+        export_kwargs["passphrase"] = passphrase
+    private_armor = gpg_source.export_keys(key.fingerprint, **export_kwargs)
     assert "BEGIN PGP PRIVATE KEY BLOCK" in private_armor
     return key.fingerprint, private_armor
 
