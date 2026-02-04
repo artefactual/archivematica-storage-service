@@ -16,6 +16,7 @@ import os
 import re
 import shutil
 import tarfile
+import tempfile
 import uuid
 from collections.abc import Iterable
 from collections.abc import Iterator
@@ -1478,10 +1479,10 @@ def _create_admin_gpg_key(
 
 
 def _generate_private_key_armor(
-    tmp_path: Path, *, passphrase: str | None, gpg_binary_path: str
+    tmp_dir: str, *, passphrase: str | None, gpg_binary_path: str
 ) -> tuple[str, str]:
-    source_home = tmp_path / f"gnupg-source-{uuid.uuid4().hex}"
-    source_home.mkdir(parents=True, exist_ok=True)
+    source_home = Path(tmp_dir)
+    source_home.chmod(0o700)
     gpg_source = gnupg.GPG(gnupghome=str(source_home), gpgbinary=gpg_binary_path)
     key_input = gpg_source.gen_key_input(
         key_type="RSA",
@@ -1537,13 +1538,13 @@ def test_admin_key_lifecycle(
 @pytest.mark.django_db
 def test_admin_key_imports_unpassphrased_key(
     admin_client: DjangoTestClient,
-    tmp_path: Path,
     gnupg_home: Path,
     gpg_binary_path: str,
 ) -> None:
-    fingerprint, private_armor = _generate_private_key_armor(
-        tmp_path, passphrase=None, gpg_binary_path=gpg_binary_path
-    )
+    with tempfile.TemporaryDirectory(dir="/tmp", prefix="gnupg-fixture-") as tmp_dir:
+        fingerprint, private_armor = _generate_private_key_armor(
+            tmp_dir, passphrase=None, gpg_binary_path=gpg_binary_path
+        )
     resp = admin_client.post(
         reverse("administration:key_import"),
         data={"ascii_armor": private_armor},
@@ -1563,13 +1564,13 @@ def test_admin_key_imports_unpassphrased_key(
 @pytest.mark.django_db
 def test_admin_key_import_rejects_passphrased_key(
     admin_client: DjangoTestClient,
-    tmp_path: Path,
     gnupg_home: Path,
     gpg_binary_path: str,
 ) -> None:
-    fingerprint, private_armor = _generate_private_key_armor(
-        tmp_path, passphrase="secret", gpg_binary_path=gpg_binary_path
-    )
+    with tempfile.TemporaryDirectory(dir="/tmp", prefix="gnupg-fixture-") as tmp_dir:
+        fingerprint, private_armor = _generate_private_key_armor(
+            tmp_dir, passphrase="secret", gpg_binary_path=gpg_binary_path
+        )
     resp = admin_client.post(
         reverse("administration:key_import"),
         data={"ascii_armor": private_armor},
