@@ -2,11 +2,13 @@ import logging
 import os
 import pprint
 import re
+import time
 from functools import wraps
 from urllib.parse import urlparse
 
 import boto3
 import botocore
+from boto3.s3.transfer import TransferConfig
 from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -71,7 +73,12 @@ class S3(models.Model):
     def resource(self):
         if not hasattr(self, "_resource"):
             config = botocore.config.Config(
-                connect_timeout=settings.S3_TIMEOUTS, read_timeout=settings.S3_TIMEOUTS
+                connect_timeout=settings.S3_TIMEOUTS,
+                read_timeout=settings.S3_TIMEOUTS,
+                retries={
+                    "max_attempts": settings.S3_RETRY_MAX_ATTEMPTS,
+                    "mode": settings.S3_RETRY_MODE,
+                },
             )
             boto_args = {
                 "service_name": "s3",
@@ -87,6 +94,16 @@ class S3(models.Model):
                 )
             self._resource = boto3.resource(**boto_args)
         return self._resource
+
+    @property
+    def transfer_config(self):
+        if not hasattr(self, "_transfer_config"):
+            self._transfer_config = TransferConfig(
+                max_concurrency=settings.S3_TRANSFER_MAX_CONCURRENCY,
+                multipart_threshold=settings.S3_TRANSFER_MULTIPART_THRESHOLD,
+                multipart_chunksize=settings.S3_TRANSFER_MULTIPART_CHUNKSIZE,
+            )
+        return self._transfer_config
 
     def _is_global_endpoint(self, url):
         return urlparse(url).netloc == "s3.amazonaws.com"
@@ -255,5 +272,60 @@ class S3(models.Model):
         if mtype:
             extra_args["ContentType"] = mtype
 
-        with open(data, "rb") as d:
-            bucket.upload_fileobj(d, path, ExtraArgs=extra_args)
+        attempts = settings.S3_UPLOAD_MAX_ATTEMPTS
+        delay = settings.S3_UPLOAD_RETRY_DELAY
+        expected_size = os.path.getsize(data)
+        for attempt in range(1, attempts + 1):
+            try:
+                with open(data, "rb") as d:
+                    bucket.upload_fileobj(
+                        d,
+                        path,
+                        ExtraArgs=extra_args,
+                        Config=self.transfer_config,
+                    )
+                self._verify_upload(path, expected_size)
+                return
+            except (
+                botocore.exceptions.BotoCoreError,
+                botocore.exceptions.ClientError,
+            ) as err:
+                LOGGER.exception(
+                    "S3 upload attempt %s/%s failed for %s",
+                    attempt,
+                    attempts,
+                    path,
+                )
+                if attempt >= attempts:
+                    raise StorageException(
+                        f"S3 upload failed for {path}"
+                    ) from err
+                time.sleep(delay)
+                delay *= 2
+
+    def _verify_upload(self, key, expected_size):
+        if not settings.S3_UPLOAD_VERIFY:
+            return
+        attempts = settings.S3_UPLOAD_VERIFY_MAX_ATTEMPTS
+        delay = settings.S3_UPLOAD_VERIFY_DELAY
+        last_err = None
+        for attempt in range(1, attempts + 1):
+            try:
+                obj = self.resource.Object(self.bucket_name, key)
+                obj.load()
+                if obj.content_length == expected_size:
+                    return
+                last_err = StorageException(
+                    f"S3 object size mismatch for {key}: expected {expected_size}, got {obj.content_length}"
+                )
+            except botocore.exceptions.ClientError as err:
+                error_code = err.response.get("Error", {}).get("Code")
+                if error_code not in ("404", "NoSuchKey", "NotFound"):
+                    raise
+                last_err = err
+            if attempt < attempts:
+                time.sleep(delay)
+                delay *= 2
+        raise StorageException(
+            f"S3 upload verification failed for {key}"
+        ) from last_err
