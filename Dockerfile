@@ -86,7 +86,7 @@ RUN set -ex \
 		build-essential \
 		gcc \
 		gettext \
-		gnupg1 \
+		gnupg2 \
 		libffi-dev \
 		libldap2-dev \
 		libmysqlclient-dev \
