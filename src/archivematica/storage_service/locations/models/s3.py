@@ -104,6 +104,7 @@ class S3(models.Model):
                 max_concurrency=settings.S3_TRANSFER_MAX_CONCURRENCY,
                 multipart_threshold=settings.S3_TRANSFER_MULTIPART_THRESHOLD,
                 multipart_chunksize=settings.S3_TRANSFER_MULTIPART_CHUNKSIZE,
+                use_threads=settings.S3_TRANSFER_USE_THREADS,
             )
         return self._transfer_config
 
