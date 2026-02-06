@@ -75,6 +75,8 @@ class S3(models.Model):
             config = botocore.config.Config(
                 connect_timeout=settings.S3_TIMEOUTS,
                 read_timeout=settings.S3_TIMEOUTS,
+                request_checksum_calculation="when_required",
+                response_checksum_validation="when_required",
                 retries={
                     "max_attempts": settings.S3_RETRY_MAX_ATTEMPTS,
                     "mode": settings.S3_RETRY_MODE,
@@ -284,12 +286,20 @@ class S3(models.Model):
         for attempt in range(1, attempts + 1):
             try:
                 with open(data, "rb") as d:
-                    bucket.upload_fileobj(
-                        d,
-                        path,
-                        ExtraArgs=extra_args,
-                        Config=self.transfer_config,
-                    )
+                    if settings.S3_PUTOBJECT_DIRECT:
+                        self.resource.meta.client.put_object(
+                            Bucket=self.bucket_name,
+                            Key=path,
+                            Body=d,
+                            **extra_args,
+                        )
+                    else:
+                        bucket.upload_fileobj(
+                            d,
+                            path,
+                            ExtraArgs=extra_args,
+                            Config=self.transfer_config,
+                        )
                 self._verify_upload(path, expected_size)
                 return
             except (

@@ -53,3 +53,6 @@ S3_UPLOAD_RETRY_DELAY = _env_float("SS_S3_UPLOAD_RETRY_DELAY", 2.0)
 S3_UPLOAD_VERIFY = _env_bool("SS_S3_UPLOAD_VERIFY", True)
 S3_UPLOAD_VERIFY_MAX_ATTEMPTS = _env_int("SS_S3_UPLOAD_VERIFY_MAX_ATTEMPTS", 6)
 S3_UPLOAD_VERIFY_DELAY = _env_float("SS_S3_UPLOAD_VERIFY_DELAY", 2.0)
+
+# When True, bypass s3transfer and use a direct put_object call.
+S3_PUTOBJECT_DIRECT = _env_bool("SS_S3_PUTOBJECT_DIRECT", False)
