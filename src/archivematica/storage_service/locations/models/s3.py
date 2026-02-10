@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 
 import boto3
 import botocore
+from boto3.s3.transfer import TransferConfig
 from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -90,6 +91,12 @@ class S3(models.Model):
 
     def _is_global_endpoint(self, url):
         return urlparse(url).netloc == "s3.amazonaws.com"
+
+    @property
+    def transfer_config(self):
+        if not hasattr(self, "_transfer_config"):
+            self._transfer_config = TransferConfig(use_threads=settings.S3_USE_THREADS)
+        return self._transfer_config
 
     @boto_exception
     def _ensure_bucket_exists(self):
@@ -222,7 +229,9 @@ class S3(models.Model):
             dest_file = objectSummary.key.replace(src_path, dest_path, 1)
             self.space.create_local_directory(dest_file)
             if not os.path.isdir(dest_file):
-                bucket.download_file(objectSummary.key, dest_file)
+                bucket.download_file(
+                    objectSummary.key, dest_file, Config=self.transfer_config
+                )
 
     def move_from_storage_service(self, src_path, dest_path, package=None):
         self._ensure_bucket_exists()
@@ -262,4 +271,6 @@ class S3(models.Model):
             extra_args["ContentType"] = mtype
 
         with open(data, "rb") as d:
-            bucket.upload_fileobj(d, path, ExtraArgs=extra_args)
+            bucket.upload_fileobj(
+                d, path, ExtraArgs=extra_args, Config=self.transfer_config
+            )
