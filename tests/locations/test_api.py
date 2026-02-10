@@ -1144,7 +1144,7 @@ def compressed_bag_fixture_path():
 def s3_resource(compressed_bag_fixture_path, aip_storage_location):
     """Mock the S3 bucket interactions in S3.move_to_storage_service."""
 
-    def download_file(_key, dest_file):
+    def download_file(_key, dest_file, Config=None):
         shutil.copy(compressed_bag_fixture_path, dest_file)
 
     return mock.Mock(

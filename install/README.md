@@ -223,6 +223,14 @@ of these settings or provide values to mandatory fields.
   - **Type:** `integer`
   - **Default:** `900`
 
+- **`SS_S3_USE_THREADS`**:
+  - **Description:** enable boto3 S3 managed transfer threads for uploads and
+    downloads. Set to `false` if your environment has constrained CPU/memory,
+    unstable networking, backend throttling, or S3-compatible endpoints that
+    behave poorly under concurrent transfers.
+  - **Type:** `boolean`
+  - **Default:** `true`
+
 The configuration of the database is also declared via environment variables.
 Storage Service looks up the `SS_DB_URL` environment string. If defined, its
 value is expected to follow the form described in the [dj-database-url docs],
