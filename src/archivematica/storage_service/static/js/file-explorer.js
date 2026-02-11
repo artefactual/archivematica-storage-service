@@ -429,7 +429,7 @@
           var child = structure.children[index];
           if (child.children != undefined) {
             var parent = base.addDir({ name: child.name });
-            parent = this.structureToObjects(child, parent);
+            this.structureToObjects(child, parent);
           } else {
             base.addFile({ name: child.name });
           }
