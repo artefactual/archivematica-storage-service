@@ -12,6 +12,7 @@ import uuid
 from common import fields
 from common import utils
 from django.core.exceptions import ValidationError
+from django.db import close_old_connections
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -229,6 +230,8 @@ class Space(models.Model):
         from ..constants import PROTOCOL
 
         protocol_model = PROTOCOL[self.access_protocol]["model"]
+        # Close old database connections to avoid errors when processing large packages
+        close_old_connections()
         protocol_space = protocol_model.objects.get(space=self)
         # TODO try-catch AttributeError if remote_user or remote_name not exist?
         return protocol_space
