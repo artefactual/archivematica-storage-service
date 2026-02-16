@@ -762,3 +762,5 @@ if PROMETHEUS_ENABLED:
     )
     INSTALLED_APPS = INSTALLED_APPS + ["django_prometheus"]
     LOGIN_EXEMPT_URLS.append(r"^metrics$")
+
+SILENCED_SYSTEM_CHECKS = environ.get("SS_SILENCED_SYSTEM_CHECKS", "[]")
