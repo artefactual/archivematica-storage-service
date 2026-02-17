@@ -1,0 +1,9 @@
+{
+  "locationDirectoryPicker": {
+    "ariaLabel": "Location directory picker",
+    "loadingDirectories": "Laster...",
+    "loadFailed": "Unable to load directory",
+    "retry": "Retry",
+    "select": "Velg"
+  }
+}

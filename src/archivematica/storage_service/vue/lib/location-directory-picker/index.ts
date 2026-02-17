@@ -1,17 +1,29 @@
 import { createApp } from 'vue'
 import App from './App.vue'
+import { i18n, initI18n } from '@/shared/i18n'
 
-const bootstrap = () => {
+async function bootstrap() {
   const mountEl = document.getElementById('location-directory-picker')
   if (!mountEl) {
     throw new Error('Mount element not found.')
   }
 
-  const message
-    = mountEl.getAttribute('data-message')
-      || 'Storage Service location directory picker workspace initialized.'
+  await initI18n()
 
-  createApp(App, { message }).mount(mountEl)
+  const spaceUuid = mountEl.getAttribute('data-space-uuid') || ''
+  const rootPath = mountEl.getAttribute('data-root-path') || ''
+  const selectedPath = mountEl.getAttribute('data-selected-path') || ''
+
+  const app = createApp(App, {
+    spaceUuid,
+    rootPath,
+    selectedPath,
+  })
+
+  app.use(i18n)
+  app.mount(mountEl)
 }
 
-bootstrap()
+bootstrap().catch((err) => {
+  console.error('Failed to bootstrap app:', err)
+})

@@ -1,5 +1,5 @@
 /// <reference types="vitest" />
-import { dirname, resolve } from 'node:path'
+import { basename, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, normalizePath, type ProxyOptions } from 'vite'
 import vue from '@vitejs/plugin-vue'
@@ -116,7 +116,14 @@ export default defineConfig(({ mode }) => {
             }
             return undefined
           },
-          chunkFileNames: '[name]-[hash].js',
+          chunkFileNames: (chunkInfo) => {
+            const facade = chunkInfo.facadeModuleId
+            if (facade && facade.includes('/lib/shared/i18n/locales/')) {
+              const locale = basename(facade).replace('.json', '')
+              return `locale-${locale}-[hash].js`
+            }
+            return '[name]-[hash].js'
+          },
         },
       },
     },

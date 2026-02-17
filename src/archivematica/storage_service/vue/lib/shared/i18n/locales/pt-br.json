@@ -1,0 +1,9 @@
+{
+  "locationDirectoryPicker": {
+    "ariaLabel": "Location directory picker",
+    "loadingDirectories": "Carregando...",
+    "loadFailed": "Unable to load directory",
+    "retry": "Retry",
+    "select": "Selecione"
+  }
+}
