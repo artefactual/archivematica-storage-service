@@ -3,6 +3,7 @@ ARG UBUNTU_VERSION=24.04
 ARG USER_ID=1000
 ARG GROUP_ID=1000
 ARG PYTHON_VERSION=3.10
+ARG NODE_VERSION=24
 ARG PYENV_DIR=/pyenv
 
 # -----------------------------------------------------------------------------
@@ -71,6 +72,16 @@ RUN set -ex \
 	&& pyenv exec python3 -m pip install --upgrade pip setuptools \
 	&& pyenv exec python3 -m pip install --requirement /src/requirements-dev.txt \
 	&& pyenv rehash
+
+# -----------------------------------------------------------------------------
+
+FROM node:${NODE_VERSION} AS archivematica-storage-service-vue-builder
+
+COPY --link src/archivematica/storage_service/vue /src/src/archivematica/storage_service/vue
+
+WORKDIR /src/src/archivematica/storage_service/vue
+
+RUN npm clean-install
 
 # -----------------------------------------------------------------------------
 
@@ -148,6 +159,7 @@ ENV SS_GUNICORN_ERRORLOG=-
 ENV FORWARDED_ALLOW_IPS=*
 
 COPY --chown=${USER_ID}:${GROUP_ID} --link . /src/
+COPY --chown=${USER_ID}:${GROUP_ID} --from=archivematica-storage-service-vue-builder --link /src/src/archivematica/storage_service/vue/dist /src/src/archivematica/storage_service/vue/dist
 
 RUN set -ex \
 	&& export SS_DB_URL=mysql://ne:ver@min/d \
