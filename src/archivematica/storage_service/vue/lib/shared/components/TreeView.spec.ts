@@ -177,6 +177,28 @@ describe('TreeView', () => {
     wrapper.unmount()
   })
 
+  it('does not steal focus from the active tree item on items refresh', async () => {
+    const wrapper = mount(Tree, {
+      attachTo: document.body,
+      props: {
+        items: sampleTreeMultiRoot,
+        autoFocusOnItemsChange: true,
+        autoFocusTarget: 'first',
+      },
+    })
+    const treeItems = wrapper.findAll('[role="treeitem"]')
+    const secondTreeItem = treeItems[1]?.element as HTMLElement | undefined
+    secondTreeItem?.focus()
+    expect(document.activeElement).toBe(secondTreeItem ?? null)
+
+    await wrapper.setProps({ items: [...sampleTreeMultiRoot] })
+    await wrapper.vm.$nextTick()
+    await wrapper.vm.$nextTick()
+
+    expect(document.activeElement).toBe(secondTreeItem ?? null)
+    wrapper.unmount()
+  })
+
   it('generates unique DOM ids for root nodes without ids', () => {
     const wrapper = mount(Tree, {
       props: {

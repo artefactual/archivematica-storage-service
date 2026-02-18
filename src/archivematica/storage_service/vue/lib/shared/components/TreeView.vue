@@ -293,6 +293,11 @@ const focusTree = (options?: TreeFocusOptions) => {
 }
 
 const hasItems = (nodes: TreeNode[]) => nodes.length > 0
+const isFocusInsideTree = () => {
+  const rootEl = treeRootRef.value?.$el as HTMLElement | undefined
+  const active = document.activeElement as HTMLElement | null
+  return !!(rootEl && active && rootEl.contains(active))
+}
 
 onMounted(() => {
   if (!props.autoFocusOnMount || !hasItems(props.items)) return
@@ -307,6 +312,7 @@ watch(
     if (!props.autoFocusOnItemsChange) return
     const nowHasItems = hasItems(items)
     if (!nowHasItems) return
+    if (isFocusInsideTree()) return
     nextTick(() => {
       focusTree({ target: props.autoFocusTarget })
     })
