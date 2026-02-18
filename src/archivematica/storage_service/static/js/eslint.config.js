@@ -12,11 +12,6 @@ module.exports = [
       globals: {
         ...globals.browser,
         ...globals.jquery,
-        Backbone: "readonly",
-        Base64: "readonly",
-        DirectoryPickerView: "readonly",
-        _: "readonly",
-        exports: "readonly",
         gettext: "readonly",
       },
     },

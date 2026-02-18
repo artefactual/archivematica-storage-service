@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-06-07 08:43-0700\n"
+"POT-Creation-Date: 2026-02-17 16:12-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,38 +17,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-
-#: static/js/directory_picker.js:44
-msgid "Select"
-msgstr ""
-
-#: static/js/directory_picker.js:45
-msgid "Select directory"
-msgstr ""
-
-#: static/js/directory_picker.js:46
-msgid "Add"
-msgstr ""
-
-#: static/js/directory_picker.js:64
-msgid "De-select directory"
-msgstr ""
-
-#: static/js/directory_picker.js:65
-msgid "Are you sure you want to de-select this?"
-msgstr ""
-
-#: static/js/directory_picker.js:122
-msgid "OK"
-msgstr ""
-
-#: static/js/directory_picker.js:139
-msgid "Yes"
-msgstr ""
-
-#: static/js/directory_picker.js:146
-msgid "Cancel"
-msgstr ""
 
 #: static/js/project.js:83
 msgid "No data available in table"

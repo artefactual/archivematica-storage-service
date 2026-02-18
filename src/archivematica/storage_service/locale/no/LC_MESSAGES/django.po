@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-22 11:14-0800\n"
+"POT-Creation-Date: 2026-02-17 15:57-0800\n"
 "PO-Revision-Date: 2020-10-19 21:12+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -20,7 +20,7 @@ msgstr ""
 
 #: administration/forms.py:45 locations/models/space.py:187
 #: templates/locations/location_detail.html:10
-#: templates/locations/location_form.html:20
+#: templates/locations/location_form.html:19
 #: templates/snippets/locations_table.html:12
 msgid "Space"
 msgstr "Rom"
@@ -313,7 +313,7 @@ msgstr "GPG-nøkkel %(fingerprint)s er slettet."
 msgid "Failed to delete GPG key %(fingerprint)s."
 msgstr "Kunne ikke slette GPG-nøkkel %(fingerprint)s."
 
-#: common/gpgutils.py:26
+#: common/gpgutils.py:193
 msgid "Archivematica Storage Service GPG Key"
 msgstr "Archivematica lagringstjeneste GPG-nøkkel"
 
@@ -2645,7 +2645,7 @@ msgid "Delete"
 msgstr "Slett"
 
 #: templates/administration/key_delete.html:16
-#: templates/locations/delete.html:26 templates/locations/location_form.html:77
+#: templates/locations/delete.html:26 templates/locations/location_form.html:52
 #: templates/locations/package_reingest.html:15
 msgid "Cancel"
 msgstr "Avbryt"
@@ -2788,39 +2788,39 @@ msgstr "Om Archivematica lagringstjeneste"
 msgid "Git commit"
 msgstr "Git commit"
 
-#: templates/base.html:10 templates/base.html:48 templates/base.html:76
+#: templates/base.html:13 templates/base.html:57 templates/base.html:85
 #: templates/fluid.html:9 templates/index.html:4
 msgid "Archivematica Storage Service"
 msgstr "Archivematica lagringstjeneste"
 
-#: templates/base.html:51
+#: templates/base.html:60
 msgid "Home"
 msgstr "Hjem"
 
-#: templates/base.html:52 templates/index.html:10
+#: templates/base.html:61 templates/index.html:10
 #: templates/locations/location_detail.html:73
 msgid "Pipelines"
 msgstr "Rør"
 
-#: templates/base.html:53 templates/index.html:13
+#: templates/base.html:62 templates/index.html:13
 msgid "Spaces"
 msgstr "Rom"
 
-#: templates/base.html:54 templates/index.html:16
+#: templates/base.html:63 templates/index.html:16
 #: templates/locations/pipeline_detail.html:27
 msgid "Locations"
 msgstr "Plasseringer"
 
-#: templates/base.html:55 templates/index.html:19
+#: templates/base.html:64 templates/index.html:19
 #: templates/locations/location_detail.html:81
 msgid "Packages"
 msgstr "Pakker"
 
-#: templates/base.html:56 templates/index.html:22
+#: templates/base.html:65 templates/index.html:22
 msgid "Administration"
 msgstr "Administrasjon"
 
-#: templates/base.html:61
+#: templates/base.html:70
 msgid "Log out"
 msgstr "Logg ut"
 
@@ -2975,12 +2975,17 @@ msgid "No packages in this space."
 msgstr "Ingen pakker i dette rommet."
 
 #: templates/locations/location_form.html:39
-msgid "Browse"
-msgstr "Bla gjennom"
+#: templates/snippets/package_row.html:80
+msgid "Close"
+msgstr "Lukk"
 
-#: templates/locations/location_form.html:71
+#: templates/locations/location_form.html:41
 msgid "Select a directory"
 msgstr "Velg en mappe"
+
+#: templates/locations/location_form.html:67
+msgid "Browse"
+msgstr "Bla gjennom"
 
 #: templates/locations/location_list.html:4
 msgid "All Locations"
@@ -3280,10 +3285,6 @@ msgstr ""
 "                      Er du sikker på at du vil slette pakken (%(type)s) med "
 "UUID <strong>%(uuid)s</strong>?\n"
 "                    "
-
-#: templates/snippets/package_row.html:80
-msgid "Close"
-msgstr "Lukk"
 
 #: templates/snippets/packages_table.html:6
 msgid "Originating Pipeline"
