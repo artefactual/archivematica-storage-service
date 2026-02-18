@@ -106,3 +106,25 @@ jobs:
       - name: "Run tox"
         run: |
           tox -e ${{ matrix.toxenv }}
+  vue:
+    name: "Test Vue storage service"
+    runs-on: "ubuntu-24.04"
+    defaults:
+      run:
+        working-directory: "./src/archivematica/storage_service/vue/"
+    steps:
+      - name: "Check out repository"
+        uses: "actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd" # v6.0.2
+      - name: "Set up Node JS"
+        uses: "actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238" # v6.2.0
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: |
+            src/archivematica/storage_service/vue/package-lock.json
+      - name: "Install Vue dependencies"
+        run: |
+          npm clean-install
+      - name: "Run Vue tests"
+        run: |
+          npm run test
