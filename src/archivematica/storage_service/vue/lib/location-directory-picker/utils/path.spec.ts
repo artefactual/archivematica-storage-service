@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toAbsolutePath, toRelativePath } from '@/location-directory-picker/pathUtils'
+import { toAbsolutePath, toRelativePath } from '@/location-directory-picker/utils/path'
 
 describe('toAbsolutePath', () => {
   it('returns empty string for empty relative path', () => {
