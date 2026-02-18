@@ -125,6 +125,6 @@ jobs:
       - name: "Install Vue dependencies"
         run: |
           npm clean-install
-      - name: "Run Vue tests"
+      - name: "Run Vue checks"
         run: |
-          npm run test
+          npm run check
