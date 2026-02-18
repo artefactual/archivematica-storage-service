@@ -9,7 +9,7 @@ const selectedPath = ref('')
 
 <template>
   <div class="page-container">
-    <h1>Storage Service Vue Components</h1>
+    <h1>Storage Service Frontend Components</h1>
     <div class="well">
       <h2>Location Directory Picker</h2>
 

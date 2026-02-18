@@ -4,7 +4,7 @@
 {% block page_title %}{{ action }}{% endblock %}
 
 {% block extra_css %}
-  <link href="{{ STATIC_URL }}vue/storage-service-vue.css" rel="stylesheet" type="text/css" />
+  <link href="{{ STATIC_URL }}frontend/storage-service-frontend.css" rel="stylesheet" type="text/css" />
 {% endblock %}
 
 {% block content %}
@@ -55,7 +55,7 @@
 {% endblock %}
 
 {% block extra_js %}
-  <script type="module" src="{{ STATIC_URL }}vue/location-directory-picker.js"></script>
+  <script type="module" src="{{ STATIC_URL }}frontend/location-directory-picker.js"></script>
 
   <script>
     $(document).ready(function() {

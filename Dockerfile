@@ -75,11 +75,11 @@ RUN set -ex \
 
 # -----------------------------------------------------------------------------
 
-FROM node:${NODE_VERSION} AS archivematica-storage-service-vue-builder
+FROM node:${NODE_VERSION} AS archivematica-storage-service-frontend-builder
 
-COPY --link src/archivematica/storage_service/vue /src/src/archivematica/storage_service/vue
+COPY --link src/archivematica/storage_service/frontend /src/src/archivematica/storage_service/frontend
 
-WORKDIR /src/src/archivematica/storage_service/vue
+WORKDIR /src/src/archivematica/storage_service/frontend
 
 RUN npm clean-install
 
@@ -159,7 +159,7 @@ ENV SS_GUNICORN_ERRORLOG=-
 ENV FORWARDED_ALLOW_IPS=*
 
 COPY --chown=${USER_ID}:${GROUP_ID} --link . /src/
-COPY --chown=${USER_ID}:${GROUP_ID} --from=archivematica-storage-service-vue-builder --link /src/src/archivematica/storage_service/vue/dist /src/src/archivematica/storage_service/vue/dist
+COPY --chown=${USER_ID}:${GROUP_ID} --from=archivematica-storage-service-frontend-builder --link /src/src/archivematica/storage_service/frontend/dist /src/src/archivematica/storage_service/frontend/dist
 
 RUN set -ex \
 	&& export SS_DB_URL=mysql://ne:ver@min/d \

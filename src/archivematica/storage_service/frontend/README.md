@@ -1,4 +1,4 @@
-# Archivematica Storage Service Vue Components
+# Archivematica Storage Service Frontend Components
 
 Vue.js components for Archivematica Storage Service, migrating from legacy
 JavaScript to modern Vue 3 + TypeScript.
@@ -39,7 +39,7 @@ npm run preview           # Preview production build locally
 ## Internationalization (i18n)
 
 Vue i18n is configured in `lib/shared/i18n` and loads JSON translation bundles
-at runtime. The Vue package does not include gettext conversion scripts; the
+at runtime. The frontend package does not include gettext conversion scripts; the
 JSON files under `lib/shared/i18n/locales` are the runtime source of truth.
 
 ### Translation files structure
