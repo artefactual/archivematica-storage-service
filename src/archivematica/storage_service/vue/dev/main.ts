@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import { i18n, initI18n } from '@/shared/i18n'
+import 'font-awesome/css/font-awesome.min.css'
 
 async function bootstrap() {
   await initI18n()
