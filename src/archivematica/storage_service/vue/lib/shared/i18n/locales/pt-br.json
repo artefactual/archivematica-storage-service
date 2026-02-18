@@ -1,9 +1,9 @@
 {
   "locationDirectoryPicker": {
-    "ariaLabel": "Location directory picker",
+    "ariaLabel": "Seletor de diretório de localização",
     "loadingDirectories": "Carregando...",
-    "loadFailed": "Unable to load directory",
-    "retry": "Retry",
-    "select": "Selecione"
+    "loadFailed": "Não foi possível carregar o diretório",
+    "retry": "Tentar novamente",
+    "select": "Selecionar"
   }
 }
