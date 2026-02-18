@@ -20,3 +20,8 @@
 # Exclude
 **/*~
 **/*.egg-info
+**/node_modules
+**/__pycache__/
+**/*.py[cod]
+**/.mypy_cache
+**/.ruff_cache

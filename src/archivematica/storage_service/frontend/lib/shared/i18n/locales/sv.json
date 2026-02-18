@@ -1,0 +1,9 @@
+{
+  "locationDirectoryPicker": {
+    "ariaLabel": "Katalogväljare för plats",
+    "loadingDirectories": "Läser in...",
+    "loadFailed": "Det gick inte att läsa in katalogen",
+    "retry": "Försök igen",
+    "select": "Välj"
+  }
+}

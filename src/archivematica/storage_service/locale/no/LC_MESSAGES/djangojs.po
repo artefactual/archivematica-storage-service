@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-06-07 08:43-0700\n"
+"POT-Creation-Date: 2026-02-17 16:12-0800\n"
 "PO-Revision-Date: 2020-10-19 21:12+0200\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -17,38 +17,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 2.4.1\n"
-
-#: static/js/directory_picker.js:44
-msgid "Select"
-msgstr "Velg"
-
-#: static/js/directory_picker.js:45
-msgid "Select directory"
-msgstr "Velg mappe"
-
-#: static/js/directory_picker.js:46
-msgid "Add"
-msgstr "Legg til"
-
-#: static/js/directory_picker.js:64
-msgid "De-select directory"
-msgstr "Avvelg mappen"
-
-#: static/js/directory_picker.js:65
-msgid "Are you sure you want to de-select this?"
-msgstr "Er du sikker på at du vil avvelge denne?"
-
-#: static/js/directory_picker.js:122
-msgid "OK"
-msgstr "Ok"
-
-#: static/js/directory_picker.js:139
-msgid "Yes"
-msgstr "Ja"
-
-#: static/js/directory_picker.js:146
-msgid "Cancel"
-msgstr "Avbryt"
 
 #: static/js/project.js:83
 msgid "No data available in table"

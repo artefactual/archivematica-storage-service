@@ -1,0 +1,9 @@
+{
+  "locationDirectoryPicker": {
+    "ariaLabel": "Mappevelger for plassering",
+    "loadingDirectories": "Laster inn...",
+    "loadFailed": "Kunne ikke laste inn katalogen",
+    "retry": "Prøv igjen",
+    "select": "Velg"
+  }
+}

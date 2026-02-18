@@ -1,0 +1,9 @@
+{
+  "locationDirectoryPicker": {
+    "ariaLabel": "Sélecteur de répertoire d’emplacement",
+    "loadingDirectories": "Chargement...",
+    "loadFailed": "Impossible de charger le répertoire",
+    "retry": "Réessayer",
+    "select": "Sélectionner"
+  }
+}

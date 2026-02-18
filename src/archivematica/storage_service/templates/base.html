@@ -1,10 +1,13 @@
 {% load static %}
 {% load i18n %}
+{% load lang %}
 {% load user %}
 {% logout_link as logout_url %}
+{% get_current_language as LANGUAGE_CODE %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ LANGUAGE_CODE }}" {% if LANGUAGE_BIDI %}dir="rtl"{% endif %}>
   <head>
     <meta charset="utf-8">
     <title>{% block title %}{% trans "Archivematica Storage Service" %}{% endblock title %}</title>
@@ -33,6 +36,12 @@
     <!-- Use this to quickly test CSS changes in a template,
         then move to project.css -->
     {% block extra_css %}{% endblock extra_css %}
+
+    <script type="text/javascript">
+      window.StorageServiceConfig = {
+        'currentLanguage': '{{ LANGUAGE_CODE|standardize_lang_code }}'
+      };
+    </script>
   </head>
 
   <body>
