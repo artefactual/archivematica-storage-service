@@ -63,7 +63,6 @@ def validate_space_path(path):
 #         Location.DIP_STORAGE,
 #         Location.STORAGE_SERVICE_INTERNAL,
 #         Location.TRANSFER_SOURCE,
-#         Location.BACKLOG,
 #     ]
 #
 #     def browse(self, path):

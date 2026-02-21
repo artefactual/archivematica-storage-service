@@ -116,20 +116,6 @@
     }
 },
 {
-    "pk": 4, 
-    "model": "locations.location", 
-    "fields": {
-        "used": 0, 
-        "description": "Default transfer backlog", 
-        "space": "7d20c992-bc92-4f92-a794-7161ff2cc08b",
-        "enabled": true, 
-        "quota": null, 
-        "relative_path": "var/archivematica/sharedDirectory/www/AIPsStore/transferBacklog", 
-        "purpose": "BL", 
-        "uuid": "6e61aacf-8492-4382-8ef3-262cc5420259"
-    }
-},
-{
     "pk": 5, 
     "model": "locations.location", 
     "fields": {

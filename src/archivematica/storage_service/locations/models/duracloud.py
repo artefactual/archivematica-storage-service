@@ -46,7 +46,6 @@ class Duracloud(models.Model):
     ALLOWED_LOCATION_PURPOSE = [
         Location.AIP_RECOVERY,
         Location.AIP_STORAGE,
-        Location.BACKLOG,
         Location.DIP_STORAGE,
         Location.REPLICATOR,
         Location.TRANSFER_SOURCE,

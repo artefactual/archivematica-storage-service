@@ -137,12 +137,6 @@ class DefaultLocationsForm(SettingsForm):
         label=_("Default DIP storage locations for new pipelines"),
     )
     new_dip_storage = DefaultLocationField(required=False, label=_("New DIP Storage:"))
-    default_backlog = forms.MultipleChoiceField(
-        choices=[],
-        required=False,
-        label=_("Default transfer backlog locations for new pipelines:"),
-    )
-    new_backlog = DefaultLocationField(required=False, label=_("New Transfer Backlog:"))
     default_recovery = forms.MultipleChoiceField(
         choices=[],
         required=False,
@@ -168,9 +162,6 @@ class DefaultLocationsForm(SettingsForm):
         )
         self.fields["default_dip_storage"].choices = self._get_locations_by_purpose(
             Location.DIP_STORAGE
-        )
-        self.fields["default_backlog"].choices = self._get_locations_by_purpose(
-            Location.BACKLOG
         )
         self.fields["default_recovery"].choices = self._get_locations_by_purpose(
             Location.AIP_RECOVERY

@@ -47,7 +47,6 @@ class NFS(models.Model):
         Location.CURRENTLY_PROCESSING,
         Location.STORAGE_SERVICE_INTERNAL,
         Location.TRANSFER_SOURCE,
-        Location.BACKLOG,
     ]
 
     def move_to_storage_service(self, src_path, dest_path, dest_space):

@@ -137,11 +137,6 @@ class Pipeline(URLMixin, models.Model):
                 "purpose": Location.DIP_STORAGE,
             },
             {
-                "default": "default_backlog",
-                "new": "new_backlog",
-                "purpose": Location.BACKLOG,
-            },
-            {
                 "default": "default_recovery",
                 "new": "new_recovery",
                 "purpose": Location.AIP_RECOVERY,

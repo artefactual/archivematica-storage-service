@@ -343,7 +343,7 @@ class TestLocationAPI(TempDirMixin, TestCase):
 
     def test_cant_move_to_non_existant_locations(self):
         data = {
-            "origin_location": "/api/v2/location/6e61aacf-8492-4382-8ef3-262cc5420259/",
+            "origin_location": "/api/v2/location/4056b25d-6a85-4557-b9a5-9c85565fd892/",
             "files": [{"source": "foo", "destination": "bar"}],
             "pipeline": "/api/v2/pipeline/b25f6b71-3ebf-4fcc-823c-1feb0a2553dd/",
         }
@@ -358,11 +358,11 @@ class TestLocationAPI(TempDirMixin, TestCase):
     def test_cant_move_from_disabled_locations(self):
         # Set origin location disabled
         models.Location.objects.filter(
-            uuid="6e61aacf-8492-4382-8ef3-262cc5420259"
+            uuid="4056b25d-6a85-4557-b9a5-9c85565fd892"
         ).update(enabled=False)
         # Send request
         data = {
-            "origin_location": "/api/v2/location/6e61aacf-8492-4382-8ef3-262cc5420259/",
+            "origin_location": "/api/v2/location/4056b25d-6a85-4557-b9a5-9c85565fd892/",
             "files": [{"source": "foo", "destination": "bar"}],
             "pipeline": "/api/v2/pipeline/b25f6b71-3ebf-4fcc-823c-1feb0a2553dd/",
         }
@@ -382,7 +382,7 @@ class TestLocationAPI(TempDirMixin, TestCase):
         ).update(enabled=False)
         # Send request
         data = {
-            "origin_location": "/api/v2/location/6e61aacf-8492-4382-8ef3-262cc5420259/",
+            "origin_location": "/api/v2/location/4056b25d-6a85-4557-b9a5-9c85565fd892/",
             "files": [{"source": "foo", "destination": "bar"}],
             "pipeline": "/api/v2/pipeline/b25f6b71-3ebf-4fcc-823c-1feb0a2553dd/",
         }
@@ -1325,7 +1325,7 @@ def test_move_request_fails_if_target_location_purpose_does_not_match(
     package: models.Package,
     secondary_aip_location: models.Location,
 ) -> None:
-    secondary_aip_location.purpose = models.Location.BACKLOG
+    secondary_aip_location.purpose = models.Location.TRANSFER_SOURCE
     secondary_aip_location.save()
 
     response = admin_client.post(

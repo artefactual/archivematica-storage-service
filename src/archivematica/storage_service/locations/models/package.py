@@ -1864,60 +1864,6 @@ class Package(models.Model):
                 origin=file_data["dashboard_uuid"],
             )
 
-    def backlog_transfer(self, origin_location, origin_path):
-        """
-        Stores a package in backlog.
-
-        Invokes different transfer mechanisms depending on what the source and
-        destination Spaces are.  Checks if there is space in the Space and
-        Location for the AIP, and raises a StorageException if not.  All sizes
-        expected to be in bytes.
-        """
-        self.origin_location = origin_location
-        self.origin_path = origin_path
-
-        # Check if enough space on the space and location
-        # All sizes expected to be in bytes
-        src_space = self.origin_location.space
-        dest_space = self.current_location.space
-        self._check_quotas(dest_space, self.current_location)
-
-        # No pointer file
-        self.pointer_file_location = None
-        self.pointer_file_path = None
-
-        self.status = Package.PENDING
-        self.save()
-
-        # Move transfer
-        src_space.move_to_storage_service(
-            source_path=os.path.join(
-                self.origin_location.relative_path, self.origin_path
-            ),
-            destination_path=self.current_path,  # This should include Location.path
-            destination_space=dest_space,
-        )
-
-        try:
-            self.index_file_data_from_transfer_mets(
-                prefix=os.path.join(dest_space.staging_path, self.current_path)
-            )  # create File entries for every file in the transfer
-        except StorageException as e:
-            LOGGER.warning("Transfer METS data could not be read: %s", str(e))
-
-        dest_space.move_from_storage_service(
-            source_path=self.current_path,  # This should include Location.path
-            destination_path=os.path.join(
-                self.current_location.relative_path, self.current_path
-            ),
-            package=self,
-        )
-
-        # Save new space/location usage, package status
-        self._update_quotas(dest_space, self.current_location)
-        self.status = Package.UPLOADED
-        self.save()
-
     def check_fixity(
         self,
         force_local: bool = False,

@@ -234,7 +234,6 @@ def startup(working_directory_path: Path) -> None:
         * location (purpose=TRANSFER_SOURCE, path=home)
         * location (purpose=AIP_STORAGE, path=/var/archivematica/sharedDirectory/www/AIPsStore)
         * location (purpose=DIP_STORAGE, path=/var/archivematica/sharedDirectory/www/DIPsStore)
-        * location (purpose=BACKLOG, path=/var/archivematica/sharedDirectory/www/AIPsStore/transferBacklog)
         * location (purpose=STORAGE_SERVICE_INTERNAL, path=/var/archivematica/storage_service)
         * location (purpose=AIP_RECOVERY, path=/var/archivematica/storage_service/recover)
 

@@ -1103,11 +1103,6 @@ class PackageResource(ModelResource):
                 premis_agents=agents,
                 aip_subtype=aip_subtype,
             )
-        elif bundle.obj.package_type in (
-            Package.TRANSFER,
-        ) and bundle.obj.current_location.purpose in (Location.BACKLOG,):
-            # Move transfer to backlog
-            bundle.obj.backlog_transfer(origin_location, origin_path)
 
     def obj_create_async(self, request, **kwargs):
         """
@@ -1696,16 +1691,6 @@ class PackageResource(ModelResource):
             return http.HttpBadRequest(
                 json.dumps(
                     {"error": True, "message": _("This package is not a transfer.")}
-                ),
-                content_type="application/json",
-            )
-        if package.current_location.purpose != Location.BACKLOG:
-            return http.HttpBadRequest(
-                json.dumps(
-                    {
-                        "error": True,
-                        "message": _("This package is not in transfer backlog."),
-                    }
                 ),
                 content_type="application/json",
             )

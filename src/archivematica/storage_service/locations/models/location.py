@@ -34,12 +34,11 @@ class Location(models.Model):
     SWORD_DEPOSIT = "SD"
     # QUARANTINE = 'QU'
     STORAGE_SERVICE_INTERNAL = "SS"
-    BACKLOG = "BL"
     TRANSFER_SOURCE = "TS"
     REPLICATOR = "RP"
 
     # List of purposes where moving is not allowed.
-    PURPOSES_DISALLOWED_MOVE = (BACKLOG, AIP_STORAGE, TRANSFER_SOURCE)
+    PURPOSES_DISALLOWED_MOVE = (AIP_STORAGE, TRANSFER_SOURCE)
 
     PURPOSE_CHOICES = (
         (AIP_RECOVERY, _("AIP Recovery")),
@@ -49,7 +48,6 @@ class Location(models.Model):
         (SWORD_DEPOSIT, _("FEDORA Deposits")),
         # (QUARANTINE, 'Quarantine'),
         (STORAGE_SERVICE_INTERNAL, _("Storage Service Internal Processing")),
-        (BACKLOG, _("Transfer Backlog")),
         (TRANSFER_SOURCE, _("Transfer Source")),
         (REPLICATOR, _("Replicator")),
     )

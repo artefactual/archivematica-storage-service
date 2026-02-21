@@ -23,7 +23,6 @@ class LocalFilesystem(models.Model):
         Location.CURRENTLY_PROCESSING,
         Location.STORAGE_SERVICE_INTERNAL,
         Location.TRANSFER_SOURCE,
-        Location.BACKLOG,
         Location.REPLICATOR,
     ]
 

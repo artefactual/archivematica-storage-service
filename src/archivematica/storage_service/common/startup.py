@@ -101,16 +101,6 @@ def populate_default_locations(space_path: pathlib.Path) -> None:
             "default_setting": "default_dip_storage",
         },
         {
-            "purpose": locations_models.Location.BACKLOG,
-            "relative_path": BASE_PATH
-            / "sharedDirectory"
-            / "www"
-            / "AIPsStore"
-            / "transferBacklog",
-            "description": "Default transfer backlog",
-            "default_setting": "default_backlog",
-        },
-        {
             "purpose": locations_models.Location.STORAGE_SERVICE_INTERNAL,
             "relative_path": BASE_PATH / "storage_service",
             "description": "For storage service internal usage.",
