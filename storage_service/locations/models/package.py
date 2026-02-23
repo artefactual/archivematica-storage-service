@@ -21,6 +21,7 @@ from common import fields
 from common import premis
 from common import utils
 from django.conf import settings
+from django.db import close_old_connections
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -1005,6 +1006,8 @@ class Package(models.Model):
                 destination_path=self.current_path,  # This should include Location.path
                 destination_space=v.dest_space,
             )
+            # Close old database connections to avoid errors when processing large packages
+            close_old_connections()
             # We have to manually construct the AIP's current path here;
             # ``self.get_local_path()`` won't work.
             local_aip_path = os.path.join(v.dest_space.staging_path, self.current_path)
@@ -1025,6 +1028,9 @@ class Package(models.Model):
                 ),
                 package=self,
             )
+            # Close old database connections to avoid errors when processing large packages
+            close_old_connections()
+
             # Update package status once transferred to SS
             if v.dest_space.access_protocol not in (Space.LOM, Space.ARKIVUM):
                 self.status = Package.UPLOADED
