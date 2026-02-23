@@ -4,6 +4,7 @@ import sys
 
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.db import close_old_connections
 from django.db.models import signals
 from django.dispatch import receiver
 from django.dispatch import Signal
@@ -62,6 +63,8 @@ def _log_report(uuid, success, message=None):
     # imported in models.__init__.py and seems to cause a circular import error
     from . import models
 
+    # Close old database connections to avoid errors when processing large packages
+    close_old_connections()
     package = models.Package.objects.get(uuid=uuid)
     models.FixityLog.objects.create(
         package=package, success=success, error_details=message
