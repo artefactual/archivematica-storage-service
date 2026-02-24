@@ -679,6 +679,8 @@ class Package(models.Model):
             destination_path=replica_package.current_path,
             destination_space=dest_space,
         )
+        # Close old database connections to avoid errors when processing large packages
+        close_old_connections()
         replica_package.status = Package.STAGING
         replica_package.save()
         src_space.post_move_to_storage_service()
@@ -732,6 +734,8 @@ class Package(models.Model):
             destination_path=replica_destination_path,
             package=replica_package,
         )
+        # Close old database connections to avoid errors when processing large packages
+        close_old_connections()
         if dest_space.access_protocol not in (Space.LOM, Space.ARKIVUM):
             replica_package.status = Package.UPLOADED
         replica_package.stored_date = timezone.now()
