@@ -49,10 +49,7 @@
     }
   },
   "loggers": {
-    "administration": {
-      "level": "DEBUG"
-    },
-    "common": {
+    "archivematica.storage_service": {
       "level": "DEBUG"
     },
     "django.request": {
@@ -64,9 +61,6 @@
     },
     "django.request.tastypie": {
       "level": "ERROR"
-    },
-    "locations": {
-      "level": "DEBUG"
     },
     "sword2": {
       "level": "INFO"
