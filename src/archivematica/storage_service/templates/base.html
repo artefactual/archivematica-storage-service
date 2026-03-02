@@ -44,18 +44,25 @@
     </script>
   </head>
 
-  <body data-features="{% block data_features %}{% endblock %}">
+  <body data-features="nav-collapse {% block data_features %}{% endblock %}">
 
     <div class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
         <div class="container">
-          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+          <button
+            class="btn btn-navbar"
+            type="button"
+            data-am-toggle="collapse"
+            data-am-target="#main-navigation"
+            aria-controls="main-navigation"
+            aria-expanded="false"
+          >
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
-          </a>
+          </button>
           <a class="brand" href="#">{% trans "Archivematica Storage Service" %}</a>
-          <div class="nav-collapse collapse">
+          <div id="main-navigation" class="nav-collapse collapse" aria-hidden="true">
             <ul class="nav">
               <li {% if request.path == '/' %}class="active"{% endif %}><a href="/">{% trans "Home" %}</a></li>
               <li {% if '/pipeline' in request.path %}class="active"{% endif %}><a href="{% url 'locations:pipeline_list' %}">{% trans "Pipelines" %}</a></li>
