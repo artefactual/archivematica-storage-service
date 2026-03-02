@@ -5,5 +5,10 @@
     "loadFailed": "Kunne ikke laste inn katalogen",
     "retry": "Prøv igjen",
     "select": "Velg"
+  },
+  "clipboardField": {
+    "copy": "Kopier",
+    "copied": "Kopiert!",
+    "copyFailed": "Kunne ikke kopiere. Kopier teksten manuelt."
   }
 }

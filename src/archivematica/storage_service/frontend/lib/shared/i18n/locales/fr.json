@@ -5,5 +5,10 @@
     "loadFailed": "Impossible de charger le répertoire",
     "retry": "Réessayer",
     "select": "Sélectionner"
+  },
+  "clipboardField": {
+    "copy": "Copier",
+    "copied": "Copié !",
+    "copyFailed": "Impossible de copier. Copiez le texte manuellement."
   }
 }

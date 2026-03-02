@@ -2,6 +2,7 @@ import { createApp, defineComponent, h, ref } from 'vue'
 import App from './App.vue'
 import { i18n, initI18n } from '@/shared/i18n'
 import { toAbsolutePath, toRelativePath } from './utils/path'
+import { initLocationFormModal } from './locationFormModal'
 import 'font-awesome/css/font-awesome.min.css'
 
 async function bootstrap() {
@@ -71,3 +72,5 @@ async function bootstrap() {
 bootstrap().catch((err) => {
   console.error('Failed to bootstrap app:', err)
 })
+
+initLocationFormModal()

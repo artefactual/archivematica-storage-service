@@ -5,5 +5,10 @@
     "loadFailed": "No se pudo cargar el directorio",
     "retry": "Reintentar",
     "select": "Seleccionar"
+  },
+  "clipboardField": {
+    "copy": "Copiar",
+    "copied": "¡Copiado!",
+    "copyFailed": "No se pudo copiar. Copie el texto manualmente."
   }
 }

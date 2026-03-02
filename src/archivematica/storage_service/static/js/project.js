@@ -163,26 +163,6 @@ $(document).ready(function () {
     return false;
   });
 
-  // Enable confirmation modal in certain forms. The submit button is
-  // overriden so it opens the modal. The submit button inside the modal is
-  // allowed to submit the form instead.
-  // Used in `packages_table.html` (delete DIP functionality).
-  // Currently limited to one form per page, see jQuery.each for more.
-  $("body").on(
-    "click",
-    "form.submit-confirm button[type=submit]",
-    function (event) {
-      var $button = $(event.target);
-      var $form = $button.closest("form");
-      var $modal = $form.find(".confirm-modal");
-      if ($button.parents(".confirm-modal").length) {
-        return true;
-      }
-      event.preventDefault();
-      $modal.modal("show");
-    },
-  );
-
   /***************
   CALLBACK HEADERS
   ***************/
@@ -272,52 +252,4 @@ $(document).ready(function () {
     // Append modified clone after last header
     $last_header.after($clone);
   });
-
-  function setUpCopyButton(buttonId, targetId, iconId) {
-    $(buttonId)
-      .tooltip()
-      .click(function () {
-        var $button = $(this);
-        navigator.clipboard
-          .writeText($(targetId).val())
-          .then(function () {
-            var $button_icon = $(iconId);
-            var $icon_original_class = $button_icon.data("icon-original-class");
-            var $icon_clicked_class = $button_icon.data("icon-clicked-class");
-
-            // Update the button icon.
-            $button_icon
-              .removeClass($icon_original_class)
-              .addClass($icon_clicked_class);
-
-            // Update the button tooltip.
-            $button
-              .attr("data-original-title", $button.data("label-clicked"))
-              .tooltip("show");
-
-            // Reset the button after 2 seconds.
-            setTimeout(function () {
-              $button_icon
-                .removeClass($icon_clicked_class)
-                .addClass($icon_original_class);
-              $button
-                .attr("data-original-title", $button.data("label-original"))
-                .tooltip("hide");
-            }, 2000);
-          })
-          .catch(function (err) {
-            console.error("Failed to copy to clipboard: ", err);
-          });
-      });
-  }
-
-  // Set up the button which allows users to copy the API key to the clipboard.
-  setUpCopyButton("#copy-api-key-button", "#api-key", "#copy-button-icon");
-
-  // Set up the button which allows users to copy the GPG armor key to the clipboard.
-  setUpCopyButton(
-    "#copy-key-armor-button",
-    "#key-armor",
-    "#copy-key-armor-button-icon",
-  );
 });

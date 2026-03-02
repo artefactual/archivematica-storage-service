@@ -2,6 +2,7 @@
 {% load i18n %}
 
 {% block page_title %}{{ action }}{% endblock %}
+{% block data_features_page %}modal{% endblock %}
 
 {% block extra_css %}
   <link href="{{ STATIC_URL }}frontend/storage-service-frontend.css" rel="stylesheet" type="text/css" />
@@ -46,6 +47,7 @@
       data-space-uuid="{{ space.uuid }}"
       data-root-path="{{ space.path|escape }}"
       data-selected-relative-path="{{ form.relative_path.value|default_if_none:''|escape }}"
+      data-browse-label="{% trans 'Browse' %}"
     ></div>
   </div>
   <div class="modal-footer">
@@ -59,29 +61,6 @@
 
   <script>
     $(document).ready(function() {
-      var relativePathInput = document.getElementById('id_relative_path');
-      var pickerMount = document.getElementById('location-directory-picker');
-      var pickerModal = $('#directory-select-modal');
-
-      if (relativePathInput) {
-        $('<input id="id_relative_path_browse" type="button" value="{% trans 'Browse' %}" class="btn" />')
-          .insertAfter('#id_relative_path')
-          .on('click', function() {
-            if (pickerMount) {
-              pickerMount.setAttribute('data-selected-relative-path', relativePathInput.value || '');
-            }
-            pickerModal.modal({ show: true });
-          });
-      }
-
-      if (pickerMount && relativePathInput) {
-        pickerMount.addEventListener('location-directory-picker:selected-path', function(event) {
-          var detail = event.detail || {};
-          relativePathInput.value = detail.relativePath || '';
-          pickerModal.modal('hide');
-        });
-      }
-
       // Hide the "Replicators" field when the location being created is not an
       // AIP Storage ("AS") location.
       $('select#id_purpose').change(function(event) {replicatorsVisibility();});

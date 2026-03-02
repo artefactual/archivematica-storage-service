@@ -44,18 +44,25 @@
     </script>
   </head>
 
-  <body>
+  <body data-features="nav-collapse,{% block data_features_section %}{% endblock %},{% block data_features_page %}{% endblock %}">
 
     <div class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
         <div class="container">
-          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+          <button
+            class="btn btn-navbar"
+            type="button"
+            data-am-toggle="collapse"
+            data-am-target="#main-navigation"
+            aria-controls="main-navigation"
+            aria-expanded="false"
+          >
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
-          </a>
+          </button>
           <a class="brand" href="#">{% trans "Archivematica Storage Service" %}</a>
-          <div class="nav-collapse collapse">
+          <div id="main-navigation" class="nav-collapse collapse">
             <ul class="nav">
               <li {% if request.path == '/' %}class="active"{% endif %}><a href="/">{% trans "Home" %}</a></li>
               <li {% if '/pipeline' in request.path %}class="active"{% endif %}><a href="{% url 'locations:pipeline_list' %}">{% trans "Pipelines" %}</a></li>
@@ -98,13 +105,14 @@
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="{{STATIC_URL}}js/jquery-1.10.2.js"></script>
     <script src="{{STATIC_URL}}js/jquery-dataTables.js"></script>
-    <script src="{% static 'js/bootstrap.min.js' %}"></script>
 
     <!-- i18js catalog -->
     <script type="text/javascript" src="{% url 'javascript-catalog' %}"></script>
 
     <!-- place project specific Javascript in this file -->
     <script src="{% static 'js/project.js' %}"></script>
+
+    <script type="module" src="{{ STATIC_URL }}frontend/core.js"></script>
 
     {% block extra_js %}{% endblock extra_js %}
   </body>

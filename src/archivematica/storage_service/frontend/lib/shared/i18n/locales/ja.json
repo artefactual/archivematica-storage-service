@@ -5,5 +5,10 @@
     "loadFailed": "ディレクトリーを読み込めません",
     "retry": "再試行",
     "select": "選択"
+  },
+  "clipboardField": {
+    "copy": "コピー",
+    "copied": "コピーしました！",
+    "copyFailed": "コピーできませんでした。テキストを手動でコピーしてください。"
   }
 }
