@@ -62,7 +62,7 @@
             <span class="icon-bar"></span>
           </button>
           <a class="brand" href="#">{% trans "Archivematica Storage Service" %}</a>
-          <div id="main-navigation" class="nav-collapse collapse" aria-hidden="true">
+          <div id="main-navigation" class="nav-collapse collapse">
             <ul class="nav">
               <li {% if request.path == '/' %}class="active"{% endif %}><a href="/">{% trans "Home" %}</a></li>
               <li {% if '/pipeline' in request.path %}class="active"{% endif %}><a href="{% url 'locations:pipeline_list' %}">{% trans "Pipelines" %}</a></li>
