@@ -163,26 +163,6 @@ $(document).ready(function () {
     return false;
   });
 
-  // Enable confirmation modal in certain forms. The submit button is
-  // overriden so it opens the modal. The submit button inside the modal is
-  // allowed to submit the form instead.
-  // Used in `packages_table.html` (delete DIP functionality).
-  // Currently limited to one form per page, see jQuery.each for more.
-  $("body").on(
-    "click",
-    "form.submit-confirm button[type=submit]",
-    function (event) {
-      var $button = $(event.target);
-      var $form = $button.closest("form");
-      var $modal = $form.find(".confirm-modal");
-      if ($button.parents(".confirm-modal").length) {
-        return true;
-      }
-      event.preventDefault();
-      $modal.modal("show");
-    },
-  );
-
   /***************
   CALLBACK HEADERS
   ***************/

@@ -105,6 +105,7 @@ loads matching modules from `lib/core/features/*/index.ts`.
 Current core feature modules:
 
 - `clipboard-field`
+- `modal`
 
 When adding new frontend apps or core feature modules, register/update entries
 in `vite.config.ts` and wire template `data-features` values accordingly.

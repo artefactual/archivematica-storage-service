@@ -61,13 +61,13 @@
           {% endif %}
 
           {% if perms.locations.delete_package and package.package_type in package.PACKAGE_TYPE_CAN_DELETE_DIRECTLY and package.status != package.DELETED %}
-            <form method="POST" class="submit-confirm" action="{% url 'locations:package_delete' package.uuid %}">
+            <form method="POST" action="{% url 'locations:package_delete' package.uuid %}">
               {% csrf_token %}
-              <button class="link" type="submit">{% trans "Delete" %}</button>
-              <div class="confirm-modal modal hide fade" tabindex="-1" role="dialog">
+              <button class="link" type="button" data-am-modal-target="#confirm-delete-{{ package.uuid }}">{% trans "Delete" %}</button>
+              <div id="confirm-delete-{{ package.uuid }}" class="confirm-modal modal hide fade" tabindex="-1" role="dialog" aria-labelledby="confirm-delete-title-{{ package.uuid }}" aria-hidden="true">
                 <div class="modal-header">
                   <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                  <h3>{% trans "Delete package" %}</h3>
+                  <h3 id="confirm-delete-title-{{ package.uuid }}">{% trans "Delete package" %}</h3>
                 </div>
                 <div class="modal-body">
                   <p>
@@ -77,7 +77,7 @@
                   </p>
                 </div>
                 <div class="modal-footer">
-                  <button class="btn" data-dismiss="modal" aria-hidden="true">{% trans "Close" %}</button>
+                  <button class="btn" type="button" data-dismiss="modal" aria-hidden="true">{% trans "Close" %}</button>
                   <button class="btn btn-danger" type="submit">{% trans "Delete" %}</button>
                 </div>
               </div>
