@@ -5,5 +5,10 @@
     "loadFailed": "Unable to load directory",
     "retry": "Retry",
     "select": "Select"
+  },
+  "clipboardField": {
+    "copy": "Copy",
+    "copied": "Copied!",
+    "copyFailed": "Failed to copy. Copy the text manually."
   }
 }

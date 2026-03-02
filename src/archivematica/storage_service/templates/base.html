@@ -44,7 +44,7 @@
     </script>
   </head>
 
-  <body>
+  <body data-features="{% block data_features %}{% endblock %}">
 
     <div class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
@@ -105,6 +105,8 @@
 
     <!-- place project specific Javascript in this file -->
     <script src="{% static 'js/project.js' %}"></script>
+
+    <script type="module" src="{{ STATIC_URL }}frontend/core.js"></script>
 
     {% block extra_js %}{% endblock extra_js %}
   </body>

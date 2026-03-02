@@ -5,5 +5,10 @@
     "loadFailed": "Det gick inte att läsa in katalogen",
     "retry": "Försök igen",
     "select": "Välj"
+  },
+  "clipboardField": {
+    "copy": "Kopiera",
+    "copied": "Kopierat!",
+    "copyFailed": "Det gick inte att kopiera. Kopiera texten manuellt."
   }
 }

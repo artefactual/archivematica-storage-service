@@ -74,12 +74,22 @@ if (window.StorageServiceConfig?.currentLanguage) {
   }
 }
 
-async function initI18n(): Promise<void> {
-  try {
-    await setLocale(initialLocale)
-  } catch (error) {
-    console.warn('Failed to set initial locale:', error)
+let initPromise: Promise<void> | null = null
+
+function initI18n(): Promise<void> {
+  if (initPromise) {
+    return initPromise
   }
+
+  initPromise = (async () => {
+    try {
+      await setLocale(initialLocale)
+    } catch (error) {
+      console.warn('Failed to set initial locale:', error)
+    }
+  })()
+
+  return initPromise
 }
 
 export {

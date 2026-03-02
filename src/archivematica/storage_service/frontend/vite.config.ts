@@ -25,6 +25,38 @@ const CHUNK_ROUTES = [
   },
 ] as const
 
+const CORE_FEATURE_FACADE_RE = /\/lib\/core\/features\/([^/]+)\/index\.ts$/
+const LOCALE_FACADE_PATH = '/lib/shared/i18n/locales/'
+
+const getCoreFeatureChunkName = (normalizedFacade: string): string | null => {
+  const featureMatch = normalizedFacade.match(CORE_FEATURE_FACADE_RE)
+  if (!featureMatch?.[1]) {
+    return null
+  }
+  return `core-feature-${featureMatch[1]}-[hash].js`
+}
+
+const getLocaleChunkName = (facade: string): string | null => {
+  if (!facade.includes(LOCALE_FACADE_PATH)) {
+    return null
+  }
+  const locale = basename(facade).replace('.json', '')
+  return `locale-${locale}-[hash].js`
+}
+
+const chunkFileNameForFacade = (facadeModuleId?: string | null): string => {
+  if (!facadeModuleId) {
+    return '[name]-[hash].js'
+  }
+
+  const normalizedFacade = normalizePath(facadeModuleId)
+  return (
+    getCoreFeatureChunkName(normalizedFacade)
+    ?? getLocaleChunkName(normalizedFacade)
+    ?? '[name]-[hash].js'
+  )
+}
+
 const createProxyConfig = (target: string, includeAuth = false): ProxyOptions => ({
   target,
   changeOrigin: true,
@@ -98,6 +130,7 @@ export default defineConfig(({ mode }) => {
       lib: {
         name: 'StorageService',
         entry: {
+          'core': resolve(__dirname, 'lib/core/index.ts'),
           'location-directory-picker': resolve(
             __dirname,
             'lib/location-directory-picker/index.ts',
@@ -117,12 +150,7 @@ export default defineConfig(({ mode }) => {
             return undefined
           },
           chunkFileNames: (chunkInfo) => {
-            const facade = chunkInfo.facadeModuleId
-            if (facade && facade.includes('/lib/shared/i18n/locales/')) {
-              const locale = basename(facade).replace('.json', '')
-              return `locale-${locale}-[hash].js`
-            }
-            return '[name]-[hash].js'
+            return chunkFileNameForFacade(chunkInfo.facadeModuleId)
           },
         },
       },

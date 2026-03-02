@@ -85,6 +85,8 @@ in the Vue components. Other language files should mirror the structure of
 
 - `dev/` contains a local development shell app.
 - `lib/` contains frontend library entrypoints built for Django staticfiles.
+- `lib/core/` contains shared frontend features loaded from Django
+  `data-features`.
 - `lib/location-directory-picker/` contains the Storage Service location
   directory picker app.
 - `lib/shared/` contains shared components, encoding helpers, HTTP utilities,
@@ -92,10 +94,20 @@ in the Vue components. Other language files should mirror the structure of
 
 ## Integration
 
-The build currently emits a `location-directory-picker` entrypoint for Django
-staticfiles:
+The build emits these Django static entrypoints:
 
+- `dist/core.js`
 - `dist/location-directory-picker.js`
+
+`core.js` reads feature names from `document.body.dataset.features` and lazy
+loads matching modules from `lib/core/features/*/index.ts`.
+
+Current core feature modules:
+
+- `clipboard-field`
+
+When adding new frontend apps or core feature modules, register/update entries
+in `vite.config.ts` and wire template `data-features` values accordingly.
 
 When adding new Vue apps, register additional library entries in
 `vite.config.ts`.
