@@ -10,5 +10,18 @@
     "copy": "Copier",
     "copied": "Copié !",
     "copyFailed": "Impossible de copier. Copiez le texte manuellement."
+  },
+  "tables": {
+    "search": "Rechercher :",
+    "show": "Afficher",
+    "entries": "entrées",
+    "showEntries": "Afficher les entrées :",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "pageIndicator": "Page {page} sur {total}",
+    "noRecords": "Aucun enregistrement correspondant trouvé",
+    "info": "Affichage de {start} à {end} sur {total} entrées",
+    "infoFiltered": "Affichage de {start} à {end} sur {filtered} entrées (filtrées à partir de {total} entrées au total)",
+    "infoEmpty": "Affichage de 0 à 0 sur 0 entrée"
   }
 }

@@ -135,6 +135,7 @@ export default defineConfig(({ mode }) => {
             __dirname,
             'lib/location-directory-picker/index.ts',
           ),
+          'tables': resolve(__dirname, 'lib/tables/index.ts'),
         },
         formats: ['es'],
       },

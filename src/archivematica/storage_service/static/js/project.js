@@ -103,7 +103,6 @@ var setDataTables = function () {
       },
     },
   };
-  $(".datatable").dataTable(dataTableOptions);
   setPackagesDataTable(dataTableOptions);
   setFixityLogsDataTable(dataTableOptions);
 };

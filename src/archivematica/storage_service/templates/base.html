@@ -32,6 +32,7 @@
 
     <!-- This file store project specific CSS -->
     <link href="{% static 'css/project.css' %}" rel="stylesheet">
+    <link href="{{ STATIC_URL }}frontend/storage-service-frontend.css" rel="stylesheet" type="text/css" />
 
     <!-- Use this to quickly test CSS changes in a template,
         then move to project.css -->
@@ -112,6 +113,7 @@
     <!-- place project specific Javascript in this file -->
     <script src="{% static 'js/project.js' %}"></script>
 
+    <script type="module" src="{{ STATIC_URL }}frontend/tables.js"></script>
     <script type="module" src="{{ STATIC_URL }}frontend/core.js"></script>
 
     {% block extra_js %}{% endblock extra_js %}

@@ -10,5 +10,18 @@
     "copy": "Copy",
     "copied": "Copied!",
     "copyFailed": "Failed to copy. Copy the text manually."
+  },
+  "tables": {
+    "search": "Search:",
+    "show": "Show",
+    "entries": "entries",
+    "showEntries": "Show entries:",
+    "previous": "Previous",
+    "next": "Next",
+    "pageIndicator": "Page {page} of {total}",
+    "noRecords": "No matching records found",
+    "info": "Showing {start} to {end} of {total} entries",
+    "infoFiltered": "Showing {start} to {end} of {filtered} entries (filtered from {total} total entries)",
+    "infoEmpty": "Showing 0 to 0 of 0 entries"
   }
 }

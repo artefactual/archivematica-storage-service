@@ -96,3 +96,32 @@ def test_deleting_key_from_detail_view_redirects_to_key_list(
     assert response.status_code == 200
 
     assert f'<a href="{delete_url}?next={next_url}">Delete</a>' in response.text
+
+
+@pytest.mark.django_db
+@mock.patch(
+    "archivematica.storage_service.administration.views.gpgutils.get_gpg_key_list"
+)
+def test_key_list_builds_payload(get_gpg_key_list, admin_client):
+    get_gpg_key_list.return_value = [
+        {
+            "keyid": "65C0718327F7B2C7",
+            "fingerprint": "3173C7395C551A6647656A5065C0718327F7B2C7",
+        }
+    ]
+
+    response = admin_client.get(reverse("administration:key_list"))
+
+    assert response.status_code == 200
+    payload = response.context["keys_table_payload"]
+    assert payload["kind"] == "keys-list"
+    assert [column["key"] for column in payload["columns"]] == [
+        "keyid",
+        "fingerprint",
+        "actions",
+    ]
+    assert len(payload["rows"]) == 1
+    assert (
+        payload["rows"][0]["fingerprint"] == "3173C7395C551A6647656A5065C0718327F7B2C7"
+    )
+    assert 'id="tables-keys-table-payload"' in response.text
