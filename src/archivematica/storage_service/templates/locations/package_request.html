@@ -8,84 +8,20 @@
 {% block content %}
 
 {% if request_events %}
-  <table class="datatable">
-    <thead>
-      <tr>
-        <th>{% trans "File" %}</th>
-        <th>{% trans "Type" %}</th>
-        <th>{% trans "Reason" %}</th>
-        <th>{% trans "Pipeline" %}</th>
-        <th>{% trans "User" %}</th>
-        <th>{% trans "Submitted" %}</th>
-        {% if perms.locations.approve_package_deletion %}
-          <th>{% trans "Approve/Reject" %}</th>
-        {% endif %}
-      </tr>
-    </thead>
-    <tbody>
-    {% for req in request_events %}
-      <tr>
-        <td>{{ req.package }}</td>
-        <td>{{ req.package.get_package_type_display }}</td>
-        <td>{{ req.event_reason }}</td>
-        <td>{{ req.pipeline }}</td>
-        <td>
-          {% blocktrans with email=req.user_email user_id=req.user_id %}{{ email }} (ID: {{ user_id }}){% endblocktrans %}
-        </td>
-        <td>{{ req.status_time }}</td>
-        {% if perms.locations.approve_package_deletion %}
-          <td>
-            <form action="{% url view_name %}" method="post">
-              {% csrf_token %}
-              {{ req.form.as_p }}
-              <input type="submit" name="approve" class='btn'
-                value="{% blocktrans with action=config.event_type|title %}Approve ({{ action }} package){% endblocktrans %}" />
-                <input type="submit" name="reject" value="{% trans "Reject (No change to package)" %}" class='btn btn-primary' />
-            </form>
-          </td>
-        {% endif %}
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
+  <div
+    data-table-root
+    data-table-script-id="tables-package-requests-pending-payload"></div>
+  {{ pending_requests_table_payload|json_script:"tables-package-requests-pending-payload" }}
 {% else %}
   <p>{% trans "No requests pending." %}</p>
 {% endif %}
 
 {% if closed_requests %}
 <h2>{% trans "Closed Requests" %}</h2>
-  <table class="datatable">
-    <thead>
-      <tr>
-        <th>{% trans "File" %}</th>
-        <th>{% trans "Type" %}</th>
-        <th>{% trans "Reason" %}</th>
-        <th>{% trans "Pipeline" %}</th>
-        <th>{% trans "User" %}</th>
-        <th>{% trans "Decision" %}</th>
-        <th>{% trans "Reason" %}</th>
-        <th>{% trans "Storage Admin" %}</th>
-        <th>{% trans "Updated" %}</th>
-      </tr>
-    </thead>
-    <tbody>
-    {% for req in closed_requests %}
-      <tr>
-        <td>{{ req.package }}</td>
-        <td>{{ req.package.get_package_type_display }}</td>
-        <td>{{ req.event_reason }}</td>
-        <td>{{ req.pipeline }}</td>
-        <td>
-          {% blocktrans with email=req.user_email user_id=req.user_id %}{{ email }} (ID: {{ user_id }}){% endblocktrans %}
-        </td>
-        <td>{{ req.get_status_display }}</td>
-        <td>{{ req.status_reason }}</td>
-        <td>{{ req.admin_id }}</td>
-        <td>{{ req.status_time }}</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
+  <div
+    data-table-root
+    data-table-script-id="tables-package-requests-closed-payload"></div>
+  {{ closed_requests_table_payload|json_script:"tables-package-requests-closed-payload" }}
 {% endif %}
 
 {% endblock %}

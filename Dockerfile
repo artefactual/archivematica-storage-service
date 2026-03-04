@@ -77,11 +77,23 @@ RUN set -ex \
 
 FROM node:${NODE_VERSION} AS archivematica-storage-service-frontend-builder
 
-COPY --link src/archivematica/storage_service/frontend /src/src/archivematica/storage_service/frontend
+ARG USER_ID
+ARG GROUP_ID
 
 WORKDIR /src/src/archivematica/storage_service/frontend
 
-RUN npm clean-install
+COPY --link src/archivematica/storage_service/frontend/package.json /src/src/archivematica/storage_service/frontend/package.json
+COPY --link src/archivematica/storage_service/frontend/package-lock.json /src/src/archivematica/storage_service/frontend/package-lock.json
+
+RUN --mount=type=cache,target=/root/.npm,sharing=locked \
+	set -ex \
+	&& npm pkg delete scripts.prepare \
+	&& npm clean-install
+
+COPY --link src/archivematica/storage_service/frontend /src/src/archivematica/storage_service/frontend
+
+RUN npm run build \
+	&& chown -R ${USER_ID}:${GROUP_ID} /src/src/archivematica/storage_service/frontend/node_modules
 
 # -----------------------------------------------------------------------------
 
@@ -192,6 +204,9 @@ RUN set -ex \
 	&& python3 -m playwright install firefox
 
 COPY --chown=${USER_ID}:${GROUP_ID} --link . /src/
+
+# Copy frontend assets out of where /src is bind-mounted during tests.
+COPY --chown=${USER_ID}:${GROUP_ID} --from=archivematica-storage-service-frontend-builder --link /src/src/archivematica/storage_service/frontend/dist /opt/ss-frontend-dist
 
 # -----------------------------------------------------------------------------
 

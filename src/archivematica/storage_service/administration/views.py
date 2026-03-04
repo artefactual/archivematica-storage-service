@@ -16,6 +16,7 @@ from django.utils.translation import gettext as _
 from tastypie.models import ApiKey
 
 from archivematica.storage_service.administration import forms as settings_forms
+from archivematica.storage_service.administration import table_payloads
 from archivematica.storage_service.common import decorators
 from archivematica.storage_service.common import gpgutils
 from archivematica.storage_service.common import utils
@@ -78,6 +79,9 @@ def version_view(request):
 def user_list(request):
     users = get_user_model().objects.all()
     allow_user_edits = settings.ALLOW_USER_EDITS
+    users_table_payload = table_payloads.user_list_payload(
+        request, users, allow_user_edits=allow_user_edits
+    )
     return render(request, "administration/user_list.html", locals())
 
 
@@ -193,6 +197,7 @@ def change_language(request):
 def key_list(request):
     """List all of the GPG keys that the SS knows about."""
     keys = gpgutils.get_gpg_key_list()
+    keys_table_payload = table_payloads.key_list_payload(request, keys)
     return render(request, "administration/key_list.html", locals())
 
 

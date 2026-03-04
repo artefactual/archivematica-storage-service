@@ -1,6 +1,7 @@
 import hmac
 import uuid
 from hashlib import sha1
+from typing import Any
 from unittest import mock
 
 import pytest
@@ -11,6 +12,12 @@ from django.urls import reverse
 from tastypie.models import ApiKey
 
 from archivematica.storage_service.administration import roles
+
+
+def has_user_email(response: Any, email: str) -> bool:
+    payload = response.context["users_table_payload"]
+    rows = payload["rows"]
+    return any(row["email"] == email for row in rows)
 
 
 def as_reader(user: User) -> None:
@@ -26,7 +33,7 @@ def test_list_users(admin_client: Client) -> None:
     """The user list is available to all users."""
     resp = admin_client.get(reverse("administration:user_list"))
 
-    assert "<td>admin@example.com</td>" in resp.text
+    assert has_user_email(resp, "admin@example.com")
 
 
 @pytest.fixture
@@ -56,7 +63,7 @@ def test_create_user_as_admin(
     )
     assert resp.status_code == 200
 
-    assert "<td>demo@example.com</td>" in resp.text
+    assert has_user_email(resp, "demo@example.com")
     assert User.objects.filter(username="demo").exists()
 
 
@@ -82,7 +89,7 @@ def test_create_user_as_non_admin(
     )
     assert resp.status_code == 200
 
-    assert "<td>demo@example.com</td>" not in resp.text
+    assert not has_user_email(resp, "demo@example.com")
     assert not User.objects.filter(username="demo").exists()
 
 

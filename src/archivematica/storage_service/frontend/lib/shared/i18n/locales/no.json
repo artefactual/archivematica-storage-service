@@ -10,5 +10,18 @@
     "copy": "Kopier",
     "copied": "Kopiert!",
     "copyFailed": "Kunne ikke kopiere. Kopier teksten manuelt."
+  },
+  "tables": {
+    "search": "Søk:",
+    "show": "Vis",
+    "entries": "oppføringer",
+    "showEntries": "Vis oppføringer:",
+    "previous": "Forrige",
+    "next": "Neste",
+    "pageIndicator": "Side {page} av {total}",
+    "noRecords": "Ingen samsvarende oppføringer funnet",
+    "info": "Viser {start} til {end} av {total} oppføringer",
+    "infoFiltered": "Viser {start} til {end} av {filtered} oppføringer (filtrert fra totalt {total} oppføringer)",
+    "infoEmpty": "Viser 0 til 0 av 0 oppføringer"
   }
 }

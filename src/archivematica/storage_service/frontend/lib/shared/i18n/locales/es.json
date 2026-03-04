@@ -10,5 +10,18 @@
     "copy": "Copiar",
     "copied": "¡Copiado!",
     "copyFailed": "No se pudo copiar. Copie el texto manualmente."
+  },
+  "tables": {
+    "search": "Buscar:",
+    "show": "Mostrar",
+    "entries": "entradas",
+    "showEntries": "Mostrar entradas:",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "pageIndicator": "Página {page} de {total}",
+    "noRecords": "No se encontraron registros coincidentes",
+    "info": "Mostrando del {start} al {end} de {total} registros",
+    "infoFiltered": "Mostrando del {start} al {end} de {filtered} registros (filtrados de un total de {total} registros)",
+    "infoEmpty": "Mostrando del 0 al 0 de 0 registros"
   }
 }

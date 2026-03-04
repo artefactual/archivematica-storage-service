@@ -24,6 +24,7 @@ from archivematica.storage_service.common import utils
 from archivematica.storage_service.locations import datatable_utils
 from archivematica.storage_service.locations import forms
 from archivematica.storage_service.locations import package_request
+from archivematica.storage_service.locations import table_payloads
 from archivematica.storage_service.locations.constants import PROTOCOL
 from archivematica.storage_service.locations.models import GPG
 from archivematica.storage_service.locations.models import Callback
@@ -212,56 +213,88 @@ def _handle_package_request(
     request_events = Event.objects.filter(status=Event.SUBMITTED).filter(
         event_type=config.event_type
     )
+    row_states: dict[int, table_payloads.DecisionFormState] = {}
 
     if request.method == "POST":
-        # FIXME won't scale with many pending deletes, since does linear search
-        # on all the forms
-        for req in request_events:
-            req.form = forms.ConfirmEventForm(
-                request.POST, prefix=str(req.id), instance=req
+        event_id_value = request.POST.get(table_payloads.EVENT_ID_FIELD_NAME)
+        reason_value = request.POST.get(table_payloads.STATUS_REASON_FIELD_NAME, "")
+
+        try:
+            event_id = int(event_id_value) if event_id_value is not None else None
+        except ValueError:
+            event_id = None
+
+        if event_id is None:
+            messages.error(
+                request, _("A pending package request identifier is required.")
             )
-            if req.form.is_valid():
-                event = req.form.save(commit=False)
-                decision_value = request.POST.get("decision")
-
-                if decision_value is None:
-                    if "approve" in request.POST:
-                        decision_value = (
-                            package_request.PackageRequestDecision.APPROVE.value
-                        )
-                    elif "reject" in request.POST:
-                        decision_value = (
-                            package_request.PackageRequestDecision.REJECT.value
-                        )
-                    else:
-                        continue
-
-                try:
-                    decision, reason = package_request.parse_decision_and_reason(
-                        decision_value, req.form.cleaned_data["status_reason"]
-                    )
-                except package_request.PackageRequestValidationError as error:
-                    messages.error(request, str(error.message))
-                    continue
-
-                result = package_request.process_package_request_decision(
-                    config, event, decision, reason=reason, admin=request.user
+        else:
+            event = request_events.filter(id=event_id).first()
+            if event is None:
+                messages.error(
+                    request, _("The selected package request is no longer pending.")
                 )
+            else:
+                form = forms.ConfirmEventForm(request.POST, instance=event)
+                if not form.is_valid():
+                    row_states[event.id] = {
+                        "reason_value": reason_value,
+                        "reason_errors": [
+                            str(error) for error in form.errors.get("status_reason", [])
+                        ],
+                    }
+                else:
+                    decision_value = request.POST.get(
+                        table_payloads.DECISION_FIELD_NAME
+                    )
+                    try:
+                        decision, reason = package_request.parse_decision_and_reason(
+                            decision_value, form.cleaned_data["status_reason"]
+                        )
+                    except package_request.PackageRequestValidationError as error:
+                        messages.error(request, str(error.message))
+                        row_states[event.id] = {
+                            "reason_value": reason_value,
+                        }
+                    else:
+                        result = package_request.process_package_request_decision(
+                            config, event, decision, reason=reason, admin=request.user
+                        )
 
-                message_payload = result.message
-                message_method = getattr(messages, message_payload.level, None)
-                if message_method is not None:
-                    message_method(request, message_payload.content)
-                if result.message.detail:
-                    messages.info(request, result.message.detail)
+                        message_payload = result.message
+                        message_method = getattr(messages, message_payload.level, None)
+                        if message_method is not None:
+                            message_method(request, message_payload.content)
+                        if result.message.detail:
+                            messages.info(request, result.message.detail)
 
-                return redirect(view_name)
-    else:
-        for req in request_events:
-            req.form = forms.ConfirmEventForm(prefix=str(req.id), instance=req)
+                        return redirect(view_name)
 
     closed_requests = Event.objects.filter(
         Q(status=Event.APPROVED) | Q(status=Event.REJECTED)
+    )
+
+    status_reason_form = forms.ConfirmEventForm()
+    status_reason_field = status_reason_form.fields["status_reason"]
+    status_reason_label = str(status_reason_field.label or "")
+    label_suffix = str(status_reason_form.label_suffix or "")
+    if label_suffix and not status_reason_label.endswith(label_suffix):
+        status_reason_label = f"{status_reason_label}{label_suffix}"
+    if not status_reason_label.endswith(":"):
+        status_reason_label = f"{status_reason_label}:"
+    pending_requests_table_payload = table_payloads.package_requests_pending_payload(
+        request_events,
+        include_decision=request.user.has_perm("locations.approve_package_deletion"),
+        form_action=reverse(view_name),
+        csrf_token=get_token(request),
+        reason_label=status_reason_label,
+        approve_label=_("Approve (%(action)s package)")
+        % {"action": config.event_type.title()},
+        reject_label=_("Reject (No change to package)"),
+        row_states=row_states,
+    )
+    closed_requests_table_payload = table_payloads.package_requests_closed_payload(
+        closed_requests
     )
 
     return render(request, "locations/package_request.html", locals())
@@ -379,6 +412,7 @@ def location_edit(request, space_uuid, location_uuid=None):
 
 def location_list(request):
     locations = Location.objects.all()
+    locations_table_payload = table_payloads.locations_list_payload(request, locations)
     return render(request, "locations/location_list.html", locals())
 
 
@@ -392,6 +426,7 @@ def location_detail(request, location_uuid):
         return redirect("locations:location_list")
     pipelines = Pipeline.objects.filter(location=location)
     package_count = Package.objects.filter(current_location=location).count()
+    pipelines_table_payload = table_payloads.pipeline_list_payload(request, pipelines)
     return render(request, "locations/location_detail.html", locals())
 
 
@@ -459,6 +494,7 @@ def pipeline_edit(request, uuid=None):
 
 def pipeline_list(request):
     pipelines = Pipeline.objects.all()
+    pipelines_table_payload = table_payloads.pipeline_list_payload(request, pipelines)
     return render(request, "locations/pipeline_list.html", locals())
 
 
@@ -471,6 +507,11 @@ def pipeline_detail(request, uuid):
         )
         return redirect("locations:pipeline_list")
     locations = Location.objects.filter(pipeline=pipeline)
+    locations_table_payload = table_payloads.locations_list_payload(
+        request,
+        locations,
+        include_pipeline=False,
+    )
     return render(request, "locations/pipeline_detail.html", locals())
 
 
@@ -532,6 +573,11 @@ def space_detail(request, uuid):
     child_dict = get_child_space_dict(child, child_dict_raw)
     space.child = child_dict
     locations = Location.objects.filter(space=space)
+    locations_table_payload = table_payloads.locations_list_payload(
+        request,
+        locations,
+        include_space=False,
+    )
     return render(request, "locations/space_detail.html", locals())
 
 
@@ -663,6 +709,7 @@ def callback_switch_enabled(request, uuid):
 
 def callback_list(request):
     callbacks = Callback.objects.all()
+    callbacks_table_payload = table_payloads.callback_list_payload(request, callbacks)
     return render(request, "locations/callback_list.html", locals())
 
 

@@ -178,7 +178,11 @@ class Client:
         # Not possible via API.
         return self.admin_client.post(
             reverse("locations:aip_recover_request"),
-            {"approve": "Approve", f"{event_id}-status_reason": "Approved!"},
+            {
+                "event_id": event_id,
+                "decision": package_request.PackageRequestDecision.APPROVE.value,
+                "status_reason": "Approved!",
+            },
             follow=True,
         )
 

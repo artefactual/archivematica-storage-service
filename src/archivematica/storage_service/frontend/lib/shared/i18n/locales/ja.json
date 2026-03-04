@@ -10,5 +10,18 @@
     "copy": "コピー",
     "copied": "コピーしました！",
     "copyFailed": "コピーできませんでした。テキストを手動でコピーしてください。"
+  },
+  "tables": {
+    "search": "検索:",
+    "show": "表示",
+    "entries": "件",
+    "showEntries": "表示件数:",
+    "previous": "前へ",
+    "next": "次へ",
+    "pageIndicator": "{page} / {total} ページ",
+    "noRecords": "一致するレコードが見つかりません",
+    "info": "{total}件中 {start}〜{end} を表示",
+    "infoFiltered": "{total} 件中 {filtered} 件に絞り込み（{start} から {end} を表示）",
+    "infoEmpty": "0件中 0〜0 を表示"
   }
 }

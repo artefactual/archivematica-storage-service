@@ -2,6 +2,7 @@
 
 import json
 import logging.config
+import os
 from os import environ
 from pathlib import Path
 from sys import path
@@ -115,10 +116,15 @@ STATIC_ROOT = str(SITE_ROOT / "assets")
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#static-url
 STATIC_URL = "/static/"
 
+# Allow tests to serve frontend assets from a path not shadowed by bind mounts over /src.
+FRONTEND_DIST_DIR = Path(
+    os.environ.get("SS_FRONTEND_DIST_DIR", str(SITE_ROOT / "frontend" / "dist"))
+)
+
 # See:
 # https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#std:setting-STATICFILES_DIRS
 STATICFILES_DIRS = (
-    ("frontend", str(SITE_ROOT / "frontend" / "dist")),
+    ("frontend", str(FRONTEND_DIST_DIR)),
     str(SITE_ROOT / "static"),
 )
 
