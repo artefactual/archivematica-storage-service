@@ -205,6 +205,9 @@ RUN set -ex \
 
 COPY --chown=${USER_ID}:${GROUP_ID} --link . /src/
 
+# Copy frontend assets out of where /src is bind-mounted during tests.
+COPY --chown=${USER_ID}:${GROUP_ID} --from=archivematica-storage-service-frontend-builder --link /src/src/archivematica/storage_service/frontend/dist /opt/ss-frontend-dist
+
 # -----------------------------------------------------------------------------
 
 FROM ${TARGET}
