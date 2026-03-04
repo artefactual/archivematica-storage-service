@@ -403,16 +403,14 @@ def test_move_to_storage_service_passes_transfer_config_to_boto3(
                 "LocationConstraint": "us-east-1",
                 "ResponseMetadata": {},
             },
-            "Bucket.return_value.objects.filter.return_value": [
-                mock.Mock(key="aips/payload.txt")
-            ],
+            "meta.client.head_object.return_value": {},
         }
     )
 
     settings.S3_USE_THREADS = use_threads
-    destination = tmp_path / "downloads"
+    destination = tmp_path / "downloads" / "payload.7z"
 
-    s3_space.move_to_storage_service("/aips", str(destination), None)
+    s3_space.move_to_storage_service("/aips/payload.txt", str(destination), None)
 
     download_file = resource.return_value.Bucket.return_value.download_file
     download_file.assert_called_once()
@@ -420,3 +418,48 @@ def test_move_to_storage_service_passes_transfer_config_to_boto3(
 
     assert config is s3_space.transfer_config
     assert config.use_threads is use_threads
+
+
+@pytest.mark.django_db
+@mock.patch("boto3.resource")
+def test_move_to_storage_service_uses_paginated_prefix_download_for_directories(
+    resource: mock.Mock,
+    s3_space: models.S3,
+    tmp_path: Path,
+) -> None:
+    resource.return_value = mock.Mock(
+        **{
+            "meta.client.get_bucket_location.return_value": {
+                "LocationConstraint": "us-east-1",
+                "ResponseMetadata": {},
+            },
+            "meta.client.head_object.side_effect": botocore.exceptions.ClientError(
+                {"Error": {"Code": "404", "Message": "not found"}},
+                "HeadObject",
+            ),
+            "meta.client.get_paginator.return_value": mock.Mock(
+                **{
+                    "paginate.return_value": [
+                        {"Contents": [{"Key": "aips/dir/file1.txt"}]},
+                        {"Contents": [{"Key": "aips/dir/file2.txt"}]},
+                    ]
+                }
+            ),
+        }
+    )
+
+    destination = tmp_path / "downloads"
+    s3_space.move_to_storage_service("/aips/dir", str(destination), None)
+
+    resource.return_value.meta.client.get_paginator.assert_called_once_with(
+        "list_objects_v2"
+    )
+    resource.return_value.meta.client.get_paginator.return_value.paginate.assert_called_once_with(
+        Bucket=s3_space.bucket_name,
+        Prefix="aips/dir/",
+    )
+
+    download_file = resource.return_value.Bucket.return_value.download_file
+    assert download_file.call_count == 2
+    downloaded_keys = [call.args[0] for call in download_file.call_args_list]
+    assert downloaded_keys == ["aips/dir/file1.txt", "aips/dir/file2.txt"]

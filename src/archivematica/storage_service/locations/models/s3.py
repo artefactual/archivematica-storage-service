@@ -223,15 +223,31 @@ class S3(models.Model):
         if not utils.package_is_file(dest_path):
             dest_path = os.path.join(dest_path, "")
 
-        objects = self.resource.Bucket(self.bucket_name).objects.filter(Prefix=src_path)
-
-        for objectSummary in objects:
-            dest_file = objectSummary.key.replace(src_path, dest_path, 1)
+        for object_key in self._iter_source_object_keys(src_path):
+            dest_file = object_key.replace(src_path, dest_path, 1)
             self.space.create_local_directory(dest_file)
             if not os.path.isdir(dest_file):
-                bucket.download_file(
-                    objectSummary.key, dest_file, Config=self.transfer_config
-                )
+                bucket.download_file(object_key, dest_file, Config=self.transfer_config)
+
+    def _iter_source_object_keys(self, src_path):
+        client = self.resource.meta.client
+
+        if not src_path.endswith("/"):
+            try:
+                client.head_object(Bucket=self.bucket_name, Key=src_path)
+                yield src_path
+                return
+            except botocore.exceptions.ClientError as err:
+                error_code = err.response.get("Error", {}).get("Code")
+                if error_code not in {"404", "NoSuchKey", "NotFound"}:
+                    raise
+
+        # If the source is not an exact object key, treat it as a directory prefix.
+        prefix = src_path if src_path.endswith("/") else f"{src_path}/"
+        paginator = client.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=self.bucket_name, Prefix=prefix):
+            for obj in page.get("Contents", []):
+                yield obj["Key"]
 
     def move_from_storage_service(self, src_path, dest_path, package=None):
         self._ensure_bucket_exists()
