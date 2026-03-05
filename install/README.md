@@ -224,12 +224,23 @@ of these settings or provide values to mandatory fields.
   - **Default:** `900`
 
 - **`SS_S3_USE_THREADS`**:
-  - **Description:** enable boto3 S3 managed transfer threads for uploads and
-    downloads. Set to `false` if your environment has constrained CPU/memory,
-    unstable networking, backend throttling, or S3-compatible endpoints that
-    behave poorly under concurrent transfers.
+  - **Description:** enable boto3 S3 managed transfer threads for both uploads
+    and downloads. Acts as a shared fallback when
+    `SS_S3_UPLOAD_USE_THREADS` or `SS_S3_DOWNLOAD_USE_THREADS` are not set.
   - **Type:** `boolean`
   - **Default:** `true`
+
+- **`SS_S3_UPLOAD_USE_THREADS`**:
+  - **Description:** enable boto3 S3 managed transfer threads for uploads.
+    Overrides `SS_S3_USE_THREADS` for upload operations when set.
+  - **Type:** `boolean`
+  - **Default:** falls back to `SS_S3_USE_THREADS`
+
+- **`SS_S3_DOWNLOAD_USE_THREADS`**:
+  - **Description:** enable boto3 S3 managed transfer threads for downloads.
+    Overrides `SS_S3_USE_THREADS` for download operations when set.
+  - **Type:** `boolean`
+  - **Default:** falls back to `SS_S3_USE_THREADS`
 
 The configuration of the database is also declared via environment variables.
 Storage Service looks up the `SS_DB_URL` environment string. If defined, its

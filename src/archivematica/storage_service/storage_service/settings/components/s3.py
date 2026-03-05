@@ -19,4 +19,11 @@ except ValueError:
     raise ImproperlyConfigured(err_msg)
 
 # Enable/disable managed transfer threading for boto3 S3 transfers.
+# SS_S3_USE_THREADS is kept as a shared fallback for backward compatibility.
 S3_USE_THREADS = is_true(environ.get("SS_S3_USE_THREADS", "true"))
+S3_UPLOAD_USE_THREADS = is_true(
+    environ.get("SS_S3_UPLOAD_USE_THREADS", str(S3_USE_THREADS).lower())
+)
+S3_DOWNLOAD_USE_THREADS = is_true(
+    environ.get("SS_S3_DOWNLOAD_USE_THREADS", str(S3_USE_THREADS).lower())
+)

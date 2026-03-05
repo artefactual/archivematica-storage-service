@@ -353,26 +353,32 @@ def test_delete_path_deletes_package(resource, s3_space, caplog):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("use_threads", [True, False])
-def test_transfer_config_uses_settings_value(
+@pytest.mark.parametrize(
+    ("upload_use_threads", "download_use_threads"),
+    [(True, True), (True, False), (False, True), (False, False)],
+)
+def test_transfer_configs_use_settings_values(
     s3_space: models.S3,
     settings: SettingsWrapper,
-    use_threads: bool,
+    upload_use_threads: bool,
+    download_use_threads: bool,
 ) -> None:
-    settings.S3_USE_THREADS = use_threads
+    settings.S3_UPLOAD_USE_THREADS = upload_use_threads
+    settings.S3_DOWNLOAD_USE_THREADS = download_use_threads
 
-    assert s3_space.transfer_config.use_threads is use_threads
+    assert s3_space.upload_transfer_config.use_threads is upload_use_threads
+    assert s3_space.download_transfer_config.use_threads is download_use_threads
 
 
 @pytest.mark.django_db
 @pytest.mark.parametrize("use_threads", [True, False])
-def test_upload_object_passes_transfer_config_to_boto3(
+def test_upload_object_passes_upload_transfer_config_to_boto3(
     s3_space: models.S3,
     settings: SettingsWrapper,
     tmp_path: Path,
     use_threads: bool,
 ) -> None:
-    settings.S3_USE_THREADS = use_threads
+    settings.S3_UPLOAD_USE_THREADS = use_threads
     payload = tmp_path / "payload.txt"
     payload.write_text("hello")
     bucket = mock.Mock()
@@ -383,14 +389,14 @@ def test_upload_object_passes_transfer_config_to_boto3(
     upload_fileobj.assert_called_once()
     config = upload_fileobj.call_args.kwargs["Config"]
 
-    assert config is s3_space.transfer_config
+    assert config is s3_space.upload_transfer_config
     assert config.use_threads is use_threads
 
 
 @pytest.mark.django_db
 @pytest.mark.parametrize("use_threads", [True, False])
 @mock.patch("boto3.resource")
-def test_move_to_storage_service_passes_transfer_config_to_boto3(
+def test_move_to_storage_service_passes_download_transfer_config_to_boto3(
     resource: mock.Mock,
     s3_space: models.S3,
     settings: SettingsWrapper,
@@ -407,7 +413,7 @@ def test_move_to_storage_service_passes_transfer_config_to_boto3(
         }
     )
 
-    settings.S3_USE_THREADS = use_threads
+    settings.S3_DOWNLOAD_USE_THREADS = use_threads
     destination = tmp_path / "downloads" / "payload.7z"
 
     s3_space.move_to_storage_service("/aips/payload.txt", str(destination), None)
@@ -416,7 +422,7 @@ def test_move_to_storage_service_passes_transfer_config_to_boto3(
     download_file.assert_called_once()
     config = download_file.call_args.kwargs["Config"]
 
-    assert config is s3_space.transfer_config
+    assert config is s3_space.download_transfer_config
     assert config.use_threads is use_threads
 
 

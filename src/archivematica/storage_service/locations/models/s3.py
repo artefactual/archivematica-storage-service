@@ -93,10 +93,20 @@ class S3(models.Model):
         return urlparse(url).netloc == "s3.amazonaws.com"
 
     @property
-    def transfer_config(self):
-        if not hasattr(self, "_transfer_config"):
-            self._transfer_config = TransferConfig(use_threads=settings.S3_USE_THREADS)
-        return self._transfer_config
+    def upload_transfer_config(self):
+        if not hasattr(self, "_upload_transfer_config"):
+            self._upload_transfer_config = TransferConfig(
+                use_threads=settings.S3_UPLOAD_USE_THREADS
+            )
+        return self._upload_transfer_config
+
+    @property
+    def download_transfer_config(self):
+        if not hasattr(self, "_download_transfer_config"):
+            self._download_transfer_config = TransferConfig(
+                use_threads=settings.S3_DOWNLOAD_USE_THREADS
+            )
+        return self._download_transfer_config
 
     @boto_exception
     def _ensure_bucket_exists(self):
@@ -227,7 +237,9 @@ class S3(models.Model):
             dest_file = object_key.replace(src_path, dest_path, 1)
             self.space.create_local_directory(dest_file)
             if not os.path.isdir(dest_file):
-                bucket.download_file(object_key, dest_file, Config=self.transfer_config)
+                bucket.download_file(
+                    object_key, dest_file, Config=self.download_transfer_config
+                )
 
     def _iter_source_object_keys(self, src_path):
         client = self.resource.meta.client
@@ -288,5 +300,5 @@ class S3(models.Model):
 
         with open(data, "rb") as d:
             bucket.upload_fileobj(
-                d, path, ExtraArgs=extra_args, Config=self.transfer_config
+                d, path, ExtraArgs=extra_args, Config=self.upload_transfer_config
             )
