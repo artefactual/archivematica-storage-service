@@ -2,6 +2,7 @@ import logging
 import os
 import pprint
 import re
+import time
 from functools import wraps
 from urllib.parse import urlparse
 
@@ -17,6 +18,17 @@ from archivematica.storage_service.locations.models import StorageException
 from archivematica.storage_service.locations.models.location import Location
 
 LOGGER = logging.getLogger(__name__)
+
+RETRYABLE_CLIENT_ERRORS = {
+    "InternalError",
+    "RequestTimeout",
+    "RequestTimeoutException",
+    "SlowDown",
+    "Throttling",
+    "ThrottlingException",
+    "ServiceUnavailable",
+    "PriorRequestNotComplete",
+}
 
 
 def boto_exception(fn):
@@ -72,7 +84,12 @@ class S3(models.Model):
     def resource(self):
         if not hasattr(self, "_resource"):
             config = botocore.config.Config(
-                connect_timeout=settings.S3_TIMEOUTS, read_timeout=settings.S3_TIMEOUTS
+                connect_timeout=settings.S3_CONNECT_TIMEOUTS,
+                read_timeout=settings.S3_READ_TIMEOUTS,
+                retries={
+                    "mode": settings.S3_RETRY_MODE,
+                    "max_attempts": settings.S3_MAX_ATTEMPTS,
+                },
             )
             boto_args = {
                 "service_name": "s3",
@@ -104,9 +121,45 @@ class S3(models.Model):
     def download_transfer_config(self):
         if not hasattr(self, "_download_transfer_config"):
             self._download_transfer_config = TransferConfig(
-                use_threads=settings.S3_DOWNLOAD_USE_THREADS
+                use_threads=settings.S3_DOWNLOAD_USE_THREADS,
+                num_download_attempts=settings.S3_DOWNLOAD_ATTEMPTS,
             )
         return self._download_transfer_config
+
+    def _should_retry_transfer_error(self, err):
+        if isinstance(err, botocore.exceptions.BotoCoreError):
+            return True
+        if isinstance(err, botocore.exceptions.ClientError):
+            error = err.response.get("Error", {})
+            code = error.get("Code")
+            status_code = err.response.get("ResponseMetadata", {}).get("HTTPStatusCode")
+            if code in RETRYABLE_CLIENT_ERRORS:
+                return True
+            return status_code is not None and status_code >= 500
+        return False
+
+    def _run_transfer_with_retries(self, operation_name, fn, *args, **kwargs):
+        max_retries = settings.S3_TRANSFER_MAX_RETRIES
+        backoff = settings.S3_TRANSFER_RETRY_BACKOFF
+        attempts = max_retries + 1
+
+        for attempt in range(1, attempts + 1):
+            try:
+                return fn(*args, **kwargs)
+            except (
+                botocore.exceptions.BotoCoreError,
+                botocore.exceptions.ClientError,
+            ) as err:
+                if attempt >= attempts or not self._should_retry_transfer_error(err):
+                    raise
+                LOGGER.warning(
+                    "Retrying S3 %s after attempt %d/%d: %s",
+                    operation_name,
+                    attempt,
+                    attempts,
+                    err,
+                )
+                time.sleep(backoff * attempt)
 
     @boto_exception
     def _ensure_bucket_exists(self):
@@ -237,8 +290,12 @@ class S3(models.Model):
             dest_file = object_key.replace(src_path, dest_path, 1)
             self.space.create_local_directory(dest_file)
             if not os.path.isdir(dest_file):
-                bucket.download_file(
-                    object_key, dest_file, Config=self.download_transfer_config
+                self._run_transfer_with_retries(
+                    "download",
+                    bucket.download_file,
+                    object_key,
+                    dest_file,
+                    Config=self.download_transfer_config,
                 )
 
     def _iter_source_object_keys(self, src_path):
@@ -299,6 +356,11 @@ class S3(models.Model):
             extra_args["ContentType"] = mtype
 
         with open(data, "rb") as d:
-            bucket.upload_fileobj(
-                d, path, ExtraArgs=extra_args, Config=self.upload_transfer_config
+            self._run_transfer_with_retries(
+                "upload",
+                bucket.upload_fileobj,
+                d,
+                path,
+                ExtraArgs=extra_args,
+                Config=self.upload_transfer_config,
             )

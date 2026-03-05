@@ -365,9 +365,11 @@ def test_transfer_configs_use_settings_values(
 ) -> None:
     settings.S3_UPLOAD_USE_THREADS = upload_use_threads
     settings.S3_DOWNLOAD_USE_THREADS = download_use_threads
+    settings.S3_DOWNLOAD_ATTEMPTS = 7
 
     assert s3_space.upload_transfer_config.use_threads is upload_use_threads
     assert s3_space.download_transfer_config.use_threads is download_use_threads
+    assert s3_space.download_transfer_config.num_download_attempts == 7
 
 
 @pytest.mark.django_db
@@ -469,3 +471,55 @@ def test_move_to_storage_service_uses_paginated_prefix_download_for_directories(
     assert download_file.call_count == 2
     downloaded_keys = [call.args[0] for call in download_file.call_args_list]
     assert downloaded_keys == ["aips/dir/file1.txt", "aips/dir/file2.txt"]
+
+
+@pytest.mark.django_db
+@mock.patch("time.sleep")
+@mock.patch("boto3.resource")
+def test_move_to_storage_service_retries_stalled_downloads(
+    resource: mock.Mock,
+    _sleep: mock.Mock,
+    s3_space: models.S3,
+    settings: SettingsWrapper,
+    tmp_path: Path,
+) -> None:
+    resource.return_value = mock.Mock(
+        **{
+            "meta.client.get_bucket_location.return_value": {
+                "LocationConstraint": "us-east-1",
+                "ResponseMetadata": {},
+            },
+            "meta.client.head_object.return_value": {},
+        }
+    )
+    resource.return_value.Bucket.return_value.download_file.side_effect = [
+        botocore.exceptions.BotoCoreError(),
+        None,
+    ]
+    settings.S3_TRANSFER_MAX_RETRIES = 2
+    settings.S3_TRANSFER_RETRY_BACKOFF = 0
+    destination = tmp_path / "downloads" / "payload.7z"
+
+    s3_space.move_to_storage_service("/aips/payload.txt", str(destination), None)
+
+    download_file = resource.return_value.Bucket.return_value.download_file
+    assert download_file.call_count == 2
+
+
+@pytest.mark.django_db
+def test_upload_object_retries_stalled_uploads(
+    s3_space: models.S3,
+    settings: SettingsWrapper,
+    tmp_path: Path,
+) -> None:
+    settings.S3_TRANSFER_MAX_RETRIES = 2
+    settings.S3_TRANSFER_RETRY_BACKOFF = 0
+    payload = tmp_path / "payload.txt"
+    payload.write_text("hello")
+    bucket = mock.Mock()
+    bucket.upload_fileobj.side_effect = [botocore.exceptions.BotoCoreError(), None]
+
+    with mock.patch("time.sleep") as _sleep:
+        s3_space.upload_object(bucket, "aips/payload.txt", str(payload))
+
+    assert bucket.upload_fileobj.call_count == 2

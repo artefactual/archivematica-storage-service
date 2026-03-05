@@ -223,6 +223,18 @@ of these settings or provide values to mandatory fields.
   - **Type:** `integer`
   - **Default:** `900`
 
+- **`SS_S3_CONNECT_TIMEOUTS`**:
+  - **Description:** connect timeout for S3 requests in seconds. Falls back to
+    `SS_S3_TIMEOUTS` if not set.
+  - **Type:** `integer`
+  - **Default:** falls back to `SS_S3_TIMEOUTS`
+
+- **`SS_S3_READ_TIMEOUTS`**:
+  - **Description:** read timeout for S3 requests in seconds. Falls back to
+    `SS_S3_TIMEOUTS` if not set.
+  - **Type:** `integer`
+  - **Default:** falls back to `SS_S3_TIMEOUTS`
+
 - **`SS_S3_USE_THREADS`**:
   - **Description:** enable boto3 S3 managed transfer threads for both uploads
     and downloads. Acts as a shared fallback when
@@ -241,6 +253,34 @@ of these settings or provide values to mandatory fields.
     Overrides `SS_S3_USE_THREADS` for download operations when set.
   - **Type:** `boolean`
   - **Default:** falls back to `SS_S3_USE_THREADS`
+
+- **`SS_S3_RETRY_MODE`**:
+  - **Description:** botocore retry mode (`legacy`, `standard`, `adaptive`) for
+    S3 client operations.
+  - **Type:** `string`
+  - **Default:** `standard`
+
+- **`SS_S3_MAX_ATTEMPTS`**:
+  - **Description:** maximum botocore retry attempts for S3 API operations.
+  - **Type:** `integer`
+  - **Default:** `10`
+
+- **`SS_S3_TRANSFER_MAX_RETRIES`**:
+  - **Description:** additional application-level retries for managed upload and
+    download transfer operations when transient/stalled failures occur.
+  - **Type:** `integer`
+  - **Default:** `3`
+
+- **`SS_S3_TRANSFER_RETRY_BACKOFF`**:
+  - **Description:** base retry backoff in seconds for transfer retries.
+  - **Type:** `integer`
+  - **Default:** `2`
+
+- **`SS_S3_DOWNLOAD_ATTEMPTS`**:
+  - **Description:** managed transfer read-attempt count per download part
+    (`TransferConfig.num_download_attempts`).
+  - **Type:** `integer`
+  - **Default:** `5`
 
 The configuration of the database is also declared via environment variables.
 Storage Service looks up the `SS_DB_URL` environment string. If defined, its
