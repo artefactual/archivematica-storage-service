@@ -10,19 +10,6 @@ repos:
   hooks:
   - id: django-upgrade
     args: [--target-version, "5.2"]
-- repo: https://github.com/pre-commit/mirrors-eslint
-  rev: v10.0.0
-  hooks:
-  - id: eslint
-    files: ^src/archivematica/storage_service/static/js/(project|.*directory_picker|file-explorer).js
-    args: [--fix]
-    additional_dependencies:
-    - "@eslint/js@10.0.1"
-    - eslint@10.0.0
-    - eslint-config-prettier@10.1.8
-    - eslint-plugin-prettier@5.5.5
-    - globals@17.3.0
-    - prettier@3.8.1
 - repo: https://github.com/igorshubovych/markdownlint-cli
   rev: v0.47.0
   hooks:
