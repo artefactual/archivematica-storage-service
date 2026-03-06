@@ -71,6 +71,7 @@ describe('core package-request-delete feature', () => {
 
   it('renders warning feedback when deletion request fails', async () => {
     const { requestDeleteLink } = setFixture()
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ message: 'Request rejected.' }), {
         status: 400,
@@ -93,6 +94,10 @@ describe('core package-request-delete feature', () => {
     const alert = document.getElementById('package-delete-alert')
     expect(alert?.classList.contains('alert-warning')).toBe(true)
     expect(alert?.textContent).toBe('Request rejected.')
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Failed to submit package deletion request',
+      expect.any(Error),
+    )
   })
 
   it('skips requests when request URL metadata is missing', async () => {
