@@ -163,11 +163,13 @@ def test_package_list_ajax_returns_structured_rows(
         "download_request",
         args=["v2", "file", package.uuid],
     )
-    assert actions["request_delete"] == {
-        "package_type": models.Package.AIP,
-        "package_uuid": str(package.uuid),
-        "pipeline_uuid": str(package.origin_pipeline.uuid),
-    }
+    request_delete_action = actions["request_delete"]
+    assert request_delete_action is not None
+    assert request_delete_action["action_url"] == reverse(
+        "locations:package_request_deletion",
+        args=[package.uuid],
+    )
+    assert request_delete_action["csrf_token"]
     assert actions["reingest_href"] is not None
     parsed_reingest_url = urlparse(actions["reingest_href"])
     assert parsed_reingest_url.path == reverse(

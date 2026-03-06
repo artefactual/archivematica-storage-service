@@ -1,8 +1,10 @@
+import { createHttpClient, toHttpErrorInfo } from '../../../shared/http/client'
+
 const REQUEST_DELETE_SELECTOR = 'a.request-delete'
-const USER_DATA_SELECTOR = '#user-data-packages'
+const REQUEST_DELETE_URL_DATA_KEY = 'packageRequestDeleteUrl'
+const REQUEST_DELETE_CSRF_TOKEN_DATA_KEY = 'packageRequestDeleteCsrfToken'
 const PAGE_HEADING_SELECTOR = 'h1'
 const ALERT_ID = 'package-delete-alert'
-const AIP_DELETE_ENDPOINT_PATH = 'api/v2/file'
 const FALLBACK_SUCCESS_MESSAGE = 'Package deletion request submitted.'
 const FALLBACK_ERROR_MESSAGE = 'Package deletion request failed.'
 
@@ -12,32 +14,14 @@ type GettextGlobal = typeof globalThis & {
 
 type RequestDeleteTrigger = HTMLElement & {
   dataset: DOMStringMap & {
-    packageUuid?: string
-    packagePipeline?: string
-    packageType?: string
+    packageRequestDeleteUrl?: string
+    packageRequestDeleteCsrfToken?: string
   }
-}
-
-type UserDataElement = HTMLElement & {
-  dataset: DOMStringMap & {
-    uri?: string
-    userId?: string
-    userEmail?: string
-    userUsername?: string
-    userApiKey?: string
-  }
-}
-
-type UserData = {
-  uri: string
-  userId: string
-  userEmail: string
-  userUsername: string
-  userApiKey: string
 }
 
 type DeleteRequestResponse = {
   message?: string
+  error_message?: string
 }
 
 const translate = (message: string): string => {
@@ -48,30 +32,7 @@ const translate = (message: string): string => {
   return message
 }
 
-const buildDeleteEndpointUrl = (uri: string, packageUuid: string): string => {
-  const baseUri = new URL(uri, window.location.origin)
-  return new URL(`${AIP_DELETE_ENDPOINT_PATH}/${packageUuid}/delete_aip/`, baseUri).toString()
-}
-
-const getUserData = (): UserData | null => {
-  const userDataEl = document.querySelector<UserDataElement>(USER_DATA_SELECTOR)
-  if (!userDataEl) {
-    return null
-  }
-
-  const {
-    uri,
-    userId,
-    userEmail,
-    userUsername,
-    userApiKey,
-  } = userDataEl.dataset
-  if (!uri || !userId || !userEmail || !userUsername || !userApiKey) {
-    return null
-  }
-
-  return { uri, userId, userEmail, userUsername, userApiKey }
-}
+const httpClient = createHttpClient()
 
 const renderAlert = (message: string, level: 'success' | 'warning'): void => {
   document.getElementById(ALERT_ID)?.remove()
@@ -89,61 +50,44 @@ const renderAlert = (message: string, level: 'success' | 'warning'): void => {
   heading.insertAdjacentElement('afterend', alert)
 }
 
-const parseResponseMessage = async (response: Response): Promise<string | null> => {
-  try {
-    const payload = await response.json() as DeleteRequestResponse
-    if (typeof payload.message === 'string' && payload.message.length > 0) {
-      return payload.message
-    }
-  } catch {
-    // Ignore invalid JSON responses and fallback to default messages.
+const parseResponseMessage = (payload: unknown): string | null => {
+  if (!payload || typeof payload !== 'object') {
+    return null
+  }
+
+  const {
+    message,
+    error_message: errorMessage,
+  } = payload as DeleteRequestResponse
+  if (typeof message === 'string' && message.length > 0) {
+    return message
+  }
+  if (typeof errorMessage === 'string' && errorMessage.length > 0) {
+    return errorMessage
   }
   return null
 }
 
 const submitDeleteRequest = async (trigger: RequestDeleteTrigger): Promise<void> => {
-  const {
-    packageUuid,
-    packagePipeline,
-    packageType,
-  } = trigger.dataset
-  if (!packageUuid || !packagePipeline || !packageType) {
+  const endpoint = trigger.dataset[REQUEST_DELETE_URL_DATA_KEY]
+  const csrfToken = trigger.dataset[REQUEST_DELETE_CSRF_TOKEN_DATA_KEY]
+  if (!endpoint || !csrfToken) {
     return
-  }
-
-  const userData = getUserData()
-  if (!userData) {
-    return
-  }
-
-  const endpoint = buildDeleteEndpointUrl(userData.uri, packageUuid)
-  const payload = {
-    event_reason: `Storage Service user wants to delete ${packageType} ${packageUuid}.`,
-    pipeline: packagePipeline,
-    user_id: userData.userId,
-    user_email: userData.userEmail,
   }
 
   try {
-    const response = await fetch(endpoint, {
+    const payload = await httpClient.requestJson<DeleteRequestResponse | null>(endpoint, {
       method: 'POST',
       headers: {
-        'Authorization': `ApiKey ${userData.userUsername}:${userData.userApiKey}`,
-        'Content-Type': 'application/json; charset=utf-8',
+        'X-CSRFToken': csrfToken,
       },
-      body: JSON.stringify(payload),
     })
-
-    const responseMessage = await parseResponseMessage(response)
-    if (response.ok) {
-      renderAlert(responseMessage ?? translate(FALLBACK_SUCCESS_MESSAGE), 'success')
-      return
-    }
-
-    renderAlert(responseMessage ?? translate(FALLBACK_ERROR_MESSAGE), 'warning')
+    const responseMessage = parseResponseMessage(payload)
+    renderAlert(responseMessage ?? translate(FALLBACK_SUCCESS_MESSAGE), 'success')
   } catch (error) {
+    const errorMessage = parseResponseMessage(toHttpErrorInfo(error)?.bodyJson)
     console.error('Failed to submit package deletion request', error)
-    renderAlert(translate(FALLBACK_ERROR_MESSAGE), 'warning')
+    renderAlert(errorMessage ?? translate(FALLBACK_ERROR_MESSAGE), 'warning')
   }
 }
 

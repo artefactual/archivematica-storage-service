@@ -46,9 +46,8 @@ const directDeleteModalTarget = computed(() => {
     v-if="cell.requestDelete"
     href="#"
     class="request-delete"
-    :data-package-type="cell.requestDelete.packageType"
-    :data-package-uuid="cell.requestDelete.packageUuid"
-    :data-package-pipeline="cell.requestDelete.pipelineUuid"
+    :data-package-request-delete-url="cell.requestDelete.actionUrl"
+    :data-package-request-delete-csrf-token="cell.requestDelete.csrfToken"
   >{{ requestDeleteLabel }}</a>
 
   <span

@@ -26,9 +26,8 @@ class FixityStatusCell(TypedDict):
 
 
 class RequestDeleteAction(TypedDict):
-    package_type: str
-    package_uuid: str
-    pipeline_uuid: str
+    action_url: str
+    csrf_token: str
 
 
 class DirectDeleteAction(TypedDict):
@@ -97,10 +96,7 @@ def build_package_row_payload(
 ) -> PackageRowPayload:
     package_uuid = str(package.uuid)
     origin_pipeline_cell: LinkCell = {"text": _("None"), "href": None}
-    origin_pipeline_uuid = ""
-
     if package.origin_pipeline is not None:
-        origin_pipeline_uuid = str(package.origin_pipeline.uuid)
         origin_pipeline_cell = {
             "text": str(package.origin_pipeline),
             "href": reverse(
@@ -133,9 +129,10 @@ def build_package_row_payload(
     request_delete_action = None
     if package.package_type in package.PACKAGE_TYPE_CAN_DELETE:
         request_delete_action = {
-            "package_type": package.package_type,
-            "package_uuid": package_uuid,
-            "pipeline_uuid": origin_pipeline_uuid,
+            "action_url": reverse(
+                "locations:package_request_deletion", args=[package.uuid]
+            ),
+            "csrf_token": csrf_token,
         }
 
     direct_delete_action = None

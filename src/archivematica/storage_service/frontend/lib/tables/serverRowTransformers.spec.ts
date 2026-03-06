@@ -19,9 +19,8 @@ describe('serverRowTransformers', () => {
         download_href: '/download/pkg-1/',
         reingest_href: '/reingest/pkg-1/',
         request_delete: {
-          package_type: 'AIP',
-          package_uuid: 'pkg-1',
-          pipeline_uuid: 'pipeline-1',
+          action_url: '/packages/pkg-1/request_deletion/',
+          csrf_token: 'csrf-token',
         },
         direct_delete: {
           action_url: '/package/pkg-1/delete/',
@@ -60,9 +59,8 @@ describe('serverRowTransformers', () => {
         { label: 'Re-ingest', href: '/reingest/pkg-1/' },
       ],
       requestDelete: {
-        packageType: 'AIP',
-        packageUuid: 'pkg-1',
-        pipelineUuid: 'pipeline-1',
+        actionUrl: '/packages/pkg-1/request_deletion/',
+        csrfToken: 'csrf-token',
       },
       directDelete: {
         actionUrl: '/package/pkg-1/delete/',

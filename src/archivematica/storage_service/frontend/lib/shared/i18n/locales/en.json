@@ -19,6 +19,8 @@
     "previous": "Previous",
     "next": "Next",
     "pageIndicator": "Page {page} of {total}",
+    "loading": "Loading...",
+    "loadFailed": "Unable to load records",
     "noRecords": "No matching records found",
     "info": "Showing {start} to {end} of {total} entries",
     "infoFiltered": "Showing {start} to {end} of {filtered} entries (filtered from {total} total entries)",

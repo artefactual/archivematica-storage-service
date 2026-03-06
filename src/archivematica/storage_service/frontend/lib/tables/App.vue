@@ -356,10 +356,14 @@ const pageEnd = computed(() => {
 
 const numberFormatter = computed(() => new Intl.NumberFormat(locale.value))
 const formatNumber = (value: number): string => numberFormatter.value.format(value)
-const loadingLabel = computed(() => 'Loading...')
+const loadingLabel = computed(() => t('tables.loading'))
+const loadFailedLabel = computed(() => t('tables.loadFailed'))
 const emptyCellText = computed(() => {
   if (isServerMode.value && serverTable.loading.value) {
     return loadingLabel.value
+  }
+  if (isServerMode.value && serverTable.error.value) {
+    return loadFailedLabel.value
   }
   return t('tables.noRecords')
 })

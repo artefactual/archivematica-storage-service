@@ -19,6 +19,8 @@
     "previous": "Précédent",
     "next": "Suivant",
     "pageIndicator": "Page {page} sur {total}",
+    "loading": "Chargement...",
+    "loadFailed": "Impossible de charger les enregistrements",
     "noRecords": "Aucun enregistrement correspondant trouvé",
     "info": "Affichage de {start} à {end} sur {total} entrées",
     "infoFiltered": "Affichage de {start} à {end} sur {filtered} entrées (filtrées à partir de {total} entrées au total)",

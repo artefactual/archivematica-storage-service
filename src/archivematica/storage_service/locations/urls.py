@@ -36,6 +36,11 @@ urlpatterns = [
         name="package_delete",
     ),
     path(
+        "packages/<uuid:uuid>/request_deletion/",
+        views.package_request_deletion,
+        name="package_request_deletion",
+    ),
+    path(
         "packages/<uuid:uuid>/update_status/",
         views.package_update_status,
         name="package_update_status",

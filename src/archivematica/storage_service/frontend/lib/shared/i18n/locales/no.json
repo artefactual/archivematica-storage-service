@@ -19,6 +19,8 @@
     "previous": "Forrige",
     "next": "Neste",
     "pageIndicator": "Side {page} av {total}",
+    "loading": "Laster inn...",
+    "loadFailed": "Kunne ikke laste inn oppføringer",
     "noRecords": "Ingen samsvarende oppføringer funnet",
     "info": "Viser {start} til {end} av {total} oppføringer",
     "infoFiltered": "Viser {start} til {end} av {filtered} oppføringer (filtrert fra totalt {total} oppføringer)",

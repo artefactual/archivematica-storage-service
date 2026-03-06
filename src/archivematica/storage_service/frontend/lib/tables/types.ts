@@ -36,9 +36,8 @@ export type StatusWithLinkCell = {
 }
 
 export type RequestDeleteAction = {
-  packageType: string
-  packageUuid: string
-  pipelineUuid: string
+  actionUrl: string
+  csrfToken: string
 }
 
 export type DirectDeleteAction = {

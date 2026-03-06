@@ -19,6 +19,8 @@
     "previous": "Föregående",
     "next": "Nästa",
     "pageIndicator": "Sida {page} av {total}",
+    "loading": "Läser in...",
+    "loadFailed": "Det gick inte att läsa in poster",
     "noRecords": "Inga matchande poster hittades",
     "info": "Visar {start} till {end} av {total} poster",
     "infoFiltered": "Visar {start} till {end} av {filtered} poster (filtrerat från totalt {total} poster)",

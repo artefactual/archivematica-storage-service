@@ -20,9 +20,8 @@ type AjaxFixityStatusCell = {
 }
 
 type AjaxRequestDeleteAction = {
-  package_type: string
-  package_uuid: string
-  pipeline_uuid: string
+  action_url: string
+  csrf_token: string
 }
 
 type AjaxDirectDeleteAction = {
@@ -132,9 +131,8 @@ export const toPackageTableRow = (row: PackageAjaxRow): TableRow => {
       links,
       requestDelete: row.actions.request_delete
         ? {
-            packageType: row.actions.request_delete.package_type,
-            packageUuid: row.actions.request_delete.package_uuid,
-            pipelineUuid: row.actions.request_delete.pipeline_uuid,
+            actionUrl: row.actions.request_delete.action_url,
+            csrfToken: row.actions.request_delete.csrf_token,
           }
         : undefined,
       directDelete: row.actions.direct_delete

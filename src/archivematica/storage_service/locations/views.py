@@ -1,5 +1,6 @@
 import logging
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import permission_required
 from django.db.models import Q
@@ -14,7 +15,6 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
-from tastypie.models import ApiKey
 
 from archivematica.storage_service.common import decorators
 from archivematica.storage_service.common import gpgutils
@@ -23,6 +23,7 @@ from archivematica.storage_service.locations import datatable_rows
 from archivematica.storage_service.locations import datatable_utils
 from archivematica.storage_service.locations import forms
 from archivematica.storage_service.locations import package_request
+from archivematica.storage_service.locations import signals
 from archivematica.storage_service.locations import table_payloads
 from archivematica.storage_service.locations.constants import PROTOCOL
 from archivematica.storage_service.locations.models import GPG
@@ -65,14 +66,8 @@ def get_delete_context_dict(request, model, object_uuid, default_cancel="/"):
 
 
 def package_list(request):
-    api_key = ApiKey.objects.get(user=request.user).key
     context = {
         "package_count": Package.objects.count(),
-        "user": request.user,
-        "api_key": api_key,
-        "uri": request.build_absolute_uri("/"),
-        "redirect_path": request.path,
-        "csrf_token": get_token(request),
         "packages_table_payload": table_payloads.packages_server_payload(
             endpoint=reverse("locations:package_list_ajax")
         ),
@@ -114,7 +109,6 @@ def package_fixity(request, package_uuid):
     )
     context = {
         "log_entries": log_entries,
-        "uri": request.build_absolute_uri("/"),
         "package_uuid": package_uuid,
         "fixity_logs_table_payload": table_payloads.fixity_logs_server_payload(
             endpoint=reverse("locations:fixity_logs_ajax"),
@@ -197,6 +191,74 @@ def package_delete_request(request):
     config = package_request.PackageDeletionRequestHandlerConfig()
 
     return _handle_package_request(request, config, "locations:package_delete_request")
+
+
+@require_http_methods(["POST"])
+def package_request_deletion(request: HttpRequest, uuid: str) -> HttpResponse:
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            status=403,
+            data={"message": _("Authentication is required.")},
+        )
+
+    if request.user.id is None:
+        return JsonResponse(
+            status=400,
+            data={"message": _("Package deletion request failed.")},
+        )
+
+    package = get_object_or_404(Package, uuid=uuid)
+
+    if package.package_type not in Package.PACKAGE_TYPE_CAN_DELETE:
+        return JsonResponse(
+            status=405,
+            data={"message": _("Deletes not allowed on this package type.")},
+        )
+
+    if package.origin_pipeline is None:
+        return JsonResponse(
+            status=400,
+            data={"message": _("Package deletion request failed.")},
+        )
+
+    request_info = {
+        "event_reason": _(
+            "Storage Service user wants to delete %(package_type)s %(package_uuid)s."
+        )
+        % {"package_type": package.package_type, "package_uuid": package.uuid},
+        "pipeline": package.origin_pipeline,
+        "user_id": request.user.id,
+        "user_email": request.user.email,
+    }
+
+    config = package_request.PackageDeletionRequestHandlerConfig()
+    submission_result = package_request.submit_package_request_event(
+        config,
+        package,
+        request_info=request_info,
+    )
+
+    if submission_result.created:
+        site_url = getattr(settings, "SITE_BASE_URL", None)
+        signals.deletion_request.send(
+            sender=package_request_deletion,
+            url=site_url,
+            uuid=package.uuid,
+            location=package.full_path,
+            pipeline=str(package.origin_pipeline.uuid),
+        )
+        return JsonResponse(
+            status=202,
+            data={
+                "message": _("%(event_type)s request created successfully.")
+                % {"event_type": config.request_description.title()}
+            },
+        )
+
+    return JsonResponse(
+        status=200,
+        data={"message": _("A deletion request already exists for this AIP.")},
+    )
 
 
 def _handle_package_request(
@@ -420,8 +482,6 @@ def location_detail(request, location_uuid):
         return redirect("locations:location_list")
     pipelines = Pipeline.objects.filter(location=location)
     package_count = Package.objects.filter(current_location=location).count()
-    api_key = ApiKey.objects.get(user=request.user).key
-    uri = request.build_absolute_uri("/")
     pipelines_table_payload = table_payloads.pipeline_list_payload(request, pipelines)
     packages_table_payload = table_payloads.packages_server_payload(
         endpoint=reverse("locations:package_list_ajax"),

@@ -373,9 +373,8 @@ describe('tables/App', () => {
               download_href: '/download/pkg-1/',
               reingest_href: '/reingest/pkg-1/',
               request_delete: {
-                package_type: 'AIP',
-                package_uuid: 'pkg-1',
-                pipeline_uuid: 'pipeline-1',
+                action_url: '/packages/pkg-1/request_deletion/',
+                csrf_token: 'csrf-token',
               },
               direct_delete: {
                 action_url: '/packages/pkg-1/delete/',
@@ -404,7 +403,9 @@ describe('tables/App', () => {
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(wrapper.text()).toContain('pkg-1')
-    expect(wrapper.find('a.request-delete[data-package-uuid="pkg-1"]').exists()).toBe(true)
+    expect(
+      wrapper.find('a.request-delete[data-package-request-delete-url="/packages/pkg-1/request_deletion/"]').exists(),
+    ).toBe(true)
     expect(wrapper.find('form[action="/packages/pkg-1/delete/"]').exists()).toBe(true)
     expect(wrapper.find('#confirm-delete-pkg-1').exists()).toBe(true)
   })
@@ -461,5 +462,25 @@ describe('tables/App', () => {
     const searchUrl = lastFetchUrl()
     expect(searchUrl).toContain('sSearch=disk+error')
     expect(searchUrl).toContain('iDisplayStart=0')
+  })
+
+  it('shows a load-failed message when a server table request fails', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({}),
+    })
+
+    const wrapper = mount(App, {
+      props: { payload: buildPackagesServerPayload() },
+      global: {
+        plugins: [createI18nMock()],
+      },
+    })
+
+    await flushPromises()
+
+    expect(wrapper.find('.ss-table-cell--empty').text()).toBe('Unable to load records')
+    expect(wrapper.text()).not.toContain('No matching records found')
   })
 })

@@ -2,13 +2,3 @@
   data-table-root
   data-table-script-id="tables-packages-table-payload"></div>
 {{ packages_table_payload|json_script:"tables-packages-table-payload" }}
-<div
-  id="user-data-packages"
-  style="display: none;"
-  data-uri="{{ uri }}"
-  data-location-uuid="{% if location %}{{ location.uuid }}{% endif %}"
-  data-user-id="{{ user.id }}"
-  data-user-email="{{ user.email }}"
-  data-user-username="{{ user.username }}"
-  data-user-api-key="{{ api_key }}"
-  data-user-can-change-package="{{ perms.locations.add_package|yesno:'true,false' }}"></div>

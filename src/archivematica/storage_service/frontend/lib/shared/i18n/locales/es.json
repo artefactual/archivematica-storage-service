@@ -19,6 +19,8 @@
     "previous": "Anterior",
     "next": "Siguiente",
     "pageIndicator": "Página {page} de {total}",
+    "loading": "Cargando...",
+    "loadFailed": "No se pudieron cargar los registros",
     "noRecords": "No se encontraron registros coincidentes",
     "info": "Mostrando del {start} al {end} de {total} registros",
     "infoFiltered": "Mostrando del {start} al {end} de {filtered} registros (filtrados de un total de {total} registros)",

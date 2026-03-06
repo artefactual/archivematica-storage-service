@@ -185,3 +185,55 @@ def test_package_delete_request_keeps_form_errors_on_targeted_row(
     reason_errors = pending_row["actions"]["reasonErrors"]
     assert reason_errors
     assert "required" in reason_errors[0].lower()
+
+
+@mock.patch(
+    "archivematica.storage_service.locations.views.signals.deletion_request.send"
+)
+@pytest.mark.django_db
+def test_package_request_deletion_creates_event_from_request_user(
+    deletion_request_send: mock.Mock,
+    admin_client: Client,
+    package: models.Package,
+    pipeline: models.Pipeline,
+) -> None:
+    package.origin_pipeline = pipeline
+    package.save(update_fields=["origin_pipeline"])
+
+    response = admin_client.post(
+        reverse("locations:package_request_deletion", args=[package.uuid])
+    )
+
+    assert response.status_code == 202
+    assert "created successfully" in response.json()["message"].lower()
+
+    request_event = models.Event.objects.get(
+        package=package,
+        event_type=models.Event.DELETE,
+    )
+    request_user = response.wsgi_request.user
+    assert request_event.status == models.Event.SUBMITTED
+    assert request_event.pipeline == pipeline
+    assert request_event.user_id == request_user.id
+    assert request_event.user_email == request_user.email
+    assert (
+        models.Package.objects.get(uuid=package.uuid).status == models.Package.DEL_REQ
+    )
+    deletion_request_send.assert_called_once()
+
+
+@pytest.mark.django_db
+def test_package_request_deletion_requires_origin_pipeline(
+    admin_client: Client,
+    package: models.Package,
+) -> None:
+    response = admin_client.post(
+        reverse("locations:package_request_deletion", args=[package.uuid])
+    )
+
+    assert response.status_code == 400
+    assert response.json()["message"] == "Package deletion request failed."
+    assert not models.Event.objects.filter(
+        package=package,
+        event_type=models.Event.DELETE,
+    ).exists()

@@ -19,6 +19,8 @@
     "previous": "前へ",
     "next": "次へ",
     "pageIndicator": "{page} / {total} ページ",
+    "loading": "読み込み中...",
+    "loadFailed": "レコードを読み込めませんでした",
     "noRecords": "一致するレコードが見つかりません",
     "info": "{total}件中 {start}〜{end} を表示",
     "infoFiltered": "{total} 件中 {filtered} 件に絞り込み（{start} から {end} を表示）",

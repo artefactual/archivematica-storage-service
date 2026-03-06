@@ -5,27 +5,18 @@ type Fixture = {
   requestDeleteLink: HTMLAnchorElement
 }
 
-const PACKAGE_UUID = '65ef6700-29ec-45f0-938d-bdf6cb93d90c'
-const PIPELINE_UUID = 'f63d53ec-8f24-4e86-b7f0-c737dfd2b1ab'
+const DELETE_REQUEST_URL = '/packages/65ef6700-29ec-45f0-938d-bdf6cb93d90c/request_deletion/'
+const CSRF_TOKEN = 'csrf-token'
 
 const setFixture = (): Fixture => {
   document.body.innerHTML = `
     <h1>All Packages</h1>
-    <div
-      id="user-data-packages"
-      data-uri="/"
-      data-user-id="3"
-      data-user-email="test@example.com"
-      data-user-username="test"
-      data-user-api-key="abc123"
-    ></div>
     <a
       id="request-delete"
       href="#"
       class="request-delete"
-      data-package-uuid="${PACKAGE_UUID}"
-      data-package-pipeline="${PIPELINE_UUID}"
-      data-package-type="DIP"
+      data-package-request-delete-url="${DELETE_REQUEST_URL}"
+      data-package-request-delete-csrf-token="${CSRF_TOKEN}"
     >Request Deletion</a>
   `
 
@@ -61,19 +52,13 @@ describe('core package-request-delete feature', () => {
     })
 
     const [requestUrl, requestOptions] = fetchMock.mock.calls[0] as [string, RequestInit]
-    expect(requestUrl).toContain(`/api/v2/file/${PACKAGE_UUID}/delete_aip/`)
+    expect(requestUrl).toBe(`http://localhost:3000${DELETE_REQUEST_URL}`)
     expect(requestOptions.method).toBe('POST')
-    expect(requestOptions.headers).toEqual({
-      'Authorization': 'ApiKey test:abc123',
-      'Content-Type': 'application/json; charset=utf-8',
-    })
-    const payload = JSON.parse(String(requestOptions.body))
-    expect(payload).toEqual({
-      event_reason: `Storage Service user wants to delete DIP ${PACKAGE_UUID}.`,
-      pipeline: PIPELINE_UUID,
-      user_id: '3',
-      user_email: 'test@example.com',
-    })
+    expect(requestOptions.credentials).toBe('same-origin')
+    const requestHeaders = new Headers(requestOptions.headers)
+    expect(requestHeaders.get('X-Requested-With')).toBe('XMLHttpRequest')
+    expect(requestHeaders.get('X-CSRFToken')).toBe(CSRF_TOKEN)
+    expect(requestOptions.body).toBeNull()
 
     await vi.waitFor(() => {
       expect(document.getElementById('package-delete-alert')).not.toBeNull()
@@ -110,9 +95,9 @@ describe('core package-request-delete feature', () => {
     expect(alert?.textContent).toBe('Request rejected.')
   })
 
-  it('skips requests when user metadata is missing', async () => {
+  it('skips requests when request URL metadata is missing', async () => {
     const { requestDeleteLink } = setFixture()
-    document.getElementById('user-data-packages')?.removeAttribute('data-user-api-key')
+    requestDeleteLink.removeAttribute('data-package-request-delete-url')
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
 
