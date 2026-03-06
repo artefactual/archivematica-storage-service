@@ -2,7 +2,7 @@
 {% load i18n %}
 
 {% block page_title %}{{ action }}{% endblock %}
-{% block data_features_page %}modal{% endblock %}
+{% block data_features_page %}modal,location-replicators{% endblock %}
 
 {% block extra_css %}
   <link href="{{ STATIC_URL }}frontend/storage-service-frontend.css" rel="stylesheet" type="text/css" />
@@ -58,21 +58,4 @@
 
 {% block extra_js %}
   <script type="module" src="{{ STATIC_URL }}frontend/location-directory-picker.js"></script>
-
-  <script>
-    $(document).ready(function() {
-      // Hide the "Replicators" field when the location being created is not an
-      // AIP Storage ("AS") location.
-      $('select#id_purpose').change(function(event) {replicatorsVisibility();});
-      function replicatorsVisibility() {
-        var purpose = $('select#id_purpose').val();
-        if (purpose === 'AS') {
-            $('select#id_replicators').closest('p').show();
-        } else {
-            $('select#id_replicators').closest('p').hide();
-        }
-      }
-      replicatorsVisibility();
-    });
-  </script>
 {% endblock extra_js %}
