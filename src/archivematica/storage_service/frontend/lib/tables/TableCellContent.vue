@@ -4,11 +4,14 @@ import type {
   DecisionFormCell,
   LinkCell,
   LinkListCell,
+  PackageActionsCell,
+  StatusWithLinkCell,
   TableAction,
   TableActionStyle,
   TextWithLinksCell,
 } from './types'
 import TableDecisionFormCell from './TableDecisionFormCell.vue'
+import TablePackageActionsCell from './TablePackageActionsCell.vue'
 
 const props = defineProps<{
   columnId: string
@@ -55,6 +58,22 @@ const isTableAction = (value: unknown): value is TableAction => {
   return typeof maybeAction.label === 'string' && typeof maybeAction.href === 'string'
 }
 
+const isStatusWithLinkCell = (value: unknown): value is StatusWithLinkCell => {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+  const maybeCell = value as Partial<StatusWithLinkCell>
+  return maybeCell.kind === 'status-with-link' && typeof maybeCell.text === 'string'
+}
+
+const isPackageActionsCell = (value: unknown): value is PackageActionsCell => {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+  const maybeCell = value as Partial<PackageActionsCell>
+  return maybeCell.kind === 'package-actions' && Array.isArray(maybeCell.links)
+}
+
 const isDecisionFormCell = (value: unknown): value is DecisionFormCell => {
   if (!value || typeof value !== 'object') {
     return false
@@ -92,6 +111,14 @@ const actions = computed<TableAction[]>(() => {
 
 const asDecisionFormCell = computed<DecisionFormCell | null>(() => {
   return isDecisionFormCell(props.value) ? props.value : null
+})
+
+const asStatusWithLinkCell = computed<StatusWithLinkCell | null>(() => {
+  return isStatusWithLinkCell(props.value) ? props.value : null
+})
+
+const asPackageActionsCell = computed<PackageActionsCell | null>(() => {
+  return isPackageActionsCell(props.value) ? props.value : null
 })
 
 const valueText = computed(() => {
@@ -134,6 +161,10 @@ const linkListSeparator = (cell: LinkListCell): string => cell.separator || ', '
     <TableDecisionFormCell :cell="asDecisionFormCell" />
   </template>
 
+  <template v-else-if="columnId === 'actions' && asPackageActionsCell">
+    <TablePackageActionsCell :cell="asPackageActionsCell" />
+  </template>
+
   <template v-else-if="columnId === 'actions'">
     <template
       v-for="(action, index) in actions"
@@ -158,6 +189,15 @@ const linkListSeparator = (cell: LinkListCell): string => cell.separator || ', '
     <a :href="asLinkCell.href">
       {{ asLinkCell.text }}
     </a>
+  </template>
+
+  <template v-else-if="asStatusWithLinkCell">
+    <span>{{ asStatusWithLinkCell.text }}</span>
+    <template v-if="asStatusWithLinkCell.link">
+      <span> (</span>
+      <a :href="asStatusWithLinkCell.link.href">{{ asStatusWithLinkCell.link.text }}</a>
+      <span>)</span>
+    </template>
   </template>
 
   <template v-else-if="asLinkListCell">

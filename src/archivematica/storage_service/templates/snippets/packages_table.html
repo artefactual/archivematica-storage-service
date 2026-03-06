@@ -1,31 +1,14 @@
-{% load i18n %}
-  <table class="packages-datatable">
-    <thead>
-      <tr>
-        <th>{% trans "UUID" %}</th>
-        <th class="sortable">{% trans "Originating Pipeline" %}</th>
-        <th class="sortable">{% trans "Current Location" %}</th>
-        <th class="sortable">{% trans "Size" %}</th>
-        <th class="sortable">{% trans "Type" %}</th>
-        <th class="sortable">{% trans "Replica Of" %}</th>
-        <th class="sortable">{% trans "Status" %}</th>
-        <th class="sortable">{% trans "Stored" %}</th>
-        <th class="sortable">{% trans "Fixity Date" %}</th>
-        <th class="sortable">{% trans "Fixity Status" %}</th>
-        <th>{% trans "Actions" %}</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td colspan="10" class="dataTables_empty">{% trans "Loading data from server" %}</td>
-      </tr>
-    </tbody>
-  </table>
-  <div id="user-data-packages" style="display: none;"
-       data-uri="{{ uri }}"
-       data-location-uuid="{{ location.uuid }}"
-       data-user-id="{{ user.id }}"
-       data-user-email="{{ user.email }}"
-       data-user-username="{{ user.username }}"
-       data-user-api-key="{{ api_key }}"
-       data-user-can-change-package="{{ perms.locations.add_package|yesno:'true,false' }}">
+<div
+  data-table-root
+  data-table-script-id="tables-packages-table-payload"></div>
+{{ packages_table_payload|json_script:"tables-packages-table-payload" }}
+<div
+  id="user-data-packages"
+  style="display: none;"
+  data-uri="{{ uri }}"
+  data-location-uuid="{% if location %}{{ location.uuid }}{% endif %}"
+  data-user-id="{{ user.id }}"
+  data-user-email="{{ user.email }}"
+  data-user-username="{{ user.username }}"
+  data-user-api-key="{{ api_key }}"
+  data-user-can-change-package="{{ perms.locations.add_package|yesno:'true,false' }}"></div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, type Ref } from 'vue'
 import {
   getCoreRowModel,
   getPaginationRowModel,
@@ -13,10 +13,19 @@ import {
 import { useI18n } from 'vue-i18n'
 import TableCellContent from './TableCellContent.vue'
 import TablePagination from './TablePagination.vue'
-import { useTableSearch } from './useTableSearch'
+import {
+  toFixityLogTableRow,
+  toPackageTableRow,
+  type FixityLogAjaxRow,
+  type PackageAjaxRow,
+} from './serverRowTransformers'
+import { useServerDatatable } from './composables/useServerDatatable'
+import { useTableSearch } from './composables/useTableSearch'
 import type {
   LinkCell,
   LinkListCell,
+  PackageActionsCell,
+  StatusWithLinkCell,
   TablePayload,
   TableRow,
   TableAction,
@@ -31,8 +40,29 @@ const props = defineProps<{
 const { t, locale } = useI18n()
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const
+const isServerMode = computed(() => props.payload.ui.server?.mode === 'server-datatables-v1')
 
 const initialSorting = (): SortingState => {
+  if (isServerMode.value) {
+    const defaultSort = props.payload.ui.server?.defaultSort
+    if (defaultSort) {
+      const sortableColumn = props.payload.columns.find((column) => {
+        return (
+          column.key === defaultSort.columnKey
+          && (column.sortable ?? true)
+        )
+      })
+      if (sortableColumn) {
+        return [
+          {
+            id: sortableColumn.key,
+            desc: defaultSort.direction === 'desc',
+          },
+        ]
+      }
+    }
+  }
+
   const firstSortableColumn = props.payload.columns.find(
     column => column.sortable ?? true,
   )
@@ -88,6 +118,22 @@ const isTextWithLinksCell = (value: unknown): value is TextWithLinksCell => {
   )
 }
 
+const isStatusWithLinkCell = (value: unknown): value is StatusWithLinkCell => {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+  const maybeCell = value as Partial<StatusWithLinkCell>
+  return maybeCell.kind === 'status-with-link' && typeof maybeCell.text === 'string'
+}
+
+const isPackageActionsCell = (value: unknown): value is PackageActionsCell => {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+  const maybeCell = value as Partial<PackageActionsCell>
+  return maybeCell.kind === 'package-actions' && Array.isArray(maybeCell.links)
+}
+
 const isTableAction = (value: unknown): value is TableAction => {
   if (!value || typeof value !== 'object') {
     return false
@@ -115,9 +161,16 @@ const cellText = (value: unknown): string => {
   if (isLinkListCell(value)) {
     return value.items.map(item => item.text).join(' ')
   }
+  if (isStatusWithLinkCell(value)) {
+    const suffix = value.link?.text || ''
+    return `${value.text} ${suffix}`.trim()
+  }
   if (isTextWithLinksCell(value)) {
     const suffix = value.items.map(item => item.text).join(' ')
     return `${value.text} ${suffix}`.trim()
+  }
+  if (isPackageActionsCell(value)) {
+    return ''
   }
   return ''
 }
@@ -143,6 +196,69 @@ const filteredRows = computed(() => {
 
 watch(globalFilter, () => {
   pagination.value.pageIndex = 0
+})
+
+type ServerTableState = {
+  rows: Ref<TableRow[]>
+  totalRecords: Ref<number>
+  totalDisplayRecords: Ref<number>
+  loading: Ref<boolean>
+  error: Ref<string | null>
+}
+
+const emptyServerRows = ref<TableRow[]>([])
+const emptyServerTotalRecords = ref(0)
+const emptyServerTotalDisplayRecords = ref(0)
+const emptyServerLoading = ref(false)
+const emptyServerError = ref<string | null>(null)
+
+const emptyServerState: ServerTableState = {
+  rows: emptyServerRows,
+  totalRecords: emptyServerTotalRecords,
+  totalDisplayRecords: emptyServerTotalDisplayRecords,
+  loading: emptyServerLoading,
+  error: emptyServerError,
+}
+
+const serverTable: ServerTableState = (() => {
+  const serverUi = props.payload.ui.server
+  if (!isServerMode.value || !serverUi) {
+    return emptyServerState
+  }
+
+  if (props.payload.kind === 'packages-server') {
+    return useServerDatatable<PackageAjaxRow>({
+      endpoint: serverUi.endpoint,
+      columns: props.payload.columns,
+      pagination,
+      sorting,
+      search: globalFilter,
+      filters: serverUi.filters,
+      mapRow: toPackageTableRow,
+    })
+  }
+
+  if (props.payload.kind === 'fixity-logs-server') {
+    return useServerDatatable<FixityLogAjaxRow>({
+      endpoint: serverUi.endpoint,
+      columns: props.payload.columns,
+      pagination,
+      sorting,
+      search: globalFilter,
+      filters: serverUi.filters,
+      mapRow: toFixityLogTableRow,
+    })
+  }
+
+  emptyServerError.value = 'Unsupported server table kind'
+  return emptyServerState
+})()
+
+const tableRows = computed(() => {
+  if (isServerMode.value) {
+    return serverTable.rows.value
+  }
+  return filteredRows.value
 })
 
 const columnLabelByKey = computed(() => {
@@ -171,7 +287,7 @@ const columns = computed<ColumnDef<TableRow>[]>(() => {
 
 const table = useVueTable({
   get data() {
-    return filteredRows.value
+    return tableRows.value
   },
   get columns() {
     return columns.value
@@ -189,16 +305,40 @@ const table = useVueTable({
     pagination.value.pageIndex = 0
   },
   onPaginationChange: updater => updateRef(updater, pagination),
+  manualSorting: isServerMode.value,
+  manualPagination: isServerMode.value,
   getCoreRowModel: getCoreRowModel(),
-  getSortedRowModel: getSortedRowModel(),
-  getPaginationRowModel: getPaginationRowModel(),
+  getSortedRowModel: isServerMode.value ? undefined : getSortedRowModel(),
+  getPaginationRowModel: isServerMode.value ? undefined : getPaginationRowModel(),
 })
 
 const rows = computed(() => table.getRowModel().rows)
 const pageSizeOptions = [...PAGE_SIZE_OPTIONS]
 const sortedColumnId = computed(() => sorting.value[0]?.id ?? null)
-const totalRowsCount = computed(() => props.payload.rows.length)
-const filteredRowsCount = computed(() => filteredRows.value.length)
+const totalRowsCount = computed(() => {
+  if (isServerMode.value) {
+    return serverTable.totalRecords.value
+  }
+  return props.payload.rows.length
+})
+const filteredRowsCount = computed(() => {
+  if (isServerMode.value) {
+    return serverTable.totalDisplayRecords.value
+  }
+  return filteredRows.value.length
+})
+const canPrevious = computed(() => {
+  if (isServerMode.value) {
+    return pagination.value.pageIndex > 0
+  }
+  return table.getCanPreviousPage()
+})
+const canNext = computed(() => {
+  if (isServerMode.value) {
+    return (pagination.value.pageIndex + 1) * pagination.value.pageSize < filteredRowsCount.value
+  }
+  return table.getCanNextPage()
+})
 
 const pageStart = computed(() => {
   if (rows.value.length === 0) {
@@ -216,6 +356,13 @@ const pageEnd = computed(() => {
 
 const numberFormatter = computed(() => new Intl.NumberFormat(locale.value))
 const formatNumber = (value: number): string => numberFormatter.value.format(value)
+const loadingLabel = computed(() => 'Loading...')
+const emptyCellText = computed(() => {
+  if (isServerMode.value && serverTable.loading.value) {
+    return loadingLabel.value
+  }
+  return t('tables.noRecords')
+})
 
 const infoText = computed(() => {
   if (filteredRowsCount.value < totalRowsCount.value) {
@@ -362,7 +509,7 @@ const onPageSizeChange = (event: Event): void => {
             class="ss-table-cell--empty"
             :colspan="table.getAllLeafColumns().length"
           >
-            {{ t('tables.noRecords') }}
+            {{ emptyCellText }}
           </td>
         </tr>
       </tbody>
@@ -375,8 +522,8 @@ const onPageSizeChange = (event: Event): void => {
     <div class="ss-table-pagination">
       <TablePagination
         :page-index="pagination.pageIndex"
-        :can-previous="table.getCanPreviousPage()"
-        :can-next="table.getCanNextPage()"
+        :can-previous="canPrevious"
+        :can-next="canNext"
         @update:page-index="updatePageIndex"
       />
     </div>

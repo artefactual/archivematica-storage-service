@@ -73,6 +73,9 @@ def package_list(request):
         "uri": request.build_absolute_uri("/"),
         "redirect_path": request.path,
         "csrf_token": get_token(request),
+        "packages_table_payload": table_payloads.packages_server_payload(
+            endpoint=reverse("locations:package_list_ajax")
+        ),
     }
     return render(request, "locations/package_list.html", context)
 
@@ -113,6 +116,10 @@ def package_fixity(request, package_uuid):
         "log_entries": log_entries,
         "uri": request.build_absolute_uri("/"),
         "package_uuid": package_uuid,
+        "fixity_logs_table_payload": table_payloads.fixity_logs_server_payload(
+            endpoint=reverse("locations:fixity_logs_ajax"),
+            package_uuid=package_uuid,
+        ),
     }
     return render(request, "locations/fixity_results.html", context)
 
@@ -413,7 +420,13 @@ def location_detail(request, location_uuid):
         return redirect("locations:location_list")
     pipelines = Pipeline.objects.filter(location=location)
     package_count = Package.objects.filter(current_location=location).count()
+    api_key = ApiKey.objects.get(user=request.user).key
+    uri = request.build_absolute_uri("/")
     pipelines_table_payload = table_payloads.pipeline_list_payload(request, pipelines)
+    packages_table_payload = table_payloads.packages_server_payload(
+        endpoint=reverse("locations:package_list_ajax"),
+        location_uuid=str(location.uuid),
+    )
     return render(request, "locations/location_detail.html", locals())
 
 

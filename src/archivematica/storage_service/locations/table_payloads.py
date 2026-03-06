@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from typing import Any
 from typing import TypedDict
 from urllib.parse import urlencode
 
@@ -25,6 +26,28 @@ REJECT_DECISION_VALUE = package_request.PackageRequestDecision.REJECT.value
 class DecisionFormState(TypedDict, total=False):
     reason_value: str
     reason_errors: list[str]
+
+
+def _server_table_ui(
+    *,
+    endpoint: str,
+    default_sort_column_key: str,
+    default_sort_direction: str = "asc",
+    filters: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    ui: dict[str, Any] = {
+        "server": {
+            "mode": "server-datatables-v1",
+            "endpoint": endpoint,
+            "defaultSort": {
+                "columnKey": default_sort_column_key,
+                "direction": default_sort_direction,
+            },
+        }
+    }
+    if filters:
+        ui["server"]["filters"] = filters
+    return ui
 
 
 def _enabled_label(is_enabled: bool) -> str:
@@ -276,6 +299,61 @@ def callback_list_payload(
             {"key": "actions", "label": _("Actions"), "sortable": False},
         ],
         rows=rows,
+    )
+
+
+def packages_server_payload(
+    *,
+    endpoint: str,
+    location_uuid: str | None = None,
+) -> table_payloads.TablePayload:
+    filters: dict[str, str] = {}
+    if location_uuid:
+        filters["location-uuid"] = location_uuid
+
+    return table_payloads.table_payload(
+        "packages-server",
+        columns=[
+            {"key": "uuid", "label": _("UUID"), "sortable": False},
+            {"key": "origin_pipeline", "label": _("Originating Pipeline")},
+            {"key": "current_location", "label": _("Current Location")},
+            {"key": "size", "label": _("Size")},
+            {"key": "package_type", "label": _("Type")},
+            {"key": "replica_of", "label": _("Replica Of")},
+            {"key": "status", "label": _("Status")},
+            {"key": "stored", "label": _("Stored")},
+            {"key": "fixity_date", "label": _("Fixity Date")},
+            {"key": "fixity_status", "label": _("Fixity Status")},
+            {"key": "actions", "label": _("Actions"), "sortable": False},
+        ],
+        rows=[],
+        ui=_server_table_ui(
+            endpoint=endpoint,
+            default_sort_column_key="origin_pipeline",
+            default_sort_direction="asc",
+            filters=filters or None,
+        ),
+    )
+
+
+def fixity_logs_server_payload(
+    *,
+    endpoint: str,
+    package_uuid: str,
+) -> table_payloads.TablePayload:
+    return table_payloads.table_payload(
+        "fixity-logs-server",
+        columns=[
+            {"key": "date", "label": _("Date")},
+            {"key": "error", "label": _("Error")},
+        ],
+        rows=[],
+        ui=_server_table_ui(
+            endpoint=endpoint,
+            default_sort_column_key="date",
+            default_sort_direction="desc",
+            filters={"package-uuid": package_uuid},
+        ),
     )
 
 
