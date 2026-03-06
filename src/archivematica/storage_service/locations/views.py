@@ -1,18 +1,16 @@
-import json
 import logging
 
 from django.contrib import messages
-from django.contrib.auth.context_processors import PermWrapper
 from django.contrib.auth.decorators import permission_required
 from django.db.models import Q
 from django.forms.models import model_to_dict
 from django.http import HttpRequest
 from django.http import HttpResponse
+from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.shortcuts import get_object_or_404
 from django.shortcuts import redirect
 from django.shortcuts import render
-from django.template.loader import get_template
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods
@@ -21,6 +19,7 @@ from tastypie.models import ApiKey
 from archivematica.storage_service.common import decorators
 from archivematica.storage_service.common import gpgutils
 from archivematica.storage_service.common import utils
+from archivematica.storage_service.locations import datatable_rows
 from archivematica.storage_service.locations import datatable_utils
 from archivematica.storage_service.locations import forms
 from archivematica.storage_service.locations import package_request
@@ -78,23 +77,22 @@ def package_list(request):
     return render(request, "locations/package_list.html", context)
 
 
-def package_list_ajax(request):
+def package_list_ajax(request: HttpRequest) -> HttpResponse:
     datatable = datatable_utils.PackageDataTable(request.GET)
-    data = []
     csrf_token = get_token(request)
-    for package in datatable.records:
-        data.append(
-            get_template("snippets/package_row.html")
-            .render(
-                {
-                    "package": package,
-                    "redirect_path": request.headers.get("referer", request.path),
-                    "csrf_token": csrf_token,
-                    "perms": PermWrapper(request.user),
-                }
-            )
-            .strip()
+    can_change_package = request.user.has_perm("locations.change_package")
+    can_delete_package = request.user.has_perm("locations.delete_package")
+    redirect_path = request.headers.get("referer", request.path)
+    data = [
+        datatable_rows.build_package_row_payload(
+            package,
+            redirect_path=redirect_path,
+            csrf_token=csrf_token,
+            can_change_package=can_change_package,
+            can_delete_package=can_delete_package,
         )
+        for package in datatable.records
+    ]
     # these are the values that DataTables expects from the server
     # see "Reply from the server" in http://legacy.datatables.net/usage/server-side
     response = {
@@ -103,9 +101,7 @@ def package_list_ajax(request):
         "sEcho": datatable.echo,
         "aaData": data,
     }
-    return HttpResponse(
-        status=200, content=json.dumps(response), content_type="application/json"
-    )
+    return JsonResponse(status=200, data=response)
 
 
 @permission_required("locations.change_package", raise_exception=True)
@@ -121,19 +117,12 @@ def package_fixity(request, package_uuid):
     return render(request, "locations/fixity_results.html", context)
 
 
-def fixity_logs_ajax(request):
+def fixity_logs_ajax(request: HttpRequest) -> HttpResponse:
     datatable = datatable_utils.FixityLogDataTable(request.GET)
-    data = []
-    for fixity_log in datatable.records:
-        data.append(
-            get_template("snippets/fixity_log_row.html")
-            .render(
-                {
-                    "entry": fixity_log,
-                }
-            )
-            .strip()
-        )
+    data = [
+        datatable_rows.build_fixity_log_row_payload(fixity_log)
+        for fixity_log in datatable.records
+    ]
     # these are the values that DataTables expects from the server
     # see "Reply from the server" in http://legacy.datatables.net/usage/server-side
     response = {
@@ -142,9 +131,7 @@ def fixity_logs_ajax(request):
         "sEcho": datatable.echo,
         "aaData": data,
     }
-    return HttpResponse(
-        status=200, content=json.dumps(response), content_type="application/json"
-    )
+    return JsonResponse(status=200, data=response)
 
 
 @permission_required("locations.change_package", raise_exception=True)

@@ -1,4 +1,220 @@
-var getAjaxDataTableOptions = function (options, ajaxSource, headers, filter) {
+var textOrEmpty = function (value) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  return String(value);
+};
+
+var escapeHtml = function (value) {
+  return $("<div>").text(textOrEmpty(value)).html();
+};
+
+var linkHtml = function (href, text) {
+  var $link = $("<a>").attr("href", href).text(textOrEmpty(text));
+  return $link.prop("outerHTML");
+};
+
+var elementToHtml = function ($element) {
+  return $("<div>").append($element).html();
+};
+
+var buildColumns = function (headers, renderers) {
+  var columns = [];
+  headers.each(function (i, header) {
+    columns.push({
+      mData: function (source) {
+        return renderers[i](source);
+      },
+      bSortable: $(header).hasClass("sortable"),
+    });
+  });
+  return columns;
+};
+
+var buildRequestDeleteLink = function (requestDeleteAction) {
+  var $requestDeleteLink = $("<a>")
+    .attr("href", "#")
+    .addClass("request-delete")
+    .attr("data-package-type", textOrEmpty(requestDeleteAction.package_type))
+    .attr("data-package-uuid", textOrEmpty(requestDeleteAction.package_uuid))
+    .attr(
+      "data-package-pipeline",
+      textOrEmpty(requestDeleteAction.pipeline_uuid),
+    )
+    .text(gettext("Request Deletion"));
+  return $requestDeleteLink.prop("outerHTML");
+};
+
+var buildDirectDeleteForm = function (directDeleteAction) {
+  var deleteLabel = textOrEmpty(directDeleteAction.confirm_label);
+  var $form = $("<form>")
+    .attr("method", "POST")
+    .attr("action", directDeleteAction.action_url);
+  $form.append(
+    $("<input>")
+      .attr("type", "hidden")
+      .attr("name", "csrfmiddlewaretoken")
+      .val(textOrEmpty(directDeleteAction.csrf_token)),
+  );
+  $form.append(
+    $("<button>")
+      .addClass("link")
+      .attr("type", "button")
+      .attr(
+        "data-am-modal-target",
+        "#" + textOrEmpty(directDeleteAction.modal_id),
+      )
+      .text(deleteLabel),
+  );
+
+  var $modal = $("<div>")
+    .attr("id", textOrEmpty(directDeleteAction.modal_id))
+    .addClass("confirm-modal modal hide fade")
+    .attr("tabindex", "-1")
+    .attr("role", "dialog")
+    .attr("aria-labelledby", textOrEmpty(directDeleteAction.modal_label_id))
+    .attr("aria-hidden", "true");
+  var $modalHeader = $("<div>").addClass("modal-header");
+  $modalHeader.append(
+    $("<button>")
+      .attr("type", "button")
+      .addClass("close")
+      .attr("data-dismiss", "modal")
+      .attr("aria-hidden", "true")
+      .html("&times;"),
+  );
+  $modalHeader.append(
+    $("<h3>")
+      .attr("id", textOrEmpty(directDeleteAction.modal_label_id))
+      .text(textOrEmpty(directDeleteAction.modal_title)),
+  );
+  $modal.append($modalHeader);
+
+  var $modalBody = $("<div>").addClass("modal-body");
+  $modalBody.append($("<p>").text(textOrEmpty(directDeleteAction.prompt_text)));
+  $modal.append($modalBody);
+
+  var $modalFooter = $("<div>").addClass("modal-footer");
+  $modalFooter.append(
+    $("<button>")
+      .addClass("btn")
+      .attr("type", "button")
+      .attr("data-dismiss", "modal")
+      .attr("aria-hidden", "true")
+      .text(textOrEmpty(directDeleteAction.close_label)),
+  );
+  $modalFooter.append(
+    $("<button>")
+      .addClass("btn btn-danger")
+      .attr("type", "submit")
+      .text(deleteLabel),
+  );
+  $modal.append($modalFooter);
+
+  $form.append($modal);
+  return elementToHtml($form);
+};
+
+var renderPackageActions = function (actions) {
+  if (actions === null || actions === undefined) {
+    return "";
+  }
+
+  var links = [];
+  if (actions.pointer_file_href) {
+    links.push(linkHtml(actions.pointer_file_href, gettext("Pointer File")));
+  }
+  if (actions.download_href) {
+    links.push(linkHtml(actions.download_href, gettext("Download")));
+  }
+  if (actions.reingest_href) {
+    links.push(linkHtml(actions.reingest_href, gettext("Re-ingest")));
+  }
+  if (actions.request_delete) {
+    links.push(buildRequestDeleteLink(actions.request_delete));
+  }
+
+  var linksHtml = links.join(" | ");
+  if (actions.direct_delete) {
+    return linksHtml + buildDirectDeleteForm(actions.direct_delete);
+  }
+  return linksHtml;
+};
+
+var packageColumnRenderers = [
+  function (source) {
+    return escapeHtml(source.uuid);
+  },
+  function (source) {
+    var cell = source.origin_pipeline || {};
+    if (cell.href) {
+      return linkHtml(cell.href, cell.text);
+    }
+    return escapeHtml(cell.text);
+  },
+  function (source) {
+    var cell = source.current_location || {};
+    if (cell.href) {
+      return linkHtml(cell.href, cell.text);
+    }
+    return escapeHtml(cell.text);
+  },
+  function (source) {
+    return escapeHtml(source.size);
+  },
+  function (source) {
+    return escapeHtml(source.package_type);
+  },
+  function (source) {
+    return escapeHtml(source.replica_of);
+  },
+  function (source) {
+    var cell = source.status || {};
+    var statusText = escapeHtml(cell.text);
+    if (cell.update_href) {
+      return (
+        statusText +
+        " (" +
+        linkHtml(cell.update_href, gettext("Update Status")) +
+        ")"
+      );
+    }
+    return statusText;
+  },
+  function (source) {
+    return escapeHtml(source.stored);
+  },
+  function (source) {
+    return escapeHtml(source.fixity_date);
+  },
+  function (source) {
+    var cell = source.fixity_status || {};
+    if (cell.href) {
+      return linkHtml(cell.href, cell.text);
+    }
+    return escapeHtml(cell.text);
+  },
+  function (source) {
+    return renderPackageActions(source.actions);
+  },
+];
+
+var fixityLogColumnRenderers = [
+  function (source) {
+    return escapeHtml(source.date);
+  },
+  function (source) {
+    return escapeHtml(source.error);
+  },
+];
+
+var getAjaxDataTableOptions = function (
+  options,
+  ajaxSource,
+  headers,
+  renderers,
+  filter,
+) {
   var result = {};
   for (var key in options) {
     result[key] = options[key];
@@ -12,19 +228,7 @@ var getAjaxDataTableOptions = function (options, ajaxSource, headers, filter) {
       data.push(filter);
     };
   }
-  var columns = [];
-  // for each column create a function that replaces the
-  // table cell content with the HTML returned by the server
-  headers.each(function (i, header) {
-    columns.push({
-      mData: function (source) {
-        var $tr = $(Object.values(source).join(""));
-        return $tr.find("td").eq(i).html();
-      },
-      bSortable: $(header).hasClass("sortable"),
-    });
-  });
-  result["aoColumns"] = columns;
+  result["aoColumns"] = buildColumns(headers, renderers);
   return result;
 };
 
@@ -43,6 +247,7 @@ var setPackagesDataTable = function (options) {
       options,
       uri + "packages_ajax",
       $(".packages-datatable thead th"),
+      packageColumnRenderers,
       filter,
     ),
   );
@@ -70,6 +275,7 @@ var setFixityLogsDataTable = function (options) {
       customOptions,
       uri + "fixity_ajax",
       $(".fixity-logs-datatable thead th"),
+      fixityLogColumnRenderers,
       filter,
     ),
   );
