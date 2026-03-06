@@ -1,10 +1,12 @@
 import { nextTick } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { createI18nMock } from '@/shared/i18n'
 import type { TablePayload } from './types'
-import { SEARCH_DEBOUNCE_MS } from './useTableSearch'
+import { SEARCH_DEBOUNCE_MS } from './composables/useTableSearch'
+
+const mockFetch = vi.fn()
 
 const buildPayload = (): TablePayload => ({
   version: 1,
@@ -149,6 +151,58 @@ const buildPendingRequestsPayload = (): TablePayload => ({
   ui: {},
 })
 
+const buildPackagesServerPayload = (): TablePayload => ({
+  version: 1,
+  kind: 'packages-server',
+  columns: [
+    { key: 'uuid', label: 'UUID', sortable: false },
+    { key: 'origin_pipeline', label: 'Originating Pipeline' },
+    { key: 'current_location', label: 'Current Location' },
+    { key: 'size', label: 'Size' },
+    { key: 'package_type', label: 'Type' },
+    { key: 'replica_of', label: 'Replica Of' },
+    { key: 'status', label: 'Status' },
+    { key: 'stored', label: 'Stored' },
+    { key: 'fixity_date', label: 'Fixity Date' },
+    { key: 'fixity_status', label: 'Fixity Status' },
+    { key: 'actions', label: 'Actions', sortable: false },
+  ],
+  rows: [],
+  ui: {
+    server: {
+      mode: 'server-datatables-v1',
+      endpoint: '/locations/packages_ajax/',
+      defaultSort: {
+        columnKey: 'origin_pipeline',
+        direction: 'asc',
+      },
+    },
+  },
+})
+
+const buildFixityServerPayload = (): TablePayload => ({
+  version: 1,
+  kind: 'fixity-logs-server',
+  columns: [
+    { key: 'date', label: 'Date' },
+    { key: 'error', label: 'Error' },
+  ],
+  rows: [],
+  ui: {
+    server: {
+      mode: 'server-datatables-v1',
+      endpoint: '/locations/fixity_ajax/',
+      filters: {
+        'package-uuid': 'pkg-1',
+      },
+      defaultSort: {
+        columnKey: 'date',
+        direction: 'desc',
+      },
+    },
+  },
+})
+
 const applySearch = async (wrapper: ReturnType<typeof mount>, query: string): Promise<void> => {
   await wrapper.find('input[type="search"]').setValue(query)
   await nextTick()
@@ -156,7 +210,25 @@ const applySearch = async (wrapper: ReturnType<typeof mount>, query: string): Pr
   await nextTick()
 }
 
+const lastFetchUrl = (): string => {
+  const calls = mockFetch.mock.calls as unknown[][]
+  if (calls.length === 0) {
+    return ''
+  }
+  return String(calls[calls.length - 1][0])
+}
+
 describe('tables/App', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', mockFetch)
+    mockFetch.mockReset()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.clearAllMocks()
+  })
+
   it('renders rows, links and actions', () => {
     const wrapper = mount(App, {
       props: { payload: buildPayload() },
@@ -275,5 +347,140 @@ describe('tables/App', () => {
     expect(form.text()).toContain('Approve (Delete package)')
     expect(form.text()).toContain('Reject (No change to package)')
     expect(wrapper.text()).toContain('A reason is required.')
+  })
+
+  it('renders server-side package rows and action controls', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        iTotalRecords: 1,
+        iTotalDisplayRecords: 1,
+        sEcho: 1,
+        aaData: [
+          {
+            uuid: 'pkg-1',
+            origin_pipeline: { text: 'Pipeline A', href: '/pipelines/1/' },
+            current_location: { text: '/var/aip/pkg-1.7z', href: '/download/pkg-1/' },
+            size: '1 KB',
+            package_type: 'AIP',
+            replica_of: '',
+            status: { text: 'Stored', update_href: '/packages/pkg-1/status/' },
+            stored: '2026-03-05 12:00',
+            fixity_date: '2026-03-05 12:01',
+            fixity_status: { text: 'Success', href: '/fixity/pkg-1/' },
+            actions: {
+              pointer_file_href: '/pointer/pkg-1/',
+              download_href: '/download/pkg-1/',
+              reingest_href: '/reingest/pkg-1/',
+              request_delete: {
+                action_url: '/packages/pkg-1/request_deletion/',
+                csrf_token: 'csrf-token',
+              },
+              direct_delete: {
+                action_url: '/packages/pkg-1/delete/',
+                csrf_token: 'csrf-token',
+                modal_id: 'confirm-delete-pkg-1',
+                modal_label_id: 'confirm-delete-title-pkg-1',
+                modal_title: 'Delete package',
+                prompt_text: 'Confirm delete',
+                close_label: 'Close',
+                confirm_label: 'Delete',
+              },
+            },
+          },
+        ],
+      }),
+    })
+
+    const wrapper = mount(App, {
+      props: { payload: buildPackagesServerPayload() },
+      global: {
+        plugins: [createI18nMock()],
+      },
+    })
+
+    await flushPromises()
+
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(wrapper.text()).toContain('pkg-1')
+    expect(
+      wrapper.find('a.request-delete[data-package-request-delete-url="/packages/pkg-1/request_deletion/"]').exists(),
+    ).toBe(true)
+    expect(wrapper.find('form[action="/packages/pkg-1/delete/"]').exists()).toBe(true)
+    expect(wrapper.find('#confirm-delete-pkg-1').exists()).toBe(true)
+  })
+
+  it('builds legacy DataTables query params for server sorting, paging and search', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        iTotalRecords: 200,
+        iTotalDisplayRecords: 200,
+        sEcho: 1,
+        aaData: [{ date: '2026-03-05', error: '' }],
+      }),
+    })
+
+    const wrapper = mount(App, {
+      props: { payload: buildFixityServerPayload() },
+      global: {
+        plugins: [createI18nMock()],
+      },
+    })
+
+    await flushPromises()
+
+    const firstCallUrl = String(mockFetch.mock.calls[0][0])
+    expect(firstCallUrl).toContain('/locations/fixity_ajax/?')
+    expect(firstCallUrl).toContain('iSortCol_0=0')
+    expect(firstCallUrl).toContain('sSortDir_0=desc')
+    expect(firstCallUrl).toContain('package-uuid=pkg-1')
+
+    await wrapper.findAll('.ss-table-sort-button')[1]?.trigger('click')
+    await flushPromises()
+    const sortCallUrl = lastFetchUrl()
+    expect(sortCallUrl).toContain('iSortCol_0=1')
+    expect(sortCallUrl).toContain('sSortDir_0=asc')
+
+    await wrapper.find('.ss-table-length__select').setValue('25')
+    await flushPromises()
+    const pageSizeUrl = lastFetchUrl()
+    expect(pageSizeUrl).toContain('iDisplayLength=25')
+
+    await wrapper.find('.ss-table-pagination__link--next').trigger('click')
+    await flushPromises()
+    const nextPageUrl = lastFetchUrl()
+    expect(nextPageUrl).toContain('iDisplayStart=25')
+
+    vi.useFakeTimers()
+    try {
+      await applySearch(wrapper, 'disk error')
+      await flushPromises()
+    } finally {
+      vi.useRealTimers()
+    }
+    const searchUrl = lastFetchUrl()
+    expect(searchUrl).toContain('sSearch=disk+error')
+    expect(searchUrl).toContain('iDisplayStart=0')
+  })
+
+  it('shows a load-failed message when a server table request fails', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({}),
+    })
+
+    const wrapper = mount(App, {
+      props: { payload: buildPackagesServerPayload() },
+      global: {
+        plugins: [createI18nMock()],
+      },
+    })
+
+    await flushPromises()
+
+    expect(wrapper.find('.ss-table-cell--empty').text()).toBe('Unable to load records')
+    expect(wrapper.text()).not.toContain('No matching records found')
   })
 })

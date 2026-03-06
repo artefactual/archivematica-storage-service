@@ -11,6 +11,21 @@
     "copied": "Kopierat!",
     "copyFailed": "Det gick inte att kopiera. Kopiera texten manuellt."
   },
+  "packageActions": {
+    "pointerFile": "Pekarfil",
+    "download": "Ladda ned",
+    "reingest": "Återinmata",
+    "updateStatus": "Uppdatera status",
+    "requestDeletion": "Begär radering"
+  },
+  "callbackHeaders": {
+    "delete": "Ta bort",
+    "addHeader": "Lägg till rubrik"
+  },
+  "packageRequestDelete": {
+    "success": "Begäran om att radera paketet har skickats.",
+    "failure": "Begäran om att radera paketet misslyckades."
+  },
   "tables": {
     "search": "Sök:",
     "show": "Visa",
@@ -19,6 +34,8 @@
     "previous": "Föregående",
     "next": "Nästa",
     "pageIndicator": "Sida {page} av {total}",
+    "loading": "Läser in...",
+    "loadFailed": "Det gick inte att läsa in poster",
     "noRecords": "Inga matchande poster hittades",
     "info": "Visar {start} till {end} av {total} poster",
     "infoFiltered": "Visar {start} till {end} av {filtered} poster (filtrerat från totalt {total} poster)",

@@ -11,6 +11,21 @@
     "copied": "Kopiert!",
     "copyFailed": "Kunne ikke kopiere. Kopier teksten manuelt."
   },
+  "packageActions": {
+    "pointerFile": "Peker-fil",
+    "download": "Last ned",
+    "reingest": "Re-ingester",
+    "updateStatus": "Oppdater status",
+    "requestDeletion": "Be om sletting"
+  },
+  "callbackHeaders": {
+    "delete": "Slett",
+    "addHeader": "Legg til header"
+  },
+  "packageRequestDelete": {
+    "success": "Forespørsel om sletting av pakke sendt.",
+    "failure": "Forespørsel om sletting av pakke mislyktes."
+  },
   "tables": {
     "search": "Søk:",
     "show": "Vis",
@@ -19,6 +34,8 @@
     "previous": "Forrige",
     "next": "Neste",
     "pageIndicator": "Side {page} av {total}",
+    "loading": "Laster inn...",
+    "loadFailed": "Kunne ikke laste inn oppføringer",
     "noRecords": "Ingen samsvarende oppføringer funnet",
     "info": "Viser {start} til {end} av {total} oppføringer",
     "infoFiltered": "Viser {start} til {end} av {filtered} oppføringer (filtrert fra totalt {total} oppføringer)",

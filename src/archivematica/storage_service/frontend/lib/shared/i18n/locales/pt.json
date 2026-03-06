@@ -11,6 +11,21 @@
     "copied": "Copiado!",
     "copyFailed": "Não foi possível copiar. Copie o texto manualmente."
   },
+  "packageActions": {
+    "pointerFile": "Ficheiro ponteiro",
+    "download": "Transferir",
+    "reingest": "Reingerir",
+    "updateStatus": "Atualizar estado",
+    "requestDeletion": "Solicitar eliminação"
+  },
+  "callbackHeaders": {
+    "delete": "Eliminar",
+    "addHeader": "Adicionar cabeçalho"
+  },
+  "packageRequestDelete": {
+    "success": "Pedido de eliminação do pacote submetido.",
+    "failure": "O pedido de eliminação do pacote falhou."
+  },
   "tables": {
     "search": "Pesquisar:",
     "show": "Mostrar",
@@ -19,6 +34,8 @@
     "previous": "Anterior",
     "next": "Seguinte",
     "pageIndicator": "Página {page} de {total}",
+    "loading": "A carregar...",
+    "loadFailed": "Não foi possível carregar os registos",
     "noRecords": "Não foram encontrados registos correspondentes",
     "info": "A mostrar de {start} a {end} de {total} registos",
     "infoFiltered": "A mostrar de {start} a {end} de {filtered} registos (filtrados de um total de {total} registos)",

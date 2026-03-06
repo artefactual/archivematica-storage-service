@@ -11,6 +11,21 @@
     "copied": "Copiado!",
     "copyFailed": "Não foi possível copiar. Copie o texto manualmente."
   },
+  "packageActions": {
+    "pointerFile": "Arquivo ponteiro",
+    "download": "Baixar",
+    "reingest": "Reingerir",
+    "updateStatus": "Atualizar status",
+    "requestDeletion": "Solicitar exclusão"
+  },
+  "callbackHeaders": {
+    "delete": "Excluir",
+    "addHeader": "Adicionar cabeçalho"
+  },
+  "packageRequestDelete": {
+    "success": "Solicitação de exclusão do pacote enviada.",
+    "failure": "Falha na solicitação de exclusão do pacote."
+  },
   "tables": {
     "search": "Pesquisar:",
     "show": "Mostrar",
@@ -19,6 +34,8 @@
     "previous": "Anterior",
     "next": "Próximo",
     "pageIndicator": "Página {page} de {total}",
+    "loading": "Carregando...",
+    "loadFailed": "Não foi possível carregar os registros",
     "noRecords": "Nenhum registro correspondente encontrado",
     "info": "Mostrando de {start} a {end} de {total} registros",
     "infoFiltered": "Mostrando de {start} a {end} de {filtered} registros (filtrados de um total de {total} registros)",

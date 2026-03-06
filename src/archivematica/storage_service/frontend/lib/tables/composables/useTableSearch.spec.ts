@@ -1,6 +1,6 @@
 import { computed, nextTick, ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
-import type { TableColumn, TableRow } from './types'
+import type { TableColumn, TableRow } from '../types'
 import { SEARCH_DEBOUNCE_MS, useTableSearch } from './useTableSearch'
 
 const columns = ref<TableColumn[]>([

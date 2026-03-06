@@ -1,13 +1,18 @@
+import json
 from collections.abc import Callable
 from unittest import mock
 
 import pytest
+from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth.models import User
 from django.test import Client
+from django.test import RequestFactory
 from django.urls import reverse
 
 from archivematica.storage_service.locations import models
 from archivematica.storage_service.locations import package_request
 from archivematica.storage_service.locations import table_payloads
+from archivematica.storage_service.locations import views
 
 EventFactory = Callable[..., models.Event]
 
@@ -185,3 +190,167 @@ def test_package_delete_request_keeps_form_errors_on_targeted_row(
     reason_errors = pending_row["actions"]["reasonErrors"]
     assert reason_errors
     assert "required" in reason_errors[0].lower()
+
+
+@mock.patch(
+    "archivematica.storage_service.locations.views.signals.deletion_request.send"
+)
+@pytest.mark.django_db
+def test_package_request_deletion_creates_event_from_request_user(
+    deletion_request_send: mock.Mock,
+    admin_client: Client,
+    package: models.Package,
+    pipeline: models.Pipeline,
+) -> None:
+    package.origin_pipeline = pipeline
+    package.save(update_fields=["origin_pipeline"])
+
+    response = admin_client.post(
+        reverse("locations:package_request_deletion", args=[package.uuid])
+    )
+
+    assert response.status_code == 202
+    assert "created successfully" in response.json()["message"].lower()
+
+    request_event = models.Event.objects.get(
+        package=package,
+        event_type=models.Event.DELETE,
+    )
+    request_user = response.wsgi_request.user
+    assert request_event.status == models.Event.SUBMITTED
+    assert request_event.pipeline == pipeline
+    assert request_event.user_id == request_user.id
+    assert request_event.user_email == request_user.email
+    assert (
+        models.Package.objects.get(uuid=package.uuid).status == models.Package.DEL_REQ
+    )
+    deletion_request_send.assert_called_once()
+
+
+@pytest.mark.django_db
+def test_package_request_deletion_requires_authentication(
+    rf: RequestFactory,
+    package: models.Package,
+    pipeline: models.Pipeline,
+) -> None:
+    package.origin_pipeline = pipeline
+    package.save(update_fields=["origin_pipeline"])
+
+    request = rf.post(
+        reverse("locations:package_request_deletion", args=[package.uuid])
+    )
+    request.user = AnonymousUser()
+
+    response = views.package_request_deletion(
+        request=request,
+        uuid=str(package.uuid),
+    )
+
+    assert response.status_code == 403
+    assert json.loads(response.content)["message"] == "Authentication is required."
+
+
+@pytest.mark.django_db
+def test_package_request_deletion_requires_change_package_permission(
+    client: Client,
+    django_user_model: type[User],
+    package: models.Package,
+    pipeline: models.Pipeline,
+) -> None:
+    package.origin_pipeline = pipeline
+    package.save(update_fields=["origin_pipeline"])
+    user = django_user_model.objects.create_user(
+        username="viewer",
+        email="viewer@example.com",
+        password="Abc.Def.1234",
+    )
+    client.force_login(user)
+
+    response = client.post(
+        reverse("locations:package_request_deletion", args=[package.uuid])
+    )
+
+    assert response.status_code == 403
+    assert (
+        response.json()["message"]
+        == "You do not have permission to request package deletion."
+    )
+    assert not models.Event.objects.filter(
+        package=package,
+        event_type=models.Event.DELETE,
+    ).exists()
+
+
+@pytest.mark.django_db
+def test_package_request_deletion_requires_origin_pipeline(
+    admin_client: Client,
+    package: models.Package,
+) -> None:
+    response = admin_client.post(
+        reverse("locations:package_request_deletion", args=[package.uuid])
+    )
+
+    assert response.status_code == 400
+    assert response.json()["message"] == "Package deletion request failed."
+    assert not models.Event.objects.filter(
+        package=package,
+        event_type=models.Event.DELETE,
+    ).exists()
+
+
+@pytest.mark.django_db
+def test_package_request_deletion_rejects_unsupported_package_type(
+    admin_client: Client,
+    package: models.Package,
+    pipeline: models.Pipeline,
+) -> None:
+    package.package_type = models.Package.DIP
+    package.origin_pipeline = pipeline
+    package.save(update_fields=["package_type", "origin_pipeline"])
+
+    response = admin_client.post(
+        reverse("locations:package_request_deletion", args=[package.uuid])
+    )
+
+    assert response.status_code == 405
+    assert response.json()["message"] == "Deletes not allowed on this package type."
+    assert not models.Event.objects.filter(
+        package=package,
+        event_type=models.Event.DELETE,
+    ).exists()
+
+
+@mock.patch(
+    "archivematica.storage_service.locations.views.signals.deletion_request.send"
+)
+@pytest.mark.django_db
+def test_package_request_deletion_returns_existing_request_message(
+    deletion_request_send: mock.Mock,
+    admin_client: Client,
+    package: models.Package,
+    pipeline: models.Pipeline,
+) -> None:
+    package.origin_pipeline = pipeline
+    package.save(update_fields=["origin_pipeline"])
+
+    first_response = admin_client.post(
+        reverse("locations:package_request_deletion", args=[package.uuid])
+    )
+    second_response = admin_client.post(
+        reverse("locations:package_request_deletion", args=[package.uuid])
+    )
+
+    assert first_response.status_code == 202
+    assert second_response.status_code == 200
+    assert (
+        second_response.json()["message"]
+        == "A deletion request already exists for this AIP."
+    )
+    assert (
+        models.Event.objects.filter(
+            package=package,
+            event_type=models.Event.DELETE,
+        ).count()
+        == 1
+    )
+    deletion_request_send.assert_called_once()

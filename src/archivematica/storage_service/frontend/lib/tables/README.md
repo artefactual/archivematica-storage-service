@@ -1,11 +1,13 @@
 # Tables (Vue)
 
-`tables` is the Vue/TanStack replacement for non-server-side Storage
-Service DataTables views.
+`tables` is the Vue/TanStack replacement for Storage Service DataTables
+views.
 
-This migration intentionally targets only table pages where Django already
-renders full datasets in HTML and DataTables is used for client-side
-sorting/filtering/pagination.
+This app supports two modes:
+
+- client mode for pages where Django already renders full datasets in HTML
+- server compatibility mode for endpoints that still use legacy DataTables
+  server-side contracts
 
 ## What It Does
 
@@ -25,10 +27,8 @@ Current `kind` values:
 - `callbacks-list`
 - `package-requests-pending`
 - `package-requests-closed`
-
-Out of scope for this app:
-
-- server-side DataTables flows (`packages-datatable`, `fixity-logs-datatable`)
+- `packages-server`
+- `fixity-logs-server`
 
 ## How It Loads
 
@@ -45,7 +45,7 @@ Out of scope for this app:
 - `TableCellContent.vue`: cell/action rendering for payload cell types
 - `TableDecisionFormCell.vue`: per-row package request approval/rejection form cell
 - `TablePagination.vue`: pager + page-size selector
-- `useTableSearch.ts`: debounced tokenized search composable
+- `composables/useTableSearch.ts`: debounced tokenized search composable
 - `types.ts`: payload type definitions
 
 ## Payload Shape (High Level)
