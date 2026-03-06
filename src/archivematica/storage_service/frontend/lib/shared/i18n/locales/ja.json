@@ -11,6 +11,21 @@
     "copied": "コピーしました！",
     "copyFailed": "コピーできませんでした。テキストを手動でコピーしてください。"
   },
+  "packageActions": {
+    "pointerFile": "ポインターファイル",
+    "download": "ダウンロード",
+    "reingest": "再取り込み",
+    "updateStatus": "ステータスを更新",
+    "requestDeletion": "削除をリクエスト"
+  },
+  "callbackHeaders": {
+    "delete": "削除",
+    "addHeader": "ヘッダーを追加"
+  },
+  "packageRequestDelete": {
+    "success": "パッケージ削除リクエストを送信しました。",
+    "failure": "パッケージ削除リクエストに失敗しました。"
+  },
   "tables": {
     "search": "検索:",
     "show": "表示",

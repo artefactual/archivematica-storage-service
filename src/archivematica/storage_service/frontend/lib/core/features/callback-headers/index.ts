@@ -1,19 +1,9 @@
+import { translate } from '@/shared/i18n/plain'
+
 const CALLBACK_FORM_SELECTOR = '.callback > form'
 const HEADER_INPUT_SELECTOR = 'input[name^="header_"]'
 const DELETE_LINK_CLASS = 'delete_header'
 const ADD_LINK_CLASS = 'add_header'
-
-type GettextGlobal = typeof globalThis & {
-  gettext?: (message: string) => string
-}
-
-const translate = (message: string): string => {
-  const gettext = (globalThis as GettextGlobal).gettext
-  if (typeof gettext === 'function') {
-    return gettext(message)
-  }
-  return message
-}
 
 const getHeaderInputs = (row: ParentNode): HTMLInputElement[] => {
   return Array.from(row.querySelectorAll<HTMLInputElement>(HEADER_INPUT_SELECTOR))
@@ -72,7 +62,7 @@ const ensureDeleteLink = (row: HTMLParagraphElement): void => {
   const deleteLink = document.createElement('a')
   deleteLink.href = '#'
   deleteLink.className = DELETE_LINK_CLASS
-  deleteLink.textContent = translate('Delete')
+  deleteLink.textContent = translate('callbackHeaders.delete')
   valueField.insertAdjacentElement('afterend', deleteLink)
 }
 
@@ -91,7 +81,7 @@ const ensureAddLink = (form: HTMLFormElement): void => {
   const addLink = document.createElement('a')
   addLink.href = '#'
   addLink.className = ADD_LINK_CLASS
-  addLink.textContent = translate('Add header')
+  addLink.textContent = translate('callbackHeaders.addHeader')
   wrapper.append(addLink)
 
   lastHeader.insertAdjacentElement('afterend', wrapper)

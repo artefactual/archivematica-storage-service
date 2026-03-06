@@ -1,16 +1,13 @@
 import { createHttpClient, toHttpErrorInfo } from '../../../shared/http/client'
+import { translate } from '../../../shared/i18n/plain'
 
 const REQUEST_DELETE_SELECTOR = 'a.request-delete'
 const REQUEST_DELETE_URL_DATA_KEY = 'packageRequestDeleteUrl'
 const REQUEST_DELETE_CSRF_TOKEN_DATA_KEY = 'packageRequestDeleteCsrfToken'
 const PAGE_HEADING_SELECTOR = 'h1'
 const ALERT_ID = 'package-delete-alert'
-const FALLBACK_SUCCESS_MESSAGE = 'Package deletion request submitted.'
-const FALLBACK_ERROR_MESSAGE = 'Package deletion request failed.'
-
-type GettextGlobal = typeof globalThis & {
-  gettext?: (message: string) => string
-}
+const FALLBACK_SUCCESS_MESSAGE_KEY = 'packageRequestDelete.success'
+const FALLBACK_ERROR_MESSAGE_KEY = 'packageRequestDelete.failure'
 
 type RequestDeleteTrigger = HTMLElement & {
   dataset: DOMStringMap & {
@@ -22,14 +19,6 @@ type RequestDeleteTrigger = HTMLElement & {
 type DeleteRequestResponse = {
   message?: string
   error_message?: string
-}
-
-const translate = (message: string): string => {
-  const gettext = (globalThis as GettextGlobal).gettext
-  if (typeof gettext === 'function') {
-    return gettext(message)
-  }
-  return message
 }
 
 const httpClient = createHttpClient()
@@ -83,11 +72,11 @@ const submitDeleteRequest = async (trigger: RequestDeleteTrigger): Promise<void>
       },
     })
     const responseMessage = parseResponseMessage(payload)
-    renderAlert(responseMessage ?? translate(FALLBACK_SUCCESS_MESSAGE), 'success')
+    renderAlert(responseMessage ?? translate(FALLBACK_SUCCESS_MESSAGE_KEY), 'success')
   } catch (error) {
     const errorMessage = parseResponseMessage(toHttpErrorInfo(error)?.bodyJson)
     console.error('Failed to submit package deletion request', error)
-    renderAlert(errorMessage ?? translate(FALLBACK_ERROR_MESSAGE), 'warning')
+    renderAlert(errorMessage ?? translate(FALLBACK_ERROR_MESSAGE_KEY), 'warning')
   }
 }
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { translate } from '@/shared/i18n/plain'
 import { toFixityLogTableRow, toPackageTableRow, type PackageAjaxRow } from './serverRowTransformers'
 
 describe('serverRowTransformers', () => {
@@ -47,16 +48,16 @@ describe('serverRowTransformers', () => {
       kind: 'status-with-link',
       text: 'Stored',
       link: {
-        text: 'Update Status',
+        text: translate('packageActions.updateStatus'),
         href: '/package/pkg-1/status/?next=/packages/',
       },
     })
     expect(result.actions).toEqual({
       kind: 'package-actions',
       links: [
-        { label: 'Pointer File', href: '/pointer/pkg-1/' },
-        { label: 'Download', href: '/download/pkg-1/' },
-        { label: 'Re-ingest', href: '/reingest/pkg-1/' },
+        { label: translate('packageActions.pointerFile'), href: '/pointer/pkg-1/' },
+        { label: translate('packageActions.download'), href: '/download/pkg-1/' },
+        { label: translate('packageActions.reingest'), href: '/reingest/pkg-1/' },
       ],
       requestDelete: {
         actionUrl: '/packages/pkg-1/request_deletion/',

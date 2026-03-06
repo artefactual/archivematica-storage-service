@@ -11,6 +11,21 @@
     "copied": "Kopierat!",
     "copyFailed": "Det gick inte att kopiera. Kopiera texten manuellt."
   },
+  "packageActions": {
+    "pointerFile": "Pekarfil",
+    "download": "Ladda ned",
+    "reingest": "Återinmata",
+    "updateStatus": "Uppdatera status",
+    "requestDeletion": "Begär radering"
+  },
+  "callbackHeaders": {
+    "delete": "Ta bort",
+    "addHeader": "Lägg till rubrik"
+  },
+  "packageRequestDelete": {
+    "success": "Begäran om att radera paketet har skickats.",
+    "failure": "Begäran om att radera paketet misslyckades."
+  },
   "tables": {
     "search": "Sök:",
     "show": "Visa",

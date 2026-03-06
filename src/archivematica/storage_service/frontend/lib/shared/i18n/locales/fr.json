@@ -11,6 +11,21 @@
     "copied": "Copié !",
     "copyFailed": "Impossible de copier. Copiez le texte manuellement."
   },
+  "packageActions": {
+    "pointerFile": "Fichier pointeur",
+    "download": "Télécharger",
+    "reingest": "Réingérer",
+    "updateStatus": "Mettre à jour le statut",
+    "requestDeletion": "Demander la suppression"
+  },
+  "callbackHeaders": {
+    "delete": "Supprimer",
+    "addHeader": "Ajouter un en-tête"
+  },
+  "packageRequestDelete": {
+    "success": "Demande de suppression du paquet envoyée.",
+    "failure": "Échec de la demande de suppression du paquet."
+  },
   "tables": {
     "search": "Rechercher :",
     "show": "Afficher",

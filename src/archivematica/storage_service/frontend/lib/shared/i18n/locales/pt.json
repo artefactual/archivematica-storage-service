@@ -11,6 +11,21 @@
     "copied": "Copiado!",
     "copyFailed": "Não foi possível copiar. Copie o texto manualmente."
   },
+  "packageActions": {
+    "pointerFile": "Ficheiro ponteiro",
+    "download": "Transferir",
+    "reingest": "Reingerir",
+    "updateStatus": "Atualizar estado",
+    "requestDeletion": "Solicitar eliminação"
+  },
+  "callbackHeaders": {
+    "delete": "Eliminar",
+    "addHeader": "Adicionar cabeçalho"
+  },
+  "packageRequestDelete": {
+    "success": "Pedido de eliminação do pacote submetido.",
+    "failure": "O pedido de eliminação do pacote falhou."
+  },
   "tables": {
     "search": "Pesquisar:",
     "show": "Mostrar",

@@ -1,24 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { PackageActionsCell } from './types'
 
 const props = defineProps<{
   cell: PackageActionsCell
 }>()
 
-type GettextGlobal = typeof globalThis & {
-  gettext?: (message: string) => string
-}
+const { t } = useI18n()
 
-const translate = (message: string): string => {
-  const gettext = (globalThis as GettextGlobal).gettext
-  if (typeof gettext === 'function') {
-    return gettext(message)
-  }
-  return message
-}
-
-const requestDeleteLabel = computed(() => translate('Request Deletion'))
+const requestDeleteLabel = computed(() => t('packageActions.requestDeletion'))
 
 const directDeleteModalTarget = computed(() => {
   if (!props.cell.directDelete) {

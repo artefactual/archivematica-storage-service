@@ -11,6 +11,21 @@
     "copied": "Copied!",
     "copyFailed": "Failed to copy. Copy the text manually."
   },
+  "packageActions": {
+    "pointerFile": "Pointer File",
+    "download": "Download",
+    "reingest": "Re-ingest",
+    "updateStatus": "Update Status",
+    "requestDeletion": "Request Deletion"
+  },
+  "callbackHeaders": {
+    "delete": "Delete",
+    "addHeader": "Add header"
+  },
+  "packageRequestDelete": {
+    "success": "Package deletion request submitted.",
+    "failure": "Package deletion request failed."
+  },
   "tables": {
     "search": "Search:",
     "show": "Show",

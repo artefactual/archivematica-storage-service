@@ -1,8 +1,5 @@
+import { translate } from '@/shared/i18n/plain'
 import type { TableRow } from './types'
-
-type GettextGlobal = typeof globalThis & {
-  gettext?: (message: string) => string
-}
 
 type AjaxLinkCell = {
   text: string
@@ -62,14 +59,6 @@ export type FixityLogAjaxRow = {
   error: string
 }
 
-const translate = (message: string): string => {
-  const gettext = (globalThis as GettextGlobal).gettext
-  if (typeof gettext === 'function') {
-    return gettext(message)
-  }
-  return message
-}
-
 const toTextOrLinkCell = (cell: AjaxLinkCell): TableRow[string] => {
   if (cell.href) {
     return {
@@ -85,19 +74,19 @@ export const toPackageTableRow = (row: PackageAjaxRow): TableRow => {
   const links: Array<{ label: string, href: string }> = []
   if (row.actions.pointer_file_href) {
     links.push({
-      label: translate('Pointer File'),
+      label: translate('packageActions.pointerFile'),
       href: row.actions.pointer_file_href,
     })
   }
   if (row.actions.download_href) {
     links.push({
-      label: translate('Download'),
+      label: translate('packageActions.download'),
       href: row.actions.download_href,
     })
   }
   if (row.actions.reingest_href) {
     links.push({
-      label: translate('Re-ingest'),
+      label: translate('packageActions.reingest'),
       href: row.actions.reingest_href,
     })
   }
@@ -114,7 +103,7 @@ export const toPackageTableRow = (row: PackageAjaxRow): TableRow => {
       text: row.status.text,
       link: row.status.update_href
         ? {
-            text: translate('Update Status'),
+            text: translate('packageActions.updateStatus'),
             href: row.status.update_href,
           }
         : undefined,

@@ -1,3 +1,5 @@
+import { initI18n } from '@/shared/i18n'
+
 export type FeatureModule = {
   init?: () => void | Promise<void>
 }
@@ -17,6 +19,8 @@ const parseFeatureNames = (raw: string): string[] => {
 }
 
 async function boot(): Promise<void> {
+  await initI18n()
+
   const featureAttr = document.body.dataset.features ?? ''
   if (!featureAttr) {
     return
