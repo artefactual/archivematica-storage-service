@@ -201,6 +201,14 @@ def package_request_deletion(request: HttpRequest, uuid: str) -> HttpResponse:
             data={"message": _("Authentication is required.")},
         )
 
+    if not request.user.has_perm("locations.change_package"):
+        return JsonResponse(
+            status=403,
+            data={
+                "message": _("You do not have permission to request package deletion.")
+            },
+        )
+
     if request.user.id is None:
         return JsonResponse(
             status=400,

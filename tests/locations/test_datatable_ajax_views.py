@@ -219,10 +219,7 @@ def test_package_list_ajax_hides_privileged_actions_for_non_privileged_users(
     django_user_model: type[User],
     package_factory: PackageFactory,
 ) -> None:
-    dip_package = package_factory(
-        package_type=models.Package.DIP,
-        current_path="viewer-dip.tar",
-    )
+    package = package_factory(current_path="viewer-aip.7z")
     viewer = django_user_model.objects.create_user(
         username="viewer",
         email="viewer@example.com",
@@ -232,14 +229,36 @@ def test_package_list_ajax_hides_privileged_actions_for_non_privileged_users(
 
     response = client.get(
         reverse("locations:package_list_ajax"),
-        data=package_datatable_params(search=str(dip_package.uuid)),
+        data=package_datatable_params(search=str(package.uuid)),
     )
 
     assert response.status_code == 200
     payload = response.json()
     row = payload["aaData"][0]
     assert row["status"]["update_href"] is None
+    assert row["actions"]["request_delete"] is None
+    assert row["actions"]["reingest_href"] is None
     assert row["actions"]["direct_delete"] is None
+
+
+@pytest.mark.django_db
+def test_package_list_ajax_hides_request_delete_without_origin_pipeline(
+    admin_client: Client,
+    package_factory: PackageFactory,
+) -> None:
+    package = package_factory(current_path="no-origin-pipeline.7z")
+    package.origin_pipeline = None
+    package.save(update_fields=["origin_pipeline"])
+
+    response = admin_client.get(
+        reverse("locations:package_list_ajax"),
+        data=package_datatable_params(search=str(package.uuid)),
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    row = payload["aaData"][0]
+    assert row["actions"]["request_delete"] is None
 
 
 @pytest.mark.django_db

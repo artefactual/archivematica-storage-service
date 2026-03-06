@@ -127,7 +127,11 @@ def build_package_row_payload(
         )
 
     request_delete_action = None
-    if package.package_type in package.PACKAGE_TYPE_CAN_DELETE:
+    if (
+        can_change_package
+        and package.origin_pipeline is not None
+        and package.package_type in package.PACKAGE_TYPE_CAN_DELETE
+    ):
         request_delete_action = {
             "action_url": reverse(
                 "locations:package_request_deletion", args=[package.uuid]
