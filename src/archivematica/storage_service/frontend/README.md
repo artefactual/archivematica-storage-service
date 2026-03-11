@@ -71,13 +71,13 @@ in the Vue components. Other language files should mirror the structure of
 1. Add a new JSON file in `lib/shared/i18n/locales` (BCP 47 filename, e.g.
    `pt-br.json`).
 2. Add the locale code to `AVAILABLE_LOCALES` in `lib/shared/i18n/index.ts`.
-3. Ensure the backend sets `window.StorageServiceConfig.currentLanguage` to the
-   POSIX/CLDR form (e.g. `pt_BR`) when needed.
+3. Ensure the backend sets `data-current-language` on `<body>` to the POSIX/CLDR
+   form (e.g. `pt_BR`) when needed.
 
 ### Language selection at runtime
 
-- The initial locale comes from `window.StorageServiceConfig.currentLanguage`
-  when present, and falls back to English.
+- The initial locale comes from `document.body.dataset.currentLanguage` (or
+  `document.documentElement.dataset.currentLanguage`), and falls back to English.
 - The runtime expects POSIX/CLDR style values like `pt_BR` and converts them to
   BCP 47 (`pt-br`) internally.
 
