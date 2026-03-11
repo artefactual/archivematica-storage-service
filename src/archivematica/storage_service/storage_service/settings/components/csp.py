@@ -9,6 +9,7 @@ CONTENT_SECURITY_POLICY = {
         "script-src": [SELF, UNSAFE_INLINE, UNSAFE_EVAL],
         "style-src": [SELF, UNSAFE_INLINE],
         "img-src": [SELF],
+        "font-src": [SELF, "data:"],
         # for the create space form
         "connect-src": [SELF],
     }
