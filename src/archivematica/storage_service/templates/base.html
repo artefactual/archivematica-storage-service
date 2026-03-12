@@ -92,10 +92,10 @@
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <!-- i18js catalog -->
-    <script type="text/javascript" src="{% url 'javascript-catalog' %}"></script>
+    <script nonce="{{ CSP_NONCE }}" type="text/javascript" src="{% url 'javascript-catalog' %}"></script>
 
-    <script type="module" src="{% static 'frontend/tables.js' %}"></script>
-    <script type="module" src="{% static 'frontend/core.js' %}"></script>
+    <script nonce="{{ CSP_NONCE }}" type="module" src="{% static 'frontend/tables.js' %}"></script>
+    <script nonce="{{ CSP_NONCE }}" type="module" src="{% static 'frontend/core.js' %}"></script>
 
     {% block extra_js %}{% endblock extra_js %}
   </body>

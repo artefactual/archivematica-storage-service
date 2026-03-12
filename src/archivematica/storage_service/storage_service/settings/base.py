@@ -753,6 +753,7 @@ CSP_ENABLED = is_true(environ.get("SS_CSP_ENABLED", ""))
 if CSP_ENABLED:
     INSTALLED_APPS.append("csp")
     MIDDLEWARE.insert(0, "csp.middleware.CSPMiddleware")
+    TEMPLATES[0]["OPTIONS"]["context_processors"].append("csp.context_processors.nonce")
 
     from archivematica.storage_service.storage_service.settings.components.csp import *
 

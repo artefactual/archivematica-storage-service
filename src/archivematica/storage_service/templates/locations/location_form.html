@@ -54,5 +54,5 @@
 {% endblock %}
 
 {% block extra_js %}
-  <script type="module" src="{% static 'frontend/location-directory-picker.js' %}"></script>
+  <script nonce="{{ CSP_NONCE }}" type="module" src="{% static 'frontend/location-directory-picker.js' %}"></script>
 {% endblock extra_js %}
