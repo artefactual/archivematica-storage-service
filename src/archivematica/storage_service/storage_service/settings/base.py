@@ -749,7 +749,7 @@ GNUPG_HOME_PATH = environ.get("SS_GNUPG_HOME_PATH", None)
 # - locations.models.arkivum
 INSECURE_SKIP_VERIFY = is_true(environ.get("SS_INSECURE_SKIP_VERIFY", ""))
 
-CSP_ENABLED = is_true(environ.get("SS_CSP_ENABLED", ""))
+CSP_ENABLED = is_true(environ.get("SS_CSP_ENABLED", "true"))
 if CSP_ENABLED:
     INSTALLED_APPS.append("csp")
     MIDDLEWARE.insert(0, "csp.middleware.CSPMiddleware")

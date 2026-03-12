@@ -39,6 +39,7 @@ repos:
     - boto3
     - django-auth-ldap
     - django-cas-ng
+    - django-csp
     - django-stubs-ext
     - django-stubs[compatible-mypy]
     - django-tastypie

@@ -202,10 +202,10 @@ of these settings or provide values to mandatory fields.
   - **Default:** `false`
 
 - **`SS_CSP_ENABLED`**:
-  - **Description:** **Experimental** support for [Control Security Policy]
-    headers.
+  - **Description:** Enables [Content Security Policy] headers. This is enabled
+    by default.
   - **Type:** `boolean`
-  - **Default:** `false`
+  - **Default:** `true`
 
 - **`SS_PROMETHEUS_ENABLED`**:
   - **Description:** enable metrics export for collection by Prometheus.
@@ -710,15 +710,20 @@ an alternative to providing these details via the user interface. See
 
 ### CSP-specific environment variables
 
-**CSP support is experimental, please share your feedback!**
-
 These variables specify the behaviour of the Content Security Policy (CSP)
-headers. Only applicable if `SS_CSP_ENABLED` is set.
+headers. CSP is enabled by default. Set `SS_CSP_ENABLED=false` to opt out
+temporarily.
 
 - **`CSP_SETTINGS_FILE`**:
   - **Description:** Path to a Python module with overrides of the
     [django-csp policy settings]. An `ImproperlyConfigured` exception will be
     raised if the Python module cannot be imported.
+  - **Type:** `string`
+  - **Default:** ``
+
+- **`CSP_REPORT_URI`**:
+  - **Description:** Optional absolute URI that browsers should use when
+    sending CSP violation reports during rollout.
   - **Type:** `string`
   - **Default:** ``
 
@@ -803,7 +808,7 @@ services.
 [ALLOWED_HOSTS]: https://docs.djangoproject.com/en/1.8/ref/settings/#allowed-hosts
 [TIME_ZONE]: https://docs.djangoproject.com/en/1.8/ref/settings/#time-zone
 [#708]: https://github.com/artefactual/archivematica/issues/708
-[Control Security Policy]: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
+[Content Security Policy]: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
 [dj-database-url docs]: https://github.com/kennethreitz/dj-database-url#url-schema
 [engine]: https://docs.djangoproject.com/en/1.8/ref/settings/#engine
 [DB_NAME]: https://docs.djangoproject.com/en/1.8/ref/settings/#name
