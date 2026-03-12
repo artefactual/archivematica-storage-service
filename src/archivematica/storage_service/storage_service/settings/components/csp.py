@@ -22,6 +22,8 @@ def build_content_security_policy(
         "base-uri": [SELF],
         "form-action": [SELF],
         "frame-ancestors": [NONE],
+        "require-trusted-types-for": ["'script'"],
+        "trusted-types": ["am-storage-service", "dompurify", "vue"],
     }
     if report_uri:
         directives["report-uri"] = report_uri

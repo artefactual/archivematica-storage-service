@@ -22,6 +22,8 @@ def test_build_content_security_policy_uses_nonce_enforced_defaults():
             "base-uri": [SELF],
             "form-action": [SELF],
             "frame-ancestors": [NONE],
+            "require-trusted-types-for": ["'script'"],
+            "trusted-types": ["am-storage-service", "dompurify", "vue"],
         }
     }
 
@@ -39,6 +41,8 @@ def test_build_content_security_policy_adds_report_uri():
             "base-uri": [SELF],
             "form-action": [SELF],
             "frame-ancestors": [NONE],
+            "require-trusted-types-for": ["'script'"],
+            "trusted-types": ["am-storage-service", "dompurify", "vue"],
             "report-uri": "https://example.com/csp-report/",
         }
     }
