@@ -63,6 +63,33 @@ describe('core space-protocol feature', () => {
     })
   })
 
+  it('sanitizes fetched protocol markup before injecting it', async () => {
+    const { protocolField, protocolContainer } = setFixture()
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response('<img src="/test.png" onerror="alert(1)"><p>Updated protocol fields</p>', {
+        status: 200,
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    init()
+
+    protocolField.value = 'GPG'
+    protocolField.dispatchEvent(new Event('change', { bubbles: true }))
+
+    await vi.waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+    })
+
+    await vi.waitFor(() => {
+      expect(protocolContainer.innerHTML).toContain('Updated protocol fields')
+    })
+
+    const injectedImage = protocolContainer.querySelector('img')
+    expect(injectedImage).not.toBeNull()
+    expect(injectedImage?.getAttribute('onerror')).toBeNull()
+  })
+
   it('does nothing when feature root is missing required fields', () => {
     document.body.innerHTML = '<form data-space-protocol-form-url="/foo"></form>'
 
