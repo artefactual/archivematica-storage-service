@@ -22,29 +22,29 @@
     "@vueuse/core": "^14.2.1",
     "base64-helpers": "github:artefactual-labs/base64-helpers#v0.1.4",
     "font-awesome": "^4.7.0",
-    "reka-ui": "^2.9.0",
-    "vue": "^3.5.29",
-    "vue-i18n": "^11.2.8"
+    "reka-ui": "^2.9.2",
+    "vue": "^3.5.30",
+    "vue-i18n": "^11.3.0"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.10.0",
     "@tsconfig/node24": "^24.0.4",
     "@types/jsdom": "^28.0.0",
-    "@types/node": "^25.3.5",
-    "@vitejs/plugin-vue": "^6.0.4",
-    "@vitest/eslint-plugin": "^1.6.9",
+    "@types/node": "^25.5.0",
+    "@vitejs/plugin-vue": "^6.0.5",
+    "@vitest/eslint-plugin": "^1.6.11",
     "@vue/eslint-config-typescript": "^14.7.0",
     "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.9.0",
-    "eslint": "^10.0.2",
+    "eslint": "^10.0.3",
     "eslint-plugin-vue": "~10.8.0",
     "glob": "^13.0.6",
     "jiti": "^2.6.1",
     "jsdom": "^28.1.0",
     "npm-run-all2": "^8.0.4",
     "typescript": "~5.9.3",
-    "vite": "^7.3.1",
-    "vitest": "^4.0.18",
+    "vite": "^8.0.0",
+    "vitest": "^4.1.0",
     "vue-tsc": "^3.2.5"
   }
 }
