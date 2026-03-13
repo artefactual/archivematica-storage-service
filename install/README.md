@@ -202,8 +202,8 @@ of these settings or provide values to mandatory fields.
   - **Default:** `false`
 
 - **`SS_CSP_ENABLED`**:
-  - **Description:** Enables [Content Security Policy] headers. This is enabled
-    by default.
+  - **Description:** Enables enforced [Content Security Policy] headers. This
+    is enabled by default.
   - **Type:** `boolean`
   - **Default:** `true`
 
@@ -711,8 +711,9 @@ an alternative to providing these details via the user interface. See
 ### CSP-specific environment variables
 
 These variables specify the behaviour of the Content Security Policy (CSP)
-headers. CSP is enabled by default. Set `SS_CSP_ENABLED=false` to opt out
-temporarily.
+headers. CSP is enabled by default, and supporting browsers also enforce
+Trusted Types as part of the default policy. Set `SS_CSP_ENABLED=false` to
+opt out temporarily.
 
 - **`CSP_SETTINGS_FILE`**:
   - **Description:** Path to a Python module with overrides of the
