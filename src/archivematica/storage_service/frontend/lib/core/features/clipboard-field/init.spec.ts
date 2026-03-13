@@ -22,10 +22,18 @@ const createDeferred = (): Deferred => {
   return { promise, resolve, reject }
 }
 
-const mockTranslateModule = (): void => {
-  vi.doMock('@/shared/i18n/plain', () => ({
-    translate: (value: string) =>
-      LABELS[value as keyof typeof LABELS] ?? value,
+const mockI18nModule = (
+  initI18n: () => Promise<void>,
+  isLocaleReady: () => boolean = () => true,
+): void => {
+  vi.doMock('@/shared/i18n', () => ({
+    i18n: {
+      global: {
+        te: (key: string) => isLocaleReady() && key in LABELS,
+        t: (key: string) => LABELS[key as keyof typeof LABELS] ?? key,
+      },
+    },
+    initI18n,
   }))
 }
 
@@ -38,15 +46,13 @@ describe('clipboard-field init', () => {
 
   afterEach(() => {
     vi.doUnmock('@/shared/i18n')
-    vi.doUnmock('@/shared/i18n/plain')
   })
 
   it('defines the element even if i18n init rejects', async () => {
     const initI18n = vi.fn().mockRejectedValue(new Error('boom'))
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
 
-    vi.doMock('@/shared/i18n', () => ({ initI18n }))
-    mockTranslateModule()
+    mockI18nModule(initI18n)
 
     const defineSpy = vi.spyOn(customElements, 'define').mockImplementation(() => undefined)
     vi.spyOn(customElements, 'get').mockReturnValue(undefined)
@@ -68,24 +74,17 @@ describe('clipboard-field init', () => {
     const deferred = createDeferred()
     let localeReady = false
 
-    vi.doMock('@/shared/i18n', () => ({
-      initI18n: vi.fn(async () => {
+    mockI18nModule(
+      vi.fn(async () => {
         await deferred.promise
         localeReady = true
       }),
-    }))
-
-    vi.doMock('@/shared/i18n/plain', () => ({
-      translate: (value: string) => {
-        if (!localeReady) return value
-        return LABELS[value as keyof typeof LABELS] ?? value
-      },
-    }))
+      () => localeReady,
+    )
 
     const { init } = await import('./index')
     const initPromise = init()
 
-    await Promise.resolve()
     expect(customElements.get('am-clipboard-field')).toBeUndefined()
 
     deferred.resolve()

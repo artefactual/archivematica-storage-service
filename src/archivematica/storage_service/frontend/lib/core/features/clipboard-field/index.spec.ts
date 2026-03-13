@@ -1,10 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AmClipboardFieldElement, defineAmClipboardField } from './index'
 
-vi.mock('@/shared/i18n', () => ({
-  initI18n: vi.fn().mockResolvedValue(undefined),
-}))
-
 vi.mock('@/shared/i18n/plain', () => ({
   translate: (value: string) =>
     (
