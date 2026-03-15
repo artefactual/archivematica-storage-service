@@ -10,9 +10,9 @@ asgiref==3.11.1
     # via django
 bagit==1.9.0
     # via archivematica-storage-service (pyproject.toml)
-boto3==1.42.62
+boto3==1.42.68
     # via archivematica-storage-service (pyproject.toml)
-botocore==1.42.62
+botocore==1.42.68
     # via
     #   boto3
     #   s3transfer
@@ -20,7 +20,7 @@ brotli==1.2.0
     # via archivematica-storage-service (pyproject.toml)
 build==1.4.0
     # via pip-tools
-cachetools==7.0.3
+cachetools==7.0.5
     # via tox
 certifi==2026.2.25
     # via requests
@@ -78,7 +78,7 @@ django-tastypie==0.15.1
     # via archivematica-storage-service (pyproject.toml)
 exceptiongroup==1.3.1
     # via pytest
-filelock==3.25.0
+filelock==3.25.2
     # via
     #   python-discovery
     #   tox
@@ -204,7 +204,7 @@ pyee==13.0.1
     # via playwright
 pygments==2.19.2
     # via pytest
-pyjwt==2.11.0
+pyjwt==2.12.1
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   mozilla-django-oidc
@@ -242,7 +242,7 @@ python-dateutil==2.9.0.post0
     # via
     #   botocore
     #   django-tastypie
-python-discovery==1.1.0
+python-discovery==1.1.3
     # via virtualenv
 python-gnupg==0.5.6
     # via archivematica-storage-service (pyproject.toml)
@@ -302,7 +302,7 @@ tomli==2.4.0
     #   tox
 tomli-w==1.2.0
     # via tox
-tox==4.48.1
+tox==4.49.1
     # via archivematica-storage-service (pyproject.toml)
 types-pyyaml==6.0.12.20250915
     # via django-stubs
@@ -317,13 +317,14 @@ typing-extensions==4.15.0
     #   mypy
     #   os-service-types
     #   pyee
+    #   pyjwt
     #   tox
     #   virtualenv
 urllib3==2.6.3
     # via
     #   botocore
     #   requests
-virtualenv==21.1.0
+virtualenv==21.2.0
     # via tox
 wheel==0.46.3
     # via pip-tools
@@ -339,7 +340,7 @@ zope-interface==8.2
 # The following packages are considered to be unsafe in a requirements file:
 pip==26.0.1
     # via pip-tools
-setuptools==82.0.0
+setuptools==82.0.1
     # via
     #   pbr
     #   pip-tools
