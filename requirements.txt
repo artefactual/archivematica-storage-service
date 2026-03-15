@@ -10,9 +10,9 @@ asgiref==3.11.1
     # via django
 bagit==1.9.0
     # via archivematica-storage-service (pyproject.toml)
-boto3==1.42.62
+boto3==1.42.68
     # via archivematica-storage-service (pyproject.toml)
-botocore==1.42.62
+botocore==1.42.68
     # via
     #   boto3
     #   s3transfer
@@ -139,7 +139,7 @@ pyasn1-modules==0.4.2
     # via python-ldap
 pycparser==3.0
     # via cffi
-pyjwt==2.11.0
+pyjwt==2.12.1
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   mozilla-django-oidc
@@ -201,6 +201,7 @@ typing-extensions==4.15.0
     #   django-stubs-ext
     #   keystoneauth1
     #   os-service-types
+    #   pyjwt
 urllib3==2.6.3
     # via
     #   botocore
@@ -215,5 +216,5 @@ zope-interface==8.2
     # via gevent
 
 # The following packages are considered to be unsafe in a requirements file:
-setuptools==82.0.0
+setuptools==82.0.1
     # via pbr
