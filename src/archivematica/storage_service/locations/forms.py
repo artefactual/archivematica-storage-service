@@ -74,11 +74,20 @@ class PipelineForm(forms.ModelForm):
             "enabled",
         )
 
+    def clean_api_key(self):
+        api_key = self.cleaned_data["api_key"]
+        if self.instance.pk and api_key == "":
+            # PasswordInput does not render the stored key on edit, so a blank
+            # submission means "leave the existing value alone" rather than
+            # "clear it".
+            return self.instance.api_key
+        return api_key
+
     def save(self, *args, **kwargs):
-        if not self.cleaned_data["api_key"]:
-            # If the API key was not provided, remove it from the cleaned data
-            # to avoid overwriting its existing stored value.
-            del self.cleaned_data["api_key"]
+        if not self.instance.pk and self.instance.api_key is None:
+            # Normalize create-time empty API keys to the canonical empty string
+            # so form and API-created pipelines behave the same way.
+            self.instance.api_key = ""
         return super().save(*args, **kwargs)
 
 
