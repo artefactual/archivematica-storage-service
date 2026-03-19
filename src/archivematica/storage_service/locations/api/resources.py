@@ -250,6 +250,10 @@ class PipelineResource(ModelResource):
         return bundle
 
     def obj_create(self, bundle, **kwargs):
+        if bundle.data.get("api_key") is None:
+            # Normalize omitted/null API keys to the canonical empty string so
+            # API and form-created pipelines behave the same way.
+            bundle.data["api_key"] = ""
         bundle = super().obj_create(bundle, **kwargs)
         bundle.obj.enabled = not utils.get_setting("pipelines_disabled", False)
         create_default_locations = bundle.data.get("create_default_locations", False)

@@ -1098,6 +1098,23 @@ class TestPipelineAPI(TestCase):
             "http://192.168.0.10"
         )
 
+    def test_pipeline_create_without_api_key_stores_empty_string(self):
+        pipeline_uuid = str(uuid.uuid4())
+        data = {
+            "uuid": pipeline_uuid,
+            "description": "My pipeline without api key",
+            "remote_name": "https://archivematica-dashboard:8080",
+            "api_username": "test",
+        }
+
+        response = self.client.post(
+            "/api/v2/pipeline/", data=json.dumps(data), content_type="application/json"
+        )
+        assert response.status_code == 201
+
+        pipeline = models.Pipeline.objects.get(uuid=pipeline_uuid)
+        assert pipeline.api_key == ""
+
 
 @pytest.fixture
 def internal_processing_location(db, tmp_path):

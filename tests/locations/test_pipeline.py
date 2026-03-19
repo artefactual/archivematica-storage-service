@@ -152,15 +152,41 @@ def test_view_create_pipeline_invalid_post(admin_client: Client) -> None:
 
 def test_view_create_pipeline_post(admin_client: Client) -> None:
     url = reverse("locations:pipeline_create")
+    pipeline_uuid = str(uuid.uuid4())
+
+    resp = admin_client.post(url, follow=True, data={"uuid": pipeline_uuid})
+    messages = list(resp.context["messages"])
+
+    pipeline = models.Pipeline.objects.get(uuid=pipeline_uuid)
+    assert pipeline.api_key == ""
+    assert str(messages[0]) == "Pipeline saved."
+
+
+def test_view_create_pipeline_post_with_blank_api_key(admin_client: Client) -> None:
+    url = reverse("locations:pipeline_create")
+    pipeline_uuid = str(uuid.uuid4())
+    description = "Pipeline without API key"
+    remote_name = "http://example.com"
+    api_username = "myuser"
 
     resp = admin_client.post(
-        url, follow=True, data={"uuid": "0d9d6be9-2751-4e81-b85f-fe4e51a1f789"}
+        url,
+        follow=True,
+        data={
+            "uuid": pipeline_uuid,
+            "description": description,
+            "remote_name": remote_name,
+            "api_username": api_username,
+            "api_key": "",
+        },
     )
     messages = list(resp.context["messages"])
 
-    assert models.Pipeline.objects.filter(
-        uuid="0d9d6be9-2751-4e81-b85f-fe4e51a1f789"
-    ).exists()
+    pipeline = models.Pipeline.objects.get(uuid=pipeline_uuid)
+    assert pipeline.description == description
+    assert pipeline.remote_name == remote_name
+    assert pipeline.api_username == api_username
+    assert pipeline.api_key == ""
     assert str(messages[0]) == "Pipeline saved."
 
 
@@ -221,11 +247,43 @@ def test_view_edit_pipeline_post(
     assert str(messages[0]) == "Pipeline saved."
 
 
-def test_view_edit_pipeline_post_updates_fields_when_api_key_is_not_set(
+def test_view_edit_pipeline_post_preserves_existing_api_key_when_blank_string_is_submitted(
     admin_client: Client, pipeline: models.Pipeline
 ) -> None:
     url = reverse("locations:pipeline_edit", args=[pipeline.uuid])
     description = "Pipeline 3ebf"
+    remote_name = "localhost"
+    api_username = "newapiusername"
+    old_api_key = pipeline.api_key
+
+    resp = admin_client.post(
+        url,
+        follow=True,
+        data={
+            "uuid": str(pipeline.uuid),
+            "description": description,
+            "remote_name": remote_name,
+            "api_username": api_username,
+            "api_key": "",
+        },
+    )
+    messages = list(resp.context["messages"])
+
+    pipeline.refresh_from_db()
+    assert pipeline.description == description
+    assert pipeline.remote_name == remote_name
+    assert pipeline.api_username == api_username
+    assert str(messages[0]) == "Pipeline saved."
+
+    # The existing API key value was not modified.
+    assert pipeline.api_key == old_api_key
+
+
+def test_view_edit_pipeline_post_preserves_existing_api_key_when_api_key_is_omitted(
+    admin_client: Client, pipeline: models.Pipeline
+) -> None:
+    url = reverse("locations:pipeline_edit", args=[pipeline.uuid])
+    description = "Pipeline with omitted api_key"
     remote_name = "localhost"
     api_username = "newapiusername"
     old_api_key = pipeline.api_key
@@ -248,7 +306,7 @@ def test_view_edit_pipeline_post_updates_fields_when_api_key_is_not_set(
     assert pipeline.api_username == api_username
     assert str(messages[0]) == "Pipeline saved."
 
-    # The existing API key value was not modified.
+    # Omitting the field entirely should preserve the existing key too.
     assert pipeline.api_key == old_api_key
 
 
