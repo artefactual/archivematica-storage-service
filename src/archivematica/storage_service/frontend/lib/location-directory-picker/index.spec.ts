@@ -30,6 +30,11 @@ vi.mock('./App.vue', () => ({
           'type': 'button',
           'onClick': () => emit('select', '/var/storage/home/selected'),
         }),
+        h('button', {
+          'data-testid': 'emit-current-select',
+          'type': 'button',
+          'onClick': () => emit('select', props.selectedPath),
+        }),
       ])
     },
   }),
@@ -75,6 +80,14 @@ describe('location-directory-picker bootstrap', () => {
     button.click()
   }
 
+  const triggerCurrentSelect = (mountEl: HTMLElement) => {
+    const button = mountEl.querySelector<HTMLButtonElement>('[data-testid="emit-current-select"]')
+    if (!button) {
+      throw new Error('Current select button not found in test DOM.')
+    }
+    button.click()
+  }
+
   it('dispatches selected-path once per directory selection', async () => {
     await import('./index')
     await Promise.resolve()
@@ -106,6 +119,30 @@ describe('location-directory-picker bootstrap', () => {
     await Promise.resolve()
 
     expect(getSelectedPathText(mountEl)).toBe('/var/storage/home/new')
+  })
+
+  it('keeps selected paths relative for object storage roots', async () => {
+    document.body.innerHTML = `
+      <div
+        id="location-directory-picker"
+        data-space-uuid="2e008d73-33d0-4aa6-917b-9fd6f4031915"
+        data-root-path=""
+        data-selected-relative-path="/transfers/foo"
+      ></div>
+    `
+
+    await import('./index')
+    await Promise.resolve()
+    await Promise.resolve()
+
+    const mountEl = getMountEl()
+    expect(getSelectedPathText(mountEl)).toBe('transfers/foo')
+
+    triggerCurrentSelect(mountEl)
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(mountEl.getAttribute('data-selected-relative-path')).toBe('transfers/foo')
   })
 
   it('uses latest manual relative path after a prior selection', async () => {

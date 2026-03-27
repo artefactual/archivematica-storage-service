@@ -18,7 +18,12 @@ describe('toAbsolutePath', () => {
 
   it('joins from root slash', () => {
     expect(toAbsolutePath('/', 'child/path')).toBe('/child/path')
-    expect(toAbsolutePath('', 'child/path')).toBe('/child/path')
+  })
+
+  it('keeps object storage paths relative when root path is empty', () => {
+    expect(toAbsolutePath('', 'child/path')).toBe('child/path')
+    expect(toAbsolutePath('', '/transfers/foo')).toBe('transfers/foo')
+    expect(toAbsolutePath('', '///transfers/foo')).toBe('transfers/foo')
   })
 
   it('treats paths starting with slash as already absolute', () => {
@@ -48,5 +53,10 @@ describe('toRelativePath', () => {
 
   it('handles root slash as base path', () => {
     expect(toRelativePath('/', '/home/archivematica')).toBe('home/archivematica')
+  })
+
+  it('keeps object storage paths relative when root path is empty', () => {
+    expect(toRelativePath('', 'child/path')).toBe('child/path')
+    expect(toRelativePath('', '/child/path')).toBe('child/path')
   })
 })
