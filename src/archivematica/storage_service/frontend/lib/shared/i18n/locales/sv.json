@@ -4,7 +4,8 @@
     "loadingDirectories": "Läser in...",
     "loadFailed": "Det gick inte att läsa in katalogen",
     "retry": "Försök igen",
-    "select": "Välj"
+    "select": "Välj",
+    "spaceRoot": "Utrymmets rot"
   },
   "clipboardField": {
     "copy": "Kopiera",

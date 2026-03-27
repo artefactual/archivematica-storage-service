@@ -19,11 +19,14 @@ const emit = defineEmits<{
 const selectedNode = ref<DirectoryNode | undefined>()
 const committedSelectedPath = ref(props.selectedPath ?? '')
 const expandedPaths = ref<string[]>([])
-const { items, loading, error, loadRoot, expandNode, clearError } = useSpaceBrowser()
 const { t } = useI18n()
+const { items, loading, error, loadRoot, expandNode, clearError } = useSpaceBrowser(
+  t('locationDirectoryPicker.spaceRoot'),
+)
 
 const refresh = async () => {
   await loadRoot(props.spaceUuid, props.rootPath)
+
   if (props.selectedPath) {
     const node = findNodeByPath(items.value, props.selectedPath)
     if (node) {
@@ -33,12 +36,12 @@ const refresh = async () => {
 }
 
 const handleToggle = async (node: DirectoryNode) => {
-  const path = node.path
-  const index = expandedPaths.value.indexOf(path)
+  const key = node.id
+  const index = expandedPaths.value.indexOf(key)
   if (index === -1) {
-    expandedPaths.value = [...expandedPaths.value, path]
+    expandedPaths.value = [...expandedPaths.value, key]
   } else {
-    expandedPaths.value = expandedPaths.value.filter(entry => entry !== path)
+    expandedPaths.value = expandedPaths.value.filter(entry => entry !== key)
   }
 
   await expandNode(props.spaceUuid, node)
@@ -150,7 +153,7 @@ function findNodeByPath(nodes: DirectoryNode[], path: string): DirectoryNode | u
         :variant="'compact'"
         :auto-focus-on-items-change="true"
         :auto-focus-target="'first'"
-        :get-key="node => (node as DirectoryNode).path"
+        :get-key="node => (node as DirectoryNode).id"
         :get-children="node => (node as DirectoryNode).children"
         :right-toggles="true"
         :enter-toggles="false"

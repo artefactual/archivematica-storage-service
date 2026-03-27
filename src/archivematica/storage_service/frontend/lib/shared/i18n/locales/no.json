@@ -4,7 +4,8 @@
     "loadingDirectories": "Laster inn...",
     "loadFailed": "Kunne ikke laste inn katalogen",
     "retry": "Prøv igjen",
-    "select": "Velg"
+    "select": "Velg",
+    "spaceRoot": "Lagringsområdets rot"
   },
   "clipboardField": {
     "copy": "Kopier",

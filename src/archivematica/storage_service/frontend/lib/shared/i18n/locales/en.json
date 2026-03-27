@@ -4,7 +4,8 @@
     "loadingDirectories": "Loading...",
     "loadFailed": "Unable to load directory",
     "retry": "Retry",
-    "select": "Select"
+    "select": "Select",
+    "spaceRoot": "Space root"
   },
   "clipboardField": {
     "copy": "Copy",

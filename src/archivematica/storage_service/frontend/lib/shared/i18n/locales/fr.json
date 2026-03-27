@@ -4,7 +4,8 @@
     "loadingDirectories": "Chargement...",
     "loadFailed": "Impossible de charger le répertoire",
     "retry": "Réessayer",
-    "select": "Sélectionner"
+    "select": "Sélectionner",
+    "spaceRoot": "Racine de l’espace"
   },
   "clipboardField": {
     "copy": "Copier",

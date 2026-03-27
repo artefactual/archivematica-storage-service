@@ -4,6 +4,7 @@ import {
   decodeBrowseResponse,
   joinPath,
   mapBrowseResponseToDirectoryNodes,
+  toTreeKey,
 } from '@/location-directory-picker/composables/useSpaceBrowser'
 
 describe('useSpaceBrowser helpers', () => {
@@ -34,7 +35,7 @@ describe('useSpaceBrowser helpers', () => {
 
     expect(nodes).toEqual([
       {
-        id: '/var/storage/child_1',
+        id: 'path:/var/storage/child_1',
         label: 'child_1',
         path: '/var/storage/child_1',
         children: [],
@@ -43,7 +44,7 @@ describe('useSpaceBrowser helpers', () => {
         loadError: null,
       },
       {
-        id: '/var/storage/child_2',
+        id: 'path:/var/storage/child_2',
         label: 'child_2',
         path: '/var/storage/child_2',
         children: [],
@@ -52,5 +53,12 @@ describe('useSpaceBrowser helpers', () => {
         loadError: null,
       },
     ])
+  })
+
+  it('namespaces tree keys for roots and paths separately', () => {
+    expect(toTreeKey('', true)).toBe('root:')
+    expect(toTreeKey('space-root')).toBe('path:space-root')
+    expect(toTreeKey('/')).toBe('path:/')
+    expect(toTreeKey('/', true)).toBe('root:/')
   })
 })

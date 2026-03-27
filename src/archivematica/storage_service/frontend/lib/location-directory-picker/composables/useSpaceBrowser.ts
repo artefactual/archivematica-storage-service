@@ -38,6 +38,10 @@ const decodeBrowseResponse = (response: SpaceBrowseResponse): DecodedBrowseRespo
   }
 }
 
+const toTreeKey = (path: string, isRoot = false): string => {
+  return `${isRoot ? 'root' : 'path'}:${path}`
+}
+
 const mapBrowseResponseToDirectoryNodes = (
   response: DecodedBrowseResponse,
   currentPath: string,
@@ -49,7 +53,7 @@ const mapBrowseResponseToDirectoryNodes = (
     .map((entry) => {
       const path = joinPath(currentPath, entry)
       return {
-        id: path,
+        id: toTreeKey(path),
         label: entry,
         path,
         children: [],
@@ -60,9 +64,17 @@ const mapBrowseResponseToDirectoryNodes = (
     })
 }
 
-const createRootNode = (path: string): DirectoryNode => ({
-  id: path,
-  label: path.split('/').filter(Boolean).pop() ?? path,
+const getRootLabel = (path: string, spaceRootLabel: string): string => {
+  if (path === '') {
+    return spaceRootLabel
+  }
+
+  return path.split('/').filter(Boolean).pop() ?? path
+}
+
+const createRootNode = (path: string, spaceRootLabel: string): DirectoryNode => ({
+  id: toTreeKey(path, true),
+  label: getRootLabel(path, spaceRootLabel),
   path,
   children: [],
   loaded: false,
@@ -70,7 +82,7 @@ const createRootNode = (path: string): DirectoryNode => ({
   loadError: null,
 })
 
-export function useSpaceBrowser() {
+export function useSpaceBrowser(spaceRootLabel: string) {
   const items: Ref<DirectoryNode[]> = ref([])
   const loading: Ref<boolean> = ref(false)
   const error: Ref<string | null> = ref(null)
@@ -85,14 +97,14 @@ export function useSpaceBrowser() {
     items.value = []
     error.value = null
 
-    if (!spaceUuid || !rootPath) {
-      error.value = 'A valid space UUID and root path are required.'
+    if (!spaceUuid) {
+      error.value = 'A valid space UUID is required.'
       return
     }
 
     loading.value = true
 
-    const root = createRootNode(rootPath)
+    const root = createRootNode(rootPath, spaceRootLabel)
     root.loading = true
     items.value = [root]
 
@@ -151,4 +163,5 @@ export {
   decodeBrowseResponse,
   mapBrowseResponseToDirectoryNodes,
   joinPath,
+  toTreeKey,
 }

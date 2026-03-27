@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createI18nMock } from '@/shared/i18n'
+import TreeView from '@/shared/components/TreeView.vue'
 import App from './App.vue'
 
 const mockBrowseSpaceDirectory = vi.fn()
@@ -84,6 +85,100 @@ describe('LocationDirectoryPickerApp', () => {
     expect(wrapper.text()).toContain('child_2')
   })
 
+  it('loads and labels object storage roots when root path is empty', async () => {
+    mockBrowseSpaceDirectory.mockResolvedValueOnce({
+      entries: ['dHJhbnNmZXJz'],
+      directories: ['dHJhbnNmZXJz'],
+    })
+
+    const wrapper = mount(App, {
+      props: {
+        spaceUuid: '7d20c992-bc92-4f92-a794-7161ff2cc08b',
+        rootPath: '',
+      },
+      global: {
+        plugins: [createI18nMock()],
+        stubs: {
+          TreeView: TreeViewStub,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    const tree = wrapper.findComponent(TreeViewStub)
+
+    expect(mockBrowseSpaceDirectory).toHaveBeenCalledWith(
+      '7d20c992-bc92-4f92-a794-7161ff2cc08b',
+      '',
+      undefined,
+    )
+    expect(tree.props('expanded')).toEqual([])
+    expect(wrapper.text()).toContain('Space root')
+    expect(wrapper.text()).toContain('transfers')
+  })
+
+  it('reveals empty-root children after expanding the synthetic root', async () => {
+    mockBrowseSpaceDirectory.mockResolvedValueOnce({
+      entries: ['c3BhY2Utcm9vdA=='],
+      directories: ['c3BhY2Utcm9vdA=='],
+    })
+
+    const wrapper = mount(App, {
+      props: {
+        spaceUuid: '7d20c992-bc92-4f92-a794-7161ff2cc08b',
+        rootPath: '',
+      },
+      global: {
+        plugins: [createI18nMock()],
+      },
+    })
+
+    await flushPromises()
+
+    const tree = wrapper.findComponent(TreeView)
+    const [rootNode] = tree.props('items') as Array<Record<string, unknown>>
+
+    expect(wrapper.findAll('.tree-node-label').map(node => node.text())).toEqual(['Space root'])
+    expect(rootNode?.id).toBe('root:')
+
+    const rootTreeNode = wrapper.findComponent({ name: 'TreeNode' })
+    rootTreeNode.vm.$emit('toggle', rootNode)
+    await flushPromises()
+
+    expect(wrapper.findAll('.tree-node-label').map(node => node.text())).toEqual([
+      'Space root',
+      'space-root',
+    ])
+    expect((tree.props('expanded') as string[])).toContain('root:')
+    expect(mockBrowseSpaceDirectory).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps filesystem root labels for non-empty root paths', async () => {
+    mockBrowseSpaceDirectory.mockResolvedValueOnce({
+      entries: ['Y2hpbGRfMQ=='],
+      directories: ['Y2hpbGRfMQ=='],
+    })
+
+    const wrapper = mount(App, {
+      props: {
+        spaceUuid: '7d20c992-bc92-4f92-a794-7161ff2cc08b',
+        rootPath: '/',
+      },
+      global: {
+        plugins: [createI18nMock()],
+        stubs: {
+          TreeView: TreeViewStub,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('"label":"/"')
+    expect(wrapper.text()).not.toContain('Space root')
+  })
+
   it('loads children when a directory is toggled', async () => {
     mockBrowseSpaceDirectory
       .mockResolvedValueOnce({
@@ -112,7 +207,7 @@ describe('LocationDirectoryPickerApp', () => {
 
     const tree = wrapper.findComponent(TreeViewStub)
     tree.vm.$emit('toggle', {
-      id: '/var/storage/child_1',
+      id: 'path:/var/storage/child_1',
       path: '/var/storage/child_1',
       label: 'child_1',
       children: [],
@@ -182,7 +277,7 @@ describe('LocationDirectoryPickerApp', () => {
 
     const tree = wrapper.findComponent(TreeViewStub)
     tree.vm.$emit('update:modelValue', {
-      id: '/var/storage/child_1',
+      id: 'path:/var/storage/child_1',
       path: '/var/storage/child_1',
       label: 'child_1',
       children: [],
