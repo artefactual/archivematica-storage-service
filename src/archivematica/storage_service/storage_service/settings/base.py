@@ -616,6 +616,7 @@ if OIDC_AUTHENTICATION:
     OIDC_ALLOW_LOCAL_AUTHENTICATION = is_true(
         environ.get("SS_OIDC_ALLOW_LOCAL_AUTHENTICATION", "true")
     )
+    OIDC_CREATE_USER = is_true(environ.get("SS_OIDC_AUTO_CREATE_USER", "true"))
 
     if not OIDC_ALLOW_LOCAL_AUTHENTICATION:
         LOGIN_URL = "/oidc/authenticate/"
