@@ -12,10 +12,14 @@ bagit==1.9.0
     # via archivematica-storage-service (pyproject.toml)
 boto3==1.42.83
     # via archivematica-storage-service (pyproject.toml)
+boto3-stubs[s3]==1.42.86
+    # via archivematica-storage-service (pyproject.toml)
 botocore==1.42.83
     # via
     #   boto3
     #   s3transfer
+botocore-stubs==1.42.41
+    # via boto3-stubs
 brotli==1.2.0
     # via archivematica-storage-service (pyproject.toml)
 build==1.4.2
@@ -127,6 +131,8 @@ mypy==1.20.0
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   django-stubs
+mypy-boto3-s3==1.42.85
+    # via boto3-stubs
 mypy-extensions==1.1.0
     # via mypy
 mysqlclient==2.2.8
@@ -306,17 +312,23 @@ tomli-w==1.2.0
     # via tox
 tox==4.52.0
     # via archivematica-storage-service (pyproject.toml)
+types-awscrt==0.31.3
+    # via botocore-stubs
 types-pyyaml==6.0.12.20250915
     # via django-stubs
+types-s3transfer==0.16.0
+    # via boto3-stubs
 typing-extensions==4.15.0
     # via
     #   asgiref
+    #   boto3-stubs
     #   cryptography
     #   django-stubs
     #   django-stubs-ext
     #   exceptiongroup
     #   keystoneauth1
     #   mypy
+    #   mypy-boto3-s3
     #   os-service-types
     #   pyee
     #   pyjwt

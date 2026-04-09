@@ -53,6 +53,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "boto3-stubs[s3]",
   "coverage[toml]",
   "django-stubs[compatible-mypy]",
   "mypy",
@@ -130,7 +131,11 @@ force-single-line = true
 [tool.mypy]
 strict = true
 explicit_package_bases = true
-mypy_path = ["src"]
+files = ["src", "tests"]
+mypy_path = [
+  "$MYPY_CONFIG_FILE_DIR/src",
+  "$MYPY_CONFIG_FILE_DIR/typings",
+]
 plugins = ["mypy_django_plugin.main"]
 
 [[tool.mypy.overrides]]
@@ -155,17 +160,6 @@ module = [
     "tests.storage_service.test_oidc",
 ]
 ignore_errors = false
-
-[[tool.mypy.overrides]]
-module = [
-    "boto3.*",
-    "gunicorn.*",
-    "metsrw.*",
-    "playwright.*",
-    "prometheus_client.*",
-    "tastypie.*",
-]
-ignore_missing_imports = true
 
 [tool.django-stubs]
 django_settings_module = "archivematica.storage_service.storage_service.settings.test"

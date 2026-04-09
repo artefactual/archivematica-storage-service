@@ -31,12 +31,17 @@ repos:
   rev: v1.20.0
   hooks:
   - id: mypy
+    # Override upstream args to omit --ignore-missing-imports on purpose.
+    args: ["--scripts-are-modules"]
+    # Let mypy own target selection so hook and standalone runs use the same files.
+    pass_filenames: false
     additional_dependencies:
     # Most of these dependencies are necessary because django-stubs initializes
     # Django's runtime to extract information about the models.
     - agentarchives
     - bagit
     - boto3
+    - boto3-stubs[s3]
     - django-auth-ldap
     - django-cas-ng
     - django-stubs-ext
@@ -44,11 +49,15 @@ repos:
     - django-tastypie
     - jsonfield
     - metsrw
+    - playwright
     - prometheus-client
     - pytest
+    - pytest-django
     - python-gnupg
     - python-swiftclient
     - sword2 @ git+https://github.com/artefactual-labs/python-client-sword2.git@619ee44467dcdb2ab75fab16864ea2e4ded7ffe4
+    - types-gunicorn
+    - types-lxml
     - types-requests
 - repo: https://github.com/tcort/markdown-link-check
   rev: v3.14.2

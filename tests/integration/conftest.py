@@ -1,11 +1,18 @@
+from __future__ import annotations
+
 from collections.abc import Callable
 from collections.abc import Iterator
+from typing import TYPE_CHECKING
 from typing import Any
 
 import boto3
 import pytest
 from boto3.resources.base import ServiceResource
-from boto3.resources.collection import ResourceCollection
+
+if TYPE_CHECKING:
+    from mypy_boto3_s3.service_resource import Bucket
+    from mypy_boto3_s3.service_resource import BucketObjectsCollection
+    from mypy_boto3_s3.service_resource import S3ServiceResource
 
 
 class KeyRecordingIterable:
@@ -27,7 +34,9 @@ class KeyRecordingIterable:
 class KeyRecordingCollection:
     """Proxy iterable that appends each yielded S3 key to the tracking list."""
 
-    def __init__(self, collection: ResourceCollection, seen_keys: list[str]) -> None:
+    def __init__(
+        self, collection: BucketObjectsCollection, seen_keys: list[str]
+    ) -> None:
         self._collection = collection
         self._seen_keys = seen_keys
 
@@ -100,7 +109,7 @@ class KeyRecordingMeta:
 class KeyRecordingBucket:
     """Expose a bucket whose object collections add accessed keys to the log."""
 
-    def __init__(self, bucket: ServiceResource, seen_keys: list[str]) -> None:
+    def __init__(self, bucket: Bucket, seen_keys: list[str]) -> None:
         self._bucket = bucket
         self._seen_keys = seen_keys
 
@@ -116,7 +125,7 @@ class KeyRecordingBucket:
 class KeyRecordingResource:
     """Resource wrapper that yields key-recording buckets."""
 
-    def __init__(self, resource: ServiceResource, seen_keys: list[str]) -> None:
+    def __init__(self, resource: S3ServiceResource, seen_keys: list[str]) -> None:
         self._resource = resource
         self._seen_keys = seen_keys
         self._meta_wrapper: KeyRecordingMeta | None = None
@@ -138,7 +147,7 @@ class KeyRecordingResource:
 
 
 def make_key_recording_resource_factory(
-    recorded_keys: list[str], original_factory: Callable[..., ServiceResource]
+    recorded_keys: list[str], original_factory: Callable[..., S3ServiceResource]
 ) -> Callable[..., KeyRecordingResource]:
     def factory(*args: Any, **kwargs: Any) -> KeyRecordingResource:
         resource = original_factory(*args, **kwargs)
