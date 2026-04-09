@@ -10,6 +10,8 @@ Missing: encryption, multiple replicators, packages generated with older version
 of Archivematica, etc...
 """
 
+from __future__ import annotations
+
 import base64
 import json
 import os
@@ -21,13 +23,14 @@ import uuid
 from collections.abc import Iterable
 from collections.abc import Iterator
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Protocol
 from typing import TypedDict
+from typing import cast
 
 import boto3
 import gnupg
 import pytest
-from boto3.resources.base import ServiceResource
 from botocore.exceptions import ClientError
 from django.contrib import messages
 from django.http import StreamingHttpResponse
@@ -43,6 +46,10 @@ from archivematica.storage_service.locations.models import Event
 from archivematica.storage_service.locations.models import Location
 from archivematica.storage_service.locations.models import Package
 from archivematica.storage_service.locations.models import Space
+
+if TYPE_CHECKING:
+    from mypy_boto3_s3.service_resource import S3ServiceResource
+    from mypy_boto3_s3.type_defs import CreateBucketConfigurationTypeDef
 
 if "RUN_INTEGRATION_TESTS" not in os.environ:
     pytest.skip("Skipping integration tests", allow_module_level=True)
@@ -950,7 +957,7 @@ def test_aip_recovery_handles_recovery_copy_setup_error(
 
 
 @pytest.fixture
-def s3_resource(s3_recorded_keys: list[str]) -> ServiceResource:
+def s3_resource(s3_recorded_keys: list[str]) -> S3ServiceResource:
     """Return a boto3 resource connected to the test MinIO instance."""
     del s3_recorded_keys  # Ensure tracking fixture executes before resource creation.
     return boto3.resource(
@@ -963,7 +970,7 @@ def s3_resource(s3_recorded_keys: list[str]) -> ServiceResource:
 
 
 def _provision_s3_bucket(
-    s3_resource: ServiceResource,
+    s3_resource: S3ServiceResource,
     *,
     region: str,
     name_prefix: str,
@@ -976,7 +983,11 @@ def _provision_s3_bucket(
         else:
             s3_resource.create_bucket(
                 Bucket=bucket_name,
-                CreateBucketConfiguration={"LocationConstraint": region},
+                # MinIO accepts non-AWS region names; boto3 stubs restrict this to AWS literals.
+                CreateBucketConfiguration=cast(
+                    "CreateBucketConfigurationTypeDef",
+                    {"LocationConstraint": region},
+                ),
             )
     except ClientError as exc:
         error_code = (exc.response.get("Error") or {}).get("Code")
@@ -992,7 +1003,7 @@ def _provision_s3_bucket(
 
 @pytest.fixture
 def s3_browse_bucket(
-    request: pytest.FixtureRequest, s3_resource: ServiceResource
+    request: pytest.FixtureRequest, s3_resource: S3ServiceResource
 ) -> Iterator[str]:
     """Provision a bucket backed by the MinIO test service."""
     object_keys = getattr(request, "param", None)
@@ -1320,7 +1331,7 @@ class AIPDeletionScenario(StorageScenario):
     def assert_deleted(
         self,
         package_full_path: str,
-        s3_resource: ServiceResource | None,
+        s3_resource: S3ServiceResource | None,
     ) -> None:
         package = Package.objects.get(uuid=self.PACKAGE_UUID)
         assert package.status == Package.DELETED
@@ -1388,7 +1399,7 @@ def test_aip_deletion(
     admin_client: DjangoTestClient,
     working_directory_path: Path,
     s3_browse_bucket: str,
-    s3_resource: ServiceResource,
+    s3_resource: S3ServiceResource,
 ) -> None:
     scenario.init(
         admin_client,
@@ -1487,7 +1498,9 @@ def _generate_private_key_armor(
 ) -> tuple[str, str]:
     source_home = Path(tmp_dir)
     source_home.chmod(0o700)
-    gpg_source = gnupg.GPG(gnupghome=str(source_home), gpgbinary=gpg_binary_path)
+    gpg_source: gnupg.GPG = gnupg.GPG(
+        gnupghome=str(source_home), gpgbinary=gpg_binary_path
+    )
     key_input = gpg_source.gen_key_input(
         key_type="RSA",
         key_length=2048,
@@ -1498,12 +1511,18 @@ def _generate_private_key_armor(
     )
     key = gpg_source.gen_key(key_input)
     assert key
-    export_kwargs: dict[str, bool | str] = {"secret": True}
     if passphrase is None:
-        export_kwargs["expect_passphrase"] = False
+        private_armor = gpg_source.export_keys(
+            key.fingerprint,
+            secret=True,
+            expect_passphrase=False,
+        )
     else:
-        export_kwargs["passphrase"] = passphrase
-    private_armor = gpg_source.export_keys(key.fingerprint, **export_kwargs)
+        private_armor = gpg_source.export_keys(
+            key.fingerprint,
+            secret=True,
+            passphrase=passphrase,
+        )
     assert "BEGIN PGP PRIVATE KEY BLOCK" in private_armor
     return key.fingerprint, private_armor
 

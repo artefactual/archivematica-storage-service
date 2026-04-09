@@ -4,6 +4,7 @@ from collections.abc import Generator
 import pytest
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.models import Group
+from django.contrib.auth.models import User
 from django.urls import reverse
 from playwright.sync_api import Page
 from pytest_django.fixtures import SettingsWrapper
@@ -33,7 +34,7 @@ def recreate_user_groups(
 
 
 @pytest.fixture
-def user(django_user_model: type[AbstractUser]) -> AbstractUser:
+def user(django_user_model: type[User]) -> User:
     user = django_user_model.objects.create(
         username="foobar",
         email="foobar@example.com",
@@ -47,7 +48,7 @@ def user(django_user_model: type[AbstractUser]) -> AbstractUser:
 
 
 @pytest.fixture
-def user_apikey(user: AbstractUser) -> ApiKey:
+def user_apikey(user: User) -> ApiKey:
     return ApiKey.objects.create(user=user)
 
 
@@ -77,9 +78,9 @@ def test_oidc_backend_creates_local_user(
         page.url
         == f"{live_server.url}{reverse('administration:user_detail', args=[user.pk])}"
     )
-    assert [
-        i.strip() for i in page.locator("dl").text_content().splitlines() if i.strip()
-    ] == [
+    details_text = page.locator("dl").text_content()
+    assert details_text is not None
+    assert [i.strip() for i in details_text.splitlines() if i.strip()] == [
         "Username",
         "demo@example.com",
         "Name",
@@ -108,9 +109,9 @@ def test_local_authentication_backend_authenticates_existing_user(
         page.url
         == f"{live_server.url}{reverse('administration:user_detail', args=[user.pk])}"
     )
-    assert [
-        i.strip() for i in page.locator("dl").text_content().splitlines() if i.strip()
-    ] == [
+    details_text = page.locator("dl").text_content()
+    assert details_text is not None
+    assert [i.strip() for i in details_text.splitlines() if i.strip()] == [
         "Username",
         "foobar",
         "Name",
@@ -139,10 +140,9 @@ def test_removing_model_authentication_backend_disables_local_authentication(
     page.get_by_text("Log in", exact=True).click()
 
     assert page.url == f"{live_server.url}{settings.LOGIN_URL}"
-    assert (
-        "Your username and password didn't match."
-        in page.locator("p").text_content().strip()
-    )
+    error_text = page.locator("p").text_content()
+    assert error_text is not None
+    assert "Your username and password didn't match." in error_text.strip()
 
 
 @pytest.mark.django_db
@@ -206,9 +206,9 @@ def test_setting_request_parameter_in_local_login_url_redirects_to_secondary_pro
     page.get_by_role("link", name="Administration").click()
     page.get_by_role("link", name="View").click()
 
-    assert [
-        i.strip() for i in page.locator("dl").text_content().splitlines() if i.strip()
-    ] == [
+    detail_text = page.locator("dl").text_content()
+    assert detail_text is not None
+    assert [i.strip() for i in detail_text.splitlines() if i.strip()] == [
         "Username",
         "supportreader@example.com",
         "Name",
