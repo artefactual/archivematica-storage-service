@@ -10,9 +10,9 @@ asgiref==3.11.1
     # via django
 bagit==1.9.0
     # via archivematica-storage-service (pyproject.toml)
-boto3==1.42.83
+boto3==1.42.87
     # via archivematica-storage-service (pyproject.toml)
-botocore==1.42.83
+botocore==1.42.87
     # via
     #   boto3
     #   s3transfer
@@ -24,7 +24,7 @@ cffi==2.0.0
     # via cryptography
 charset-normalizer==3.4.7
     # via requests
-cryptography==46.0.6
+cryptography==46.0.7
     # via mozilla-django-oidc
 debtcollector==3.1.0
     # via
@@ -32,7 +32,7 @@ debtcollector==3.1.0
     #   python-keystoneclient
 dj-database-url==3.1.2
     # via archivematica-storage-service (pyproject.toml)
-django==5.2.12
+django==5.2.13
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   dj-database-url
@@ -57,9 +57,9 @@ django-stubs-ext==6.0.2
     # via archivematica-storage-service (pyproject.toml)
 django-tastypie==0.15.1
     # via archivematica-storage-service (pyproject.toml)
-gevent==25.9.1
+gevent==26.4.0
     # via archivematica-storage-service (pyproject.toml)
-greenlet==3.3.2
+greenlet==3.4.0
     # via gevent
 gunicorn==25.3.0
     # via archivematica-storage-service (pyproject.toml)
@@ -79,7 +79,7 @@ jsonfield==3.2.0
     # via archivematica-storage-service (pyproject.toml)
 keystoneauth1==5.13.1
     # via python-keystoneclient
-lxml==6.0.2
+lxml==6.0.3
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   metsrw
@@ -108,7 +108,7 @@ oslo-i18n==6.7.2
     #   python-keystoneclient
 oslo-serialization==5.9.1
     # via python-keystoneclient
-oslo-utils==10.0.0
+oslo-utils==10.0.1
     # via
     #   oslo-serialization
     #   python-keystoneclient
@@ -125,7 +125,7 @@ pbr==7.0.3
     #   oslo-i18n
     #   oslo-utils
     #   python-keystoneclient
-prometheus-client==0.24.1
+prometheus-client==0.25.0
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   django-prometheus
@@ -212,7 +212,7 @@ wrapt==2.1.2
     # via debtcollector
 zope-event==6.1
     # via gevent
-zope-interface==8.2
+zope-interface==8.3
     # via gevent
 
 # The following packages are considered to be unsafe in a requirements file:

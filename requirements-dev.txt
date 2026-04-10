@@ -10,11 +10,11 @@ asgiref==3.11.1
     # via django
 bagit==1.9.0
     # via archivematica-storage-service (pyproject.toml)
-boto3==1.42.83
+boto3==1.42.87
     # via archivematica-storage-service (pyproject.toml)
-boto3-stubs[s3]==1.42.86
+boto3-stubs[s3]==1.42.87
     # via archivematica-storage-service (pyproject.toml)
-botocore==1.42.83
+botocore==1.42.87
     # via
     #   boto3
     #   s3transfer
@@ -40,7 +40,7 @@ coverage[toml]==7.13.5
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   pytest-cov
-cryptography==46.0.6
+cryptography==46.0.7
     # via mozilla-django-oidc
 debtcollector==3.1.0
     # via
@@ -50,7 +50,7 @@ distlib==0.4.0
     # via virtualenv
 dj-database-url==3.1.2
     # via archivematica-storage-service (pyproject.toml)
-django==5.2.12
+django==5.2.13
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   dj-database-url
@@ -87,9 +87,9 @@ filelock==3.25.2
     #   python-discovery
     #   tox
     #   virtualenv
-gevent==25.9.1
+gevent==26.4.0
     # via archivematica-storage-service (pyproject.toml)
-greenlet==3.3.2
+greenlet==3.4.0
     # via
     #   gevent
     #   playwright
@@ -113,9 +113,9 @@ jsonfield==3.2.0
     # via archivematica-storage-service (pyproject.toml)
 keystoneauth1==5.13.1
     # via python-keystoneclient
-librt==0.8.1
+librt==0.9.0
     # via mypy
-lxml==6.0.2
+lxml==6.0.3
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   metsrw
@@ -152,7 +152,7 @@ oslo-i18n==6.7.2
     #   python-keystoneclient
 oslo-serialization==5.9.1
     # via python-keystoneclient
-oslo-utils==10.0.0
+oslo-utils==10.0.1
     # via
     #   oslo-serialization
     #   python-keystoneclient
@@ -178,7 +178,7 @@ pbr==7.0.3
     #   python-keystoneclient
 pip-tools==7.5.3
     # via archivematica-storage-service (pyproject.toml)
-platformdirs==4.9.4
+platformdirs==4.9.6
     # via
     #   python-discovery
     #   tox
@@ -192,7 +192,7 @@ pluggy==1.6.0
     #   pytest
     #   pytest-cov
     #   tox
-prometheus-client==0.24.1
+prometheus-client==0.25.0
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   django-prometheus
@@ -224,7 +224,7 @@ pyproject-hooks==1.2.0
     # via
     #   build
     #   pip-tools
-pytest==9.0.2
+pytest==9.0.3
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   pytest-base-url
@@ -248,7 +248,7 @@ python-dateutil==2.9.0.post0
     # via
     #   botocore
     #   django-tastypie
-python-discovery==1.2.1
+python-discovery==1.2.2
     # via
     #   tox
     #   virtualenv
@@ -310,11 +310,11 @@ tomli==2.4.1
     #   tox
 tomli-w==1.2.0
     # via tox
-tox==4.52.0
+tox==4.52.1
     # via archivematica-storage-service (pyproject.toml)
 types-awscrt==0.31.3
     # via botocore-stubs
-types-pyyaml==6.0.12.20250915
+types-pyyaml==6.0.12.20260408
     # via django-stubs
 types-s3transfer==0.16.0
     # via boto3-stubs
@@ -338,7 +338,7 @@ urllib3==2.6.3
     # via
     #   botocore
     #   requests
-virtualenv==21.2.0
+virtualenv==21.2.1
     # via tox
 wheel==0.46.3
     # via pip-tools
@@ -348,7 +348,7 @@ wrapt==2.1.2
     # via debtcollector
 zope-event==6.1
     # via gevent
-zope-interface==8.2
+zope-interface==8.3
     # via gevent
 
 # The following packages are considered to be unsafe in a requirements file:
