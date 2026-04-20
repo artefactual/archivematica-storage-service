@@ -453,6 +453,7 @@ def location_edit(request, space_uuid, location_uuid=None):
         location = form.save(commit=False)
         location.space = space
         location.save()
+        location.fail_replication = form.cleaned_data["fail_replication"]
         # Cannot use form.save_m2m() because of 'through' table
         for pipeline in form.cleaned_data["pipeline"]:
             LocationPipeline.objects.get_or_create(location=location, pipeline=pipeline)

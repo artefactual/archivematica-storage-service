@@ -945,6 +945,26 @@ class TestPackage(TestCase):
         )
         self._test_bagit_structure(aip.replicas.first(), replication_dir)
 
+    def test_replicate_aip_fails_when_replicator_toggle_enabled(self):
+        space_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="space")
+        replication_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="replication")
+        aip = models.Package.objects.get(uuid="0d4e739b-bf60-4b87-bc20-67a379b28cea")
+        aip.current_location.space.staging_path = space_dir
+        aip.current_location.space.save()
+        replicator = aip.current_location.replicators.create(
+            space=aip.current_location.space,
+            relative_path=replication_dir,
+            purpose=models.Location.REPLICATOR,
+        )
+        replicator.fail_replication = True
+
+        with pytest.raises(
+            models.StorageException, match="configured to fail for testing"
+        ):
+            aip.create_replicas()
+
+        assert aip.replicas.count() == 0
+
     def test_replicate_aic(self):
         """Ensure that replication works for AICs as well as AIPs."""
         space_dir = tempfile.mkdtemp(dir=self.tmp_dir, prefix="space")

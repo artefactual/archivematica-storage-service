@@ -291,6 +291,14 @@ class LocationForm(forms.ModelForm):
     default = forms.BooleanField(
         required=False, label=_("Set as global default location for its purpose")
     )
+    fail_replication = forms.BooleanField(
+        required=False,
+        label=_("Fail replication attempts"),
+        help_text=_(
+            "Temporary testing toggle. When enabled on a replicator location, "
+            "replication to that location will fail immediately."
+        ),
+    )
 
     class Meta:
         model = models.Location
@@ -341,6 +349,22 @@ class LocationForm(forms.ModelForm):
             "pk", flat=True
         )
         self.fields["default"].initial = self.instance.default
+        self.fields["fail_replication"].initial = (
+            bool(self.instance.pk) and self.instance.fail_replication
+        )
+        self.order_fields(
+            [
+                "purpose",
+                "pipeline",
+                "relative_path",
+                "description",
+                "quota",
+                "enabled",
+                "default",
+                "replicators",
+                "fail_replication",
+            ]
+        )
         # If we are accessing a Dataverse we want to be able to do nice things
         # with the Transfer Browser. Create a namespace to work with the path
         # here.
@@ -366,6 +390,13 @@ class LocationForm(forms.ModelForm):
         if purpose != models.Location.AIP_STORAGE and replicators:
             raise forms.ValidationError(
                 _("Only AIP storage locations can have replicators")
+            )
+
+        if purpose != models.Location.REPLICATOR and cleaned_data.get(
+            "fail_replication"
+        ):
+            raise forms.ValidationError(
+                _("Only replicator locations can be configured to fail replication")
             )
 
         if purpose == models.Location.AIP_RECOVERY:

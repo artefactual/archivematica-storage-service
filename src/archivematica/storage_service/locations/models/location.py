@@ -1,3 +1,4 @@
+import ast
 import logging
 import os
 import uuid
@@ -117,6 +118,8 @@ class Location(models.Model):
     # more details.
     _default = None
 
+    REPLICATION_FAILURE_SETTING_PREFIX = "replication_failure_location_"
+
     def __str__(self):
         return _("%(uuid)s: %(path)s (%(purpose)s)") % {
             "uuid": self.uuid,
@@ -160,11 +163,37 @@ class Location(models.Model):
         """Returns whether it's allowed to move contents from this location."""
         return self.purpose not in self.PURPOSES_DISALLOWED_MOVE
 
+    @property
+    def replication_failure_setting_name(self):
+        return f"{self.REPLICATION_FAILURE_SETTING_PREFIX}{self.uuid}"
+
+    @property
+    def fail_replication(self):
+        try:
+            setting = Settings.objects.get(name=self.replication_failure_setting_name)
+        except Settings.DoesNotExist:
+            return False
+        try:
+            return bool(ast.literal_eval(setting.value))
+        except (SyntaxError, ValueError):
+            return False
+
+    @fail_replication.setter
+    def fail_replication(self, value):
+        if value:
+            Settings.objects.update_or_create(
+                name=self.replication_failure_setting_name,
+                defaults={"value": "True"},
+            )
+        else:
+            Settings.objects.filter(name=self.replication_failure_setting_name).delete()
+
 
 @receiver(models.signals.pre_delete, sender=Location)
 def unset_default_location(sender, instance, using, **kwargs):
     name = f"default_{instance.purpose}_location"
     Settings.objects.filter(name=name, value=str(instance.uuid)).delete()
+    Settings.objects.filter(name=instance.replication_failure_setting_name).delete()
 
 
 @receiver(models.signals.pre_save, sender=Location)

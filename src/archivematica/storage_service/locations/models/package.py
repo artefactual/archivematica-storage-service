@@ -635,6 +635,14 @@ class Package(models.Model):
             replicator_location.uuid,
         )
 
+        if replicator_location.fail_replication:
+            message = _(
+                "Replication to location %(uuid)s has been configured to fail "
+                "for testing."
+            ) % {"uuid": replicator_location.uuid}
+            LOGGER.warning(message)
+            raise StorageException(message)
+
         replica_package = self._clone()
         replica_package.replicated_package = self
 
