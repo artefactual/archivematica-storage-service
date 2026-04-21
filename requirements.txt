@@ -79,7 +79,7 @@ jsonfield==3.2.0
     # via archivematica-storage-service (pyproject.toml)
 keystoneauth1==5.13.1
     # via python-keystoneclient
-lxml==6.0.3
+lxml==6.1.0
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   metsrw

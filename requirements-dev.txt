@@ -115,7 +115,7 @@ keystoneauth1==5.13.1
     # via python-keystoneclient
 librt==0.9.0
     # via mypy
-lxml==6.0.3
+lxml==6.1.0
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   metsrw
