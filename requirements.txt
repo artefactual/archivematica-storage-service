@@ -10,15 +10,15 @@ asgiref==3.11.1
     # via django
 bagit==1.9.0
     # via archivematica-storage-service (pyproject.toml)
-boto3==1.42.87
+boto3==1.42.94
     # via archivematica-storage-service (pyproject.toml)
-botocore==1.42.87
+botocore==1.42.94
     # via
     #   boto3
     #   s3transfer
 brotli==1.2.0
     # via archivematica-storage-service (pyproject.toml)
-certifi==2026.2.25
+certifi==2026.4.22
     # via requests
 cffi==2.0.0
     # via cryptography
@@ -53,7 +53,7 @@ django-prometheus==2.4.1
     # via archivematica-storage-service (pyproject.toml)
 django-shibboleth-remoteuser @ git+https://github.com/artefactual-labs/django-shibboleth-remoteuser.git@f08a7864d6130416c352981ccf318fff0fd5be58
     # via archivematica-storage-service (pyproject.toml)
-django-stubs-ext==6.0.2
+django-stubs-ext==6.0.3
     # via archivematica-storage-service (pyproject.toml)
 django-tastypie==0.15.1
     # via archivematica-storage-service (pyproject.toml)
@@ -65,7 +65,7 @@ gunicorn==25.3.0
     # via archivematica-storage-service (pyproject.toml)
 httplib2==0.31.2
     # via sword2
-idna==3.11
+idna==3.13
     # via requests
 iso8601==2.1.0
     # via
@@ -79,7 +79,7 @@ jsonfield==3.2.0
     # via archivematica-storage-service (pyproject.toml)
 keystoneauth1==5.13.1
     # via python-keystoneclient
-lxml==6.0.3
+lxml==6.1.0
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   metsrw
@@ -112,7 +112,7 @@ oslo-utils==10.0.1
     # via
     #   oslo-serialization
     #   python-keystoneclient
-packaging==26.0
+packaging==26.1
     # via
     #   django-csp
     #   gunicorn
@@ -181,7 +181,7 @@ requests==2.33.1
     #   python-swiftclient
 rfc3986==2.0.0
     # via oslo-config
-s3transfer==0.16.0
+s3transfer==0.16.1
     # via boto3
 six==1.17.0
     # via python-dateutil
