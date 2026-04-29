@@ -3,16 +3,23 @@ import { HttpError, toHttpErrorInfo } from '@/shared/http'
 import { createHttpClient } from '@/shared/http/client'
 
 const mockFetch = vi.fn()
+const clearCookie = (name: string): void => {
+  document.cookie = `${name}=; Max-Age=0; path=/`
+}
 
 describe('shared http client', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', mockFetch)
     mockFetch.mockReset()
+    clearCookie('storageapi_csrfid')
+    clearCookie('csrftoken')
   })
 
   afterEach(() => {
     vi.unstubAllGlobals()
     vi.clearAllMocks()
+    clearCookie('storageapi_csrfid')
+    clearCookie('csrftoken')
   })
 
   it('appends query params and cache buster', async () => {
@@ -54,6 +61,26 @@ describe('shared http client', () => {
     expect(init?.body).toBe(JSON.stringify({ a: 1 }))
     expect(headers.get('Content-Type')).toBe('application/json')
     expect(headers.get('X-Requested-With')).toBe('XMLHttpRequest')
+  })
+
+  it('uses the Storage Service CSRF cookie for unsafe requests', async () => {
+    document.cookie = 'storageapi_csrfid=csrf-token; path=/'
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: async () => JSON.stringify({ ok: true }),
+    })
+
+    const client = createHttpClient()
+    await client.requestJson('/api/test/', {
+      method: 'POST',
+      json: { a: 1 },
+    })
+
+    expect(mockFetch).toHaveBeenCalled()
+    const [, init] = mockFetch.mock.calls[0] as [string, RequestInit?]
+    const headers = new Headers(init?.headers as HeadersInit)
+
+    expect(headers.get('X-CSRFToken')).toBe('csrf-token')
   })
 
   it('throws HttpError for non-ok responses', async () => {
