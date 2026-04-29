@@ -116,7 +116,7 @@ const getCookie = (name: string): string => {
 }
 
 const getCsrfToken = (): string => {
-  return getCookie('csrftoken')
+  return getCookie('storageapi_csrfid')
 }
 
 const needsCsrf = (method?: string) =>

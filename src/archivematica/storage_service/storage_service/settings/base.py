@@ -333,10 +333,12 @@ else:
 # ######## END LOGGING CONFIGURATION
 
 
-# ######## SESSION CONFIGURATION
+# ######## COOKIE NAME CONFIGURATION
 # So the cookies don't conflict with archivematica cookies
 SESSION_COOKIE_NAME = "storageapi_sessionid"
-# ######## END SESSION CONFIGURATION
+CSRF_COOKIE_NAME = "storageapi_csrfid"
+LANGUAGE_COOKIE_NAME = "storageapi_languageid"
+# ######## END COOKIE NAME CONFIGURATION
 
 
 # ######## WSGI CONFIGURATION
