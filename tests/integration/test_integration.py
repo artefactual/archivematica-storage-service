@@ -214,6 +214,9 @@ class Client:
     def download_file(self, file_id: uuid.UUID) -> HttpResponse:
         return self.admin_client.get(f"/api/v2/file/{file_id}/download/")
 
+    def extract_file(self, file_id: uuid.UUID, data: dict[str, str]) -> HttpResponse:
+        return self.admin_client.get(f"/api/v2/file/{file_id}/extract_file/", data)
+
 
 @pytest.fixture(scope="session")
 def client(admin_client: DjangoTestClient) -> Client:
@@ -483,6 +486,18 @@ class StorageScenario:
         else:
             shutil.copy(FIXTURES_DIR / self.pkg, dst)
             assert dst.is_file()
+
+    def aip_mets_relative_path(self) -> str:
+        if self.compressed:
+            package_root = self.pkg.name.removesuffix("".join(self.pkg.suffixes))
+            mets_filename = f"METS.{self.PACKAGE_UUID}.xml"
+        else:
+            mets_files = list(self.pkg.glob("data/METS.*.xml"))
+            assert len(mets_files) == 1
+            package_root = self.pkg_name
+            mets_filename = mets_files[0].name
+
+        return f"{package_root}/data/{mets_filename}"
 
     def store_aip(self) -> None:
         resp = self.client.get_locations(
@@ -1266,19 +1281,22 @@ class AIPDeletionScenario(StorageScenario):
         return self.client.review_aip_deletion(file_uuid, data)
 
     def delete_aip(self) -> str:
+        return self.delete_package(self.PACKAGE_UUID, self.storage_protocol)
+
+    def delete_package(self, file_uuid: uuid.UUID, expected_protocol: str) -> str:
         data: dict[str, str | int] = {
             "event_reason": "Delete please!",
             "pipeline": str(self.PIPELINE_UUID),
             "user_id": 1,
             "user_email": "user@example.com",
         }
-        resp = self.request_aip_deletion(data)
+        resp = self.client.request_aip_deletion(file_uuid, data)
         assert resp.status_code == 202
 
         assert Event.objects.count() == 1
 
         event = Event.objects.get(
-            package=Package.objects.get(uuid=self.PACKAGE_UUID),
+            package=Package.objects.get(uuid=file_uuid),
             event_type=Event.DELETE,
             status=Event.SUBMITTED,
             event_reason=data["event_reason"],
@@ -1287,16 +1305,16 @@ class AIPDeletionScenario(StorageScenario):
             user_email=data["user_email"],
         )
 
-        package = Package.objects.get(uuid=self.PACKAGE_UUID)
-        assert package.current_location.space.access_protocol == self.storage_protocol
+        package = Package.objects.get(uuid=file_uuid)
+        assert package.current_location.space.access_protocol == expected_protocol
         package_full_path = str(package.full_path)
 
-        if self.storage_protocol not in self.OBJECT_STORAGE_PROTOCOLS:
+        if expected_protocol not in self.OBJECT_STORAGE_PROTOCOLS:
             assert Path(package_full_path).exists()
 
         reason = "Deleting!"
         resp = self.review_aip_deletion(
-            self.PACKAGE_UUID,
+            file_uuid,
             {
                 "reason": reason,
                 "decision": package_request.PackageRequestDecision.APPROVE,
@@ -1312,7 +1330,7 @@ class AIPDeletionScenario(StorageScenario):
         assert Event.objects.count() == 1
         assert (
             Event.objects.filter(
-                package=Package.objects.get(uuid=self.PACKAGE_UUID),
+                package=Package.objects.get(uuid=file_uuid),
                 event_type=Event.DELETE,
                 status=Event.APPROVED,
                 event_reason=data["event_reason"],
@@ -1415,6 +1433,166 @@ def test_aip_deletion(
         if scenario.storage_protocol in scenario.OBJECT_STORAGE_PROTOCOLS
         else None,
     )
+
+
+def assert_package_content_exists(
+    protocol: str,
+    package_full_path: str,
+    bucket_name: str,
+    s3_resource: S3ServiceResource,
+) -> None:
+    if protocol in StorageScenario.OBJECT_STORAGE_PROTOCOLS:
+        prefix = package_full_path.lstrip(os.sep)
+        bucket = s3_resource.Bucket(bucket_name)
+        assert list(bucket.objects.filter(Prefix=prefix))
+    else:
+        assert Path(package_full_path).exists()
+
+
+def assert_package_content_deleted(
+    protocol: str,
+    package_full_path: str,
+    bucket_name: str,
+    s3_resource: S3ServiceResource,
+) -> None:
+    if protocol in StorageScenario.OBJECT_STORAGE_PROTOCOLS:
+        prefix = package_full_path.lstrip(os.sep)
+        bucket = s3_resource.Bucket(bucket_name)
+        assert not list(bucket.objects.filter(Prefix=prefix))
+    else:
+        assert not Path(package_full_path).exists()
+
+
+@pytest.mark.parametrize(
+    ("pkg", "compressed"),
+    [
+        (COMPRESSED_PACKAGE, True),
+        (UNCOMPRESSED_PACKAGE, False),
+    ],
+    ids=["compressed", "uncompressed"],
+)
+@pytest.mark.parametrize(
+    ("storage_protocol", "replication_protocol"),
+    [
+        (Space.S3, Space.S3),
+        (Space.S3, Space.RCLONE),
+        (Space.S3, Space.NFS),
+        (Space.S3, Space.LOCAL_FILESYSTEM),
+        (Space.RCLONE, Space.S3),
+        (Space.RCLONE, Space.RCLONE),
+        (Space.RCLONE, Space.NFS),
+        (Space.RCLONE, Space.LOCAL_FILESYSTEM),
+        (Space.NFS, Space.S3),
+        (Space.NFS, Space.RCLONE),
+        (Space.NFS, Space.NFS),
+        (Space.NFS, Space.LOCAL_FILESYSTEM),
+        (Space.LOCAL_FILESYSTEM, Space.S3),
+        (Space.LOCAL_FILESYSTEM, Space.RCLONE),
+        (Space.LOCAL_FILESYSTEM, Space.NFS),
+        (Space.LOCAL_FILESYSTEM, Space.LOCAL_FILESYSTEM),
+    ],
+    ids=[
+        "s3_to_s3",
+        "s3_to_rclone",
+        "s3_to_nfs",
+        "s3_to_local_fs",
+        "rclone_to_s3",
+        "rclone_to_rclone",
+        "rclone_to_nfs",
+        "rclone_to_local_fs",
+        "nfs_to_s3",
+        "nfs_to_rclone",
+        "nfs_to_nfs",
+        "nfs_to_local_fs",
+        "local_fs_to_s3",
+        "local_fs_to_rclone",
+        "local_fs_to_nfs",
+        "local_fs_to_local_fs",
+    ],
+)
+@pytest.mark.django_db
+def test_deleting_replica_keeps_original_aip(
+    startup: None,
+    admin_client: DjangoTestClient,
+    working_directory_path: Path,
+    s3_browse_bucket: str,
+    s3_resource: S3ServiceResource,
+    pkg: Path,
+    compressed: bool,
+    storage_protocol: str,
+    replication_protocol: str,
+) -> None:
+    # Store the AIP through the shared scenario setup, creating its replica too.
+    scenario = AIPDeletionScenario(
+        storage_protocol=storage_protocol,
+        replication_protocol=replication_protocol,
+        pkg=pkg,
+        compressed=compressed,
+    )
+    scenario.init(
+        admin_client,
+        working_directory_path,
+        s3_bucket=s3_browse_bucket,
+    )
+    scenario.store_aip()
+    scenario.assert_stored()
+
+    aip = Package.objects.get(uuid=scenario.PACKAGE_UUID)
+    replica = Package.objects.get(replicated_package=aip.uuid)
+    aip_full_path = str(aip.full_path)
+    replica_full_path = str(replica.full_path)
+
+    # Confirm both packages exist, are uploaded, and are in the expected spaces.
+    assert aip.status == Package.UPLOADED
+    assert replica.status == Package.UPLOADED
+    assert aip.current_location.space.access_protocol == storage_protocol
+    assert replica.current_location.space.access_protocol == replication_protocol
+    assert_package_content_exists(
+        storage_protocol, aip_full_path, s3_browse_bucket, s3_resource
+    )
+    assert_package_content_exists(
+        replication_protocol, replica_full_path, s3_browse_bucket, s3_resource
+    )
+
+    # Compressed replicas create their own pointer file.
+    if compressed:
+        assert replica.pointer_file_location is not None
+        assert replica.pointer_file_path is not None
+        assert str(replica.uuid) in replica.pointer_file_path
+        assert replica.full_pointer_file_path != aip.full_pointer_file_path
+        assert Path(replica.full_pointer_file_path).exists()
+
+    # Delete only the replica through the package deletion request/review flow.
+    scenario.delete_package(replica.uuid, replication_protocol)
+
+    # The replica is gone, while the original AIP remains uploaded and readable.
+    aip.refresh_from_db()
+    replica.refresh_from_db()
+    assert aip.status == Package.UPLOADED
+    assert replica.status == Package.DELETED
+    assert_package_content_exists(
+        storage_protocol, aip_full_path, s3_browse_bucket, s3_resource
+    )
+    assert_package_content_deleted(
+        replication_protocol, replica_full_path, s3_browse_bucket, s3_resource
+    )
+
+    # Only the original remains uploaded; no uploaded replica points at it.
+    assert Package.objects.filter(status=Package.UPLOADED).count() == 1
+    assert (
+        Package.objects.filter(
+            replicated_package=aip.uuid, status=Package.UPLOADED
+        ).count()
+        == 0
+    )
+
+    # Extract the original AIP's METS file through the API after replica deletion.
+    resp = scenario.client.extract_file(
+        aip.uuid, {"relative_path_to_file": scenario.aip_mets_relative_path()}
+    )
+    assert resp.status_code == 200
+    assert isinstance(resp, StreamingHttpResponse)
+    assert b"<mets:mets" in b"".join(resp.streaming_content)
 
 
 @pytest.fixture

@@ -637,6 +637,8 @@ class Package(models.Model):
 
         replica_package = self._clone()
         replica_package.replicated_package = self
+        replica_package.pointer_file_location = None
+        replica_package.pointer_file_path = None
 
         # Remove the /uuid/path from the replica's current_path and replace the
         # old UUID in the basename with the new UUID.
@@ -692,7 +694,12 @@ class Package(models.Model):
             # Calculate the checksum of the replica while we have it locally,
             # compare it to the master's checksum and create a PREMIS validation
             # event out of the result.
-            replica_local_path = self.get_local_path()
+            #
+            # The main package may be in remote storage, but the replica has just
+            # been copied into the destination space's local staging path.
+            replica_local_path = os.path.join(
+                dest_space.staging_path, replica_package.current_path
+            )
             replica_checksum = utils.generate_checksum(
                 replica_local_path, master_checksum_algorithm
             ).hexdigest()
@@ -1167,10 +1174,18 @@ class Package(models.Model):
         uncompressed AIPs. See artefactual/archivematica-storage-service#324
         for further enhancements.
         """
-        if not self.should_have_pointer_file():
+        if not self.pointer_file_location or not self.pointer_file_path:
+            if self.should_have_pointer_file():
+                LOGGER.warning(
+                    "Package %s should have a pointer file, but no pointer file "
+                    "location/path is set.",
+                    self.uuid,
+                )
             return None
         ptr_path = self.full_pointer_file_path
-        if not ptr_path:
+        # Pointer files are stored in SS internal storage, so the XML must be
+        # locally present before metsrw can parse it.
+        if not ptr_path or not os.path.isfile(ptr_path):
             return None
         return metsrw.METSDocument.fromfile(ptr_path)
 
