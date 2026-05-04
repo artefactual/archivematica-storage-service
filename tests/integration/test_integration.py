@@ -13,6 +13,7 @@ of Archivematica, etc...
 from __future__ import annotations
 
 import base64
+import datetime
 import json
 import os
 import re
@@ -33,9 +34,12 @@ import gnupg
 import pytest
 from botocore.exceptions import ClientError
 from django.contrib import messages
+from django.core.management import call_command
 from django.http import StreamingHttpResponse
 from django.test import Client as DjangoTestClient
 from django.urls import reverse
+from django.utils import timezone
+from lxml import etree
 from metsrw.plugins import premisrw
 from pytest_django.fixtures import SettingsWrapper
 
@@ -46,6 +50,7 @@ from archivematica.storage_service.locations.models import Event
 from archivematica.storage_service.locations.models import Location
 from archivematica.storage_service.locations.models import Package
 from archivematica.storage_service.locations.models import Space
+from archivematica.storage_service.storage_service import __version__ as ss_version
 
 if TYPE_CHECKING:
     from mypy_boto3_s3.service_resource import S3ServiceResource
@@ -106,6 +111,8 @@ UNCOMPRESSED_PACKAGE = (
 class HttpResponse(Protocol):
     status_code: int
     content: bytes
+
+    def __getitem__(self, header: str) -> str: ...
 
     @property
     def text(self) -> str: ...
@@ -213,6 +220,9 @@ class Client:
 
     def download_file(self, file_id: uuid.UUID) -> HttpResponse:
         return self.admin_client.get(f"/api/v2/file/{file_id}/download/")
+
+    def extract_file(self, file_id: uuid.UUID, data: dict[str, str]) -> HttpResponse:
+        return self.admin_client.get(f"/api/v2/file/{file_id}/extract_file/", data)
 
 
 @pytest.fixture(scope="session")
@@ -483,6 +493,18 @@ class StorageScenario:
         else:
             shutil.copy(FIXTURES_DIR / self.pkg, dst)
             assert dst.is_file()
+
+    def aip_mets_relative_path(self) -> str:
+        if self.compressed:
+            package_root = self.pkg.name.removesuffix("".join(self.pkg.suffixes))
+            mets_filename = f"METS.{self.PACKAGE_UUID}.xml"
+        else:
+            mets_files = list(self.pkg.glob("data/METS.*.xml"))
+            assert len(mets_files) == 1
+            package_root = self.pkg_name
+            mets_filename = mets_files[0].name
+
+        return f"{package_root}/data/{mets_filename}"
 
     def store_aip(self) -> None:
         resp = self.client.get_locations(
@@ -1266,19 +1288,22 @@ class AIPDeletionScenario(StorageScenario):
         return self.client.review_aip_deletion(file_uuid, data)
 
     def delete_aip(self) -> str:
+        return self.delete_package(self.PACKAGE_UUID, self.storage_protocol)
+
+    def delete_package(self, file_uuid: uuid.UUID, expected_protocol: str) -> str:
         data: dict[str, str | int] = {
             "event_reason": "Delete please!",
             "pipeline": str(self.PIPELINE_UUID),
             "user_id": 1,
             "user_email": "user@example.com",
         }
-        resp = self.request_aip_deletion(data)
+        resp = self.client.request_aip_deletion(file_uuid, data)
         assert resp.status_code == 202
 
         assert Event.objects.count() == 1
 
         event = Event.objects.get(
-            package=Package.objects.get(uuid=self.PACKAGE_UUID),
+            package=Package.objects.get(uuid=file_uuid),
             event_type=Event.DELETE,
             status=Event.SUBMITTED,
             event_reason=data["event_reason"],
@@ -1287,16 +1312,16 @@ class AIPDeletionScenario(StorageScenario):
             user_email=data["user_email"],
         )
 
-        package = Package.objects.get(uuid=self.PACKAGE_UUID)
-        assert package.current_location.space.access_protocol == self.storage_protocol
+        package = Package.objects.get(uuid=file_uuid)
+        assert package.current_location.space.access_protocol == expected_protocol
         package_full_path = str(package.full_path)
 
-        if self.storage_protocol not in self.OBJECT_STORAGE_PROTOCOLS:
+        if expected_protocol not in self.OBJECT_STORAGE_PROTOCOLS:
             assert Path(package_full_path).exists()
 
         reason = "Deleting!"
         resp = self.review_aip_deletion(
-            self.PACKAGE_UUID,
+            file_uuid,
             {
                 "reason": reason,
                 "decision": package_request.PackageRequestDecision.APPROVE,
@@ -1312,7 +1337,7 @@ class AIPDeletionScenario(StorageScenario):
         assert Event.objects.count() == 1
         assert (
             Event.objects.filter(
-                package=Package.objects.get(uuid=self.PACKAGE_UUID),
+                package=Package.objects.get(uuid=file_uuid),
                 event_type=Event.DELETE,
                 status=Event.APPROVED,
                 event_reason=data["event_reason"],
@@ -1415,6 +1440,643 @@ def test_aip_deletion(
         if scenario.storage_protocol in scenario.OBJECT_STORAGE_PROTOCOLS
         else None,
     )
+
+
+def assert_mets_response(resp: HttpResponse) -> bytes:
+    assert resp.status_code == 200
+    assert isinstance(resp, StreamingHttpResponse)
+    content = b"".join(resp.streaming_content)
+
+    assert b"<mets:mets" in content
+
+    return content
+
+
+def assert_download_filename(resp: HttpResponse, filename: str) -> None:
+    assert resp["Content-Disposition"] == f'attachment; filename="{filename}"'
+
+
+def get_xml_element(root: etree._Element, path: str) -> etree._Element:
+    elements = root.findall(path, namespaces=utils.NSMAP)
+
+    assert len(elements) == 1
+
+    return elements[0]
+
+
+def get_mets_createdate(mets_content: bytes) -> str:
+    mets_root = etree.fromstring(mets_content)
+    mets_header = get_xml_element(mets_root, "mets:metsHdr")
+    createdate = mets_header.get("CREATEDATE")
+
+    assert createdate
+
+    return createdate
+
+
+def current_storage_timestamp() -> datetime.datetime:
+    return timezone.now().replace(microsecond=0, tzinfo=None)
+
+
+def parse_storage_timestamp(value: str) -> datetime.datetime:
+    return datetime.datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
+
+
+def get_xml_elements_by_local_name(
+    root: etree._Element, local_name: str
+) -> list[etree._Element]:
+    return [
+        element
+        for element in root.iter()
+        if isinstance(element.tag, str) and element.tag.rsplit("}", 1)[-1] == local_name
+    ]
+
+
+def get_child_text(element: etree._Element, child_name: str) -> str:
+    children = get_xml_elements_by_local_name(element, child_name)
+
+    assert len(children) == 1
+    assert children[0].text
+
+    return children[0].text
+
+
+def get_premis_event(root: etree._Element, event_type: str) -> etree._Element:
+    events = [
+        event
+        for event in get_xml_elements_by_local_name(root, "event")
+        if get_child_text(event, "eventType") == event_type
+    ]
+
+    assert len(events) == 1
+
+    return events[0]
+
+
+@pytest.mark.parametrize(
+    ("storage_protocol", "replication_protocol"),
+    [
+        (Space.S3, Space.S3),
+        (Space.S3, Space.RCLONE),
+        (Space.S3, Space.NFS),
+        (Space.S3, Space.LOCAL_FILESYSTEM),
+        (Space.RCLONE, Space.S3),
+        (Space.RCLONE, Space.RCLONE),
+        (Space.RCLONE, Space.NFS),
+        (Space.RCLONE, Space.LOCAL_FILESYSTEM),
+    ],
+    ids=[
+        "s3_to_s3",
+        "s3_to_rclone",
+        "s3_to_nfs",
+        "s3_to_local_fs",
+        "rclone_to_s3",
+        "rclone_to_rclone",
+        "rclone_to_nfs",
+        "rclone_to_local_fs",
+    ],
+)
+@pytest.mark.django_db
+def test_repair_aip_pointer_file_after_remote_replica_deletion(
+    startup: None,
+    admin_client: DjangoTestClient,
+    working_directory_path: Path,
+    s3_browse_bucket: str,
+    storage_protocol: str,
+    replication_protocol: str,
+) -> None:
+    # Store a compressed AIP in remote storage and create its replica.
+    scenario = AIPDeletionScenario(
+        storage_protocol=storage_protocol,
+        replication_protocol=replication_protocol,
+        pkg=COMPRESSED_PACKAGE,
+        compressed=True,
+    )
+    scenario.init(
+        admin_client,
+        working_directory_path,
+        s3_bucket=s3_browse_bucket,
+    )
+    scenario.store_aip()
+    scenario.assert_stored()
+
+    # In the current code, these remote-source replicas share the original AIP
+    # pointer.
+    aip = Package.objects.get(uuid=scenario.PACKAGE_UUID)
+    replica = Package.objects.get(replicated_package=aip.uuid)
+    aip_pointer_path = Path(str(aip.full_pointer_file_path))
+    mets_relative_path = scenario.aip_mets_relative_path()
+
+    assert replica.pointer_file_location == aip.pointer_file_location
+    assert replica.pointer_file_path == aip.pointer_file_path
+    assert aip.full_pointer_file_path is not None
+    assert aip_pointer_path.exists()
+
+    # The original AIP METS is extractable before the shared pointer is deleted.
+    resp = scenario.client.extract_file(
+        aip.uuid, {"relative_path_to_file": mets_relative_path}
+    )
+    aip_mets_createdate = get_mets_createdate(assert_mets_response(resp))
+
+    # Deleting the replica deletes the shared pointer file but keeps the AIP row.
+    scenario.delete_package(replica.uuid, replication_protocol)
+    aip.refresh_from_db()
+    replica.refresh_from_db()
+
+    assert aip.status == Package.UPLOADED
+    assert replica.status == Package.DELETED
+    assert not aip_pointer_path.exists()
+
+    # Without its pointer file, the original compressed AIP cannot be extracted.
+    missing_pointer_error = rf"Error reading file.*{re.escape(str(aip_pointer_path))}.*No such file or directory"
+    with pytest.raises(OSError, match=missing_pointer_error):
+        scenario.client.extract_file(
+            aip.uuid, {"relative_path_to_file": mets_relative_path}
+        )
+
+    # Recreate the missing original AIP pointer from the stored package content.
+    repair_started_at = current_storage_timestamp()
+    call_command("repair_aip_pointer_files", str(aip.uuid))
+    repair_finished_at = current_storage_timestamp()
+    aip.refresh_from_db()
+
+    assert aip.full_pointer_file_path == str(aip_pointer_path)
+    assert aip_pointer_path.exists()
+
+    # The command recalculates the stored AIP file size and checksum.
+    expected_checksum_algorithm = Package.DEFAULT_CHECKSUM_ALGORITHM
+    expected_checksum = utils.generate_checksum(
+        scenario.pkg, expected_checksum_algorithm
+    ).hexdigest()
+    expected_size = get_size(scenario.pkg)
+
+    assert aip.checksum == expected_checksum
+    assert aip.checksum_algorithm == expected_checksum_algorithm
+    assert aip.size == expected_size
+
+    # Download the repaired pointer through the API.
+    pointer_resp = scenario.client.get_pointer_file(aip.uuid)
+
+    assert pointer_resp.status_code == 200
+    assert isinstance(pointer_resp, StreamingHttpResponse)
+
+    # The command records the recalculated size and checksum in the pointer
+    # PREMIS object.
+    expected_7z_version = utils.get_7z_version()
+    expected_agent_identifier = f"Archivematica-Storage-Service-{ss_version}"
+    expected_file_id = aip.construct_file_id_for_pointer(aip.full_path)
+    pointer_root = etree.fromstring(b"".join(pointer_resp.streaming_content))
+    mets_header = get_xml_element(pointer_root, "mets:metsHdr")
+    amd_sec = get_xml_element(pointer_root, "mets:amdSec")
+    tech_md = get_xml_element(amd_sec, "mets:techMD")
+    digiprov_mds = amd_sec.findall("mets:digiprovMD", namespaces=utils.NSMAP)
+    premis_object = get_xml_element(pointer_root, ".//premis3:object")
+    pointer_createdate = mets_header.get("CREATEDATE")
+    amd_sec_id = amd_sec.get("ID")
+    digiprov_md_ids = [digiprov_md.get("ID") for digiprov_md in digiprov_mds]
+
+    assert pointer_root.tag == f"{{{utils.NSMAP['mets']}}}mets"
+    assert (
+        pointer_root.get(f"{{{utils.NSMAP['xsi']}}}schemaLocation")
+        == "http://www.loc.gov/METS/ "
+        "http://www.loc.gov/standards/mets/version1121/mets.xsd"
+    )
+    assert pointer_createdate
+    assert repair_started_at <= parse_storage_timestamp(pointer_createdate)
+    assert parse_storage_timestamp(pointer_createdate) <= repair_finished_at
+    assert amd_sec_id
+    assert tech_md.get("ID")
+    assert tech_md.get("CREATED") == pointer_createdate
+    assert tech_md.get("STATUS") == "current"
+    assert get_xml_element(tech_md, "mets:mdWrap").get("MDTYPE") == "PREMIS:OBJECT"
+    assert len(digiprov_md_ids) == 2
+    assert len(set(digiprov_md_ids)) == 2
+    assert all(digiprov_md_ids)
+    assert [digiprov_md.get("CREATED") for digiprov_md in digiprov_mds] == [
+        pointer_createdate,
+        pointer_createdate,
+    ]
+    assert [
+        get_xml_element(digiprov_md, "mets:mdWrap").get("MDTYPE")
+        for digiprov_md in digiprov_mds
+    ] == ["PREMIS:EVENT", "PREMIS:AGENT"]
+    assert len(pointer_root.findall(".//premis3:object", namespaces=utils.NSMAP)) == 1
+    assert premis_object.get(f"{{{utils.NSMAP['xsi']}}}type") == "premis:file"
+    assert (
+        premis_object.findtext(
+            "premis3:objectIdentifier/premis3:objectIdentifierType",
+            namespaces=utils.NSMAP,
+        )
+        == "UUID"
+    )
+    assert premis_object.findtext(
+        "premis3:objectIdentifier/premis3:objectIdentifierValue",
+        namespaces=utils.NSMAP,
+    ) == str(aip.uuid)
+    assert (
+        premis_object.findtext(
+            "premis3:objectCharacteristics/premis3:compositionLevel",
+            namespaces=utils.NSMAP,
+        )
+        == "1"
+    )
+    assert (
+        premis_object.findtext(
+            ".//premis3:messageDigestAlgorithm",
+            namespaces=utils.NSMAP,
+        )
+        == expected_checksum_algorithm
+    )
+    assert (
+        premis_object.findtext(".//premis3:messageDigest", namespaces=utils.NSMAP)
+        == expected_checksum
+    )
+    assert premis_object.findtext(
+        "premis3:objectCharacteristics/premis3:size",
+        namespaces=utils.NSMAP,
+    ) == str(expected_size)
+    assert (
+        premis_object.findtext(".//premis3:formatName", namespaces=utils.NSMAP)
+        == "7Zip format"
+    )
+    assert (
+        premis_object.findtext(".//premis3:formatRegistryName", namespaces=utils.NSMAP)
+        == "PRONOM"
+    )
+    assert (
+        premis_object.findtext(".//premis3:formatRegistryKey", namespaces=utils.NSMAP)
+        == utils.PRONOM_7Z
+    )
+    assert (
+        premis_object.findtext(
+            ".//premis3:creatingApplicationName",
+            namespaces=utils.NSMAP,
+        )
+        == "7z"
+    )
+    assert (
+        premis_object.findtext(
+            ".//premis3:creatingApplicationVersion",
+            namespaces=utils.NSMAP,
+        )
+        == expected_7z_version
+    )
+    assert (
+        premis_object.findtext(
+            ".//premis3:dateCreatedByApplication",
+            namespaces=utils.NSMAP,
+        )
+        == aip_mets_createdate
+    )
+
+    # The repaired pointer should preserve the embedded AIP METS creation time
+    # in the synthetic compression event.
+    compression_event = get_xml_element(pointer_root, ".//premis3:event")
+
+    assert (
+        compression_event.findtext(
+            "premis3:eventIdentifier/premis3:eventIdentifierType",
+            namespaces=utils.NSMAP,
+        )
+        == "UUID"
+    )
+    assert uuid.UUID(
+        compression_event.findtext(
+            "premis3:eventIdentifier/premis3:eventIdentifierValue",
+            namespaces=utils.NSMAP,
+        )
+    )
+    assert (
+        compression_event.findtext("premis3:eventType", namespaces=utils.NSMAP)
+        == "compression"
+    )
+    assert (
+        compression_event.findtext("premis3:eventDateTime", namespaces=utils.NSMAP)
+        == aip_mets_createdate
+    )
+    assert (
+        compression_event.findtext(
+            "premis3:eventDetailInformation/premis3:eventDetail",
+            namespaces=utils.NSMAP,
+        )
+        == f"program=7z; version={expected_7z_version}; algorithm=bzip2"
+    )
+    assert (
+        compression_event.findtext(
+            "premis3:eventOutcomeInformation/premis3:eventOutcome",
+            namespaces=utils.NSMAP,
+        )
+        == "success"
+    )
+    assert (
+        compression_event.findtext(
+            "premis3:eventOutcomeInformation/premis3:eventOutcomeDetail/"
+            "premis3:eventOutcomeDetailNote",
+            namespaces=utils.NSMAP,
+        )
+        == "Pointer file recreated from stored AIP package content."
+    )
+    assert (
+        compression_event.findtext(
+            "premis3:linkingAgentIdentifier/premis3:linkingAgentIdentifierType",
+            namespaces=utils.NSMAP,
+        )
+        == "preservation system"
+    )
+    assert (
+        compression_event.findtext(
+            "premis3:linkingAgentIdentifier/premis3:linkingAgentIdentifierValue",
+            namespaces=utils.NSMAP,
+        )
+        == expected_agent_identifier
+    )
+
+    # The command records the Storage Service as the only PREMIS agent.
+    premis_agent = get_xml_element(pointer_root, ".//premis3:agent")
+
+    assert (
+        premis_agent.findtext(
+            "premis3:agentIdentifier/premis3:agentIdentifierType",
+            namespaces=utils.NSMAP,
+        )
+        == "preservation system"
+    )
+    assert (
+        premis_agent.findtext(
+            "premis3:agentIdentifier/premis3:agentIdentifierValue",
+            namespaces=utils.NSMAP,
+        )
+        == expected_agent_identifier
+    )
+    assert (
+        premis_agent.findtext("premis3:agentName", namespaces=utils.NSMAP)
+        == "Archivematica Storage Service"
+    )
+    assert (
+        premis_agent.findtext("premis3:agentType", namespaces=utils.NSMAP) == "software"
+    )
+
+    # The METS file section points at the stored AIP and records how to
+    # decompress it.
+    file_group = get_xml_element(pointer_root, ".//mets:fileGrp")
+    aip_file = get_xml_element(file_group, "mets:file")
+    file_location = get_xml_element(aip_file, "mets:FLocat")
+    transform_file = get_xml_element(aip_file, "mets:transformFile")
+    physical_div = get_xml_element(
+        pointer_root,
+        ".//mets:structMap[@TYPE='physical']/mets:div",
+    )
+    physical_struct_map = get_xml_element(
+        pointer_root, ".//mets:structMap[@TYPE='physical']"
+    )
+    physical_file_pointer = get_xml_element(physical_div, "mets:fptr")
+    logical_div = get_xml_element(
+        pointer_root,
+        ".//mets:structMap[@TYPE='logical']/mets:div",
+    )
+    logical_struct_map = get_xml_element(
+        pointer_root, ".//mets:structMap[@TYPE='logical']"
+    )
+
+    assert file_group.get("USE") == "Archival Information Package"
+    assert aip_file.get("ID") == expected_file_id
+    assert aip_file.get("GROUPID") == f"Group-{aip.uuid}"
+    assert aip_file.get("ADMID") == amd_sec_id
+    assert file_location.get(f"{{{utils.NSMAP['xlink']}}}href") == aip.full_path
+    assert file_location.get("LOCTYPE") == "OTHER"
+    assert file_location.get("OTHERLOCTYPE") == "SYSTEM"
+    assert transform_file.get("TRANSFORMALGORITHM") == utils.COMPRESS_ALGO_BZIP2
+    assert transform_file.get("TRANSFORMORDER") == "1"
+    assert transform_file.get("TRANSFORMTYPE") == utils.DECOMPRESS_TRANSFORM_TYPE
+    assert physical_struct_map.get("ID") == "structMap_1"
+    assert physical_div.get("TYPE") == "Archival Information Package"
+    assert physical_div.get("LABEL") == Path(aip.full_path).name
+    assert physical_file_pointer.get("FILEID") == expected_file_id
+    assert logical_struct_map.get("ID") == "structMap_2"
+    assert logical_div.get("TYPE") == "Archival Information Package"
+    assert logical_div.get("LABEL") == Path(aip.full_path).name
+
+    # The repaired pointer restores METS extraction for the original AIP.
+    resp = scenario.client.extract_file(
+        aip.uuid, {"relative_path_to_file": mets_relative_path}
+    )
+    assert_mets_response(resp)
+
+
+@pytest.mark.parametrize(
+    ("storage_protocol", "replication_protocol"),
+    [
+        (Space.S3, Space.S3),
+        (Space.S3, Space.RCLONE),
+        (Space.S3, Space.NFS),
+        (Space.S3, Space.LOCAL_FILESYSTEM),
+        (Space.RCLONE, Space.S3),
+        (Space.RCLONE, Space.RCLONE),
+        (Space.RCLONE, Space.NFS),
+        (Space.RCLONE, Space.LOCAL_FILESYSTEM),
+    ],
+    ids=[
+        "s3_to_s3",
+        "s3_to_rclone",
+        "s3_to_nfs",
+        "s3_to_local_fs",
+        "rclone_to_s3",
+        "rclone_to_rclone",
+        "rclone_to_nfs",
+        "rclone_to_local_fs",
+    ],
+)
+@pytest.mark.django_db
+def test_repair_replica_pointer_file_before_replica_deletion(
+    startup: None,
+    admin_client: DjangoTestClient,
+    working_directory_path: Path,
+    s3_browse_bucket: str,
+    storage_protocol: str,
+    replication_protocol: str,
+) -> None:
+    # Store a compressed AIP in remote storage and create its replica.
+    scenario = AIPDeletionScenario(
+        storage_protocol=storage_protocol,
+        replication_protocol=replication_protocol,
+        pkg=COMPRESSED_PACKAGE,
+        compressed=True,
+    )
+    scenario.init(
+        admin_client,
+        working_directory_path,
+        s3_bucket=s3_browse_bucket,
+    )
+    scenario.store_aip()
+    scenario.assert_stored()
+
+    # In the current code, these remote-source replicas share the original AIP
+    # pointer.
+    aip = Package.objects.get(uuid=scenario.PACKAGE_UUID)
+    replica = Package.objects.get(replicated_package=aip.uuid)
+    aip_pointer_path = Path(str(aip.full_pointer_file_path))
+    mets_relative_path = scenario.aip_mets_relative_path()
+
+    assert replica.pointer_file_location == aip.pointer_file_location
+    assert replica.pointer_file_path == aip.pointer_file_path
+    assert aip_pointer_path.exists()
+
+    # Before repair, the replica endpoint still downloads the original AIP
+    # pointer file.
+    pointer_resp = scenario.client.get_pointer_file(replica.uuid)
+
+    assert pointer_resp.status_code == 200
+    assert_download_filename(pointer_resp, aip_pointer_path.name)
+
+    # Repair the uploaded replica so it has its own pointer file before deletion.
+    call_command("repair_replica_pointer_files", str(replica.uuid))
+    aip.refresh_from_db()
+    replica.refresh_from_db()
+    refreshed_aip_pointer_path = Path(str(aip.full_pointer_file_path))
+    replica_pointer_path = Path(str(replica.full_pointer_file_path))
+
+    assert aip.status == Package.UPLOADED
+    assert replica.status == Package.UPLOADED
+    assert refreshed_aip_pointer_path == aip_pointer_path
+    assert refreshed_aip_pointer_path.exists()
+    assert replica.pointer_file_path != aip.pointer_file_path
+    assert replica_pointer_path != refreshed_aip_pointer_path
+    assert replica_pointer_path.exists()
+
+    # Download the repaired replica pointer through the API.
+    pointer_resp = scenario.client.get_pointer_file(replica.uuid)
+
+    assert pointer_resp.status_code == 200
+    assert isinstance(pointer_resp, StreamingHttpResponse)
+    assert_download_filename(pointer_resp, replica_pointer_path.name)
+
+    # The command recalculates the uploaded replica size and checksum, and the
+    # replica pointer records the replica UUID with a relationship back to the
+    # original AIP.
+    expected_checksum_algorithm = Package.DEFAULT_CHECKSUM_ALGORITHM
+    expected_checksum = utils.generate_checksum(
+        scenario.pkg, expected_checksum_algorithm
+    ).hexdigest()
+    expected_size = get_size(scenario.pkg)
+    expected_file_id = replica.construct_file_id_for_pointer(replica.full_path)
+    pointer_root = etree.fromstring(b"".join(pointer_resp.streaming_content))
+    premis_object = get_xml_element(pointer_root, ".//premis3:object")
+    relationship = get_xml_element(premis_object, ".//premis3:relationship")
+
+    assert replica.checksum == expected_checksum
+    assert replica.checksum_algorithm == expected_checksum_algorithm
+    assert replica.size == expected_size
+    assert pointer_root.tag == f"{{{utils.NSMAP['mets']}}}mets"
+    assert len(pointer_root.findall(".//premis3:object", namespaces=utils.NSMAP)) == 1
+    assert premis_object.findtext(
+        "premis3:objectIdentifier/premis3:objectIdentifierValue",
+        namespaces=utils.NSMAP,
+    ) == str(replica.uuid)
+    assert (
+        premis_object.findtext(
+            ".//premis3:messageDigestAlgorithm",
+            namespaces=utils.NSMAP,
+        )
+        == expected_checksum_algorithm
+    )
+    assert (
+        premis_object.findtext(".//premis3:messageDigest", namespaces=utils.NSMAP)
+        == expected_checksum
+    )
+    assert premis_object.findtext(
+        "premis3:objectCharacteristics/premis3:size",
+        namespaces=utils.NSMAP,
+    ) == str(expected_size)
+    assert (
+        relationship.findtext("premis3:relationshipType", namespaces=utils.NSMAP)
+        == "derivation"
+    )
+    assert relationship.findtext(
+        "premis3:relatedObjectIdentifier/premis3:relatedObjectIdentifierValue",
+        namespaces=utils.NSMAP,
+    ) == str(aip.uuid)
+    assert uuid.UUID(
+        relationship.findtext(
+            "premis3:relatedEventIdentifier/premis3:relatedEventIdentifierValue",
+            namespaces=utils.NSMAP,
+        )
+    )
+
+    # The replica pointer keeps the original compression event and adds replica
+    # creation and validation events.
+    event_types = sorted(
+        get_child_text(event, "eventType")
+        for event in get_xml_elements_by_local_name(pointer_root, "event")
+    )
+    creation_event = get_premis_event(pointer_root, "creation")
+    validation_event = get_premis_event(pointer_root, "validation")
+
+    assert event_types == ["compression", "creation", "validation"]
+    assert (
+        creation_event.findtext(
+            "premis3:eventOutcomeInformation/premis3:eventOutcomeDetail/"
+            "premis3:eventOutcomeDetailNote",
+            namespaces=utils.NSMAP,
+        )
+        == f"Created Archival Information Package (AIP) {replica.uuid} by "
+        f"replicating previously created AIP {aip.uuid}"
+    )
+    assert (
+        validation_event.findtext(
+            "premis3:eventOutcomeInformation/premis3:eventOutcome",
+            namespaces=utils.NSMAP,
+        )
+        == "success"
+    )
+    assert (
+        validation_event.findtext(
+            "premis3:eventOutcomeInformation/premis3:eventOutcomeDetail/"
+            "premis3:eventOutcomeDetailNote",
+            namespaces=utils.NSMAP,
+        )
+        == f"Original AIP {aip.uuid} and replica AIP {replica.uuid} both have "
+        f"checksum {expected_checksum} when using algorithm "
+        f"{expected_checksum_algorithm}."
+    )
+
+    # The METS file section points at the stored replica and records how to
+    # decompress it.
+    file_group = get_xml_element(pointer_root, ".//mets:fileGrp")
+    replica_file = get_xml_element(file_group, "mets:file")
+    file_location = get_xml_element(replica_file, "mets:FLocat")
+    transform_file = get_xml_element(replica_file, "mets:transformFile")
+
+    assert file_group.get("USE") == "Archival Information Package"
+    assert replica_file.get("ID") == expected_file_id
+    assert replica_file.get("GROUPID") == f"Group-{replica.uuid}"
+    assert file_location.get(f"{{{utils.NSMAP['xlink']}}}href") == replica.full_path
+    assert file_location.get("LOCTYPE") == "OTHER"
+    assert file_location.get("OTHERLOCTYPE") == "SYSTEM"
+    assert transform_file.get("TRANSFORMALGORITHM") == utils.COMPRESS_ALGO_BZIP2
+    assert transform_file.get("TRANSFORMORDER") == "1"
+    assert transform_file.get("TRANSFORMTYPE") == utils.DECOMPRESS_TRANSFORM_TYPE
+
+    # The repaired pointer supports extraction from the replica.
+    resp = scenario.client.extract_file(
+        replica.uuid, {"relative_path_to_file": mets_relative_path}
+    )
+    assert_mets_response(resp)
+
+    # Deleting the replica deletes only the replica pointer and keeps the
+    # original AIP pointer usable.
+    scenario.delete_package(replica.uuid, replication_protocol)
+    aip.refresh_from_db()
+    replica.refresh_from_db()
+
+    assert aip.status == Package.UPLOADED
+    assert replica.status == Package.DELETED
+    assert aip_pointer_path.exists()
+    assert not replica_pointer_path.exists()
+
+    resp = scenario.client.extract_file(
+        aip.uuid, {"relative_path_to_file": mets_relative_path}
+    )
+    assert_mets_response(resp)
 
 
 @pytest.fixture
