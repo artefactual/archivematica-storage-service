@@ -50,7 +50,7 @@ distlib==0.4.0
     # via virtualenv
 dj-database-url==3.1.2
     # via archivematica-storage-service (pyproject.toml)
-django==5.2.13
+django==5.2.14
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   dj-database-url
