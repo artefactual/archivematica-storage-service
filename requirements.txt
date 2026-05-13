@@ -65,7 +65,7 @@ gunicorn==26.0.0
     # via archivematica-storage-service (pyproject.toml)
 httplib2==0.31.2
     # via sword2
-idna==3.14
+idna==3.15
     # via requests
 iso8601==2.1.0
     # via
@@ -77,7 +77,7 @@ jmespath==1.1.0
     #   botocore
 jsonfield==3.2.0
     # via archivematica-storage-service (pyproject.toml)
-keystoneauth1==5.13.1
+keystoneauth1==5.14.0
     # via python-keystoneclient
 lxml==6.1.0
     # via
