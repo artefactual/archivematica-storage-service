@@ -99,7 +99,7 @@ gunicorn==26.0.0
     # via archivematica-storage-service (pyproject.toml)
 httplib2==0.31.2
     # via sword2
-idna==3.14
+idna==3.15
     # via requests
 iniconfig==2.3.0
     # via pytest
@@ -113,7 +113,7 @@ jmespath==1.1.0
     #   botocore
 jsonfield==3.2.0
     # via archivematica-storage-service (pyproject.toml)
-keystoneauth1==5.13.1
+keystoneauth1==5.14.0
     # via python-keystoneclient
 librt==0.11.0
     # via mypy
@@ -250,7 +250,7 @@ python-dateutil==2.9.0.post0
     # via
     #   botocore
     #   django-tastypie
-python-discovery==1.3.0
+python-discovery==1.3.1
     # via
     #   tox
     #   virtualenv
@@ -312,7 +312,7 @@ tomli==2.4.1
     #   tox
 tomli-w==1.2.0
     # via tox
-tox==4.53.1
+tox==4.54.0
     # via archivematica-storage-service (pyproject.toml)
 types-awscrt==0.31.3
     # via botocore-stubs
@@ -340,7 +340,7 @@ urllib3==2.7.0
     # via
     #   botocore
     #   requests
-virtualenv==21.3.1
+virtualenv==21.3.2
     # via tox
 wheel==0.47.0
     # via pip-tools
