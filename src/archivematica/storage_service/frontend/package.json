@@ -29,7 +29,7 @@
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.10.0",
     "@tsconfig/node24": "^24.0.4",
-    "@types/jsdom": "^28.0.2",
+    "@types/jsdom": "^28.0.3",
     "@types/node": "^25.7.0",
     "@vitejs/plugin-vue": "^6.0.6",
     "@vitest/eslint-plugin": "^1.6.17",
