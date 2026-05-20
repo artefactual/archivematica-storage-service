@@ -8,15 +8,15 @@ agentarchives==0.10.0
     # via archivematica-storage-service (pyproject.toml)
 asgiref==3.11.1
     # via django
-ast-serialize==0.3.0
+ast-serialize==0.5.0
     # via mypy
 bagit==1.9.0
     # via archivematica-storage-service (pyproject.toml)
-boto3==1.43.6
+boto3==1.43.12
     # via archivematica-storage-service (pyproject.toml)
-boto3-stubs[s3]==1.43.6
+boto3-stubs[s3]==1.43.12
     # via archivematica-storage-service (pyproject.toml)
-botocore==1.43.6
+botocore==1.43.12
     # via
     #   boto3
     #   s3transfer
@@ -26,15 +26,15 @@ brotli==1.2.0
     # via archivematica-storage-service (pyproject.toml)
 build==1.5.0
     # via pip-tools
-cachetools==7.1.1
+cachetools==7.1.3
     # via tox
-certifi==2026.4.22
+certifi==2026.5.20
     # via requests
 cffi==2.0.0
     # via cryptography
 charset-normalizer==3.4.7
     # via requests
-click==8.3.3
+click==8.4.0
     # via pip-tools
 colorama==0.4.6
     # via tox
@@ -89,9 +89,9 @@ filelock==3.29.0
     #   python-discovery
     #   tox
     #   virtualenv
-gevent==26.4.0
+gevent==26.5.0
     # via archivematica-storage-service (pyproject.toml)
-greenlet==3.5.0
+greenlet==3.5.1
     # via
     #   gevent
     #   playwright
@@ -117,7 +117,7 @@ keystoneauth1==5.14.0
     # via python-keystoneclient
 librt==0.11.0
     # via mypy
-lxml==6.1.0
+lxml==6.1.1
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   metsrw
@@ -145,14 +145,14 @@ netaddr==1.3.0
     #   oslo-utils
 os-service-types==1.8.2
     # via keystoneauth1
-oslo-config==10.3.0
+oslo-config==10.4.0
     # via python-keystoneclient
-oslo-i18n==6.7.2
+oslo-i18n==6.8.0
     # via
     #   oslo-config
     #   oslo-utils
     #   python-keystoneclient
-oslo-serialization==5.9.1
+oslo-serialization==5.10.0
     # via python-keystoneclient
 oslo-utils==10.0.1
     # via
@@ -185,7 +185,7 @@ platformdirs==4.9.6
     #   python-discovery
     #   tox
     #   virtualenv
-playwright==1.59.0
+playwright==1.60.0
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   pytest-playwright
@@ -240,7 +240,7 @@ pytest-cov==7.1.0
     # via archivematica-storage-service (pyproject.toml)
 pytest-django==4.12.0
     # via archivematica-storage-service (pyproject.toml)
-pytest-playwright==0.7.2
+pytest-playwright==0.8.0
     # via archivematica-storage-service (pyproject.toml)
 pytest-randomly==4.1.0
     # via archivematica-storage-service (pyproject.toml)
@@ -258,7 +258,7 @@ python-gnupg==0.5.6
     # via archivematica-storage-service (pyproject.toml)
 python-keystoneclient==5.8.0
     # via archivematica-storage-service (pyproject.toml)
-python-ldap==3.4.5
+python-ldap==3.4.7
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   django-auth-ldap
@@ -272,7 +272,7 @@ pyyaml==6.0.3
     # via
     #   oslo-config
     #   oslo-utils
-requests==2.34.0
+requests==2.34.2
     # via
     #   agentarchives
     #   archivematica-storage-service (pyproject.toml)
@@ -291,7 +291,7 @@ six==1.17.0
     # via python-dateutil
 sqlparse==0.5.5
     # via django
-stevedore==5.7.0
+stevedore==5.8.0
     # via
     #   keystoneauth1
     #   oslo-config
@@ -316,7 +316,7 @@ tox==4.54.0
     # via archivematica-storage-service (pyproject.toml)
 types-awscrt==0.31.3
     # via botocore-stubs
-types-pyyaml==6.0.12.20260510
+types-pyyaml==6.0.12.20260518
     # via django-stubs
 types-s3transfer==0.16.0
     # via boto3-stubs
@@ -340,7 +340,7 @@ urllib3==2.7.0
     # via
     #   botocore
     #   requests
-virtualenv==21.3.2
+virtualenv==21.3.3
     # via tox
 wheel==0.47.0
     # via pip-tools
