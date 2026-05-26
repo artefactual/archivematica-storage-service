@@ -90,7 +90,7 @@ of these settings or provide values to mandatory fields.
 - **`TIME_ZONE`**:
   - **Description:** application time zone. See [TIME_ZONE] for more details.
   - **Type:** `string`
-  - **Default:** `"America/Los_Angeles"`
+  - **Default:** `"UTC"`
 
 - **`SECRET_KEY`**:
   - **Description:** a secret key used for cryptographic signing. See [SECRET_KEY]
