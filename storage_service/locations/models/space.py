@@ -11,6 +11,9 @@ import uuid
 
 from common import fields
 from common import utils
+from common.rsync import RsyncError
+from common.rsync import run_rsync
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -550,8 +553,8 @@ class Space(models.Model):
                     dest_norm,
                 )
 
-        # Rsync file over
-        # TODO Do this asyncronously, with restarting failed attempts
+        # Rsync file over. Keep this call bounded so API users get a terminal
+        # success or failure instead of waiting indefinitely.
         command = [
             "rsync",
             "-t",
@@ -560,19 +563,17 @@ class Space(models.Model):
             "-vv",
             "--chmod=Fug+rw,o-rwx,Dug+rwx,o-rwx",
             "-r",
+            f"--timeout={settings.RSYNC_IO_TIMEOUT_SECONDS}",
             source,
             destination,
         ]
-        LOGGER.info("rsync command: %s", command)
-        kwargs = {"stdout": subprocess.PIPE, "stderr": subprocess.STDOUT}
+        env = None
         if assume_rsync_daemon:
-            kwargs["env"] = {"RSYNC_PASSWORD": rsync_password}
-        p = subprocess.Popen(command, **kwargs)
-        stdout, _ = p.communicate()
-        if p.returncode != 0:
-            s = f"Rsync failed with status {p.returncode}: {stdout}"
-            LOGGER.warning(s)
-            raise StorageException(s)
+            env = {"RSYNC_PASSWORD": rsync_password}
+        try:
+            run_rsync(command, env=env, source=source, destination=destination)
+        except RsyncError as err:
+            raise StorageException(str(err)) from err
 
     def create_local_directory(self, path, mode=None):
         """

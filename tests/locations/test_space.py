@@ -1,12 +1,13 @@
 import os.path
 import shutil
-import subprocess
 from os import makedirs
 from os import scandir
 
 import pytest
+from common.rsync import RsyncError
 from locations.models import LocalFilesystem
 from locations.models import Space
+from locations.models import StorageException
 from locations.models.space import path2browse_dict
 
 
@@ -522,17 +523,13 @@ def test_delete_non_existant_path_local(tmpdir, aipstore_uncompressed):
         assert os.path.exists(remaining_aip)
 
 
-def test_move_rsync_command_decodes_paths(mocker):
-    popen = mocker.patch(
-        "subprocess.Popen",
-        return_value=mocker.Mock(
-            **{"communicate.return_value": ("command output", None), "returncode": 0}
-        ),
-    )
+def test_move_rsync_command_decodes_paths(mocker, settings):
+    settings.RSYNC_IO_TIMEOUT_SECONDS = 42
+    run_rsync = mocker.patch("locations.models.space.run_rsync")
     space = Space()
     space.move_rsync("source_dir", "destination_dir")
 
-    popen.assert_called_once_with(
+    run_rsync.assert_called_once_with(
         [
             "rsync",
             "-t",
@@ -541,12 +538,37 @@ def test_move_rsync_command_decodes_paths(mocker):
             "-vv",
             "--chmod=Fug+rw,o-rwx,Dug+rwx,o-rwx",
             "-r",
+            "--timeout=42",
             "source_dir",
             "destination_dir",
         ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        env=None,
+        source="source_dir",
+        destination="destination_dir",
     )
+
+
+def test_move_rsync_maps_rsync_error_to_storage_exception(mocker):
+    mocker.patch(
+        "locations.models.space.run_rsync", side_effect=RsyncError("rsync failed")
+    )
+
+    with pytest.raises(StorageException, match="rsync failed"):
+        Space().move_rsync("source_dir", "destination_dir")
+
+
+def test_move_rsync_try_mv_local_returns_after_successful_rename(mocker):
+    rename = mocker.patch("os.rename")
+    subprocess_call = mocker.patch("subprocess.call")
+    run_rsync = mocker.patch("locations.models.space.run_rsync")
+    space = Space()
+    space.move_rsync("source_dir", "destination_dir", try_mv_local=True)
+
+    rename.assert_called_once_with("source_dir", "destination_dir")
+    subprocess_call.assert_called_once_with(
+        ["chmod", "--recursive", "ug+rw,o+r", "destination_dir"]
+    )
+    run_rsync.assert_not_called()
 
 
 def test_create_rsync_directory_commands_decode_paths(tmp_path, mocker):
