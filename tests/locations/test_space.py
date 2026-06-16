@@ -1,14 +1,15 @@
 import os.path
 import shutil
-import subprocess
 from os import makedirs
 from os import scandir
 from unittest import mock
 
 import pytest
 
+from archivematica.storage_service.common.rsync import RsyncError
 from archivematica.storage_service.locations.models import LocalFilesystem
 from archivematica.storage_service.locations.models import Space
+from archivematica.storage_service.locations.models import StorageException
 from archivematica.storage_service.locations.models.space import path2browse_dict
 
 
@@ -521,17 +522,13 @@ def test_delete_non_existant_path_local(tmpdir, aipstore_uncompressed):
         assert os.path.exists(remaining_aip)
 
 
-@mock.patch(
-    "subprocess.Popen",
-    return_value=mock.Mock(
-        **{"communicate.return_value": ("command output", None), "returncode": 0}
-    ),
-)
-def test_move_rsync_command_decodes_paths(popen):
+@mock.patch("archivematica.storage_service.locations.models.space.run_rsync")
+def test_move_rsync_command_decodes_paths(run_rsync, settings):
+    settings.RSYNC_IO_TIMEOUT_SECONDS = 42
     space = Space()
     space.move_rsync("source_dir", "destination_dir")
 
-    popen.assert_called_once_with(
+    run_rsync.assert_called_once_with(
         [
             "rsync",
             "-t",
@@ -540,12 +537,38 @@ def test_move_rsync_command_decodes_paths(popen):
             "-vv",
             "--chmod=Fug+rw,o-rwx,Dug+rwx,o-rwx",
             "-r",
+            "--timeout=42",
             "source_dir",
             "destination_dir",
         ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        env=None,
+        source="source_dir",
+        destination="destination_dir",
     )
+
+
+@mock.patch("archivematica.storage_service.locations.models.space.run_rsync")
+def test_move_rsync_maps_rsync_error_to_storage_exception(run_rsync):
+    run_rsync.side_effect = RsyncError("rsync failed")
+
+    with pytest.raises(StorageException, match="rsync failed"):
+        Space().move_rsync("source_dir", "destination_dir")
+
+
+@mock.patch("archivematica.storage_service.locations.models.space.run_rsync")
+@mock.patch("subprocess.call")
+@mock.patch("os.rename")
+def test_move_rsync_try_mv_local_returns_after_successful_rename(
+    rename, subprocess_call, run_rsync
+):
+    space = Space()
+    space.move_rsync("source_dir", "destination_dir", try_mv_local=True)
+
+    rename.assert_called_once_with("source_dir", "destination_dir")
+    subprocess_call.assert_called_once_with(
+        ["chmod", "--recursive", "ug+rw,o+r", "destination_dir"]
+    )
+    run_rsync.assert_not_called()
 
 
 @mock.patch("tempfile.mkdtemp")
