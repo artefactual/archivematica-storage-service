@@ -212,7 +212,7 @@ pyee==13.0.1
     # via playwright
 pygments==2.20.0
     # via pytest
-pyjwt==2.12.1
+pyjwt==2.13.0
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   mozilla-django-oidc

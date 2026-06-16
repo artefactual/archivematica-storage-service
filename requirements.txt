@@ -139,7 +139,7 @@ pyasn1-modules==0.4.2
     # via python-ldap
 pycparser==3.0
     # via cffi
-pyjwt==2.12.1
+pyjwt==2.13.0
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   mozilla-django-oidc
