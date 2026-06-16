@@ -14,6 +14,7 @@ from django.utils.translation import gettext_lazy as _
 
 from archivematica.storage_service.common.helpers import get_oidc_secondary_providers
 from archivematica.storage_service.common.helpers import is_true
+from archivematica.storage_service.storage_service.settings.components.rsync import *
 from archivematica.storage_service.storage_service.settings.components.s3 import *
 
 try:

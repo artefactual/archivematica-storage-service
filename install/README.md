@@ -217,6 +217,18 @@ of these settings or provide values to mandatory fields.
   - **Type:** `boolean`
   - **Default:** `false`
 
+- **`SS_RSYNC_IO_TIMEOUT_SECONDS`**:
+  - **Description:** maximum number of seconds rsync may observe no I/O before
+    failing a transfer. This does not limit total transfer duration.
+  - **Type:** `integer`
+  - **Default:** `300`
+
+- **`SS_RSYNC_PROCESS_TIMEOUT_SECONDS`**:
+  - **Description:** maximum wall-clock runtime for an rsync process before
+    Storage Service terminates it.
+  - **Type:** `integer`
+  - **Default:** `86400`
+
 - **`SS_S3_TIMEOUTS`**:
   - **Description:** read and connect timeouts for S3 matching your
     implementation's recommended defaults.
