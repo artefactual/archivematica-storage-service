@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import errno
 import logging
@@ -8,15 +10,14 @@ import stat
 import subprocess
 import tempfile
 import uuid
-from typing import Set
 
 from common import fields
 from common import utils
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-
-from . import StorageException
+from rsync import RSYNC_IO_TIMEOUT_SECONDS
+from rsync import run_rsync
 
 LOGGER = logging.getLogger(__name__)
 
@@ -113,7 +114,7 @@ class Space(models.Model):
     GPG = "GPG"
     S3 = "S3"
     # These will not be displayed in the Space Create GUI (see locations/forms.py)
-    BETA_PROTOCOLS: Set[str] = set()
+    BETA_PROTOCOLS: set[str] = set()
     OBJECT_STORAGE = {
         ARCHIPELAGO,
         DATAVERSE,
@@ -547,8 +548,8 @@ class Space(models.Model):
                     dest_norm,
                 )
 
-        # Rsync file over
-        # TODO Do this asyncronously, with restarting failed attempts
+        # Rsync file over. Keep this call bounded so API users get a terminal
+        # success or failure instead of waiting indefinitely.
         command = [
             "rsync",
             "-t",
@@ -557,19 +558,14 @@ class Space(models.Model):
             "-vv",
             "--chmod=Fug+rw,o-rwx,Dug+rwx,o-rwx",
             "-r",
+            f"--timeout={RSYNC_IO_TIMEOUT_SECONDS}",
             source,
             destination,
         ]
-        LOGGER.info("rsync command: %s", command)
-        kwargs = {"stdout": subprocess.PIPE, "stderr": subprocess.STDOUT}
+        env = None
         if assume_rsync_daemon:
-            kwargs["env"] = {"RSYNC_PASSWORD": rsync_password}
-        p = subprocess.Popen(command, **kwargs)
-        stdout, _ = p.communicate()
-        if p.returncode != 0:
-            s = f"Rsync failed with status {p.returncode}: {stdout}"
-            LOGGER.warning(s)
-            raise StorageException(s)
+            env = {"RSYNC_PASSWORD": rsync_password}
+        run_rsync(command, env=env, source=source, destination=destination)
 
     def create_local_directory(self, path, mode=None):
         """
