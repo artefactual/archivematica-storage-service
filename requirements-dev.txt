@@ -42,7 +42,7 @@ coverage[toml]==7.14.0
     # via
     #   archivematica-storage-service (pyproject.toml)
     #   pytest-cov
-cryptography==48.0.0
+cryptography==48.0.1
     # via mozilla-django-oidc
 debtcollector==3.1.0
     # via
