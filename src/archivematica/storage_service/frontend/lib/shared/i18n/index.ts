@@ -1,5 +1,4 @@
 import { createI18n } from 'vue-i18n'
-import en from './locales/en.json'
 
 // Available locales for async loading. This mirrors the LANGUAGES list in
 // archivematica/storage_service/storage_service/settings/base.py.
@@ -44,17 +43,6 @@ function bcp47ToPosixLocale(bcp47Locale: string): string {
   return region ? `${language}_${region.toUpperCase()}` : language
 }
 
-function createI18nMock() {
-  return createI18n({
-    legacy: false,
-    locale: 'en',
-    fallbackLocale: 'en',
-    messages: { en: en },
-    silentTranslationWarn: true,
-    silentFallbackWarn: true,
-  })
-}
-
 // Initialize i18n.
 const i18n = createI18n({
   legacy: false,
@@ -95,9 +83,6 @@ function initI18n(): Promise<void> {
 export {
   i18n,
   initI18n,
-
-  // Used for testing.
-  createI18nMock,
 
   // Used in the development environment.
   AVAILABLE_LOCALES,

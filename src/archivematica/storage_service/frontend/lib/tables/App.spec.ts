@@ -2,7 +2,7 @@ import { nextTick } from 'vue'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
-import { createI18nMock } from '@/shared/i18n'
+import { createI18nMock } from '@/shared/i18n/test-utils'
 import type { TablePayload } from './types'
 import { SEARCH_DEBOUNCE_MS } from './composables/useTableSearch'
 
