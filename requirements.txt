@@ -8,7 +8,7 @@ agentarchives==0.10.0
     # via archivematica-storage-service (pyproject.toml)
 asgiref==3.11.1
     # via django
-bagit==1.9.0
+bagit @ git+https://github.com/LibraryOfCongress/bagit-python.git@4bd2713cedbe1f8e634567c20ef0dded9622011d
     # via archivematica-storage-service (pyproject.toml)
 boto3==1.43.32
     # via archivematica-storage-service (pyproject.toml)
