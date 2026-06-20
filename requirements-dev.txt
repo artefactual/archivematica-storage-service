@@ -125,7 +125,7 @@ metsrw==0.6.1
     # via archivematica-storage-service (pyproject.toml)
 mozilla-django-oidc==5.0.2
     # via archivematica-storage-service (pyproject.toml)
-msgpack==1.2.0
+msgpack==1.2.1
     # via oslo-serialization
 mypy==2.1.0
     # via
