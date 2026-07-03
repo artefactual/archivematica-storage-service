@@ -10,9 +10,9 @@ asgiref==3.11.1
     # via django
 bagit @ git+https://github.com/LibraryOfCongress/bagit-python.git@4bd2713cedbe1f8e634567c20ef0dded9622011d
     # via archivematica-storage-service (pyproject.toml)
-boto3==1.43.32
+boto3==1.43.40
     # via archivematica-storage-service (pyproject.toml)
-botocore==1.43.32
+botocore==1.43.40
     # via
     #   boto3
     #   s3transfer
@@ -51,17 +51,17 @@ django-prometheus==2.5.0
     # via archivematica-storage-service (pyproject.toml)
 django-shibboleth-remoteuser @ git+https://github.com/artefactual-labs/django-shibboleth-remoteuser.git@f08a7864d6130416c352981ccf318fff0fd5be58
     # via archivematica-storage-service (pyproject.toml)
-django-stubs-ext==6.0.5
+django-stubs-ext==6.0.6
     # via archivematica-storage-service (pyproject.toml)
 django-tastypie==0.15.1
     # via archivematica-storage-service (pyproject.toml)
 gevent==26.5.0
     # via archivematica-storage-service (pyproject.toml)
-greenlet==3.5.2
+greenlet==3.5.3
     # via gevent
 gunicorn==26.0.0
     # via archivematica-storage-service (pyproject.toml)
-httplib2==0.31.2
+httplib2==0.32.0
     # via sword2
 idna==3.18
     # via requests
@@ -83,7 +83,7 @@ lxml==6.1.1
     #   metsrw
     #   python-cas
     #   sword2
-metsrw==0.6.1
+metsrw==0.7.0
     # via archivematica-storage-service (pyproject.toml)
 mozilla-django-oidc==5.0.2
     # via archivematica-storage-service (pyproject.toml)
@@ -192,7 +192,7 @@ stevedore==5.8.0
     #   python-keystoneclient
 sword2 @ git+https://github.com/artefactual-labs/python-client-sword2.git@619ee44467dcdb2ab75fab16864ea2e4ded7ffe4
     # via archivematica-storage-service (pyproject.toml)
-typing-extensions==4.15.0
+typing-extensions==4.16.0
     # via
     #   asgiref
     #   cryptography
@@ -206,7 +206,7 @@ urllib3==2.7.0
     #   requests
 whitenoise==6.12.0
     # via archivematica-storage-service (pyproject.toml)
-wrapt==2.2.1
+wrapt==2.2.2
     # via debtcollector
 zope-event==6.2
     # via gevent
