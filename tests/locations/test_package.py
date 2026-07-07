@@ -1468,6 +1468,53 @@ def package(location):
     return result
 
 
+@pytest.fixture
+def enabled_replicator(location: models.Location) -> models.Location:
+    result = models.Location.objects.create(
+        space=location.space,
+        relative_path="enabled-replication",
+        purpose=models.Location.REPLICATOR,
+    )
+    pathlib.Path(result.full_path).mkdir()
+    location.replicators.add(result)
+    return result
+
+
+@pytest.fixture
+def disabled_replicator(location: models.Location) -> models.Location:
+    result = models.Location.objects.create(
+        space=location.space,
+        relative_path="disabled-replication",
+        purpose=models.Location.REPLICATOR,
+        enabled=False,
+    )
+    pathlib.Path(result.full_path).mkdir()
+    location.replicators.add(result)
+    return result
+
+
+@pytest.mark.django_db
+def test_create_replicas_uses_only_enabled_replicators(
+    package: models.Package,
+    enabled_replicator: models.Location,
+    disabled_replicator: models.Location,
+) -> None:
+    with mock.patch.object(models.Package, "replicate", autospec=True) as replicate:
+        package.create_replicas()
+
+    replicate.assert_called_once_with(package, enabled_replicator)
+
+
+@pytest.mark.django_db
+def test_create_replicas_skips_disabled_replicator_when_uuid_requested(
+    package: models.Package, disabled_replicator: models.Location
+) -> None:
+    with mock.patch.object(models.Package, "replicate", autospec=True) as replicate:
+        package.create_replicas(replicator_uuid=disabled_replicator.uuid)
+
+    replicate.assert_not_called()
+
+
 @pytest.mark.django_db
 @mock.patch(
     "archivematica.storage_service.common.utils.generate_checksum",

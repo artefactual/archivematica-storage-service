@@ -1550,7 +1550,7 @@ class Package(models.Model):
         """
         if delete_replicas:
             self._delete_replicas()
-        replicator_locs = self.current_location.replicators.all()
+        replicator_locs = self.current_location.replicators.filter(enabled=True)
         if replicator_uuid:
             replicator_locs = replicator_locs.filter(uuid=replicator_uuid)
         for replicator_loc in replicator_locs:
