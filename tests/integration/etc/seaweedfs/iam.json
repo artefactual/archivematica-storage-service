@@ -1,0 +1,30 @@
+{
+  "identities": [
+    {
+      "name": "ss",
+      "credentials": [
+        {
+          "accessKey": "ss",
+          "secretKey": "ss123",
+          "status": "Active"
+        }
+      ],
+      "policyNames": [
+        "AdminAccess"
+      ]
+    },
+    {
+      "name": "limited",
+      "credentials": [
+        {
+          "accessKey": "limited",
+          "secretKey": "limited123",
+          "status": "Active"
+        }
+      ],
+      "policyNames": [
+        "BrowseBuckets"
+      ]
+    }
+  ]
+}

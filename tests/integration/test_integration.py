@@ -294,10 +294,10 @@ class StorageScenario:
             "access_protocol": Space.S3,
             "path": "",
             "staging_path": "/var/archivematica/sharedDirectory/tmp/s3_staging_path",
-            "endpoint_url": "http://minio:9000",
-            "access_key_id": "minio",
-            "secret_access_key": "minio123",
-            "region": "planet-earth",
+            "endpoint_url": "http://seaweedfs:8333",
+            "access_key_id": "ss",
+            "secret_access_key": "ss123",
+            "region": "us-east-1",
             "bucket": "aip-storage",
         },
         Space.RCLONE: {
@@ -1240,14 +1240,14 @@ def test_aip_recovery_handles_recovery_copy_setup_error(
 
 @pytest.fixture
 def s3_resource(s3_recorded_keys: list[str]) -> S3ServiceResource:
-    """Return a boto3 resource connected to the test MinIO instance."""
+    """Return a boto3 resource connected to the S3-compatible test service."""
     del s3_recorded_keys  # Ensure tracking fixture executes before resource creation.
     return boto3.resource(
         "s3",
-        endpoint_url="http://minio:9000",
-        aws_access_key_id="minio",
-        aws_secret_access_key="minio123",
-        region_name="planet-earth",
+        endpoint_url="http://seaweedfs:8333",
+        aws_access_key_id="ss",
+        aws_secret_access_key="ss123",
+        region_name="us-east-1",
     )
 
 
@@ -1265,7 +1265,6 @@ def _provision_s3_bucket(
         else:
             s3_resource.create_bucket(
                 Bucket=bucket_name,
-                # MinIO accepts non-AWS region names; boto3 stubs restrict this to AWS literals.
                 CreateBucketConfiguration=cast(
                     "CreateBucketConfigurationTypeDef",
                     {"LocationConstraint": region},
@@ -1287,11 +1286,11 @@ def _provision_s3_bucket(
 def s3_browse_bucket(
     request: pytest.FixtureRequest, s3_resource: S3ServiceResource
 ) -> Iterator[str]:
-    """Provision a bucket backed by the MinIO test service."""
+    """Provision a bucket backed by the S3-compatible test service."""
     object_keys = getattr(request, "param", None)
     bucket_name = _provision_s3_bucket(
         s3_resource,
-        region="planet-earth",
+        region="us-east-1",
         name_prefix="storage-service-browse-",
         object_keys=object_keys,
     )
@@ -1352,10 +1351,10 @@ def test_browsing_a_s3_transfer_source_location_loads_path_level_results_only(
             "access_protocol": Space.S3,
             "path": "/",
             "staging_path": "/var/archivematica/storage_service",
-            "endpoint_url": "http://minio:9000",
-            "access_key_id": "minio-user",
-            "secret_access_key": "minio-password",
-            "region": "planet-earth",
+            "endpoint_url": "http://seaweedfs:8333",
+            "access_key_id": "limited",
+            "secret_access_key": "limited123",
+            "region": "us-east-1",
             "bucket": s3_browse_bucket,
         }
     )
@@ -1407,8 +1406,8 @@ def test_browsing_an_rclone_transfer_source_location_works_with_limited_permissi
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("RCLONE_CONFIG_MYS3_ACCESS_KEY_ID", "minio-user")
-    monkeypatch.setenv("RCLONE_CONFIG_MYS3_SECRET_ACCESS_KEY", "minio-password")
+    monkeypatch.setenv("RCLONE_CONFIG_MYS3_ACCESS_KEY_ID", "limited")
+    monkeypatch.setenv("RCLONE_CONFIG_MYS3_SECRET_ACCESS_KEY", "limited123")
 
     client = Client(admin_client)
     shared_directory = tmp_path / "var" / "archivematica" / "sharedDirectory"
