@@ -32,11 +32,11 @@ services:
       SESSION_COOKIE_SAMESITE: "Lax"
       CSRF_COOKIE_SECURE: "false"
       RCLONE_CONFIG_MYS3_TYPE: "s3"
-      RCLONE_CONFIG_MYS3_PROVIDER: "Minio"
-      RCLONE_CONFIG_MYS3_ENDPOINT: "http://minio:9000"
-      RCLONE_CONFIG_MYS3_ACCESS_KEY_ID: "minio"
-      RCLONE_CONFIG_MYS3_SECRET_ACCESS_KEY: "minio123"
-      RCLONE_CONFIG_MYS3_REGION: "planet-earth"
+      RCLONE_CONFIG_MYS3_PROVIDER: "SeaweedFS"
+      RCLONE_CONFIG_MYS3_ENDPOINT: "http://seaweedfs:8333"
+      RCLONE_CONFIG_MYS3_ACCESS_KEY_ID: "ss"
+      RCLONE_CONFIG_MYS3_SECRET_ACCESS_KEY: "ss123"
+      RCLONE_CONFIG_MYS3_REGION: "us-east-1"
       SS_OIDC_AUTHENTICATION: "true"
       OIDC_USE_PKCE: "true"
       OIDC_PKCE_CODE_CHALLENGE_METHOD: "S256"
@@ -77,55 +77,66 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-      minio-setup:
+      seaweedfs:
+        condition: service_healthy
+      seaweedfs-setup:
         condition: service_completed_successfully
     links:
-      - "minio"
+      - "seaweedfs"
       - "mysql"
       - "keycloak"
 
-  minio:
-    image: "minio/minio:RELEASE.2025-09-07T16-13-09Z"
-    command: "server /data"
+  seaweedfs:
+    image: "chrislusf/seaweedfs:4.38"
+    command: ["mini", "-dir=/data"]
     environment:
-      MINIO_ROOT_USER: "minio"
-      MINIO_ROOT_PASSWORD: "minio123"
-      MINIO_REGION_NAME: "planet-earth"
-      MINIO_BROWSER: "off"
+      WEED_ADMIN_USER: "admin"
+      WEED_ADMIN_PASSWORD: "admin123"
     expose:
-      - "9000"
+      - "8333"
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:9000/minio/health/ready"]
+      test:
+        [
+          "CMD-SHELL",
+          "test \"$$(curl -sS --max-time 2 -o /dev/null -w '%{http_code}' http://localhost:8333/ || true)\" = \"403\"",
+        ]
       interval: 5s
       timeout: 5s
       retries: 5
       start_period: 5s
+    volumes:
+      - "./etc/seaweedfs:/config:ro"
 
-  minio-setup:
-    image: "minio/mc:RELEASE.2025-08-13T08-35-41Z"
+  seaweedfs-setup:
+    image: "chrislusf/seaweedfs:4.38"
     entrypoint: []
     command:
       - "/bin/sh"
       - "-c"
       - |
-        set -e
-        until mc alias set minio http://minio:9000 minio minio123 >/dev/null 2>&1; do
+        set -eu
+        while :; do
+          output=$(
+            weed shell -master=seaweedfs:9333 -filer=seaweedfs:8888 2>&1 <<'EOF' || true
+        s3.iam.import -file=/config/iam.json -apply
+        s3.policy -put -name=AdminAccess -file=/config/policies/admin-access.json
+        s3.policy -put -name=BrowseBuckets -file=/config/policies/browse-buckets.json
+        s3.config.show
+        EOF
+          )
+          printf '%s\n' "$$output"
+
+          if ! printf '%s\n' "$$output" | grep -qi '^error:'; then
+            break
+          fi
+
           sleep 1
         done
-        #
-        # The resource name used in the statement of this policy file
-        # matches the bucket naming convention of the s3_browse_bucket fixture.
-        #
-        mc admin policy info minio ss-user >/dev/null 2>&1 || mc admin policy create minio ss-user /config/policies/user.json
-        if ! mc admin user info minio minio-user >/dev/null 2>&1; then
-          mc admin user add minio minio-user minio-password
-        fi
-        mc admin policy attach minio ss-user --user minio-user
     depends_on:
-      minio:
-        condition: service_healthy
+      seaweedfs:
+        condition: service_started
     volumes:
-      - "./etc/minio:/config:ro"
+      - "./etc/seaweedfs:/config:ro"
 
   mysql:
     image: "percona/percona-server:8.4.10-10"

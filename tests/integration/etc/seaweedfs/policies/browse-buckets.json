@@ -9,7 +9,8 @@
         "s3:ListBucket"
       ],
       "Resource": [
-        "arn:aws:s3:::storage-service-browse-*"
+        "arn:aws:s3:::storage-service-browse-*",
+        "arn:aws:s3:::storage-service-browse-*/*"
       ]
     }
   ]
