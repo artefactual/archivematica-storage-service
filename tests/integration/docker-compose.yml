@@ -87,7 +87,7 @@ services:
       - "keycloak"
 
   seaweedfs:
-    image: "chrislusf/seaweedfs:4.39"
+    image: "chrislusf/seaweedfs:4.40"
     command: ["mini", "-dir=/data"]
     environment:
       WEED_ADMIN_USER: "admin"
@@ -108,7 +108,7 @@ services:
       - "./etc/seaweedfs:/config:ro"
 
   seaweedfs-setup:
-    image: "chrislusf/seaweedfs:4.39"
+    image: "chrislusf/seaweedfs:4.40"
     entrypoint: []
     command:
       - "/bin/sh"
