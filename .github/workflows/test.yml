@@ -15,7 +15,6 @@ jobs:
       fail-fast: false
       matrix:
         ubuntu-version: [
-          "22.04",
           "24.04",
         ]
         python-version: [
