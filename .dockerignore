@@ -5,7 +5,9 @@
 !/install/**
 !/src/**
 !/tests/**
+!/.python-version
 !/pyproject.toml
+!/uv.lock
 !/.markdownlint.jsonc
 !/.pre-commit-config.yaml
 !/CHANGELOG.md
@@ -15,7 +17,6 @@
 !/Makefile
 !/README.md
 !/SECURITY.md
-!/requirements*
 
 # Exclude
 **/*~

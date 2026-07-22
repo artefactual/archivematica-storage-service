@@ -51,21 +51,25 @@ dependencies = [
   "pyjwt",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
   "boto3-stubs[s3]",
   "coverage[toml]",
   "django-stubs[compatible-mypy]",
   "mypy",
-  "pip-tools",
   "playwright",
+  "pre-commit",
   "pytest-cov",
   "pytest-django",
   "pytest-playwright",
   "pytest-randomly",
   "pytest",
-  "tox",
 ]
+
+[tool.uv]
+# Keep compatibility with newer global uv installations used by deployments.
+# GitHub Actions reads this value automatically via astral-sh/setup-uv.
+required-version = ">=0.11.30"
 
 [project.urls]
 homepage = "https://github.com/artefacutal/archivematica-storage-service"
@@ -163,32 +167,3 @@ ignore_errors = false
 
 [tool.django-stubs]
 django_settings_module = "archivematica.storage_service.storage_service.settings.test"
-
-[tool.tox]
-legacy_tox_ini = """
-    [tox]
-    envlist = linting, py, migrations
-    skip_missing_interpreters = true
-
-    [testenv:linting]
-    skip_install = true
-    basepython = python3
-    deps = pre-commit
-    commands = pre-commit run --all-files --show-diff-on-failure
-
-    [testenv]
-    package = editable
-    deps = -r {toxinidir}/requirements-dev.txt
-    commands =
-        py.test {posargs}
-    setenv =
-        PYTEST_ADDOPTS = {env:PYTEST_ADDOPTS:}
-        DJANGO_SETTINGS_MODULE = archivematica.storage_service.storage_service.settings.test
-        DJANGO_SECRET_KEY = 1234
-        BOTO_CONFIG = /dev/null
-
-    [testenv:migrations]
-    basepython = python3
-    deps = -r {toxinidir}/requirements-dev.txt
-    commands = django-admin makemigrations --check --dry-run
-"""
