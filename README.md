@@ -24,6 +24,42 @@ details.
 * [Production installation]
 * [Development installation]
 
+## Development workflows
+
+Install uv using the [uv installation documentation], then synchronize the
+locked project and development dependencies:
+
+```bash
+make sync
+```
+
+The Makefile exposes the common workflows:
+
+* `make sync-runtime` installs only the project and runtime dependencies.
+* `make sync` also installs development tools.
+* `make lock-check` verifies that `uv.lock` matches `pyproject.toml`.
+* `make lock` refreshes the lock without upgrading existing versions, while
+  `make upgrade` upgrades all dependencies.
+* `make check` verifies the lock and runs lint and migration checks.
+* `make test PYTEST_ARGS="..."` runs pytest with optional arguments.
+* `make docker-build` builds the application image.
+
+Declare runtime dependencies in `project.dependencies` and development
+dependencies in `dependency-groups.dev` in `pyproject.toml`. The committed
+`uv.lock` is the sole dependency lock; requirements exports are not maintained.
+
+The exact default interpreter is pinned in `.python-version`. Local uv
+commands and the `setup-uv` GitHub Action discover it automatically, and the
+Docker builder copies it before installing Python. CI matrices override this
+default to exercise every supported Python version. To upgrade the default,
+update `.python-version` and run `make lock`. If the supported range changes,
+also update `project.requires-python` and the CI matrix.
+
+`tool.uv.required-version` declares the minimum supported uv version and
+accepts newer global installations. The Docker build independently pins its uv
+tool image and digest for reproducibility. Raise either version independently,
+then run `make lock`, `make check`, and `make docker-build`.
+
 ## Resources
 
 * [Website][Archivematica Storage Service]: User and administrator documentation
@@ -76,3 +112,4 @@ on the [Contributors Portal].
 [Case studies repo]: https://github.com/archivematica/archivematica-case-studies
 [dependencies]: https://contributors.artefactual.com/dependencies.html#archivematica
 [Contributors Portal]: https://contributors.artefactual.com/index.html
+[uv installation documentation]: https://docs.astral.sh/uv/getting-started/installation/
