@@ -1,4 +1,5 @@
 import datetime
+import logging
 import pickle
 from unittest import mock
 
@@ -8,9 +9,6 @@ from django.urls import reverse
 from django.utils import timezone
 
 from archivematica.storage_service.locations import metrics
-from archivematica.storage_service.locations.models.asynchronous import Async
-from archivematica.storage_service.locations.models.asynchronous import serialize_error
-from archivematica.storage_service.locations.models.async_manager import AsyncManager
 from archivematica.storage_service.locations.models.async_manager import (
     INTERRUPTED_TASK_ERROR_CODE,
 )
@@ -20,7 +18,10 @@ from archivematica.storage_service.locations.models.async_manager import (
 from archivematica.storage_service.locations.models.async_manager import (
     TASK_TIMEOUT_SECONDS,
 )
+from archivematica.storage_service.locations.models.async_manager import AsyncManager
 from archivematica.storage_service.locations.models.async_manager import RunningTask
+from archivematica.storage_service.locations.models.asynchronous import Async
+from archivematica.storage_service.locations.models.asynchronous import serialize_error
 
 
 @pytest.fixture(autouse=True)
@@ -152,11 +153,7 @@ def test_watchdog_records_local_completion_before_expiring() -> None:
 @pytest.mark.django_db
 def test_watchdog_heartbeats_local_task_before_expiring() -> None:
     async_task = Async.objects.create()
-    expired_time = (
-        timezone.now()
-        - TASK_TIMEOUT_SECONDS
-        - datetime.timedelta(seconds=1)
-    )
+    expired_time = timezone.now() - TASK_TIMEOUT_SECONDS - datetime.timedelta(seconds=1)
     Async.objects.filter(pk=async_task.pk).update(updated_time=expired_time)
     running_task = RunningTask()
     running_task.async_id = async_task.pk
@@ -223,3 +220,27 @@ def test_watchdog_does_not_overwrite_terminal_result() -> None:
     assert async_task.was_error is True
     assert async_task.error == "<class 'RuntimeError'>: Interrupted"
     assert async_task._result is None
+
+
+@pytest.mark.django_db
+def test_watchdog_reports_interrupted_tasks(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    expired_time = timezone.now() - TASK_TIMEOUT_SECONDS - datetime.timedelta(seconds=1)
+    async_tasks = [Async.objects.create(), Async.objects.create()]
+    Async.objects.filter(pk__in=[task.pk for task in async_tasks]).update(
+        updated_time=expired_time
+    )
+
+    with (
+        mock.patch.object(
+            metrics.async_manager_interrupted_tasks_counter, "inc"
+        ) as increment,
+        caplog.at_level(logging.WARNING),
+    ):
+        AsyncManager._watchdog_loop()
+
+    increment.assert_called_once_with(2)
+    assert "Marked 2 asynchronous task(s) as interrupted" in caplog.text
+    for async_task in async_tasks:
+        assert str(async_task.pk) in caplog.text
