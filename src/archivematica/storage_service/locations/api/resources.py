@@ -56,6 +56,9 @@ from archivematica.storage_service.locations.models import PosixMoveUnsupportedE
 from archivematica.storage_service.locations.models import Space
 from archivematica.storage_service.locations.models import StorageException
 from archivematica.storage_service.locations.models.async_manager import AsyncManager
+from archivematica.storage_service.locations.models.async_manager import (
+    get_async_error_code,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -2168,6 +2171,7 @@ class AsyncResource(ModelResource):
         if bundle.obj.completed:
             if bundle.obj.was_error:
                 bundle.data["error"] = bundle.obj.error
+                bundle.data["error_code"] = get_async_error_code(bundle.obj._error)
             else:
                 bundle.data["result"] = bundle.obj.result
 
