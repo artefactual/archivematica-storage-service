@@ -14,6 +14,11 @@ async_manager_watchdog_time_counter = Counter(
     ("Total time taken by a watchdog loop iteration in seconds"),
 )
 
+async_manager_interrupted_tasks_counter = Counter(
+    "async_manager_interrupted_tasks",
+    "Number of tasks marked as interrupted after their heartbeat expired",
+)
+
 
 @contextmanager
 def watchdog_loop_timer():

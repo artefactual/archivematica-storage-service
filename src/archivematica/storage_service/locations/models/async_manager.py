@@ -135,16 +135,35 @@ class AsyncManager:
 
             # Mark any tasks that have expired before finishing as interrupted
             # (i.e. interrupted due to a server restart).
-            Async.objects.filter(
+            expired_tasks = Async.objects.filter(
                 completed=False,
                 updated_time__lte=(now - TASK_TIMEOUT_SECONDS),
-            ).update(
-                completed=True,
-                was_error=True,
-                completed_time=now,
-                updated_time=now,
-                _error=INTERRUPTED_TASK_ERROR,
             )
+            expired_task_ids = list(expired_tasks.values_list("id", flat=True))
+            if expired_task_ids:
+                interrupted_count = expired_tasks.update(
+                    completed=True,
+                    was_error=True,
+                    completed_time=now,
+                    updated_time=now,
+                    _error=INTERRUPTED_TASK_ERROR,
+                )
+                if interrupted_count:
+                    interrupted_task_ids = Async.objects.filter(
+                        id__in=expired_task_ids,
+                        completed=True,
+                        was_error=True,
+                        completed_time=now,
+                    ).values_list("id", flat=True)
+                    metrics.async_manager_interrupted_tasks_counter.inc(
+                        interrupted_count
+                    )
+                    LOGGER.warning(
+                        "Marked %d asynchronous task(s) as interrupted after their "
+                        "heartbeat expired: %s",
+                        interrupted_count,
+                        ", ".join(str(task_id) for task_id in interrupted_task_ids),
+                    )
 
             # Delete any tasks whose results have expired.
             Async.objects.filter(
