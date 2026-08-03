@@ -19,6 +19,7 @@ from django.utils import timezone
 
 from archivematica.storage_service.locations import metrics
 from archivematica.storage_service.locations.models.asynchronous import Async
+from archivematica.storage_service.locations.models.asynchronous import serialize_error
 
 LOGGER = logging.getLogger(__name__)
 
@@ -35,6 +36,23 @@ MAX_TASK_AGE_SECONDS = datetime.timedelta(seconds=86400)
 # Must be less than TASK_TIMEOUT_SECONDS!  Controls how often we wake up to
 # check the status of our tasks.
 WATCHDOG_POLL_SECONDS = 5
+
+INTERRUPTED_TASK_ERROR_CODE = "async_operation_interrupted"
+INTERRUPTED_TASK_ERROR = serialize_error(
+    RuntimeError(
+        "The asynchronous operation was interrupted after its heartbeat expired. "
+        "Its final outcome is unknown; do not retry it automatically."
+    )
+)
+
+
+def get_async_error_code(error: bytes | memoryview | None) -> str | None:
+    """Return the stable API code for a recognized asynchronous error."""
+    if isinstance(error, memoryview):
+        error = error.tobytes()
+    if error == INTERRUPTED_TASK_ERROR:
+        return INTERRUPTED_TASK_ERROR_CODE
+    return None
 
 
 class RunningTask:
@@ -66,17 +84,25 @@ class AsyncManager:
         """Wake up, expire old tasks, report completed tasks and give a sign of
         life for everything that's still running"""
         with AsyncManager.lock:
-            # Delete any tasks that have expired before finishing
+            now = timezone.now()
+
+            # Mark any tasks that have expired before finishing as interrupted
             # (i.e. interrupted due to a server restart)
             Async.objects.filter(
                 completed=False,
-                updated_time__lte=(timezone.now() - TASK_TIMEOUT_SECONDS),
-            ).delete()
+                updated_time__lte=(now - TASK_TIMEOUT_SECONDS),
+            ).update(
+                completed=True,
+                was_error=True,
+                completed_time=now,
+                updated_time=now,
+                _error=INTERRUPTED_TASK_ERROR,
+            )
 
             # Delete any tasks whose results have expired
             Async.objects.filter(
                 completed=True,
-                completed_time__lte=(timezone.now() - MAX_TASK_AGE_SECONDS),
+                completed_time__lte=(now - MAX_TASK_AGE_SECONDS),
             ).delete()
 
             # Touch the update time of any running task.  If we crash/restart then these will expire.

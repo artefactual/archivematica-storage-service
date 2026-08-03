@@ -9,6 +9,10 @@ __all__ = ("Async",)
 LOGGER = logging.getLogger(__name__)
 
 
+def serialize_error(value):
+    return pickle.dumps(str(type(value)) + ": " + str(value))
+
+
 class Async(models.Model):
     """Stores information about currently running asynchronous tasks."""
 
@@ -52,7 +56,7 @@ class Async(models.Model):
 
     @error.setter
     def error(self, value):
-        self._error = pickle.dumps(str(type(value)) + ": " + str(value))
+        self._error = serialize_error(value)
 
     class Meta:
         verbose_name = _("Async")
