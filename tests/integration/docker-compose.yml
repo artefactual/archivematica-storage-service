@@ -139,7 +139,7 @@ services:
       - "./etc/seaweedfs:/config:ro"
 
   mysql:
-    image: "percona/percona-server:8.4.10-10"
+    image: "percona/percona-server:9.7.1-1.1"
     environment:
       MYSQL_ROOT_PASSWORD: "root"
       # These are used in the storage_service.settings.testmysql module
