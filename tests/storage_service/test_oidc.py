@@ -301,8 +301,7 @@ def test_get_userinfo(settings: pytest_django.Settings) -> None:
 
 @pytest.mark.django_db
 def test_get_or_create_user_does_not_create_user_when_disabled(
-    settings: pytest_django.fixtures.SettingsWrapper,
-    monkeypatch: pytest.MonkeyPatch,
+    settings: pytest_django.Settings, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     settings.OIDC_CREATE_USER = False
     backend = CustomOIDCBackend()
@@ -324,8 +323,7 @@ def test_get_or_create_user_does_not_create_user_when_disabled(
 
 @pytest.mark.django_db
 def test_get_or_create_user_returns_existing_user_when_creation_disabled(
-    settings: pytest_django.fixtures.SettingsWrapper,
-    monkeypatch: pytest.MonkeyPatch,
+    settings: pytest_django.Settings, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     settings.OIDC_CREATE_USER = False
     existing_user = User.objects.create_user(
