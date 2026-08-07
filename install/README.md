@@ -592,6 +592,9 @@ These variables specify the behaviour of CAS authentication. If
 These variables specify the behaviour of OpenID Connect (OIDC) authentication.
 If `SS_OIDC_AUTHENTICATION` is false, none of the other ones are used.
 
+Automatic local user creation for OIDC logins is controlled by
+`SS_OIDC_AUTO_CREATE_USER`.
+
 - **`SS_OIDC_AUTHENTICATION`**:
   - **Description:** Enables user authentication via OIDC.
   - **Type:** `boolean`
@@ -599,6 +602,12 @@ If `SS_OIDC_AUTHENTICATION` is false, none of the other ones are used.
 
 - **`SS_OIDC_ALLOW_LOCAL_AUTHENTICATION`**:
   - **Description:** Allows local authentication and authentication via OIDC.
+  - **Type:** `boolean`
+  - **Default:** `true`
+
+- **`SS_OIDC_AUTO_CREATE_USER`**:
+  - **Description:** enables automatic local user creation for successful OIDC
+    logins when no matching Storage Service user already exists.
   - **Type:** `boolean`
   - **Default:** `true`
 
