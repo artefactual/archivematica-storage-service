@@ -38,7 +38,7 @@ from django.http import StreamingHttpResponse
 from django.test import Client as DjangoTestClient
 from django.urls import reverse
 from metsrw.plugins import premisrw
-from pytest_django.fixtures import SettingsWrapper
+from pytest_django import Settings
 
 from archivematica.storage_service.common import gpgutils
 from archivematica.storage_service.common import utils
@@ -1862,7 +1862,7 @@ def test_deleting_replica_keeps_original_aip(
 
 
 @pytest.fixture
-def gnupg_home(tmp_path: Path, settings: SettingsWrapper) -> Iterator[Path]:
+def gnupg_home(tmp_path: Path, settings: Settings) -> Iterator[Path]:
     home = tmp_path / "gnupg"
     home.mkdir(parents=True, exist_ok=True)
     # GnuPG expects 0700 on the homedir.

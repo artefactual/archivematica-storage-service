@@ -37,9 +37,7 @@ def test_list_users(admin_client: Client) -> None:
 
 
 @pytest.fixture
-def settings(
-    settings: pytest_django.fixtures.SettingsWrapper,
-) -> pytest_django.fixtures.SettingsWrapper:
+def settings(settings: pytest_django.Settings) -> pytest_django.Settings:
     settings.ALLOW_USER_EDITS = True
 
     return settings
@@ -47,7 +45,7 @@ def settings(
 
 @pytest.mark.django_db
 def test_create_user_as_admin(
-    admin_client: Client, settings: pytest_django.fixtures.SettingsWrapper
+    admin_client: Client, settings: pytest_django.Settings
 ) -> None:
     """Only administrators are allowed to create new users."""
     resp = admin_client.post(
@@ -70,7 +68,7 @@ def test_create_user_as_admin(
 @pytest.mark.django_db
 def test_create_user_as_non_admin(
     admin_client: Client,
-    settings: pytest_django.fixtures.SettingsWrapper,
+    settings: pytest_django.Settings,
     django_user_model: type[User],
 ) -> None:
     """Only administrators are allowed to create new users."""
@@ -103,7 +101,7 @@ def user(django_user_model: type[User]) -> User:
 @pytest.mark.django_db
 def test_edit_user_promote_as_manager(
     admin_client: Client,
-    settings: pytest_django.fixtures.SettingsWrapper,
+    settings: pytest_django.Settings,
     user: User,
 ) -> None:
     """Only administrators are allowed to promote/demote users."""
@@ -127,7 +125,7 @@ def test_edit_user_promote_as_manager(
 @pytest.mark.django_db
 def test_edit_user_promotion_requires_admin(
     admin_client: Client,
-    settings: pytest_django.fixtures.SettingsWrapper,
+    settings: pytest_django.Settings,
     django_user_model: type[User],
     user: User,
 ) -> None:
@@ -158,7 +156,7 @@ def admin_user_apikey(admin_client: Client, django_user_model: type[User]) -> Ap
 @pytest.mark.django_db
 def test_user_edit_view_updates_password(
     admin_client: Client,
-    settings: pytest_django.fixtures.SettingsWrapper,
+    settings: pytest_django.Settings,
     django_user_model: type[User],
     admin_user_apikey: ApiKey,
 ) -> None:
@@ -187,7 +185,7 @@ def test_user_edit_view_updates_password(
 @pytest.mark.django_db
 def test_user_edit_view_regenerates_api_key(
     admin_client: Client,
-    settings: pytest_django.fixtures.SettingsWrapper,
+    settings: pytest_django.Settings,
     django_user_model: type[User],
     admin_user_apikey: ApiKey,
 ) -> None:
@@ -216,7 +214,7 @@ def test_user_edit_view_regenerates_api_key(
 @pytest.mark.django_db
 def test_user_edit_view_validates_current_password(
     admin_client: Client,
-    settings: pytest_django.fixtures.SettingsWrapper,
+    settings: pytest_django.Settings,
     django_user_model: type[User],
 ) -> None:
     current_password = "password"

@@ -7,7 +7,7 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
 from django.urls import reverse
 from playwright.sync_api import Page
-from pytest_django.fixtures import SettingsWrapper
+from pytest_django import Settings
 from pytest_django.live_server_helper import LiveServer
 from pytest_django.plugin import DjangoDbBlocker
 from tastypie.models import ApiKey
@@ -123,10 +123,7 @@ def test_local_authentication_backend_authenticates_existing_user(
 
 @pytest.mark.django_db
 def test_removing_model_authentication_backend_disables_local_authentication(
-    page: Page,
-    live_server: LiveServer,
-    user: AbstractUser,
-    settings: SettingsWrapper,
+    page: Page, live_server: LiveServer, user: AbstractUser, settings: Settings
 ) -> None:
     disabled_backends = ["django.contrib.auth.backends.ModelBackend"]
     settings.AUTHENTICATION_BACKENDS = [
@@ -147,10 +144,7 @@ def test_removing_model_authentication_backend_disables_local_authentication(
 
 @pytest.mark.django_db
 def test_setting_login_url_redirects_to_oidc_login_page(
-    page: Page,
-    live_server: LiveServer,
-    user: AbstractUser,
-    settings: SettingsWrapper,
+    page: Page, live_server: LiveServer, user: AbstractUser, settings: Settings
 ) -> None:
     page.goto(live_server.url)
     assert page.url == f"{live_server.url}{reverse('login')}?next=/"
@@ -164,9 +158,7 @@ def test_setting_login_url_redirects_to_oidc_login_page(
 
 @pytest.mark.django_db
 def test_logging_out_logs_out_user_from_both_systems(
-    page: Page,
-    live_server: LiveServer,
-    settings: SettingsWrapper,
+    page: Page, live_server: LiveServer, settings: Settings
 ) -> None:
     page.goto(live_server.url)
 
@@ -188,9 +180,7 @@ def test_logging_out_logs_out_user_from_both_systems(
 
 @pytest.mark.django_db
 def test_setting_request_parameter_in_local_login_url_redirects_to_secondary_provider_reader_role(
-    page: Page,
-    live_server: LiveServer,
-    settings: SettingsWrapper,
+    page: Page, live_server: LiveServer, settings: Settings
 ) -> None:
     page.goto(
         f"{live_server.url}{reverse('login')}?{settings.OIDC_PROVIDER_QUERY_PARAM_NAME}=SECONDARY"
@@ -220,9 +210,7 @@ def test_setting_request_parameter_in_local_login_url_redirects_to_secondary_pro
 
 @pytest.mark.django_db
 def test_logging_out_logs_out_user_from_secondary_provider_reader_role(
-    page: Page,
-    live_server: LiveServer,
-    settings: SettingsWrapper,
+    page: Page, live_server: LiveServer, settings: Settings
 ) -> None:
     page.goto(
         f"{live_server.url}{reverse('login')}?{settings.OIDC_PROVIDER_QUERY_PARAM_NAME}=SECONDARY"
@@ -251,9 +239,7 @@ def test_logging_out_logs_out_user_from_secondary_provider_reader_role(
 
 @pytest.mark.django_db
 def test_setting_request_parameter_in_local_login_url_redirects_to_secondary_provider_admin_role(
-    page: Page,
-    live_server: LiveServer,
-    settings: SettingsWrapper,
+    page: Page, live_server: LiveServer, settings: Settings
 ) -> None:
     page.goto(
         f"{live_server.url}{reverse('login')}?{settings.OIDC_PROVIDER_QUERY_PARAM_NAME}=SECONDARY"
@@ -275,9 +261,7 @@ def test_setting_request_parameter_in_local_login_url_redirects_to_secondary_pro
 
 @pytest.mark.django_db
 def test_logging_out_logs_out_user_from_secondary_provider_admin_role(
-    page: Page,
-    live_server: LiveServer,
-    settings: SettingsWrapper,
+    page: Page, live_server: LiveServer, settings: Settings
 ) -> None:
     page.goto(
         f"{live_server.url}{reverse('login')}?{settings.OIDC_PROVIDER_QUERY_PARAM_NAME}=SECONDARY"

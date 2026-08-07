@@ -80,6 +80,7 @@ ARG GROUP_ID
 
 WORKDIR /src/src/archivematica/storage_service/frontend
 
+COPY --link src/archivematica/storage_service/frontend/.npmrc /src/src/archivematica/storage_service/frontend/.npmrc
 COPY --link src/archivematica/storage_service/frontend/package.json /src/src/archivematica/storage_service/frontend/package.json
 COPY --link src/archivematica/storage_service/frontend/package-lock.json /src/src/archivematica/storage_service/frontend/package-lock.json
 
