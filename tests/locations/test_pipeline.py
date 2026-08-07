@@ -49,9 +49,7 @@ def test_parse_and_fix_url_with_empty_remote_name(pipeline: models.Pipeline) -> 
 @pytest.mark.django_db
 @mock.patch("requests.request")
 def test_request_api(
-    request: mock.Mock,
-    pipeline: models.Pipeline,
-    settings: pytest_django.fixtures.SettingsWrapper,
+    request: mock.Mock, pipeline: models.Pipeline, settings: pytest_django.Settings
 ) -> None:
     method = "GET"
     url = "http://127.0.0.1/api/processing-configuration/default"

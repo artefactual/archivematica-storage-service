@@ -3,7 +3,7 @@ from unittest import mock
 
 import botocore
 import pytest
-from pytest_django.fixtures import SettingsWrapper
+from pytest_django import Settings
 
 from archivematica.storage_service.locations import models
 
@@ -352,7 +352,7 @@ def test_delete_path_deletes_package(resource, s3_space, caplog):
 @pytest.mark.parametrize("use_threads", [True, False])
 def test_transfer_config_uses_settings_value(
     s3_space: models.S3,
-    settings: SettingsWrapper,
+    settings: Settings,
     use_threads: bool,
 ) -> None:
     settings.S3_USE_THREADS = use_threads
@@ -364,7 +364,7 @@ def test_transfer_config_uses_settings_value(
 @pytest.mark.parametrize("use_threads", [True, False])
 def test_upload_object_passes_transfer_config_to_boto3(
     s3_space: models.S3,
-    settings: SettingsWrapper,
+    settings: Settings,
     tmp_path: Path,
     use_threads: bool,
 ) -> None:
@@ -389,7 +389,7 @@ def test_upload_object_passes_transfer_config_to_boto3(
 def test_move_to_storage_service_passes_transfer_config_to_boto3(
     resource: mock.Mock,
     s3_space: models.S3,
-    settings: SettingsWrapper,
+    settings: Settings,
     tmp_path: Path,
     use_threads: bool,
 ) -> None:
