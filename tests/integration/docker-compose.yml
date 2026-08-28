@@ -87,7 +87,7 @@ services:
       - "keycloak"
 
   seaweedfs:
-    image: "chrislusf/seaweedfs:4.42"
+    image: "chrislusf/seaweedfs:4.44"
     command: ["mini", "-dir=/data"]
     environment:
       WEED_ADMIN_USER: "admin"
@@ -108,7 +108,7 @@ services:
       - "./etc/seaweedfs:/config:ro"
 
   seaweedfs-setup:
-    image: "chrislusf/seaweedfs:4.42"
+    image: "chrislusf/seaweedfs:4.44"
     entrypoint: []
     command:
       - "/bin/sh"
@@ -139,7 +139,7 @@ services:
       - "./etc/seaweedfs:/config:ro"
 
   mysql:
-    image: "percona/percona-server:8.4.10-10"
+    image: "percona/percona-server:8.4.11-11.1"
     environment:
       MYSQL_ROOT_PASSWORD: "root"
       # These are used in the storage_service.settings.testmysql module
@@ -154,7 +154,7 @@ services:
       start_period: 15s
 
   keycloak:
-    image: "quay.io/keycloak/keycloak:26.7.1-0"
+    image: "quay.io/keycloak/keycloak:26.7.2-1"
     command: ["start-dev", "--import-realm"]
     restart: "unless-stopped"
     environment:
