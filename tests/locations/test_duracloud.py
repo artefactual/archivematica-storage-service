@@ -699,3 +699,60 @@ def test_move_from_storage_service_fails_if_source_file_cannot_be_determined(
 
     with pytest.raises(StorageException, match=f"{f} is not a file or directory."):
         d.move_from_storage_service(f.as_posix(), "some/file.txt")
+
+
+@pytest.mark.django_db
+def test_post_move_from_storage_service_deletes_staging_file(space, tmp_path):
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    staging_file = tmp_path / "staging_file.txt"
+    staging_file.write_text("staged content")
+
+    assert staging_file.exists()
+
+    d.post_move_from_storage_service(
+        staging_path=staging_file.as_posix(), destination_path="some/file.txt"
+    )
+
+    assert not staging_file.exists()
+
+
+@pytest.mark.django_db
+def test_post_move_from_storage_service_deletes_staging_directory(space, tmp_path):
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    staging_dir = tmp_path / "staging_dir"
+    staging_dir.mkdir()
+    (staging_dir / "file1.txt").write_text("content 1")
+    (staging_dir / "file2.txt").write_text("content 2")
+    subdir = staging_dir / "subdir"
+    subdir.mkdir()
+    (subdir / "file3.txt").write_text("content 3")
+
+    assert staging_dir.exists()
+    assert (staging_dir / "file1.txt").exists()
+
+    d.post_move_from_storage_service(
+        staging_path=staging_dir.as_posix(), destination_path="some/folder/"
+    )
+
+    assert not staging_dir.exists()
+
+
+@pytest.mark.django_db
+def test_post_move_from_storage_service_handles_missing_staging_path(space, tmp_path):
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    nonexistent = tmp_path / "nonexistent"
+
+    # Should not raise an exception
+    d.post_move_from_storage_service(
+        staging_path=nonexistent.as_posix(), destination_path="some/file.txt"
+    )
+
+
+@pytest.mark.django_db
+def test_post_move_from_storage_service_handles_none_staging_path(space):
+    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+
+    # Should not raise an exception
+    d.post_move_from_storage_service(
+        staging_path=None, destination_path="some/file.txt"
+    )
