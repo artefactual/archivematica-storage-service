@@ -9,9 +9,9 @@ import requests
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from archivematica.storage_service.locations.models import StorageException
-from archivematica.storage_service.locations.models.location import Location
-from archivematica.storage_service.locations.models.urlmixin import URLMixin
+from . import StorageException
+from .location import Location
+from .urlmixin import URLMixin
 
 LOGGER = logging.getLogger(__name__)
 
@@ -28,7 +28,8 @@ class Dataverse(URLMixin, models.Model):
         max_length=50,
         verbose_name=_("API key"),
         help_text=_(
-            "API key for Dataverse instance. Eg. b84d6b87-7b1e-4a30-a374-87191dbbbe2d"
+            "API key for Dataverse instance. Eg. "
+            "b84d6b87-7b1e-4a30-a374-87191dbbbe2d"
         ),
     )
     agent_name = models.CharField(
@@ -158,7 +159,9 @@ class Dataverse(URLMixin, models.Model):
         ``dataset_identifier`` (conforming to ``browse`` protocol).
         """
         files_in_dataset_path = (
-            f"/api/v1/datasets/{dataset_identifier}/versions/:latest"
+            "/api/v1/datasets/{dataset_identifier}/versions/:latest".format(
+                dataset_identifier=dataset_identifier
+            )
         )
         url = self._generate_dataverse_url(slug=files_in_dataset_path)
         params = {"key": self.api_key, "sort": "name", "order": "asc"}
@@ -229,6 +232,7 @@ class Dataverse(URLMixin, models.Model):
 
         # Fetch all files in dataset.json
         for file_entry in dataset["latestVersion"]["files"]:
+            data_file = file_entry.get("dataFile", {})
             zipped_bundle = False
             entry_id = str(file_entry["dataFile"]["id"])
             if file_entry["label"].endswith(".tab"):
@@ -267,7 +271,7 @@ class Dataverse(URLMixin, models.Model):
                 # The bundle .zip itself is ephemeral, and so once downloaded
                 # unzip and remove the container here.
                 LOGGER.info("Bundle downloaded. Deleting.")
-                self.extract_and_remove_bundle(dest_path, download_path)
+                # self.extract_and_remove_bundle(dest_path, download_path)
 
         # Add Agent info
         agent_info = [
@@ -281,24 +285,6 @@ class Dataverse(URLMixin, models.Model):
         agentjson_path = os.path.join(dest_path, "metadata", "agents.json")
         with open(agentjson_path, "w") as f:
             json.dump(agent_info, f, sort_keys=True, indent=4, separators=(",", ": "))
-
-    @staticmethod
-    def extract_and_remove_bundle(dest_path, bundle_path):
-        """Given a bundle from Dataverse, extract the files from the ZIP and
-        then remove the original file from the file system.
-        """
-        try:
-            with zipfile.ZipFile(bundle_path, "r") as unzipper:
-                unzipper.extractall(dest_path)
-                os.unlink(bundle_path)
-        except zipfile.BadZipfile as err:
-            # Log the error and return without extracting the bundle.
-            # Archivematica may still be able to work with the data returned.
-            LOGGER.info("Bundle '%s' error: %s", bundle_path, err)
-        except OSError as err:
-            # Unlink has the potential to also raise an IOError so capture
-            # that here.
-            LOGGER.info("Issue deleting bundle zip from file system: %s", err)
 
     def _generate_dataverse_url(self, slug=""):
         """Manage the generation of a URL for various different Dataverse API
