@@ -821,9 +821,12 @@ class PosixMoveUnsupportedError(Exception):
 
 def _scandir_public(path):
     """Generate all directory entries, excluding hidden files."""
-    for entry in os.scandir(path):
-        if not entry.name.startswith("."):
-            yield entry
+    try:
+        for entry in os.scandir(path):
+            if not entry.name.startswith("."):
+                yield entry
+    except OSError:
+        return
 
 
 def _scandir_files(path):
@@ -850,14 +853,17 @@ def path2browse_dict(path):
 
     for entry in sorted(_scandir_public(path), key=lambda e: e.name.lower()):
         entries.append(entry.name)
-        if not entry.is_dir():
-            properties[entry.name] = {"size": entry.stat().st_size}
-        elif os.access(entry.path, os.R_OK):
-            directories.append(entry.name)
-            if should_count:
-                properties[entry.name] = {
-                    "object count": count_objects_in_directory(entry.path)
-                }
+        try:
+            if not entry.is_dir():
+                properties[entry.name] = {"size": entry.stat().st_size}
+            elif os.access(entry.path, os.R_OK):
+                directories.append(entry.name)
+                if should_count:
+                    properties[entry.name] = {
+                        "object count": count_objects_in_directory(entry.path)
+                    }
+        except OSError:
+            continue
 
     return {"directories": directories, "entries": entries, "properties": properties}
 
