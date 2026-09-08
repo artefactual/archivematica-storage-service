@@ -119,7 +119,7 @@ services:
         condition: service_healthy
 
   seaweedfs:
-    image: "chrislusf/seaweedfs:4.45"
+    image: "chrislusf/seaweedfs:4.46"
     command: ["mini", "-dir=/data"]
     environment:
       WEED_ADMIN_USER: "admin"
@@ -140,7 +140,7 @@ services:
       - "./etc/seaweedfs:/config:ro"
 
   seaweedfs-setup:
-    image: "chrislusf/seaweedfs:4.45"
+    image: "chrislusf/seaweedfs:4.46"
     entrypoint: []
     command: ["/bin/sh", "/setup.sh"]
     configs:
