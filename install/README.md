@@ -831,19 +831,19 @@ services.
 [DB_PASSWORD]: https://docs.djangoproject.com/en/1.8/ref/settings/#password
 [DB_HOST]: https://docs.djangoproject.com/en/1.8/ref/settings/#host
 [#813]: https://github.com/artefactual/archivematica/pull/813
-[USER]: http://docs.gunicorn.org/en/stable/settings.html#user
-[GROUP]: http://docs.gunicorn.org/en/stable/settings.html#group
-[BIND]: http://docs.gunicorn.org/en/stable/settings.html#bind
-[WORKERS]: http://docs.gunicorn.org/en/stable/settings.html#workers
-[WORKER-CLASS]: http://docs.gunicorn.org/en/stable/settings.html#worker-class
-[TIMEOUT]: http://docs.gunicorn.org/en/stable/settings.html#timeout
-[RELOAD]: http://docs.gunicorn.org/en/stable/settings.html#reload
-[RELOAD-ENGINE]: http://docs.gunicorn.org/en/stable/settings.html#reload-engine
-[CHDIR]: http://docs.gunicorn.org/en/stable/settings.html#chdir
-[ACCESSLOG]: http://docs.gunicorn.org/en/stable/settings.html#accesslog
-[ERRORLOG]: http://docs.gunicorn.org/en/stable/settings.html#errorlog
-[LOGLEVEL]: http://docs.gunicorn.org/en/stable/settings.html#loglevel
-[PROC-NAME]: http://docs.gunicorn.org/en/stable/settings.html#proc-name
+[USER]: http://gunicorn.org/reference/settings/#user
+[GROUP]: http://gunicorn.org/reference/settings/#group
+[BIND]: http://gunicorn.org/reference/settings/#bind
+[WORKERS]: http://gunicorn.org/reference/settings/#workers
+[WORKER-CLASS]: http://gunicorn.org/reference/settings/#worker-class
+[TIMEOUT]: http://gunicorn.org/reference/settings/#timeout
+[RELOAD]: http://gunicorn.org/reference/settings/#reload
+[RELOAD-ENGINE]: http://gunicorn.org/reference/settings/#reload-engine
+[CHDIR]: http://gunicorn.org/reference/settings/#chdir
+[ACCESSLOG]: http://gunicorn.org/reference/settings/#accesslog
+[ERRORLOG]: http://gunicorn.org/reference/settings/#errorlog
+[LOGLEVEL]: http://gunicorn.org/reference/settings/#loglevel
+[PROC-NAME]: http://gunicorn.org/reference/settings/#proc-name
 [available values]: https://django-auth-ldap.readthedocs.io/en/latest/groups.html
 [AWS CLI Environment Variables]: https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html
 [django-csp policy settings]: https://django-csp.readthedocs.io/en/latest/configuration.html#policy-settings
