@@ -60,9 +60,9 @@ of these settings or provide values to mandatory fields.
 
 - **`DJANGO_SETTINGS_MODULE`**:
   - **Description:** the [settings module] used by Django. There are three
-    modules available: [storage_service.settings.production](../storage_service/storage_service/settings/production.py),
-    [storage_service.settings.local](../storage_service/storage_service/settings/local.py)
-    and [storage_service.settings.test](../storage_service/storage_service/settings/test.py).
+    modules available: [archivematica.storage_service.storage_service.settings.production][settings-production],
+    [archivematica.storage_service.storage_service.settings.local][settings-local]
+    and [archivematica.storage_service.storage_service.settings.test][settings-test].
     Unless you are a developer you should only use the former.
   - **Type:** `string`
   - :red_circle: **Mandatory!**
@@ -169,7 +169,7 @@ of these settings or provide values to mandatory fields.
 - **`SS_SHIBBOLETH_AUTHENTICATION`**:
   - **Description:** enables the Shibboleth authentication system. Other
     settings related to Shibboleth cannot be defined via environment variables
-    at the moment, please edit [storage_service.settings.base](../storage_service/storage_service/settings/base.py)
+    at the moment, please edit [archivematica.storage_service.storage_service.settings.base][settings-base]
     manually.
   - **Type:** `boolean`
   - **Default:** `false`
@@ -181,11 +181,17 @@ of these settings or provide values to mandatory fields.
   - **Default:** `false`
 
 - **`SS_BAG_VALIDATION_NO_PROCESSES`**:
-  - **Description:** number of concurrent processes used by BagIt. If Gunicorn
-    is being used to serve the Storage Service and its worker class is set to
-    `gevent`, then BagIt validation must use 1 process. Otherwise, calls to
-    `validate` will hang because of the incompatibility between gevent and
-    multiprocessing (BagIt) concurrency strategies. See [#708].
+  - **Description:** number of processes BagIt uses to verify checksums when
+    the Storage Service validates a bag (fixity checks and AIP reingest).
+    Keep it at `1` when Gunicorn runs with the `gevent` worker class (the
+    default). Any other value (`0` selects BagIt's default pool size) makes
+    BagIt verify checksums in a `multiprocessing` pool. Gunicorn's gevent
+    worker monkey-patches threading, which is incompatible with the queues
+    those pools use, so validation hangs in that configuration. See the
+    [gevent monkey-patching caveats] and [storage service PR 230], which
+    introduced this setting. Use a higher value only when validation runs
+    outside a gevent-monkey-patched worker; `sync` is the recommended worker
+    class.
   - **Type:** `int`
   - **Default:** `1`
 
@@ -265,7 +271,7 @@ and expects the following environment variables to be defined:
 There are a limited number of email settings that can be populated via
 environment variables - we are hoping to improve this soon (see
 [#813]). We have some
-settings hard-coded (see [storage_service.settings.production](../storage_service/storage_service/settings/production.py)).
+settings hard-coded (see [archivematica.storage_service.storage_service.settings.production][settings-production]).
 This is the current list of strings supported:
 
 - **`EMAIL_BACKEND`**:
@@ -327,14 +333,13 @@ This is the current list of strings supported:
 
 - **`SS_GUNICORN_WORKERS`**:
   - **Description:** number of gunicorn worker processes to run. See [WORKERS].
-    If `SS_GUNICORN_WORKER_CLASS` is set to `gevent`, then `SS_BAG_VALIDATION_NO_PROCESSES`
-    **must** be set to `1`. Otherwise reingest will fail at bagit validate. See
-    [#708].
   - **Type:** `integer`
   - **Default:** `1`
 
 - **`SS_GUNICORN_WORKER_CLASS`**:
   - **Description:** the type of worker processes to run. See [WORKER-CLASS].
+    With `gevent` (the default), `SS_BAG_VALIDATION_NO_PROCESSES` must stay
+    at `1`; see that setting for the reason.
   - **Type:** `string`
   - **Default:** `gevent`
 
@@ -759,7 +764,7 @@ used to access the logs from different containers, e.g. `docker compose logs
 
 ### Overriding the logging configuration
 
-Via the Django configuration settings, i.e. [base.py][django-config], the
+Via the Django configuration settings, i.e. [base.py][settings-base], the
 storage service will look for a file in `/etc/archivematica/` called
 `storageService.logging.json`. If this file is found it can be used to override
 the default logging behavior.
@@ -817,13 +822,17 @@ services.
 
 [python-docs]: https://docs.python.org/3/howto/logging.html#when-to-use-logging
 [boto3]: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/core/boto3.html#boto3.set_stream
-[django-config]: https://github.com/artefactual/archivematica-storage-service/blob/1adaea28b8853308b8220c493d836eb9d50eb975/storage_service/storage_service/settings/base.py
 [gh-issues]: https://github.com/archivematica/issues
 [settings module]: https://docs.djangoproject.com/en/1.8/ref/settings/#settings
 [SECRET_KEY]: https://docs.djangoproject.com/en/1.8/ref/settings/#secret-key
 [ALLOWED_HOSTS]: https://docs.djangoproject.com/en/1.8/ref/settings/#allowed-hosts
 [TIME_ZONE]: https://docs.djangoproject.com/en/1.8/ref/settings/#time-zone
-[#708]: https://github.com/artefactual/archivematica/issues/708
+[settings-production]: ../src/archivematica/storage_service/storage_service/settings/production.py
+[settings-local]: ../src/archivematica/storage_service/storage_service/settings/local.py
+[settings-test]: ../src/archivematica/storage_service/storage_service/settings/test.py
+[settings-base]: ../src/archivematica/storage_service/storage_service/settings/base.py
+[gevent monkey-patching caveats]: https://www.gevent.org/api/gevent.monkey.html#gevent.monkey.patch_thread
+[storage service PR 230]: https://github.com/artefactual/archivematica-storage-service/pull/230
 [Control Security Policy]: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
 [dj-database-url docs]: https://github.com/kennethreitz/dj-database-url#url-schema
 [engine]: https://docs.djangoproject.com/en/1.8/ref/settings/#engine
@@ -831,19 +840,19 @@ services.
 [DB_PASSWORD]: https://docs.djangoproject.com/en/1.8/ref/settings/#password
 [DB_HOST]: https://docs.djangoproject.com/en/1.8/ref/settings/#host
 [#813]: https://github.com/artefactual/archivematica/pull/813
-[USER]: http://docs.gunicorn.org/en/stable/settings.html#user
-[GROUP]: http://docs.gunicorn.org/en/stable/settings.html#group
-[BIND]: http://docs.gunicorn.org/en/stable/settings.html#bind
-[WORKERS]: http://docs.gunicorn.org/en/stable/settings.html#workers
-[WORKER-CLASS]: http://docs.gunicorn.org/en/stable/settings.html#worker-class
-[TIMEOUT]: http://docs.gunicorn.org/en/stable/settings.html#timeout
-[RELOAD]: http://docs.gunicorn.org/en/stable/settings.html#reload
-[RELOAD-ENGINE]: http://docs.gunicorn.org/en/stable/settings.html#reload-engine
-[CHDIR]: http://docs.gunicorn.org/en/stable/settings.html#chdir
-[ACCESSLOG]: http://docs.gunicorn.org/en/stable/settings.html#accesslog
-[ERRORLOG]: http://docs.gunicorn.org/en/stable/settings.html#errorlog
-[LOGLEVEL]: http://docs.gunicorn.org/en/stable/settings.html#loglevel
-[PROC-NAME]: http://docs.gunicorn.org/en/stable/settings.html#proc-name
+[USER]: http://gunicorn.org/reference/settings/#user
+[GROUP]: http://gunicorn.org/reference/settings/#group
+[BIND]: http://gunicorn.org/reference/settings/#bind
+[WORKERS]: http://gunicorn.org/reference/settings/#workers
+[WORKER-CLASS]: http://gunicorn.org/reference/settings/#worker-class
+[TIMEOUT]: http://gunicorn.org/reference/settings/#timeout
+[RELOAD]: http://gunicorn.org/reference/settings/#reload
+[RELOAD-ENGINE]: http://gunicorn.org/reference/settings/#reload-engine
+[CHDIR]: http://gunicorn.org/reference/settings/#chdir
+[ACCESSLOG]: http://gunicorn.org/reference/settings/#accesslog
+[ERRORLOG]: http://gunicorn.org/reference/settings/#errorlog
+[LOGLEVEL]: http://gunicorn.org/reference/settings/#loglevel
+[PROC-NAME]: http://gunicorn.org/reference/settings/#proc-name
 [available values]: https://django-auth-ldap.readthedocs.io/en/latest/groups.html
 [AWS CLI Environment Variables]: https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html
 [django-csp policy settings]: https://django-csp.readthedocs.io/en/latest/configuration.html#policy-settings

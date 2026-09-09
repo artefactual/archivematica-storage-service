@@ -23,10 +23,14 @@ bind = os.environ.get("SS_GUNICORN_BIND", "127.0.0.1:8001")
 workers = os.environ.get("SS_GUNICORN_WORKERS", "1")
 
 # http://docs.gunicorn.org/en/stable/settings.html#worker-class
-# WARNING: if ``worker_class`` is set to ``'gevent'``, then
-# ``BAG_VALIDATION_NO_PROCESSES`` in settings/base.py *must* be set to 1.
-# Otherwise reingest will fail at bagit validate. See
-# https://github.com/artefactual/archivematica/issues/708
+# WARNING: with ``worker_class = 'gevent'`` (the default), keep
+# ``SS_BAG_VALIDATION_NO_PROCESSES`` at 1. Any other value makes BagIt verify
+# checksums in a ``multiprocessing`` pool, and the gevent worker monkey-patches
+# threading, which is incompatible with the queues those pools use, so bag
+# validation hangs. Use a higher value only when validation runs outside a
+# gevent-monkey-patched worker; ``sync`` is the recommended worker class. See
+# https://www.gevent.org/api/gevent.monkey.html#gevent.monkey.patch_thread
+# and https://github.com/artefactual/archivematica-storage-service/pull/230
 worker_class = os.environ.get("SS_GUNICORN_WORKER_CLASS", "gevent")
 
 # http://docs.gunicorn.org/en/stable/settings.html#timeout
