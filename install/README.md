@@ -60,9 +60,9 @@ of these settings or provide values to mandatory fields.
 
 - **`DJANGO_SETTINGS_MODULE`**:
   - **Description:** the [settings module] used by Django. There are three
-    modules available: [storage_service.settings.production](../storage_service/storage_service/settings/production.py),
-    [storage_service.settings.local](../storage_service/storage_service/settings/local.py)
-    and [storage_service.settings.test](../storage_service/storage_service/settings/test.py).
+    modules available: [archivematica.storage_service.storage_service.settings.production][settings-production],
+    [archivematica.storage_service.storage_service.settings.local][settings-local]
+    and [archivematica.storage_service.storage_service.settings.test][settings-test].
     Unless you are a developer you should only use the former.
   - **Type:** `string`
   - :red_circle: **Mandatory!**
@@ -169,7 +169,7 @@ of these settings or provide values to mandatory fields.
 - **`SS_SHIBBOLETH_AUTHENTICATION`**:
   - **Description:** enables the Shibboleth authentication system. Other
     settings related to Shibboleth cannot be defined via environment variables
-    at the moment, please edit [storage_service.settings.base](../storage_service/storage_service/settings/base.py)
+    at the moment, please edit [archivematica.storage_service.storage_service.settings.base][settings-base]
     manually.
   - **Type:** `boolean`
   - **Default:** `false`
@@ -271,7 +271,7 @@ and expects the following environment variables to be defined:
 There are a limited number of email settings that can be populated via
 environment variables - we are hoping to improve this soon (see
 [#813]). We have some
-settings hard-coded (see [storage_service.settings.production](../storage_service/storage_service/settings/production.py)).
+settings hard-coded (see [archivematica.storage_service.storage_service.settings.production][settings-production]).
 This is the current list of strings supported:
 
 - **`EMAIL_BACKEND`**:
@@ -828,6 +828,10 @@ services.
 [SECRET_KEY]: https://docs.djangoproject.com/en/1.8/ref/settings/#secret-key
 [ALLOWED_HOSTS]: https://docs.djangoproject.com/en/1.8/ref/settings/#allowed-hosts
 [TIME_ZONE]: https://docs.djangoproject.com/en/1.8/ref/settings/#time-zone
+[settings-production]: ../src/archivematica/storage_service/storage_service/settings/production.py
+[settings-local]: ../src/archivematica/storage_service/storage_service/settings/local.py
+[settings-test]: ../src/archivematica/storage_service/storage_service/settings/test.py
+[settings-base]: ../src/archivematica/storage_service/storage_service/settings/base.py
 [gevent monkey-patching caveats]: https://www.gevent.org/api/gevent.monkey.html#gevent.monkey.patch_thread
 [storage service PR 230]: https://github.com/artefactual/archivematica-storage-service/pull/230
 [Control Security Policy]: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
