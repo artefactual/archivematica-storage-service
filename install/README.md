@@ -764,7 +764,7 @@ used to access the logs from different containers, e.g. `docker compose logs
 
 ### Overriding the logging configuration
 
-Via the Django configuration settings, i.e. [base.py][django-config], the
+Via the Django configuration settings, i.e. [base.py][settings-base], the
 storage service will look for a file in `/etc/archivematica/` called
 `storageService.logging.json`. If this file is found it can be used to override
 the default logging behavior.
@@ -822,7 +822,6 @@ services.
 
 [python-docs]: https://docs.python.org/3/howto/logging.html#when-to-use-logging
 [boto3]: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/core/boto3.html#boto3.set_stream
-[django-config]: https://github.com/artefactual/archivematica-storage-service/blob/1adaea28b8853308b8220c493d836eb9d50eb975/storage_service/storage_service/settings/base.py
 [gh-issues]: https://github.com/archivematica/issues
 [settings module]: https://docs.djangoproject.com/en/1.8/ref/settings/#settings
 [SECRET_KEY]: https://docs.djangoproject.com/en/1.8/ref/settings/#secret-key
