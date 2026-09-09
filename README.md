@@ -108,7 +108,7 @@ on the [Contributors Portal].
 [contributing guidelines]: CONTRIBUTING.md
 [Archivematica]: https://github.com/artefactual/archivematica
 [Storage Service]: https://github.com/artefactual/archivematica-storage-service
-[Format Policy Registry]: https://github.com/artefactual/archivematica/tree/qa/1.x/src/dashboard/src/fpr
+[Format Policy Registry]: https://github.com/artefactual/archivematica/tree/qa/1.x/src/archivematica/dashboard/fpr
 [Case studies repo]: https://github.com/archivematica/archivematica-case-studies
 [dependencies]: https://contributors.artefactual.com/dependencies.html#archivematica
 [Contributors Portal]: https://contributors.artefactual.com/index.html
