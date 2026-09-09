@@ -732,11 +732,15 @@ if OIDC_AUTHENTICATION:
 
 ######### END OIDC CONFIGURATION #########
 
-# WARNING: if Gunicorn is being used to serve the Storage Service and its
-# worker class is set to `gevent`, then BagIt validation must use 1 process.
-# Otherwise, calls to `validate` will hang because of the incompatibility
-# between gevent and multiprocessing (BagIt) concurrency strategies. See
-# https://github.com/artefactual/archivematica/issues/708
+# WARNING: keep this at 1 when Gunicorn runs with the `gevent` worker class
+# (the default). Any other value (0 selects BagIt's default pool size) makes
+# BagIt verify checksums in a `multiprocessing` pool. Gunicorn's gevent worker
+# monkey-patches threading, which is incompatible with the queues those pools
+# use, so validation hangs in that configuration. Use a higher value only when
+# validation runs outside a gevent-monkey-patched worker; `sync` is the
+# recommended worker class. See
+# https://www.gevent.org/api/gevent.monkey.html#gevent.monkey.patch_thread
+# and https://github.com/artefactual/archivematica-storage-service/pull/230
 try:
     BAG_VALIDATION_NO_PROCESSES = int(environ.get("SS_BAG_VALIDATION_NO_PROCESSES", 1))
 except ValueError:

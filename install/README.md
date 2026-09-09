@@ -181,11 +181,17 @@ of these settings or provide values to mandatory fields.
   - **Default:** `false`
 
 - **`SS_BAG_VALIDATION_NO_PROCESSES`**:
-  - **Description:** number of concurrent processes used by BagIt. If Gunicorn
-    is being used to serve the Storage Service and its worker class is set to
-    `gevent`, then BagIt validation must use 1 process. Otherwise, calls to
-    `validate` will hang because of the incompatibility between gevent and
-    multiprocessing (BagIt) concurrency strategies. See [#708].
+  - **Description:** number of processes BagIt uses to verify checksums when
+    the Storage Service validates a bag (fixity checks and AIP reingest).
+    Keep it at `1` when Gunicorn runs with the `gevent` worker class (the
+    default). Any other value (`0` selects BagIt's default pool size) makes
+    BagIt verify checksums in a `multiprocessing` pool. Gunicorn's gevent
+    worker monkey-patches threading, which is incompatible with the queues
+    those pools use, so validation hangs in that configuration. See the
+    [gevent monkey-patching caveats] and [storage service PR 230], which
+    introduced this setting. Use a higher value only when validation runs
+    outside a gevent-monkey-patched worker; `sync` is the recommended worker
+    class.
   - **Type:** `int`
   - **Default:** `1`
 
@@ -327,14 +333,13 @@ This is the current list of strings supported:
 
 - **`SS_GUNICORN_WORKERS`**:
   - **Description:** number of gunicorn worker processes to run. See [WORKERS].
-    If `SS_GUNICORN_WORKER_CLASS` is set to `gevent`, then `SS_BAG_VALIDATION_NO_PROCESSES`
-    **must** be set to `1`. Otherwise reingest will fail at bagit validate. See
-    [#708].
   - **Type:** `integer`
   - **Default:** `1`
 
 - **`SS_GUNICORN_WORKER_CLASS`**:
   - **Description:** the type of worker processes to run. See [WORKER-CLASS].
+    With `gevent` (the default), `SS_BAG_VALIDATION_NO_PROCESSES` must stay
+    at `1`; see that setting for the reason.
   - **Type:** `string`
   - **Default:** `gevent`
 
@@ -823,7 +828,8 @@ services.
 [SECRET_KEY]: https://docs.djangoproject.com/en/1.8/ref/settings/#secret-key
 [ALLOWED_HOSTS]: https://docs.djangoproject.com/en/1.8/ref/settings/#allowed-hosts
 [TIME_ZONE]: https://docs.djangoproject.com/en/1.8/ref/settings/#time-zone
-[#708]: https://github.com/artefactual/archivematica/issues/708
+[gevent monkey-patching caveats]: https://www.gevent.org/api/gevent.monkey.html#gevent.monkey.patch_thread
+[storage service PR 230]: https://github.com/artefactual/archivematica-storage-service/pull/230
 [Control Security Policy]: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
 [dj-database-url docs]: https://github.com/kennethreitz/dj-database-url#url-schema
 [engine]: https://docs.djangoproject.com/en/1.8/ref/settings/#engine
