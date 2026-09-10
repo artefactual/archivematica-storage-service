@@ -1,4 +1,5 @@
 import os
+import re
 from collections.abc import Generator
 
 import pytest
@@ -7,6 +8,7 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
 from django.urls import reverse
 from playwright.sync_api import Page
+from playwright.sync_api import expect
 from pytest_django import Settings
 from pytest_django.live_server_helper import LiveServer
 from pytest_django.plugin import DjangoDbBlocker
@@ -14,6 +16,10 @@ from tastypie.models import ApiKey
 
 if "RUN_INTEGRATION_TESTS" not in os.environ:
     pytest.skip("Skipping integration tests", allow_module_level=True)
+
+
+def url_starting_with(prefix: str) -> re.Pattern[str]:
+    return re.compile(f"^{re.escape(prefix)}")
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -65,7 +71,7 @@ def test_oidc_backend_creates_local_user(
     page.get_by_label("Password", exact=True).fill("demo")
     page.get_by_role("button", name="Sign In").click()
 
-    assert page.url == f"{live_server.url}/"
+    expect(page).to_have_url(f"{live_server.url}/")
 
     user = django_user_model.objects.get(
         username="demo@example.com", first_name="Demo", last_name="User"
@@ -74,9 +80,8 @@ def test_oidc_backend_creates_local_user(
     page.get_by_role("link", name="Administration").click()
     page.get_by_role("link", name="View").click()
 
-    assert (
-        page.url
-        == f"{live_server.url}{reverse('administration:user_detail', args=[user.pk])}"
+    expect(page).to_have_url(
+        f"{live_server.url}{reverse('administration:user_detail', args=[user.pk])}"
     )
     details_text = page.locator("dl").text_content()
     assert details_text is not None
@@ -100,14 +105,13 @@ def test_local_authentication_backend_authenticates_existing_user(
     page.get_by_label("Password").fill("foobar1A,")
     page.get_by_text("Log in", exact=True).click()
 
-    assert page.url == f"{live_server.url}/"
+    expect(page).to_have_url(f"{live_server.url}/")
 
     page.get_by_role("link", name="Administration").click()
     page.get_by_role("link", name="View").click()
 
-    assert (
-        page.url
-        == f"{live_server.url}{reverse('administration:user_detail', args=[user.pk])}"
+    expect(page).to_have_url(
+        f"{live_server.url}{reverse('administration:user_detail', args=[user.pk])}"
     )
     details_text = page.locator("dl").text_content()
     assert details_text is not None
@@ -136,7 +140,7 @@ def test_removing_model_authentication_backend_disables_local_authentication(
     page.get_by_label("Password").fill("foobar1A,")
     page.get_by_text("Log in", exact=True).click()
 
-    assert page.url == f"{live_server.url}{settings.LOGIN_URL}"
+    expect(page).to_have_url(f"{live_server.url}{settings.LOGIN_URL}")
     error_text = page.locator("p").text_content()
     assert error_text is not None
     assert "Your username and password didn't match." in error_text.strip()
@@ -147,13 +151,13 @@ def test_setting_login_url_redirects_to_oidc_login_page(
     page: Page, live_server: LiveServer, user: AbstractUser, settings: Settings
 ) -> None:
     page.goto(live_server.url)
-    assert page.url == f"{live_server.url}{reverse('login')}?next=/"
+    expect(page).to_have_url(f"{live_server.url}{reverse('login')}?next=/")
 
     settings.LOGIN_URL = reverse("oidc_authentication_init")
 
     page.goto(live_server.url)
 
-    assert page.url.startswith(settings.OIDC_OP_AUTHORIZATION_ENDPOINT)
+    expect(page).to_have_url(url_starting_with(settings.OIDC_OP_AUTHORIZATION_ENDPOINT))
 
 
 @pytest.mark.django_db
@@ -167,15 +171,15 @@ def test_logging_out_logs_out_user_from_both_systems(
     page.get_by_label("Password", exact=True).fill("demo")
     page.get_by_role("button", name="Sign In").click()
 
-    assert page.url == f"{live_server.url}/"
+    expect(page).to_have_url(f"{live_server.url}/")
 
     # Logging out redirects the user to the login url.
     page.get_by_role("button", name="Log out").click()
-    assert page.url == f"{live_server.url}{reverse('login')}?next=/"
+    expect(page).to_have_url(f"{live_server.url}{reverse('login')}?next=/")
 
     # Logging in through the OIDC provider requires to authenticate again.
     page.get_by_role("link", name="Log in with OpenID Connect").click()
-    assert page.url.startswith(settings.OIDC_OP_AUTHORIZATION_ENDPOINT)
+    expect(page).to_have_url(url_starting_with(settings.OIDC_OP_AUTHORIZATION_ENDPOINT))
 
 
 @pytest.mark.django_db
@@ -191,7 +195,7 @@ def test_setting_request_parameter_in_local_login_url_redirects_to_secondary_pro
     page.get_by_label("Password", exact=True).fill("support")
     page.get_by_role("button", name="Sign In").click()
 
-    assert page.url == f"{live_server.url}/"
+    expect(page).to_have_url(f"{live_server.url}/")
 
     page.get_by_role("link", name="Administration").click()
     page.get_by_role("link", name="View").click()
@@ -221,19 +225,21 @@ def test_logging_out_logs_out_user_from_secondary_provider_reader_role(
     page.get_by_label("Password", exact=True).fill("support")
     page.get_by_role("button", name="Sign In").click()
 
-    assert page.url == f"{live_server.url}/"
+    expect(page).to_have_url(f"{live_server.url}/")
 
     # Logging out redirects the user to the login url.
     page.get_by_role("button", name="Log out").click()
-    assert page.url == f"{live_server.url}{reverse('login')}?next=/"
+    expect(page).to_have_url(f"{live_server.url}{reverse('login')}?next=/")
 
     # Logging in through the OIDC provider requires to authenticate again.
     page.goto(
         f"{live_server.url}{reverse('login')}?{settings.OIDC_PROVIDER_QUERY_PARAM_NAME}=SECONDARY"
     )
     page.get_by_role("link", name="Log in with OpenID Connect").click()
-    assert page.url.startswith(
-        settings.OIDC_PROVIDERS["SECONDARY"]["OIDC_OP_AUTHORIZATION_ENDPOINT"]
+    expect(page).to_have_url(
+        url_starting_with(
+            settings.OIDC_PROVIDERS["SECONDARY"]["OIDC_OP_AUTHORIZATION_ENDPOINT"]
+        )
     )
 
 
@@ -250,13 +256,15 @@ def test_setting_request_parameter_in_local_login_url_redirects_to_secondary_pro
     page.get_by_label("Password", exact=True).fill("support")
     page.get_by_role("button", name="Sign In").click()
 
-    assert page.url == f"{live_server.url}/"
+    expect(page).to_have_url(f"{live_server.url}/")
 
     page.get_by_role("link", name="Administration").click()
 
     page.get_by_role("link", name="Configuration").click()
 
-    assert page.url == f"{live_server.url}{reverse('administration:configuration')}"
+    expect(page).to_have_url(
+        f"{live_server.url}{reverse('administration:configuration')}"
+    )
 
 
 @pytest.mark.django_db
@@ -272,19 +280,21 @@ def test_logging_out_logs_out_user_from_secondary_provider_admin_role(
     page.get_by_label("Password", exact=True).fill("support")
     page.get_by_role("button", name="Sign In").click()
 
-    assert page.url == f"{live_server.url}/"
+    expect(page).to_have_url(f"{live_server.url}/")
 
     # Logging out redirects the user to the login url.
     page.get_by_role("button", name="Log out").click()
-    assert page.url == f"{live_server.url}{reverse('login')}?next=/"
+    expect(page).to_have_url(f"{live_server.url}{reverse('login')}?next=/")
 
     # Logging in through the OIDC provider requires to authenticate again.
     page.goto(
         f"{live_server.url}{reverse('login')}?{settings.OIDC_PROVIDER_QUERY_PARAM_NAME}=SECONDARY"
     )
     page.get_by_role("link", name="Log in with OpenID Connect").click()
-    assert page.url.startswith(
-        settings.OIDC_PROVIDERS["SECONDARY"]["OIDC_OP_AUTHORIZATION_ENDPOINT"]
+    expect(page).to_have_url(
+        url_starting_with(
+            settings.OIDC_PROVIDERS["SECONDARY"]["OIDC_OP_AUTHORIZATION_ENDPOINT"]
+        )
     )
 
 
@@ -293,14 +303,14 @@ def test_logout_link_logs_out_user(
     page: Page, live_server: LiveServer, user: AbstractUser, user_apikey: ApiKey
 ) -> None:
     page.goto(live_server.url)
-    assert page.url == f"{live_server.url}{reverse('login')}?next=/"
+    expect(page).to_have_url(f"{live_server.url}{reverse('login')}?next=/")
 
     page.get_by_label("Username").fill("foobar")
     page.get_by_label("Password").fill("foobar1A,")
     page.get_by_text("Log in", exact=True).click()
 
-    assert page.url == f"{live_server.url}/"
+    expect(page).to_have_url(f"{live_server.url}/")
 
     page.get_by_role("button", name="Log out").click()
 
-    assert page.url == f"{live_server.url}{reverse('login')}"
+    expect(page).to_have_url(f"{live_server.url}{reverse('login')}")
