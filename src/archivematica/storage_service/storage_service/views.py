@@ -3,6 +3,9 @@ from urllib.parse import urlencode
 from django.conf import settings
 from django.contrib.auth.views import logout_then_login
 from django.core.exceptions import ImproperlyConfigured
+from django.http import HttpRequest
+from django.http import HttpResponse
+from django.shortcuts import render
 from django.utils import timezone
 from django.utils.translation import get_language
 from django.views.decorators.cache import cache_page
@@ -20,7 +23,20 @@ def cached_javascript_catalog(request, domain="djangojs", packages=None):
 
 
 class CustomShibbolethLogoutView(ShibbolethLogoutView):
-    pass
+    """Accept the POST that the "Log out" form submits.
+
+    The library's view only implements GET.
+    """
+
+    def post(
+        self, request: HttpRequest, *args: object, **kwargs: object
+    ) -> HttpResponse:
+        return self.get(request, *args, **kwargs)
+
+
+def logged_out(request: HttpRequest) -> HttpResponse:
+    """Page the service provider returns to after a Shibboleth logout."""
+    return render(request, "logged_out.html")
 
 
 class CustomOIDCAuthenticationRequestView(OIDCAuthenticationRequestView):

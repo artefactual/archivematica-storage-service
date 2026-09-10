@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from typing import Any
 
 import jwt
@@ -7,6 +8,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpRequest
 from django_cas_ng.backends import CASBackend
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
+from shibboleth.backends import ShibbolethRemoteUserBackend
 
 from archivematica.storage_service.administration import roles
 
@@ -20,6 +22,22 @@ class CustomCASBackend(CASBackend):
             user.email = f"{user.username}@{settings.CAS_EMAIL_DOMAIN}"
             user.save()
         return user
+
+
+class CustomShibbolethRemoteUserBackend(ShibbolethRemoteUserBackend):
+    @staticmethod
+    def update_user_params(user: User, params: Mapping[str, str]) -> None:
+        """Copy the released attributes onto the user when they changed.
+
+        The library's version fails when the identity provider releases no
+        attribute that maps to a user field.
+        """
+        if params and any(
+            getattr(user, name) != value for name, value in params.items()
+        ):
+            for name, value in params.items():
+                setattr(user, name, value)
+            user.save()
 
 
 class CustomOIDCBackend(OIDCAuthenticationBackend):

@@ -13,6 +13,7 @@ on:
           - "oidc"
           - "cas"
           - "ldap"
+          - "shibboleth"
   pull_request:
     paths:
       - ".github/workflows/authentication.yml"
@@ -76,6 +77,11 @@ jobs:
                           name: "LDAP",
                           label: "ldap",
                           service: "archivematica-storage-service-ldap"
+                      },
+                      {
+                          name: "Shibboleth",
+                          label: "shibboleth",
+                          service: "archivematica-storage-service-shibboleth"
                       }
                   ]
                   | if $selected == "all"
@@ -172,6 +178,16 @@ jobs:
           load: true
           cache-from: "type=gha,scope=archivematica-storage-service-cas-server"
           cache-to: "type=gha,scope=archivematica-storage-service-cas-server,mode=max"
+      - name: "Build the Shibboleth service provider image"
+        if: "${{ matrix.provider.name == 'Shibboleth' }}"
+        uses: "docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a" # v7.3.0
+        with:
+          context: "./tests/integration/etc/shibboleth"
+          tags: "archivematica-storage-service-shibboleth-sp:latest"
+          push: false
+          load: true
+          cache-from: "type=gha,scope=archivematica-storage-service-shibboleth-sp"
+          cache-to: "type=gha,scope=archivematica-storage-service-shibboleth-sp,mode=max"
       - name: "Run tests"
         id: "run-tests"
         run: |
