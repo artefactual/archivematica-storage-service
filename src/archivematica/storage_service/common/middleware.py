@@ -1,7 +1,9 @@
+from collections.abc import Mapping
 from re import compile
 from urllib.parse import quote
 
 from django.conf import settings
+from django.contrib.auth.models import AbstractBaseUser
 from django.http import HttpResponseRedirect
 from django.utils.deprecation import MiddlewareMixin
 from shibboleth.middleware import ShibbolethRemoteUserMiddleware
@@ -70,7 +72,9 @@ class CustomShibbolethRemoteUserMiddleware(ShibbolethRemoteUserMiddleware):
 
     header = SHIBBOLETH_REMOTE_USER_HEADER
 
-    def make_profile(self, user, shib_meta):
+    def make_profile(
+        self, user: AbstractBaseUser, shib_meta: Mapping[str, str]
+    ) -> None:
         """
         Customize the user based on shib_meta mappings (anything that's not
         already covered by the attribute map)

@@ -61,7 +61,25 @@ else:
     ]
 
 if "shibboleth" in settings.INSTALLED_APPS:
-    urlpatterns += [path("shib/", include("shibboleth.urls"))]
+    from shibboleth.views import ShibbolethLoginView
+    from shibboleth.views import ShibbolethView
+
+    from archivematica.storage_service.storage_service.views import (
+        CustomShibbolethLogoutView,
+    )
+    from archivematica.storage_service.storage_service.views import logged_out
+
+    # The library's URLconf, with a logout view that accepts the POST of the
+    # "Log out" form.
+    shibboleth_urlpatterns = [
+        path("login/", ShibbolethLoginView.as_view(), name="login"),
+        path("logout/", CustomShibbolethLogoutView.as_view(), name="logout"),
+        path("", ShibbolethView.as_view(), name="info"),
+    ]
+    urlpatterns += [
+        path("shib/", include((shibboleth_urlpatterns, "shibboleth"))),
+        path("logged-out/", logged_out, name="logged_out"),
+    ]
 
 
 if settings.PROMETHEUS_ENABLED:

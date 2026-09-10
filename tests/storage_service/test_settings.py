@@ -12,6 +12,29 @@ AUTHENTICATION_SWITCHES = (
 )
 
 
+def test_cas_and_shibboleth_cannot_be_enabled_together() -> None:
+    """The settings refuse CAS together with another single sign-on method."""
+    env = {
+        **os.environ,
+        "SS_SHIBBOLETH_AUTHENTICATION": "true",
+        "SS_CAS_AUTHENTICATION": "true",
+    }
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import archivematica.storage_service.storage_service.settings.base",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "CAS authentication is not supported in tandem" in result.stderr
+
+
 @pytest.mark.parametrize(
     "variable,setting",
     [
