@@ -1,0 +1,12 @@
+{
+  "@class": "org.apereo.cas.services.CasRegisteredService",
+  "serviceId": "^http://archivematica-storage-service:8000/.*",
+  "name": "Archivematica Storage Service (integration tests)",
+  "description": "Archivematica Storage Service live test server CAS service",
+  "id": 1002,
+  "evaluationOrder": 20,
+  "logoutType": "NONE",
+  "attributeReleasePolicy": {
+    "@class": "org.apereo.cas.services.ReturnAllAttributeReleasePolicy"
+  }
+}

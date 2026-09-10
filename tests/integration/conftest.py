@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from collections.abc import Generator
 from collections.abc import Iterator
 from typing import TYPE_CHECKING
 from typing import Any
@@ -8,11 +9,49 @@ from typing import Any
 import boto3
 import pytest
 from boto3.resources.base import ServiceResource
+from django.contrib.auth.models import Group
+from pytest_django.plugin import DjangoDbBlocker
 
 if TYPE_CHECKING:
     from mypy_boto3_s3.service_resource import Bucket
     from mypy_boto3_s3.service_resource import BucketObjectsCollection
     from mypy_boto3_s3.service_resource import S3ServiceResource
+
+
+def create_user_groups() -> None:
+    """Create the user groups added during the 0030_user_groups migration."""
+    Group.objects.get_or_create(name="Managers")
+    Group.objects.get_or_create(name="Reviewers")
+
+
+@pytest.fixture(autouse=True)
+def recreate_user_groups(
+    django_db_setup: None, django_db_blocker: DjangoDbBlocker
+) -> Generator[None, None, None]:
+    """Recreate user groups added during the 0030_user_groups migration.
+
+    The flush that the live_server fixture runs after each test does not
+    restore migration data, so the groups are recreated before every test.
+    """
+    with django_db_blocker.unblock():
+        create_user_groups()
+
+    yield
+
+
+@pytest.fixture(scope="module", autouse=True)
+def recreate_user_groups_after_module(
+    django_db_setup: None, django_db_blocker: DjangoDbBlocker
+) -> Generator[None, None, None]:
+    """Recreate user groups added during the 0030_user_groups migration.
+
+    The modules collected after this directory, the unit tests included,
+    rely on the groups that the flush of the last test removed.
+    """
+    yield
+
+    with django_db_blocker.unblock():
+        create_user_groups()
 
 
 class KeyRecordingIterable:

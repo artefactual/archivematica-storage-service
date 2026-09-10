@@ -6,8 +6,9 @@
 #   INTEGRATION_SERVICE   Compose service that runs pytest. The default
 #                         service runs the unit tests and the storage suites;
 #                         the authentication suites run in dedicated services
-#                         (archivematica-storage-service-oidc, ...) because
-#                         their Django settings cannot all be enabled at once.
+#                         (archivematica-storage-service-oidc, -cas, ...)
+#                         because their Django settings cannot all be enabled
+#                         at once.
 #   SKIP_DOCKER_BUILD     When set, use the images already built.
 #   PYTEST_ADDOPTS        Extra pytest options, e.g. "-k expr".
 #   REUSE_TEST_ENV        When set, leave the stack running after the tests.
@@ -26,6 +27,10 @@ if [ -z "${SKIP_DOCKER_BUILD}" ]; then
             # The authentication services reuse the image built by the
             # default service.
             docker compose build archivematica-storage-service
+            ;;
+        archivematica-storage-service-cas)
+            # The CAS service also needs the CAS server image.
+            docker compose build archivematica-storage-service cas
             ;;
         *)
             docker compose build "${INTEGRATION_SERVICE}"
