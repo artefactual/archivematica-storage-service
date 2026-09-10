@@ -12,6 +12,7 @@ on:
           - "all"
           - "oidc"
           - "cas"
+          - "ldap"
   pull_request:
     paths:
       - ".github/workflows/authentication.yml"
@@ -70,6 +71,11 @@ jobs:
                           name: "CAS",
                           label: "cas",
                           service: "archivematica-storage-service-cas"
+                      },
+                      {
+                          name: "LDAP",
+                          label: "ldap",
+                          service: "archivematica-storage-service-ldap"
                       }
                   ]
                   | if $selected == "all"
