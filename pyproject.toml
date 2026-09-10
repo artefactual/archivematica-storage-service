@@ -167,6 +167,7 @@ module = [
     "tests.locations.test_reingest",
     "tests.storage_service.test_cas",
     "tests.storage_service.test_helpers",
+    "tests.storage_service.test_ldap",
     "tests.storage_service.test_oidc",
     "tests.storage_service.test_settings",
 ]
