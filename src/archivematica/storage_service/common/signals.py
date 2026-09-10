@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.db import transaction
 from django.dispatch import receiver
+from django_auth_ldap.backend import _LDAPUser
 from django_auth_ldap.backend import populate_user
 from django_cas_ng.signals import cas_user_authenticated
 
@@ -105,7 +106,12 @@ def cas_user_authenticated_callback(
 
 
 @receiver(populate_user)
-def ldap_populate_user_profile(sender, user=None, ldap_user=None, **kwargs):
+def ldap_populate_user_profile(
+    sender: object,
+    user: AbstractBaseUser | None = None,
+    ldap_user: _LDAPUser | None = None,
+    **kwargs: object,
+) -> None:
     """Populate the user role after authentication."""
     if not settings.LDAP_AUTHENTICATION:
         return
