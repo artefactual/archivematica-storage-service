@@ -1,6 +1,27 @@
 ---
 name: ss-integration
 
+x-storage-service-environment: &storage-service-environment
+  PYTEST_ADDOPTS: ${PYTEST_ADDOPTS:-}
+  RUN_INTEGRATION_TESTS: "true"
+  DJANGO_LIVE_TEST_SERVER_ADDRESS: "archivematica-storage-service:8000"
+  DJANGO_ALLOW_ASYNC_UNSAFE: true
+  FORWARDED_ALLOW_IPS: "*"
+  SS_GUNICORN_ACCESSLOG: "/dev/null"
+  DJANGO_SETTINGS_MODULE: "archivematica.storage_service.storage_service.settings.testmysql"
+  # /src is bind-mounted, so point Django staticfiles to the image-owned dist copy.
+  SS_FRONTEND_DIST_DIR: "/opt/ss-frontend-dist"
+  SS_GNUPG_HOME_PATH: "/var/archivematica/storage_service/.gnupg"
+  SESSION_COOKIE_SECURE: "false"
+  SESSION_COOKIE_SAMESITE: "Lax"
+  CSRF_COOKIE_SECURE: "false"
+  RCLONE_CONFIG_MYS3_TYPE: "s3"
+  RCLONE_CONFIG_MYS3_PROVIDER: "SeaweedFS"
+  RCLONE_CONFIG_MYS3_ENDPOINT: "http://seaweedfs:8333"
+  RCLONE_CONFIG_MYS3_ACCESS_KEY_ID: "ss"
+  RCLONE_CONFIG_MYS3_SECRET_ACCESS_KEY: "ss123"
+  RCLONE_CONFIG_MYS3_REGION: "us-east-1"
+
 configs:
 
   seaweedfs-setup:
@@ -38,6 +59,7 @@ configs:
 services:
 
   archivematica-storage-service:
+    image: "archivematica-storage-service-tests:latest"
     build:
       context: "../../"
       dockerfile: "Dockerfile"
@@ -52,25 +74,25 @@ services:
     command: ["pytest", "--browser", "firefox"]
     hostname: "archivematica-storage-service"
     environment:
-      PYTEST_ADDOPTS: ${PYTEST_ADDOPTS:-}
-      RUN_INTEGRATION_TESTS: "true"
-      DJANGO_LIVE_TEST_SERVER_ADDRESS: "archivematica-storage-service:8000"
-      DJANGO_ALLOW_ASYNC_UNSAFE: true
-      FORWARDED_ALLOW_IPS: "*"
-      SS_GUNICORN_ACCESSLOG: "/dev/null"
-      DJANGO_SETTINGS_MODULE: "archivematica.storage_service.storage_service.settings.testmysql"
-      # /src is bind-mounted, so point Django staticfiles to the image-owned dist copy.
-      SS_FRONTEND_DIST_DIR: "/opt/ss-frontend-dist"
-      SS_GNUPG_HOME_PATH: "/var/archivematica/storage_service/.gnupg"
-      SESSION_COOKIE_SECURE: "false"
-      SESSION_COOKIE_SAMESITE: "Lax"
-      CSRF_COOKIE_SECURE: "false"
-      RCLONE_CONFIG_MYS3_TYPE: "s3"
-      RCLONE_CONFIG_MYS3_PROVIDER: "SeaweedFS"
-      RCLONE_CONFIG_MYS3_ENDPOINT: "http://seaweedfs:8333"
-      RCLONE_CONFIG_MYS3_ACCESS_KEY_ID: "ss"
-      RCLONE_CONFIG_MYS3_SECRET_ACCESS_KEY: "ss123"
-      RCLONE_CONFIG_MYS3_REGION: "us-east-1"
+      <<: *storage-service-environment
+    volumes:
+      - "../../:/src"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      seaweedfs:
+        condition: service_healthy
+      seaweedfs-setup:
+        condition: service_completed_successfully
+
+  archivematica-storage-service-oidc:
+    image: "archivematica-storage-service-tests:latest"
+    entrypoint: ""
+    working_dir: "/src"
+    command: ["pytest", "--browser", "firefox", "/src/tests/integration/test_oidc_auth.py"]
+    hostname: "archivematica-storage-service"
+    environment:
+      <<: *storage-service-environment
       SS_OIDC_AUTHENTICATION: "true"
       OIDC_USE_PKCE: "true"
       OIDC_PKCE_CODE_CHALLENGE_METHOD: "S256"
@@ -111,10 +133,6 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-      seaweedfs:
-        condition: service_healthy
-      seaweedfs-setup:
-        condition: service_completed_successfully
       keycloak:
         condition: service_healthy
 

@@ -3,6 +3,7 @@ import re
 from collections.abc import Generator
 
 import pytest
+from django.conf import settings as django_settings
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
@@ -16,6 +17,9 @@ from tastypie.models import ApiKey
 
 if "RUN_INTEGRATION_TESTS" not in os.environ:
     pytest.skip("Skipping integration tests", allow_module_level=True)
+
+if not django_settings.OIDC_AUTHENTICATION:
+    pytest.skip("Skipping OIDC integration tests", allow_module_level=True)
 
 
 def url_starting_with(prefix: str) -> re.Pattern[str]:
