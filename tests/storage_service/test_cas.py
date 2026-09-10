@@ -1,221 +1,234 @@
-from unittest import mock
-
 import pytest
-from django.conf import settings
+import pytest_django
 from django.contrib.auth.models import User
-from django.test import RequestFactory
-from django.test import TestCase
-from django.test.client import Client
 
 from archivematica.storage_service.administration import roles
 from archivematica.storage_service.common.backends import CustomCASBackend
 from archivematica.storage_service.common.signals import _cas_user_role
+from archivematica.storage_service.common.signals import cas_user_authenticated_callback
 
 TEST_CAS_USER = "casuser"
-TEST_CAS_ADMIN_ATTRIBUTE = "usertype"
-TEST_CAS_ADMIN_ATTRIBUTE_VALUE_POSITIVE = "admin"
-TEST_CAS_ADMIN_ATTRIBUTE_VALUE_NEGATIVE = "regular"
-
-TEST_CAS_ATTRIBUTES_STRING_POSITIVE = {
-    TEST_CAS_ADMIN_ATTRIBUTE: TEST_CAS_ADMIN_ATTRIBUTE_VALUE_POSITIVE
-}
-TEST_CAS_ATTRIBUTES_STRING_NEGATIVE = {
-    TEST_CAS_ADMIN_ATTRIBUTE: TEST_CAS_ADMIN_ATTRIBUTE_VALUE_NEGATIVE
-}
-TEST_CAS_ATTRIBUTES_LIST_POSITIVE = {
-    TEST_CAS_ADMIN_ATTRIBUTE: [
-        TEST_CAS_ADMIN_ATTRIBUTE_VALUE_POSITIVE,
-        "attribute1",
-        "attribute2",
-    ]
-}
-TEST_CAS_ATTRIBUTES_LIST_NEGATIVE = {
-    TEST_CAS_ADMIN_ATTRIBUTE: [
-        TEST_CAS_ADMIN_ATTRIBUTE_VALUE_NEGATIVE,
-        "attribute1",
-        "attribute2",
-    ]
-}
+TEST_CAS_ROLE_ATTRIBUTE = "memberOf"
+TEST_CAS_ADMIN_ATTRIBUTE_VALUE = "administrators"
+TEST_CAS_MANAGER_ATTRIBUTE_VALUE = "managers"
+TEST_CAS_REVIEWER_ATTRIBUTE_VALUE = "reviewers"
 
 
-def mock_verify(ticket, service):
-    user = TEST_CAS_USER
-    attributes = {
-        "ticket": ticket,
-        "service": service,
-        TEST_CAS_ADMIN_ATTRIBUTE: TEST_CAS_ADMIN_ATTRIBUTE_VALUE_NEGATIVE,
-    }
-    pgtiou = None
-    return user, attributes, pgtiou
+@pytest.fixture
+def settings(settings: pytest_django.Settings) -> pytest_django.Settings:
+    settings.CAS_ADMIN_ATTRIBUTE = TEST_CAS_ROLE_ATTRIBUTE
+    settings.CAS_ADMIN_ATTRIBUTE_VALUE = TEST_CAS_ADMIN_ATTRIBUTE_VALUE
+    settings.CAS_MANAGER_ATTRIBUTE = TEST_CAS_ROLE_ATTRIBUTE
+    settings.CAS_MANAGER_ATTRIBUTE_VALUE = TEST_CAS_MANAGER_ATTRIBUTE_VALUE
+    settings.CAS_REVIEWER_ATTRIBUTE = TEST_CAS_ROLE_ATTRIBUTE
+    settings.CAS_REVIEWER_ATTRIBUTE_VALUE = TEST_CAS_REVIEWER_ATTRIBUTE_VALUE
+
+    return settings
 
 
-def mock_verify_superuser(ticket, service):
-    user = TEST_CAS_USER
-    attributes = {
-        "ticket": ticket,
-        "service": service,
-        TEST_CAS_ADMIN_ATTRIBUTE: TEST_CAS_ADMIN_ATTRIBUTE_VALUE_POSITIVE,
-    }
-    pgtiou = None
-    return user, attributes, pgtiou
-
-
-@pytest.mark.skipif(
-    not settings.CAS_AUTHENTICATION, reason="tests will only pass if CAS is enabled"
+@pytest.mark.parametrize(
+    "attributes,expected_role",
+    [
+        # The CAS client hands over a single group as a string and several
+        # groups as a list, so both shapes have to be understood.
+        (
+            {TEST_CAS_ROLE_ATTRIBUTE: TEST_CAS_ADMIN_ATTRIBUTE_VALUE},
+            roles.USER_ROLE_ADMIN,
+        ),
+        (
+            {TEST_CAS_ROLE_ATTRIBUTE: [TEST_CAS_MANAGER_ATTRIBUTE_VALUE, "users"]},
+            roles.USER_ROLE_MANAGER,
+        ),
+        # The roles are checked from the highest permission to the lowest, so
+        # a member of every group gets the highest role.
+        (
+            {
+                TEST_CAS_ROLE_ATTRIBUTE: [
+                    TEST_CAS_ADMIN_ATTRIBUTE_VALUE,
+                    TEST_CAS_MANAGER_ATTRIBUTE_VALUE,
+                    TEST_CAS_REVIEWER_ATTRIBUTE_VALUE,
+                ]
+            },
+            roles.USER_ROLE_ADMIN,
+        ),
+        (
+            {
+                TEST_CAS_ROLE_ATTRIBUTE: [
+                    TEST_CAS_MANAGER_ATTRIBUTE_VALUE,
+                    TEST_CAS_REVIEWER_ATTRIBUTE_VALUE,
+                ]
+            },
+            roles.USER_ROLE_MANAGER,
+        ),
+        (
+            {TEST_CAS_ROLE_ATTRIBUTE: TEST_CAS_REVIEWER_ATTRIBUTE_VALUE},
+            roles.USER_ROLE_REVIEWER,
+        ),
+        ({TEST_CAS_ROLE_ATTRIBUTE: ["users"]}, roles.USER_ROLE_READER),
+        ({}, roles.USER_ROLE_READER),
+        ({"affiliation": [TEST_CAS_ADMIN_ATTRIBUTE_VALUE]}, roles.USER_ROLE_READER),
+    ],
 )
-class TestCAS(TestCase):
-    def setUp(self):
-        self.client = Client()
+def test_cas_user_role(
+    settings: pytest_django.Settings,
+    attributes: dict[str, object],
+    expected_role: str,
+) -> None:
+    assert _cas_user_role(attributes) == expected_role
 
-    def authenticate_user(self, request):
-        """Helper function to authenticate a user using custom backend."""
-        backend = CustomCASBackend()
-        backend.authenticate(request, ticket="fake-ticket", service="fake-service")
 
-    def create_request(self):
-        """Helper function to create request that will redirect to CAS."""
-        factory = RequestFactory()
-        request = factory.get("/")
-        request.session = {}
-        return request
+@pytest.mark.parametrize(
+    "unset_setting", ["CAS_ADMIN_ATTRIBUTE", "CAS_ADMIN_ATTRIBUTE_VALUE"]
+)
+def test_unconfigured_role_attributes_grant_nobody_that_role(
+    settings: pytest_django.Settings, unset_setting: str
+) -> None:
+    setattr(settings, unset_setting, None)
 
-    def test_redirect_for_login(self):
-        """Unauthenticated users should be redirected twice.
-
-        After the initial redirect to LOGIN_URL, the user should be
-        redirected again to the CAS server for authentication.
-        """
-        response = self.client.get("/")
-        expected_redirect = settings.LOGIN_URL + "?next=/"
-        self.assertRedirects(
-            response, expected_redirect, status_code=302, target_status_code=302
+    # The administrator role is skipped because it is not configured, but the
+    # manager role still applies.
+    assert (
+        _cas_user_role(
+            {
+                TEST_CAS_ROLE_ATTRIBUTE: [
+                    TEST_CAS_ADMIN_ATTRIBUTE_VALUE,
+                    TEST_CAS_MANAGER_ATTRIBUTE_VALUE,
+                ]
+            }
         )
+        == roles.USER_ROLE_MANAGER
+    )
 
-    @mock.patch("cas.CASClientV2.verify_ticket", mock_verify)
-    def test_autoconfigure_email(self):
-        """Test that email is autoconfigured from username and domain."""
-        with self.settings(
-            CAS_AUTOCONFIGURE_EMAIL=True, CAS_EMAIL_DOMAIN="artefactual.com"
-        ):
-            request = self.create_request()
 
-            # Check that user doesn't already exist.
-            assert not User.objects.filter(username=TEST_CAS_USER).exists()
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "attributes,expected_role",
+    [
+        (
+            {TEST_CAS_ROLE_ATTRIBUTE: TEST_CAS_ADMIN_ATTRIBUTE_VALUE},
+            roles.USER_ROLE_ADMIN,
+        ),
+        (
+            {TEST_CAS_ROLE_ATTRIBUTE: [TEST_CAS_MANAGER_ATTRIBUTE_VALUE]},
+            roles.USER_ROLE_MANAGER,
+        ),
+        ({TEST_CAS_ROLE_ATTRIBUTE: ["users"]}, roles.USER_ROLE_READER),
+    ],
+)
+def test_cas_user_authenticated_callback_sets_the_role(
+    settings: pytest_django.Settings,
+    attributes: dict[str, object],
+    expected_role: str,
+) -> None:
+    settings.CAS_CHECK_ADMIN_ATTRIBUTES = True
+    user = User.objects.create(username=TEST_CAS_USER)
 
-            # Create the user and check its properties.
-            self.authenticate_user(request)
-            user = User.objects.get(username=TEST_CAS_USER)
-            assert user.username == TEST_CAS_USER
-            assert user.email == "casuser@artefactual.com"
+    cas_user_authenticated_callback(sender=None, user=user, attributes=attributes)
 
-    @mock.patch("cas.CASClientV2.verify_ticket", mock_verify_superuser)
-    def test_check_admin_attributes_superuser_new_user(self):
-        """Test setting is_superuser for new users.
+    user.refresh_from_db()
+    assert roles.get_user_role(user) == expected_role
+    assert user.is_superuser is (expected_role == roles.USER_ROLE_ADMIN)
+    assert user.groups.filter(name="Managers").exists() is (
+        expected_role == roles.USER_ROLE_MANAGER
+    )
 
-        If settings are properly configured and expected key-value is
-        found in the CAS attributes, user.is_superuser should be True.
-        """
-        # Check that user doesn't already exist.
-        assert not User.objects.filter(username=TEST_CAS_USER).exists()
 
-        with self.settings(
-            CAS_CHECK_ADMIN_ATTRIBUTES=True,
-            CAS_ADMIN_ATTRIBUTE=TEST_CAS_ADMIN_ATTRIBUTE,
-            CAS_ADMIN_ATTRIBUTE_VALUE=TEST_CAS_ADMIN_ATTRIBUTE_VALUE_POSITIVE,
-        ):
-            request = self.create_request()
-            self.authenticate_user(request)
-            user = User.objects.get(username=TEST_CAS_USER)
-            assert user.get_role() == roles.USER_ROLE_ADMIN
+@pytest.mark.django_db
+def test_cas_user_authenticated_callback_demotes_a_former_administrator(
+    settings: pytest_django.Settings,
+) -> None:
+    settings.CAS_CHECK_ADMIN_ATTRIBUTES = True
+    user = User.objects.create(username=TEST_CAS_USER, is_superuser=True)
+    assert roles.get_user_role(user) == roles.USER_ROLE_ADMIN
 
-    @mock.patch("cas.CASClientV2.verify_ticket", mock_verify_superuser)
-    def test_check_admin_attributes_superuser_existing_user(self):
-        """Test setting is_superuser for existing users.
+    cas_user_authenticated_callback(
+        sender=None,
+        user=user,
+        attributes={TEST_CAS_ROLE_ATTRIBUTE: ["users"]},
+    )
 
-        If settings are properly configured and expected key-value is
-        found in the CAS attributes, user.is_superuser for an existing
-        non-administrative user should be updated to True.
-        """
-        user = User.objects.create(username=TEST_CAS_USER)
-        assert user.get_role() == roles.USER_ROLE_READER
+    user.refresh_from_db()
+    assert roles.get_user_role(user) == roles.USER_ROLE_READER
+    assert not user.is_superuser
 
-        # Authenticate again with CAS_CHECK_ADMIN_ATTRIBUTES enabled
-        # and check that user.is_superuser has been updated to True.
-        with self.settings(
-            CAS_CHECK_ADMIN_ATTRIBUTES=True,
-            CAS_ADMIN_ATTRIBUTE=TEST_CAS_ADMIN_ATTRIBUTE,
-            CAS_ADMIN_ATTRIBUTE_VALUE=TEST_CAS_ADMIN_ATTRIBUTE_VALUE_POSITIVE,
-        ):
-            request = self.create_request()
-            self.authenticate_user(request)
-            user = User.objects.get(username=TEST_CAS_USER)
-            assert user.get_role() == roles.USER_ROLE_ADMIN
 
-    @mock.patch("cas.CASClientV2.verify_ticket", mock_verify)
-    def test_check_admin_attributes_regular_new_user(self):
-        """Test setting is_superuser for new users.
+@pytest.mark.django_db
+def test_cas_user_authenticated_callback_sets_the_role_on_the_authenticated_user(
+    settings: pytest_django.Settings,
+) -> None:
+    settings.CAS_CHECK_ADMIN_ATTRIBUTES = True
+    user = User.objects.create(username=TEST_CAS_USER)
+    # django_cas_ng can match a local user through another field, in which
+    # case the CAS username it sends along differs from the local one and may
+    # even name another account.
+    other_user = User.objects.create(username=f"{TEST_CAS_USER}@example.com")
 
-        If settings are properly configured and expected key-value is
-        not found in the CAS attributes, user.is_superuser should be
-        False.
-        """
-        # Check that user doesn't already exist.
-        assert not User.objects.filter(username=TEST_CAS_USER).exists()
+    cas_user_authenticated_callback(
+        sender=None,
+        user=user,
+        username=other_user.username,
+        attributes={TEST_CAS_ROLE_ATTRIBUTE: TEST_CAS_ADMIN_ATTRIBUTE_VALUE},
+    )
 
-        with self.settings(
-            CAS_CHECK_ADMIN_ATTRIBUTES=True,
-            CAS_ADMIN_ATTRIBUTE=TEST_CAS_ADMIN_ATTRIBUTE,
-            CAS_ADMIN_ATTRIBUTE_VALUE=TEST_CAS_ADMIN_ATTRIBUTE_VALUE_POSITIVE,
-        ):
-            request = self.create_request()
-            self.authenticate_user(request)
-            user = User.objects.get(username=TEST_CAS_USER)
-            assert user.get_role() == roles.USER_ROLE_MANAGER
+    user.refresh_from_db()
+    assert roles.get_user_role(user) == roles.USER_ROLE_ADMIN
+    other_user.refresh_from_db()
+    assert roles.get_user_role(other_user) == roles.USER_ROLE_READER
 
-    @mock.patch("cas.CASClientV2.verify_ticket", mock_verify_superuser)
-    def test_check_admin_attributes_regular_existing_user(self):
-        """Test setting is_superuser for existing users.
 
-        If settings are properly configured and expected key-value is
-        not found in the CAS attributes, user.is_superuser for an
-        existing administrative user should be updated to False.
-        """
-        # Create a new superuser.
-        user = User.objects.create(username=TEST_CAS_USER, is_superuser=True)
-        assert user.get_role() == roles.USER_ROLE_ADMIN
+@pytest.mark.django_db
+def test_cas_user_authenticated_callback_ignores_a_missing_user(
+    settings: pytest_django.Settings,
+) -> None:
+    settings.CAS_CHECK_ADMIN_ATTRIBUTES = True
 
-        # Authenticate with CAS_ADMIN_ATTRIBUTE_VALUE set to a value
-        # not present in the CAS attributes and check that
-        # user.is_superuser has been updated to False.
-        with self.settings(
-            CAS_CHECK_ADMIN_ATTRIBUTES=True,
-            CAS_ADMIN_ATTRIBUTE=TEST_CAS_ADMIN_ATTRIBUTE,
-            CAS_ADMIN_ATTRIBUTE_VALUE="something else",
-        ):
-            request = self.create_request()
-            self.authenticate_user(request)
-            user = User.objects.get(username=TEST_CAS_USER)
-            assert user.get_role() == roles.USER_ROLE_MANAGER
+    # django_cas_ng sends no user when it is configured not to create local
+    # users and none matches the CAS identity.
+    cas_user_authenticated_callback(
+        sender=None,
+        user=None,
+        username=TEST_CAS_USER,
+        attributes={TEST_CAS_ROLE_ATTRIBUTE: TEST_CAS_ADMIN_ATTRIBUTE_VALUE},
+    )
 
-    def test_cas_user_role(self):
-        """Unit test for _cas_user_role helper."""
-        with self.settings(
-            CAS_CHECK_ADMIN_ATTRIBUTES=True,
-            CAS_ADMIN_ATTRIBUTE="usertype",
-            CAS_ADMIN_ATTRIBUTE_VALUE="admin",
-            CAS_MANAGER_ATTRIBUTE="usertype",
-            CAS_MANAGER_ATTRIBUTE_VALUE="manager",
-            CAS_REVIEWER_ATTRIBUTE="usertype",
-            CAS_REVIEWER_ATTRIBUTE_VALUE="reviewer",
-        ):
-            role = _cas_user_role({"usertype": "admin"})
-            assert role == roles.USER_ROLE_ADMIN
+    assert not User.objects.exists()
 
-            role = _cas_user_role({"usertype": "manager"})
-            assert role == roles.USER_ROLE_MANAGER
 
-            role = _cas_user_role({"usertype": "reviewer"})
-            assert role == roles.USER_ROLE_REVIEWER
+@pytest.mark.django_db
+def test_cas_user_authenticated_callback_does_nothing_when_the_check_is_off(
+    settings: pytest_django.Settings,
+) -> None:
+    settings.CAS_CHECK_ADMIN_ATTRIBUTES = False
+    user = User.objects.create(username=TEST_CAS_USER, is_superuser=True)
 
-            role = _cas_user_role({})
-            assert role == roles.USER_ROLE_READER
+    # These attributes would demote the administrator if the check was on.
+    cas_user_authenticated_callback(
+        sender=None,
+        user=user,
+        attributes={TEST_CAS_ROLE_ATTRIBUTE: ["users"]},
+    )
+
+    user.refresh_from_db()
+    assert roles.get_user_role(user) == roles.USER_ROLE_ADMIN
+    assert user.is_superuser
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "autoconfigure_email,expected_email",
+    [(True, f"{TEST_CAS_USER}@example.com"), (False, "")],
+)
+def test_cas_backend_autoconfigures_email(
+    settings: pytest_django.Settings,
+    autoconfigure_email: bool,
+    expected_email: str,
+) -> None:
+    settings.CAS_AUTOCONFIGURE_EMAIL = autoconfigure_email
+    settings.CAS_EMAIL_DOMAIN = "example.com"
+    user = User.objects.create(username=TEST_CAS_USER)
+
+    configured_user = CustomCASBackend().configure_user(user)
+
+    assert configured_user.email == expected_email
+    user.refresh_from_db()
+    assert user.email == expected_email

@@ -1,7 +1,9 @@
 import logging
+from collections.abc import Mapping
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.base_user import AbstractBaseUser
 from django.db import transaction
 from django.dispatch import receiver
 from django_auth_ldap.backend import populate_user
@@ -12,7 +14,7 @@ from archivematica.storage_service.administration import roles
 LOGGER = logging.getLogger(__name__)
 
 
-def _cas_user_role(cas_attributes):
+def _cas_user_role(cas_attributes: Mapping[str, object]) -> str:
     """Determine the role of the user from CAS attributes.
 
     :param cas_attributes: Attributes dict returned by CAS server.
@@ -47,19 +49,26 @@ def _cas_user_role(cas_attributes):
             )
         ):
             continue
+        # CAS attributes are a dictionary. The value for a given key can be
+        # a string or a list, so our approach for checking for the expected
+        # value takes that into account.
         cas_attr = cas_attributes.get(role_attr)
-        if not cas_attr:
-            continue
         if isinstance(cas_attr, str):
-            cas_attr = [cas_attr]
-        if role_attr_val in cas_attr:
+            if cas_attr == role_attr_val:
+                return role
+        elif isinstance(cas_attr, list) and role_attr_val in cas_attr:
             return role
 
     return roles.USER_ROLE_READER
 
 
 @receiver(cas_user_authenticated)
-def cas_user_authenticated_callback(sender, **kwargs):
+def cas_user_authenticated_callback(
+    sender: object,
+    user: AbstractBaseUser | None = None,
+    attributes: Mapping[str, object] | None = None,
+    **kwargs: object,
+) -> None:
     """Set user.is_superuser based on CAS attributes.
 
     When a user is authenticated, django_cas_ng sends the
@@ -81,20 +90,18 @@ def cas_user_authenticated_callback(sender, **kwargs):
 
     LOGGER.debug("cas_user_authenticated signal received")
 
-    username = kwargs.get("user")
-    attributes = kwargs.get("attributes")
-
-    if not attributes:
+    # The signal also carries the CAS username, which django_cas_ng can match
+    # to a local user through another field, so the role is set on the
+    # authenticated user itself.
+    if user is None or not attributes:
         return
 
     User = get_user_model()
-    role = _cas_user_role(attributes)
-
-    role = roles.promoted_role(role)
+    role = roles.promoted_role(_cas_user_role(attributes))
 
     with transaction.atomic():
-        user = User.objects.select_for_update().get(username=username)
-        user.set_role(role)
+        authenticated_user = User.objects.select_for_update().get(pk=user.pk)
+        authenticated_user.set_role(role)
 
 
 @receiver(populate_user)

@@ -11,6 +11,7 @@ on:
         options:
           - "all"
           - "oidc"
+          - "cas"
   pull_request:
     paths:
       - ".github/workflows/authentication.yml"
@@ -64,6 +65,11 @@ jobs:
                           name: "OIDC",
                           label: "oidc",
                           service: "archivematica-storage-service-oidc"
+                      },
+                      {
+                          name: "CAS",
+                          label: "cas",
+                          service: "archivematica-storage-service-cas"
                       }
                   ]
                   | if $selected == "all"
@@ -150,6 +156,16 @@ jobs:
             type=gha,scope=archivematica-storage-service-tests-base-${{ env.UBUNTU_VERSION }}-${{ env.PYTHON_VERSION }},mode=max
             type=gha,scope=archivematica-storage-service-tests-${{ env.UBUNTU_VERSION }}-${{ env.PYTHON_VERSION }},mode=max
             type=gha,scope=archivematica-storage-service-tests-${{ env.UBUNTU_VERSION }}-${{ env.PYTHON_VERSION }}-${{ steps.cache_key.outputs.requirements_hash }},mode=max
+      - name: "Build the CAS server image"
+        if: "${{ matrix.provider.name == 'CAS' }}"
+        uses: "docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a" # v7.3.0
+        with:
+          context: "./tests/integration/etc/cas"
+          tags: "archivematica-storage-service-cas:latest"
+          push: false
+          load: true
+          cache-from: "type=gha,scope=archivematica-storage-service-cas-server"
+          cache-to: "type=gha,scope=archivematica-storage-service-cas-server,mode=max"
       - name: "Run tests"
         id: "run-tests"
         run: |

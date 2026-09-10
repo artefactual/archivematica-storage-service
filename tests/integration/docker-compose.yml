@@ -136,6 +136,25 @@ services:
       keycloak:
         condition: service_healthy
 
+  archivematica-storage-service-cas:
+    image: "archivematica-storage-service-tests:latest"
+    entrypoint: ""
+    working_dir: "/src"
+    command: ["pytest", "--browser", "firefox", "/src/tests/integration/test_cas_auth.py"]
+    hostname: "archivematica-storage-service"
+    environment:
+      <<: *storage-service-environment
+      SS_CAS_AUTHENTICATION: "true"
+      AUTH_CAS_SERVER_URL: "http://cas:8080/cas/"
+      AUTH_CAS_PROTOCOL_VERSION: "3"
+    volumes:
+      - "../../:/src"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      cas:
+        condition: service_healthy
+
   seaweedfs:
     image: "chrislusf/seaweedfs:4.46"
     command: ["mini", "-dir=/data"]
@@ -207,3 +226,28 @@ services:
       timeout: 5s
       retries: 30
       start_period: 30s
+
+  cas:
+    image: "archivematica-storage-service-cas"
+    build:
+      context: "./etc/cas"
+      args:
+        # Head of the cas-overlay-template 7.3 branch (CAS 7.3.8).
+        CAS_OVERLAY_COMMIT: "${CAS_OVERLAY_COMMIT:-b244d192d9462068fc24625a75ebe19ed6fc34cd}"
+    volumes:
+      - "./etc/cas/config:/etc/cas/config:ro"
+      - "./etc/cas/services:/etc/cas/services:ro"
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --silent
+        - --show-error
+        - --max-time
+        - "2"
+        - http://127.0.0.1:8080/cas/login
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 20s

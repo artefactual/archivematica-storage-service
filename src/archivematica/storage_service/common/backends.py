@@ -12,7 +12,7 @@ from archivematica.storage_service.administration import roles
 
 
 class CustomCASBackend(CASBackend):
-    def configure_user(self, user):
+    def configure_user(self, user: User) -> User:
         # If CAS_AUTOCONFIGURE_EMAIL and CAS_EMAIL_DOMAIN settings are
         # configured, add an email address for this user, using rule
         # username@domain.
