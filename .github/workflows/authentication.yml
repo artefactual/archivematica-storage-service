@@ -1,0 +1,182 @@
+---
+name: "Authentication Integration Test"
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: "Authentication provider to test"
+        default: "all"
+        required: true
+        type: "choice"
+        options:
+          - "all"
+          - "oidc"
+  pull_request:
+    paths:
+      - ".github/workflows/authentication.yml"
+      - ".python-version"
+      - "Dockerfile"
+      - "pyproject.toml"
+      - "src/archivematica/storage_service/administration/apps.py"
+      - "src/archivematica/storage_service/administration/roles.py"
+      - "src/archivematica/storage_service/common/**"
+      - "src/archivematica/storage_service/storage_service/**"
+      - "src/archivematica/storage_service/templates/**"
+      - "tests/integration/**"
+      - "uv.lock"
+  push:
+    branches:
+      - "qa/**"
+      - "stable/**"
+    paths:
+      - ".github/workflows/authentication.yml"
+      - ".python-version"
+      - "Dockerfile"
+      - "pyproject.toml"
+      - "src/archivematica/storage_service/administration/apps.py"
+      - "src/archivematica/storage_service/administration/roles.py"
+      - "src/archivematica/storage_service/common/**"
+      - "src/archivematica/storage_service/storage_service/**"
+      - "src/archivematica/storage_service/templates/**"
+      - "tests/integration/**"
+      - "uv.lock"
+env:
+  UBUNTU_VERSION: "24.04"
+  PYTHON_VERSION: "3.10"
+jobs:
+  select_matrix:
+    name: "Select the authentication provider matrix"
+    runs-on: "ubuntu-24.04"
+    outputs:
+      providers: "${{ steps.select.outputs.providers }}"
+    steps:
+      - name: "Select matrix"
+        id: "select"
+        env:
+          SELECTED_PROVIDER: "${{ inputs.provider }}"
+        run: |
+          selected="${SELECTED_PROVIDER:-all}"
+          providers=$(
+              jq --compact-output --null-input \
+                  --arg selected "$selected" \
+                  '[
+                      {
+                          name: "OIDC",
+                          label: "oidc",
+                          service: "archivematica-storage-service-oidc"
+                      }
+                  ]
+                  | if $selected == "all"
+                    then .
+                    else map(select(.label == $selected))
+                    end'
+          )
+          if [[ $(jq 'length' <<< "$providers") -eq 0 ]]; then
+              echo "Unknown authentication provider: ${selected}" >&2
+              exit 1
+          fi
+          echo "providers=${providers}" >> "$GITHUB_OUTPUT"
+  cache-python-builder:
+    name: "Cache layers of the python-builder stage"
+    runs-on: "ubuntu-24.04"
+    steps:
+      - name: "Check out repository"
+        uses: "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" # v7.0.1
+      - name: "Set up Docker Buildx"
+        uses: "docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e" # v4.3.0
+      - name: "Generate cache key from lockfile"
+        id: cache_key
+        run: |
+          echo "requirements_hash=${{ hashFiles('.python-version', 'pyproject.toml', 'uv.lock') }}" >> $GITHUB_OUTPUT
+      - name: "Build base layers"
+        uses: "docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a" # v7.3.0
+        with:
+          context: .
+          target: python-builder
+          build-args: |
+            UBUNTU_VERSION=${{ env.UBUNTU_VERSION }}
+            PYTHON_VERSION=${{ env.PYTHON_VERSION }}
+            BUILDKIT_INLINE_CACHE=1
+          push: false
+          cache-from: |
+            type=gha,scope=archivematica-storage-service-tests-base-${{ env.UBUNTU_VERSION }}-${{ env.PYTHON_VERSION }}
+            type=gha,scope=archivematica-storage-service-tests-${{ env.UBUNTU_VERSION }}-${{ env.PYTHON_VERSION }}-${{ steps.cache_key.outputs.requirements_hash }}
+          cache-to: |
+            type=gha,scope=archivematica-storage-service-tests-base-${{ env.UBUNTU_VERSION }}-${{ env.PYTHON_VERSION }},mode=max
+            type=gha,scope=archivematica-storage-service-tests-${{ env.UBUNTU_VERSION }}-${{ env.PYTHON_VERSION }}-${{ steps.cache_key.outputs.requirements_hash }},mode=max
+  test:
+    needs: [cache-python-builder, select_matrix]
+    name: "Test ${{ matrix.provider.name }}"
+    runs-on: "ubuntu-24.04"
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: "${{ fromJSON(needs.select_matrix.outputs.providers) }}"
+    steps:
+      - name: "Check out repository"
+        uses: "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" # v7.0.1
+      - name: "Save user id"
+        id: user_id
+        run: |
+          echo "user_id=$(id -u)" >> $GITHUB_OUTPUT
+      - name: "Save group id"
+        id: group_id
+        run: |
+          echo "group_id=$(id -g)" >> $GITHUB_OUTPUT
+      - name: "Generate cache key from lockfile"
+        id: cache_key
+        run: |
+          echo "requirements_hash=${{ hashFiles('.python-version', 'pyproject.toml', 'uv.lock') }}" >> $GITHUB_OUTPUT
+      - name: "Set up buildx"
+        uses: "docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e" # v4.3.0
+      - name: "Build the archivematica-storage-service-tests image"
+        uses: "docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a" # v7.3.0
+        with:
+          context: .
+          target: "archivematica-storage-service-tests"
+          build-args: |
+            USER_ID=${{ steps.user_id.outputs.user_id }}
+            GROUP_ID=${{ steps.group_id.outputs.group_id }}
+            UBUNTU_VERSION=${{ env.UBUNTU_VERSION }}
+            PYTHON_VERSION=${{ env.PYTHON_VERSION }}
+          tags: "archivematica-storage-service-tests:latest"
+          push: false
+          load: true
+          cache-from: |
+            type=gha,scope=archivematica-storage-service-tests-base-${{ env.UBUNTU_VERSION }}-${{ env.PYTHON_VERSION }}
+            type=gha,scope=archivematica-storage-service-tests-${{ env.UBUNTU_VERSION }}-${{ env.PYTHON_VERSION }}
+            type=gha,scope=archivematica-storage-service-tests-${{ env.UBUNTU_VERSION }}-${{ env.PYTHON_VERSION }}-${{ steps.cache_key.outputs.requirements_hash }}
+          cache-to: |
+            type=gha,scope=archivematica-storage-service-tests-base-${{ env.UBUNTU_VERSION }}-${{ env.PYTHON_VERSION }},mode=max
+            type=gha,scope=archivematica-storage-service-tests-${{ env.UBUNTU_VERSION }}-${{ env.PYTHON_VERSION }},mode=max
+            type=gha,scope=archivematica-storage-service-tests-${{ env.UBUNTU_VERSION }}-${{ env.PYTHON_VERSION }}-${{ steps.cache_key.outputs.requirements_hash }},mode=max
+      - name: "Run tests"
+        id: "run-tests"
+        run: |
+          ./run.sh
+        shell: "bash"
+        working-directory: "tests/integration"
+        env:
+          USER_ID: ${{ steps.user_id.outputs.user_id }}
+          GROUP_ID: ${{ steps.group_id.outputs.group_id }}
+          UBUNTU_VERSION: ${{ env.UBUNTU_VERSION }}
+          PYTHON_VERSION: ${{ env.PYTHON_VERSION }}
+          SKIP_DOCKER_BUILD: 1
+          REUSE_TEST_ENV: 1
+          COMPOSE_DOCKER_CLI_BUILD: 1
+          DOCKER_BUILDKIT: 1
+          PYTEST_ADDOPTS: -vv
+          INTEGRATION_SERVICE: ${{ matrix.provider.service }}
+      - name: "Save docker logs on failure"
+        if: "${{ (failure() && steps.run-tests.outcome == 'failure') || (cancelled() && steps.run-tests.outcome == 'cancelled') }}"
+        run: |
+          mkdir docker-logs
+          docker compose logs --no-color > docker-logs/docker-compose.log
+          docker compose ps --all > docker-logs/docker-compose-ps.log
+        working-directory: "tests/integration"
+      - name: "Upload docker logs on failure"
+        if: "${{ (failure() && steps.run-tests.outcome == 'failure') || (cancelled() && steps.run-tests.outcome == 'cancelled') }}"
+        uses: "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" # v7.0.1
+        with:
+          name: "docker-logs-${{ matrix.provider.label }}"
+          path: "tests/integration/docker-logs"
