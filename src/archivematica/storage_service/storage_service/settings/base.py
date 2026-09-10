@@ -486,7 +486,10 @@ if LDAP_AUTHENTICATION:
 
 SHIBBOLETH_AUTHENTICATION = is_true(environ.get("SS_SHIBBOLETH_AUTHENTICATION", ""))
 if SHIBBOLETH_AUTHENTICATION:
-    SHIBBOLETH_LOGOUT_URL = "/Shibboleth.sso/Logout?target=%s"
+    # The service provider's logout handler returns the browser to the URL in
+    # the "return" parameter (it has no "target" parameter).
+    SHIBBOLETH_LOGOUT_URL = "/Shibboleth.sso/Logout?return=%s"
+    SHIBBOLETH_LOGOUT_REDIRECT_URL = "/logged-out/"
 
     SHIBBOLETH_REMOTE_USER_HEADER = "HTTP_EPPN"
     SHIBBOLETH_ATTRIBUTE_MAP = {
@@ -507,7 +510,12 @@ if SHIBBOLETH_AUTHENTICATION:
         "shibboleth.context_processors.logout_link"
     ]
 
-    AUTHENTICATION_BACKENDS += ["shibboleth.backends.ShibbolethRemoteUserBackend"]
+    AUTHENTICATION_BACKENDS += [
+        "archivematica.storage_service.common.backends.CustomShibbolethRemoteUserBackend"
+    ]
+
+    # The page the service provider returns to after logging out.
+    LOGIN_EXEMPT_URLS.append(r"^logged-out/$")
 
     # Insert Shibboleth after the authentication middleware
     MIDDLEWARE.insert(

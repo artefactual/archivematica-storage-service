@@ -165,6 +165,7 @@ module = [
     "tests.storage_service.test_ldap",
     "tests.storage_service.test_oidc",
     "tests.storage_service.test_settings",
+    "tests.storage_service.test_shibboleth",
 ]
 ignore_errors = false
 

@@ -170,7 +170,10 @@ of these settings or provide values to mandatory fields.
   - **Description:** enables the Shibboleth authentication system. Other
     settings related to Shibboleth cannot be defined via environment variables
     at the moment, please edit [archivematica.storage_service.storage_service.settings.base][settings-base]
-    manually.
+    manually. The Shibboleth service provider in front of the Storage Service
+    must not require a session for the `/api/`, `/logged-out/`, `/static/` and
+    `/jsi18n/` paths: API clients authenticate with their API keys, and the
+    browser loads the logged-out page and its assets once the session is gone.
   - **Type:** `boolean`
   - **Default:** `false`
 
