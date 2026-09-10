@@ -1,18 +1,15 @@
 import os
 import re
-from collections.abc import Generator
 
 import pytest
 from django.conf import settings as django_settings
 from django.contrib.auth.models import AbstractUser
-from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
 from django.urls import reverse
 from playwright.sync_api import Page
 from playwright.sync_api import expect
 from pytest_django import Settings
 from pytest_django.live_server_helper import LiveServer
-from pytest_django.plugin import DjangoDbBlocker
 from tastypie.models import ApiKey
 
 if "RUN_INTEGRATION_TESTS" not in os.environ:
@@ -24,23 +21,6 @@ if not django_settings.OIDC_AUTHENTICATION:
 
 def url_starting_with(prefix: str) -> re.Pattern[str]:
     return re.compile(f"^{re.escape(prefix)}")
-
-
-@pytest.fixture(scope="module", autouse=True)
-def recreate_user_groups(
-    django_db_setup: None, django_db_blocker: DjangoDbBlocker
-) -> Generator[None, None, None]:
-    """Recreate user groups added during the 0030_user_groups migration.
-
-    This ensures that tests dependent on these user groups can execute
-    correctly after transactional rollbacks executed by the live_server
-    fixture which do not restore migration data.
-    """
-    yield
-
-    with django_db_blocker.unblock():
-        Group.objects.get_or_create(name="Managers")
-        Group.objects.get_or_create(name="Reviewers")
 
 
 @pytest.fixture
