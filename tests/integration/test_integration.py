@@ -17,11 +17,16 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import tarfile
 import tempfile
+import urllib.parse
 import uuid
 from collections.abc import Iterable
 from collections.abc import Iterator
+from collections.abc import Mapping
+from dataclasses import dataclass
+from dataclasses import field
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
@@ -29,9 +34,11 @@ from typing import Protocol
 from typing import TypedDict
 from typing import cast
 
+import bagit
 import boto3
 import gnupg
 import pytest
+import requests
 from botocore.exceptions import ClientError
 from django.contrib import messages
 from django.http import StreamingHttpResponse
@@ -286,6 +293,7 @@ class StorageScenario:
     """Storage test scenario."""
 
     PIPELINE_UUID = uuid.UUID("00000b87-1655-4b7e-bbf8-344b317da334")
+    PIPELINE_URL = "http://127.0.0.1:65534"
     PACKAGE_UUID = uuid.UUID("5658e603-277b-4292-9b58-20bf261c8f88")
     OBJECT_STORAGE_PROTOCOLS = {Space.S3, Space.RCLONE}
 
@@ -367,7 +375,7 @@ class StorageScenario:
                 "description": "Beefy pipeline",
                 "create_default_locations": True,
                 "shared_path": str(self.shared_directory_path),
-                "remote_name": "http://127.0.0.1:65534",
+                "remote_name": self.PIPELINE_URL,
                 "api_username": "test",
                 "api_key": "test",
             }
@@ -876,16 +884,35 @@ class AIPRecoveryScenario(StorageScenario):
 class ReingestScenario(StorageScenario):
     REINGEST_MARKER = "reingest-marker"
 
-    def request_reingest(self, reingest_type: str) -> dict[str, Any]:
-        resp = self.client.request_reingest(
-            self.PACKAGE_UUID,
-            {
-                "pipeline": str(self.PIPELINE_UUID),
-                "reingest_type": reingest_type,
-            },
-        )
-        assert resp.status_code == 202
+    def request_reingest(
+        self, reingest_type: str, processing_config: str | None = None
+    ) -> dict[str, Any]:
+        data = {
+            "pipeline": str(self.PIPELINE_UUID),
+            "reingest_type": reingest_type,
+        }
+        if processing_config is not None:
+            data["processing_config"] = processing_config
+        resp = self.client.request_reingest(self.PACKAGE_UUID, data)
+        assert resp.status_code == 202, resp.text
         return cast(dict[str, Any], json.loads(resp.text))
+
+    def stage_pipeline_space_in_internal_location(self) -> None:
+        """Stage the pipeline space through the internal location.
+
+        Registering the pipeline creates its local space without a staging
+        path, which the reingest transfers would resolve against the current
+        working directory. A default deployment stages that space through the
+        Storage Service internal location.
+        """
+        internal_location = Location.objects.get(
+            purpose=Location.STORAGE_SERVICE_INTERNAL
+        )
+        space = Location.objects.get(
+            pipeline__uuid=self.PIPELINE_UUID, purpose=Location.CURRENTLY_PROCESSING
+        ).space
+        space.staging_path = internal_location.full_path
+        space.save()
 
     def get_currently_processing_location(self) -> LocationResponseResult:
         resp = self.client.get_locations(
@@ -1127,6 +1154,232 @@ def test_reingest_with_replicas(
             prefix = f"{prefix}/"
         matches = list(s3_resource.Bucket(bucket_name).objects.filter(Prefix=prefix))
         assert matches
+
+
+PROCESSING_CONFIG = "<processingMCP><preconfiguredChoices/></processingMCP>"
+
+AIP_PAYLOAD: Mapping[str, str] = {
+    "README.html": "<html/>\n",
+    "logs/filenameCleanup.log": "",
+    "objects/hello.txt": "hello\n",
+    "objects/metadata/metadata.csv": "filename,dc.title\nobjects/hello.txt,Hello\n",
+    "objects/submissionDocumentation/transfer-hello/METS.xml": "<mets/>\n",
+}
+
+
+def list_files(directory: Path) -> set[str]:
+    """Return the paths of all files under ``directory`` relative to it."""
+    return {
+        path.relative_to(directory).as_posix()
+        for path in directory.rglob("*")
+        if path.is_file()
+    }
+
+
+def build_aip(parent: Path, package_uuid: uuid.UUID) -> Path:
+    """Write a valid bag named like an Archivematica AIP and return its path.
+
+    ``AIP_PAYLOAD`` and the METS file named after ``package_uuid`` are
+    written first and end up under ``data`` when the directory is bagged, so
+    the bag carries the layout the reingest types select on: an original, a
+    metadata directory and submission documentation.
+    """
+    aip_dir = parent / f"foobar-{package_uuid}"
+    files = {**AIP_PAYLOAD, f"METS.{package_uuid}.xml": "<mets/>\n"}
+    for relative_path, content in files.items():
+        path = aip_dir / relative_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content)
+    bagit.make_bag(str(aip_dir), checksums=["sha256"])
+    return aip_dir
+
+
+def compress_aip(aip_dir: Path) -> Path:
+    """Archive a bag with 7-Zip next to itself, as the pipeline does."""
+    archive = aip_dir.parent / f"{aip_dir.name}.7z"
+    command = ["7z", "a", "-bd", "-t7z", "-y", "-m0=bzip2", "-mtc=on", "-mtm=on"]
+    command += ["-mta=on", str(archive), str(aip_dir)]
+    subprocess.run(command, check=True, capture_output=True)
+    return archive
+
+
+@dataclass(frozen=True)
+class ReingestApproval:
+    """A reingest approval requested from the fake dashboard."""
+
+    target: str
+    """``ingest`` for partial reingest, ``transfer`` for full reingest."""
+    name: str
+    """Path of the AIP under the pipeline's ``tmp`` directory."""
+    package_uuid: uuid.UUID
+
+
+REINGEST_PATH = re.compile(r"/api/(?P<target>ingest|transfer)/reingest")
+PROCESSING_CONFIG_PATH = "/api/processing-configuration/"
+
+
+def _response(status: int, content_type: str, body: str) -> requests.Response:
+    result = requests.Response()
+    result.status_code = status
+    result.headers["Content-Type"] = content_type
+    result.encoding = "utf-8"
+    result._content = body.encode()
+    return result
+
+
+@dataclass
+class FakeDashboard:
+    """Stand-in for the dashboard API of the scenario pipeline.
+
+    It takes the place of ``requests.request``, the call through which the
+    Storage Service reaches a pipeline. It serves the processing
+    configurations registered in ``processing_configs``, approves reingest
+    requests with ``reingest_uuid`` and records what it is asked for.
+    """
+
+    processing_configs: dict[str, str] = field(default_factory=dict)
+    reingest_uuid: uuid.UUID = field(default_factory=uuid.uuid4)
+    processing_config_requests: list[str] = field(default_factory=list)
+    """Names of the processing configurations requested."""
+    reingest_approvals: list[ReingestApproval] = field(default_factory=list)
+
+    def request(
+        self,
+        method: str,
+        url: str,
+        *,
+        headers: Mapping[str, str] | None = None,
+        data: Mapping[str, str] | None = None,
+        **kwargs: object,
+    ) -> requests.Response:
+        parts = urllib.parse.urlsplit(url)
+        assert f"{parts.scheme}://{parts.netloc}" == StorageScenario.PIPELINE_URL, url
+        assert (headers or {}).get("Authorization") == "ApiKey test:test"
+        if method == "GET" and parts.path.startswith(PROCESSING_CONFIG_PATH):
+            name = parts.path.removeprefix(PROCESSING_CONFIG_PATH)
+            self.processing_config_requests.append(name)
+            config = self.processing_configs.get(name)
+            if config is not None:
+                return _response(200, "text/xml", config)
+        elif method == "POST" and (match := REINGEST_PATH.fullmatch(parts.path)):
+            fields = dict(data or {})
+            self.reingest_approvals.append(
+                ReingestApproval(
+                    target=match.group("target"),
+                    name=fields["name"],
+                    package_uuid=uuid.UUID(fields["uuid"]),
+                )
+            )
+            body = {
+                "message": "Approval successful.",
+                "reingest_uuid": str(self.reingest_uuid),
+            }
+            return _response(200, "application/json", json.dumps(body))
+        return _response(404, "application/json", json.dumps({"error": True}))
+
+
+@pytest.fixture
+def dashboard(monkeypatch: pytest.MonkeyPatch) -> FakeDashboard:
+    result = FakeDashboard()
+    monkeypatch.setattr(requests, "request", result.request)
+    return result
+
+
+def _bucket_objects(s3_resource: S3ServiceResource, bucket_name: str) -> dict[str, str]:
+    """Return the keys of the objects in the bucket with their ETags."""
+    return {obj.key: obj.e_tag for obj in s3_resource.Bucket(bucket_name).objects.all()}
+
+
+@pytest.mark.parametrize(
+    ("reingest_type", "target"),
+    [
+        (Package.METADATA_ONLY, "ingest"),
+        (Package.OBJECTS, "ingest"),
+        (Package.FULL, "transfer"),
+    ],
+    ids=["metadata_only", "objects", "full"],
+)
+@pytest.mark.parametrize(
+    "compressed", [True, False], ids=["compressed", "uncompressed"]
+)
+@pytest.mark.parametrize(
+    "storage_protocol", [Space.S3, Space.RCLONE], ids=["s3", "rclone"]
+)
+@pytest.mark.django_db
+def test_reingest_request_from_object_storage_sends_selected_files_and_processing_configuration(
+    startup: None,
+    admin_client: DjangoTestClient,
+    working_directory_path: Path,
+    s3_browse_bucket: str,
+    s3_resource: S3ServiceResource,
+    dashboard: FakeDashboard,
+    tmp_path: Path,
+    storage_protocol: str,
+    compressed: bool,
+    reingest_type: str,
+    target: str,
+) -> None:
+    """Reingest requests fetch the AIP from object storage and deliver a flat bag.
+
+    The unit tests prove which files each reingest type selects with a local
+    stand-in for remote storage. This exercises the real object storage
+    drivers: the package is fetched from the bucket, the selection and the
+    processing configuration land under the pipeline's ``tmp`` directory,
+    and the stored AIP is left untouched.
+    """
+    package_uuid = StorageScenario.PACKAGE_UUID
+    bag_dir = build_aip(tmp_path / "build", package_uuid)
+    bag_files = list_files(bag_dir)
+    scenario = ReingestScenario(
+        storage_protocol=storage_protocol,
+        pkg=compress_aip(bag_dir) if compressed else bag_dir,
+        compressed=compressed,
+    )
+    scenario.init(admin_client, working_directory_path, s3_bucket=s3_browse_bucket)
+    scenario.stage_pipeline_space_in_internal_location()
+    scenario.store_aip()
+    scenario.assert_stored()
+    stored_objects = _bucket_objects(s3_resource, s3_browse_bucket)
+    dashboard.processing_configs["custom"] = PROCESSING_CONFIG
+
+    body = scenario.request_reingest(reingest_type, processing_config="custom")
+
+    pipeline = Pipeline.objects.get(uuid=scenario.PIPELINE_UUID)
+    assert body == {
+        "error": False,
+        "status_code": 202,
+        "message": f"Package {package_uuid} sent to pipeline {pipeline} for re-ingest",
+        "reingest_uuid": str(dashboard.reingest_uuid),
+    }
+    assert dashboard.processing_config_requests == ["custom"]
+    (approval,) = dashboard.reingest_approvals
+    assert approval.target == target
+    assert approval.package_uuid == package_uuid
+
+    # The pipeline finds a flat bag under its tmp directory, holding the files
+    # selected by the reingest type and the processing configuration.
+    mets = f"data/METS.{package_uuid}.xml"
+    objects = {
+        path
+        for path in bag_files
+        if path.startswith("data/objects/")
+        and not path.startswith("data/objects/submissionDocumentation/")
+    }
+    expected_files = {
+        Package.METADATA_ONLY: {mets, "data/objects/metadata/metadata.csv"},
+        Package.OBJECTS: {mets} | objects,
+        Package.FULL: bag_files,
+    }[reingest_type] | {"processingMCP.xml"}
+    cp_location = scenario.get_currently_processing_location()
+    sent_dir = Path(cp_location["path"]) / "tmp" / approval.name
+    assert list_files(sent_dir) == expected_files
+    assert (sent_dir / "processingMCP.xml").read_text() == PROCESSING_CONFIG
+
+    # The request only reads from object storage.
+    assert _bucket_objects(s3_resource, s3_browse_bucket) == stored_objects
+
+    package = Package.objects.get(uuid=package_uuid)
+    assert package.misc_attributes["reingest_pipeline"] == str(scenario.PIPELINE_UUID)
 
 
 @pytest.mark.parametrize(
