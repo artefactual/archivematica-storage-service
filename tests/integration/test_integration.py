@@ -17,7 +17,6 @@ import json
 import os
 import re
 import shutil
-import subprocess
 import tarfile
 import tempfile
 import urllib.parse
@@ -49,6 +48,8 @@ from pytest_django import Settings
 
 from archivematica.storage_service.common import gpgutils
 from archivematica.storage_service.common import utils
+from archivematica.storage_service.common.compression import COMPRESSION_7Z_BZIP
+from archivematica.storage_service.common.compression import get_archiver
 from archivematica.storage_service.locations import package_request
 from archivematica.storage_service.locations.models import Event
 from archivematica.storage_service.locations.models import Location
@@ -1196,11 +1197,7 @@ def build_aip(parent: Path, package_uuid: uuid.UUID) -> Path:
 
 def compress_aip(aip_dir: Path) -> Path:
     """Archive a bag with 7-Zip next to itself, as the pipeline does."""
-    archive = aip_dir.parent / f"{aip_dir.name}.7z"
-    command = ["7z", "a", "-bd", "-t7z", "-y", "-m0=bzip2", "-mtc=on", "-mtm=on"]
-    command += ["-mta=on", str(archive), str(aip_dir)]
-    subprocess.run(command, check=True, capture_output=True)
-    return archive
+    return get_archiver().compress(aip_dir, aip_dir.parent, COMPRESSION_7Z_BZIP).path
 
 
 @dataclass(frozen=True)

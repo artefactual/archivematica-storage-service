@@ -22,6 +22,31 @@ from lxml import etree
 from lxml.builder import ElementMaker
 
 from archivematica.storage_service.administration import models
+
+# The compression constants moved to the compression module. They are still
+# importable from here so that existing imports keep working, which is why
+# the unused import warnings are ignored.
+from archivematica.storage_service.common.compression import (
+    COMPRESSION_7Z_BZIP,  # noqa: F401
+)
+from archivematica.storage_service.common.compression import (
+    COMPRESSION_7Z_COPY,  # noqa: F401
+)
+from archivematica.storage_service.common.compression import (
+    COMPRESSION_7Z_LZMA,  # noqa: F401
+)
+from archivematica.storage_service.common.compression import (
+    COMPRESSION_ALGORITHMS,  # noqa: F401
+)
+from archivematica.storage_service.common.compression import (
+    COMPRESSION_TAR,  # noqa: F401
+)
+from archivematica.storage_service.common.compression import (
+    COMPRESSION_TAR_BZIP2,  # noqa: F401
+)
+from archivematica.storage_service.common.compression import (
+    COMPRESSION_TAR_GZIP,  # noqa: F401
+)
 from archivematica.storage_service.storage_service import __version__ as ss_version
 
 LOGGER = logging.getLogger(__name__)
@@ -39,23 +64,6 @@ NSMAP = {
     "xlink": "http://www.w3.org/1999/xlink",
     "xsi": "http://www.w3.org/2001/XMLSchema-instance",
 }
-
-# Compression options for packages, the list is not yet comprehensive, and
-# future work could bring much of this into its own module.
-COMPRESSION_7Z_BZIP = "7z with bzip"
-COMPRESSION_7Z_LZMA = "7z with lzma"
-COMPRESSION_7Z_COPY = "7z without compression"
-COMPRESSION_TAR = "tar"
-COMPRESSION_TAR_BZIP2 = "tar bz2"
-COMPRESSION_TAR_GZIP = "tar gz"
-COMPRESSION_ALGORITHMS = (
-    COMPRESSION_7Z_BZIP,
-    COMPRESSION_7Z_LZMA,
-    COMPRESSION_7Z_COPY,
-    COMPRESSION_TAR,
-    COMPRESSION_TAR_BZIP2,
-    COMPRESSION_TAR_GZIP,
-)
 
 PRONOM_7Z = "fmt/484"
 PRONOM_BZIP2 = "x-fmt/268"
@@ -340,72 +348,6 @@ def get_compression(pointer_path):
         return COMPRESSION_7Z_BZIP
 
 
-def get_compress_command(compression, extract_path, basename, full_path):
-    """Return command for compressing the package
-
-    :param compression: one of the constants in ``COMPRESSION_ALGORITHMS``.
-    :param extract_path: target path for the compressed file
-    :param basename: base name of the file (without extension)
-    :param full_path: Path of source files
-    :returns: (command, compressed_filename) where
-        `command` is the compression command (as a list of strings)
-        `compressed_filename` is the full path to the compressed file
-    """
-    extract_path = pathlib.Path(extract_path) / basename
-    full_path = pathlib.Path(full_path)
-
-    if compression in (COMPRESSION_TAR, COMPRESSION_TAR_BZIP2, COMPRESSION_TAR_GZIP):
-        compressed_filename = extract_path.with_suffix(TAR_EXTENSION)
-        relative_path = full_path.parent
-        algo = ""
-        if compression == COMPRESSION_TAR_BZIP2:
-            algo = "-j"  # Compress with bzip2
-            compressed_filename = extract_path.with_suffix(TAR_EXTENSION + ".bz2")
-        elif compression == COMPRESSION_TAR_GZIP:
-            algo = "-z"  # Compress with gzip
-            compressed_filename = extract_path.with_suffix(TAR_EXTENSION + ".gz")
-        command = [
-            "tar",
-            "c",  # Create tar
-            algo,  # Optional compression flag
-            "-C",
-            str(relative_path),  # Work in this directory
-            "-f",
-            str(compressed_filename),  # Output file
-            full_path.name,  # Relative path to source files
-        ]
-    elif compression in (COMPRESSION_7Z_BZIP, COMPRESSION_7Z_LZMA, COMPRESSION_7Z_COPY):
-        compressed_filename = extract_path.with_suffix(".7z")
-        if compression == COMPRESSION_7Z_BZIP:
-            algo = COMPRESS_ALGO_BZIP2
-        elif compression == COMPRESSION_7Z_LZMA:
-            algo = COMPRESS_ALGO_LZMA
-        elif compression == COMPRESSION_7Z_COPY:
-            algo = COMPRESS_ALGO_7Z_COPY
-        command = [
-            "7z",
-            "a",  # Add
-            "-bd",  # Disable percentage indicator
-            "-t7z",  # Type of archive
-            "-y",  # Assume Yes on all queries
-            "-m0=" + algo,  # Compression method
-            "-mtc=on",
-            "-mtm=on",
-            "-mta=on",  # Keep timestamps (create, mod, access)
-            "-mmt=on",  # Multithreaded
-            str(compressed_filename),  # Destination
-            str(full_path),  # Source
-        ]
-
-    else:
-        raise NotImplementedError(
-            _("Algorithm %(algorithm)s not implemented") % {"algorithm": compression}
-        )
-
-    command = [_f for _f in command if _f]
-    return (command, str(compressed_filename))
-
-
 def get_compressed_package_checksum(pointer_path):
     """Return the checksum (and algorithm) for a compressed package as
     documented in the pointer file at ``pointer_path``.
@@ -428,33 +370,6 @@ def get_compressed_package_checksum(pointer_path):
         )
 
     return (checksum, checksum_algorithm)
-
-
-def get_tool_info(compression):
-    """Return compression tool details
-
-    :param compression: one of the constants in ``COMPRESSION_ALGORITHMS``.
-    :returns: tool details in string format
-    """
-    if compression in (COMPRESSION_TAR, COMPRESSION_TAR_BZIP2, COMPRESSION_TAR_GZIP):
-        program = "tar"
-        algo = {COMPRESSION_TAR_BZIP2: "-j", COMPRESSION_TAR_GZIP: "-z"}.get(
-            compression, ""
-        )
-        version = get_tar_version()
-    elif compression in (COMPRESSION_7Z_BZIP, COMPRESSION_7Z_LZMA, COMPRESSION_7Z_COPY):
-        program = "7z"
-        algo = {
-            COMPRESSION_7Z_BZIP: COMPRESS_ALGO_BZIP2,
-            COMPRESSION_7Z_LZMA: COMPRESS_ALGO_LZMA,
-            COMPRESSION_7Z_COPY: COMPRESS_ALGO_7Z_COPY,
-        }.get(compression, "")
-        version = get_7z_version()
-    else:
-        raise NotImplementedError(
-            _("Algorithm %(algorithm)s not implemented") % {"algorithm": compression}
-        )
-    return f"program={program}; algorithm={algo}; version={version}"
 
 
 def get_7z_version():

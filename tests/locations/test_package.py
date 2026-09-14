@@ -3,6 +3,7 @@ import hashlib
 import os
 import pathlib
 import shutil
+import subprocess
 import tempfile
 import time
 import uuid
@@ -16,7 +17,10 @@ from django.test import TestCase
 from django.urls import reverse
 
 from archivematica.storage_service.common import utils
+from archivematica.storage_service.common.compression import CommandLineArchiver
+from archivematica.storage_service.common.compression import override_archiver
 from archivematica.storage_service.locations import models
+from archivematica.storage_service.locations.models.package import _extract_rein_aip
 
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
@@ -1538,6 +1542,114 @@ def test_get_fixity_check_report_send_signals_verifies_failed_fixity_check(
         "failures": {"files": {"missing": [], "changed": [], "untracked": []}},
         "timestamp": None,
     }
+
+
+def _failing_archiver() -> CommandLineArchiver:
+    """Return an archiver whose tools always fail."""
+
+    def run(command: list[str]) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(list(command), 1, "", "broken")
+
+    return CommandLineArchiver(run=run)
+
+
+@pytest.mark.django_db
+def test_get_base_directory_raises_storage_exception_when_listing_fails(
+    package: models.Package,
+) -> None:
+    with (
+        override_archiver(_failing_archiver()),
+        pytest.raises(models.StorageException, match="Error determining basename"),
+    ):
+        package.get_base_directory()
+
+
+@pytest.mark.django_db
+def test_compress_package_raises_storage_exception_when_the_tool_fails(
+    package: models.Package, internal_location: models.Location
+) -> None:
+    with (
+        override_archiver(_failing_archiver()),
+        pytest.raises(models.StorageException, match="Error compressing package"),
+    ):
+        package.compress_package(utils.COMPRESSION_TAR)
+
+
+def _archiver_failing_to_extract(partial_output: pathlib.Path) -> CommandLineArchiver:
+    """Return an archiver whose listing works but whose extraction fails half-way."""
+    listing = '{"lsarContents": [{"XADFileName": "aip", "XADIsDirectory": 1}]}'
+
+    def run(command: list[str]) -> subprocess.CompletedProcess[str]:
+        if command[0] == "lsar":
+            return subprocess.CompletedProcess(list(command), 0, listing, "")
+        partial_output.mkdir(parents=True, exist_ok=True)
+        (partial_output / "partial.txt").write_text("partial")
+        return subprocess.CompletedProcess(list(command), 2, "", "Data error")
+
+    return CommandLineArchiver(run=run)
+
+
+@pytest.mark.django_db
+def test_extract_rein_aip_raises_storage_exception_when_listing_fails(
+    internal_location: models.Location, tmp_path: pathlib.Path
+) -> None:
+    archive = tmp_path / "aip.7z"
+    archive.write_bytes(b"not an archive")
+
+    with (
+        override_archiver(_failing_archiver()),
+        pytest.raises(models.StorageException, match="Error extracting reingested AIP"),
+    ):
+        _extract_rein_aip(internal_location, str(archive))
+
+    assert archive.exists()
+
+
+@pytest.mark.django_db
+def test_extract_rein_aip_keeps_the_archive_when_extraction_fails(
+    internal_location: models.Location, tmp_path: pathlib.Path
+) -> None:
+    """The listing succeeds and the tool fails: the incoming archive is kept."""
+    archive = tmp_path / "aip.7z"
+    archive.write_bytes(b"not an archive")
+    partial_output = pathlib.Path(internal_location.full_path) / "aip"
+
+    with (
+        override_archiver(_archiver_failing_to_extract(partial_output)),
+        pytest.raises(
+            models.StorageException, match="exited with status 2: Data error"
+        ),
+    ):
+        _extract_rein_aip(internal_location, str(archive))
+
+    assert archive.exists()
+    # What the tool extracted before failing is left for the operator.
+    assert (partial_output / "partial.txt").exists()
+
+
+@pytest.mark.django_db
+def test_compress_package_accepts_a_directory_with_a_trailing_slash(
+    package: models.Package, internal_location: models.Location, tmp_path: pathlib.Path
+) -> None:
+    """A trailing slash in extract_path must not change where the archive goes."""
+    compressed_path, parent = package.compress_package(
+        utils.COMPRESSION_TAR, extract_path=f"{tmp_path}/"
+    )
+
+    assert parent == f"{tmp_path}/"
+    assert compressed_path == str(tmp_path / "working_bag.tar")
+    assert os.path.isfile(compressed_path)
+
+
+@pytest.mark.django_db
+def test_extract_file_accepts_a_directory_with_a_trailing_slash(
+    package: models.Package, internal_location: models.Location, tmp_path: pathlib.Path
+) -> None:
+    output_path, extract_path = package.extract_file(extract_path=f"{tmp_path}/")
+
+    assert extract_path == f"{tmp_path}/"
+    assert output_path == str(tmp_path / "working_bag")
+    assert os.path.isfile(os.path.join(output_path, "manifest-md5.txt"))
 
 
 class TestTransferPackage(TestCase):

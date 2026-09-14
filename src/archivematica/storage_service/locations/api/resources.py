@@ -38,6 +38,7 @@ from tastypie.validation import CleanedDataFormValidation
 
 from archivematica.storage_service.administration.models import Settings
 from archivematica.storage_service.common import utils
+from archivematica.storage_service.common.compression import COMPRESSION_TAR
 from archivematica.storage_service.locations import package_request
 from archivematica.storage_service.locations import signals
 from archivematica.storage_service.locations.api.sword import views as sword_views
@@ -1574,7 +1575,7 @@ class PackageResource(ModelResource):
             temp_dir = None
             full_path = package.get_download_path(lockss_au_number)
         except StorageException:
-            full_path, temp_dir = package.compress_package(utils.COMPRESSION_TAR)
+            full_path, temp_dir = package.compress_package(COMPRESSION_TAR)
         response = utils.download_file_stream(full_path, temp_dir)
         package.clear_local_tempdirs()
         return response

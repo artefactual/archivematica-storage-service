@@ -10,6 +10,12 @@ import pytest
 from metsrw import FSEntry
 
 from archivematica.storage_service.common import utils
+from archivematica.storage_service.common.compression import COMPRESSION_7Z_BZIP
+from archivematica.storage_service.common.compression import COMPRESSION_7Z_COPY
+from archivematica.storage_service.common.compression import COMPRESSION_7Z_LZMA
+from archivematica.storage_service.common.compression import COMPRESSION_TAR
+from archivematica.storage_service.common.compression import COMPRESSION_TAR_BZIP2
+from archivematica.storage_service.common.compression import COMPRESSION_TAR_GZIP
 
 TEST_DIR = pathlib.Path(__file__).resolve().parent
 FIXTURES_DIR = TEST_DIR / "fixtures"
@@ -27,13 +33,13 @@ COMPRESS_ORDER_TWO = "2"
 @pytest.mark.parametrize(
     "pronom,algorithm,compression",
     [
-        (utils.PRONOM_7Z, utils.COMPRESS_ALGO_BZIP2, utils.COMPRESSION_7Z_BZIP),
-        (utils.PRONOM_7Z, utils.COMPRESS_ALGO_LZMA, utils.COMPRESSION_7Z_LZMA),
-        (utils.PRONOM_7Z, utils.COMPRESS_ALGO_7Z_COPY, utils.COMPRESSION_7Z_COPY),
-        (utils.PRONOM_7Z, "unknown algo", utils.COMPRESSION_7Z_BZIP),
-        (utils.PRONOM_BZIP2, "", utils.COMPRESSION_TAR_BZIP2),
-        (utils.PRONOM_GZIP, "", utils.COMPRESSION_TAR_GZIP),
-        ("unknown pronom", "", utils.COMPRESSION_7Z_BZIP),
+        (utils.PRONOM_7Z, utils.COMPRESS_ALGO_BZIP2, COMPRESSION_7Z_BZIP),
+        (utils.PRONOM_7Z, utils.COMPRESS_ALGO_LZMA, COMPRESSION_7Z_LZMA),
+        (utils.PRONOM_7Z, utils.COMPRESS_ALGO_7Z_COPY, COMPRESSION_7Z_COPY),
+        (utils.PRONOM_7Z, "unknown algo", COMPRESSION_7Z_BZIP),
+        (utils.PRONOM_BZIP2, "", COMPRESSION_TAR_BZIP2),
+        (utils.PRONOM_GZIP, "", COMPRESSION_TAR_GZIP),
+        ("unknown pronom", "", COMPRESSION_7Z_BZIP),
     ],
 )
 def test_get_compression(pronom, algorithm, compression):
@@ -51,154 +57,50 @@ def test_get_compression(pronom, algorithm, compression):
 
 
 @pytest.mark.parametrize(
-    "compression,command",
-    [
-        (
-            utils.COMPRESSION_7Z_BZIP,
-            "7z a -bd -t7z -y -m0=bzip2 -mtc=on -mtm=on -mta=on -mmt=on /extract/filename.7z /full/path",
-        ),
-        (
-            utils.COMPRESSION_7Z_LZMA,
-            "7z a -bd -t7z -y -m0=lzma -mtc=on -mtm=on -mta=on -mmt=on /extract/filename.7z /full/path",
-        ),
-        (
-            utils.COMPRESSION_7Z_COPY,
-            "7z a -bd -t7z -y -m0=copy -mtc=on -mtm=on -mta=on -mmt=on /extract/filename.7z /full/path",
-        ),
-        (utils.COMPRESSION_TAR, "tar c -C /full -f /extract/filename.tar path"),
-        (
-            utils.COMPRESSION_TAR_GZIP,
-            "tar c -z -C /full -f /extract/filename.tar.gz path",
-        ),
-        (
-            utils.COMPRESSION_TAR_BZIP2,
-            "tar c -j -C /full -f /extract/filename.tar.bz2 path",
-        ),
-    ],
-)
-def test_get_compress_command(compression, command):
-    cmd, _ = utils.get_compress_command(
-        compression, "/extract/", "filename", "/full/path"
-    )
-    assert " ".join(cmd) == command, (
-        f"Incorrect compression command: {cmd} returned for compression input {compression}"
-    )
-
-
-@pytest.mark.parametrize(
-    "compression,expected_program,expected_algorithm",
-    [
-        (utils.COMPRESSION_7Z_BZIP, "7z", utils.COMPRESS_ALGO_BZIP2),
-        (
-            utils.COMPRESSION_7Z_LZMA,
-            "7z",
-            utils.COMPRESS_ALGO_LZMA,
-        ),
-        (
-            utils.COMPRESSION_7Z_COPY,
-            "7z",
-            utils.COMPRESS_ALGO_7Z_COPY,
-        ),
-        (
-            utils.COMPRESSION_TAR,
-            "tar",
-            "",
-        ),
-        (
-            utils.COMPRESSION_TAR_GZIP,
-            "tar",
-            "-z",
-        ),
-        (
-            utils.COMPRESSION_TAR_BZIP2,
-            "tar",
-            "-j",
-        ),
-    ],
-)
-@mock.patch("subprocess.check_output")
-def test_get_tool_info(check_output, compression, expected_program, expected_algorithm):
-    if expected_program == "7z":
-        expected_version = "p7zip Version 16.02"
-        command_output = b"\n".join(
-            [
-                b"",
-                b"7-Zip [64] 16.02 : Copyright (c) 1999-2016 Igor Pavlov : 2016-05-21",
-                expected_version.encode(),
-            ]
-        )
-    elif expected_program == "tar":
-        expected_version = "tar (GNU tar) 1.35"
-        command_output = b"\n".join(
-            [
-                expected_version.encode(),
-                b"Copyright (C) 2023 Free Software Foundation, Inc.",
-            ]
-        )
-    else:
-        raise AssertionError(f"unexpected program {expected_program}")
-    check_output.return_value = command_output
-    expected_output = f"program={expected_program}; algorithm={expected_algorithm}; version={expected_version}"
-
-    output = utils.get_tool_info(compression)
-
-    assert output == expected_output, (
-        f"Incorrect tool info: {output} returned for compression input {compression}"
-    )
-
-
-def test_get_tool_info_fails_if_compression_algorithm_is_not_implemented():
-    with pytest.raises(
-        NotImplementedError, match="Algorithm unknown and random not implemented"
-    ):
-        utils.get_tool_info("unknown and random")
-
-
-@pytest.mark.parametrize(
     "compression,cmd_output,expected_detail",
     [
         (
-            utils.COMPRESSION_7Z_BZIP,
+            COMPRESSION_7Z_BZIP,
             "\n7z command\np7zip Version 3.0\nsomething else",
             'program="7z"; version="p7zip Version 3.0"',
         ),
         (
-            utils.COMPRESSION_7Z_BZIP,
+            COMPRESSION_7Z_BZIP,
             "\n7-Zip 23.01 (x64)\n 64-bit locale=C.UTF-8\nsomething else",
             'program="7z"; version="7-Zip 23.01 (x64) 64-bit locale=C.UTF-8"',
         ),
         (
-            utils.COMPRESSION_7Z_LZMA,
+            COMPRESSION_7Z_LZMA,
             "\n7z command\np7zip Version 3.0\nsomething else",
             'program="7z"; version="p7zip Version 3.0"',
         ),
         (
-            utils.COMPRESSION_7Z_LZMA,
+            COMPRESSION_7Z_LZMA,
             "\n7-Zip 23.01 (x64)\n 64-bit locale=C.UTF-8\nsomething else",
             'program="7z"; version="7-Zip 23.01 (x64) 64-bit locale=C.UTF-8"',
         ),
         (
-            utils.COMPRESSION_7Z_COPY,
+            COMPRESSION_7Z_COPY,
             "\n7z command\np7zip Version 3.0\nsomething else",
             'program="7z"; version="p7zip Version 3.0"',
         ),
         (
-            utils.COMPRESSION_7Z_COPY,
+            COMPRESSION_7Z_COPY,
             "\n7-Zip 23.01 (x64)\n 64-bit locale=C.UTF-8\nsomething else",
             'program="7z"; version="7-Zip 23.01 (x64) 64-bit locale=C.UTF-8"',
         ),
         (
-            utils.COMPRESSION_TAR,
+            COMPRESSION_TAR,
             "tar version 2.0",
             'program="tar"; version="tar version 2.0"',
         ),
         (
-            utils.COMPRESSION_TAR_GZIP,
+            COMPRESSION_TAR_GZIP,
             "tar version 2.0",
             'program="tar"; version="tar version 2.0"',
         ),
         (
-            utils.COMPRESSION_TAR_BZIP2,
+            COMPRESSION_TAR_BZIP2,
             "tar version 2.0",
             'program="tar"; version="tar version 2.0"',
         ),
@@ -221,7 +123,7 @@ def test_get_compression_event_detail(
     "compression,version,extension,program_name,transform",
     [
         (
-            utils.COMPRESSION_7Z_BZIP,
+            COMPRESSION_7Z_BZIP,
             PROG_VERS_7Z,
             utils.COMPRESS_EXTENSION_7Z,
             utils.COMPRESS_PROGRAM_7Z,
@@ -234,7 +136,7 @@ def test_get_compression_event_detail(
             ],
         ),
         (
-            utils.COMPRESSION_7Z_LZMA,
+            COMPRESSION_7Z_LZMA,
             PROG_VERS_7Z,
             utils.COMPRESS_EXTENSION_7Z,
             utils.COMPRESS_PROGRAM_7Z,
@@ -247,7 +149,7 @@ def test_get_compression_event_detail(
             ],
         ),
         (
-            utils.COMPRESSION_7Z_COPY,
+            COMPRESSION_7Z_COPY,
             PROG_VERS_7Z,
             utils.COMPRESS_EXTENSION_7Z,
             utils.COMPRESS_PROGRAM_7Z,
@@ -260,7 +162,7 @@ def test_get_compression_event_detail(
             ],
         ),
         (
-            utils.COMPRESSION_TAR_BZIP2,
+            COMPRESSION_TAR_BZIP2,
             PROG_VERS_TAR,
             utils.COMPRESS_EXTENSION_BZIP2,
             utils.COMPRESS_PROGRAM_TAR,
@@ -278,7 +180,7 @@ def test_get_compression_event_detail(
             ],
         ),
         (
-            utils.COMPRESSION_TAR_GZIP,
+            COMPRESSION_TAR_GZIP,
             PROG_VERS_TAR,
             utils.COMPRESS_EXTENSION_GZIP,
             utils.COMPRESS_PROGRAM_TAR,

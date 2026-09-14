@@ -14,11 +14,9 @@ import json
 import os
 import re
 import shutil
-import subprocess
 import time
 import urllib.parse
 import uuid
-from collections.abc import Callable
 from collections.abc import Mapping
 from dataclasses import dataclass
 from dataclasses import field
@@ -31,6 +29,11 @@ import requests
 from django.test import Client
 from metsrw.plugins import premisrw
 
+from archivematica.storage_service.common.compression import COMPRESSION_7Z_BZIP
+from archivematica.storage_service.common.compression import Archive
+from archivematica.storage_service.common.compression import Archiver
+from archivematica.storage_service.common.compression import CompressionError
+from archivematica.storage_service.common.compression import override_archiver
 from archivematica.storage_service.locations import models
 from archivematica.storage_service.locations.models.local_filesystem import (
     LocalFilesystem,
@@ -38,17 +41,6 @@ from archivematica.storage_service.locations.models.local_filesystem import (
 from archivematica.storage_service.locations.models.nfs import NFS
 
 PROCESSING_CONFIG = "<processingMCP><preconfiguredChoices/></processingMCP>"
-
-# Compressed AIPs are made and read back with the tools the pipeline and the
-# Storage Service use, so their cases need the tools on the path.
-TOOLS = ("7z", "unar", "lsar")
-MISSING_TOOLS = [tool for tool in TOOLS if shutil.which(tool) is None]
-
-
-def _require_tools() -> None:
-    if MISSING_TOOLS:
-        pytest.skip(f"missing command line tools: {MISSING_TOOLS}")
-
 
 # A preservation derivative is recognised by its ``<name>-<uuid><ext>`` name.
 DERIVATIVE_UUID = uuid.uuid4()
@@ -145,13 +137,14 @@ class AIPBuilder:
 
     The reingest code paths branch on stored state: compression, stored
     checksum, pointer file and layout. This builder produces valid bags with
-    the payload layout Archivematica writes, compresses them with 7-Zip as
-    the pipeline does and stores them through the API, so that the resulting
+    the payload layout Archivematica writes, compresses them with the
+    archiver in use and stores them through the API, so that the resulting
     package rows and files look like production ones.
     """
 
-    def __init__(self, client: Client) -> None:
+    def __init__(self, client: Client, archiver: Archiver) -> None:
         self.client = client
+        self.archiver = archiver
 
     @staticmethod
     def mets_filename(package_uuid: uuid.UUID) -> str:
@@ -193,14 +186,9 @@ class AIPBuilder:
         bagit.make_bag(str(aip_dir), checksums=["sha256"])
         return aip_dir
 
-    def compress(self, aip_dir: Path) -> Path:
-        """Compress a bag with 7-Zip next to itself, as the pipeline does."""
-        _require_tools()
-        archive = aip_dir.parent / f"{aip_dir.name}.7z"
-        command = ["7z", "a", "-bd", "-t7z", "-y", "-m0=bzip2", "-mtc=on", "-mtm=on"]
-        command += ["-mta=on", str(archive), str(aip_dir)]
-        subprocess.run(command, check=True, capture_output=True)
-        return archive
+    def compress(self, aip_dir: Path, compression: str = COMPRESSION_7Z_BZIP) -> Path:
+        """Compress a bag next to itself."""
+        return self.archiver.compress(aip_dir, aip_dir.parent, compression).path
 
     def store(
         self,
@@ -242,9 +230,13 @@ class AIPBuilder:
 
 
 @pytest.fixture
-def aip_builder(admin_client: Client) -> AIPBuilder:
-    """Return a builder that stores AIPs through the API as an administrator."""
-    return AIPBuilder(admin_client)
+def aip_builder(admin_client: Client, fake_archiver: Archiver) -> AIPBuilder:
+    """Return a builder that stores AIPs through the API as an administrator.
+
+    The fake archiver stays in use for the test, so no compression tools are
+    needed.
+    """
+    return AIPBuilder(admin_client, fake_archiver)
 
 
 @dataclass(frozen=True)
@@ -953,16 +945,12 @@ def _finish_reingest(
     return response.status_code, body
 
 
-def _stored_files(package: models.Package, scratch: Path) -> dict[str, str]:
+def _stored_files(
+    package: models.Package, archiver: Archiver, scratch: Path
+) -> dict[str, str]:
     """Return the files of the stored AIP, extracting it first if compressed."""
     full_path = Path(package.full_path)
-    root = full_path
-    if full_path.is_file():
-        _require_tools()
-        scratch.mkdir()
-        command = ["7z", "x", "-bd", "-y", f"-o{scratch}", str(full_path)]
-        subprocess.run(command, check=True, capture_output=True)
-        (root,) = scratch.iterdir()
+    root = archiver.extract(full_path, scratch) if full_path.is_file() else full_path
     return {
         path.relative_to(root).as_posix(): path.read_text()
         for path in root.rglob("*")
@@ -986,6 +974,7 @@ def test_finish_reingest_merges_the_reingested_aip_into_the_stored_one(
     admin_client: Client,
     aip_builder: AIPBuilder,
     store_aip: StoreAIP,
+    fake_archiver: Archiver,
     pipeline: models.Pipeline,
     currently_processing: models.Location,
     storage: Storage,
@@ -993,7 +982,7 @@ def test_finish_reingest_merges_the_reingested_aip_into_the_stored_one(
     reingest_type: str,
 ) -> None:
     package = store_aip(compressed=False).package
-    before = _stored_files(package, tmp_path / "before")
+    before = _stored_files(package, fake_archiver, tmp_path / "before")
     status_code, _ = _request_reingest(
         admin_client,
         package,
@@ -1024,7 +1013,7 @@ def test_finish_reingest_merges_the_reingested_aip_into_the_stored_one(
     assert package.status == models.Package.UPLOADED
     assert package.misc_attributes["reingest_pipeline"] is None
     assert package.full_pointer_file_path is None
-    after = _stored_files(package, tmp_path / "after")
+    after = _stored_files(package, fake_archiver, tmp_path / "after")
     mets = f"data/METS.{package.uuid}.xml"
     # The METS, the metadata and the derivatives come from the reingested AIP.
     assert after[mets] == REINGESTED_METS
@@ -1057,6 +1046,7 @@ def test_finish_reingest_applies_the_compression_of_the_reingested_aip(
     admin_client: Client,
     aip_builder: AIPBuilder,
     store_aip: StoreAIP,
+    fake_archiver: Archiver,
     pipeline: models.Pipeline,
     currently_processing: models.Location,
     storage: Storage,
@@ -1105,34 +1095,42 @@ def test_finish_reingest_applies_the_compression_of_the_reingested_aip(
         assert Path(package.full_pointer_file_path).is_file()
     else:
         assert package.full_pointer_file_path is None
-    after = _stored_files(package, tmp_path / "after")
+    after = _stored_files(package, fake_archiver, tmp_path / "after")
     assert after[f"data/METS.{package.uuid}.xml"] == REINGESTED_METS
     assert f"data/objects/hello-{REGENERATED_DERIVATIVE_UUID}.tif" in after
     fixity = _check_fixity(admin_client, package)
     assert fixity["success"] is True, fixity
 
 
-@pytest.fixture
-def failing_tool(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> Callable[[str], None]:
-    """Return a function that puts a failing stand-in for a tool first on the path."""
-    bin_dir = tmp_path / "bin"
-    bin_dir.mkdir()
-    monkeypatch.setenv("PATH", f"{bin_dir}{os.pathsep}{os.environ['PATH']}")
+class _ArchiverFailingAt:
+    """Wrap an archiver so that one of its operations fails, as a tool would."""
 
-    def install(tool: str) -> None:
-        stand_in = bin_dir / tool
-        stand_in.write_text("#!/bin/sh\nexit 1\n")
-        stand_in.chmod(0o755)
+    def __init__(self, inner: Archiver, operation: str) -> None:
+        self.inner = inner
+        self.operation = operation
 
-    return install
+    def compress(
+        self, source: Path, destination_dir: Path, compression: str
+    ) -> Archive:
+        if self.operation == "compress":
+            raise CompressionError("the tool failed")
+        return self.inner.compress(source, destination_dir, compression)
+
+    def extract(
+        self,
+        archive: Path,
+        destination_dir: Path,
+        compression: str | None = None,
+        member: str | None = None,
+    ) -> Path:
+        if self.operation == "extract":
+            raise CompressionError("the tool failed")
+        return self.inner.extract(archive, destination_dir, compression, member)
+
+    def root_directory(self, archive: Path) -> str:
+        return self.inner.root_directory(archive)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="A failing tool is only logged, and a missing file fails finalization later.",
-)
 @pytest.mark.django_db
 @pytest.mark.parametrize("storage", ["local"], indirect=True)
 @pytest.mark.parametrize(
@@ -1144,13 +1142,13 @@ def test_finish_reingest_failure_leaves_the_stored_aip_alone(
     admin_client: Client,
     aip_builder: AIPBuilder,
     store_aip: StoreAIP,
+    fake_archiver: Archiver,
     dashboard: FakeDashboard,
     pipeline: models.Pipeline,
     currently_processing: models.Location,
     internal_location: models.Location,
     storage: Storage,
     tmp_path: Path,
-    failing_tool: Callable[[str], None],
     failing: str,
     left_in_internal_location: str,
 ) -> None:
@@ -1162,7 +1160,7 @@ def test_finish_reingest_failure_leaves_the_stored_aip_alone(
     operator to recover. The package is no longer marked as reingesting.
     """
     package = store_aip(compressed=False).package
-    before = _stored_files(package, tmp_path / "before")
+    before = _stored_files(package, fake_archiver, tmp_path / "before")
     status_code, _ = _request_reingest(
         admin_client,
         package,
@@ -1177,9 +1175,11 @@ def test_finish_reingest_failure_leaves_the_stored_aip_alone(
         mets=REINGESTED_METS,
     )
     archive = aip_builder.compress(reingested)
-    failing_tool({"extract": "unar", "compress": "7z"}[failing])
 
-    with pytest.raises(models.StorageException):
+    with (
+        override_archiver(_ArchiverFailingAt(fake_archiver, failing)),
+        pytest.raises(models.StorageException),
+    ):
         _finish_reingest(
             admin_client,
             package,
@@ -1194,7 +1194,7 @@ def test_finish_reingest_failure_leaves_the_stored_aip_alone(
     package.refresh_from_db()
     assert package.status == models.Package.UPLOADED
     assert package.misc_attributes["reingest_pipeline"] is None
-    assert _stored_files(package, tmp_path / "after") == before
+    assert _stored_files(package, fake_archiver, tmp_path / "after") == before
     internal = Path(internal_location.full_path)
     if left_in_internal_location == "archive":
         assert (internal / archive.name).is_file()
