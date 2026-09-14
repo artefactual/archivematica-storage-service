@@ -16,6 +16,7 @@ jobs:
       matrix:
         ubuntu-version: [
           "24.04",
+          "26.04",
         ]
         python-version: [
           "3.10",
