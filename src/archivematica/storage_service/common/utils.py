@@ -9,6 +9,7 @@ import re
 import shutil
 import subprocess
 import tarfile
+import tempfile
 import uuid
 from collections import deque
 from collections import namedtuple
@@ -583,7 +584,7 @@ class TARException(Exception):
     pass
 
 
-def create_tar(path, extension=False):
+def create_tar(path: str | os.PathLike[str], extension: bool = False) -> None:
     """Create a tarfile from the directory at ``path`` and overwrite
     ``path`` with that tarfile.
 
@@ -594,27 +595,37 @@ def create_tar(path, extension=False):
     tarpath = pathlib.Path(f"{path}{TAR_EXTENSION}")
     changedir = tarpath.parent
     source = path.name
-    cmd = ["tar", "-C", changedir, "-cf", tarpath, source]
     LOGGER.info(
         "creating archive of %s at %s, relative to %s", source, tarpath, changedir
     )
     fail_msg = f"Failed to create a tarfile at {tarpath} for dir at {path}"
+    # The tarfile is written in a directory of its own and published once it
+    # is valid, so a failure never touches a tarfile already at ``tarpath``.
+    try:
+        staging = pathlib.Path(tempfile.mkdtemp(prefix=".tar-", dir=changedir))
+    except OSError:
+        raise TARException(fail_msg)
+    output = staging / tarpath.name
+    cmd = ["tar", "-C", changedir, "-cf", output, source]
     try:
         subprocess.check_output(cmd)
+        if not (output.is_file() and tarfile.is_tarfile(output)):
+            raise TARException(fail_msg)
+        output.replace(tarpath)
     except (OSError, subprocess.CalledProcessError):
         raise TARException(fail_msg)
+    finally:
+        # Whatever tar left behind, complete or not, is ours.
+        shutil.rmtree(staging, ignore_errors=True)
 
     # Providing the TAR is successfully created then remove the original.
-    if tarpath.is_file() and tarfile.is_tarfile(tarpath):
-        try:
-            shutil.rmtree(path)
-        except OSError:
-            # Remove a file-path as We're likely packaging a file, e.g. 7z.
-            path.unlink()
-        if not extension:
-            tarpath.rename(path)
-    else:
-        raise TARException(fail_msg)
+    try:
+        shutil.rmtree(path)
+    except OSError:
+        # Remove a file-path as We're likely packaging a file, e.g. 7z.
+        path.unlink()
+    if not extension:
+        tarpath.rename(path)
 
     if not tarfile.is_tarfile(tarpath if extension else path):
         raise TARException(fail_msg)

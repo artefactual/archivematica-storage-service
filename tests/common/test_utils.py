@@ -1,8 +1,8 @@
+import os
 import pathlib
 import re
-import shutil
 import tarfile
-from collections import namedtuple
+from collections.abc import Callable
 from io import StringIO
 from unittest import mock
 
@@ -22,9 +22,6 @@ PROG_VERS_TAR = r"tar"
 # Specifically string types for the tuple we create.
 COMPRESS_ORDER_ONE = "1"
 COMPRESS_ORDER_TWO = "2"
-
-ExTarCase = namedtuple("ExTarCase", "path isdir raises expected")
-CrTarCase = namedtuple("CrTarCase", "path isfile istar raises expected extension")
 
 
 @pytest.mark.parametrize(
@@ -340,151 +337,196 @@ def test_package_is_file(package_path, is_file):
     assert utils.package_is_file(package_path) == is_file
 
 
-@pytest.mark.parametrize(
-    "path, will_be_dir, sp_raises, expected",
-    [
-        ExTarCase(path="/a/b/c", isdir=True, raises=False, expected="success"),
-        ExTarCase(path="/a/b/d", isdir=False, raises=True, expected="fail"),
-        ExTarCase(path="/a/b/c", isdir=True, raises=True, expected="fail"),
-    ],
-)
-@mock.patch("pathlib.Path.rename")
-@mock.patch("pathlib.Path.unlink")
-@mock.patch("pathlib.Path.is_dir")
-@mock.patch("subprocess.check_output")
-def test_extract_tar(
-    check_output, is_dir, unlink, rename, path, will_be_dir, sp_raises, expected
-):
-    if sp_raises:
-        check_output.side_effect = OSError("gotcha!")
-    if will_be_dir:
-        is_dir.return_value = True
-    else:
-        is_dir.return_value = False
-    path = pathlib.Path(path)
-    tarpath_ext = path.with_suffix(".tar")
-    dirname = tarpath_ext.parent
-    if expected == "success":
-        ret = utils.extract_tar(path)
-        assert ret is None
-        tarpath_ext.unlink.assert_called_once()
-    else:
-        with pytest.raises(utils.TARException) as excinfo:
-            ret = utils.extract_tar(path)
-        assert f"Failed to extract {path}: gotcha!" == str(excinfo.value)
-        tarpath_ext.rename.assert_any_call(path)
-        unlink.assert_not_called()
-    path.rename.assert_any_call(tarpath_ext)
-    check_output.assert_called_once_with(["tar", "-xf", tarpath_ext, "-C", dirname])
+def _files_under(directory: pathlib.Path) -> dict[str, str]:
+    return {
+        path.relative_to(directory).as_posix(): path.read_text()
+        for path in directory.rglob("*")
+        if path.is_file()
+    }
 
 
-@pytest.mark.parametrize(
-    "path, will_be_file, will_be_tar, sp_raises, expected, extension",
-    [
-        CrTarCase(
-            path="/a/b/c",
-            isfile=True,
-            istar=True,
-            raises=False,
-            expected="success",
-            extension=False,
-        ),
-        CrTarCase(
-            path="/a/b/c/",
-            isfile=True,
-            istar=True,
-            raises=False,
-            expected="success",
-            extension=False,
-        ),
-        CrTarCase(
-            path="/a/b/c",
-            isfile=True,
-            istar=False,
-            raises=False,
-            expected="fail",
-            extension=False,
-        ),
-        CrTarCase(
-            path="/a/b/c",
-            isfile=False,
-            istar=True,
-            raises=False,
-            expected="fail",
-            extension=False,
-        ),
-        CrTarCase(
-            path="/a/b/c",
-            isfile=False,
-            istar=False,
-            raises=True,
-            expected="fail",
-            extension=False,
-        ),
-        CrTarCase(
-            path="/a/b/c",
-            isfile=True,
-            istar=True,
-            raises=False,
-            expected="success",
-            extension=True,
-        ),
-        CrTarCase(
-            path="/a/b/c/",
-            isfile=True,
-            istar=True,
-            raises=False,
-            expected="success",
-            extension=True,
-        ),
-    ],
-)
-@mock.patch("pathlib.Path.rename")
-@mock.patch("shutil.rmtree")
-@mock.patch("pathlib.Path.is_file")
-@mock.patch("tarfile.is_tarfile")
-@mock.patch("subprocess.check_output")
-def test_create_tar(
-    check_output,
-    is_tarfile,
-    is_file,
-    rmtree,
-    rename,
-    path,
-    will_be_file,
-    will_be_tar,
-    sp_raises,
-    expected,
-    extension,
-):
-    if sp_raises:
-        check_output.side_effect = OSError("gotcha!")
-    is_file.return_value = will_be_file
-    is_tarfile.return_value = will_be_tar
+@pytest.fixture
+def package_dir(tmp_path: pathlib.Path) -> pathlib.Path:
+    """Return a small directory tree, like an AIP about to be encrypted."""
+    directory = tmp_path / "package"
+    (directory / "data" / "objects").mkdir(parents=True)
+    (directory / "bagit.txt").write_text("BagIt-Version: 0.97\n")
+    (directory / "data" / "objects" / "hello.txt").write_text("hello\n")
+    return directory
 
-    fixed_path = pathlib.Path(path)
-    tarpath = fixed_path.with_suffix(".tar")
-    if expected == "success":
-        ret = utils.create_tar(path)
-        shutil.rmtree.assert_called_once_with(fixed_path)
-        tarpath.rename.assert_called_once_with(fixed_path)
-        tarfile.is_tarfile.assert_any_call(fixed_path)
-        assert ret is None
-    else:
-        with pytest.raises(utils.TARException) as excinfo:
-            ret = utils.create_tar(path, extension=extension)
-        assert (
-            f"Failed to create a tarfile at {tarpath} for dir at {fixed_path}"
-            == str(excinfo.value)
-        )
-        rmtree.assert_not_called()
-        rename.assert_not_called()
-    if not sp_raises:
-        tarpath.is_file.assert_called_once()
-        if will_be_file:
-            tarfile.is_tarfile.assert_any_call(tarpath)
-        if extension:
-            assert tarpath.suffix == utils.TAR_EXTENSION
+
+def test_create_tar_replaces_a_directory_with_a_tarfile(
+    package_dir: pathlib.Path,
+) -> None:
+    utils.create_tar(package_dir)
+
+    assert package_dir.is_file()
+    assert tarfile.is_tarfile(package_dir)
+    assert not package_dir.with_name("package.tar").exists()
+    with tarfile.open(package_dir) as tar:
+        assert sorted(tar.getnames()) == [
+            "package",
+            "package/bagit.txt",
+            "package/data",
+            "package/data/objects",
+            "package/data/objects/hello.txt",
+        ]
+
+
+def test_create_tar_keeps_the_extension_when_asked(package_dir: pathlib.Path) -> None:
+    utils.create_tar(package_dir, extension=True)
+
+    tarpath = package_dir.with_name("package.tar")
+    assert tarfile.is_tarfile(tarpath)
+    assert not package_dir.exists()
+
+
+def test_create_tar_packages_a_file(tmp_path: pathlib.Path) -> None:
+    archive = tmp_path / "package.7z"
+    archive.write_bytes(b"compressed package")
+
+    utils.create_tar(archive, extension=True)
+
+    tarpath = tmp_path / "package.7z.tar"
+    assert tarfile.is_tarfile(tarpath)
+    assert not archive.exists()
+    with tarfile.open(tarpath) as tar:
+        assert tar.getnames() == ["package.7z"]
+
+
+def test_create_tar_fails_when_the_path_does_not_exist(
+    tmp_path: pathlib.Path,
+) -> None:
+    missing = tmp_path / "missing"
+
+    with pytest.raises(
+        utils.TARException,
+        match=f"Failed to create a tarfile at {missing}.tar for dir at {missing}",
+    ):
+        utils.create_tar(missing)
+
+    assert not missing.with_name("missing.tar").exists()
+
+
+def test_create_tar_keeps_an_existing_tarfile_when_the_tool_fails(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Only what this call created may be removed on failure."""
+    missing = tmp_path / "missing"
+    existing = tmp_path / "missing.tar"
+    existing.write_bytes(b"previous archive")
+
+    with pytest.raises(utils.TARException):
+        utils.create_tar(missing)
+
+    assert existing.read_bytes() == b"previous archive"
+
+
+@pytest.fixture
+def fake_tar(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> Callable[[str], None]:
+    """Return a function that puts a stand-in ``tar`` running a shell script first on the path."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    monkeypatch.setenv("PATH", f"{bin_dir}{os.pathsep}{os.environ['PATH']}")
+
+    def install(script: str) -> None:
+        tool = bin_dir / "tar"
+        tool.write_text(f"#!/bin/sh\n{script}\n")
+        tool.chmod(0o755)
+
+    return install
+
+
+def test_create_tar_fails_when_the_tool_writes_no_tarfile(
+    package_dir: pathlib.Path, fake_tar: Callable[[str], None]
+) -> None:
+    """The source is kept unless the tarfile that replaces it is there."""
+    before = _files_under(package_dir)
+    fake_tar("exit 0")
+
+    with pytest.raises(utils.TARException):
+        utils.create_tar(package_dir)
+
+    assert _files_under(package_dir) == before
+    assert sorted(entry.name for entry in package_dir.parent.iterdir()) == [
+        "bin",
+        "package",
+    ]
+
+
+def test_create_tar_fails_when_the_tool_writes_an_invalid_tarfile(
+    package_dir: pathlib.Path, fake_tar: Callable[[str], None]
+) -> None:
+    before = _files_under(package_dir)
+    # The output path follows the -cf option: tar -C <dir> -cf <output> <source>.
+    fake_tar('echo "not a tarfile" > "$4"')
+
+    with pytest.raises(utils.TARException):
+        utils.create_tar(package_dir)
+
+    assert _files_under(package_dir) == before
+    assert sorted(entry.name for entry in package_dir.parent.iterdir()) == [
+        "bin",
+        "package",
+    ]
+
+
+def test_create_tar_fails_when_the_parent_directory_is_not_writable(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Every failure to create the tarfile is reported the same way."""
+    if os.geteuid() == 0:
+        pytest.skip("permissions are not enforced for root")
+    store = tmp_path / "store"
+    package = store / "package"
+    package.mkdir(parents=True)
+    (package / "bagit.txt").write_text("BagIt-Version: 0.97\n")
+    before = _files_under(package)
+    store.chmod(0o555)
+
+    try:
+        with pytest.raises(utils.TARException):
+            utils.create_tar(package)
+    finally:
+        store.chmod(0o755)
+
+    assert _files_under(package) == before
+    assert sorted(entry.name for entry in store.iterdir()) == ["package"]
+
+
+def test_extract_tar_restores_the_directory(package_dir: pathlib.Path) -> None:
+    expected = _files_under(package_dir)
+    utils.create_tar(package_dir)
+
+    utils.extract_tar(package_dir)
+
+    assert package_dir.is_dir()
+    assert _files_under(package_dir) == expected
+    assert not package_dir.with_name("package.tar").exists()
+
+
+def test_extract_tar_restores_a_file(tmp_path: pathlib.Path) -> None:
+    archive = tmp_path / "package.7z"
+    archive.write_bytes(b"compressed package")
+    utils.create_tar(archive, extension=True)
+
+    utils.extract_tar(tmp_path / "package.7z.tar")
+
+    assert archive.read_bytes() == b"compressed package"
+    assert not (tmp_path / "package.7z.tar").exists()
+
+
+def test_extract_tar_fails_and_restores_the_name(tmp_path: pathlib.Path) -> None:
+    broken = tmp_path / "broken"
+    broken.write_bytes(b"not a tarfile")
+
+    with pytest.raises(utils.TARException, match=f"Failed to extract {broken}: "):
+        utils.extract_tar(broken)
+
+    assert broken.read_bytes() == b"not a tarfile"
+    assert not broken.with_name("broken.tar").exists()
 
 
 @pytest.mark.parametrize(
