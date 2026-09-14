@@ -160,6 +160,7 @@ module = [
     "archivematica.storage_service.locations.package_request",
     "tests.administration.test_users",
     "tests.integration.*",
+    "tests.locations.test_reingest",
     "tests.storage_service.test_helpers",
     "tests.storage_service.test_oidc",
 ]

@@ -1,0 +1,876 @@
+"""Tests for the reingest of AIPs through the Storage Service API.
+
+The request phase is exercised on packages stored the way the pipeline stores
+them, across the working paths ``start_reingest`` uses: the stored directory
+itself for uncompressed AIPs the Storage Service can read directly, an
+extracted copy for compressed AIPs, with and without a stored checksum, and a
+fetched copy for AIPs in locations it cannot read directly. Requests that
+cannot proceed are checked for their responses.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import shutil
+import subprocess
+import urllib.parse
+import uuid
+from collections.abc import Mapping
+from dataclasses import dataclass
+from dataclasses import field
+from pathlib import Path
+from typing import Protocol
+
+import bagit
+import pytest
+import requests
+from django.test import Client
+from metsrw.plugins import premisrw
+
+from archivematica.storage_service.locations import models
+from archivematica.storage_service.locations.models.local_filesystem import (
+    LocalFilesystem,
+)
+from archivematica.storage_service.locations.models.nfs import NFS
+
+PROCESSING_CONFIG = "<processingMCP><preconfiguredChoices/></processingMCP>"
+
+# Compressed AIPs are made and read back with the tools the pipeline and the
+# Storage Service use, so their cases need the tools on the path.
+TOOLS = ("7z", "unar", "lsar")
+MISSING_TOOLS = [tool for tool in TOOLS if shutil.which(tool) is None]
+
+
+def _require_tools() -> None:
+    if MISSING_TOOLS:
+        pytest.skip(f"missing command line tools: {MISSING_TOOLS}")
+
+
+# A preservation derivative is recognised by its ``<name>-<uuid><ext>`` name.
+DERIVATIVE_UUID = uuid.uuid4()
+
+# Payload of the built AIPs, relative to ``data/``, laid out as Archivematica
+# writes it. It holds something for every selection the reingest types make.
+DEFAULT_PAYLOAD: Mapping[str, str] = {
+    "objects/hello.txt": "hello\n",
+    f"objects/hello-{DERIVATIVE_UUID}.tif": "preservation derivative\n",
+    "objects/metadata/metadata.csv": "filename,dc.title\nobjects/hello.txt,Hello\n",
+    "objects/submissionDocumentation/transfer-hello/METS.xml": "<mets/>\n",
+    "logs/fileFormatIdentification.log": "objects/hello.txt,fmt/111\n",
+    "README.html": "<html><body>AIP</body></html>\n",
+}
+
+
+def _get_size(path: Path) -> int:
+    if path.is_file():
+        return path.stat().st_size
+    return sum(
+        (Path(root) / name).stat().st_size
+        for root, _, names in os.walk(path)
+        for name in names
+    )
+
+
+def _compression_event() -> tuple[object, ...]:
+    """Return the PREMIS compression event the pipeline sends when storing."""
+    return (
+        "event",
+        premisrw.PREMIS_META,
+        (
+            "event_identifier",
+            ("event_identifier_type", "UUID"),
+            ("event_identifier_value", str(uuid.uuid4())),
+        ),
+        ("event_type", "compression"),
+        ("event_date_time", "2017-08-15T00:30:55"),
+        (
+            "event_detail",
+            (
+                "program=7z; "
+                "version=p7zip Version 16.02 "
+                "(locale=en_US.UTF-8,Utf16=on,HugeFiles=on,2 CPUs); "
+                "algorithm=bzip2"
+            ),
+        ),
+        (
+            "event_outcome_information",
+            (
+                "event_outcome_detail",
+                (
+                    "event_outcome_detail_note",
+                    'Standard Output="..."; Standard Error=""',
+                ),
+            ),
+        ),
+        (
+            "linking_agent_identifier",
+            ("linking_agent_identifier_type", "preservation system"),
+            ("linking_agent_identifier_value", "Archivematica"),
+        ),
+    )
+
+
+def _agent() -> tuple[object, ...]:
+    return (
+        "agent",
+        premisrw.PREMIS_3_0_META,
+        (
+            "agent_identifier",
+            ("agent_identifier_type", "preservation system"),
+            ("agent_identifier_value", "Archivematica"),
+        ),
+        ("agent_name", "Archivematica"),
+        ("agent_type", "software"),
+    )
+
+
+class AIPBuilder:
+    """Build and store AIPs shaped like the ones Archivematica produces.
+
+    The reingest code paths branch on stored state: compression, stored
+    checksum, pointer file and layout. This builder produces valid bags with
+    the payload layout Archivematica writes, compresses them with 7-Zip as
+    the pipeline does and stores them through the API, so that the resulting
+    package rows and files look like production ones.
+    """
+
+    def __init__(self, client: Client) -> None:
+        self.client = client
+
+    @staticmethod
+    def mets_filename(package_uuid: uuid.UUID) -> str:
+        return f"METS.{package_uuid}.xml"
+
+    @staticmethod
+    def list_files(directory: Path) -> set[str]:
+        """Return the paths of all files under ``directory`` relative to it."""
+        return {
+            os.path.relpath(os.path.join(root, name), directory)
+            for root, _, names in os.walk(directory)
+            for name in names
+        }
+
+    def build(
+        self,
+        parent: Path,
+        package_uuid: uuid.UUID,
+        name: str,
+        *,
+        payload: Mapping[str, str] = DEFAULT_PAYLOAD,
+        mets: str = "<mets/>\n",
+    ) -> Path:
+        """Write a valid bag named ``name`` under ``parent`` and return its path.
+
+        ``payload`` maps paths relative to the payload directory to their
+        content. The METS file is always named after ``package_uuid``. Files
+        are written first and the directory is bagged last, so the manifests
+        always match the content.
+        """
+        aip_dir = parent / name
+        aip_dir.mkdir()
+        files = dict(payload)
+        files[self.mets_filename(package_uuid)] = mets
+        for relative_path, content in files.items():
+            path = aip_dir / relative_path
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content)
+        bagit.make_bag(str(aip_dir), checksums=["sha256"])
+        return aip_dir
+
+    def compress(self, aip_dir: Path) -> Path:
+        """Compress a bag with 7-Zip next to itself, as the pipeline does."""
+        _require_tools()
+        archive = aip_dir.parent / f"{aip_dir.name}.7z"
+        command = ["7z", "a", "-bd", "-t7z", "-y", "-m0=bzip2", "-mtc=on", "-mtm=on"]
+        command += ["-mta=on", str(archive), str(aip_dir)]
+        subprocess.run(command, check=True, capture_output=True)
+        return archive
+
+    def store(
+        self,
+        *,
+        package_uuid: uuid.UUID,
+        package_path: Path,
+        pipeline: models.Pipeline,
+        origin_location: models.Location,
+        storage_location: models.Location,
+    ) -> models.Package:
+        """Store the AIP at ``package_path`` through the API, as the pipeline does.
+
+        ``package_path`` is a bag directory or an archive inside
+        ``origin_location``. Returns the resulting package.
+        """
+        compressed = package_path.is_file()
+        origin_path = package_path.name if compressed else f"{package_path.name}/"
+        response = self.client.post(
+            "/api/v2/file/",
+            json.dumps(
+                {
+                    "uuid": str(package_uuid),
+                    "origin_location": f"/api/v2/location/{origin_location.uuid}/",
+                    "origin_path": origin_path,
+                    "current_location": f"/api/v2/location/{storage_location.uuid}/",
+                    "current_path": package_path.name,
+                    "size": _get_size(package_path),
+                    "package_type": models.Package.AIP,
+                    "aip_subtype": "Archival Information Package",
+                    "origin_pipeline": f"/api/v2/pipeline/{pipeline.uuid}/",
+                    "events": [_compression_event()] if compressed else [],
+                    "agents": [_agent()],
+                }
+            ),
+            content_type="application/json",
+        )
+        assert response.status_code == 201, response.content
+        return models.Package.objects.get(uuid=package_uuid)
+
+
+@pytest.fixture
+def aip_builder(admin_client: Client) -> AIPBuilder:
+    """Return a builder that stores AIPs through the API as an administrator."""
+    return AIPBuilder(admin_client)
+
+
+@dataclass(frozen=True)
+class DashboardRequest:
+    """A request received by the fake dashboard."""
+
+    method: str
+    path: str
+    authorization: str | None
+    fields: Mapping[str, str]
+    """Form fields of a POST request."""
+
+
+@dataclass(frozen=True)
+class ReingestApproval:
+    """A reingest approval requested from the fake dashboard."""
+
+    target: str
+    """``ingest`` for partial reingest, ``transfer`` for full reingest."""
+    name: str
+    """Path of the AIP under the pipeline's ``tmp`` directory."""
+    package_uuid: uuid.UUID
+
+
+REINGEST_PATH = re.compile(r"/api/(?P<target>ingest|transfer)/reingest")
+PROCESSING_CONFIG_PATH = "/api/processing-configuration/"
+
+
+def _response(status: int, content_type: str, body: str) -> requests.Response:
+    result = requests.Response()
+    result.status_code = status
+    result.headers["Content-Type"] = content_type
+    result.encoding = "utf-8"
+    result._content = body.encode()
+    return result
+
+
+@dataclass
+class FakeDashboard:
+    """Stand-in for the dashboard API of a pipeline.
+
+    It takes the place of ``requests.request``, the call through which the
+    Storage Service reaches a pipeline. It serves the processing
+    configurations registered in ``processing_configs``, approves reingest
+    requests with ``reingest_uuid`` and records every request it receives.
+    """
+
+    url: str = "http://dashboard.test"
+    processing_configs: dict[str, str] = field(default_factory=dict)
+    reingest_uuid: uuid.UUID = field(default_factory=uuid.uuid4)
+    reingest_status: int = 200
+    """HTTP status returned to reingest approvals."""
+    received: list[DashboardRequest] = field(default_factory=list)
+
+    def request(
+        self,
+        method: str,
+        url: str,
+        *,
+        headers: Mapping[str, str] | None = None,
+        data: Mapping[str, str] | None = None,
+        **kwargs: object,
+    ) -> requests.Response:
+        parts = urllib.parse.urlsplit(url)
+        assert f"{parts.scheme}://{parts.netloc}" == self.url, url
+        self.received.append(
+            DashboardRequest(
+                method=method,
+                path=parts.path,
+                authorization=(headers or {}).get("Authorization"),
+                fields=dict(data or {}),
+            )
+        )
+        if method == "GET" and parts.path.startswith(PROCESSING_CONFIG_PATH):
+            name = parts.path.removeprefix(PROCESSING_CONFIG_PATH)
+            config = self.processing_configs.get(name)
+            if config is not None:
+                return _response(200, "text/xml", config)
+        elif method == "POST" and REINGEST_PATH.fullmatch(parts.path):
+            if self.reingest_status != 200:
+                body = {"error": True, "message": "Approval failed."}
+                return _response(
+                    self.reingest_status, "application/json", json.dumps(body)
+                )
+            body = {
+                "message": "Approval successful.",
+                "reingest_uuid": str(self.reingest_uuid),
+            }
+            return _response(200, "application/json", json.dumps(body))
+        return _response(404, "application/json", json.dumps({"error": True}))
+
+    @property
+    def processing_config_requests(self) -> list[str]:
+        """Return the names of the processing configurations requested."""
+        return [
+            request.path.removeprefix(PROCESSING_CONFIG_PATH)
+            for request in self.received
+            if request.method == "GET"
+            and request.path.startswith(PROCESSING_CONFIG_PATH)
+        ]
+
+    @property
+    def reingest_approvals(self) -> list[ReingestApproval]:
+        result = []
+        for request in self.received:
+            match = REINGEST_PATH.fullmatch(request.path)
+            if request.method == "POST" and match:
+                result.append(
+                    ReingestApproval(
+                        target=match.group("target"),
+                        name=request.fields["name"],
+                        package_uuid=uuid.UUID(request.fields["uuid"]),
+                    )
+                )
+        return result
+
+
+@pytest.fixture
+def dashboard(monkeypatch: pytest.MonkeyPatch) -> FakeDashboard:
+    """Put a fake dashboard behind the HTTP client the pipeline model uses."""
+    result = FakeDashboard()
+    monkeypatch.setattr(requests, "request", result.request)
+    return result
+
+
+@pytest.fixture
+def default_space(tmp_path: Path) -> models.Space:
+    """Return a space shaped like the default one.
+
+    Its staging path is the Storage Service internal location, as in a
+    default deployment.
+    """
+    space_dir = tmp_path / "space"
+    staging_dir = space_dir / "var" / "archivematica" / "storage_service"
+    staging_dir.mkdir(parents=True)
+    space = models.Space.objects.create(
+        access_protocol=models.Space.LOCAL_FILESYSTEM,
+        path=str(space_dir),
+        staging_path=str(staging_dir),
+    )
+    LocalFilesystem.objects.create(space=space)
+    return space
+
+
+@pytest.fixture
+def internal_location(default_space: models.Space) -> models.Location:
+    return models.Location.objects.create(
+        space=default_space,
+        purpose=models.Location.STORAGE_SERVICE_INTERNAL,
+        relative_path="var/archivematica/storage_service",
+    )
+
+
+@pytest.fixture
+def pipeline(default_space: models.Space, dashboard: FakeDashboard) -> models.Pipeline:
+    result = models.Pipeline.objects.create(
+        remote_name=dashboard.url,
+        api_username="test",
+        api_key="test",
+    )
+    currently_processing = models.Location.objects.create(
+        space=default_space,
+        purpose=models.Location.CURRENTLY_PROCESSING,
+        relative_path="var/archivematica/sharedDirectory",
+    )
+    Path(currently_processing.full_path).mkdir(parents=True)
+    currently_processing.pipeline.add(result)
+    return result
+
+
+@pytest.fixture
+def currently_processing(pipeline: models.Pipeline) -> models.Location:
+    return models.Location.objects.get(
+        pipeline=pipeline, purpose=models.Location.CURRENTLY_PROCESSING
+    )
+
+
+@dataclass(frozen=True)
+class Storage:
+    """An AIP storage location and whether the service can read it directly."""
+
+    location: models.Location
+    remote: bool
+
+
+@pytest.fixture
+def storage(
+    request: pytest.FixtureRequest, tmp_path: Path, pipeline: models.Pipeline
+) -> Storage:
+    """Return an AIP storage location of the requested kind.
+
+    ``local`` and ``nfs`` are directly readable. ``remote`` is a local space
+    that is hidden once a package is stored, so the package has to be fetched
+    like one in object storage.
+    """
+    kind: str = request.param
+    space_dir = tmp_path / kind
+    staging_dir = tmp_path / f"{kind}_staging"
+    space_dir.mkdir()
+    staging_dir.mkdir()
+    if kind == "nfs":
+        space = models.Space.objects.create(
+            access_protocol=models.Space.NFS,
+            path=str(space_dir),
+            staging_path=str(staging_dir),
+        )
+        NFS.objects.create(
+            space=space, remote_name="nfs-server", remote_path="/export", version="nfs4"
+        )
+    else:
+        space = models.Space.objects.create(
+            access_protocol=models.Space.LOCAL_FILESYSTEM,
+            path=str(space_dir),
+            staging_path=str(staging_dir),
+        )
+        LocalFilesystem.objects.create(space=space)
+    location = models.Location.objects.create(
+        space=space, purpose=models.Location.AIP_STORAGE, relative_path="aips"
+    )
+    Path(location.full_path).mkdir()
+    location.pipeline.add(pipeline)
+    return Storage(location=location, remote=kind == "remote")
+
+
+def _hide_space(
+    space: models.Space, hidden_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Make a local space unreadable in place, so packages must be fetched.
+
+    The space directory is moved aside and copies out of the space are
+    redirected to it, standing in for a remote transport. Directories are
+    copied by content, as object storage drivers do.
+    """
+    space_dir = space.path
+    shutil.move(space_dir, hidden_dir)
+    original = LocalFilesystem.move_to_storage_service
+
+    def fetch(
+        self: LocalFilesystem,
+        src_path: str,
+        dest_path: str,
+        dest_space: models.Space,
+    ) -> None:
+        if src_path.startswith(space_dir):
+            src_path = str(hidden_dir) + src_path[len(space_dir) :]
+            if Path(src_path).is_dir():
+                src_path = f"{src_path.rstrip('/')}/"
+        original(self, src_path, dest_path, dest_space)
+
+    monkeypatch.setattr(LocalFilesystem, "move_to_storage_service", fetch)
+
+
+@dataclass(frozen=True)
+class StoredAIP:
+    package: models.Package
+    files: frozenset[str]
+    """Paths of every file in the bag, relative to the bag directory."""
+
+
+class StoreAIP(Protocol):
+    def __call__(
+        self, *, compressed: bool, stored_checksum: bool = True
+    ) -> StoredAIP: ...
+
+
+@pytest.fixture
+def store_aip(
+    aip_builder: AIPBuilder,
+    tmp_path: Path,
+    pipeline: models.Pipeline,
+    currently_processing: models.Location,
+    internal_location: models.Location,
+    storage: Storage,
+    monkeypatch: pytest.MonkeyPatch,
+) -> StoreAIP:
+    """Return a callable that builds an AIP and stores it through the API."""
+    build_dir = tmp_path / "build"
+    build_dir.mkdir()
+
+    def _store(*, compressed: bool, stored_checksum: bool = True) -> StoredAIP:
+        package_uuid = uuid.uuid4()
+        bag_dir = aip_builder.build(build_dir, package_uuid, f"aip-{package_uuid}")
+        files = frozenset(aip_builder.list_files(bag_dir))
+        artifact = aip_builder.compress(bag_dir) if compressed else bag_dir
+        package_path = Path(currently_processing.full_path) / artifact.name
+        shutil.move(artifact, package_path)
+        package = aip_builder.store(
+            package_uuid=package_uuid,
+            package_path=package_path,
+            pipeline=pipeline,
+            origin_location=currently_processing,
+            storage_location=storage.location,
+        )
+        if not stored_checksum:
+            # Compressed AIPs whose pointer file was generated by the pipeline
+            # are stored without a checksum.
+            models.Package.objects.filter(uuid=package_uuid).update(checksum=None)
+            package.refresh_from_db()
+        if storage.remote:
+            _hide_space(storage.location.space, tmp_path / "hidden", monkeypatch)
+        return StoredAIP(package=package, files=files)
+
+    return _store
+
+
+def _request_reingest(
+    client: Client, package: models.Package, data: dict[str, str]
+) -> tuple[int, dict[str, object]]:
+    response = client.post(
+        f"/api/v2/file/{package.uuid}/reingest/",
+        json.dumps(data),
+        content_type="application/json",
+    )
+    body: dict[str, object] = json.loads(response.content)
+    return response.status_code, body
+
+
+def _sent_directory(
+    approval: ReingestApproval, currently_processing: models.Location
+) -> Path:
+    """Return the directory the pipeline was told to reingest from."""
+    result = Path(currently_processing.full_path) / "tmp" / approval.name
+    assert result.is_dir()
+    return result
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("storage", ["local", "nfs", "remote"], indirect=True)
+@pytest.mark.parametrize(
+    ("compressed", "stored_checksum"),
+    [(False, True), (True, True), (True, False)],
+    ids=["uncompressed", "compressed", "compressed-without-checksum"],
+)
+@pytest.mark.parametrize(
+    ("reingest_type", "target"),
+    [
+        (models.Package.METADATA_ONLY, "ingest"),
+        (models.Package.OBJECTS, "ingest"),
+        (models.Package.FULL, "transfer"),
+    ],
+)
+def test_reingest_request_sends_selected_files_and_processing_configuration(
+    admin_client: Client,
+    aip_builder: AIPBuilder,
+    store_aip: StoreAIP,
+    dashboard: FakeDashboard,
+    pipeline: models.Pipeline,
+    currently_processing: models.Location,
+    compressed: bool,
+    stored_checksum: bool,
+    reingest_type: str,
+    target: str,
+) -> None:
+    stored = store_aip(compressed=compressed, stored_checksum=stored_checksum)
+    package = stored.package
+    mets = f"data/{aip_builder.mets_filename(package.uuid)}"
+    objects = {
+        path
+        for path in stored.files
+        if path.startswith("data/objects/")
+        and not path.startswith("data/objects/submissionDocumentation/")
+    }
+    expected_files = {
+        models.Package.METADATA_ONLY: {mets, "data/objects/metadata/metadata.csv"},
+        models.Package.OBJECTS: {mets} | objects,
+        models.Package.FULL: set(stored.files),
+    }[reingest_type] | {"processingMCP.xml"}
+    dashboard.processing_configs["custom"] = PROCESSING_CONFIG
+
+    status_code, body = _request_reingest(
+        admin_client,
+        package,
+        {
+            "pipeline": str(pipeline.uuid),
+            "reingest_type": reingest_type,
+            "processing_config": "custom",
+        },
+    )
+
+    assert status_code == 202
+    assert body == {
+        "error": False,
+        "status_code": 202,
+        "message": f"Package {package.uuid} sent to pipeline {pipeline} for re-ingest",
+        "reingest_uuid": str(dashboard.reingest_uuid),
+    }
+
+    # The pipeline is asked for the configuration and then to approve the
+    # reingest, with the pipeline's own credentials.
+    assert dashboard.processing_config_requests == ["custom"]
+    (approval,) = dashboard.reingest_approvals
+    assert approval.target == target
+    assert approval.package_uuid == package.uuid
+    assert {request.authorization for request in dashboard.received} == {
+        "ApiKey test:test"
+    }
+
+    # The pipeline finds a flat bag under its tmp directory, holding the files
+    # selected by the reingest type and the processing configuration.
+    sent_dir = _sent_directory(approval, currently_processing)
+    assert aip_builder.list_files(sent_dir) == expected_files
+    assert (sent_dir / "processingMCP.xml").read_text() == PROCESSING_CONFIG
+
+    package.refresh_from_db()
+    assert package.misc_attributes["reingest_pipeline"] == str(pipeline.uuid)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("storage", ["local"], indirect=True)
+def test_reingest_request_with_default_processing_configuration_sends_no_file(
+    admin_client: Client,
+    aip_builder: AIPBuilder,
+    store_aip: StoreAIP,
+    dashboard: FakeDashboard,
+    pipeline: models.Pipeline,
+    currently_processing: models.Location,
+) -> None:
+    package = store_aip(compressed=False).package
+
+    status_code, body = _request_reingest(
+        admin_client,
+        package,
+        {"pipeline": str(pipeline.uuid), "reingest_type": models.Package.METADATA_ONLY},
+    )
+
+    assert status_code == 202
+    assert body["error"] is False
+    assert dashboard.processing_config_requests == []
+    (approval,) = dashboard.reingest_approvals
+    assert aip_builder.list_files(_sent_directory(approval, currently_processing)) == {
+        f"data/{aip_builder.mets_filename(package.uuid)}",
+        "data/objects/metadata/metadata.csv",
+    }
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("storage", ["local"], indirect=True)
+def test_reingest_request_continues_when_processing_configuration_is_missing(
+    admin_client: Client,
+    aip_builder: AIPBuilder,
+    store_aip: StoreAIP,
+    dashboard: FakeDashboard,
+    pipeline: models.Pipeline,
+    currently_processing: models.Location,
+) -> None:
+    package = store_aip(compressed=False).package
+
+    status_code, body = _request_reingest(
+        admin_client,
+        package,
+        {
+            "pipeline": str(pipeline.uuid),
+            "reingest_type": models.Package.METADATA_ONLY,
+            "processing_config": "missing",
+        },
+    )
+
+    assert status_code == 202
+    assert body["error"] is False
+    assert dashboard.processing_config_requests == ["missing"]
+    (approval,) = dashboard.reingest_approvals
+    assert aip_builder.list_files(_sent_directory(approval, currently_processing)) == {
+        f"data/{aip_builder.mets_filename(package.uuid)}",
+        "data/objects/metadata/metadata.csv",
+    }
+
+
+# Failed requests: the response says why, nothing reaches the pipeline that
+# should not, and the AIP stays available for another request.
+
+
+def _expect_failure(status_code: int, message: str) -> dict[str, object]:
+    return {"error": True, "status_code": status_code, "message": message}
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("storage", ["local"], indirect=True)
+def test_reingest_request_rejects_unknown_pipelines(
+    admin_client: Client, store_aip: StoreAIP, dashboard: FakeDashboard
+) -> None:
+    package = store_aip(compressed=False).package
+    unknown = uuid.uuid4()
+
+    status_code, body = _request_reingest(
+        admin_client,
+        package,
+        {"pipeline": str(unknown), "reingest_type": models.Package.FULL},
+    )
+
+    assert status_code == 400
+    assert body == {
+        "error": True,
+        "message": f"Pipeline UUID {unknown} failed to return a pipeline",
+    }
+    assert dashboard.received == []
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("storage", ["local"], indirect=True)
+def test_reingest_request_rejects_packages_that_are_not_aips(
+    admin_client: Client,
+    store_aip: StoreAIP,
+    dashboard: FakeDashboard,
+    pipeline: models.Pipeline,
+) -> None:
+    package = store_aip(compressed=False).package
+    models.Package.objects.filter(uuid=package.uuid).update(
+        package_type=models.Package.DIP
+    )
+
+    status_code, body = _request_reingest(
+        admin_client,
+        package,
+        {"pipeline": str(pipeline.uuid), "reingest_type": models.Package.FULL},
+    )
+
+    assert status_code == 405
+    assert body == _expect_failure(405, "Package with type DIP cannot be re-ingested.")
+    assert dashboard.received == []
+    package.refresh_from_db()
+    assert "reingest_pipeline" not in package.misc_attributes
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("storage", ["local"], indirect=True)
+def test_reingest_request_rejects_packages_already_being_reingested(
+    admin_client: Client,
+    store_aip: StoreAIP,
+    dashboard: FakeDashboard,
+    pipeline: models.Pipeline,
+) -> None:
+    package = store_aip(compressed=False).package
+    other_pipeline = uuid.uuid4()
+    models.Package.objects.filter(uuid=package.uuid).update(
+        misc_attributes={"reingest_pipeline": str(other_pipeline)}
+    )
+
+    status_code, body = _request_reingest(
+        admin_client,
+        package,
+        {"pipeline": str(pipeline.uuid), "reingest_type": models.Package.FULL},
+    )
+
+    assert status_code == 409
+    assert body == _expect_failure(
+        409, f"This AIP is already being reingested on {other_pipeline}"
+    )
+    assert dashboard.received == []
+    package.refresh_from_db()
+    assert package.misc_attributes["reingest_pipeline"] == str(other_pipeline)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("storage", ["local"], indirect=True)
+def test_reingest_request_fails_when_the_stored_aip_does_not_validate(
+    admin_client: Client,
+    store_aip: StoreAIP,
+    dashboard: FakeDashboard,
+    pipeline: models.Pipeline,
+) -> None:
+    package = store_aip(compressed=False).package
+    aip_dir = Path(package.full_path)
+    oxum = bagit.Bag(str(aip_dir)).info["Payload-Oxum"]
+    assert isinstance(oxum, str)
+    size, count = (int(part) for part in oxum.split("."))
+    extra = "corrupted\n"
+    with (aip_dir / "data" / "objects" / "hello.txt").open("a") as payload_file:
+        payload_file.write(extra)
+
+    status_code, body = _request_reingest(
+        admin_client,
+        package,
+        {"pipeline": str(pipeline.uuid), "reingest_type": models.Package.FULL},
+    )
+
+    assert status_code == 500
+    assert body == _expect_failure(
+        500,
+        "Payload-Oxum validation failed."
+        f" Expected {count} files and {size} bytes"
+        f" but found {count} files and {size + len(extra)} bytes",
+    )
+    assert dashboard.received == []
+    package.refresh_from_db()
+    assert "reingest_pipeline" not in package.misc_attributes
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("storage", ["local"], indirect=True)
+def test_reingest_request_fails_without_a_currently_processing_location(
+    admin_client: Client,
+    store_aip: StoreAIP,
+    dashboard: FakeDashboard,
+    pipeline: models.Pipeline,
+    currently_processing: models.Location,
+) -> None:
+    package = store_aip(compressed=False).package
+    currently_processing.enabled = False
+    currently_processing.save()
+
+    status_code, body = _request_reingest(
+        admin_client,
+        package,
+        {"pipeline": str(pipeline.uuid), "reingest_type": models.Package.FULL},
+    )
+
+    assert status_code == 412
+    assert body == _expect_failure(
+        412,
+        f"No currently processing Location is associated with pipeline {pipeline.uuid}",
+    )
+    assert dashboard.received == []
+    package.refresh_from_db()
+    assert "reingest_pipeline" not in package.misc_attributes
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("storage", ["local"], indirect=True)
+def test_reingest_request_fails_when_the_pipeline_rejects_the_approval(
+    admin_client: Client,
+    store_aip: StoreAIP,
+    dashboard: FakeDashboard,
+    pipeline: models.Pipeline,
+) -> None:
+    package = store_aip(compressed=False).package
+    dashboard.reingest_status = 500
+
+    status_code, body = _request_reingest(
+        admin_client,
+        package,
+        {"pipeline": str(pipeline.uuid), "reingest_type": models.Package.FULL},
+    )
+
+    assert status_code == 502
+    assert body == _expect_failure(
+        502,
+        f"Error in approve reingest API. Pipeline {pipeline} returned an"
+        " unexpected status code: 500 (Approval failed.)",
+    )
+    (approval,) = dashboard.reingest_approvals
+    assert approval.package_uuid == package.uuid
+    package.refresh_from_db()
+    assert "reingest_pipeline" not in package.misc_attributes

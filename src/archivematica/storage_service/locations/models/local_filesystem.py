@@ -1,10 +1,17 @@
+from __future__ import annotations
+
 import datetime
 import os
+from typing import TYPE_CHECKING
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from archivematica.storage_service.locations.models.location import Location
+
+if TYPE_CHECKING:
+    from archivematica.storage_service.locations.models.package import Package
+    from archivematica.storage_service.locations.models.space import Space
 
 
 class LocalFilesystem(models.Model):
@@ -27,13 +34,20 @@ class LocalFilesystem(models.Model):
         Location.REPLICATOR,
     ]
 
-    def move_to_storage_service(self, src_path, dest_path, dest_space):
+    def move_to_storage_service(
+        self, src_path: str, dest_path: str, dest_space: Space
+    ) -> None:
         """Moves src_path to dest_space.staging_path/dest_path."""
         # Archivematica expects the file to still be on disk even after stored
         self.space.create_local_directory(dest_path)
         return self.space.move_rsync(src_path, dest_path)
 
-    def move_from_storage_service(self, source_path, destination_path, package=None):
+    def move_from_storage_service(
+        self,
+        source_path: str,
+        destination_path: str,
+        package: Package | None = None,
+    ) -> None:
         """Moves self.staging_path/src_path to dest_path."""
         self.space.create_local_directory(destination_path)
         return self.space.move_rsync(source_path, destination_path, try_mv_local=True)
