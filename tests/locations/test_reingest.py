@@ -5,7 +5,8 @@ them, across the working paths ``start_reingest`` uses: the stored directory
 itself for uncompressed AIPs the Storage Service can read directly, an
 extracted copy for compressed AIPs, with and without a stored checksum, and a
 fetched copy for AIPs in locations it cannot read directly. Requests that
-cannot proceed are checked for their responses.
+cannot proceed are checked for their responses. Whatever the working path,
+the stored AIP itself is never written to.
 """
 
 from __future__ import annotations
@@ -14,9 +15,11 @@ import json
 import os
 import re
 import shutil
+import stat
 import time
 import urllib.parse
 import uuid
+from collections.abc import Callable
 from collections.abc import Mapping
 from dataclasses import dataclass
 from dataclasses import field
@@ -26,6 +29,7 @@ from typing import Protocol
 import bagit
 import pytest
 import requests
+from django.conf import settings
 from django.test import Client
 from metsrw.plugins import premisrw
 
@@ -35,6 +39,7 @@ from archivematica.storage_service.common.compression import Archiver
 from archivematica.storage_service.common.compression import CompressionError
 from archivematica.storage_service.common.compression import override_archiver
 from archivematica.storage_service.locations import models
+from archivematica.storage_service.locations import reingest
 from archivematica.storage_service.locations.models.local_filesystem import (
     LocalFilesystem,
 )
@@ -420,6 +425,8 @@ class Storage:
 
     location: models.Location
     remote: bool
+    hidden_dir: Path
+    """Where the space directory is moved when ``remote``."""
 
 
 @pytest.fixture
@@ -458,7 +465,11 @@ def storage(
     )
     Path(location.full_path).mkdir()
     location.pipeline.add(pipeline)
-    return Storage(location=location, remote=kind == "remote")
+    return Storage(
+        location=location,
+        remote=kind == "remote",
+        hidden_dir=tmp_path / f"{kind}_hidden",
+    )
 
 
 def _hide_space(
@@ -498,7 +509,11 @@ class StoredAIP:
 
 class StoreAIP(Protocol):
     def __call__(
-        self, *, compressed: bool, stored_checksum: bool = True
+        self,
+        *,
+        compressed: bool,
+        stored_checksum: bool = True,
+        payload: Mapping[str, str] = DEFAULT_PAYLOAD,
     ) -> StoredAIP: ...
 
 
@@ -516,9 +531,16 @@ def store_aip(
     build_dir = tmp_path / "build"
     build_dir.mkdir()
 
-    def _store(*, compressed: bool, stored_checksum: bool = True) -> StoredAIP:
+    def _store(
+        *,
+        compressed: bool,
+        stored_checksum: bool = True,
+        payload: Mapping[str, str] = DEFAULT_PAYLOAD,
+    ) -> StoredAIP:
         package_uuid = uuid.uuid4()
-        bag_dir = aip_builder.build(build_dir, package_uuid, f"aip-{package_uuid}")
+        bag_dir = aip_builder.build(
+            build_dir, package_uuid, f"aip-{package_uuid}", payload=payload
+        )
         files = frozenset(aip_builder.list_files(bag_dir))
         artifact = aip_builder.compress(bag_dir) if compressed else bag_dir
         package_path = Path(currently_processing.full_path) / artifact.name
@@ -537,7 +559,7 @@ def store_aip(
             models.Package.objects.filter(uuid=package_uuid).update(checksum=None)
             package.refresh_from_db()
         if storage.remote:
-            _hide_space(storage.location.space, tmp_path / "hidden", monkeypatch)
+            _hide_space(storage.location.space, storage.hidden_dir, monkeypatch)
         return StoredAIP(package=package, files=files)
 
     return _store
@@ -671,6 +693,32 @@ def test_reingest_request_with_default_processing_configuration_sends_no_file(
         f"data/{aip_builder.mets_filename(package.uuid)}",
         "data/objects/metadata/metadata.csv",
     }
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("storage", ["local", "nfs"], indirect=True)
+def test_reingest_request_reads_a_stored_directory_in_place_when_nothing_is_added(
+    admin_client: Client,
+    store_aip: StoreAIP,
+    dashboard: FakeDashboard,
+    pipeline: models.Pipeline,
+) -> None:
+    """Without a configuration to add, the stored AIP is sent from where it is.
+
+    The pipeline is then given the path of the AIP within its location, as
+    it always was, instead of that of a working copy.
+    """
+    package = store_aip(compressed=False).package
+
+    status_code, _ = _request_reingest(
+        admin_client,
+        package,
+        {"pipeline": str(pipeline.uuid), "reingest_type": models.Package.FULL},
+    )
+
+    assert status_code == 202
+    (approval,) = dashboard.reingest_approvals
+    assert approval.name == f"{package.current_path}/"
 
 
 @pytest.mark.django_db
@@ -945,15 +993,20 @@ def _finish_reingest(
     return response.status_code, body
 
 
-def _stored_files(
-    package: models.Package, archiver: Archiver, scratch: Path
-) -> dict[str, str]:
+def _stored_root(package: models.Package, storage: Storage) -> Path:
+    """Return the path of the stored AIP, behind the stand-in when remote."""
+    root = Path(package.full_path)
+    if storage.remote:
+        root = storage.hidden_dir / root.relative_to(storage.location.space.path)
+    return root
+
+
+def _stored_files(root: Path, archiver: Archiver, scratch: Path) -> dict[str, str]:
     """Return the files of the stored AIP, extracting it first if compressed."""
-    full_path = Path(package.full_path)
-    root = archiver.extract(full_path, scratch) if full_path.is_file() else full_path
+    aip_dir = archiver.extract(root, scratch) if root.is_file() else root
     return {
-        path.relative_to(root).as_posix(): path.read_text()
-        for path in root.rglob("*")
+        path.relative_to(aip_dir).as_posix(): path.read_text()
+        for path in aip_dir.rglob("*")
         if path.is_file()
     }
 
@@ -982,7 +1035,7 @@ def test_finish_reingest_merges_the_reingested_aip_into_the_stored_one(
     reingest_type: str,
 ) -> None:
     package = store_aip(compressed=False).package
-    before = _stored_files(package, fake_archiver, tmp_path / "before")
+    before = _stored_files(Path(package.full_path), fake_archiver, tmp_path / "before")
     status_code, _ = _request_reingest(
         admin_client,
         package,
@@ -1013,7 +1066,7 @@ def test_finish_reingest_merges_the_reingested_aip_into_the_stored_one(
     assert package.status == models.Package.UPLOADED
     assert package.misc_attributes["reingest_pipeline"] is None
     assert package.full_pointer_file_path is None
-    after = _stored_files(package, fake_archiver, tmp_path / "after")
+    after = _stored_files(Path(package.full_path), fake_archiver, tmp_path / "after")
     mets = f"data/METS.{package.uuid}.xml"
     # The METS, the metadata and the derivatives come from the reingested AIP.
     assert after[mets] == REINGESTED_METS
@@ -1095,11 +1148,447 @@ def test_finish_reingest_applies_the_compression_of_the_reingested_aip(
         assert Path(package.full_pointer_file_path).is_file()
     else:
         assert package.full_pointer_file_path is None
-    after = _stored_files(package, fake_archiver, tmp_path / "after")
+    after = _stored_files(Path(package.full_path), fake_archiver, tmp_path / "after")
     assert after[f"data/METS.{package.uuid}.xml"] == REINGESTED_METS
     assert f"data/objects/hello-{REGENERATED_DERIVATIVE_UUID}.tif" in after
     fixity = _check_fixity(admin_client, package)
     assert fixity["success"] is True, fixity
+
+
+# The request phase reads the stored AIP and adds the processing configuration
+# to what it sends, on a working copy. Uncompressed AIPs in storage the Storage
+# Service reads directly used to be written to in place.
+
+# Every storage and package form.
+STORED_AIPS = [
+    pytest.param("local", False, id="local-uncompressed"),
+    pytest.param("nfs", False, id="nfs-uncompressed"),
+    pytest.param("remote", False, id="remote-uncompressed"),
+    pytest.param("local", True, id="local-compressed"),
+    pytest.param("nfs", True, id="nfs-compressed"),
+    pytest.param("remote", True, id="remote-compressed"),
+]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(("storage", "compressed"), STORED_AIPS, indirect=["storage"])
+@pytest.mark.parametrize(
+    "reingest_type",
+    [models.Package.METADATA_ONLY, models.Package.OBJECTS, models.Package.FULL],
+)
+def test_reingest_request_leaves_the_stored_aip_unchanged(
+    admin_client: Client,
+    store_aip: StoreAIP,
+    fake_archiver: Archiver,
+    dashboard: FakeDashboard,
+    pipeline: models.Pipeline,
+    storage: Storage,
+    tmp_path: Path,
+    compressed: bool,
+    reingest_type: str,
+) -> None:
+    package = store_aip(compressed=compressed).package
+    root = _stored_root(package, storage)
+    before = _stored_files(root, fake_archiver, tmp_path / "before")
+    dashboard.processing_configs["custom"] = PROCESSING_CONFIG
+
+    status_code, _ = _request_reingest(
+        admin_client,
+        package,
+        {
+            "pipeline": str(pipeline.uuid),
+            "reingest_type": reingest_type,
+            "processing_config": "custom",
+        },
+    )
+
+    assert status_code == 202
+    assert _stored_files(root, fake_archiver, tmp_path / "after") == before
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(("storage", "compressed"), STORED_AIPS, indirect=["storage"])
+def test_rejected_reingest_request_leaves_the_stored_aip_unchanged(
+    admin_client: Client,
+    store_aip: StoreAIP,
+    fake_archiver: Archiver,
+    dashboard: FakeDashboard,
+    pipeline: models.Pipeline,
+    storage: Storage,
+    tmp_path: Path,
+    compressed: bool,
+) -> None:
+    """The pipeline rejects the approval after the configuration was fetched."""
+    package = store_aip(compressed=compressed).package
+    root = _stored_root(package, storage)
+    before = _stored_files(root, fake_archiver, tmp_path / "before")
+    dashboard.processing_configs["custom"] = PROCESSING_CONFIG
+    dashboard.reingest_status = 500
+
+    status_code, _ = _request_reingest(
+        admin_client,
+        package,
+        {
+            "pipeline": str(pipeline.uuid),
+            "reingest_type": models.Package.METADATA_ONLY,
+            "processing_config": "custom",
+        },
+    )
+
+    assert status_code == 502
+    assert _stored_files(root, fake_archiver, tmp_path / "after") == before
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("storage", ["local", "nfs"], indirect=True)
+@pytest.mark.parametrize(
+    "reingest_type", [models.Package.METADATA_ONLY, models.Package.OBJECTS]
+)
+def test_finish_reingest_leaves_no_processing_configuration_in_the_stored_aip(
+    admin_client: Client,
+    aip_builder: AIPBuilder,
+    store_aip: StoreAIP,
+    fake_archiver: Archiver,
+    dashboard: FakeDashboard,
+    pipeline: models.Pipeline,
+    currently_processing: models.Location,
+    storage: Storage,
+    tmp_path: Path,
+    reingest_type: str,
+) -> None:
+    """A partial reingest is finalized on top of the stored AIP."""
+    package = store_aip(compressed=False).package
+    dashboard.processing_configs["custom"] = PROCESSING_CONFIG
+    status_code, _ = _request_reingest(
+        admin_client,
+        package,
+        {
+            "pipeline": str(pipeline.uuid),
+            "reingest_type": reingest_type,
+            "processing_config": "custom",
+        },
+    )
+    assert status_code == 202
+    reingested = aip_builder.build(
+        Path(currently_processing.full_path) / "reingested",
+        package.uuid,
+        f"aip-{package.uuid}",
+        payload=_reingested_payload(),
+        mets=REINGESTED_METS,
+    )
+
+    status_code, _ = _finish_reingest(
+        admin_client,
+        package,
+        pipeline=pipeline,
+        origin_location=currently_processing,
+        origin_path=f"reingested/{reingested.name}/",
+        storage_location=storage.location,
+        current_path=reingested.name,
+        size=_get_size(reingested),
+    )
+
+    assert status_code in {200, 202}
+    package = models.Package.objects.get(uuid=package.uuid)
+    after = _stored_files(Path(package.full_path), fake_archiver, tmp_path / "after")
+    assert "processingMCP.xml" not in after
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(("storage", "compressed"), STORED_AIPS, indirect=["storage"])
+@pytest.mark.parametrize("accepted", [True, False], ids=["accepted", "rejected"])
+def test_reingest_request_leaves_no_working_copy_behind(
+    admin_client: Client,
+    store_aip: StoreAIP,
+    dashboard: FakeDashboard,
+    pipeline: models.Pipeline,
+    internal_location: models.Location,
+    compressed: bool,
+    accepted: bool,
+) -> None:
+    package = store_aip(compressed=compressed).package
+    dashboard.processing_configs["custom"] = PROCESSING_CONFIG
+    if not accepted:
+        dashboard.reingest_status = 500
+
+    status_code, _ = _request_reingest(
+        admin_client,
+        package,
+        {
+            "pipeline": str(pipeline.uuid),
+            "reingest_type": models.Package.FULL,
+            "processing_config": "custom",
+        },
+    )
+
+    assert status_code == (202 if accepted else 502)
+    working_copies = [
+        name
+        for name in os.listdir(internal_location.full_path)
+        if name.startswith("tmp")
+    ]
+    assert working_copies == []
+
+
+def _make_read_only(root: Path) -> None:
+    """Remove the write permission from everything under ``root``."""
+    for path in sorted(root.rglob("*"), reverse=True):
+        path.chmod(0o555 if path.is_dir() else 0o444)
+    root.chmod(0o555)
+
+
+def _writable_entries(root: Path) -> dict[str, bool]:
+    """Map every path under ``root`` to whether its owner may write it."""
+    return {
+        path.relative_to(root).as_posix(): bool(path.stat().st_mode & stat.S_IWUSR)
+        for path in root.rglob("*")
+    }
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("storage", ["local"], indirect=True)
+def test_reingest_request_delivers_a_writable_copy_of_a_read_only_aip(
+    admin_client: Client,
+    store_aip: StoreAIP,
+    fake_archiver: Archiver,
+    dashboard: FakeDashboard,
+    pipeline: models.Pipeline,
+    currently_processing: models.Location,
+    internal_location: models.Location,
+    storage: Storage,
+    tmp_path: Path,
+) -> None:
+    """Stored AIPs may be read-only; what the pipeline receives must not be."""
+    package = store_aip(compressed=False).package
+    root = _stored_root(package, storage)
+    _make_read_only(root)
+    before = _stored_files(root, fake_archiver, tmp_path / "before")
+    dashboard.processing_configs["custom"] = PROCESSING_CONFIG
+
+    status_code, _ = _request_reingest(
+        admin_client,
+        package,
+        {
+            "pipeline": str(pipeline.uuid),
+            "reingest_type": models.Package.FULL,
+            "processing_config": "custom",
+        },
+    )
+
+    assert status_code == 202
+    (approval,) = dashboard.reingest_approvals
+    sent_dir = _sent_directory(approval, currently_processing)
+    writable = _writable_entries(sent_dir)
+    assert all(writable.values()), [path for path, ok in writable.items() if not ok]
+    assert _stored_files(root, fake_archiver, tmp_path / "after") == before
+    working_copies = [
+        name
+        for name in os.listdir(internal_location.full_path)
+        if name.startswith("tmp")
+    ]
+    assert working_copies == []
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("storage", ["local"], indirect=True)
+def test_reingest_request_discards_the_working_copy_of_a_read_only_aip(
+    admin_client: Client,
+    store_aip: StoreAIP,
+    dashboard: FakeDashboard,
+    pipeline: models.Pipeline,
+    default_space: models.Space,
+    internal_location: models.Location,
+    storage: Storage,
+    tmp_path: Path,
+) -> None:
+    """When the delivery copies rather than moves, the copy must be removable."""
+    package = store_aip(compressed=False).package
+    _make_read_only(_stored_root(package, storage))
+    # The pipeline space stages elsewhere, so the delivery leaves the working
+    # copy in the internal location for the request to discard.
+    staging_dir = tmp_path / "pipeline_staging"
+    staging_dir.mkdir()
+    default_space.staging_path = str(staging_dir)
+    default_space.save()
+    dashboard.processing_configs["custom"] = PROCESSING_CONFIG
+
+    status_code, _ = _request_reingest(
+        admin_client,
+        package,
+        {
+            "pipeline": str(pipeline.uuid),
+            "reingest_type": models.Package.METADATA_ONLY,
+            "processing_config": "custom",
+        },
+    )
+
+    assert status_code == 202
+    working_copies = [
+        name
+        for name in os.listdir(internal_location.full_path)
+        if name.startswith("tmp")
+    ]
+    assert working_copies == []
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("storage", ["local"], indirect=True)
+def test_reingest_request_discards_a_working_copy_it_could_not_complete(
+    admin_client: Client,
+    store_aip: StoreAIP,
+    dashboard: FakeDashboard,
+    pipeline: models.Pipeline,
+    internal_location: models.Location,
+) -> None:
+    """A failure while copying must not leave the partial copy behind.
+
+    An AIP without a metadata directory makes the copy of a metadata-only
+    selection fail, as the delivery itself used to.
+    """
+    payload = {
+        path: content
+        for path, content in DEFAULT_PAYLOAD.items()
+        if not path.startswith("objects/metadata/")
+    }
+    package = store_aip(compressed=False, payload=payload).package
+    dashboard.processing_configs["custom"] = PROCESSING_CONFIG
+
+    with pytest.raises(models.StorageException):
+        _request_reingest(
+            admin_client,
+            package,
+            {
+                "pipeline": str(pipeline.uuid),
+                "reingest_type": models.Package.METADATA_ONLY,
+                "processing_config": "custom",
+            },
+        )
+
+    working_copies = [
+        name
+        for name in os.listdir(internal_location.full_path)
+        if name.startswith("tmp")
+    ]
+    assert working_copies == []
+
+
+@pytest.mark.django_db
+def test_writable_copy_is_removed_when_it_fails_after_a_read_only_directory(
+    aip_builder: AIPBuilder, internal_location: models.Location, tmp_path: Path
+) -> None:
+    """The partial copy must be removable whatever was copied before the failure."""
+    bag_dir = aip_builder.build(tmp_path / "source", uuid.uuid4(), "aip")
+    (bag_dir / "data" / "objects" / "metadata").chmod(0o555)
+    source = reingest.WorkingCopy(
+        path=f"{bag_dir}/", location=internal_location, disposable=False
+    )
+
+    with pytest.raises(models.StorageException):
+        reingest._writable_copy(source, ["data/objects/metadata/", "data/missing"])
+
+    working_copies = [
+        name
+        for name in os.listdir(internal_location.full_path)
+        if name.startswith("tmp")
+    ]
+    assert working_copies == []
+
+
+@pytest.mark.django_db
+def test_writable_copy_fails_when_a_directory_cannot_be_read(
+    aip_builder: AIPBuilder, internal_location: models.Location, tmp_path: Path
+) -> None:
+    """An unreadable directory must abort the copy rather than be left out."""
+    if os.geteuid() == 0:
+        pytest.skip("permissions are not enforced for root")
+    bag_dir = aip_builder.build(tmp_path / "source", uuid.uuid4(), "aip")
+    unreadable = bag_dir / "data" / "objects" / "metadata"
+    unreadable.chmod(0o000)
+    source = reingest.WorkingCopy(
+        path=f"{bag_dir}/", location=internal_location, disposable=False
+    )
+
+    try:
+        with pytest.raises(models.StorageException):
+            reingest._writable_copy(source, ["data/objects/"])
+    finally:
+        unreadable.chmod(0o755)
+
+    working_copies = [
+        name
+        for name in os.listdir(internal_location.full_path)
+        if name.startswith("tmp")
+    ]
+    assert working_copies == []
+
+
+@pytest.fixture
+def recorded_rsync_commands(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Callable[[], list[list[str]]]:
+    """Put an rsync on the path that records its arguments before running the real one."""
+    real_rsync = shutil.which("rsync")
+    assert real_rsync
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    log = tmp_path / "rsync.log"
+    tool = bin_dir / "rsync"
+    tool.write_text(
+        f'#!/bin/sh\nprintf "%s\\n" "$*" >> "{log}"\nexec "{real_rsync}" "$@"\n'
+    )
+    tool.chmod(0o755)
+    monkeypatch.setenv("PATH", f"{bin_dir}{os.pathsep}{os.environ['PATH']}")
+
+    def commands() -> list[list[str]]:
+        if not log.exists():
+            return []
+        return [line.split() for line in log.read_text().splitlines()]
+
+    return commands
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("storage", ["local"], indirect=True)
+def test_reingest_request_copies_the_stored_aip_with_the_bounded_rsync_transfer(
+    admin_client: Client,
+    store_aip: StoreAIP,
+    dashboard: FakeDashboard,
+    pipeline: models.Pipeline,
+    internal_location: models.Location,
+    storage: Storage,
+    recorded_rsync_commands: Callable[[], list[list[str]]],
+) -> None:
+    """The working copy goes through the same bounded transfer as every other move.
+
+    Copying in process would hold the request worker for as long as the
+    copy takes; rsync runs as a subprocess with the idle and runtime limits
+    the service applies everywhere.
+    """
+    package = store_aip(compressed=False).package
+    stored = _stored_root(package, storage)
+    dashboard.processing_configs["custom"] = PROCESSING_CONFIG
+
+    status_code, _ = _request_reingest(
+        admin_client,
+        package,
+        {
+            "pipeline": str(pipeline.uuid),
+            "reingest_type": models.Package.FULL,
+            "processing_config": "custom",
+        },
+    )
+
+    assert status_code == 202
+    copies = [
+        command
+        for command in recorded_rsync_commands()
+        if command[-2].startswith(str(stored))
+        and command[-1].startswith(internal_location.full_path)
+    ]
+    assert copies, recorded_rsync_commands()
+    for command in copies:
+        assert f"--timeout={settings.RSYNC_IO_TIMEOUT_SECONDS}" in command
+        assert "--chmod=Fug+rw,o-rwx,Dug+rwx,o-rwx" in command
 
 
 class _ArchiverFailingAt:
@@ -1160,7 +1649,7 @@ def test_finish_reingest_failure_leaves_the_stored_aip_alone(
     operator to recover. The package is no longer marked as reingesting.
     """
     package = store_aip(compressed=False).package
-    before = _stored_files(package, fake_archiver, tmp_path / "before")
+    before = _stored_files(Path(package.full_path), fake_archiver, tmp_path / "before")
     status_code, _ = _request_reingest(
         admin_client,
         package,
@@ -1194,7 +1683,10 @@ def test_finish_reingest_failure_leaves_the_stored_aip_alone(
     package.refresh_from_db()
     assert package.status == models.Package.UPLOADED
     assert package.misc_attributes["reingest_pipeline"] is None
-    assert _stored_files(package, fake_archiver, tmp_path / "after") == before
+    assert (
+        _stored_files(Path(package.full_path), fake_archiver, tmp_path / "after")
+        == before
+    )
     internal = Path(internal_location.full_path)
     if left_in_internal_location == "archive":
         assert (internal / archive.name).is_file()

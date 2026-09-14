@@ -13,16 +13,21 @@ from __future__ import annotations
 import logging
 import os
 import shutil
+import tempfile
 from dataclasses import dataclass
 from typing import TypedDict
 
 import requests
+from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from django_stubs_ext import StrOrPromise
 
+from archivematica.storage_service.common.rsync import RsyncError
+from archivematica.storage_service.common.rsync import run_rsync
 from archivematica.storage_service.locations.models import Location
 from archivematica.storage_service.locations.models import Package
 from archivematica.storage_service.locations.models import Pipeline
+from archivematica.storage_service.locations.models import StorageException
 
 LOGGER = logging.getLogger(__name__)
 
@@ -102,31 +107,95 @@ def working_copy(package: Package) -> WorkingCopy:
     )
 
 
-def _select_paths(copy: WorkingCopy, reingest_type: str, package: Package) -> list[str]:
-    """Return the paths of ``copy`` to send for ``reingest_type``.
+def _selection(bag_dir: str, reingest_type: str, package: Package) -> list[str] | None:
+    """Return the paths of the bag at ``bag_dir`` that ``reingest_type`` sends.
 
-    Paths are relative to the location of the copy. Directories end with a
-    slash so that the move functions send their content.
+    Paths are relative to the bag and directories end with a slash so that
+    the move functions send their content. ``None`` stands for the whole bag.
     """
-    relative_path = copy.relative_path
     if reingest_type == Package.FULL:
         # All the things!
-        return [relative_path]
-    paths = [os.path.join(relative_path, "data", f"METS.{package.uuid}.xml")]
+        return None
+    paths = [os.path.join("data", f"METS.{package.uuid}.xml")]
     if reingest_type == Package.OBJECTS:
         # All in objects except submissionDocumentation dir
-        for name in os.listdir(os.path.join(copy.path, "data", "objects")):
+        for name in os.listdir(os.path.join(bag_dir, "data", "objects")):
             if name in ("submissionDocumentation",):
                 continue
-            abs_path = os.path.join(copy.path, "data", "objects", name)
+            abs_path = os.path.join(bag_dir, "data", "objects", name)
             if os.path.isfile(abs_path):
-                paths.append(os.path.join(relative_path, "data", "objects", name))
+                paths.append(os.path.join("data", "objects", name))
             elif os.path.isdir(abs_path):
                 # Dirs must be / terminated to make the move functions happy
-                paths.append(os.path.join(relative_path, "data", "objects", name, ""))
+                paths.append(os.path.join("data", "objects", name, ""))
     elif reingest_type == Package.METADATA_ONLY:
-        paths.append(os.path.join(relative_path, "data", "objects", "metadata", ""))
+        paths.append(os.path.join("data", "objects", "metadata", ""))
     return paths
+
+
+def _paths_to_send(copy: WorkingCopy, selection: list[str] | None) -> list[str]:
+    """Return ``selection`` relative to the location of ``copy``."""
+    if selection is None:
+        return [copy.relative_path]
+    return [os.path.join(copy.relative_path, path) for path in selection]
+
+
+def _writable_copy(source: WorkingCopy, selection: list[str] | None) -> WorkingCopy:
+    """Copy ``selection`` of ``source`` into the internal location.
+
+    The stored AIP is never written to. What the reingest adds, such as the
+    processing configuration, goes into this copy, which is what the
+    pipeline receives.
+    """
+    internal_location = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
+    temp_dir = tempfile.mkdtemp(dir=internal_location.full_path)
+    bag_dir = os.path.join(temp_dir, os.path.basename(os.path.normpath(source.path)))
+    try:
+        if selection is None:
+            _copy(source.path, os.path.join(bag_dir, ""))
+        else:
+            for path in selection:
+                _copy(os.path.join(source.path, path), os.path.join(bag_dir, path))
+    except BaseException:
+        # Whatever was copied so far has no owner yet.
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        raise
+    LOGGER.debug("Reingest: stored AIP copied to %s", bag_dir)
+    return WorkingCopy(
+        path=os.path.join(bag_dir, ""),
+        location=internal_location,
+        disposable=True,
+        temp_dir=temp_dir,
+    )
+
+
+def _copy(src: str, dst: str) -> None:
+    """Copy ``src``, a file or a directory ending with a slash, to ``dst``.
+
+    The copy is made with the rsync transfer the service uses for every
+    move, so it runs as a subprocess with the idle and runtime limits that
+    keep a request worker responsive, and it gives the copy the same modes:
+    the stored AIP may be read-only, while the copy is written to, handed to
+    the pipeline and deleted afterwards. A source that cannot be read fails
+    the copy rather than being left out.
+    """
+    os.makedirs(os.path.dirname(dst.rstrip(os.sep)), exist_ok=True)
+    command = [
+        "rsync",
+        "-t",
+        "-O",
+        "--protect-args",
+        "-vv",
+        "--chmod=Fug+rw,o-rwx,Dug+rwx,o-rwx",
+        "-r",
+        f"--timeout={settings.RSYNC_IO_TIMEOUT_SECONDS}",
+        src,
+        dst,
+    ]
+    try:
+        run_rsync(command, source=src, destination=dst)
+    except RsyncError as err:
+        raise StorageException(str(err)) from err
 
 
 def _fetch_processing_config(pipeline: Pipeline, name: str) -> str | None:
@@ -234,32 +303,44 @@ def start(
     if not success:
         return _error(500, error_msg)
 
-    copy = working_copy(package)
-    reingest_files = _select_paths(copy, reingest_type, package)
-
-    # Fetch processing configuration, put it in the root of the package and
-    # include the file in reingest_files.
+    source = working_copy(package)
+    selection = _selection(source.path, reingest_type, package)
+    # Fetch processing configuration, to put it in the root of the package
+    # and include the file in reingest_files.
     config = _fetch_processing_config(pipeline, processing_config)
-    if config is not None:
-        _write_processing_config(config, processing_config, copy.path)
-        if reingest_type != Package.FULL:
-            reingest_files.append(os.path.join(copy.relative_path, "processingMCP.xml"))
-
-    LOGGER.info("Reingest: files: %s", reingest_files)
-
-    # Copy to pipeline
+    # The stored AIP itself is only read: when there is something to add to
+    # what the pipeline gets, the reingest works on a copy.
+    if source.disposable or config is None:
+        copy = source
+    else:
+        copy = _writable_copy(source, selection)
     try:
-        currently_processing = Location.active.filter(pipeline=pipeline).get(
-            purpose=Location.CURRENTLY_PROCESSING
-        )
-    except (Location.DoesNotExist, Location.MultipleObjectsReturned):
-        return _error(
-            412,
-            _("No currently processing Location is associated with pipeline %(uuid)s")
-            % {"uuid": pipeline.uuid},
-        )
-    _deliver(copy, reingest_files, currently_processing, package)
-    copy.discard()
+        reingest_files = _paths_to_send(copy, selection)
+        if config is not None:
+            _write_processing_config(config, processing_config, copy.path)
+            if reingest_type != Package.FULL:
+                reingest_files.append(
+                    os.path.join(copy.relative_path, "processingMCP.xml")
+                )
+
+        LOGGER.info("Reingest: files: %s", reingest_files)
+
+        # Copy to pipeline
+        try:
+            currently_processing = Location.active.filter(pipeline=pipeline).get(
+                purpose=Location.CURRENTLY_PROCESSING
+            )
+        except (Location.DoesNotExist, Location.MultipleObjectsReturned):
+            return _error(
+                412,
+                _(
+                    "No currently processing Location is associated with pipeline %(uuid)s"
+                )
+                % {"uuid": pipeline.uuid},
+            )
+        _deliver(copy, reingest_files, currently_processing, package)
+    finally:
+        copy.discard()
 
     # Call reingest API
     reingest_target = "transfer" if reingest_type == Package.FULL else "ingest"
