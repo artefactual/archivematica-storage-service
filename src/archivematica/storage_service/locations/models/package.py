@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import codecs
 import copy
 import importlib.resources
@@ -10,13 +12,13 @@ import subprocess
 import tempfile
 from collections import namedtuple
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
 from uuid import uuid4
 
 import bagit
 import jsonfield
 import metsrw
-import requests
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -47,6 +49,10 @@ from archivematica.storage_service.locations.models.space import (
     PosixMoveUnsupportedError,
 )
 from archivematica.storage_service.locations.models.space import Space
+
+if TYPE_CHECKING:
+    from archivematica.storage_service.locations.models.pipeline import Pipeline
+    from archivematica.storage_service.locations.reingest import ReingestResponse
 
 __all__ = ("Package",)
 
@@ -202,6 +208,11 @@ class Package(models.Model):
             ("approve_package_deletion", "Can approve Package deletion requests"),
         ]
 
+    # Temporary attributes to track path on locally accessible filesystem
+    local_path: str | None
+    local_path_location: Location | None
+    local_tempdirs: list[str]
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -272,7 +283,7 @@ class Package(models.Model):
         return space_is_packaged and is_file
 
     @property
-    def is_compressed(self):
+    def is_compressed(self) -> bool:
         """Determines whether or not the package is a compressed file."""
         full_path = self.get_local_path() or self.fetch_local_path()
         if os.path.isdir(full_path):
@@ -329,7 +340,7 @@ class Package(models.Model):
         LOGGER.debug("Got download path %s for package %s", path, self.uuid)
         return path
 
-    def get_local_path(self):
+    def get_local_path(self) -> str | None:
         """Return a locally accessible path to this Package if available.
 
         If a cached copy of the local path is available (possibly from
@@ -348,7 +359,7 @@ class Package(models.Model):
             return self.local_path
         return None
 
-    def fetch_local_path(self):
+    def fetch_local_path(self) -> str:
         """Fetches a local copy of the package.
 
         Return local path if package is already available locally. Otherwise,
@@ -2172,188 +2183,19 @@ class Package(models.Model):
 
     # REINGEST
 
-    def start_reingest(self, pipeline, reingest_type, processing_config="default"):
+    def start_reingest(
+        self, pipeline: Pipeline, reingest_type: str, processing_config: str = "default"
+    ) -> ReingestResponse:
+        """Copy this package to ``pipeline`` for reingest.
+
+        See :func:`archivematica.storage_service.locations.reingest.start`.
         """
-        Copies this package to `pipeline` for reingest.
+        # TODO: drop this wrapper and call the reingest module from the API
+        # and the dashboard view directly. The import is local because the
+        # module depends on the models.
+        from archivematica.storage_service.locations import reingest
 
-        Fetches the AIP from storage, extracts and runs fixity on it to verify integrity.
-        If reingest_type is METADATA_ONLY, sends the METS and all files in the metadata directory.
-        If reingest_type is OBJECTS, sends METS, all files in metadata directory and all objects, preservation and original.
-        If reingest_type is FULL, we do like in OBJECTS but sending the package to the transfer source location.
-        Calls Archivematica endpoint /api/ingest/reingest/ to start reingest.
-
-        :param pipeline: Pipeline object to send reingested AIP to.
-        :param reingest_type: Type of reingest to start, one of REINGEST_CHOICES.
-        :return: Dict with keys 'error', 'status_code' and 'message'
-        """
-
-        # Reingest type is part of the payload so we can convert it to lower
-        # case here to make any calls to start_reingest more robust.
-        reingest_type = reingest_type.lower()
-
-        if self.package_type not in Package.PACKAGE_TYPE_CAN_REINGEST:
-            return {
-                "error": True,
-                "status_code": 405,
-                "message": f"Package with type {self.get_package_type_display()} cannot be re-ingested.",
-            }
-
-        # Check and set reingest pipeline
-        if self.misc_attributes.get("reingest_pipeline", None):
-            return {
-                "error": True,
-                "status_code": 409,
-                "message": _("This AIP is already being reingested on %(pipeline)s")
-                % {"pipeline": self.misc_attributes["reingest_pipeline"]},
-            }
-        self.misc_attributes.update({"reingest_pipeline": str(pipeline.uuid)})
-
-        # Run fixity
-        # Fixity will fetch & extract package if needed
-        success, ___, error_msg, ___ = self.check_fixity(delete_after=False)
-        LOGGER.debug("Reingest: Fixity response: %s, %s", success, error_msg)
-        if not success:
-            return {"error": True, "status_code": 500, "message": error_msg}
-
-        # Fetch and extract if needed
-        if self.is_compressed:
-            local_path, temp_dir = self.extract_file()
-            LOGGER.debug("Reingest: extracted to %s", local_path)
-        else:
-            # Append / to uncompressed AIPS so we send the contents of the dir
-            # not the dir itself inside a dir of the same name
-            local_path = os.path.join(self.fetch_local_path(), "")
-            temp_dir = ""
-            LOGGER.debug("Reingest: uncompressed at %s", local_path)
-
-        # Make list of folders to move
-        current_location = self.local_path_location or self.current_location
-        relative_path = local_path.replace(current_location.full_path, "", 1).lstrip(
-            "/"
-        )
-        reingest_files = [
-            os.path.join(relative_path, "data", "METS." + str(self.uuid) + ".xml")
-        ]
-        if reingest_type == self.FULL:
-            # All the things!
-            reingest_files = [relative_path]
-        elif reingest_type == self.OBJECTS:
-            # All in objects except submissionDocumentation dir
-            for f in os.listdir(os.path.join(local_path, "data", "objects")):
-                if f in ("submissionDocumentation",):
-                    continue
-                abs_path = os.path.join(local_path, "data", "objects", f)
-                if os.path.isfile(abs_path):
-                    reingest_files.append(
-                        os.path.join(relative_path, "data", "objects", f)
-                    )
-                elif os.path.isdir(abs_path):
-                    # Dirs must be / terminated to make the move functions happy
-                    reingest_files.append(
-                        os.path.join(relative_path, "data", "objects", f, "")
-                    )
-        elif reingest_type == self.METADATA_ONLY:
-            reingest_files.append(
-                os.path.join(relative_path, "data", "objects", "metadata", "")
-            )
-
-        # Fetch processing configuration, put it in the root of the package and
-        # include the file in reingest_files.
-        if processing_config != "default":
-            try:
-                config = pipeline.get_processing_config(processing_config)
-            except requests.exceptions.RequestException:
-                LOGGER.error(
-                    "Reingest: processing configuration %s could not be loaded",
-                    processing_config,
-                )
-            else:
-                config_path = os.path.join(local_path, "processingMCP.xml")
-                try:
-                    # It's not expected to find an existing processingMCP.xml
-                    # file in the original AIP, but we are using the w+ mode
-                    # just in case.
-                    with open(config_path, "w+") as f:
-                        f.write(config)
-                    LOGGER.debug(
-                        "Reingest: processing configuration %s written, location: %s",
-                        processing_config,
-                        config_path,
-                    )
-                except OSError:
-                    LOGGER.exception(
-                        "Reingest: processing configuration %s could not be written",
-                        processing_config,
-                    )
-                    raise
-                else:
-                    if reingest_type != self.FULL:
-                        reingest_files.append(
-                            os.path.join(relative_path, "processingMCP.xml")
-                        )
-
-        LOGGER.info("Reingest: files: %s", reingest_files)
-
-        # Copy to pipeline
-        try:
-            currently_processing = Location.active.filter(pipeline=pipeline).get(
-                purpose=Location.CURRENTLY_PROCESSING
-            )
-        except (Location.DoesNotExist, Location.MultipleObjectsReturned):
-            return {
-                "error": True,
-                "status_code": 412,
-                "message": _(
-                    "No currently processing Location is associated with pipeline %(uuid)s"
-                )
-                % {"uuid": pipeline.uuid},
-            }
-        LOGGER.debug("Reingest: Current location: %s", current_location)
-        dest_basepath = os.path.join(currently_processing.relative_path, "tmp", "")
-        for path in reingest_files:
-            current_location.space.move_to_storage_service(
-                source_path=os.path.join(current_location.relative_path, path),
-                destination_path=path,
-                destination_space=currently_processing.space,
-            )
-            currently_processing.space.move_from_storage_service(
-                source_path=path,
-                destination_path=os.path.join(dest_basepath, path),
-                package=self,
-            )
-
-        # Delete local copy of extraction
-        if self.local_path != self.full_path:
-            try:
-                shutil.rmtree(local_path)
-            except OSError:  # May have been moved not copied
-                pass
-        if temp_dir:
-            shutil.rmtree(temp_dir)
-
-        # Call reingest API
-        reingest_target = "transfer" if reingest_type == self.FULL else "ingest"
-        reingest_uuid = self.uuid
-        try:
-            resp = pipeline.reingest(relative_path, self.uuid, reingest_target)
-        except requests.exceptions.RequestException as e:
-            message = _("Error in approve reingest API. %(error)s") % {"error": e}
-            LOGGER.exception(
-                "Error approving reingest in pipeline for package %s", self.uuid
-            )
-            return {"error": True, "status_code": 502, "message": message}
-        else:
-            reingest_uuid = resp.get("reingest_uuid")
-        LOGGER.debug("Reingest UUID: %s", reingest_uuid)
-        self.save()
-
-        return {
-            "error": False,
-            "status_code": 202,
-            "message": _("Package %(uuid)s sent to pipeline %(pipeline)s for re-ingest")
-            % {"uuid": self.uuid, "pipeline": pipeline},
-            "reingest_uuid": str(reingest_uuid),
-        }
+        return reingest.start(self, pipeline, reingest_type, processing_config)
 
     def finish_reingest(
         self,

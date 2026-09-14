@@ -159,6 +159,7 @@ module = [
     "archivematica.storage_service.common.helpers",
     "archivematica.storage_service.common.gpgutils",
     "archivematica.storage_service.locations.package_request",
+    "archivematica.storage_service.locations.reingest",
     "tests.administration.test_users",
     "tests.common.test_compression",
     "tests.conftest",

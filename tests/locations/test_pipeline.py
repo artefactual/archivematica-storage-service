@@ -1,4 +1,5 @@
 import pathlib
+import typing
 import uuid
 from unittest import mock
 from urllib.parse import ParseResult
@@ -22,6 +23,17 @@ def pipeline() -> models.Pipeline:
         api_username="user",
         api_key="key",
     )
+
+
+def test_reingest_annotations_resolve_the_uuid_module() -> None:
+    """The ``uuid`` parameter must not resolve against the model field.
+
+    Inside the class body ``uuid`` is the field, so an annotation evaluated
+    there fails; postponed annotations are resolved in the module namespace.
+    """
+    hints = typing.get_type_hints(models.Pipeline.reingest)
+
+    assert hints["uuid"] is uuid.UUID
 
 
 @pytest.mark.django_db

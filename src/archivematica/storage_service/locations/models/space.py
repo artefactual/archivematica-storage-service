@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import errno
 import logging
@@ -304,8 +306,13 @@ class Space(models.Model):
         )
 
     def move_to_storage_service(
-        self, source_path, destination_path, destination_space, *args, **kwargs
-    ):
+        self,
+        source_path: str,
+        destination_path: str,
+        destination_space: Space,
+        *args: object,
+        **kwargs: object,
+    ) -> None:
         """Move source_path to destination_path in the staging area of destination_space.
 
         If source_path is not an absolute path, it is assumed to be relative to
@@ -381,7 +388,13 @@ class Space(models.Model):
 
         return staging_path, destination_path
 
-    def move_from_storage_service(self, source_path, destination_path, *args, **kwargs):
+    def move_from_storage_service(
+        self,
+        source_path: str,
+        destination_path: str,
+        *args: object,
+        **kwargs: object,
+    ) -> utils.StorageEffects | None:
         """Move source_path in this Space's staging area to destination_path in this Space.
 
         That is, moves self.staging_path/source_path to self.path/destination_path.
