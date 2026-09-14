@@ -155,10 +155,13 @@ ignore_errors = true
 [[tool.mypy.overrides]]
 module = [
     "archivematica.storage_service.administration.roles",
+    "archivematica.storage_service.common.compression",
     "archivematica.storage_service.common.helpers",
     "archivematica.storage_service.common.gpgutils",
     "archivematica.storage_service.locations.package_request",
     "tests.administration.test_users",
+    "tests.common.test_compression",
+    "tests.conftest",
     "tests.integration.*",
     "tests.locations.test_reingest",
     "tests.storage_service.test_helpers",
