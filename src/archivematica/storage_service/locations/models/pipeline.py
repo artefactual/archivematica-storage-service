@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import uuid
 
@@ -189,7 +191,7 @@ class Pipeline(URLMixin, models.Model):
             LOGGER.debug("Response: %s %s", resp.status_code, resp.text)
             return resp
 
-    def get_processing_config(self, name):
+    def get_processing_config(self, name: str) -> str:
         """
         Obtain a processing configuration XML document given its name. The
         content is returned as a string. An exception is raised if the
@@ -211,7 +213,9 @@ class Pipeline(URLMixin, models.Model):
             )
         return resp.text
 
-    def reingest(self, name, uuid, target="transfer"):
+    def reingest(
+        self, name: str, uuid: uuid.UUID, target: str = "transfer"
+    ) -> dict[str, str]:
         """
         Approve reingest in the pipeline.
         """

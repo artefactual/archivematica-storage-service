@@ -62,6 +62,7 @@ from django.db.utils import IntegrityError
 from archivematica.storage_service.administration.models import Settings
 from archivematica.storage_service.common import premis
 from archivematica.storage_service.common import utils
+from archivematica.storage_service.common.compression import COMPRESSION_ALGORITHMS
 from archivematica.storage_service.locations import models
 
 # Suppress the logging from models/package.py
@@ -110,7 +111,7 @@ class Command(BaseCommand):
             help="The compression algorithm to use when compressing the"
             " imported AIP. Omit this if the AIP is already compressed or"
             " if you want to import an uncompressed AIP as is.",
-            choices=utils.COMPRESSION_ALGORITHMS,
+            choices=COMPRESSION_ALGORITHMS,
             default=None,
         )
         parser.add_argument(

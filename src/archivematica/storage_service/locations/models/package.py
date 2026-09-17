@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import codecs
 import copy
 import importlib.resources
@@ -10,13 +12,13 @@ import subprocess
 import tempfile
 from collections import namedtuple
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
 from uuid import uuid4
 
 import bagit
 import jsonfield
 import metsrw
-import requests
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -28,6 +30,14 @@ from metsrw.plugins import premisrw
 from archivematica.storage_service.common import fields
 from archivematica.storage_service.common import premis
 from archivematica.storage_service.common import utils
+from archivematica.storage_service.common.compression import COMPRESSION_7Z_BZIP
+from archivematica.storage_service.common.compression import COMPRESSION_7Z_COPY
+from archivematica.storage_service.common.compression import COMPRESSION_7Z_LZMA
+from archivematica.storage_service.common.compression import COMPRESSION_ALGORITHMS
+from archivematica.storage_service.common.compression import COMPRESSION_TAR_BZIP2
+from archivematica.storage_service.common.compression import COMPRESSION_TAR_GZIP
+from archivematica.storage_service.common.compression import CompressionError
+from archivematica.storage_service.common.compression import get_archiver
 from archivematica.storage_service.locations import signals
 from archivematica.storage_service.locations.models import StorageException
 from archivematica.storage_service.locations.models.event import Callback
@@ -39,6 +49,10 @@ from archivematica.storage_service.locations.models.space import (
     PosixMoveUnsupportedError,
 )
 from archivematica.storage_service.locations.models.space import Space
+
+if TYPE_CHECKING:
+    from archivematica.storage_service.locations.models.pipeline import Pipeline
+    from archivematica.storage_service.locations.reingest import ReingestResponse
 
 __all__ = ("Package",)
 
@@ -194,6 +208,11 @@ class Package(models.Model):
             ("approve_package_deletion", "Can approve Package deletion requests"),
         ]
 
+    # Temporary attributes to track path on locally accessible filesystem
+    local_path: str | None
+    local_path_location: Location | None
+    local_tempdirs: list[str]
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -264,7 +283,7 @@ class Package(models.Model):
         return space_is_packaged and is_file
 
     @property
-    def is_compressed(self):
+    def is_compressed(self) -> bool:
         """Determines whether or not the package is a compressed file."""
         full_path = self.get_local_path() or self.fetch_local_path()
         if os.path.isdir(full_path):
@@ -321,7 +340,7 @@ class Package(models.Model):
         LOGGER.debug("Got download path %s for package %s", path, self.uuid)
         return path
 
-    def get_local_path(self):
+    def get_local_path(self) -> str | None:
         """Return a locally accessible path to this Package if available.
 
         If a cached copy of the local path is available (possibly from
@@ -340,7 +359,7 @@ class Package(models.Model):
             return self.local_path
         return None
 
-    def fetch_local_path(self):
+    def fetch_local_path(self) -> str:
         """Fetches a local copy of the package.
 
         Return local path if package is already available locally. Otherwise,
@@ -391,7 +410,7 @@ class Package(models.Model):
                         f"Error deleting Storage Service internal tempdir: {err}"
                     )
 
-    def get_base_directory(self):
+    def get_base_directory(self) -> str:
         """
         Returns the base directory of a package. This is the directory in
         which all of the contents of the package are nested. For example,
@@ -418,24 +437,13 @@ class Package(models.Model):
             )
 
         if self.is_compressed:
-            # Use lsar's JSON output to determine the directories in a
-            # compressed file. Since the index of the base directory may
-            # not be consistent, determine it by filtering all entries
-            # for directories, then determine the directory with the
-            # shortest name. (e.g. foo is the parent of foo/bar)
-            # NOTE: lsar's JSON output is broken in certain circumstances in
-            #       all released versions; make sure to use a patched version
-            #       for this to work.
-            command = ["lsar", "-ja", full_path]
-            output = subprocess.check_output(command).decode("utf8")
-            output = json.loads(output)
-            directories = [
-                d["XADFileName"]
-                for d in output["lsarContents"]
-                if d.get("XADIsDirectory", False)
-            ]
-            directories = sorted(directories, key=len)
-            return directories[0]
+            try:
+                return get_archiver().root_directory(Path(full_path))
+            except CompressionError as err:
+                raise StorageException(
+                    _("Error determining basename of %(path)s: %(error)s")
+                    % {"path": full_path, "error": err}
+                ) from err
         return os.path.basename(full_path)
 
     def _check_quotas(self, dest_space, dest_location):
@@ -1603,7 +1611,9 @@ class Package(models.Model):
             except CallbackError as e:
                 LOGGER.error("Error in %s callback: %s", callback.event, str(e))
 
-    def extract_file(self, relative_path="", extract_path=None):
+    def extract_file(
+        self, relative_path: str = "", extract_path: str | None = None
+    ) -> tuple[str, str]:
         """Attempts to extract this package.
 
         If `relative_path` is provided, will extract only that file.  Otherwise,
@@ -1622,71 +1632,51 @@ class Package(models.Model):
         if extract_path is None:
             extract_path = tempfile.mkdtemp(dir=ss_internal.full_path)
 
-        # The basename is the base directory containing a package
-        # like an AIP inside the compressed file.
-        try:
-            basename = self.get_base_directory()
-        except subprocess.CalledProcessError:
-            raise StorageException(_("Error determining basename during extraction"))
-
-        if relative_path:
-            output_path = os.path.join(extract_path, relative_path)
-        else:
-            output_path = os.path.join(extract_path, basename)
-
         if self.is_compressed:
-            # The command used to extract the compressed file at
-            # full_path was, previously, universally::
-            #
-            #     $ unar -force-overwrite -o extract_path full_path
-            #
-            # The problem with this command is that unar treats __MACOSX .rsrc
-            # ("resource fork") files differently than 7z and tar do. 7z and
-            # tar convert these .rsrc files to ._-prefixed files. Similar
-            # behaviour with unar can be achieved by passing `-k hidden`.
-            # However, while a command like::
-            #
-            #     $ unar -force-overwrite -k hidden -o extract_path full_path
-            #
-            # preserves the .rsrc MACOSX files as ._-prefixed files, it does so
-            # differently than 7z/tar do: the resulting .-prefixed files have
-            # different sizes than those created via unar. This makes
-            # ``bag.validate`` choke.
             if self.full_pointer_file_path:
                 compression = utils.get_compression(self.full_pointer_file_path)
             else:
-                compression = None  # no pointer file :. command will be unar
-            command = _get_decompr_cmd(compression, extract_path, full_path)
-            if relative_path:
-                command.append(relative_path)
-            LOGGER.info("Extracting file with: %s to %s", command, output_path)
-            rc = subprocess.check_output(command).decode("utf8")
-            if "No files extracted" in rc:
-                raise StorageException(_("Extraction error"))
+                # Without a pointer file the archive format is detected.
+                compression = None
+            try:
+                output_path = str(
+                    get_archiver().extract(
+                        Path(full_path),
+                        Path(extract_path),
+                        compression,
+                        member=relative_path or None,
+                    )
+                )
+            except CompressionError as err:
+                raise StorageException(_("Extraction error")) from err
+        elif relative_path:
+            # Copy only one file out of the package.
+            output_path = os.path.join(extract_path, relative_path)
+            src = os.path.join(os.path.dirname(full_path), relative_path)
+            os.makedirs(os.path.dirname(output_path))
+            LOGGER.info("Copying from: %s to %s", src, output_path)
+            shutil.copy(src, output_path)
         else:
-            if relative_path:
-                # copy only one file out of aip
-                head, tail = os.path.split(full_path)
-                src = os.path.join(head, relative_path)
-                os.makedirs(os.path.dirname(output_path))
-                LOGGER.info("Copying from: %s to %s", src, output_path)
-                shutil.copy(src, output_path)
-            else:
-                src = full_path
-                LOGGER.info("Copying from: %s to %s", full_path, output_path)
-                shutil.copytree(full_path, output_path)
+            output_path = os.path.join(extract_path, os.path.basename(full_path))
+            LOGGER.info("Copying from: %s to %s", full_path, output_path)
+            shutil.copytree(full_path, output_path)
 
         if not relative_path:
             self.local_path_location = ss_internal
             self.local_path = output_path
         return (output_path, extract_path)
 
-    def compress_package(self, algorithm, extract_path=None, detailed_output=False):
+    def compress_package(
+        self,
+        algorithm: str,
+        extract_path: str | None = None,
+        detailed_output: bool = False,
+    ) -> tuple[str, str] | tuple[str, str, dict[str, str]]:
         """
         Produces a compressed copy of the package.
 
         :param algorithm: Compression algorithm to use. Should be one of
-            :const:`utils.COMPRESSION_ALGORITHMS`
+            :const:`COMPRESSION_ALGORITHMS`
         :param str extract_path: Path to compress to. If not provided, will
             compress to a temp directory in the SS internal location.
         :param bool detailed_output: If true, the method will return a 3-tuple
@@ -1702,53 +1692,31 @@ class Package(models.Model):
         if extract_path is None:
             ss_internal = Location.active.get(purpose=Location.STORAGE_SERVICE_INTERNAL)
             extract_path = tempfile.mkdtemp(dir=ss_internal.full_path)
-        if algorithm not in utils.COMPRESSION_ALGORITHMS:
+        if algorithm not in COMPRESSION_ALGORITHMS:
             raise ValueError(
                 _("Algorithm %(algorithm)s not in %(algorithms)s")
-                % {"algorithm": algorithm, "algorithms": utils.COMPRESSION_ALGORITHMS}
+                % {"algorithm": algorithm, "algorithms": COMPRESSION_ALGORITHMS}
             )
 
         full_path = self.fetch_local_path()
-
-        if os.path.isfile(full_path):
-            basename = os.path.splitext(os.path.basename(full_path))[0]
-        else:
-            basename = os.path.basename(full_path)
-
-        command, compressed_filename = utils.get_compress_command(
-            algorithm, extract_path, basename, full_path
-        )
-
-        LOGGER.info("Compressing package with: %s to %s", command, compressed_filename)
-        if detailed_output:
-            p = subprocess.Popen(
-                command, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        try:
+            archive = get_archiver().compress(
+                Path(full_path), Path(extract_path), algorithm
             )
-            stdout, stderr = p.communicate()
-            rc = p.returncode
-            LOGGER.debug("Compress package RC: %s", rc)
-            tic_stdout = ""
-            tic_stderr = ""
-            try:
-                tic_stdout = utils.get_tool_info(algorithm)
-            except subprocess.CalledProcessError as e:
-                tic_stderr = e.stderr.decode()
-            except Exception as e:
-                tic_stderr = str(e)
+        except CompressionError as err:
+            raise StorageException(
+                _("Error compressing package: %(error)s") % {"error": err}
+            ) from err
+        compressed_filename = str(archive.path)
+        if detailed_output:
             LOGGER.debug("Tool info stdout")
-            LOGGER.debug(tic_stdout)
-            LOGGER.debug(tic_stderr)
+            LOGGER.debug(archive.event_detail)
             details = {
-                "event_detail": tic_stdout,
-                "event_outcome_detail_note": 'Standard Output="{}"; Standard Error="{}"'.format(
-                    stdout.decode("utf-8"), stderr.decode("utf-8")
-                ),
+                "event_detail": archive.event_detail,
+                "event_outcome_detail_note": f'Standard Output="{archive.stdout}"; Standard Error="{archive.stderr}"',
             }
             return (compressed_filename, extract_path, details)
-        else:
-            rc = subprocess.call(command)
-            LOGGER.debug("Compress package RC: %s", rc)
-            return (compressed_filename, extract_path)
+        return (compressed_filename, extract_path)
 
     def _parse_mets(self, prefix):
         """
@@ -2215,188 +2183,19 @@ class Package(models.Model):
 
     # REINGEST
 
-    def start_reingest(self, pipeline, reingest_type, processing_config="default"):
+    def start_reingest(
+        self, pipeline: Pipeline, reingest_type: str, processing_config: str = "default"
+    ) -> ReingestResponse:
+        """Copy this package to ``pipeline`` for reingest.
+
+        See :func:`archivematica.storage_service.locations.reingest.start`.
         """
-        Copies this package to `pipeline` for reingest.
+        # TODO: drop this wrapper and call the reingest module from the API
+        # and the dashboard view directly. The import is local because the
+        # module depends on the models.
+        from archivematica.storage_service.locations import reingest
 
-        Fetches the AIP from storage, extracts and runs fixity on it to verify integrity.
-        If reingest_type is METADATA_ONLY, sends the METS and all files in the metadata directory.
-        If reingest_type is OBJECTS, sends METS, all files in metadata directory and all objects, preservation and original.
-        If reingest_type is FULL, we do like in OBJECTS but sending the package to the transfer source location.
-        Calls Archivematica endpoint /api/ingest/reingest/ to start reingest.
-
-        :param pipeline: Pipeline object to send reingested AIP to.
-        :param reingest_type: Type of reingest to start, one of REINGEST_CHOICES.
-        :return: Dict with keys 'error', 'status_code' and 'message'
-        """
-
-        # Reingest type is part of the payload so we can convert it to lower
-        # case here to make any calls to start_reingest more robust.
-        reingest_type = reingest_type.lower()
-
-        if self.package_type not in Package.PACKAGE_TYPE_CAN_REINGEST:
-            return {
-                "error": True,
-                "status_code": 405,
-                "message": f"Package with type {self.get_package_type_display()} cannot be re-ingested.",
-            }
-
-        # Check and set reingest pipeline
-        if self.misc_attributes.get("reingest_pipeline", None):
-            return {
-                "error": True,
-                "status_code": 409,
-                "message": _("This AIP is already being reingested on %(pipeline)s")
-                % {"pipeline": self.misc_attributes["reingest_pipeline"]},
-            }
-        self.misc_attributes.update({"reingest_pipeline": str(pipeline.uuid)})
-
-        # Run fixity
-        # Fixity will fetch & extract package if needed
-        success, ___, error_msg, ___ = self.check_fixity(delete_after=False)
-        LOGGER.debug("Reingest: Fixity response: %s, %s", success, error_msg)
-        if not success:
-            return {"error": True, "status_code": 500, "message": error_msg}
-
-        # Fetch and extract if needed
-        if self.is_compressed:
-            local_path, temp_dir = self.extract_file()
-            LOGGER.debug("Reingest: extracted to %s", local_path)
-        else:
-            # Append / to uncompressed AIPS so we send the contents of the dir
-            # not the dir itself inside a dir of the same name
-            local_path = os.path.join(self.fetch_local_path(), "")
-            temp_dir = ""
-            LOGGER.debug("Reingest: uncompressed at %s", local_path)
-
-        # Make list of folders to move
-        current_location = self.local_path_location or self.current_location
-        relative_path = local_path.replace(current_location.full_path, "", 1).lstrip(
-            "/"
-        )
-        reingest_files = [
-            os.path.join(relative_path, "data", "METS." + str(self.uuid) + ".xml")
-        ]
-        if reingest_type == self.FULL:
-            # All the things!
-            reingest_files = [relative_path]
-        elif reingest_type == self.OBJECTS:
-            # All in objects except submissionDocumentation dir
-            for f in os.listdir(os.path.join(local_path, "data", "objects")):
-                if f in ("submissionDocumentation",):
-                    continue
-                abs_path = os.path.join(local_path, "data", "objects", f)
-                if os.path.isfile(abs_path):
-                    reingest_files.append(
-                        os.path.join(relative_path, "data", "objects", f)
-                    )
-                elif os.path.isdir(abs_path):
-                    # Dirs must be / terminated to make the move functions happy
-                    reingest_files.append(
-                        os.path.join(relative_path, "data", "objects", f, "")
-                    )
-        elif reingest_type == self.METADATA_ONLY:
-            reingest_files.append(
-                os.path.join(relative_path, "data", "objects", "metadata", "")
-            )
-
-        # Fetch processing configuration, put it in the root of the package and
-        # include the file in reingest_files.
-        if processing_config != "default":
-            try:
-                config = pipeline.get_processing_config(processing_config)
-            except requests.exceptions.RequestException:
-                LOGGER.error(
-                    "Reingest: processing configuration %s could not be loaded",
-                    processing_config,
-                )
-            else:
-                config_path = os.path.join(local_path, "processingMCP.xml")
-                try:
-                    # It's not expected to find an existing processingMCP.xml
-                    # file in the original AIP, but we are using the w+ mode
-                    # just in case.
-                    with open(config_path, "w+") as f:
-                        f.write(config)
-                    LOGGER.debug(
-                        "Reingest: processing configuration %s written, location: %s",
-                        processing_config,
-                        config_path,
-                    )
-                except OSError:
-                    LOGGER.exception(
-                        "Reingest: processing configuration %s could not be written",
-                        processing_config,
-                    )
-                    raise
-                else:
-                    if reingest_type != self.FULL:
-                        reingest_files.append(
-                            os.path.join(relative_path, "processingMCP.xml")
-                        )
-
-        LOGGER.info("Reingest: files: %s", reingest_files)
-
-        # Copy to pipeline
-        try:
-            currently_processing = Location.active.filter(pipeline=pipeline).get(
-                purpose=Location.CURRENTLY_PROCESSING
-            )
-        except (Location.DoesNotExist, Location.MultipleObjectsReturned):
-            return {
-                "error": True,
-                "status_code": 412,
-                "message": _(
-                    "No currently processing Location is associated with pipeline %(uuid)s"
-                )
-                % {"uuid": pipeline.uuid},
-            }
-        LOGGER.debug("Reingest: Current location: %s", current_location)
-        dest_basepath = os.path.join(currently_processing.relative_path, "tmp", "")
-        for path in reingest_files:
-            current_location.space.move_to_storage_service(
-                source_path=os.path.join(current_location.relative_path, path),
-                destination_path=path,
-                destination_space=currently_processing.space,
-            )
-            currently_processing.space.move_from_storage_service(
-                source_path=path,
-                destination_path=os.path.join(dest_basepath, path),
-                package=self,
-            )
-
-        # Delete local copy of extraction
-        if self.local_path != self.full_path:
-            try:
-                shutil.rmtree(local_path)
-            except OSError:  # May have been moved not copied
-                pass
-        if temp_dir:
-            shutil.rmtree(temp_dir)
-
-        # Call reingest API
-        reingest_target = "transfer" if reingest_type == self.FULL else "ingest"
-        reingest_uuid = self.uuid
-        try:
-            resp = pipeline.reingest(relative_path, self.uuid, reingest_target)
-        except requests.exceptions.RequestException as e:
-            message = _("Error in approve reingest API. %(error)s") % {"error": e}
-            LOGGER.exception(
-                "Error approving reingest in pipeline for package %s", self.uuid
-            )
-            return {"error": True, "status_code": 502, "message": message}
-        else:
-            reingest_uuid = resp.get("reingest_uuid")
-        LOGGER.debug("Reingest UUID: %s", reingest_uuid)
-        self.save()
-
-        return {
-            "error": False,
-            "status_code": 202,
-            "message": _("Package %(uuid)s sent to pipeline %(pipeline)s for re-ingest")
-            % {"uuid": self.uuid, "pipeline": pipeline},
-            "reingest_uuid": str(reingest_uuid),
-        }
+        return reingest.start(self, pipeline, reingest_type, processing_config)
 
     def finish_reingest(
         self,
@@ -2565,11 +2364,11 @@ class Package(models.Model):
                 )
                 try:
                     compression = {
-                        "bzip2": utils.COMPRESSION_7Z_BZIP,
-                        "lzma": utils.COMPRESSION_7Z_LZMA,
-                        "pbzip2": utils.COMPRESSION_TAR_BZIP2,
-                        "tar.gzip": utils.COMPRESSION_TAR_GZIP,
-                        "copy": utils.COMPRESSION_7Z_COPY,
+                        "bzip2": COMPRESSION_7Z_BZIP,
+                        "lzma": COMPRESSION_7Z_LZMA,
+                        "pbzip2": COMPRESSION_TAR_BZIP2,
+                        "tar.gzip": COMPRESSION_TAR_GZIP,
+                        "copy": COMPRESSION_7Z_COPY,
                     }[compression_algorithm]
                     LOGGER.info(
                         f'Extracted compression "{compression}" from AM-passed'
@@ -2581,7 +2380,7 @@ class Package(models.Model):
                         ' "{}"; does not match any of the following recognized'
                         " options: {}".format(
                             compression_algorithm,
-                            ", ".join(utils.COMPRESSION_ALGORITHMS),
+                            ", ".join(COMPRESSION_ALGORITHMS),
                         )
                     )
                     LOGGER.error(msg)
@@ -2983,68 +2782,25 @@ class Package(models.Model):
         return clone
 
 
-def _get_decompr_cmd(compression, extract_path, full_path):
-    """Returns a decompression command (as a list), given ``compression``
-    (one of ``COMPRESSION_ALGORITHMS``), the destination path
-    ``extract_path`` and the path of the archive ``full_path``.
-    """
-    if compression in (
-        utils.COMPRESSION_7Z_BZIP,
-        utils.COMPRESSION_7Z_LZMA,
-        utils.COMPRESSION_7Z_COPY,
-    ):
-        return ["7z", "x", "-bd", "-y", f"-o{extract_path}", full_path]
-    elif compression == utils.COMPRESSION_TAR_BZIP2:
-        return ["/bin/tar", "xvjf", full_path, "-C", extract_path]
-    elif compression == utils.COMPRESSION_TAR_GZIP:
-        return ["/bin/tar", "xvzf", full_path, "-C", extract_path]
-    return ["unar", "-force-overwrite", "-o", extract_path, full_path]
-
-
-def _extract_rein_aip(internal_location, rein_aip_internal_path):
+def _extract_rein_aip(internal_location: Location, rein_aip_internal_path: str) -> str:
     """Extract the reingested AIP (package) at ``rein_aip_internal_path`` and
     return the path to the resulting directory.
     """
     if os.path.isfile(rein_aip_internal_path):
-        # TODO modify extract_file and get_base_directory to handle
-        # reingest paths?  Update self.local_path sooner?
-        # Extract
-        command = [
-            "unar",
-            "-force-overwrite",
-            "-o",
-            internal_location.full_path,
-            rein_aip_internal_path,
-        ]
-        LOGGER.info("Extracting reingested AIP with: %s", command)
-        rc = subprocess.call(command)
-        LOGGER.debug("Extract file RC: %s", rc)
-        # Get output path
-        command = ["lsar", "-ja", rein_aip_internal_path]
+        archive = Path(rein_aip_internal_path)
+        LOGGER.info("Extracting reingested AIP %s", archive)
         try:
-            output = subprocess.check_output(command).decode("utf8")
-            j = json.loads(output)
-            bname = sorted(
-                (
-                    d["XADFileName"]
-                    for d in j["lsarContents"]
-                    if d.get("XADIsDirectory", False)
-                ),
-                key=len,
-            )[0]
-        except (subprocess.CalledProcessError, ValueError):
-            bname = os.path.splitext(os.path.basename(rein_aip_internal_path))[0]
-            LOGGER.warning(
-                "Unable to parse base directory from package, using basename %s",
-                bname,
+            extracted = get_archiver().extract(
+                archive, Path(internal_location.full_path)
             )
-        else:
-            LOGGER.debug(
-                "Reingested AIP extracted, removing original package %s",
-                rein_aip_internal_path,
-            )
-            os.remove(rein_aip_internal_path)
-            rein_aip_internal_path = os.path.join(internal_location.full_path, bname)
+        except CompressionError as err:
+            raise StorageException(
+                _("Error extracting reingested AIP %(path)s: %(error)s")
+                % {"path": archive, "error": err}
+            ) from err
+        LOGGER.debug("Reingested AIP extracted, removing original package %s", archive)
+        archive.unlink()
+        rein_aip_internal_path = str(extracted)
     LOGGER.debug("Reingested AIP full path: %s", rein_aip_internal_path)
     return rein_aip_internal_path
 

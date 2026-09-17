@@ -1,5 +1,7 @@
 import pathlib
+import subprocess
 import uuid
+from collections.abc import Sequence
 from unittest import mock
 
 import pytest
@@ -7,6 +9,9 @@ from django.core.management import call_command
 from lxml import etree
 
 from archivematica.storage_service.common import utils
+from archivematica.storage_service.common.compression import CommandLineArchiver
+from archivematica.storage_service.common.compression import override_archiver
+from archivematica.storage_service.common.compression import run_command
 from archivematica.storage_service.locations import models
 
 TEST_DIR = pathlib.Path(__file__).resolve().parent
@@ -79,9 +84,7 @@ def test_import_aip_command_creates_uncompressed_package(
     "archivematica.storage_service.common.management.commands.import_aip.getpwnam"
 )
 @mock.patch("logging.config")
-@mock.patch("archivematica.storage_service.common.utils.get_7z_version")
 def test_import_aip_command_creates_compressed_package(
-    get_7z_version,
     logging_config,
     getpwnam,
     chown,
@@ -91,17 +94,24 @@ def test_import_aip_command_creates_compressed_package(
     expected_event_detail_algorithm,
 ):
     expected_event_detail_version = "p7zip Version 3.0"
-    get_7z_version.return_value = expected_event_detail_version
 
-    call_command(
-        "import_aip",
-        "--decompress-source",
-        "--aip-storage-location",
-        aip_storage_location.uuid,
-        AIP_PATH,
-        "--compression-algorithm",
-        compression_algorithm,
-    )
+    def run(command: Sequence[str]) -> subprocess.CompletedProcess[str]:
+        """Run the real tools, but answer the 7z version probe with a banner."""
+        if list(command) == ["7z"]:
+            banner = f"\n7-Zip [64] 16.02 : Copyright (c) 1999-2016\n{expected_event_detail_version}\n"
+            return subprocess.CompletedProcess(list(command), 0, banner, "")
+        return run_command(command)
+
+    with override_archiver(CommandLineArchiver(run=run)):
+        call_command(
+            "import_aip",
+            "--decompress-source",
+            "--aip-storage-location",
+            aip_storage_location.uuid,
+            AIP_PATH,
+            "--compression-algorithm",
+            compression_algorithm,
+        )
     captured = capsys.readouterr()
     assert "Successfully imported AIP" in captured.out
 
