@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { computed, ref, watch, type Ref } from 'vue'
 import {
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
+  createPaginatedRowModel,
+  createSortedRowModel,
+  rowPaginationFeature,
+  rowSortingFeature,
+  tableFeatures,
   type ColumnDef,
   type PaginationState,
   type SortingState,
   type Updater,
-  useVueTable,
+  useTable,
 } from '@tanstack/vue-table'
 import { useI18n } from 'vue-i18n'
 import TableCellContent from './TableCellContent.vue'
@@ -40,6 +42,12 @@ const props = defineProps<{
 const { t, locale } = useI18n()
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const
+const features = tableFeatures({
+  rowSortingFeature,
+  rowPaginationFeature,
+  sortedRowModel: createSortedRowModel(),
+  paginatedRowModel: createPaginatedRowModel(),
+})
 const isServerMode = computed(() => props.payload.ui.server?.mode === 'server-datatables-v1')
 
 const initialSorting = (): SortingState => {
@@ -269,12 +277,12 @@ const columnLabelByKey = computed(() => {
   return map
 })
 
-const columns = computed<ColumnDef<TableRow>[]>(() => {
+const columns = computed<ColumnDef<typeof features, TableRow>[]>(() => {
   return props.payload.columns.map(column => ({
     id: column.key,
     accessorFn: row => row[column.key] as TableCell | TableAction[],
     enableSorting: column.sortable ?? true,
-    sortingFn: (rowA, rowB, columnId) => {
+    sortFn: (rowA, rowB, columnId) => {
       const a = cellText(rowA.getValue(columnId)).toLocaleLowerCase()
       const b = cellText(rowB.getValue(columnId)).toLocaleLowerCase()
       return a.localeCompare(b, undefined, {
@@ -285,7 +293,8 @@ const columns = computed<ColumnDef<TableRow>[]>(() => {
   }))
 })
 
-const table = useVueTable({
+const table = useTable({
+  features,
   get data() {
     return tableRows.value
   },
@@ -307,9 +316,6 @@ const table = useVueTable({
   onPaginationChange: updater => updateRef(updater, pagination),
   manualSorting: isServerMode.value,
   manualPagination: isServerMode.value,
-  getCoreRowModel: getCoreRowModel(),
-  getSortedRowModel: isServerMode.value ? undefined : getSortedRowModel(),
-  getPaginationRowModel: isServerMode.value ? undefined : getPaginationRowModel(),
 })
 
 const rows = computed(() => table.getRowModel().rows)
@@ -495,7 +501,7 @@ const onPageSizeChange = (event: Event): void => {
           :class="rowNumber % 2 === 0 ? 'ss-table-row--odd' : 'ss-table-row--even'"
         >
           <td
-            v-for="cell in row.getVisibleCells()"
+            v-for="cell in row.getAllCells()"
             :key="cell.id"
             :class="{ 'ss-table-cell--sorted': sortedColumnId === cell.column.id }"
           >
