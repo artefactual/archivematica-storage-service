@@ -2,6 +2,7 @@ import os.path
 import shutil
 from os import makedirs
 from os import scandir
+from pathlib import Path
 from unittest import mock
 
 import pytest
@@ -136,6 +137,34 @@ def test_path2browse_dict_object_counting_ignores_read_protected_directories(
                 "tree_a.txt": {"size": 6},
             },
         }
+
+
+@mock.patch(
+    "archivematica.storage_service.common.utils.get_setting", return_value=False
+)
+def test_path2browse_dict_lists_entries_whose_details_cannot_be_read(
+    get_setting: mock.MagicMock, tmp_path: Path
+) -> None:
+    """Entries that raise OSError while being inspected are still listed.
+
+    A symlink to a missing target makes ``DirEntry.stat()`` raise
+    ``FileNotFoundError``, so the entry is listed in ``entries`` but is
+    left out of ``directories`` and ``properties``.
+    """
+    tree = tmp_path / "tree"
+    tree.mkdir()
+    (tree / "tree_a.txt").write_text("tree A")
+    (tree / "first").mkdir()
+    (tree / "broken_link").symlink_to(tree / "does_not_exist")
+
+    assert path2browse_dict(str(tree)) == {
+        "directories": ["first"],
+        "entries": ["broken_link", "first", "tree_a.txt"],
+        "properties": {
+            "first": {"object count": 0},
+            "tree_a.txt": {"size": 6},
+        },
+    }
 
 
 # AIP store directory structure with components of the quad structure
