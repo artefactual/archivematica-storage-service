@@ -11,9 +11,11 @@ import shutil
 import subprocess
 import tempfile
 from collections import namedtuple
+from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
+from uuid import UUID
 from uuid import uuid4
 
 import bagit
@@ -30,13 +32,11 @@ from metsrw.plugins import premisrw
 from archivematica.storage_service.common import fields
 from archivematica.storage_service.common import premis
 from archivematica.storage_service.common import utils
-from archivematica.storage_service.common.compression import COMPRESSION_7Z_BZIP
-from archivematica.storage_service.common.compression import COMPRESSION_7Z_COPY
-from archivematica.storage_service.common.compression import COMPRESSION_7Z_LZMA
 from archivematica.storage_service.common.compression import COMPRESSION_ALGORITHMS
-from archivematica.storage_service.common.compression import COMPRESSION_TAR_BZIP2
-from archivematica.storage_service.common.compression import COMPRESSION_TAR_GZIP
 from archivematica.storage_service.common.compression import CompressionError
+from archivematica.storage_service.common.compression import (
+    compression_for_premis_algorithm,
+)
 from archivematica.storage_service.common.compression import get_archiver
 from archivematica.storage_service.locations import signals
 from archivematica.storage_service.locations.models import StorageException
@@ -2355,36 +2355,9 @@ class Package(models.Model):
                 if was_compressed:
                     os.remove(rein_pointer_dst_full_path)
             else:
-                (
-                    compression_algorithm,
-                    __,
-                    archive_tool,
-                ) = _get_compression_details_from_premis_events(
+                compression = _get_compression_from_premis_events(
                     premis_events, self.uuid
                 )
-                try:
-                    compression = {
-                        "bzip2": COMPRESSION_7Z_BZIP,
-                        "lzma": COMPRESSION_7Z_LZMA,
-                        "pbzip2": COMPRESSION_TAR_BZIP2,
-                        "tar.gzip": COMPRESSION_TAR_GZIP,
-                        "copy": COMPRESSION_7Z_COPY,
-                    }[compression_algorithm]
-                    LOGGER.info(
-                        f'Extracted compression "{compression}" from AM-passed'
-                        " PREMIS events"
-                    )
-                except KeyError:
-                    msg = (
-                        "Failed to extract valid compression algorithm from"
-                        ' "{}"; does not match any of the following recognized'
-                        " options: {}".format(
-                            compression_algorithm,
-                            ", ".join(COMPRESSION_ALGORITHMS),
-                        )
-                    )
-                    LOGGER.error(msg)
-                    raise StorageException(msg)
 
         # 6. Compress the re-ingested AIP (if necessary) and get the local path
         #    to it and to its parent directory. At this point ``updated_aip``
@@ -2931,6 +2904,31 @@ def _get_compression_details_from_premis_events(premis_events, aip_uuid):
             )
         )
     return compression_event.compression_details
+
+
+def _get_compression_from_premis_events(
+    premis_events: Sequence[Sequence[object]], aip_uuid: UUID
+) -> str:
+    """Return the compression of the AIP, one of ``COMPRESSION_ALGORITHMS``,
+    as the compression event the pipeline sent records it.
+    """
+    compression_algorithm, __, __ = _get_compression_details_from_premis_events(
+        premis_events, aip_uuid
+    )
+    try:
+        compression = compression_for_premis_algorithm(compression_algorithm)
+    except ValueError as err:
+        msg = (
+            "Failed to extract valid compression algorithm from"
+            ' "{}"; does not match any of the following recognized'
+            " options: {}".format(
+                compression_algorithm, ", ".join(COMPRESSION_ALGORITHMS)
+            )
+        )
+        LOGGER.error(msg)
+        raise StorageException(msg) from err
+    LOGGER.info('Extracted compression "%s" from AM-passed PREMIS events', compression)
+    return compression
 
 
 def _get_checksum_report(
