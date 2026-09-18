@@ -97,6 +97,26 @@ def archive_name(source: Path) -> str:
     return source.stem
 
 
+_COMPRESSION_BY_PREMIS_ALGORITHM: dict[str, str] = {
+    "bzip2": COMPRESSION_7Z_BZIP,
+    "lzma": COMPRESSION_7Z_LZMA,
+    "copy": COMPRESSION_7Z_COPY,
+    "pbzip2": COMPRESSION_TAR_BZIP2,
+    "tar.gzip": COMPRESSION_TAR_GZIP,
+}
+
+
+def compression_for_premis_algorithm(algorithm: str) -> str:
+    """Return the compression that ``algorithm`` stands for, as named in a
+    PREMIS compression event of the pipeline.
+
+    Raises ``ValueError`` for an unknown name.
+    """
+    if algorithm not in _COMPRESSION_BY_PREMIS_ALGORITHM:
+        raise ValueError(f"Unknown compression algorithm: {algorithm}")
+    return _COMPRESSION_BY_PREMIS_ALGORITHM[algorithm]
+
+
 @dataclass(frozen=True)
 class Archive:
     """An archive created by :meth:`Archiver.compress`."""

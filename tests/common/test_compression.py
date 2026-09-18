@@ -21,6 +21,9 @@ from archivematica.storage_service.common.compression import Archiver
 from archivematica.storage_service.common.compression import CommandLineArchiver
 from archivematica.storage_service.common.compression import CompressionError
 from archivematica.storage_service.common.compression import archive_extension
+from archivematica.storage_service.common.compression import (
+    compression_for_premis_algorithm,
+)
 from archivematica.storage_service.common.compression import get_archiver
 from archivematica.storage_service.common.compression import override_archiver
 
@@ -272,6 +275,47 @@ def test_compress_rejects_an_unsupported_algorithm(
 ) -> None:
     with pytest.raises(ValueError, match="Unsupported compression: zip"):
         archiver.compress(package, tmp_path / "archives", "zip")
+
+
+@pytest.mark.parametrize(
+    ("algorithm", "compression"),
+    [
+        ("bzip2", COMPRESSION_7Z_BZIP),
+        ("lzma", COMPRESSION_7Z_LZMA),
+        ("copy", COMPRESSION_7Z_COPY),
+        ("pbzip2", COMPRESSION_TAR_BZIP2),
+        ("tar.gzip", COMPRESSION_TAR_GZIP),
+    ],
+)
+def test_compression_for_premis_algorithm_reads_the_names_the_pipeline_sends(
+    algorithm: str, compression: str
+) -> None:
+    assert compression_for_premis_algorithm(algorithm) == compression
+
+
+def test_compression_for_premis_algorithm_rejects_an_unknown_name() -> None:
+    with pytest.raises(ValueError, match="Unknown compression algorithm: zip"):
+        compression_for_premis_algorithm("zip")
+
+
+@pytest.mark.parametrize(
+    "compression", [COMPRESSION_7Z_BZIP, COMPRESSION_7Z_LZMA, COMPRESSION_7Z_COPY]
+)
+def test_compression_for_premis_algorithm_reads_back_the_7z_names_written(
+    package: Path, tmp_path: Path, compression: str
+) -> None:
+    """The 7z names this module writes in its own compression events read back
+    to the compression they were made with.
+    """
+
+    def run(command: Sequence[str]) -> subprocess.CompletedProcess[str]:
+        if command[:2] == ["7z", "a"]:
+            Path(command[-2]).write_bytes(b"archive")
+        return completed(command)
+
+    archive = CommandLineArchiver(run=run).compress(package, tmp_path, compression)
+
+    assert compression_for_premis_algorithm(archive.algorithm) == compression
 
 
 # The command line implementation, with the real tools.
