@@ -1600,7 +1600,7 @@ def test_extract_rein_aip_raises_storage_exception_when_listing_fails(
         override_archiver(_failing_archiver()),
         pytest.raises(models.StorageException, match="Error extracting reingested AIP"),
     ):
-        _extract_rein_aip(internal_location, str(archive))
+        _extract_rein_aip(internal_location, str(archive), utils.COMPRESSION_7Z_BZIP)
 
     assert archive.exists()
 
@@ -1620,11 +1620,41 @@ def test_extract_rein_aip_keeps_the_archive_when_extraction_fails(
             models.StorageException, match="exited with status 2: Data error"
         ),
     ):
-        _extract_rein_aip(internal_location, str(archive))
+        _extract_rein_aip(internal_location, str(archive), utils.COMPRESSION_7Z_BZIP)
 
     assert archive.exists()
     # What the tool extracted before failing is left for the operator.
     assert (partial_output / "partial.txt").exists()
+
+
+@pytest.mark.django_db
+def test_extract_rein_aip_extracts_with_the_tool_of_the_compression(
+    internal_location: models.Location, tmp_path: pathlib.Path
+) -> None:
+    """The reingested AIP is extracted by the tool of its compression, not by
+    detecting the format of the archive.
+    """
+    archive = tmp_path / "aip.7z"
+    archive.write_bytes(b"archive")
+    listing = '{"lsarContents": [{"XADFileName": "aip", "XADIsDirectory": 1}]}'
+    commands: list[list[str]] = []
+
+    def run(command: list[str]) -> subprocess.CompletedProcess[str]:
+        commands.append(list(command))
+        if command[0] == "lsar":
+            return subprocess.CompletedProcess(list(command), 0, listing, "")
+        extracted = pathlib.Path(internal_location.full_path) / "aip"
+        extracted.mkdir(parents=True, exist_ok=True)
+        return subprocess.CompletedProcess(list(command), 0, "", "")
+
+    with override_archiver(CommandLineArchiver(run=run)):
+        extracted = _extract_rein_aip(
+            internal_location, str(archive), utils.COMPRESSION_7Z_BZIP
+        )
+
+    assert extracted == os.path.join(internal_location.full_path, "aip")
+    assert [command[:2] for command in commands] == [["lsar", "-ja"], ["7z", "x"]]
+    assert not archive.exists()
 
 
 @pytest.mark.django_db

@@ -2285,17 +2285,13 @@ class Package(models.Model):
             rein_aip_internal_path
         )
 
-        # Extract reingested AIP, if needed
-        if rein_aip_is_compressed:
-            rein_aip_internal_path = _extract_rein_aip(
-                internal_location, rein_aip_internal_path
-            )
-
-        # Copy the pointer file, if it exists, from the origin location (e.g.,
-        # currently processing) to the internal location.
-        # ``rein_pointer_dst_full_path`` is the full path to the pointer file
-        # in the internal location, or ``None`` if no pointer file is needed.
+        # The compression of the reingested AIP comes from the pointer file,
+        # if the pipeline wrote one beside it, or else from the PREMIS events
+        # it sent. ``rein_pointer_dst_full_path`` is the full path the pointer
+        # file will have in the internal location, or ``None`` if no pointer
+        # file is needed.
         rein_pointer_dst_full_path = None
+        compression = None
         if self.package_type in (Package.AIP, Package.AIC) and to_be_compressed:
             (
                 reingest_pointer_name,
@@ -2312,12 +2308,34 @@ class Package(models.Model):
                 internal_location,
             )
             if os.path.isfile(reingest_pointer_src_full_path):
-                origin_space.move_to_storage_service(
-                    reingest_pointer_src, reingest_pointer_name, internal_space
+                compression = utils.get_compression(reingest_pointer_src_full_path)
+                LOGGER.info('Extracted compression "%s" from pointer file', compression)
+            else:
+                compression = _get_compression_from_premis_events(
+                    premis_events, self.uuid
                 )
-                internal_space.move_from_storage_service(
-                    reingest_pointer_name, reingest_pointer_dst, package=None
-                )
+
+        # Extract the reingested AIP, if needed, with the tool of the
+        # compression the pipeline recorded, as the stored AIP is, rather
+        # than by detecting the format of the archive.
+        if rein_aip_is_compressed:
+            rein_aip_internal_path = _extract_rein_aip(
+                internal_location, rein_aip_internal_path, compression
+            )
+
+        # Copy the pointer file, if it exists, from the origin location (e.g.,
+        # currently processing) to the internal location.
+        if (
+            self.package_type in (Package.AIP, Package.AIC)
+            and to_be_compressed
+            and os.path.isfile(reingest_pointer_src_full_path)
+        ):
+            origin_space.move_to_storage_service(
+                reingest_pointer_src, reingest_pointer_name, internal_space
+            )
+            internal_space.move_from_storage_service(
+                reingest_pointer_name, reingest_pointer_dst, package=None
+            )
 
         # 2. Replace the old AIP's METS file with the reingested AIP's mets
         #    file.
@@ -2344,20 +2362,13 @@ class Package(models.Model):
         #    validate it.
         _update_bag_payload_and_verify(old_aip_internal_path)
 
-        compression = None
         if to_be_compressed:
             if os.path.isfile(rein_pointer_dst_full_path):
-                compression = utils.get_compression(rein_pointer_dst_full_path)
                 # If updating, rather than creating a new pointer file, delete
                 # this pointer file. TODO: this is maybe not a good idea and
                 # might be what is messing with encrypted re-ingest...
-                LOGGER.info(f'Extracted compression "{compression}" from pointer file')
                 if was_compressed:
                     os.remove(rein_pointer_dst_full_path)
-            else:
-                compression = _get_compression_from_premis_events(
-                    premis_events, self.uuid
-                )
 
         # 6. Compress the re-ingested AIP (if necessary) and get the local path
         #    to it and to its parent directory. At this point ``updated_aip``
@@ -2755,16 +2766,23 @@ class Package(models.Model):
         return clone
 
 
-def _extract_rein_aip(internal_location: Location, rein_aip_internal_path: str) -> str:
+def _extract_rein_aip(
+    internal_location: Location,
+    rein_aip_internal_path: str,
+    compression: str | None,
+) -> str:
     """Extract the reingested AIP (package) at ``rein_aip_internal_path`` and
     return the path to the resulting directory.
+
+    ``compression`` selects the tool that extracts it; without it the format
+    is detected.
     """
     if os.path.isfile(rein_aip_internal_path):
         archive = Path(rein_aip_internal_path)
         LOGGER.info("Extracting reingested AIP %s", archive)
         try:
             extracted = get_archiver().extract(
-                archive, Path(internal_location.full_path)
+                archive, Path(internal_location.full_path), compression
             )
         except CompressionError as err:
             raise StorageException(

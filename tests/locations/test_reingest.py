@@ -34,6 +34,7 @@ from django.test import Client
 from metsrw.plugins import premisrw
 
 from archivematica.storage_service.common.compression import COMPRESSION_7Z_BZIP
+from archivematica.storage_service.common.compression import COMPRESSION_7Z_LZMA
 from archivematica.storage_service.common.compression import Archive
 from archivematica.storage_service.common.compression import Archiver
 from archivematica.storage_service.common.compression import CompressionError
@@ -84,8 +85,11 @@ def _get_size(path: Path) -> int:
     )
 
 
-def _compression_event() -> tuple[object, ...]:
-    """Return the PREMIS compression event the pipeline sends when storing."""
+def _compression_event(algorithm: str = "bzip2") -> tuple[object, ...]:
+    """Return the PREMIS compression event the pipeline sends when storing.
+
+    ``algorithm`` is the compression algorithm the event detail names.
+    """
     return (
         "event",
         premisrw.PREMIS_META,
@@ -102,7 +106,7 @@ def _compression_event() -> tuple[object, ...]:
                 "program=7z; "
                 "version=p7zip Version 16.02 "
                 "(locale=en_US.UTF-8,Utf16=on,HugeFiles=on,2 CPUs); "
-                "algorithm=bzip2"
+                f"algorithm={algorithm}"
             ),
         ),
         (
@@ -967,8 +971,13 @@ def _finish_reingest(
     storage_location: models.Location,
     current_path: str,
     size: int,
+    compression_algorithm: str = "bzip2",
 ) -> tuple[int, dict[str, object]]:
-    """Store the reingested AIP as the pipeline does at the end of a reingest."""
+    """Store the reingested AIP as the pipeline does at the end of a reingest.
+
+    ``compression_algorithm`` is the algorithm named in the compression event
+    sent with the request.
+    """
     response = client.put(
         f"/api/v2/file/{package.uuid}/",
         json.dumps(
@@ -982,7 +991,7 @@ def _finish_reingest(
                 "package_type": models.Package.AIP,
                 "aip_subtype": "Archival Information Package",
                 "origin_pipeline": f"/api/v2/pipeline/{pipeline.uuid}/",
-                "events": [_compression_event()],
+                "events": [_compression_event(compression_algorithm)],
                 "agents": [_agent()],
                 "reingest": True,
             }
@@ -1692,3 +1701,86 @@ def test_finish_reingest_failure_leaves_the_stored_aip_alone(
         assert (internal / archive.name).is_file()
     else:
         assert (internal / reingested.name).is_dir()
+
+
+class _RecordingArchiver:
+    """Wrap an archiver, recording the compression each extraction is given."""
+
+    def __init__(self, inner: Archiver) -> None:
+        self.inner = inner
+        self.extractions: list[tuple[Path, str | None]] = []
+
+    def compress(
+        self, source: Path, destination_dir: Path, compression: str
+    ) -> Archive:
+        return self.inner.compress(source, destination_dir, compression)
+
+    def extract(
+        self,
+        archive: Path,
+        destination_dir: Path,
+        compression: str | None = None,
+        member: str | None = None,
+    ) -> Path:
+        self.extractions.append((archive, compression))
+        return self.inner.extract(archive, destination_dir, compression, member)
+
+    def root_directory(self, archive: Path) -> str:
+        return self.inner.root_directory(archive)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("storage", ["local"], indirect=True)
+@pytest.mark.parametrize(
+    ("compression_algorithm", "compression"),
+    [("bzip2", COMPRESSION_7Z_BZIP), ("lzma", COMPRESSION_7Z_LZMA)],
+)
+def test_finish_reingest_extracts_the_reingested_aip_with_its_compression(
+    admin_client: Client,
+    aip_builder: AIPBuilder,
+    store_aip: StoreAIP,
+    fake_archiver: Archiver,
+    pipeline: models.Pipeline,
+    currently_processing: models.Location,
+    internal_location: models.Location,
+    storage: Storage,
+    compression_algorithm: str,
+    compression: str,
+) -> None:
+    """The compression event sent with the reingested AIP selects the tool
+    that extracts it, rather than the format detected from the archive.
+    """
+    package = store_aip(compressed=False).package
+    status_code, _ = _request_reingest(
+        admin_client,
+        package,
+        {"pipeline": str(pipeline.uuid), "reingest_type": models.Package.METADATA_ONLY},
+    )
+    assert status_code == 202
+    reingested = aip_builder.build(
+        Path(currently_processing.full_path) / "reingested",
+        package.uuid,
+        f"aip-{package.uuid}",
+        payload=_reingested_payload(),
+        mets=REINGESTED_METS,
+    )
+    archive = aip_builder.compress(reingested, compression)
+    archiver = _RecordingArchiver(fake_archiver)
+
+    with override_archiver(archiver):
+        status_code, _ = _finish_reingest(
+            admin_client,
+            package,
+            pipeline=pipeline,
+            origin_location=currently_processing,
+            origin_path=f"reingested/{archive.name}",
+            storage_location=storage.location,
+            current_path=archive.name,
+            size=_get_size(archive),
+            compression_algorithm=compression_algorithm,
+        )
+
+    assert status_code in {200, 202}
+    assert archiver.extractions == [
+        (Path(internal_location.full_path) / archive.name, compression)
+    ]
