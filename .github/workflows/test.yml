@@ -53,6 +53,7 @@ jobs:
           cache-from: "type=gha,scope=archivematica-storage-service-tests-${{ matrix.ubuntu-version }}-${{ matrix.python-version }}"
           cache-to: "type=gha,scope=archivematica-storage-service-tests-${{ matrix.ubuntu-version }}-${{ matrix.python-version }},mode=max"
       - name: "Run tests"
+        id: "run-tests"
         run: |
           ./run.sh
         shell: "bash"
@@ -62,9 +63,29 @@ jobs:
           GROUP_ID: ${{ steps.group_id.outputs.group_id }}
           UBUNTU_VERSION: ${{ matrix.ubuntu-version }}
           PYTHON_VERSION: ${{ matrix.python-version }}
+          REUSE_TEST_ENV: 1
           COMPOSE_DOCKER_CLI_BUILD: 1
           DOCKER_BUILDKIT: 1
-          PYTEST_ADDOPTS: -vv --cov --cov-config=pyproject.toml --cov-report xml:coverage.xml
+          PYTEST_ADDOPTS: -vv --cov --cov-config=pyproject.toml --cov-report xml:coverage.xml --tracing retain-on-failure --screenshot only-on-failure
+      - name: "Save docker logs on failure"
+        if: "${{ (failure() && steps.run-tests.outcome == 'failure') || (cancelled() && steps.run-tests.outcome == 'cancelled') }}"
+        run: |
+          mkdir -p docker-logs
+          docker compose logs --no-color > docker-logs/docker-compose.log
+          docker compose ps --all > docker-logs/docker-compose-ps.log
+        working-directory: "tests/integration"
+      - name: "Upload docker logs on failure"
+        if: "${{ (failure() && steps.run-tests.outcome == 'failure') || (cancelled() && steps.run-tests.outcome == 'cancelled') }}"
+        uses: "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" # v7.0.1
+        with:
+          name: "docker-logs-${{ matrix.ubuntu-version }}-${{ matrix.python-version }}"
+          path: "tests/integration/docker-logs"
+      - name: "Upload Playwright traces on failure"
+        if: "${{ (failure() && steps.run-tests.outcome == 'failure') || (cancelled() && steps.run-tests.outcome == 'cancelled') }}"
+        uses: "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" # v7.0.1
+        with:
+          name: "playwright-traces-${{ matrix.ubuntu-version }}-${{ matrix.python-version }}"
+          path: "test-results"
       - name: "Upload coverage report"
         if: github.repository == 'artefactual/archivematica-storage-service'
         uses: "codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4" # v7.1.0

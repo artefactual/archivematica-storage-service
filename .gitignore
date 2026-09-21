@@ -26,3 +26,9 @@
 
 # setuptools build
 **/*.egg-info
+
+# Playwright traces of failed integration tests
+test-results/
+
+# Container logs saved from a failed integration run
+tests/integration/docker-logs/
