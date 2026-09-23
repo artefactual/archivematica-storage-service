@@ -163,7 +163,9 @@ def test_rclone_ensure_container_exists(
     else:
         with pytest.raises(models.StorageException):
             rclone_space._ensure_container_exists()
-            subprocess.assert_called_with(["mkdir", "testremote:testcontainer"])
+
+    args, _ = subprocess.Popen.call_args
+    assert args[0] == ["rclone", "mkdir", "testremote:testcontainer"]
 
 
 @pytest.mark.parametrize(
