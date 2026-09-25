@@ -7,7 +7,7 @@
 #                         service runs the unit tests and the storage suites;
 #                         the authentication suites run in dedicated services
 #                         (archivematica-storage-service-oidc, -cas, -ldap,
-#                         -shibboleth, ...) because their Django settings
+#                         -shibboleth, -azure, ...) because their Django settings
 #                         cannot all be enabled at once.
 #   SKIP_DOCKER_BUILD     When set, use the images already built.
 #   PYTEST_ADDOPTS        Extra pytest options, e.g. "-k expr".
@@ -39,6 +39,11 @@ if [ -z "${SKIP_DOCKER_BUILD}" ]; then
         archivematica-storage-service-shibboleth)
             # The Shibboleth service also needs the service provider image.
             docker compose build archivematica-storage-service shibboleth-sp
+            ;;
+        archivematica-storage-service-azure)
+            # The Azure service reuses the image built by the default service
+            # and pulls the entra-local image.
+            docker compose build archivematica-storage-service
             ;;
         *)
             docker compose build "${INTEGRATION_SERVICE}"
