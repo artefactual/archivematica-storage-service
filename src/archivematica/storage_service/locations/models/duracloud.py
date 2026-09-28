@@ -525,3 +525,25 @@ class Duracloud(models.Model):
             raise StorageException(
                 _("%(path)s is not a file or directory.") % {"path": source_path}
             )
+
+    def post_move_from_storage_service(
+        self, staging_path, destination_path, package=None
+    ):
+        """
+        Delete staging files after successful upload to DuraCloud.
+
+        DuraCloud uploads files to remote object storage rather than moving them
+        locally, so the staging copy needs to be explicitly removed after upload.
+        """
+        if staging_path and os.path.exists(staging_path):
+            try:
+                if os.path.isdir(staging_path):
+                    shutil.rmtree(staging_path)
+                    LOGGER.info("Deleted staging directory: %s", staging_path)
+                elif os.path.isfile(staging_path):
+                    os.remove(staging_path)
+                    LOGGER.info("Deleted staging file: %s", staging_path)
+            except OSError:
+                LOGGER.warning(
+                    "Unable to remove staging path %s", staging_path, exc_info=True
+                )
