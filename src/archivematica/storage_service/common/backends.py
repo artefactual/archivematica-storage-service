@@ -68,6 +68,7 @@ class CustomOIDCBackend(OIDCAuthenticationBackend):
             "OIDC_ROLE_CLAIM_MANAGER",
             "OIDC_ROLE_CLAIM_REVIEWER",
             "OIDC_ROLE_CLAIM_READER",
+            "OIDC_CREATE_USER",
         ]:
             # Retrieve the request object stored in the instance.
             request = getattr(self, "request", None)
@@ -79,11 +80,15 @@ class CustomOIDCBackend(OIDCAuthenticationBackend):
                     provider_settings = settings.OIDC_PROVIDERS.get(provider_name, {})
                     value = provider_settings.get(attr)
 
-                    if value is None:
+                    if value is not None:
+                        return value
+
+                    # A provider sets OIDC_CREATE_USER only to override the
+                    # global setting, which applies otherwise.
+                    if attr != "OIDC_CREATE_USER":
                         raise ImproperlyConfigured(
                             f"Setting {attr} for provider {provider_name} not found"
                         )
-                    return value
 
         # If request is None or provider_name session var is not set or attr is
         # not in the list, call the superclass's get_settings method.
