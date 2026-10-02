@@ -1,6 +1,6 @@
 repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.16.8
+  rev: v0.16.10
   hooks:
   - id: ruff
     args: [--fix, --exit-non-zero-on-fix]
@@ -28,7 +28,7 @@ repos:
         install/README\.md
       )
 - repo: https://github.com/pre-commit/mirrors-mypy
-  rev: v2.3.1
+  rev: v2.4.0
   hooks:
   - id: mypy
     # Override upstream args to omit --ignore-missing-imports on purpose.
