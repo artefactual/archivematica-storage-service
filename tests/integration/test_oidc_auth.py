@@ -7,6 +7,7 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
 from django.urls import reverse
 from playwright.sync_api import Page
+from playwright.sync_api import expect
 from pytest_django import Settings
 from pytest_django.live_server_helper import LiveServer
 from pytest_django.plugin import DjangoDbBlocker
@@ -304,3 +305,127 @@ def test_logout_link_logs_out_user(
     page.get_by_role("button", name="Log out").click()
 
     assert page.url == f"{live_server.url}{reverse('login')}"
+
+
+def log_in_with_openid_connect(page: Page, username: str, password: str) -> None:
+    page.get_by_role("link", name="Log in with OpenID Connect").click()
+    page.get_by_label("Username or email").fill(username)
+    page.get_by_label("Password", exact=True).fill(password)
+    page.get_by_role("button", name="Sign In").click()
+
+
+def secondary_provider_login_url(live_server: LiveServer, settings: Settings) -> str:
+    return f"{live_server.url}{reverse('login')}?{settings.OIDC_PROVIDER_QUERY_PARAM_NAME}=SECONDARY"
+
+
+def set_secondary_provider_setting(
+    settings: Settings, name: str, value: object
+) -> None:
+    """Give the secondary provider a setting of its own.
+
+    The providers are replaced as a whole so that the settings fixture restores
+    them after the test.
+    """
+    settings.OIDC_PROVIDERS = {
+        **settings.OIDC_PROVIDERS,
+        "SECONDARY": {**settings.OIDC_PROVIDERS["SECONDARY"], name: value},
+    }
+
+
+@pytest.mark.django_db
+def test_oidc_backend_does_not_create_local_user_when_creation_is_disabled(
+    page: Page,
+    live_server: LiveServer,
+    django_user_model: type[AbstractUser],
+    settings: Settings,
+) -> None:
+    settings.OIDC_CREATE_USER = False
+
+    page.goto(live_server.url)
+    log_in_with_openid_connect(page, "demo@example.com", "demo")
+
+    # The login fails and the browser ends up on the login page again.
+    expect(page).to_have_url(f"{live_server.url}{reverse('login')}?next=/")
+    assert not django_user_model.objects.filter(username="demo@example.com").exists()
+
+
+@pytest.mark.django_db
+def test_oidc_backend_authenticates_existing_user_when_creation_is_disabled(
+    page: Page,
+    live_server: LiveServer,
+    django_user_model: type[AbstractUser],
+    settings: Settings,
+) -> None:
+    settings.OIDC_CREATE_USER = False
+    django_user_model.objects.create_user(
+        username="demo@example.com",
+        email="demo@example.com",
+        first_name="Demo",
+        last_name="User",
+    )
+
+    page.goto(live_server.url)
+    log_in_with_openid_connect(page, "demo@example.com", "demo")
+
+    expect(page).to_have_url(f"{live_server.url}/")
+    assert django_user_model.objects.filter(username="demo@example.com").count() == 1
+
+
+@pytest.mark.django_db
+def test_secondary_provider_follows_the_global_create_user_setting(
+    page: Page,
+    live_server: LiveServer,
+    django_user_model: type[AbstractUser],
+    settings: Settings,
+) -> None:
+    settings.OIDC_CREATE_USER = False
+
+    page.goto(secondary_provider_login_url(live_server, settings))
+    log_in_with_openid_connect(page, "supportreader@example.com", "support")
+
+    expect(page).to_have_url(f"{live_server.url}{reverse('login')}?next=/")
+    assert not django_user_model.objects.filter(
+        username="supportreader@example.com"
+    ).exists()
+
+
+@pytest.mark.django_db
+def test_secondary_provider_create_user_setting_overrides_the_global_one(
+    page: Page,
+    live_server: LiveServer,
+    django_user_model: type[AbstractUser],
+    settings: Settings,
+) -> None:
+    settings.OIDC_CREATE_USER = False
+    set_secondary_provider_setting(settings, "OIDC_CREATE_USER", True)
+
+    page.goto(secondary_provider_login_url(live_server, settings))
+    log_in_with_openid_connect(page, "supportreader@example.com", "support")
+
+    expect(page).to_have_url(f"{live_server.url}/")
+    assert (
+        django_user_model.objects.filter(
+            username="supportreader@example.com",
+            first_name="SupportReader",
+            last_name="User",
+        ).count()
+        == 1
+    )
+
+
+@pytest.mark.django_db
+def test_secondary_provider_can_disable_user_creation_on_its_own(
+    page: Page,
+    live_server: LiveServer,
+    django_user_model: type[AbstractUser],
+    settings: Settings,
+) -> None:
+    set_secondary_provider_setting(settings, "OIDC_CREATE_USER", False)
+
+    page.goto(secondary_provider_login_url(live_server, settings))
+    log_in_with_openid_connect(page, "supportreader@example.com", "support")
+
+    expect(page).to_have_url(f"{live_server.url}{reverse('login')}?next=/")
+    assert not django_user_model.objects.filter(
+        username="supportreader@example.com"
+    ).exists()
