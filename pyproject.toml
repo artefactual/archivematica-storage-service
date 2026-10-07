@@ -79,7 +79,7 @@ issues = "https://github.com/archivematica/Issues/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include=["archivematica.storage_service*"]
+include=["archivematica*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "archivematica.storage_service.storage_service.__version__"}
