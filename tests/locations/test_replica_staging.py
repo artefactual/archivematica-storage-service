@@ -2,43 +2,53 @@ import pathlib
 import uuid
 
 import pytest
-from django.core.management import call_command
 from metsrw.plugins import premisrw
 
 from archivematica.storage_service.locations import models
-
-FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
-
-
-@pytest.fixture
-def replica_staging_fixtures(db: None) -> None:
-    call_command(
-        "loaddata",
-        *[str(FIXTURES_DIR / name) for name in ["base.json", "replica_staging.json"]],
-        verbosity=0,
-    )
+from archivematica.storage_service.locations.models.replica_staging import (
+    OfflineReplicaStaging,
+)
 
 
 @pytest.fixture
-def replica(replica_staging_fixtures: None, tmp_path: pathlib.Path) -> models.Package:
-    """The package of the offline replica staging space, with the spaces and
+def replica(
+    default_space: models.Space,
+    default_ss_internal: models.Location,
+    tmp_path: pathlib.Path,
+) -> models.Package:
+    """A package of an offline replica staging space, with the spaces and
     the internal location of the Storage Service in the temporary directory.
     """
-    result = models.Package.objects.get(id=1)
-    result.current_location.space.staging_path = str(tmp_path)
-    result.current_location.space.save()
+    space = models.Space.objects.create(
+        uuid=uuid.UUID("eb4348c7-5ec9-432d-b451-93214860aae2"),
+        access_protocol=models.Space.OFFLINE_REPLICA_STAGING,
+        path="/archivematica",
+        staging_path=str(tmp_path),
+    )
+    OfflineReplicaStaging.objects.create(space=space)
+    location = models.Location.objects.create(
+        uuid=uuid.UUID("ac3dc2d0-8422-4067-bb25-dd3cc1c54c2c"),
+        space=space,
+        purpose=models.Location.REPLICATOR,
+        relative_path="offlinestaging",
+        description="offline replica staging",
+    )
 
-    space = models.Space.objects.get(id=1)
-    space.path = str(tmp_path)
-    space.save()
+    default_space.path = str(tmp_path)
+    default_space.save()
 
-    location = models.Location.objects.get(id=5)
     ss_internal_dir = tmp_path / "internal"
     ss_internal_dir.mkdir()
-    location.relative_path = str(ss_internal_dir.relative_to(tmp_path))
-    location.save()
+    default_ss_internal.relative_path = str(ss_internal_dir.relative_to(tmp_path))
+    default_ss_internal.save()
 
-    return result
+    return models.Package.objects.create(
+        uuid=uuid.UUID("216a6d25-d705-4d00-86c3-02f51c66a0c0"),
+        current_location=location,
+        current_path="locations/fixtures/small_compressed_bag.zip",
+        package_type="AIP",
+        status="Uploaded",
+    )
 
 
 def test_delete(replica: models.Package) -> None:

@@ -1,24 +1,8 @@
-import pathlib
-
-import pytest
-from django.core.management import call_command
-
 from archivematica.storage_service.locations import forms
 from archivematica.storage_service.locations import models
 
-FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
-
-@pytest.fixture
-def pipeline_fixtures(db: None) -> None:
-    call_command(
-        "loaddata",
-        *[str(FIXTURES_DIR / name) for name in ["base.json", "pipelines.json"]],
-        verbosity=0,
-    )
-
-
-def test_clean_works(pipeline_fixtures: None) -> None:
+def test_clean_works(pipeline_rows: list[models.Pipeline]) -> None:
     pipelines = models.Pipeline.objects.all()
     form_data = {
         "purpose": "TS",
@@ -32,7 +16,7 @@ def test_clean_works(pipeline_fixtures: None) -> None:
     assert form.is_valid()
 
 
-def test_clean_aip_recovery_fine(pipeline_fixtures: None) -> None:
+def test_clean_aip_recovery_fine(pipeline_rows: list[models.Pipeline]) -> None:
     pipeline_without_ar = models.Pipeline.objects.filter(
         uuid="d2df89dc-9443-48dd-8983-55e9d1f92bcb"
     )
@@ -48,7 +32,7 @@ def test_clean_aip_recovery_fine(pipeline_fixtures: None) -> None:
     assert form.is_valid()
 
 
-def test_clean_aip_recovery_error(pipeline_fixtures: None) -> None:
+def test_clean_aip_recovery_error(pipeline_rows: list[models.Pipeline]) -> None:
     pipeline_with_ar = models.Pipeline.objects.filter(
         uuid="b25f6b71-3ebf-4fcc-823c-1feb0a2553dd"
     )

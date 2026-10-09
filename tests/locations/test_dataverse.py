@@ -1,40 +1,71 @@
 import os
 import pathlib
+import uuid
 from unittest import mock
 
 import pytest
-from django.core.management import call_command
 
 from archivematica.storage_service.locations import models
 from archivematica.storage_service.locations.models.dataverse import Dataverse
 
-FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
+
+def _create_dataverse(
+    space_uuid: str, location_uuid: str, relative_path: str, **fields: str
+) -> Dataverse:
+    """Create a Dataverse space with its transfer source location."""
+    space = models.Space.objects.create(
+        uuid=uuid.UUID(space_uuid),
+        access_protocol=models.Space.DATAVERSE,
+        path="",
+        staging_path="/var/archivematica/storage_service/",
+    )
+    models.Location.objects.create(
+        uuid=uuid.UUID(location_uuid),
+        space=space,
+        purpose=models.Location.TRANSFER_SOURCE,
+        relative_path=relative_path,
+        description="",
+    )
+
+    return Dataverse.objects.create(space=space, **fields)
 
 
 @pytest.fixture
-def dataverse_fixtures(db: None) -> None:
-    call_command(
-        "loaddata",
-        *[
-            str(FIXTURES_DIR / name)
-            for name in ["base.json", "dataverse.json", "dataverse2.json"]
-        ],
-        verbosity=0,
+def dataverse(db: None) -> Dataverse:
+    """The Dataverse space of the example network."""
+    return _create_dataverse(
+        "216bec3b-c4c1-4eff-97ef-728244e58dd0",
+        "da1c729d-0b17-4c48-91d5-127f38f7542d",
+        "*",
+        host="apitest.dataverse.org",
+        api_key="testkeys-77a8-49a3-874e-be1148e7c970",
+        agent_name="Example Dataverse Network",
+        agent_type="organization",
+        agent_identifier="http://dataverse.example.com/dvn/",
     )
 
 
 @pytest.fixture
-def dataverse(dataverse_fixtures: None) -> Dataverse:
-    return Dataverse.objects.all()[0]
+def demo_dataverse(db: None) -> Dataverse:
+    """The Dataverse space of the Scholars Portal demo instance."""
+    return _create_dataverse(
+        "d18a2763-60f0-4273-b30c-caa5d14d6d32",
+        "3af8a6a1-19f3-40be-87aa-bfa0940a1944",
+        "test",
+        host="demodv.scholarsportal.info",
+        api_key="51c64df4-abd7-4613-af21-6a68715dca92",
+        agent_name="Archivematica Test Dataverse",
+        agent_type="TestOrganisation",
+        agent_identifier="https://demodv.scholarsportal.info/dataverse/archivematica",
+    )
 
 
 @pytest.fixture
-def fs_space(dataverse_fixtures: None, tmp_path: pathlib.Path) -> models.Space:
+def fs_space(default_space: models.Space, tmp_path: pathlib.Path) -> models.Space:
     """The local filesystem space, staging in the temporary directory."""
-    result = models.Space.objects.get(access_protocol="FS")
-    result.staging_path = str(tmp_path)
+    default_space.staging_path = str(tmp_path)
 
-    return result
+    return default_space
 
 
 def test_has_required_attributes(dataverse: Dataverse) -> None:
@@ -344,13 +375,14 @@ def test_browse_all(_requests_get: mock.MagicMock, dataverse: Dataverse) -> None
         ),
     ],
 )
-@pytest.mark.usefixtures("dataverse_fixtures")
-def test_browse_datasets(_requests_get: mock.MagicMock) -> None:
+def test_browse_datasets(
+    _requests_get: mock.MagicMock, demo_dataverse: Dataverse
+) -> None:
     """
     It should fetch a list of datasets.
     It should fetch a list of objects within a dataset.
     """
-    dataverse = Dataverse.objects.get(agent_name="Archivematica Test Dataverse")
+    dataverse = demo_dataverse
     location = dataverse.space.location_set.get(purpose="TS")
 
     # Get all datasets in a location

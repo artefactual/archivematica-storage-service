@@ -5,7 +5,6 @@ import uuid
 from unittest import mock
 
 import pytest
-from django.core.management import call_command
 
 from archivematica.storage_service.locations import models
 from archivematica.storage_service.locations.models.dspace import DSpace
@@ -14,17 +13,41 @@ FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
 
 @pytest.fixture
-def dspace_fixtures(db: None) -> None:
-    call_command(
-        "loaddata",
-        *[str(FIXTURES_DIR / name) for name in ["base.json", "dspace.json"]],
-        verbosity=0,
+def dspace(db: None) -> DSpace:
+    """The DSpace space of the demo instance."""
+    space = models.Space.objects.create(
+        uuid=uuid.UUID("e764565a-5150-486a-93c6-ae78bec4b54b"),
+        access_protocol=models.Space.DSPACE,
+        path="",
+        staging_path="/var/archivematica/storage_service/",
+    )
+
+    return DSpace.objects.create(
+        space=space,
+        sd_iri="http://demo.dspace.org/swordv2/servicedocument",
+        user="dspacedemo+admin@gmail.com",
+        password="dspace",
     )
 
 
 @pytest.fixture
-def dspace(dspace_fixtures: None) -> DSpace:
-    return DSpace.objects.get(id=1)
+def dspace_package(dspace: DSpace) -> models.Package:
+    """A compressed AIP stored in the collection of the DSpace space."""
+    location = models.Location.objects.create(
+        uuid=uuid.UUID("d9d7db26-f7a1-40aa-9db1-806b4d3a61cd"),
+        space=dspace.space,
+        purpose=models.Location.AIP_STORAGE,
+        relative_path="http://demo.dspace.org/swordv2/collection/123456789/2",
+        description="DSpace AS",
+    )
+
+    return models.Package.objects.create(
+        uuid=uuid.UUID("1056123d-8a16-49c2-ac51-8e5fa367d8b5"),
+        current_location=location,
+        current_path="locations/fixtures/small_compressed_bag.zip",
+        package_type="AIP",
+        status="Uploaded",
+    )
 
 
 def test_has_required_attributes(dspace: DSpace) -> None:
@@ -163,11 +186,12 @@ def test_move_from_ss(
     _requests_post: mock.MagicMock,
     _request: mock.MagicMock,
     dspace: DSpace,
+    dspace_package: models.Package,
     tmp_path: pathlib.Path,
 ) -> None:
     # Create test.txt
     (tmp_path / "test.txt").open("w").write("test file\n")
-    package = models.Package.objects.get(uuid="1056123d-8a16-49c2-ac51-8e5fa367d8b5")
+    package = dspace_package
     shutil.copy(os.path.join(FIXTURES_DIR, "small_compressed_bag.zip"), str(tmp_path))
     path = str(tmp_path / "small_compressed_bag.zip")
 

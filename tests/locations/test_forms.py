@@ -1,21 +1,12 @@
-import pathlib
-
 import pytest
-from django.core.management import call_command
 
 from archivematica.storage_service.locations import forms
 from archivematica.storage_service.locations import models
 
-CALLBACK_FIXTURE = pathlib.Path(__file__).parent / "fixtures" / "callback.json"
-
 
 @pytest.fixture
-def callback_fixtures(db: None) -> None:
-    call_command("loaddata", str(CALLBACK_FIXTURE), verbosity=0)
-
-
-@pytest.fixture
-def callback(callback_fixtures: None) -> models.Callback:
+def callback(callback_rows: list[models.Callback]) -> models.Callback:
+    """The DIP callback, which sends headers."""
     return models.Callback.objects.get(uuid="ef0672a2-d0ed-474b-95f6-ff8f9ea1fc15")
 
 

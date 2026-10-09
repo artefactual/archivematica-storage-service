@@ -1,26 +1,24 @@
-import pathlib
+import uuid
 from unittest import mock
 
 import pytest
-from django.core.management import call_command
 
+from archivematica.storage_service.locations import models
 from archivematica.storage_service.locations.models.lockssomatic import Lockssomatic
 
-FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
-
 
 @pytest.fixture
-def lockssomatic_fixtures(db: None) -> None:
-    call_command(
-        "loaddata",
-        *[str(FIXTURES_DIR / name) for name in ["base.json", "lockssomatic.json"]],
-        verbosity=0,
+def lockssomatic(db: None) -> Lockssomatic:
+    """A LOCKSS-O-Matic space keeping its packages locally."""
+    space = models.Space.objects.create(
+        uuid=uuid.UUID("584e029f-a23e-4764-b7d7-ea6a808691c2"),
+        access_protocol=models.Space.LOM,
+        path="/tmp/",
     )
 
-
-@pytest.fixture
-def lockssomatic(lockssomatic_fixtures: None) -> Lockssomatic:
-    return Lockssomatic.objects.all()[0]
+    return Lockssomatic.objects.create(
+        space=space, sd_iri="http://localhost:9000/sd-uri", keep_local=True
+    )
 
 
 @mock.patch("httplib2.Http.request", side_effect=[(mock.Mock(status=200), "")])

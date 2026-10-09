@@ -17,7 +17,6 @@ import bagit
 import pytest
 from django.contrib.auth.models import User
 from django.contrib.messages import get_messages
-from django.core.management import call_command
 from django.test import Client
 from django.urls import reverse
 
@@ -32,12 +31,7 @@ if TYPE_CHECKING:
 
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
-# Fixture files are not cleanly separated, with potential for
-# enumeration of PKs across both:
-#
-#   * 13 Packages in package.json
-#   * 2 packages in Arkivum.json
-#
+# The thirteen packages of the package rows and the two of the Arkivum space.
 TOTAL_FIXTURE_PACKAGES = 15
 
 TEST_CHECKSUM_HASHDIGEST = (
@@ -119,18 +113,15 @@ def _point_location_at_on_disk_storage(
 
 
 @pytest.fixture
-def package_fixtures(db: None) -> None:
-    """The packages of the JSON fixtures, with the AIP storage and Arkivum
+def package_fixtures(
+    base_rows: None,
+    package_rows: list[models.Package],
+    arkivum_packages: list[models.Package],
+    callback_rows: list[models.Callback],
+) -> None:
+    """The packages of the fixtures, with the AIP storage and Arkivum
     locations pointing at the fixtures directory.
     """
-    call_command(
-        "loaddata",
-        *[
-            str(FIXTURES_DIR / name)
-            for name in ["base.json", "package.json", "arkivum.json", "callback.json"]
-        ],
-        verbosity=0,
-    )
     packages = models.Package.objects.all()
     assert len(packages) == TOTAL_FIXTURE_PACKAGES, (
         f"Packages not loaded from fixtures correctly, got '{len(packages)}' expected '{TOTAL_FIXTURE_PACKAGES}'"
@@ -147,7 +138,7 @@ def package_fixtures(db: None) -> None:
 
 @pytest.fixture
 def first_package(package_fixtures: None) -> models.Package:
-    """The first package of the JSON fixtures, a transfer."""
+    """The first package of the fixtures, a transfer."""
     return models.Package.objects.all()[0]
 
 

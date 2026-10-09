@@ -1,14 +1,10 @@
-import pathlib
 from uuid import uuid4
 
 import metsrw
 import pytest
-from django.core.management import call_command
 from metsrw.plugins import premisrw
 
 from archivematica.storage_service.locations import models
-
-FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
 TEST_PREMIS_OBJECT_UUID = str(uuid4())
 TEST_PREMIS_OBJECT_MESSAGE_DIGEST_ALGORITHM = "sha256"
@@ -159,17 +155,9 @@ TEST_PREMIS_EVENT = (
 
 
 @pytest.fixture
-def package_fixtures(db: None) -> None:
-    call_command(
-        "loaddata",
-        *[str(FIXTURES_DIR / name) for name in ["base.json", "package.json"]],
-        verbosity=0,
-    )
-
-
-@pytest.fixture
-def package(package_fixtures: None) -> models.Package:
-    return models.Package.objects.all()[0]
+def package(transfer_packages: list[models.Package]) -> models.Package:
+    """The first package of the fixtures, a transfer."""
+    return transfer_packages[0]
 
 
 def test_create_pointer_file(package: models.Package) -> None:

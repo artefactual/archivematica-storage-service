@@ -10,7 +10,6 @@ from urllib.parse import urlparse
 
 import pytest
 from django.contrib.auth.models import User
-from django.core.management import call_command
 from django.http import HttpResponseBase
 from django.http import HttpResponseRedirect
 from django.http import StreamingHttpResponse
@@ -25,10 +24,6 @@ from archivematica.storage_service.locations.api.sword.views import (
 )
 
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
-
-
-def _load_fixtures(*names: str) -> None:
-    call_command("loaddata", *[str(FIXTURES_DIR / name) for name in names], verbosity=0)
 
 
 def _basic_auth_header(username: str, password: str) -> str:
@@ -47,41 +42,39 @@ def _decode_response_content(response: HttpResponseBase) -> str:
 
 
 @pytest.fixture
-def base_fixtures(db: None) -> None:
-    """The users, the local filesystem space and its locations of base.json."""
-    _load_fixtures("base.json")
+def location_api_fixtures(
+    base_rows: None,
+    pipeline_rows: list[models.Pipeline],
+    package_rows: list[models.Package],
+) -> None:
+    """The base rows with the pipelines and the packages."""
 
 
 @pytest.fixture
-def location_api_fixtures(base_fixtures: None) -> None:
-    """The base fixtures with the pipelines and the packages."""
-    _load_fixtures("pipelines.json", "package.json")
+def package_api_fixtures(
+    base_rows: None,
+    package_rows: list[models.Package],
+    arkivum_packages: list[models.Package],
+) -> None:
+    """The base rows with the packages and the Arkivum space."""
 
 
 @pytest.fixture
-def package_api_fixtures(base_fixtures: None) -> None:
-    """The base fixtures with the packages and the Arkivum space."""
-    _load_fixtures("package.json", "arkivum.json")
-
-
-@pytest.fixture
-def api_user(base_fixtures: None) -> User:
-    """The superuser of the fixtures, whose password is "test"."""
-    return User.objects.get(username="test")
-
-
-@pytest.fixture
-def api_client(client: Client, base_fixtures: None) -> Client:
+def api_client(client: Client, base_rows: None, api_user: User) -> Client:
     """The test client authenticated as the superuser through HTTP Basic."""
-    client.defaults["HTTP_AUTHORIZATION"] = _basic_auth_header("test", "test")
+    client.defaults["HTTP_AUTHORIZATION"] = _basic_auth_header(
+        api_user.username, "test"
+    )
 
     return client
 
 
 @pytest.fixture
-def nonadmin_api_client(client: Client, base_fixtures: None) -> Client:
+def nonadmin_api_client(client: Client, base_rows: None, nonadmin_user: User) -> Client:
     """The test client authenticated as the regular user through HTTP Basic."""
-    client.defaults["HTTP_AUTHORIZATION"] = _basic_auth_header("nonadmin", "test")
+    client.defaults["HTTP_AUTHORIZATION"] = _basic_auth_header(
+        nonadmin_user.username, "test"
+    )
 
     return client
 
@@ -119,7 +112,7 @@ def package_storage(tmp_path: pathlib.Path, package_api_fixtures: None) -> None:
 # The following tests cover the space API.
 
 
-def test_space_requires_auth(client: Client, base_fixtures: None) -> None:
+def test_space_requires_auth(client: Client, base_rows: None) -> None:
     response = client.get("/api/v2/space/7d20c992-bc92-4f92-a794-7161ff2cc08b/")
     assert response.status_code == 401
 

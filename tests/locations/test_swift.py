@@ -1,32 +1,35 @@
 import os
 import pathlib
+import uuid
 from unittest import mock
 
 import pytest
 import swiftclient
-from django.core.management import call_command
 
 from archivematica.storage_service.locations import models
 from archivematica.storage_service.locations.models.swift import Swift
 
-FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
-
 
 @pytest.fixture
-def swift_fixtures(db: None) -> None:
-    call_command(
-        "loaddata",
-        *[str(FIXTURES_DIR / name) for name in ["base.json", "swift.json"]],
-        verbosity=0,
+def swift(db: None) -> Swift:
+    """A Swift space of the Toronto region."""
+    space = models.Space.objects.create(
+        uuid=uuid.UUID("6fb34c82-4222-425e-b0ea-30acfd31f52e"),
+        access_protocol=models.Space.SWIFT,
+        path="/",
+        staging_path="/var/archivematica/storage_service/",
     )
 
-
-@pytest.fixture
-def swift(swift_fixtures: None) -> Swift:
-    result = Swift.objects.first()
-    assert result is not None
-
-    return result
+    return Swift.objects.create(
+        space=space,
+        auth_url="http://142.1.121.240:5000/v2.0/",
+        auth_version="2",
+        username="toronto_admin",
+        password="torontoAdmin12",
+        container="artefactual",
+        tenant="toronto",
+        region="RegionOne",
+    )
 
 
 def test_has_required_attributes(swift: Swift) -> None:

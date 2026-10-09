@@ -1,36 +1,29 @@
 """Tests for the datatable utilities."""
 
-import pathlib
 import uuid
 
 import pytest
-from django.core.management import call_command
 
 from archivematica.storage_service.locations import datatable_utils
 from archivematica.storage_service.locations import models
 
-FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
-
-
-# There are 12 total packages in package.json.
+# The package rows hold this many packages.
 TOTAL_FIXTURE_PACKAGES = 13
 
-# There are 4 total fixity logs in fixity_log.json
+# The fixity log rows hold this many fixity logs.
 TOTAL_FIXTURE_FIXITY_LOGS = 4
 
 
 @pytest.fixture
-def package_fixtures(db: None) -> None:
-    call_command(
-        "loaddata",
-        *[str(FIXTURES_DIR / name) for name in ["base.json", "package.json"]],
-        verbosity=0,
-    )
+def package_fixtures(base_rows: None, package_rows: list[models.Package]) -> None:
+    """The packages listed by the datatable."""
 
 
 @pytest.fixture
-def fixity_log_fixtures(package_fixtures: None) -> None:
-    call_command("loaddata", str(FIXTURES_DIR / "fixity_log.json"), verbosity=0)
+def fixity_log_fixtures(
+    package_fixtures: None, fixity_log_rows: list[models.FixityLog]
+) -> None:
+    """The packages and their fixity logs."""
 
 
 @pytest.mark.usefixtures("package_fixtures")

@@ -5,7 +5,6 @@ from unittest import mock
 
 import pytest
 import requests
-from django.core.management import call_command
 
 from archivematica.storage_service.locations import models
 from archivematica.storage_service.locations.models.arkivum import Arkivum
@@ -20,35 +19,26 @@ def get_pkg_uuid_path(package_uuid):
 
 
 @pytest.fixture
-def arkivum_fixtures(db: None) -> None:
-    call_command(
-        "loaddata",
-        *[str(FIXTURES_DIR / name) for name in ["base.json", "arkivum.json"]],
-        verbosity=0,
-    )
-
-
-@pytest.fixture
-def arkivum(arkivum_fixtures: None, tmp_path: pathlib.Path) -> Arkivum:
+def arkivum(arkivum: Arkivum, tmp_path: pathlib.Path) -> Arkivum:
     """The Arkivum space of the fixtures, with its paths in the temporary
     directory.
     """
-    result = Arkivum.objects.first()
-    assert result is not None
-    result.space.path = str(tmp_path)
-    result.space.staging_path = str(tmp_path)
-    result.space.save()
-    result.save()
+    arkivum.space.path = str(tmp_path)
+    arkivum.space.staging_path = str(tmp_path)
+    arkivum.space.save()
+    arkivum.save()
 
-    return result
+    return arkivum
 
 
 @pytest.fixture
-def package(arkivum: Arkivum, tmp_path: pathlib.Path) -> models.Package:
+def package(
+    arkivum: Arkivum, arkivum_packages: list[models.Package], tmp_path: pathlib.Path
+) -> models.Package:
     """The compressed package of the fixtures, with its pointer file where the
     package expects it in the Arkivum space.
     """
-    result = models.Package.objects.get(uuid=PACKAGE_UUID)
+    result = arkivum_packages[0]
     pointer_file_location = result.pointer_file_location
     assert pointer_file_location is not None
     pointer_file_location.space = arkivum.space
@@ -68,8 +58,8 @@ def package(arkivum: Arkivum, tmp_path: pathlib.Path) -> models.Package:
 
 
 @pytest.fixture
-def uncompressed_package(arkivum_fixtures: None) -> models.Package:
-    return models.Package.objects.get(uuid="e52c518d-fcf4-46cc-8581-bbc01aff7af3")
+def uncompressed_package(arkivum_packages: list[models.Package]) -> models.Package:
+    return arkivum_packages[1]
 
 
 @pytest.fixture

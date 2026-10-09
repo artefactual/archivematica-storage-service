@@ -1,28 +1,12 @@
-import pathlib
-
 import pytest
-from django.core.management import call_command
 
 from archivematica.storage_service.locations import models
 
-FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
-
 
 @pytest.fixture
-def fixity_log_fixtures(db: None) -> None:
-    call_command(
-        "loaddata",
-        *[
-            str(FIXTURES_DIR / name)
-            for name in ["base.json", "package.json", "fixity_log.json"]
-        ],
-        verbosity=0,
-    )
-
-
-@pytest.fixture
-def fixity_log(fixity_log_fixtures: None) -> models.FixityLog:
-    return models.FixityLog.objects.all()[0]
+def fixity_log(fixity_log_rows: list[models.FixityLog]) -> models.FixityLog:
+    """The first fixity check of the transfer, a failed one."""
+    return fixity_log_rows[0]
 
 
 def test_has_required_attributes(fixity_log: models.FixityLog) -> None:
