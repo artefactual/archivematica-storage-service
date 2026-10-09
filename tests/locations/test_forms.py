@@ -7,7 +7,7 @@ from archivematica.storage_service.locations import models
 @pytest.fixture
 def callback(callback_rows: list[models.Callback]) -> models.Callback:
     """The DIP callback, which sends headers."""
-    return models.Callback.objects.get(uuid="ef0672a2-d0ed-474b-95f6-ff8f9ea1fc15")
+    return callback_rows[4]
 
 
 def test_headers_added(callback: models.Callback) -> None:

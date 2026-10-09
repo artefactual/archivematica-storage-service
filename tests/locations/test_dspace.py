@@ -18,7 +18,6 @@ FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 def dspace(make_space: SpaceFactory) -> DSpace:
     """The DSpace space of the demo instance."""
     space = make_space(
-        uuid=uuid.UUID("e764565a-5150-486a-93c6-ae78bec4b54b"),
         access_protocol=models.Space.DSPACE,
         path="",
         staging_path="/var/archivematica/storage_service/",
@@ -36,11 +35,12 @@ def dspace(make_space: SpaceFactory) -> DSpace:
 def dspace_package(
     make_location: LocationFactory, make_package: PackageFactory, dspace: DSpace
 ) -> models.Package:
-    """A compressed AIP stored in the collection of the DSpace space."""
+    """A compressed AIP stored in the collection of the DSpace space. Its UUID
+    names the METS file inside the compressed bag fixture.
+    """
     location = make_location(
         dspace.space,
         models.Location.AIP_STORAGE,
-        uuid=uuid.UUID("d9d7db26-f7a1-40aa-9db1-806b4d3a61cd"),
         relative_path="http://demo.dspace.org/swordv2/collection/123456789/2",
         description="DSpace AS",
     )
@@ -98,12 +98,11 @@ def test_get_sword_connection(_request: mock.MagicMock, dspace: DSpace) -> None:
     assert dspace.sword_connection.workspaces[0][1][0].title == "Test collection"
 
 
-def test_get_metadata(dspace: DSpace, compressed_bag_path: pathlib.Path) -> None:
+def test_get_metadata(
+    dspace: DSpace, dspace_package: models.Package, compressed_bag_path: pathlib.Path
+) -> None:
     """It should fetch DC metadata from AIP."""
-    ret = dspace._get_metadata(
-        str(compressed_bag_path),
-        uuid.UUID("1056123d-8a16-49c2-ac51-8e5fa367d8b5"),
-    )
+    ret = dspace._get_metadata(str(compressed_bag_path), dspace_package.uuid)
     assert len(ret) == 6
     assert ret["dcterms_title"] == "Yamani Weapons"
     assert ret["dcterms_description.abstract"] == "Glaives are cool"

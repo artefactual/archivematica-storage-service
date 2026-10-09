@@ -14,14 +14,11 @@ from tests.factories import SpaceFactory
 def _create_dataverse(
     make_space: SpaceFactory,
     make_location: LocationFactory,
-    space_uuid: str,
-    location_uuid: str,
     relative_path: str,
     **fields: str,
 ) -> Dataverse:
     """Create a Dataverse space with its transfer source location."""
     space = make_space(
-        uuid=uuid.UUID(space_uuid),
         access_protocol=models.Space.DATAVERSE,
         path="",
         staging_path="/var/archivematica/storage_service/",
@@ -29,7 +26,6 @@ def _create_dataverse(
     make_location(
         space,
         models.Location.TRANSFER_SOURCE,
-        uuid=uuid.UUID(location_uuid),
         relative_path=relative_path,
         description="",
     )
@@ -43,8 +39,6 @@ def dataverse(make_space: SpaceFactory, make_location: LocationFactory) -> Datav
     return _create_dataverse(
         make_space,
         make_location,
-        "216bec3b-c4c1-4eff-97ef-728244e58dd0",
-        "da1c729d-0b17-4c48-91d5-127f38f7542d",
         "*",
         host="apitest.dataverse.org",
         api_key="testkeys-77a8-49a3-874e-be1148e7c970",
@@ -62,11 +56,9 @@ def demo_dataverse(
     return _create_dataverse(
         make_space,
         make_location,
-        "d18a2763-60f0-4273-b30c-caa5d14d6d32",
-        "3af8a6a1-19f3-40be-87aa-bfa0940a1944",
         "test",
         host="demodv.scholarsportal.info",
-        api_key="51c64df4-abd7-4613-af21-6a68715dca92",
+        api_key=str(uuid.uuid4()),
         agent_name="Archivematica Test Dataverse",
         agent_type="TestOrganisation",
         agent_identifier="https://demodv.scholarsportal.info/dataverse/archivematica",

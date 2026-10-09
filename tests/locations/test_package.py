@@ -8,8 +8,9 @@ import shutil
 import subprocess
 import tempfile
 import time
-from collections import namedtuple
+import uuid
 from typing import TYPE_CHECKING
+from typing import NamedTuple
 from unittest import mock
 
 import bagit
@@ -38,6 +39,9 @@ if TYPE_CHECKING:
 
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
+# Arkivum assigned this identifier to the package whose fixity it is checking.
+ARKIVUM_IDENTIFIER = str(uuid.uuid4())
+
 TEST_CHECKSUM_HASHDIGEST = (
     "810ff2fb242a5dee4220f2cb0e6a519891fb67f2f828a6cab4ef8894633b1f50"
 )
@@ -59,21 +63,20 @@ def recursive_dir_count(target_dir):
     return sum(len(dirs) for _, dirs, _ in os.walk(target_dir))
 
 
-def mock_v():
-    """Return mock namedtuple with attributes needed to store AIP."""
-    V = namedtuple(
-        "V",
-        [
-            "src_space",
-            "dest_space",
-            "should_have_pointer",
-            "pointer_file_src",
-            "pointer_file_dst",
-            "already_generated_ptr_exists",
-        ],
-    )
-    space = models.Space.objects.get(uuid="7d20c992-bc92-4f92-a794-7161ff2cc08b")
-    return V(
+class StoragePlan(NamedTuple):
+    """The attributes of the storage plan that storing an AIP reads."""
+
+    src_space: models.Space
+    dest_space: models.Space
+    should_have_pointer: bool
+    pointer_file_src: str | None
+    pointer_file_dst: str | None
+    already_generated_ptr_exists: bool
+
+
+def mock_v(space: models.Space) -> StoragePlan:
+    """Return the storage plan of an AIP stored in the space without a pointer file."""
+    return StoragePlan(
         src_space=space,
         dest_space=space,
         should_have_pointer=False,
@@ -331,9 +334,7 @@ def test_view_package_delete(
     client: Client, api_user: User, images_transfer: models.Package
 ) -> None:
     client.force_login(api_user)
-    url = reverse(
-        "locations:package_delete", args=["00000000-0000-0000-0000-000000000000"]
-    )
+    url = reverse("locations:package_delete", args=[uuid.uuid4()])
 
     # It does only accept POST, i.e. GET returns a 405
     response = client.get(url, follow=True)
@@ -448,7 +449,9 @@ def _store_aip_to_uploaded(
     package: models.Package, related_package: models.Package
 ) -> None:
     """Store the package as the AIP of the related transfer."""
-    package._store_aip_to_uploaded(mock_v(), str(related_package.uuid))
+    package._store_aip_to_uploaded(
+        mock_v(package.current_location.space), str(related_package.uuid)
+    )
 
 
 @mock.patch(
@@ -669,7 +672,7 @@ def arkivum_checked_package(
     checking.
     """
     arkivum_uncompressed_package.misc_attributes.update(
-        {"arkivum_identifier": "5afe9428-c6d6-4d0f-9196-5e7fd028726d"}
+        {"arkivum_identifier": ARKIVUM_IDENTIFIER}
     )
     arkivum_uncompressed_package.save()
 
@@ -683,7 +686,7 @@ def arkivum_checked_package(
             **{
                 "status_code": 200,
                 "json.return_value": {
-                    "id": "5afe9428-c6d6-4d0f-9196-5e7fd028726d",
+                    "id": ARKIVUM_IDENTIFIER,
                     "status": "Scheduled",
                 },
             }
@@ -714,7 +717,7 @@ def test_fixity_scheduled_arkivum(
                     "replicationState": "amber",
                     "fixityLastChecked": "2015-11-24",
                     "replicationStates": {"amber": 18},
-                    "id": "5afe9428-c6d6-4d0f-9196-5e7fd028726d",
+                    "id": ARKIVUM_IDENTIFIER,
                     "passed": "18",
                     "status": "Completed",
                 },
@@ -746,7 +749,7 @@ def test_fixity_amber_arkivum(
                     "replicationState": "green",
                     "fixityLastChecked": "2015-11-24",
                     "replicationStates": {"green": 18},
-                    "id": "5afe9428-c6d6-4d0f-9196-5e7fd028726d",
+                    "id": ARKIVUM_IDENTIFIER,
                     "passed": "18",
                     "status": "Completed",
                 },
@@ -784,7 +787,7 @@ def test_fixity_success_arkivum(
                             "filepath": "manifest-md5.txt",
                         },
                     ],
-                    "id": "059b7285-dfd7-45f9-be31-f6609435b6ed",
+                    "id": str(uuid.uuid4()),
                     "status": "Failed",
                 },
             }

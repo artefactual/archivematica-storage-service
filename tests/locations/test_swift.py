@@ -1,6 +1,5 @@
 import os
 import pathlib
-import uuid
 from unittest import mock
 
 import pytest
@@ -15,7 +14,6 @@ from tests.factories import SpaceFactory
 def swift(make_space: SpaceFactory) -> Swift:
     """A Swift space of the Toronto region."""
     space = make_space(
-        uuid=uuid.UUID("6fb34c82-4222-425e-b0ea-30acfd31f52e"),
         access_protocol=models.Space.SWIFT,
         path="/",
         staging_path="/var/archivematica/storage_service/",

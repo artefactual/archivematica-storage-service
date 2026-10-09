@@ -17,12 +17,10 @@ def test_clean_works(pipeline_rows: list[models.Pipeline]) -> None:
 
 
 def test_clean_aip_recovery_fine(pipeline_rows: list[models.Pipeline]) -> None:
-    pipeline_without_ar = models.Pipeline.objects.filter(
-        uuid="d2df89dc-9443-48dd-8983-55e9d1f92bcb"
-    )
+    _, pipeline_without_ar, _ = pipeline_rows
     form_data = {
         "purpose": "AR",
-        "pipeline": [p.id for p in pipeline_without_ar],
+        "pipeline": [pipeline_without_ar.id],
         "relative_path": "var/archivematica/storage_service/recover2",
         "description": None,
         "quota": None,
@@ -33,12 +31,10 @@ def test_clean_aip_recovery_fine(pipeline_rows: list[models.Pipeline]) -> None:
 
 
 def test_clean_aip_recovery_error(pipeline_rows: list[models.Pipeline]) -> None:
-    pipeline_with_ar = models.Pipeline.objects.filter(
-        uuid="b25f6b71-3ebf-4fcc-823c-1feb0a2553dd"
-    )
+    pipeline_with_ar, _, _ = pipeline_rows
     form_data = {
         "purpose": "AR",
-        "pipeline": [p.id for p in pipeline_with_ar],
+        "pipeline": [pipeline_with_ar.id],
         "relative_path": "var/archivematica/storage_service/recover",
         "description": None,
         "quota": None,

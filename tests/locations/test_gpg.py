@@ -511,6 +511,10 @@ def test__parse_gpg_version():
     assert GPG_VERSION == gpg._parse_gpg_version(RAW_GPG_VERSION)
 
 
+# The encrypted transfer sits at this path, relative to its location.
+ENCRYPTED_TRANSFER_PATH = f"some/relative/path/to/images-transfer-{uuid.uuid4()}"
+
+
 @pytest.fixture
 def encrypted_package(
     make_package: PackageFactory, default_transfer_source: Location
@@ -518,8 +522,7 @@ def encrypted_package(
     """A transfer encrypted with the key of the tests."""
     return make_package(
         default_transfer_source,
-        "some/relative/path/to/images-transfer-abcdabcd-97dd-48e0-8417-03be78359531",
-        uuid=uuid.UUID("abcdabcd-c1d7-45ba-9a95-a7531c063ed1"),
+        ENCRYPTED_TRANSFER_PATH,
         package_type="Transfer",
         status="Uploaded",
         encryption_key_fingerprint=EXP_FINGERPRINT,
@@ -528,9 +531,7 @@ def encrypted_package(
 
 def test__encr_path2key_fingerprint(encrypted_package: Package) -> None:
     package = encrypted_package
-    exp_curr_path = (
-        "some/relative/path/to/images-transfer-abcdabcd-97dd-48e0-8417-03be78359531"
-    )
+    exp_curr_path = ENCRYPTED_TRANSFER_PATH
     assert package.current_path == exp_curr_path
     assert package.encryption_key_fingerprint == EXP_FINGERPRINT
 

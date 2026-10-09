@@ -30,6 +30,9 @@ from tests.factories import SpaceFactory
 
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
+# Arkivum assigned this identifier to the compressed package being staged.
+ARKIVUM_IDENTIFIER = str(uuid.uuid4())
+
 
 def _decode_response_content(response: HttpResponseBase) -> str:
     """Join the streamed content of a file response into a string."""
@@ -38,6 +41,23 @@ def _decode_response_content(response: HttpResponseBase) -> str:
     assert isinstance(chunks, Iterator)
 
     return b"".join(chunks).decode("utf8")
+
+
+def _package_files(package: models.Package) -> list[dict[str, str]]:
+    """Two files of the transfer, as the pipeline reports them to the API."""
+    package_name = os.path.basename(package.current_path)
+    origin = str(uuid.uuid4())
+
+    return [
+        {
+            "relative_path": f"{package_name}/{name}",
+            "fileuuid": str(uuid.uuid4()),
+            "accessionid": "",
+            "sipuuid": str(package.uuid),
+            "origin": origin,
+        }
+        for name in ["1.txt", "2.txt"]
+    ]
 
 
 @pytest.fixture
@@ -80,9 +100,7 @@ def package_storage(
     default_ss_internal.save()
     # The compressed Arkivum package has been requested from Arkivum.
     compressed_package, _ = arkivum_packages
-    compressed_package.misc_attributes = {
-        "arkivum_identifier": "2e75c8ad-cded-4f7e-8ac7-85627a116e39"
-    }
+    compressed_package.misc_attributes = {"arkivum_identifier": ARKIVUM_IDENTIFIER}
     compressed_package.save()
     # Packages without a pipeline cannot be read through the API.
     models.Package.objects.all().update(origin_pipeline=arkivum_pipeline)
@@ -92,7 +110,7 @@ def package_storage(
 
 
 def test_space_requires_auth(client: Client) -> None:
-    response = client.get("/api/v2/space/7d20c992-bc92-4f92-a794-7161ff2cc08b/")
+    response = client.get(f"/api/v2/space/{uuid.uuid4()}/")
     assert response.status_code == 401
 
 
@@ -234,7 +252,7 @@ def test_space_browse_with_symlinks_loop(
 
 
 def test_location_requires_auth(client: Client) -> None:
-    response = client.post("/api/v2/location/213086c8-232e-4b9e-bb03-98fbc7a7966a/")
+    response = client.post(f"/api/v2/location/{uuid.uuid4()}/")
     assert response.status_code == 401
 
 
@@ -377,9 +395,7 @@ def test_cant_move_from_non_existant_locations(
     default_currently_processing: models.Location,
     move_files_data: dict[str, object],
 ) -> None:
-    move_files_data["origin_location"] = (
-        "/api/v2/location/13ec52e6-773f-4f73-a6a8-043f285f6168/"
-    )
+    move_files_data["origin_location"] = f"/api/v2/location/{uuid.uuid4()}/"
     response = api_client.post(
         f"/api/v2/location/{default_currently_processing.uuid}/",
         data=json.dumps(move_files_data),
@@ -394,7 +410,7 @@ def test_cant_move_to_non_existant_locations(
     api_client: Client, move_files_data: dict[str, object]
 ) -> None:
     response = api_client.post(
-        "/api/v2/location/d898b2d0-bd63-4d4e-884b-ea3df9a8f56d/",
+        f"/api/v2/location/{uuid.uuid4()}/",
         data=json.dumps(move_files_data),
         content_type="application/json",
     )
@@ -579,11 +595,12 @@ def test_location_browse_with_symlinks_loop(
 
 
 def test_package_requires_auth(client: Client) -> None:
+    package_uuid = uuid.uuid4()
     urls = [
         "/api/v2/file/metadata/",
-        "/api/v2/file/e0a41934-c1d7-45ba-9a95-a7531c063ed1/contents/",
-        "/api/v2/file/6aebdb24-1b6b-41ab-b4a3-df9a73726a34/download/",
-        "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/extract_file/",
+        f"/api/v2/file/{package_uuid}/contents/",
+        f"/api/v2/file/{package_uuid}/download/",
+        f"/api/v2/file/{package_uuid}/extract_file/",
     ]
     # Get metadata
     assert [client.get(url).status_code for url in urls] == [401] * len(urls)
@@ -600,34 +617,41 @@ def test_package_non_admins_can_read_list(
 
 
 def test_package_non_admins_can_read_detail(
-    api_client: Client, api_user: User, package_storage: None
+    api_client: Client,
+    api_user: User,
+    package_storage: None,
+    working_bag: models.Package,
 ) -> None:
     api_user.set_role(roles.USER_ROLE_READER)
-    response = api_client.get("/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/")
+    response = api_client.get(f"/api/v2/file/{working_bag.uuid}/")
     assert response.status_code == 200
     assert response.text
 
 
 def test_non_admins_cant_reindex(
-    api_client: Client, api_user: User, package_storage: None
+    api_client: Client,
+    api_user: User,
+    package_storage: None,
+    working_bag: models.Package,
 ) -> None:
     api_user.set_role(roles.USER_ROLE_READER)
-    response = api_client.post(
-        "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/reindex/"
-    )
+    response = api_client.post(f"/api/v2/file/{working_bag.uuid}/reindex/")
     assert response.status_code == 401
 
 
 def test_non_admins_cant_reingest(
-    api_client: Client, api_user: User, package_storage: None
+    api_client: Client,
+    api_user: User,
+    package_storage: None,
+    working_bag: models.Package,
 ) -> None:
     api_user.set_role(roles.USER_ROLE_READER)
     data = {
-        "pipeline": "0cbf947a-1b19-4a01-a575-454078768fcd",
+        "pipeline": str(uuid.uuid4()),
         "reingest_type": "FULL",
     }
     response = api_client.post(
-        "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/reingest/",
+        f"/api/v2/file/{working_bag.uuid}/reingest/",
         data=json.dumps(data),
         content_type="application/json",
     )
@@ -635,14 +659,17 @@ def test_non_admins_cant_reingest(
 
 
 def test_non_admins_cant_move(
-    api_client: Client, api_user: User, package_storage: None
+    api_client: Client,
+    api_user: User,
+    package_storage: None,
+    working_bag: models.Package,
 ) -> None:
     api_user.set_role(roles.USER_ROLE_READER)
     data = {
-        "location_uuid": "7d20c992-bc92-4f92-a794-7161ff2cc08b",
+        "location_uuid": str(uuid.uuid4()),
     }
     response = api_client.post(
-        "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/move/",
+        f"/api/v2/file/{working_bag.uuid}/move/",
         data=json.dumps(data),
         content_type="application/json",
     )
@@ -650,27 +677,15 @@ def test_non_admins_cant_move(
 
 
 def test_non_admins_cant_add_file_to_package(
-    api_client: Client, api_user: User, package_storage: None
+    api_client: Client,
+    api_user: User,
+    package_storage: None,
+    empty_transfer: models.Package,
 ) -> None:
     api_user.set_role(roles.USER_ROLE_READER)
-    data = [
-        {
-            "relative_path": "empty-transfer-79245866-ca80-4f84-b904-a02b3e0ab621/1.txt",
-            "fileuuid": "7bffcce7-63f5-4b2e-af57-d266bfa2e3eb",
-            "accessionid": "",
-            "sipuuid": "79245866-ca80-4f84-b904-a02b3e0ab621",
-            "origin": "36398145-6e49-4b5b-af02-209b127f2726",
-        },
-        {
-            "relative_path": "empty-transfer-79245866-ca80-4f84-b904-a02b3e0ab621/2.txt",
-            "fileuuid": "152be912-819f-49c4-968f-d5ce959c1cb1",
-            "accessionid": "",
-            "sipuuid": "79245866-ca80-4f84-b904-a02b3e0ab621",
-            "origin": "36398145-6e49-4b5b-af02-209b127f2726",
-        },
-    ]
+    data = _package_files(empty_transfer)
     response = api_client.put(
-        "/api/v2/file/79245866-ca80-4f84-b904-a02b3e0ab621/contents/",
+        f"/api/v2/file/{empty_transfer.uuid}/contents/",
         data=json.dumps(data),
         content_type="application/json",
     )
@@ -678,17 +693,20 @@ def test_non_admins_cant_add_file_to_package(
 
 
 def test_non_admins_cant_delete_file_from_package(
-    api_client: Client, api_user: User, package_storage: None
+    api_client: Client,
+    api_user: User,
+    package_storage: None,
+    empty_transfer: models.Package,
 ) -> None:
     api_user.set_role(roles.USER_ROLE_READER)
     response = api_client.delete(
-        "/api/v2/file/79245866-ca80-4f84-b904-a02b3e0ab621/contents/",
+        f"/api/v2/file/{empty_transfer.uuid}/contents/",
     )
     assert response.status_code == 401
 
 
 def test_file_data_returns_metadata_given_relative_path(
-    api_client: Client, package_storage: None
+    api_client: Client, package_storage: None, images_transfer: models.Package
 ) -> None:
     path = "test_sip/objects/file.txt"
     response = api_client.get("/api/v2/file/metadata/", {"relative_path": path})
@@ -696,7 +714,7 @@ def test_file_data_returns_metadata_given_relative_path(
     assert response["content-type"] == "application/json"
     body = json.loads(response.text)
     assert body[0]["relative_path"] == path
-    assert body[0]["fileuuid"] == "86bfde11-e2a1-4ee7-b98d-9556b5f05198"
+    assert body[0]["fileuuid"] == images_transfer.file_set.get().source_id
 
 
 def test_file_data_returns_bad_response_with_no_accepted_parameters(
@@ -712,11 +730,9 @@ def test_file_data_returns_404_if_no_file_found(api_client: Client) -> None:
 
 
 def test_package_contents_returns_metadata(
-    api_client: Client, package_storage: None
+    api_client: Client, package_storage: None, images_transfer: models.Package
 ) -> None:
-    response = api_client.get(
-        "/api/v2/file/e0a41934-c1d7-45ba-9a95-a7531c063ed1/contents/"
-    )
+    response = api_client.get(f"/api/v2/file/{images_transfer.uuid}/contents/")
     assert response.status_code == 200
     assert response["content-type"] == "application/json"
     body = json.loads(response.text)
@@ -726,10 +742,10 @@ def test_package_contents_returns_metadata(
 
 
 def test_adding_package_files_returns_400_with_empty_post_body(
-    api_client: Client, package_storage: None
+    api_client: Client, package_storage: None, images_transfer: models.Package
 ) -> None:
     response = api_client.put(
-        "/api/v2/file/e0a41934-c1d7-45ba-9a95-a7531c063ed1/contents/",
+        f"/api/v2/file/{images_transfer.uuid}/contents/",
         data="",
         content_type="application/json",
     )
@@ -737,10 +753,10 @@ def test_adding_package_files_returns_400_with_empty_post_body(
 
 
 def test_adding_package_files_returns_400_if_post_body_is_not_json(
-    api_client: Client, package_storage: None
+    api_client: Client, package_storage: None, images_transfer: models.Package
 ) -> None:
     response = api_client.put(
-        "/api/v2/file/e0a41934-c1d7-45ba-9a95-a7531c063ed1/contents/",
+        f"/api/v2/file/{images_transfer.uuid}/contents/",
         data="not json!",
         content_type="application/json",
     )
@@ -748,10 +764,10 @@ def test_adding_package_files_returns_400_if_post_body_is_not_json(
 
 
 def test_adding_package_files_returns_400_if_post_body_is_not_a_list(
-    api_client: Client, package_storage: None
+    api_client: Client, package_storage: None, images_transfer: models.Package
 ) -> None:
     response = api_client.put(
-        "/api/v2/file/e0a41934-c1d7-45ba-9a95-a7531c063ed1/contents/",
+        f"/api/v2/file/{images_transfer.uuid}/contents/",
         data="{}",
         content_type="application/json",
     )
@@ -759,11 +775,11 @@ def test_adding_package_files_returns_400_if_post_body_is_not_a_list(
 
 
 def test_adding_package_files_returns_400_if_expected_fields_are_missing(
-    api_client: Client, package_storage: None
+    api_client: Client, package_storage: None, images_transfer: models.Package
 ) -> None:
     body = [{"relative_path": "/dev/null"}]
     response = api_client.put(
-        "/api/v2/file/e0a41934-c1d7-45ba-9a95-a7531c063ed1/contents/",
+        f"/api/v2/file/{images_transfer.uuid}/contents/",
         data=json.dumps(body),
         content_type="application/json",
     )
@@ -771,74 +787,57 @@ def test_adding_package_files_returns_400_if_expected_fields_are_missing(
 
 
 def test_adding_files_to_package_returns_200_for_empty_list(
-    api_client: Client, package_storage: None
+    api_client: Client, package_storage: None, empty_transfer: models.Package
 ) -> None:
     response = api_client.put(
-        "/api/v2/file/79245866-ca80-4f84-b904-a02b3e0ab621/contents/",
+        f"/api/v2/file/{empty_transfer.uuid}/contents/",
         data="[]",
         content_type="application/json",
     )
     assert response.status_code == 200
 
 
-def test_adding_files_to_package(api_client: Client, package_storage: None) -> None:
-    p = models.Package.objects.get(uuid="79245866-ca80-4f84-b904-a02b3e0ab621")
-    assert p.file_set.count() == 0
+def test_adding_files_to_package(
+    api_client: Client, package_storage: None, empty_transfer: models.Package
+) -> None:
+    assert empty_transfer.file_set.count() == 0
 
-    body = [
-        {
-            "relative_path": "empty-transfer-79245866-ca80-4f84-b904-a02b3e0ab621/1.txt",
-            "fileuuid": "7bffcce7-63f5-4b2e-af57-d266bfa2e3eb",
-            "accessionid": "",
-            "sipuuid": "79245866-ca80-4f84-b904-a02b3e0ab621",
-            "origin": "36398145-6e49-4b5b-af02-209b127f2726",
-        },
-        {
-            "relative_path": "empty-transfer-79245866-ca80-4f84-b904-a02b3e0ab621/2.txt",
-            "fileuuid": "152be912-819f-49c4-968f-d5ce959c1cb1",
-            "accessionid": "",
-            "sipuuid": "79245866-ca80-4f84-b904-a02b3e0ab621",
-            "origin": "36398145-6e49-4b5b-af02-209b127f2726",
-        },
-    ]
+    body = _package_files(empty_transfer)
 
     response = api_client.put(
-        "/api/v2/file/79245866-ca80-4f84-b904-a02b3e0ab621/contents/",
+        f"/api/v2/file/{empty_transfer.uuid}/contents/",
         data=json.dumps(body),
         content_type="application/json",
     )
     assert response.status_code == 201
-    assert p.file_set.count() == 2
+    assert empty_transfer.file_set.count() == 2
 
 
-def test_removing_file_from_package(api_client: Client, package_storage: None) -> None:
-    p = models.Package.objects.get(uuid="a59033c2-7fa7-41e2-9209-136f07174692")
-    assert p.file_set.count() == 1
+def test_removing_file_from_package(
+    api_client: Client, package_storage: None, one_file_transfer: models.Package
+) -> None:
+    assert one_file_transfer.file_set.count() == 1
 
-    response = api_client.delete(
-        "/api/v2/file/a59033c2-7fa7-41e2-9209-136f07174692/contents/"
-    )
+    response = api_client.delete(f"/api/v2/file/{one_file_transfer.uuid}/contents/")
     assert response.status_code == 204
-    assert p.file_set.count() == 0
+    assert one_file_transfer.file_set.count() == 0
 
 
-def test_download_compressed_package(api_client: Client, package_storage: None) -> None:
+def test_download_compressed_package(
+    api_client: Client, package_storage: None, zipped_bag: models.Package
+) -> None:
     """It should return the package."""
-    response = api_client.get(
-        "/api/v2/file/6aebdb24-1b6b-41ab-b4a3-df9a73726a34/download/"
-    )
+    response = api_client.get(f"/api/v2/file/{zipped_bag.uuid}/download/")
     assert response.status_code == 200
     assert response["content-type"] == "application/zip"
     assert response["content-disposition"] == 'attachment; filename="working_bag.zip"'
 
 
 def test_download_uncompressed_package(
-    api_client: Client, package_storage: None
+    api_client: Client, package_storage: None, working_bag: models.Package
 ) -> None:
     """It should tar a package before downloading."""
-    response = api_client.get(
-        "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/download/"
-    )
+    response = api_client.get(f"/api/v2/file/{working_bag.uuid}/download/")
     assert response.status_code == 200
     assert response["content-type"] == "application/x-tar"
     assert response["content-disposition"] == 'attachment; filename="working_bag.tar"'
@@ -851,11 +850,11 @@ def test_download_uncompressed_package(
 
 
 def test_download_lockss_chunk_incorrect(
-    api_client: Client, package_storage: None
+    api_client: Client, package_storage: None, working_bag: models.Package
 ) -> None:
     """It should default to the local path if a chunk ID is provided but package isn't in LOCKSS."""
     response = api_client.get(
-        "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/download/",
+        f"/api/v2/file/{working_bag.uuid}/download/",
         data={"chunk_number": 1},
     )
     assert response.status_code == 200
@@ -872,7 +871,7 @@ def test_download_lockss_chunk_incorrect(
 def test_download_package_not_exist(api_client: Client) -> None:
     """It should return 404 for a non-existant package."""
     response = api_client.get(
-        "/api/v2/file/280bf046-ba55-4d44-94b4-685b3fec1770/download/",
+        f"/api/v2/file/{uuid.uuid4()}/download/",
         data={"chunk_number": 1},
     )
     assert response.status_code == 404
@@ -885,7 +884,7 @@ def test_download_package_not_exist(api_client: Client) -> None:
             **{
                 "status_code": 200,
                 "json.return_value": {
-                    "id": "2e75c8ad-cded-4f7e-8ac7-85627a116e39",
+                    "id": ARKIVUM_IDENTIFIER,
                     "status": "Scheduled",
                     "originalSize": "775702",
                     "actualSize": "775702",
@@ -899,11 +898,14 @@ def test_download_package_not_exist(api_client: Client) -> None:
     ],
 )
 def test_download_package_arkivum_not_available(
-    requests_get: mock.MagicMock, api_client: Client, package_storage: None
+    requests_get: mock.MagicMock,
+    api_client: Client,
+    package_storage: None,
+    arkivum_compressed_package: models.Package,
 ) -> None:
     """It should return 202 if the file is in Arkivum but only on tape."""
     response = api_client.get(
-        "/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/download/"
+        f"/api/v2/file/{arkivum_compressed_package.uuid}/download/"
     )
     assert response.status_code == 202
     j = json.loads(response.text)
@@ -919,11 +921,14 @@ def test_download_package_arkivum_not_available(
     side_effect=[mock.Mock(**{"status_code": 404})],
 )
 def test_download_package_arkivum_error(
-    requests_get: mock.MagicMock, api_client: Client, package_storage: None
+    requests_get: mock.MagicMock,
+    api_client: Client,
+    package_storage: None,
+    arkivum_compressed_package: models.Package,
 ) -> None:
     """It should return 502 error from Arkivum."""
     response = api_client.get(
-        "/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/download/"
+        f"/api/v2/file/{arkivum_compressed_package.uuid}/download/"
     )
     assert response.status_code == 502
     j = json.loads(response.text)
@@ -931,21 +936,21 @@ def test_download_package_arkivum_error(
     assert "Error" in j["message"] and "Arkivum" in j["message"]
 
 
-def test_download_file_no_path(api_client: Client, package_storage: None) -> None:
+def test_download_file_no_path(
+    api_client: Client, package_storage: None, working_bag: models.Package
+) -> None:
     """It should return 400 Bad Request"""
-    response = api_client.get(
-        "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/extract_file/"
-    )
+    response = api_client.get(f"/api/v2/file/{working_bag.uuid}/extract_file/")
     assert response.status_code == 400
     assert "relative_path_to_file" in response.text
 
 
 def test_download_file_from_compressed(
-    api_client: Client, package_storage: None
+    api_client: Client, package_storage: None, zipped_bag: models.Package
 ) -> None:
     """It should extract and return the file."""
     response = api_client.get(
-        "/api/v2/file/6aebdb24-1b6b-41ab-b4a3-df9a73726a34/extract_file/",
+        f"/api/v2/file/{zipped_bag.uuid}/extract_file/",
         data={"relative_path_to_file": "working_bag/data/test.txt"},
     )
     assert response.status_code == 200
@@ -956,11 +961,11 @@ def test_download_file_from_compressed(
 
 
 def test_download_file_from_uncompressed(
-    api_client: Client, package_storage: None
+    api_client: Client, package_storage: None, working_bag: models.Package
 ) -> None:
     """It should return the file."""
     response = api_client.get(
-        "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/extract_file/",
+        f"/api/v2/file/{working_bag.uuid}/extract_file/",
         data={"relative_path_to_file": "working_bag/data/test.txt"},
     )
     assert response.status_code == 200
@@ -984,11 +989,14 @@ def test_download_file_from_uncompressed(
     ],
 )
 def test_download_file_arkivum_not_available(
-    requests_get: mock.MagicMock, api_client: Client, package_storage: None
+    requests_get: mock.MagicMock,
+    api_client: Client,
+    package_storage: None,
+    arkivum_compressed_package: models.Package,
 ) -> None:
     """It should return 202 if the file is in Arkivum but only on tape."""
     response = api_client.get(
-        "/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/extract_file/",
+        f"/api/v2/file/{arkivum_compressed_package.uuid}/extract_file/",
         data={"relative_path_to_file": "working_bag/data/test.txt"},
     )
     assert response.status_code == 202
@@ -1005,11 +1013,14 @@ def test_download_file_arkivum_not_available(
     side_effect=[mock.Mock(**{"status_code": 404})],
 )
 def test_download_file_arkivum_error(
-    requests_get: mock.MagicMock, api_client: Client, package_storage: None
+    requests_get: mock.MagicMock,
+    api_client: Client,
+    package_storage: None,
+    arkivum_compressed_package: models.Package,
 ) -> None:
     """It should return 502 error from Arkivum."""
     response = api_client.get(
-        "/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/extract_file/",
+        f"/api/v2/file/{arkivum_compressed_package.uuid}/extract_file/",
         data={"relative_path_to_file": "working_bag/data/test.txt"},
     )
     assert response.status_code == 502
@@ -1088,7 +1099,7 @@ def test_pipeline_non_admins_can_read_detail(
 
 def test_pipeline_create(api_client: Client) -> None:
     data = {
-        "uuid": "34988712-ba32-4a07-a8a8-022e8482b66c",
+        "uuid": str(uuid.uuid4()),
         "description": "My pipeline",
         "remote_name": "https://archivematica-dashboard:8080",
         "api_key": "test",
@@ -1106,7 +1117,7 @@ def test_pipeline_create(api_client: Client) -> None:
 
     # When undefined the remote_name field should be populated after the
     # REMOTE_ADDR header.
-    data["uuid"] = "54adc4b8-7f2f-474a-ba22-6e3792a92734"
+    data["uuid"] = str(uuid.uuid4())
     del data["remote_name"]
     response = api_client.post(
         "/api/v2/pipeline/",

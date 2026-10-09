@@ -26,7 +26,6 @@ def replica(
     the internal location of the Storage Service in the temporary directory.
     """
     space = make_space(
-        uuid=uuid.UUID("eb4348c7-5ec9-432d-b451-93214860aae2"),
         access_protocol=models.Space.OFFLINE_REPLICA_STAGING,
         path="/archivematica",
         staging_path=str(tmp_path),
@@ -35,7 +34,6 @@ def replica(
     location = make_location(
         space,
         models.Location.REPLICATOR,
-        uuid=uuid.UUID("ac3dc2d0-8422-4067-bb25-dd3cc1c54c2c"),
         relative_path="offlinestaging",
         description="offline replica staging",
     )
@@ -51,7 +49,6 @@ def replica(
     return make_package(
         location,
         "locations/fixtures/small_compressed_bag.zip",
-        uuid=uuid.UUID("216a6d25-d705-4d00-86c3-02f51c66a0c0"),
         status="Uploaded",
     )
 
@@ -164,7 +161,7 @@ PREMIS_COMPRESSION_EVENT_DATA = (
     (
         "event_identifier",
         ("event_identifier_type", "UUID"),
-        ("event_identifier_value", "4711f4eb-8903-4e58-85da-4827e6530d0b"),
+        ("event_identifier_value", str(uuid.uuid4())),
     ),
     ("event_type", "compression"),
     ("event_date_time", "2017-08-15T00:30:55"),

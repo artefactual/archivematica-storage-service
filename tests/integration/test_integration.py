@@ -293,7 +293,7 @@ def get_size(path: Path) -> int:
 class StorageScenario:
     """Storage test scenario."""
 
-    PIPELINE_UUID = uuid.UUID("00000b87-1655-4b7e-bbf8-344b317da334")
+    PIPELINE_UUID = uuid.uuid4()
     PIPELINE_URL = "http://127.0.0.1:65534"
     PACKAGE_UUID = uuid.UUID("5658e603-277b-4292-9b58-20bf261c8f88")
     OBJECT_STORAGE_PROTOCOLS = {Space.S3, Space.RCLONE}
@@ -424,7 +424,7 @@ class StorageScenario:
             (
                 "event_identifier",
                 ("event_identifier_type", "UUID"),
-                ("event_identifier_value", "4711f4eb-8903-4e58-85da-4827e6530d0b"),
+                ("event_identifier_value", str(uuid.uuid4())),
             ),
             ("event_type", "compression"),
             ("event_date_time", "2017-08-15T00:30:55"),

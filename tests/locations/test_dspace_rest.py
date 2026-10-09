@@ -35,7 +35,7 @@ METS_1_EXTRACTABLE_METADATA = [
 ]
 METS_2_PATH = os.path.join(FIXTURES_DIR, "dspacerestmetsnometadata.xml")
 
-DFLT_DSPACE_AIP_COLLECTION = "aaaaaaaa-99b1-4130-8337-7733409d39b8"
+DFLT_DSPACE_AIP_COLLECTION = str(uuid4())
 DFLT_DSPACE_DIP_COLLECTION = DFLT_DSPACE_AIP_COLLECTION
 
 DS_URL = "https://test.digitalpreservation.is.ed.ac.uk:443"
@@ -305,6 +305,21 @@ class FakeArchivesSpaceClient:
         # Simulate ``client.add_digital_object(...) raising
         # ``CommunicationError``.
         MoveFromCaseDIP(as_credentials_set=True, as_credentials_valid=as_ado_exc),
+    ],
+    ids=[
+        "no_package",
+        "uncompressed_aip",
+        "aip_with_mets_metadata",
+        "aip_without_tsm_upload",
+        "aip_with_space_metadata",
+        "login_failure",
+        "login_exception",
+        "record_create_failure",
+        "bitstream_create_failure",
+        "dip_with_mets_metadata",
+        "dip_with_archivesspace",
+        "archivesspace_client_exception",
+        "archivesspace_add_digital_object_error",
     ],
 )
 @mock.patch("agentarchives.archivesspace.ArchivesSpaceClient")

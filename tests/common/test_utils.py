@@ -2,6 +2,7 @@ import os
 import pathlib
 import re
 import tarfile
+import uuid
 from collections.abc import Callable
 from io import StringIO
 from unittest import mock
@@ -211,28 +212,23 @@ def test_get_format_info(compression, version, extension, program_name, transfor
     assert fsentry.transform_files == transform
 
 
+# The paths of the tests below hold a replica stored in its quad directories.
+REPLICA_UUID = uuid.uuid4()
+REPLICA_QUAD_DIRS = utils.uuid_to_path(REPLICA_UUID)
+REPLICAS_DIR = "/var/archivematica/sharedDirectory/www/offlineReplicas"
+
+
 @pytest.mark.parametrize(
     "package_path,is_file",
     [
-        (
-            "8ac0/d76b/b01e/47b1/8ca8/0fe8/0edb/e7b9/repl2-8ac0d76b-b01e-47b1-8ca8-0fe80edbe7b9.7z",
-            True,
-        ),
-        (
-            "cee5/a604/93d8/4253/a666/2f73/a19c/f835/repl13-cee5a604-93d8-4253-a666-2f73a19cf835.tar.gz",
-            True,
-        ),
-        (
-            "0eb3/ae66/2e7c/4982/bc85/23aa/697a/7dec/repl12-0eb3ae66-2e7c-4982-bc85-23aa697a7dec",
-            False,
-        ),
-        (
-            "ab9c/d802/7c7b/4377/8742/4685/d09b/6d75/repl11-ab9cd802-7c7b-4377-8742-4685d09b6d75.tar.bz2",
-            True,
-        ),
+        (f"{REPLICA_QUAD_DIRS}/repl2-{REPLICA_UUID}.7z", True),
+        (f"{REPLICA_QUAD_DIRS}/repl13-{REPLICA_UUID}.tar.gz", True),
+        (f"{REPLICA_QUAD_DIRS}/repl12-{REPLICA_UUID}", False),
+        (f"{REPLICA_QUAD_DIRS}/repl11-{REPLICA_UUID}.tar.bz2", True),
     ],
+    ids=["7z", "tar.gz", "directory", "tar.bz2"],
 )
-def test_package_is_file(package_path, is_file):
+def test_package_is_file(package_path: str, is_file: bool) -> None:
     """Ensure that we return is_file accurately for the types of path we will
     see in the storage service.
     """
@@ -436,34 +432,36 @@ def test_extract_tar_fails_and_restores_the_name(tmp_path: pathlib.Path) -> None
     [
         # Ensure UUID quad dirs are removed.
         (
-            "/var/archivematica/sharedDirectory/www/offlineReplicas/d8a4/d502/30b7/4902/b545/9c87/8242/f96c/uncompressed-test-d8a4d502-30b7-4902-b545-9c878242f96c",
-            "/var/archivematica/sharedDirectory/www/offlineReplicas/uncompressed-test-d8a4d502-30b7-4902-b545-9c878242f96c/",
+            f"{REPLICAS_DIR}/{REPLICA_QUAD_DIRS}/uncompressed-test-{REPLICA_UUID}",
+            f"{REPLICAS_DIR}/uncompressed-test-{REPLICA_UUID}/",
         ),
         (
-            "/var/archivematica/sharedDirectory/www/offlineReplicas/d8a4/d502/30b7/4902/b545/9c87/8242/f96c/uncompressed-test-d8a4d502-30b7-4902-b545-9c878242f96c/",
-            "/var/archivematica/sharedDirectory/www/offlineReplicas/uncompressed-test-d8a4d502-30b7-4902-b545-9c878242f96c/",
+            f"{REPLICAS_DIR}/{REPLICA_QUAD_DIRS}/uncompressed-test-{REPLICA_UUID}/",
+            f"{REPLICAS_DIR}/uncompressed-test-{REPLICA_UUID}/",
         ),
         (
-            "/var/archivematica/sharedDirectory/www/offlineReplicas/2965/2761/a5b2/4da9/9af8/ffb4/bc06/2439/compressed-replica-29652761-a5b2-4da9-9af8-ffb4bc062439.7z",
-            "/var/archivematica/sharedDirectory/www/offlineReplicas/compressed-replica-29652761-a5b2-4da9-9af8-ffb4bc062439.7z",
+            f"{REPLICAS_DIR}/{REPLICA_QUAD_DIRS}/compressed-replica-{REPLICA_UUID}.7z",
+            f"{REPLICAS_DIR}/compressed-replica-{REPLICA_UUID}.7z",
         ),
         # Ensure other directories are not removed.
-        (
-            "/var/archivematica/sharedDirectory/www/offlineReplicas/test-file.tar",
-            "/var/archivematica/sharedDirectory/www/offlineReplicas/test-file.tar",
-        ),
-        (
-            "/var/archivematica/sharedDirectory/www/offlineReplicas/test/package.tar.gz",
-            "/var/archivematica/sharedDirectory/www/offlineReplicas/test/package.tar.gz",
-        ),
+        (f"{REPLICAS_DIR}/test-file.tar", f"{REPLICAS_DIR}/test-file.tar"),
+        (f"{REPLICAS_DIR}/test/package.tar.gz", f"{REPLICAS_DIR}/test/package.tar.gz"),
         # Ensure directories terminate in slash, even if path contains dots.
         (
-            "/var/archivematica/sharedDirectory/www/offlineReplicas/d8a4/d502/30b7/4902/b545/9c87/8242/f96c/uncompressed.test.1-d8a4d502-30b7-4902-b545-9c878242f96c",
-            "/var/archivematica/sharedDirectory/www/offlineReplicas/uncompressed.test.1-d8a4d502-30b7-4902-b545-9c878242f96c/",
+            f"{REPLICAS_DIR}/{REPLICA_QUAD_DIRS}/uncompressed.test.1-{REPLICA_UUID}",
+            f"{REPLICAS_DIR}/uncompressed.test.1-{REPLICA_UUID}/",
         ),
     ],
+    ids=[
+        "uncompressed",
+        "uncompressed_with_slash",
+        "compressed",
+        "file_without_quad_dirs",
+        "nested_file_without_quad_dirs",
+        "dotted_name",
+    ],
 )
-def test_strip_quad_dirs_from_path(input_path, expected_path):
+def test_strip_quad_dirs_from_path(input_path: str, expected_path: str) -> None:
     assert utils.strip_quad_dirs_from_path(input_path) == expected_path
 
 

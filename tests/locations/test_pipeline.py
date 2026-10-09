@@ -12,6 +12,9 @@ from django.urls import reverse
 
 from archivematica.storage_service.locations import models
 
+# The pipeline reports this transfer.
+TRANSFER_UUID = str(uuid.uuid4())
+
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
 
@@ -99,7 +102,7 @@ def test_request_api(
                         {
                             "directory": "Foobar1",
                             "type": "standard",
-                            "uuid": "090b7f5b-637b-400b-9014-3eb58986fe8f",
+                            "uuid": TRANSFER_UUID,
                         }
                     ],
                 },
@@ -117,7 +120,7 @@ def test_list_unapproved_transfers(
     assert len(result["results"]) == 1
     assert result["results"][0]["directory"] == "Foobar1"
     assert result["results"][0]["type"] == "standard"
-    assert result["results"][0]["uuid"] == "090b7f5b-637b-400b-9014-3eb58986fe8f"
+    assert result["results"][0]["uuid"] == TRANSFER_UUID
 
 
 @pytest.mark.django_db
@@ -129,7 +132,7 @@ def test_list_unapproved_transfers(
                 "status_code": 200,
                 "json.return_value": {
                     "message": "Approval successful.",
-                    "uuid": "090b7f5b-637b-400b-9014-3eb58986fe8f",
+                    "uuid": TRANSFER_UUID,
                 },
             }
         )
@@ -139,7 +142,7 @@ def test_approve_transfer(request_api: mock.Mock, pipeline: models.Pipeline) -> 
     result = pipeline.approve_transfer("Foobar1", "standard")
 
     assert result["message"] == "Approval successful."
-    assert result["uuid"] == "090b7f5b-637b-400b-9014-3eb58986fe8f"
+    assert result["uuid"] == TRANSFER_UUID
 
 
 def test_view_create_pipeline(admin_client: Client) -> None:

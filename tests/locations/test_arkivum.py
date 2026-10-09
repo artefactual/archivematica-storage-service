@@ -1,21 +1,19 @@
-import os
 import pathlib
 import shutil
+import uuid
 from unittest import mock
 
 import pytest
 import requests
 
+from archivematica.storage_service.common import utils
 from archivematica.storage_service.locations import models
 from archivematica.storage_service.locations.models.arkivum import Arkivum
 
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
-PACKAGE_UUID = "c0f8498f-b92e-4a8b-8941-1b34ba062ed8"
 
-
-def get_pkg_uuid_path(package_uuid):
-    tmp = package_uuid.replace("-", "")
-    return os.path.join(*[tmp[i : i + 4] for i in range(0, len(tmp), 4)])
+# Arkivum assigned this identifier to the package it is replicating.
+ARKIVUM_IDENTIFIER = str(uuid.uuid4())
 
 
 @pytest.fixture
@@ -46,11 +44,11 @@ def package(
     pointer_file_location.space = arkivum.space
     pointer_file_location.relative_path = "arkivum/storage_service"
 
-    pointer_fname = f"pointer.{PACKAGE_UUID}.xml"
+    pointer_fname = f"pointer.{result.uuid}.xml"
     pointer_dst_path = pathlib.Path(
         pointer_file_location.space.path,
         pointer_file_location.relative_path,
-        get_pkg_uuid_path(PACKAGE_UUID),
+        utils.uuid_to_path(result.uuid),
         pointer_fname,
     )
     pointer_dst_path.parent.mkdir(parents=True)
@@ -150,7 +148,7 @@ def test_delete(
         mock.Mock(
             **{
                 "status_code": 202,
-                "json.return_value": {"id": "a09f9c18-df2b-474f-8c7f-50eb3dedba2d"},
+                "json.return_value": {"id": ARKIVUM_IDENTIFIER},
             }
         )
     ],
@@ -165,9 +163,7 @@ def test_post_move_from_ss(
     arkivum.post_move_from_storage_service(
         str(compressed_bag_path), package.full_path, package
     )
-    assert package.misc_attributes["arkivum_identifier"] == (
-        "a09f9c18-df2b-474f-8c7f-50eb3dedba2d"
-    )
+    assert package.misc_attributes["arkivum_identifier"] == ARKIVUM_IDENTIFIER
 
 
 @mock.patch(
@@ -206,9 +202,7 @@ def test_update_package_status_compressed(
     compressed_bag_path: pathlib.Path,
 ) -> None:
     # Setup request_id
-    package.misc_attributes.update(
-        {"arkivum_identifier": "2e75c8ad-cded-4f7e-8ac7-85627a116e39"}
-    )
+    package.misc_attributes.update({"arkivum_identifier": ARKIVUM_IDENTIFIER})
     package.save()
     # Verify status is STAGING
     assert package.status == models.Package.STAGING
@@ -232,7 +226,7 @@ def test_update_package_status_compressed(
             **{
                 "status_code": 200,
                 "json.return_value": {
-                    "id": "5afe9428-c6d6-4d0f-9196-5e7fd028726d",
+                    "id": ARKIVUM_IDENTIFIER,
                     "status": "Scheduled",
                 },
             }
@@ -251,7 +245,7 @@ def test_update_package_status_compressed(
                     "replicationState": "red",
                     "fixityLastChecked": "2015-11-24",
                     "replicationStates": {"red": 18},
-                    "id": "5afe9428-c6d6-4d0f-9196-5e7fd028726d",
+                    "id": ARKIVUM_IDENTIFIER,
                     "passed": "18",
                     "status": "Completed",
                 },
@@ -265,7 +259,7 @@ def test_update_package_status_compressed(
                     "replicationState": "green",
                     "fixityLastChecked": "2015-11-24",
                     "replicationStates": {"green": 18},
-                    "id": "5afe9428-c6d6-4d0f-9196-5e7fd028726d",
+                    "id": ARKIVUM_IDENTIFIER,
                     "passed": "18",
                     "status": "Completed",
                 },
@@ -282,7 +276,7 @@ def test_update_package_status_uncompressed(
     uncompressed_package.current_path = str(tmp_path)
     # Setup request_id
     uncompressed_package.misc_attributes.update(
-        {"arkivum_identifier": "5afe9428-c6d6-4d0f-9196-5e7fd028726d"}
+        {"arkivum_identifier": ARKIVUM_IDENTIFIER}
     )
     uncompressed_package.save()
     # Verify status is STAGING

@@ -7,9 +7,12 @@ from django.urls import reverse
 from pytest_django.asserts import assertContains
 from pytest_django.asserts import assertNotContains
 
+# The form creates the callback with this UUID.
+CALLBACK_UUID = uuid.uuid4()
+
 
 def mock_uuid() -> uuid.UUID:
-    return uuid.UUID("e3e70682-c209-4cac-629f-6fbed82c07cd")
+    return CALLBACK_UUID
 
 
 @pytest.mark.django_db
@@ -64,6 +67,6 @@ def test_displays_callbacks_table(admin_client: Client) -> None:
     assert row["uri"] == "http://localhost"
     assert row["method"] == "get"
     assert row["expectedResponse"] == 200
-    assert row["uuid"] == "e3e70682-c209-4cac-629f-6fbed82c07cd"
+    assert row["uuid"] == str(CALLBACK_UUID)
     assert row["enabled"] == "Disabled"
     assert 'id="tables-callbacks-table-payload"' in response.text

@@ -1,4 +1,3 @@
-import uuid
 from unittest import mock
 
 import pytest
@@ -12,7 +11,6 @@ from tests.factories import SpaceFactory
 def lockssomatic(make_space: SpaceFactory) -> Lockssomatic:
     """A LOCKSS-O-Matic space keeping its packages locally."""
     space = make_space(
-        uuid=uuid.UUID("584e029f-a23e-4764-b7d7-ea6a808691c2"),
         access_protocol=models.Space.LOM,
         path="/tmp/",
     )

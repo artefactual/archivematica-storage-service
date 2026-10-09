@@ -1,7 +1,5 @@
 """Tests for the datatable utilities."""
 
-import uuid
-
 import pytest
 
 from archivematica.storage_service.locations import datatable_utils
@@ -125,12 +123,11 @@ def test_search_status() -> None:
 
 
 @pytest.mark.usefixtures("package_rows")
-def test_search_replica_of() -> None:
-    package_uuid = uuid.UUID("f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04")
-    replicas_uuids = [
-        uuid.UUID("2f62b030-c3f4-4ac1-950f-fe47d0ddcd14"),
-        uuid.UUID("577f74bd-a283-49e0-b4e2-f8abb81d2566"),
-    ]
+def test_search_replica_of(
+    replicated_package: models.Package, replicas: list[models.Package]
+) -> None:
+    package_uuid = replicated_package.uuid
+    replicas_uuids = [replica.uuid for replica in replicas]
     datatable = datatable_utils.PackageDataTable(
         {
             "sSearch": str(package_uuid),
@@ -156,12 +153,11 @@ def test_search_replica_of() -> None:
 
 
 @pytest.mark.usefixtures("package_rows")
-def test_reverse_search_replica_of() -> None:
-    package_uuid = uuid.UUID("f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04")
-    replicas_uuids = [
-        uuid.UUID("2f62b030-c3f4-4ac1-950f-fe47d0ddcd14"),
-        uuid.UUID("577f74bd-a283-49e0-b4e2-f8abb81d2566"),
-    ]
+def test_reverse_search_replica_of(
+    replicated_package: models.Package, replicas: list[models.Package]
+) -> None:
+    package_uuid = replicated_package.uuid
+    replicas_uuids = [replica.uuid for replica in replicas]
     datatable = datatable_utils.PackageDataTable(
         {
             "sSearch": str(replicas_uuids[0]),
@@ -186,8 +182,7 @@ def test_reverse_search_replica_of() -> None:
     assert sorted(p.uuid for p in datatable.records) == expected_packages_uuids
 
 
-@pytest.mark.usefixtures("package_rows")
-def test_sorting_uuid_ascending() -> None:
+def test_sorting_uuid_ascending(package_rows: list[models.Package]) -> None:
     datatable = datatable_utils.PackageDataTable(
         {
             "iSortingCols": 1,
@@ -207,23 +202,11 @@ def test_sorting_uuid_ascending() -> None:
         "echo": 1,
     }
     assert datatable.params == expected_params
-    expected_uuids = [
-        uuid.UUID("0d4e739b-bf60-4b87-bc20-67a379b28cea"),
-        uuid.UUID("2f62b030-c3f4-4ac1-950f-fe47d0ddcd14"),
-        uuid.UUID("473a9398-0024-4804-81da-38946040c8af"),
-        uuid.UUID("4781e745-96bc-4b06-995c-ee59fddf856d"),
-        uuid.UUID("577f74bd-a283-49e0-b4e2-f8abb81d2566"),
-        uuid.UUID("6aebdb24-1b6b-41ab-b4a3-df9a73726a34"),
-        uuid.UUID("708f7a1d-dda4-46c7-9b3e-99e188eeb04c"),
-        uuid.UUID("79245866-ca80-4f84-b904-a02b3e0ab621"),
-        uuid.UUID("88deec53-c7dc-4828-865c-7356386e9399"),
-        uuid.UUID("9f260047-a9b7-4a75-bb6a-e8d94c83edd2"),
-    ]
+    expected_uuids = sorted(package.uuid for package in package_rows)[:10]
     assert [package.uuid for package in datatable.records] == expected_uuids
 
 
-@pytest.mark.usefixtures("package_rows")
-def test_sorting_uuid_descending() -> None:
+def test_sorting_uuid_descending(package_rows: list[models.Package]) -> None:
     datatable = datatable_utils.PackageDataTable(
         {
             "iSortingCols": 1,
@@ -243,23 +226,11 @@ def test_sorting_uuid_descending() -> None:
         "echo": 1,
     }
     assert datatable.params == expected_params
-    expected_uuids = [
-        uuid.UUID("f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04"),
-        uuid.UUID("e0a41934-c1d7-45ba-9a95-a7531c063ed1"),
-        uuid.UUID("a59033c2-7fa7-41e2-9209-136f07174692"),
-        uuid.UUID("9f260047-a9b7-4a75-bb6a-e8d94c83edd2"),
-        uuid.UUID("88deec53-c7dc-4828-865c-7356386e9399"),
-        uuid.UUID("79245866-ca80-4f84-b904-a02b3e0ab621"),
-        uuid.UUID("708f7a1d-dda4-46c7-9b3e-99e188eeb04c"),
-        uuid.UUID("6aebdb24-1b6b-41ab-b4a3-df9a73726a34"),
-        uuid.UUID("577f74bd-a283-49e0-b4e2-f8abb81d2566"),
-        uuid.UUID("4781e745-96bc-4b06-995c-ee59fddf856d"),
-    ]
-    assert [package.uuid for package in datatable.records] == expected_uuids
+    uuids_descending = sorted((package.uuid for package in package_rows), reverse=True)
+    assert [package.uuid for package in datatable.records] == uuids_descending[:10]
 
 
-@pytest.mark.usefixtures("package_rows")
-def test_sorting_by_full_path_helper() -> None:
+def test_sorting_by_full_path_helper(package_rows: list[models.Package]) -> None:
     datatable = datatable_utils.PackageDataTable(
         {
             "iSortingCols": 1,
@@ -278,49 +249,36 @@ def test_sorting_by_full_path_helper() -> None:
         "echo": 1,
     }
     assert datatable.params == expected_params
-    expected_paths = [
-        "/2f62/b030/c3f4/4ac1/950f/fe47/d0dd/cd14/0f-2f62b030-c3f4-4ac1-950f-fe47d0ddcd14.7z",
-        "/577f/74bd/a283/49e0/b4e2/f8ab/b81d/2566/0f-577f74bd-a283-49e0-b4e2-f8abb81d2566.7z",
-        "/aicsmall_aic-4781e745-96bc-4b06-995c-ee59fddf856d.7z",
-        "/broken_bag",
-        "/dev/null/a.bz2.tricky.7z.package-473a9398-0024-4804-81da-38946040c8af.7z",
-        "/dev/null/empty-transfer-79245866-ca80-4f84-b904-a02b3e0ab621",
-        "/dev/null/images-transfer-de1b31fa-97dd-48e0-8417-03be78359531",
-        "/dev/null/tar_gz_package-473a9398-0024-4804-81da-38946040c8af.tar.gz",
-        "/dev/null/transfer-with-one-file-a59033c2-7fa7-41e2-9209-136f07174692",
-        "/f0df/dc4c/7ba1/4e3f/a972/f2c5/5d87/0d04/0f-f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04.7z",
-    ]
+    expected_paths = sorted(package.full_path for package in package_rows)[:10]
     assert [package.full_path for package in datatable.records] == expected_paths
 
 
 @pytest.mark.usefixtures("package_rows")
-def test_packages_are_filtered_by_location() -> None:
+def test_packages_are_filtered_by_location(
+    testing_aip_storage: models.Location,
+) -> None:
     # count all packages with no filtering
     datatable = datatable_utils.PackageDataTable(
         {"iDisplayStart": 0, "iDisplayLength": 10, "sEcho": "1"}
     )
     assert datatable.total_records == TOTAL_FIXTURE_PACKAGES
     TOTAL_RECORDS_IN_LOCATION = 10
-    aip_storage_location = models.Location.objects.get(
-        uuid="615103f0-0ee0-4a12-ba17-43192d1143ea"
-    )
     # count packages only from that location
     datatable = datatable_utils.PackageDataTable(
         {
             "iDisplayStart": 0,
             "iDisplayLength": 10,
             "sEcho": "1",
-            "location-uuid": aip_storage_location.uuid,
+            "location-uuid": testing_aip_storage.uuid,
         }
     )
     assert datatable.total_records == TOTAL_RECORDS_IN_LOCATION
 
 
 @pytest.mark.usefixtures("package_rows")
-def test_packages_are_filtered_by_location_and_description() -> None:
-    aip_storage_location = models.Location.objects.get(
-        uuid="615103f0-0ee0-4a12-ba17-43192d1143ea"
-    )
+def test_packages_are_filtered_by_location_and_description(
+    testing_aip_storage: models.Location,
+) -> None:
     # count packages only from that location
     datatable = datatable_utils.PackageDataTable(
         {
@@ -328,7 +286,7 @@ def test_packages_are_filtered_by_location_and_description() -> None:
             "iDisplayStart": 0,
             "iDisplayLength": 10,
             "sEcho": "1",
-            "location-uuid": aip_storage_location.uuid,
+            "location-uuid": testing_aip_storage.uuid,
         }
     )
     assert len(datatable.records) == 1
@@ -338,29 +296,31 @@ def test_packages_are_filtered_by_location_and_description() -> None:
 
 
 @pytest.mark.usefixtures("fixity_log_rows")
-def test_fixity_logs_are_filtered_by_package() -> None:
+def test_fixity_logs_are_filtered_by_package(
+    images_transfer: models.Package,
+) -> None:
     # count all fixity logs with no filtering
     datatable = datatable_utils.FixityLogDataTable(
         {"iDisplayStart": 0, "iDisplayLength": 10, "sEcho": "1"}
     )
     assert datatable.total_records == TOTAL_FIXTURE_FIXITY_LOGS
     TOTAL_RECORDS_IN_PACKAGE = 3
-    package = models.Package.objects.get(uuid="e0a41934-c1d7-45ba-9a95-a7531c063ed1")
     # count fixity logs only from that package
     datatable = datatable_utils.FixityLogDataTable(
         {
             "iDisplayStart": 0,
             "iDisplayLength": 10,
             "sEcho": "1",
-            "package-uuid": package.uuid,
+            "package-uuid": images_transfer.uuid,
         }
     )
     assert datatable.total_records == TOTAL_RECORDS_IN_PACKAGE
 
 
 @pytest.mark.usefixtures("fixity_log_rows")
-def test_fixity_logs_are_filtered_by_package_and_error_details() -> None:
-    package = models.Package.objects.get(uuid="e0a41934-c1d7-45ba-9a95-a7531c063ed1")
+def test_fixity_logs_are_filtered_by_package_and_error_details(
+    images_transfer: models.Package,
+) -> None:
     # count fixity logs only from that package
     datatable = datatable_utils.FixityLogDataTable(
         {
@@ -368,7 +328,7 @@ def test_fixity_logs_are_filtered_by_package_and_error_details() -> None:
             "iDisplayStart": 0,
             "iDisplayLength": 10,
             "sEcho": "1",
-            "package-uuid": package.uuid,
+            "package-uuid": images_transfer.uuid,
         }
     )
     assert len(datatable.records) == 2
