@@ -1,61 +1,71 @@
-import os
 import pathlib
-import tempfile
 import uuid
 
 import pytest
-from django.test import TestCase
+from django.core.management import call_command
 from metsrw.plugins import premisrw
 
 from archivematica.storage_service.locations import models
 
-from . import TempDirMixin
-
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
 
-class TestOfflineReplicaStaging(TempDirMixin, TestCase):
-    fixture_files = ["base.json", "replica_staging.json"]
-    fixtures = [FIXTURES_DIR / f for f in fixture_files]
+@pytest.fixture
+def replica_staging_fixtures(db: None) -> None:
+    call_command(
+        "loaddata",
+        *[str(FIXTURES_DIR / name) for name in ["base.json", "replica_staging.json"]],
+        verbosity=0,
+    )
 
-    def setUp(self):
-        super().setUp()
-        self.replica = models.Package.objects.get(id=1)
-        self.replica.current_location.space.staging_path = str(self.tmpdir)
-        self.replica.current_location.space.save()
 
-        space = models.Space.objects.get(id=1)
-        space.path = str(self.tmpdir)
-        space.save()
+@pytest.fixture
+def replica(replica_staging_fixtures: None, tmp_path: pathlib.Path) -> models.Package:
+    """The package of the offline replica staging space, with the spaces and
+    the internal location of the Storage Service in the temporary directory.
+    """
+    result = models.Package.objects.get(id=1)
+    result.current_location.space.staging_path = str(tmp_path)
+    result.current_location.space.save()
 
-        location = models.Location.objects.get(id=5)
-        ss_internal_dir = tempfile.mkdtemp(dir=str(self.tmpdir), prefix="int")
-        ss_int_relpath = os.path.relpath(ss_internal_dir, str(self.tmpdir))
-        location.relative_path = ss_int_relpath
-        location.save()
+    space = models.Space.objects.get(id=1)
+    space.path = str(tmp_path)
+    space.save()
 
-    def test_delete(self):
-        """Test that package in Space isn't deleted."""
-        success, err = self.replica.delete_from_storage()
-        assert success is False
-        assert err == "Write-Only Offline Staging does not implement deletion"
+    location = models.Location.objects.get(id=5)
+    ss_internal_dir = tmp_path / "internal"
+    ss_internal_dir.mkdir()
+    location.relative_path = str(ss_internal_dir.relative_to(tmp_path))
+    location.save()
 
-    def test_check_fixity(self):
-        """Test that fixity check raises NotImplementedError."""
-        with self.assertRaises(NotImplementedError):
-            self.replica.check_fixity()
+    return result
 
-    def test_browse(self):
-        """Test that browse raises NotImplementedError."""
-        with self.assertRaises(NotImplementedError):
-            self.replica.current_location.space.browse("/test/path")
 
-    def test_move_to_storage_service(self):
-        """Test that move_to_storage_service raises NotImplementedError."""
-        with self.assertRaises(NotImplementedError):
-            self.replica.current_location.space.move_to_storage_service(
-                "/test/path", "/dev/null", self.replica.current_location.space
-            )
+def test_delete(replica: models.Package) -> None:
+    """Test that package in Space isn't deleted."""
+    success, err = replica.delete_from_storage()
+    assert success is False
+    assert err == "Write-Only Offline Staging does not implement deletion"
+
+
+def test_check_fixity(replica: models.Package) -> None:
+    """Test that fixity check raises NotImplementedError."""
+    with pytest.raises(NotImplementedError):
+        replica.check_fixity()
+
+
+def test_browse(replica: models.Package) -> None:
+    """Test that browse raises NotImplementedError."""
+    with pytest.raises(NotImplementedError):
+        replica.current_location.space.browse("/test/path")
+
+
+def test_move_to_storage_service(replica: models.Package) -> None:
+    """Test that move_to_storage_service raises NotImplementedError."""
+    with pytest.raises(NotImplementedError):
+        replica.current_location.space.move_to_storage_service(
+            "/test/path", "/dev/null", replica.current_location.space
+        )
 
 
 @pytest.fixture

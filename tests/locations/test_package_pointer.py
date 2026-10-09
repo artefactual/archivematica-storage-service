@@ -2,7 +2,8 @@ import pathlib
 from uuid import uuid4
 
 import metsrw
-from django.test import TestCase
+import pytest
+from django.core.management import call_command
 from metsrw.plugins import premisrw
 
 from archivematica.storage_service.locations import models
@@ -157,24 +158,29 @@ TEST_PREMIS_EVENT = (
 )
 
 
-class TestPackagePointer(TestCase):
-    """Test the package model's pointer file-related capabilities."""
+@pytest.fixture
+def package_fixtures(db: None) -> None:
+    call_command(
+        "loaddata",
+        *[str(FIXTURES_DIR / name) for name in ["base.json", "package.json"]],
+        verbosity=0,
+    )
 
-    fixture_files = ["base.json", "package.json"]
-    fixtures = [FIXTURES_DIR / f for f in fixture_files]
 
-    def setUp(self):
-        self.package = models.Package.objects.all()[0]
+@pytest.fixture
+def package(package_fixtures: None) -> models.Package:
+    return models.Package.objects.all()[0]
 
-    def test_create_pointer_file(self):
-        """It should be able to create a pointer file."""
-        pointer_file = self.package.create_pointer_file(
-            TEST_PREMIS_OBJECT,
-            [TEST_PREMIS_EVENT],
-            premis_agents=[TEST_PREMIS_AGENT_1, TEST_PREMIS_AGENT_2],
-            validate=False,
-        )
-        is_valid, report = metsrw.validate(
-            pointer_file.serialize(), schematron=metsrw.AM_PNTR_SCT_PATH
-        )
-        assert is_valid
+
+def test_create_pointer_file(package: models.Package) -> None:
+    """It should be able to create a pointer file."""
+    pointer_file = package.create_pointer_file(
+        TEST_PREMIS_OBJECT,
+        [TEST_PREMIS_EVENT],
+        premis_agents=[TEST_PREMIS_AGENT_1, TEST_PREMIS_AGENT_2],
+        validate=False,
+    )
+    is_valid, report = metsrw.validate(
+        pointer_file.serialize(), schematron=metsrw.AM_PNTR_SCT_PATH
+    )
+    assert is_valid

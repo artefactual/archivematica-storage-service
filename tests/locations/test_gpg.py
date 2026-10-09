@@ -7,7 +7,7 @@ from typing import Any
 from unittest import mock
 
 import pytest
-from django.test import TestCase
+from django.core.management import call_command
 from metsrw.plugins import premisrw
 
 from archivematica.storage_service.locations.models import Package
@@ -511,33 +511,42 @@ def test__parse_gpg_version():
     assert GPG_VERSION == gpg._parse_gpg_version(RAW_GPG_VERSION)
 
 
-class TestGPG(TestCase):
-    fixture_files = ["base.json", "package.json", "gpg.json"]
-    fixtures = [FIXTURES_DIR / f for f in fixture_files]
+@pytest.fixture
+def gpg_fixtures(db: None) -> None:
+    call_command(
+        "loaddata",
+        *[
+            str(FIXTURES_DIR / name)
+            for name in ["base.json", "package.json", "gpg.json"]
+        ],
+        verbosity=0,
+    )
 
-    def test__encr_path2key_fingerprint(self):
-        package = Package.objects.get(pk=8)
-        exp_curr_path = (
-            "some/relative/path/to/images-transfer-abcdabcd-97dd-48e0-8417-03be78359531"
-        )
-        assert package.current_path == exp_curr_path
-        assert package.encryption_key_fingerprint == EXP_FINGERPRINT
 
-        encr_path = exp_curr_path
-        assert gpg._encr_path2key_fingerprint(encr_path) == EXP_FINGERPRINT
+@pytest.mark.usefixtures("gpg_fixtures")
+def test__encr_path2key_fingerprint() -> None:
+    package = Package.objects.get(pk=8)
+    exp_curr_path = (
+        "some/relative/path/to/images-transfer-abcdabcd-97dd-48e0-8417-03be78359531"
+    )
+    assert package.current_path == exp_curr_path
+    assert package.encryption_key_fingerprint == EXP_FINGERPRINT
 
-        encr_path = f"/abs/path/to/{exp_curr_path}"
-        assert gpg._encr_path2key_fingerprint(encr_path) == EXP_FINGERPRINT
+    encr_path = exp_curr_path
+    assert gpg._encr_path2key_fingerprint(encr_path) == EXP_FINGERPRINT
 
-        encr_path = f"{exp_curr_path}/data/objects/somefile.jpg"
-        assert gpg._encr_path2key_fingerprint(encr_path) == EXP_FINGERPRINT
+    encr_path = f"/abs/path/to/{exp_curr_path}"
+    assert gpg._encr_path2key_fingerprint(encr_path) == EXP_FINGERPRINT
 
-        encr_path = f"/abs/path/to/{exp_curr_path}/data/objects/somefile.jpg"
-        assert gpg._encr_path2key_fingerprint(encr_path) == EXP_FINGERPRINT
+    encr_path = f"{exp_curr_path}/data/objects/somefile.jpg"
+    assert gpg._encr_path2key_fingerprint(encr_path) == EXP_FINGERPRINT
 
-        with pytest.raises(gpg.GPGException) as excinfo:
-            encr_path = "/some/non/matching/path.jpg"
-            gpg._encr_path2key_fingerprint(encr_path)
-        assert f"Unable to find package matching encrypted path {encr_path}" in str(
-            excinfo.value
-        )
+    encr_path = f"/abs/path/to/{exp_curr_path}/data/objects/somefile.jpg"
+    assert gpg._encr_path2key_fingerprint(encr_path) == EXP_FINGERPRINT
+
+    with pytest.raises(gpg.GPGException) as excinfo:
+        encr_path = "/some/non/matching/path.jpg"
+        gpg._encr_path2key_fingerprint(encr_path)
+    assert f"Unable to find package matching encrypted path {encr_path}" in str(
+        excinfo.value
+    )
