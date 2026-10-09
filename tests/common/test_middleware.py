@@ -1,40 +1,49 @@
-from django.conf import settings
-from django.contrib.auth import get_user_model
-from django.test import TestCase
-from django.test.client import Client
+import pytest
+import pytest_django
+from django.contrib.auth.models import User
+from django.test import Client
+
+AUDIT_LOG_MIDDLEWARE = (
+    "archivematica.storage_service.common.middleware.AuditLogMiddleware"
+)
 
 
-class AuditLogMiddlewareTestCase(TestCase):
-    def setUp(self):
-        self.client = Client()
-        User = get_user_model()
-        self.user = User.objects.create_user(username="testclient", password="test")
-        self.client.force_login(self.user)
+@pytest.fixture
+def user(django_user_model: type[User]) -> User:
+    return django_user_model.objects.create_user(username="testclient", password="test")
 
-    def test_audit_log_middleware_adds_username(self):
-        """Test that X-Username is added for authenticated users."""
-        with self.modify_settings(
-            MIDDLEWARE={
-                "append": "archivematica.storage_service.common.middleware.AuditLogMiddleware"
-            }
-        ):
-            response = self.client.get("/")
-            self.assertTrue(response.has_header("X-Username"))
-            self.assertEqual(response["X-Username"], self.user.username)
 
-    def test_audit_log_middleware_unauthenticated(self):
-        """Test absence of X-Username header for unauthenticated users.
+@pytest.fixture
+def logged_in_client(client: Client, user: User) -> Client:
+    client.force_login(user)
 
-        First we logout the authenticated user, and then we check for
-        the presence of X-Username in the response for a new request by
-        an unauthenticated user.
-        """
-        with self.modify_settings(
-            MIDDLEWARE={
-                "append": "archivematica.storage_service.common.middleware.AuditLogMiddleware"
-            }
-        ):
-            self.client.logout()
+    return client
 
-            response = self.client.get(settings.LOGIN_URL)
-            self.assertFalse(response.has_header("X-Username"))
+
+def test_audit_log_middleware_adds_username(
+    settings: pytest_django.Settings, logged_in_client: Client, user: User
+) -> None:
+    """Test that X-Username is added for authenticated users."""
+    settings.MIDDLEWARE = [*settings.MIDDLEWARE, AUDIT_LOG_MIDDLEWARE]
+
+    response = logged_in_client.get("/")
+
+    assert response.has_header("X-Username")
+    assert response["X-Username"] == user.username
+
+
+def test_audit_log_middleware_unauthenticated(
+    settings: pytest_django.Settings, logged_in_client: Client
+) -> None:
+    """Test absence of X-Username header for unauthenticated users.
+
+    First we logout the authenticated user, and then we check for
+    the presence of X-Username in the response for a new request by
+    an unauthenticated user.
+    """
+    settings.MIDDLEWARE = [*settings.MIDDLEWARE, AUDIT_LOG_MIDDLEWARE]
+    logged_in_client.logout()
+
+    response = logged_in_client.get(settings.LOGIN_URL)
+
+    assert not response.has_header("X-Username")
