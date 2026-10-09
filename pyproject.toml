@@ -164,6 +164,7 @@ module = [
     "tests.common.test_compression",
     "tests.conftest",
     "tests.integration.*",
+    "tests.locations.conftest",
     "tests.locations.test_reingest",
     "tests.storage_service.test_helpers",
     "tests.storage_service.test_oidc",
