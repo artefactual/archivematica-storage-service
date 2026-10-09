@@ -1,6 +1,5 @@
 import pathlib
 import subprocess
-import uuid
 from collections.abc import Sequence
 from unittest import mock
 
@@ -20,28 +19,17 @@ AIP_PATH = FIXTURES_DIR / "import_aip_test.7z"
 
 
 @pytest.fixture
-def aip_storage_location(db, tmp_path):
-    space_directory = tmp_path / "sub"
-    space_directory.mkdir()
-    space = models.Space.objects.create(
-        uuid=str(uuid.uuid4()),
-        path=space_directory,
-        access_protocol=models.Space.LOCAL_FILESYSTEM,
-        staging_path=space_directory,
-    )
-    pipeline = models.Pipeline.objects.create(uuid=str(uuid.uuid4()))
-    aipstore = models.Location.objects.create(
-        uuid=str(uuid.uuid4()),
-        space=space,
-        purpose="AS",
-        relative_path="",
-    )
-    models.Location.objects.create(
-        space=space, purpose=models.Location.STORAGE_SERVICE_INTERNAL, relative_path=""
-    )
-    models.LocalFilesystem.objects.create(space=space)
-    models.LocationPipeline.objects.get_or_create(pipeline=pipeline, location=aipstore)
-    return aipstore
+def aip_storage_location(
+    aip_storage_location: models.Location,
+    pipeline: models.Pipeline,
+    ss_internal_location: models.Location,
+) -> models.Location:
+    """The AIP storage location of the pipeline, in the space of the internal
+    location.
+    """
+    aip_storage_location.pipeline.add(pipeline)
+
+    return aip_storage_location
 
 
 @pytest.mark.django_db
@@ -143,8 +131,11 @@ def test_import_aip_command_creates_compressed_package(
     "archivematica.storage_service.common.management.commands.import_aip.getpwnam"
 )
 def test_import_aip_command_sets_unix_owner(
-    getpwnam, chown, capsys, aip_storage_location
-):
+    getpwnam: mock.MagicMock,
+    chown: mock.MagicMock,
+    capsys: pytest.CaptureFixture[str],
+    aip_storage_location: models.Location,
+) -> None:
     user = "foobar"
     user_id = 256
     user_group_id = 512
@@ -171,11 +162,6 @@ def test_import_aip_command_sets_unix_owner(
     getpwnam.assert_called_with(user)
 
     # Verify all calls to os.chown used the expected user ID and group ID.
-    mock_call_args = set()
-    for call in chown.mock_calls:
-        positional_call_args = call[1]
-        uid = positional_call_args[1]
-        gid = positional_call_args[2]
-        mock_call_args.add((uid, gid))
-
-    assert mock_call_args == {(user_id, user_group_id)}
+    assert {(call.args[1], call.args[2]) for call in chown.mock_calls} == {
+        (user_id, user_group_id)
+    }

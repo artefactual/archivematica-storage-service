@@ -5,12 +5,13 @@ import pytest
 
 from archivematica.storage_service.locations import models
 from archivematica.storage_service.locations.models.lockssomatic import Lockssomatic
+from tests.factories import SpaceFactory
 
 
 @pytest.fixture
-def lockssomatic(db: None) -> Lockssomatic:
+def lockssomatic(make_space: SpaceFactory) -> Lockssomatic:
     """A LOCKSS-O-Matic space keeping its packages locally."""
-    space = models.Space.objects.create(
+    space = make_space(
         uuid=uuid.UUID("584e029f-a23e-4764-b7d7-ea6a808691c2"),
         access_protocol=models.Space.LOM,
         path="/tmp/",

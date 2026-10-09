@@ -1,22 +1,6 @@
-import pytest
 import pytest_django
-from django.contrib.auth.models import User
 from django.test import Client
 from pytest_django.asserts import assertTemplateUsed
-
-
-@pytest.fixture
-def user(django_user_model: type[User]) -> User:
-    return django_user_model.objects.create_user(
-        username="admin", password="admin", email="admin@example.com"
-    )
-
-
-@pytest.fixture
-def logged_in_client(client: Client, user: User) -> Client:
-    client.force_login(user)
-
-    return client
 
 
 def test_displays_language_form(logged_in_client: Client) -> None:

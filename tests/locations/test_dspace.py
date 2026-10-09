@@ -1,4 +1,3 @@
-import os
 import pathlib
 import shutil
 import uuid
@@ -8,14 +7,17 @@ import pytest
 
 from archivematica.storage_service.locations import models
 from archivematica.storage_service.locations.models.dspace import DSpace
+from tests.factories import LocationFactory
+from tests.factories import PackageFactory
+from tests.factories import SpaceFactory
 
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
 
 @pytest.fixture
-def dspace(db: None) -> DSpace:
+def dspace(make_space: SpaceFactory) -> DSpace:
     """The DSpace space of the demo instance."""
-    space = models.Space.objects.create(
+    space = make_space(
         uuid=uuid.UUID("e764565a-5150-486a-93c6-ae78bec4b54b"),
         access_protocol=models.Space.DSPACE,
         path="",
@@ -31,22 +33,31 @@ def dspace(db: None) -> DSpace:
 
 
 @pytest.fixture
-def dspace_package(dspace: DSpace) -> models.Package:
+def dspace_package(
+    make_location: LocationFactory, make_package: PackageFactory, dspace: DSpace
+) -> models.Package:
     """A compressed AIP stored in the collection of the DSpace space."""
-    location = models.Location.objects.create(
+    location = make_location(
+        dspace.space,
+        models.Location.AIP_STORAGE,
         uuid=uuid.UUID("d9d7db26-f7a1-40aa-9db1-806b4d3a61cd"),
-        space=dspace.space,
-        purpose=models.Location.AIP_STORAGE,
         relative_path="http://demo.dspace.org/swordv2/collection/123456789/2",
         description="DSpace AS",
     )
 
-    return models.Package.objects.create(
+    return make_package(
+        location,
+        "locations/fixtures/small_compressed_bag.zip",
         uuid=uuid.UUID("1056123d-8a16-49c2-ac51-8e5fa367d8b5"),
-        current_location=location,
-        current_path="locations/fixtures/small_compressed_bag.zip",
-        package_type="AIP",
         status="Uploaded",
+    )
+
+
+@pytest.fixture
+def compressed_bag_path(tmp_path: pathlib.Path) -> pathlib.Path:
+    """A copy of the compressed bag fixture in the temporary directory."""
+    return pathlib.Path(
+        shutil.copy(FIXTURES_DIR / "small_compressed_bag.zip", tmp_path)
     )
 
 
@@ -87,11 +98,10 @@ def test_get_sword_connection(_request: mock.MagicMock, dspace: DSpace) -> None:
     assert dspace.sword_connection.workspaces[0][1][0].title == "Test collection"
 
 
-def test_get_metadata(dspace: DSpace, tmp_path: pathlib.Path) -> None:
+def test_get_metadata(dspace: DSpace, compressed_bag_path: pathlib.Path) -> None:
     """It should fetch DC metadata from AIP."""
-    shutil.copy(os.path.join(FIXTURES_DIR, "small_compressed_bag.zip"), str(tmp_path))
     ret = dspace._get_metadata(
-        str(tmp_path / "small_compressed_bag.zip"),
+        str(compressed_bag_path),
         uuid.UUID("1056123d-8a16-49c2-ac51-8e5fa367d8b5"),
     )
     assert len(ret) == 6
@@ -103,13 +113,11 @@ def test_get_metadata(dspace: DSpace, tmp_path: pathlib.Path) -> None:
     assert ret["dcterms_relation.ispartofseries"] == "None"
 
 
-def test_split_package_zip(dspace: DSpace, tmp_path: pathlib.Path) -> None:
+def test_split_package_zip(
+    dspace: DSpace, compressed_bag_path: pathlib.Path, tmp_path: pathlib.Path
+) -> None:
     """It should split a package into objects and metadata using ZIP."""
-    # Setup
-    shutil.copy(os.path.join(FIXTURES_DIR, "small_compressed_bag.zip"), str(tmp_path))
-    path = str(tmp_path / "small_compressed_bag.zip")
-    # Test
-    split_paths = dspace._split_package(path)
+    split_paths = dspace._split_package(str(compressed_bag_path))
     # Verify
     assert len(split_paths) == 2
     assert str(tmp_path / "objects.zip") in split_paths
@@ -118,13 +126,12 @@ def test_split_package_zip(dspace: DSpace, tmp_path: pathlib.Path) -> None:
     assert (tmp_path / "metadata.zip").is_file()
 
 
-def test_split_package_7z(dspace: DSpace, tmp_path: pathlib.Path) -> None:
+def test_split_package_7z(
+    dspace: DSpace, compressed_bag_path: pathlib.Path, tmp_path: pathlib.Path
+) -> None:
     """It should split a package into objects and metadata using 7Z."""
-    shutil.copy(os.path.join(FIXTURES_DIR, "small_compressed_bag.zip"), str(tmp_path))
-    path = str(tmp_path / "small_compressed_bag.zip")
     dspace.archive_format = dspace.ARCHIVE_FORMAT_7Z
-    # Test
-    split_paths = dspace._split_package(path)
+    split_paths = dspace._split_package(str(compressed_bag_path))
     # Verify
     assert len(split_paths) == 2
     assert str(tmp_path / "objects.7z") in split_paths
@@ -187,16 +194,17 @@ def test_move_from_ss(
     _request: mock.MagicMock,
     dspace: DSpace,
     dspace_package: models.Package,
+    compressed_bag_path: pathlib.Path,
     tmp_path: pathlib.Path,
 ) -> None:
     # Create test.txt
     (tmp_path / "test.txt").open("w").write("test file\n")
     package = dspace_package
-    shutil.copy(os.path.join(FIXTURES_DIR, "small_compressed_bag.zip"), str(tmp_path))
-    path = str(tmp_path / "small_compressed_bag.zip")
 
     # Upload
-    dspace.move_from_storage_service(path, "irrelevent", package=package)
+    dspace.move_from_storage_service(
+        str(compressed_bag_path), "irrelevent", package=package
+    )
 
     # Verify
     assert package.current_path == "http://demo.dspace.org/swordv2/statement/86.atom"

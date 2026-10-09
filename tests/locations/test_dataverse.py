@@ -7,22 +7,29 @@ import pytest
 
 from archivematica.storage_service.locations import models
 from archivematica.storage_service.locations.models.dataverse import Dataverse
+from tests.factories import LocationFactory
+from tests.factories import SpaceFactory
 
 
 def _create_dataverse(
-    space_uuid: str, location_uuid: str, relative_path: str, **fields: str
+    make_space: SpaceFactory,
+    make_location: LocationFactory,
+    space_uuid: str,
+    location_uuid: str,
+    relative_path: str,
+    **fields: str,
 ) -> Dataverse:
     """Create a Dataverse space with its transfer source location."""
-    space = models.Space.objects.create(
+    space = make_space(
         uuid=uuid.UUID(space_uuid),
         access_protocol=models.Space.DATAVERSE,
         path="",
         staging_path="/var/archivematica/storage_service/",
     )
-    models.Location.objects.create(
+    make_location(
+        space,
+        models.Location.TRANSFER_SOURCE,
         uuid=uuid.UUID(location_uuid),
-        space=space,
-        purpose=models.Location.TRANSFER_SOURCE,
         relative_path=relative_path,
         description="",
     )
@@ -31,9 +38,11 @@ def _create_dataverse(
 
 
 @pytest.fixture
-def dataverse(db: None) -> Dataverse:
+def dataverse(make_space: SpaceFactory, make_location: LocationFactory) -> Dataverse:
     """The Dataverse space of the example network."""
     return _create_dataverse(
+        make_space,
+        make_location,
         "216bec3b-c4c1-4eff-97ef-728244e58dd0",
         "da1c729d-0b17-4c48-91d5-127f38f7542d",
         "*",
@@ -46,9 +55,13 @@ def dataverse(db: None) -> Dataverse:
 
 
 @pytest.fixture
-def demo_dataverse(db: None) -> Dataverse:
+def demo_dataverse(
+    make_space: SpaceFactory, make_location: LocationFactory
+) -> Dataverse:
     """The Dataverse space of the Scholars Portal demo instance."""
     return _create_dataverse(
+        make_space,
+        make_location,
         "d18a2763-60f0-4273-b30c-caa5d14d6d32",
         "3af8a6a1-19f3-40be-87aa-bfa0940a1944",
         "test",
@@ -61,8 +74,8 @@ def demo_dataverse(db: None) -> Dataverse:
 
 
 @pytest.fixture
-def fs_space(default_space: models.Space, tmp_path: pathlib.Path) -> models.Space:
-    """The local filesystem space, staging in the temporary directory."""
+def default_space(default_space: models.Space, tmp_path: pathlib.Path) -> models.Space:
+    """The default space, staging in the temporary directory."""
     default_space.staging_path = str(tmp_path)
 
     return default_space
@@ -453,7 +466,7 @@ def test_browse_datasets(
 def test_move_to(
     _requests_get: mock.MagicMock,
     dataverse: Dataverse,
-    fs_space: models.Space,
+    default_space: models.Space,
     tmp_path: pathlib.Path,
 ) -> None:
     """
@@ -462,7 +475,7 @@ def test_move_to(
     """
     dest_path = str(tmp_path / "dataverse") + os.sep
     assert os.path.exists(dest_path) is False
-    dataverse.space.move_to_storage_service("90", "dataverse/", fs_space)
+    dataverse.space.move_to_storage_service("90", "dataverse/", default_space)
     assert "chelan 052.jpg" in os.listdir(dest_path)
     assert "Weather_data.zip" in os.listdir(dest_path)
     assert "metadata" in os.listdir(dest_path)

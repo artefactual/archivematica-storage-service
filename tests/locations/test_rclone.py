@@ -4,6 +4,11 @@ from unittest import mock
 import pytest
 
 from archivematica.storage_service.locations import models
+from archivematica.storage_service.locations.models.rclone import RClone
+from tests.factories import LocationFactory
+from tests.factories import PackageFactory
+from tests.factories import PipelineFactory
+from tests.factories import SpaceFactory
 
 RCLONE_SPACE_UUID = str(uuid.uuid4())
 RCLONE_AS_LOCATION_UUID = str(uuid.uuid4())
@@ -20,77 +25,60 @@ MOCK_LSJSON_STDOUT = b'[{"Name":"dir1","IsDir":true,"ModTime":"timevalue1"},{"Na
 
 
 @pytest.fixture
-def rclone_space(db):
-    space = models.Space.objects.create(
+def rclone_space(make_space: SpaceFactory) -> RClone:
+    """An rclone space using the "testcontainer" container of its remote."""
+    space = make_space(
         uuid=RCLONE_SPACE_UUID,
-        access_protocol="RCLONE",
+        access_protocol=models.Space.RCLONE,
         staging_path="rclonestaging",
     )
-    rclone_space = models.RClone.objects.create(
+
+    return RClone.objects.create(
         space=space, remote_name="testremote", container="testcontainer"
     )
+
+
+@pytest.fixture
+def rclone_space_no_container(rclone_space: RClone) -> RClone:
+    """The rclone space addressing its remote without a container."""
+    rclone_space.container = ""
+    rclone_space.save()
+
     return rclone_space
 
 
 @pytest.fixture
-def rclone_space_no_container(db):
-    space = models.Space.objects.create(
-        uuid=RCLONE_SPACE_UUID,
-        access_protocol="RCLONE",
-        staging_path="rclonestaging",
+def rclone_aip(
+    rclone_space: RClone,
+    make_pipeline: PipelineFactory,
+    make_location: LocationFactory,
+    make_package: PackageFactory,
+) -> models.Package:
+    """An AIP of a pipeline stored in the rclone space."""
+    pipeline = make_pipeline(uuid=PIPELINE_UUID)
+    aipstore = make_location(
+        rclone_space.space,
+        models.Location.AIP_STORAGE,
+        uuid=RCLONE_AS_LOCATION_UUID,
+        relative_path="test",
     )
-    rclone_space = models.RClone.objects.create(
-        space=space, remote_name="testremote", container=""
+    aipstore.pipeline.add(pipeline)
+
+    return make_package(
+        aipstore,
+        "fixtures/small_compressed_bag.zip",
+        uuid=RCLONE_AIP_UUID,
+        origin_pipeline=pipeline,
+        size=1024,
     )
-    return rclone_space
 
 
 @pytest.fixture
-def rclone_aip(db):
-    space = models.Space.objects.create(
-        uuid=RCLONE_SPACE_UUID,
-        access_protocol="RCLONE",
-        staging_path="rclonestaging",
-    )
-    models.RClone.objects.create(
-        space=space, remote_name="testremote", container="testcontainer"
-    )
-    pipeline = models.Pipeline.objects.create(uuid=PIPELINE_UUID)
-    aipstore = models.Location.objects.create(
-        uuid=RCLONE_AS_LOCATION_UUID, space=space, purpose="AS", relative_path="test"
-    )
-    models.LocationPipeline.objects.get_or_create(pipeline=pipeline, location=aipstore)
-    aip = models.Package.objects.create(
-        uuid=RCLONE_AIP_UUID,
-        origin_pipeline=pipeline,
-        current_location=aipstore,
-        current_path="fixtures/small_compressed_bag.zip",
-        size=1024,
-    )
-    return aip
-
-
-@pytest.fixture
-def rclone_aip_no_container(db):
-    space = models.Space.objects.create(
-        uuid=RCLONE_SPACE_UUID,
-        access_protocol="RCLONE",
-        staging_path="rclonestaging",
-    )
-    models.RClone.objects.create(space=space, remote_name="testremote", container="")
-    pipeline = models.Pipeline.objects.create(uuid=PIPELINE_UUID)
-    aipstore = models.Location.objects.create(
-        uuid=RCLONE_AS_LOCATION_UUID, space=space, purpose="AS", relative_path="test"
-    )
-    models.LocationPipeline.objects.get_or_create(pipeline=pipeline, location=aipstore)
-    aip = models.Package.objects.create(
-        uuid=RCLONE_AIP_UUID,
-        origin_pipeline=pipeline,
-        current_location=aipstore,
-        current_path="fixtures/small_compressed_bag.zip",
-        size=1024,
-    )
-    return aip
+def rclone_aip_no_container(
+    rclone_aip: models.Package, rclone_space_no_container: RClone
+) -> models.Package:
+    """The AIP once its space addresses the remote without a container."""
+    return rclone_aip
 
 
 @mock.patch(

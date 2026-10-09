@@ -1,10 +1,8 @@
 import json
-from collections.abc import Callable
 from unittest import mock
 
 import pytest
 from django.contrib.auth.models import AnonymousUser
-from django.contrib.auth.models import User
 from django.test import Client
 from django.test import RequestFactory
 from django.urls import reverse
@@ -13,97 +11,28 @@ from archivematica.storage_service.locations import models
 from archivematica.storage_service.locations import package_request
 from archivematica.storage_service.locations import table_payloads
 from archivematica.storage_service.locations import views
-
-EventFactory = Callable[..., models.Event]
-
-
-@pytest.fixture
-def space() -> models.Space:
-    return models.Space.objects.create(
-        access_protocol=models.Space.LOCAL_FILESYSTEM,
-        path="/var/archivematica",
-        staging_path="/var/archivematica/staging",
-    )
+from tests.factories import EventFactory
 
 
 @pytest.fixture
-def location(space: models.Space) -> models.Location:
-    return models.Location.objects.create(
-        space=space,
-        purpose=models.Location.AIP_STORAGE,
-        relative_path="aips",
-    )
-
-
-@pytest.fixture
-def package(location: models.Location) -> models.Package:
-    return models.Package.objects.create(
-        current_location=location,
-        current_path="example-aip.7z",
-        package_type=models.Package.AIP,
-        status=models.Package.UPLOADED,
-    )
-
-
-@pytest.fixture
-def pipeline() -> models.Pipeline:
-    return models.Pipeline.objects.create(description="Test pipeline")
-
-
-@pytest.fixture
-def event_factory(
-    package: models.Package,
-    pipeline: models.Pipeline,
-) -> EventFactory:
-    def _create_request_event(
-        *,
-        event_type: str = models.Event.DELETE,
-        status: str = models.Event.SUBMITTED,
-        event_reason: str = "delete requested",
-    ) -> models.Event:
-        return models.Event.objects.create(
-            package=package,
-            event_type=event_type,
-            event_reason=event_reason,
-            pipeline=pipeline,
-            user_id=1,
-            user_email="demo@example.com",
-            status=status,
-            status_reason="",
-        )
-
-    return _create_request_event
-
-
-@pytest.fixture
-def delete_request_event(event_factory: EventFactory) -> models.Event:
-    return event_factory()
-
-
-@pytest.fixture
-def pending_delete_event(event_factory: EventFactory) -> models.Event:
-    return event_factory(event_reason="pending delete")
-
-
-@pytest.fixture
-def closed_delete_event(event_factory: EventFactory) -> models.Event:
-    return event_factory(
-        status=models.Event.APPROVED,
-        event_reason="closed delete",
-    )
-
-
-@pytest.fixture
-def needs_reason_delete_event(event_factory: EventFactory) -> models.Event:
-    return event_factory(event_reason="needs reason")
+def delete_request_event(
+    make_event: EventFactory, package: models.Package, pipeline: models.Pipeline
+) -> models.Event:
+    """A pending request to delete the package."""
+    return make_event(package, pipeline)
 
 
 @pytest.mark.django_db
 def test_package_delete_request_renders_vue_payloads(
     admin_client: Client,
-    pending_delete_event: models.Event,
-    closed_delete_event: models.Event,
+    make_event: EventFactory,
+    package: models.Package,
+    pipeline: models.Pipeline,
+    delete_request_event: models.Event,
 ) -> None:
+    closed_delete_event = make_event(
+        package, pipeline, status=models.Event.APPROVED, event_reason="closed delete"
+    )
     assert closed_delete_event.status == models.Event.APPROVED
 
     response = admin_client.get(reverse("locations:package_delete_request"))
@@ -115,10 +44,12 @@ def test_package_delete_request_renders_vue_payloads(
     assert pending_payload["kind"] == "package-requests-pending"
     assert closed_payload["kind"] == "package-requests-closed"
     pending_row = next(
-        row for row in pending_payload["rows"] if row["reason"] == "pending delete"
+        row
+        for row in pending_payload["rows"]
+        if row["reason"] == delete_request_event.event_reason
     )
     assert pending_row["actions"]["kind"] == "decision-form"
-    assert pending_row["actions"]["eventId"] == pending_delete_event.id
+    assert pending_row["actions"]["eventId"] == delete_request_event.id
     assert 'id="tables-package-requests-pending-payload"' in response.text
     assert 'id="tables-package-requests-closed-payload"' in response.text
 
@@ -167,12 +98,12 @@ def test_package_delete_request_processes_targeted_event(
 @pytest.mark.django_db
 def test_package_delete_request_keeps_form_errors_on_targeted_row(
     admin_client: Client,
-    needs_reason_delete_event: models.Event,
+    delete_request_event: models.Event,
 ) -> None:
     response = admin_client.post(
         reverse("locations:package_delete_request"),
         {
-            table_payloads.EVENT_ID_FIELD_NAME: str(needs_reason_delete_event.id),
+            table_payloads.EVENT_ID_FIELD_NAME: str(delete_request_event.id),
             table_payloads.STATUS_REASON_FIELD_NAME: "",
             table_payloads.DECISION_FIELD_NAME: (
                 package_request.PackageRequestDecision.APPROVE.value
@@ -181,15 +112,28 @@ def test_package_delete_request_keeps_form_errors_on_targeted_row(
     )
 
     assert response.status_code == 200
-    needs_reason_delete_event.refresh_from_db()
-    assert needs_reason_delete_event.status == models.Event.SUBMITTED
+    delete_request_event.refresh_from_db()
+    assert delete_request_event.status == models.Event.SUBMITTED
     pending_payload = response.context["pending_requests_table_payload"]
     pending_row = next(
-        row for row in pending_payload["rows"] if row["reason"] == "needs reason"
+        row
+        for row in pending_payload["rows"]
+        if row["reason"] == delete_request_event.event_reason
     )
     reason_errors = pending_row["actions"]["reasonErrors"]
     assert reason_errors
     assert "required" in reason_errors[0].lower()
+
+
+@pytest.fixture
+def pipeline_package(
+    package: models.Package, pipeline: models.Pipeline
+) -> models.Package:
+    """The package, which originates in the pipeline."""
+    package.origin_pipeline = pipeline
+    package.save(update_fields=["origin_pipeline"])
+
+    return package
 
 
 @mock.patch(
@@ -199,11 +143,10 @@ def test_package_delete_request_keeps_form_errors_on_targeted_row(
 def test_package_request_deletion_creates_event_from_request_user(
     deletion_request_send: mock.Mock,
     admin_client: Client,
-    package: models.Package,
+    pipeline_package: models.Package,
     pipeline: models.Pipeline,
 ) -> None:
-    package.origin_pipeline = pipeline
-    package.save(update_fields=["origin_pipeline"])
+    package = pipeline_package
 
     response = admin_client.post(
         reverse("locations:package_request_deletion", args=[package.uuid])
@@ -230,20 +173,16 @@ def test_package_request_deletion_creates_event_from_request_user(
 @pytest.mark.django_db
 def test_package_request_deletion_requires_authentication(
     rf: RequestFactory,
-    package: models.Package,
-    pipeline: models.Pipeline,
+    pipeline_package: models.Package,
 ) -> None:
-    package.origin_pipeline = pipeline
-    package.save(update_fields=["origin_pipeline"])
-
     request = rf.post(
-        reverse("locations:package_request_deletion", args=[package.uuid])
+        reverse("locations:package_request_deletion", args=[pipeline_package.uuid])
     )
     request.user = AnonymousUser()
 
     response = views.package_request_deletion(
         request=request,
-        uuid=str(package.uuid),
+        uuid=str(pipeline_package.uuid),
     )
 
     assert response.status_code == 403
@@ -252,22 +191,11 @@ def test_package_request_deletion_requires_authentication(
 
 @pytest.mark.django_db
 def test_package_request_deletion_requires_change_package_permission(
-    client: Client,
-    django_user_model: type[User],
-    package: models.Package,
-    pipeline: models.Pipeline,
+    logged_in_client: Client,
+    pipeline_package: models.Package,
 ) -> None:
-    package.origin_pipeline = pipeline
-    package.save(update_fields=["origin_pipeline"])
-    user = django_user_model.objects.create_user(
-        username="viewer",
-        email="viewer@example.com",
-        password="Abc.Def.1234",
-    )
-    client.force_login(user)
-
-    response = client.post(
-        reverse("locations:package_request_deletion", args=[package.uuid])
+    response = logged_in_client.post(
+        reverse("locations:package_request_deletion", args=[pipeline_package.uuid])
     )
 
     assert response.status_code == 403
@@ -276,7 +204,7 @@ def test_package_request_deletion_requires_change_package_permission(
         == "You do not have permission to request package deletion."
     )
     assert not models.Event.objects.filter(
-        package=package,
+        package=pipeline_package,
         event_type=models.Event.DELETE,
     ).exists()
 
@@ -301,21 +229,19 @@ def test_package_request_deletion_requires_origin_pipeline(
 @pytest.mark.django_db
 def test_package_request_deletion_rejects_unsupported_package_type(
     admin_client: Client,
-    package: models.Package,
-    pipeline: models.Pipeline,
+    pipeline_package: models.Package,
 ) -> None:
-    package.package_type = models.Package.DIP
-    package.origin_pipeline = pipeline
-    package.save(update_fields=["package_type", "origin_pipeline"])
+    pipeline_package.package_type = models.Package.DIP
+    pipeline_package.save(update_fields=["package_type"])
 
     response = admin_client.post(
-        reverse("locations:package_request_deletion", args=[package.uuid])
+        reverse("locations:package_request_deletion", args=[pipeline_package.uuid])
     )
 
     assert response.status_code == 405
     assert response.json()["message"] == "Deletes not allowed on this package type."
     assert not models.Event.objects.filter(
-        package=package,
+        package=pipeline_package,
         event_type=models.Event.DELETE,
     ).exists()
 
@@ -327,17 +253,13 @@ def test_package_request_deletion_rejects_unsupported_package_type(
 def test_package_request_deletion_returns_existing_request_message(
     deletion_request_send: mock.Mock,
     admin_client: Client,
-    package: models.Package,
-    pipeline: models.Pipeline,
+    pipeline_package: models.Package,
 ) -> None:
-    package.origin_pipeline = pipeline
-    package.save(update_fields=["origin_pipeline"])
-
     first_response = admin_client.post(
-        reverse("locations:package_request_deletion", args=[package.uuid])
+        reverse("locations:package_request_deletion", args=[pipeline_package.uuid])
     )
     second_response = admin_client.post(
-        reverse("locations:package_request_deletion", args=[package.uuid])
+        reverse("locations:package_request_deletion", args=[pipeline_package.uuid])
     )
 
     assert first_response.status_code == 202
@@ -348,7 +270,7 @@ def test_package_request_deletion_returns_existing_request_message(
     )
     assert (
         models.Event.objects.filter(
-            package=package,
+            package=pipeline_package,
             event_type=models.Event.DELETE,
         ).count()
         == 1

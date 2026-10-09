@@ -16,13 +16,15 @@ FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
 
 @pytest.fixture
-def pipeline() -> models.Pipeline:
-    return models.Pipeline.objects.create(
-        description="My pipeline",
-        remote_name="127.0.0.1",
-        api_username="user",
-        api_key="key",
-    )
+def pipeline(pipeline: models.Pipeline) -> models.Pipeline:
+    """The pipeline reachable at the local host with API credentials."""
+    pipeline.description = "My pipeline"
+    pipeline.remote_name = "127.0.0.1"
+    pipeline.api_username = "user"
+    pipeline.api_key = "key"
+    pipeline.save()
+
+    return pipeline
 
 
 def test_reingest_annotations_resolve_the_uuid_module() -> None:

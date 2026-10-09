@@ -163,6 +163,7 @@ module = [
     "tests.administration.test_users",
     "tests.common.test_compression",
     "tests.conftest",
+    "tests.factories",
     "tests.integration.*",
     "tests.locations.conftest",
     "tests.locations.test_reingest",

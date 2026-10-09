@@ -1,4 +1,3 @@
-import pytest
 import pytest_django
 from django.contrib.auth.models import User
 from django.test import Client
@@ -6,18 +5,6 @@ from django.test import Client
 AUDIT_LOG_MIDDLEWARE = (
     "archivematica.storage_service.common.middleware.AuditLogMiddleware"
 )
-
-
-@pytest.fixture
-def user(django_user_model: type[User]) -> User:
-    return django_user_model.objects.create_user(username="testclient", password="test")
-
-
-@pytest.fixture
-def logged_in_client(client: Client, user: User) -> Client:
-    client.force_login(user)
-
-    return client
 
 
 def test_audit_log_middleware_adds_username(

@@ -155,9 +155,9 @@ TEST_PREMIS_EVENT = (
 
 
 @pytest.fixture
-def package(transfer_packages: list[models.Package]) -> models.Package:
-    """The first package of the fixtures, a transfer."""
-    return transfer_packages[0]
+def package(images_transfer: models.Package) -> models.Package:
+    """A transfer, whose pointer file the test creates."""
+    return images_transfer
 
 
 def test_create_pointer_file(package: models.Package) -> None:

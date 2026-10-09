@@ -8,10 +8,16 @@ from archivematica.storage_service.locations import models
 from archivematica.storage_service.locations.models.replica_staging import (
     OfflineReplicaStaging,
 )
+from tests.factories import LocationFactory
+from tests.factories import PackageFactory
+from tests.factories import SpaceFactory
 
 
 @pytest.fixture
 def replica(
+    make_space: SpaceFactory,
+    make_location: LocationFactory,
+    make_package: PackageFactory,
     default_space: models.Space,
     default_ss_internal: models.Location,
     tmp_path: pathlib.Path,
@@ -19,17 +25,17 @@ def replica(
     """A package of an offline replica staging space, with the spaces and
     the internal location of the Storage Service in the temporary directory.
     """
-    space = models.Space.objects.create(
+    space = make_space(
         uuid=uuid.UUID("eb4348c7-5ec9-432d-b451-93214860aae2"),
         access_protocol=models.Space.OFFLINE_REPLICA_STAGING,
         path="/archivematica",
         staging_path=str(tmp_path),
     )
     OfflineReplicaStaging.objects.create(space=space)
-    location = models.Location.objects.create(
+    location = make_location(
+        space,
+        models.Location.REPLICATOR,
         uuid=uuid.UUID("ac3dc2d0-8422-4067-bb25-dd3cc1c54c2c"),
-        space=space,
-        purpose=models.Location.REPLICATOR,
         relative_path="offlinestaging",
         description="offline replica staging",
     )
@@ -42,11 +48,10 @@ def replica(
     default_ss_internal.relative_path = str(ss_internal_dir.relative_to(tmp_path))
     default_ss_internal.save()
 
-    return models.Package.objects.create(
+    return make_package(
+        location,
+        "locations/fixtures/small_compressed_bag.zip",
         uuid=uuid.UUID("216a6d25-d705-4d00-86c3-02f51c66a0c0"),
-        current_location=location,
-        current_path="locations/fixtures/small_compressed_bag.zip",
-        package_type="AIP",
         status="Uploaded",
     )
 
@@ -79,71 +84,36 @@ def test_move_to_storage_service(replica: models.Package) -> None:
 
 
 @pytest.fixture
-def fs_space(db, tmp_path):
-    space_dir = tmp_path / "fs-space"
-    space_dir.mkdir()
-
-    result = models.Space.objects.create(
-        access_protocol=models.Space.LOCAL_FILESYSTEM,
-        path=space_dir,
-        staging_path=space_dir,
-    )
-    models.LocalFilesystem.objects.create(space=result)
-
-    return result
-
-
-@pytest.fixture
-def offline_space(db, tmp_path):
+def offline_space(make_space: SpaceFactory, tmp_path: pathlib.Path) -> models.Space:
+    """An offline replica staging space in the temporary directory."""
     space_dir = tmp_path / "offline-space"
     space_dir.mkdir()
 
-    return models.Space.objects.create(
+    return make_space(
         access_protocol=models.Space.OFFLINE_REPLICA_STAGING,
-        path=space_dir,
-        staging_path=space_dir,
+        path=str(space_dir),
+        staging_path=str(space_dir),
     )
 
 
 @pytest.fixture
-def offline_replica_staging_space(db, offline_space):
-    return models.OfflineReplicaStaging.objects.create(space=offline_space)
-
-
-@pytest.fixture
-def aip_storage_location(db, fs_space):
-    result = models.Location.objects.create(
-        description="AIPs",
-        space=fs_space,
-        relative_path="aips",
-        purpose=models.Location.AIP_STORAGE,
-    )
-    pathlib.Path(result.full_path).mkdir()
-
-    return result
-
-
-@pytest.fixture
-def ss_internal_location(db, fs_space):
-    result = models.Location.objects.create(
-        space=fs_space,
-        relative_path="internal",
-        purpose=models.Location.STORAGE_SERVICE_INTERNAL,
-    )
-    pathlib.Path(result.full_path).mkdir()
-
-    return result
+def offline_replica_staging_space(offline_space: models.Space) -> OfflineReplicaStaging:
+    return OfflineReplicaStaging.objects.create(space=offline_space)
 
 
 @pytest.fixture
 def replicator_location(
-    db, offline_space, offline_replica_staging_space, aip_storage_location
-):
-    result = models.Location.objects.create(
-        description="Replicas",
-        space=offline_space,
+    make_location: LocationFactory,
+    offline_space: models.Space,
+    offline_replica_staging_space: OfflineReplicaStaging,
+    aip_storage_location: models.Location,
+) -> models.Location:
+    """The location of the offline space replicating the AIP storage location."""
+    result = make_location(
+        offline_space,
+        models.Location.REPLICATOR,
         relative_path="replicas",
-        purpose=models.Location.REPLICATOR,
+        description="Replicas",
     )
     pathlib.Path(result.full_path).mkdir()
     aip_storage_location.replicators.add(result)
@@ -151,60 +121,41 @@ def replicator_location(
     return result
 
 
-def _create_compressed_package(aip_storage_location, base_name):
+@pytest.fixture
+def compressed_package_with_dotted_name(
+    make_package: PackageFactory, aip_storage_location: models.Location
+) -> models.Package:
+    """A compressed AIP whose name has dots before its UUID."""
     package_uuid = uuid.uuid4()
-    package_current_path = f"{base_name}-{package_uuid}.7z"
-    (pathlib.Path(aip_storage_location.full_path) / package_current_path).touch()
-
-    result = models.Package.objects.create(
+    result = make_package(
+        aip_storage_location,
+        f"small.compressed.bag-{package_uuid}.7z",
         uuid=package_uuid,
-        current_location=aip_storage_location,
-        current_path=package_current_path,
-        package_type=models.Package.AIP,
     )
+    (pathlib.Path(aip_storage_location.full_path) / result.current_path).touch()
     assert result.is_compressed
 
     return result
 
 
 @pytest.fixture
-def compressed_package(db, aip_storage_location):
-    return _create_compressed_package(aip_storage_location, "small-compressed-bag")
-
-
-@pytest.fixture
-def compressed_package_with_dotted_name(db, aip_storage_location):
-    return _create_compressed_package(aip_storage_location, "small.compressed.bag")
-
-
-def _create_uncompressed_package(aip_storage_location, base_name):
+def uncompressed_package_with_dotted_name(
+    make_package: PackageFactory, aip_storage_location: models.Location
+) -> models.Package:
+    """An uncompressed AIP whose name has dots before its UUID."""
     package_uuid = uuid.uuid4()
-    package_current_path = f"{base_name}-{package_uuid}"
-    package_dir = pathlib.Path(aip_storage_location.full_path) / package_current_path
+    result = make_package(
+        aip_storage_location,
+        f"small.uncompressed.bag-{package_uuid}",
+        uuid=package_uuid,
+    )
+    package_dir = pathlib.Path(aip_storage_location.full_path) / result.current_path
     package_dir.mkdir()
-
     # Add tag manifest to fake a valid bag.
     (package_dir / "tagmanifest-sha256.txt").touch()
-
-    result = models.Package.objects.create(
-        uuid=package_uuid,
-        current_location=aip_storage_location,
-        current_path=package_current_path,
-        package_type=models.Package.AIP,
-    )
     assert not result.is_compressed
 
     return result
-
-
-@pytest.fixture
-def uncompressed_package(db, aip_storage_location):
-    return _create_uncompressed_package(aip_storage_location, "small-uncompressed-bag")
-
-
-@pytest.fixture
-def uncompressed_package_with_dotted_name(db, aip_storage_location):
-    return _create_uncompressed_package(aip_storage_location, "small.uncompressed.bag")
 
 
 PREMIS_COMPRESSION_EVENT_DATA = (

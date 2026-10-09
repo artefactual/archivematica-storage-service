@@ -3,7 +3,6 @@ import json
 from unittest import mock
 
 import pytest
-from django.contrib.auth.models import User
 from django.utils import timezone
 
 from archivematica.storage_service.administration.models import Settings
@@ -51,13 +50,6 @@ def test_report_failed_fixity_check(_notify_users: mock.Mock):
             package=package.uuid, success=False, datetime_reported=expected_time
         ).count()
         == 1
-    )
-
-
-@pytest.fixture
-def user(db):
-    return User.objects.create_user(
-        username="demo", email="demo@example.com", password="Abc.Def.1234"
     )
 
 

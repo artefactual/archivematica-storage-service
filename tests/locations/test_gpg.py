@@ -13,6 +13,7 @@ from archivematica.storage_service.locations.models import Location
 from archivematica.storage_service.locations.models import Package
 from archivematica.storage_service.locations.models import gpg
 from archivematica.storage_service.locations.models import space
+from tests.factories import PackageFactory
 
 GPG_VERSION = "1.4.16"
 SS_VERSION = "0.11.0"
@@ -511,21 +512,20 @@ def test__parse_gpg_version():
 
 
 @pytest.fixture
-def encrypted_package(default_transfer_source: Location) -> Package:
+def encrypted_package(
+    make_package: PackageFactory, default_transfer_source: Location
+) -> Package:
     """A transfer encrypted with the key of the tests."""
-    return Package.objects.create(
+    return make_package(
+        default_transfer_source,
+        "some/relative/path/to/images-transfer-abcdabcd-97dd-48e0-8417-03be78359531",
         uuid=uuid.UUID("abcdabcd-c1d7-45ba-9a95-a7531c063ed1"),
-        current_location=default_transfer_source,
-        current_path=(
-            "some/relative/path/to/images-transfer-abcdabcd-97dd-48e0-8417-03be78359531"
-        ),
         package_type="Transfer",
         status="Uploaded",
         encryption_key_fingerprint=EXP_FINGERPRINT,
     )
 
 
-@pytest.mark.usefixtures("base_rows", "package_rows")
 def test__encr_path2key_fingerprint(encrypted_package: Package) -> None:
     package = encrypted_package
     exp_curr_path = (

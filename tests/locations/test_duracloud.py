@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest import mock
 
 import pytest
@@ -6,18 +7,22 @@ import requests
 from archivematica.storage_service.locations.models import Duracloud
 from archivematica.storage_service.locations.models import Space
 from archivematica.storage_service.locations.models import StorageException
+from tests.factories import SpaceFactory
 
 
 @pytest.fixture
-def space():
-    return Space.objects.create()
+def duracloud(make_space: SpaceFactory) -> Duracloud:
+    """A DuraCloud space serving the "myspace" durastore."""
+    return Duracloud.objects.create(
+        space=make_space(access_protocol=Space.DURACLOUD),
+        host="duracloud.org",
+        duraspace="myspace",
+    )
 
 
 @pytest.mark.django_db
-def test_duraspace_url(space):
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
-
-    assert d.duraspace_url == "https://duracloud.org/durastore/myspace/"
+def test_duraspace_url(duracloud: Duracloud) -> None:
+    assert duracloud.duraspace_url == "https://duracloud.org/durastore/myspace/"
 
 
 @pytest.mark.django_db
@@ -47,10 +52,8 @@ def test_duraspace_url(space):
         ),
     ],
 )
-def test_browse(get, space):
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
-
-    result = d.browse("/foo")
+def test_browse(get: mock.MagicMock, duracloud: Duracloud) -> None:
+    result = duracloud.browse("/foo")
 
     assert result == {
         "directories": ["bar"],
@@ -89,10 +92,10 @@ def test_browse(get, space):
         ),
     ],
 )
-def test_browse_strips_manifest_and_chunk_suffixes(get, space):
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
-
-    result = d.browse("/foo")
+def test_browse_strips_manifest_and_chunk_suffixes(
+    get: mock.MagicMock, duracloud: Duracloud
+) -> None:
+    result = duracloud.browse("/foo")
 
     assert result == {
         "directories": ["bar"],
@@ -106,11 +109,11 @@ def test_browse_strips_manifest_and_chunk_suffixes(get, space):
     "requests.Session.get",
     side_effect=[mock.Mock(status_code=503, spec=requests.Response)],
 )
-def test_browse_fails_if_it_cannot_retrieve_files_initially(get, space):
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
-
+def test_browse_fails_if_it_cannot_retrieve_files_initially(
+    get: mock.MagicMock, duracloud: Duracloud
+) -> None:
     with pytest.raises(StorageException, match="Unable to get list of files in /foo/"):
-        d.browse("/foo")
+        duracloud.browse("/foo")
 
 
 @pytest.mark.django_db
@@ -133,13 +136,13 @@ def test_browse_fails_if_it_cannot_retrieve_files_initially(get, space):
         mock.Mock(status_code=503, spec=requests.Response),
     ],
 )
-def test_browse_fails_if_it_cannot_retrieve_additional_files(get, space):
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
-
+def test_browse_fails_if_it_cannot_retrieve_additional_files(
+    get: mock.MagicMock, duracloud: Duracloud
+) -> None:
     with pytest.raises(
         StorageException, match="Unable to get list of files in /foo/bar/"
     ):
-        d.browse("/foo/bar/")
+        duracloud.browse("/foo/bar/")
 
 
 @pytest.mark.django_db
@@ -147,10 +150,8 @@ def test_browse_fails_if_it_cannot_retrieve_additional_files(get, space):
     "requests.Session.delete",
     side_effect=[mock.Mock(status_code=200, spec=requests.Response)],
 )
-def test_delete_path_deletes_file(delete, space):
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
-
-    d.delete_path("some/file.zip")
+def test_delete_path_deletes_file(delete: mock.MagicMock, duracloud: Duracloud) -> None:
+    duracloud.delete_path("some/file.zip")
 
     assert delete.mock_calls == [
         mock.call("https://duracloud.org/durastore/myspace/some/file.zip")
@@ -182,10 +183,10 @@ def test_delete_path_deletes_file(delete, space):
         )
     ],
 )
-def test_delete_path_deletes_chunked_file(get, delete, space):
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
-
-    d.delete_path("some/file.zip")
+def test_delete_path_deletes_chunked_file(
+    get: mock.MagicMock, delete: mock.MagicMock, duracloud: Duracloud
+) -> None:
+    duracloud.delete_path("some/file.zip")
 
     assert delete.mock_calls == [
         mock.call("https://duracloud.org/durastore/myspace/some/file.zip"),
@@ -215,10 +216,13 @@ def test_delete_path_deletes_chunked_file(get, delete, space):
     "archivematica.storage_service.locations.models.duracloud.Duracloud._get_files_list",
     side_effect=[["some/folder/a.zip", "some/folder/b.zip"]],
 )
-def test_delete_path_deletes_folder(_get_files_list, get, delete, space):
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
-
-    d.delete_path("some/folder")
+def test_delete_path_deletes_folder(
+    _get_files_list: mock.MagicMock,
+    get: mock.MagicMock,
+    delete: mock.MagicMock,
+    duracloud: Duracloud,
+) -> None:
+    duracloud.delete_path("some/folder")
 
     assert delete.mock_calls == [
         mock.call("https://duracloud.org/durastore/myspace/some/folder"),
@@ -235,11 +239,12 @@ def test_delete_path_deletes_folder(_get_files_list, get, delete, space):
     "requests.Session.send",
     side_effect=[mock.Mock(status_code=200, content=b"a file", spec=requests.Response)],
 )
-def test_move_to_storage_service_downloads_file(send, space, tmp_path):
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+def test_move_to_storage_service_downloads_file(
+    send: mock.MagicMock, duracloud: Duracloud, tmp_path: Path
+) -> None:
     dst = tmp_path / "dst" / "file.txt"
 
-    d.move_to_storage_service("some/file.txt", dst.as_posix(), None)
+    duracloud.move_to_storage_service("some/file.txt", dst.as_posix(), None)
 
     assert dst.read_text() == "a file"
 
@@ -284,11 +289,12 @@ def test_move_to_storage_service_downloads_file(send, space, tmp_path):
         ),
     ],
 )
-def test_move_to_storage_service_downloads_chunked_file(get, send, space, tmp_path):
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+def test_move_to_storage_service_downloads_chunked_file(
+    get: mock.MagicMock, send: mock.MagicMock, duracloud: Duracloud, tmp_path: Path
+) -> None:
     dst = tmp_path / "dst" / "file.txt"
 
-    d.move_to_storage_service("some/file.txt", dst.as_posix(), None)
+    duracloud.move_to_storage_service("some/file.txt", dst.as_posix(), None)
 
     assert dst.read_text() == "a chunked file"
 
@@ -311,12 +317,15 @@ def test_move_to_storage_service_downloads_chunked_file(get, send, space, tmp_pa
     side_effect=[["some/folder/a.txt", "some/folder/b.txt"]],
 )
 def test_move_to_storage_service_downloads_folder(
-    _get_files_list, get, send, space, tmp_path
-):
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    _get_files_list: mock.MagicMock,
+    get: mock.MagicMock,
+    send: mock.MagicMock,
+    duracloud: Duracloud,
+    tmp_path: Path,
+) -> None:
     dst = tmp_path / "dst"
 
-    d.move_to_storage_service("some/folder", dst.as_posix(), None)
+    duracloud.move_to_storage_service("some/folder", dst.as_posix(), None)
 
     # The folder contents were downloaded to the destination folder.
     assert {e.name for e in dst.iterdir()} == {"a.txt", "b.txt"}
@@ -330,16 +339,15 @@ def test_move_to_storage_service_downloads_folder(
     side_effect=[mock.Mock(status_code=503, spec=requests.Response)],
 )
 def test_move_to_storage_service_fails_if_it_cannot_download_file(
-    send, space, tmp_path
-):
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    send: mock.MagicMock, duracloud: Duracloud, tmp_path: Path
+) -> None:
     dst = tmp_path / "dst" / "file.txt"
 
     with pytest.raises(
         StorageException,
         match="Unable to fetch https://duracloud.org/durastore/myspace/some/file.txt",
     ):
-        d.move_to_storage_service("some/file.txt", dst.as_posix(), None)
+        duracloud.move_to_storage_service("some/file.txt", dst.as_posix(), None)
 
 
 @pytest.mark.django_db
@@ -384,12 +392,11 @@ def test_move_to_storage_service_fails_if_it_cannot_download_file(
     ],
 )
 def test_move_to_storage_service_retries_after_chunk_download_errors(
-    get, send, space, tmp_path
-):
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    get: mock.MagicMock, send: mock.MagicMock, duracloud: Duracloud, tmp_path: Path
+) -> None:
     dst = tmp_path / "dst" / "file.txt"
 
-    d.move_to_storage_service("some/file.txt", dst.as_posix(), None)
+    duracloud.move_to_storage_service("some/file.txt", dst.as_posix(), None)
 
     assert dst.read_text() == "a chunked file"
 
@@ -441,16 +448,15 @@ def test_move_to_storage_service_retries_after_chunk_download_errors(
     ],
 )
 def test_move_to_storage_service_fails_if_chunk_size_does_not_match(
-    get, send, space, tmp_path
-):
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    get: mock.MagicMock, send: mock.MagicMock, duracloud: Duracloud, tmp_path: Path
+) -> None:
     dst = tmp_path / "dst" / "file.txt"
 
     # Look for a partial match since the exception receives multiple parameters.
     with pytest.raises(
         StorageException, match="does not match expected size of"
     ) as exc_info:
-        d.move_to_storage_service("some/file.txt", dst.as_posix(), None)
+        duracloud.move_to_storage_service("some/file.txt", dst.as_posix(), None)
 
     assert exc_info.value.args == (
         "File %(path)s does not match expected size of %(expected_size)s bytes, but was actually %(actual_size)s bytes",
@@ -505,16 +511,15 @@ def test_move_to_storage_service_fails_if_chunk_size_does_not_match(
     ],
 )
 def test_move_to_storage_service_fails_if_chunk_checksum_does_not_match(
-    get, send, space, tmp_path
-):
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    get: mock.MagicMock, send: mock.MagicMock, duracloud: Duracloud, tmp_path: Path
+) -> None:
     dst = tmp_path / "dst" / "file.txt"
 
     # Look for a partial match since the exception receives multiple parameters.
     with pytest.raises(
         StorageException, match="does not match expected checksum of"
     ) as exc_info:
-        d.move_to_storage_service("some/file.txt", dst.as_posix(), None)
+        duracloud.move_to_storage_service("some/file.txt", dst.as_posix(), None)
 
     assert exc_info.value.args == (
         "File %s does not match expected checksum of %s, but was actually %s",
@@ -535,14 +540,15 @@ def test_move_to_storage_service_fails_if_chunk_checksum_does_not_match(
     "requests.Session.put",
     side_effect=[mock.Mock(status_code=201, spec=requests.Response)],
 )
-def test_move_from_storage_service_uploads_file(put, space, tmp_path):
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+def test_move_from_storage_service_uploads_file(
+    put: mock.MagicMock, duracloud: Duracloud, tmp_path: Path
+) -> None:
     src = tmp_path / "src"
     src.mkdir()
     f = src / "file.txt"
     f.write_text("a file")
 
-    d.move_from_storage_service(f.as_posix(), "some/file.txt")
+    duracloud.move_from_storage_service(f.as_posix(), "some/file.txt")
 
     assert put.mock_calls == [
         mock.call(
@@ -565,16 +571,17 @@ def test_move_from_storage_service_uploads_file(put, space, tmp_path):
         mock.Mock(status_code=201, spec=requests.Response),
     ],
 )
-def test_move_from_storage_service_uploads_chunked_file(put, space, tmp_path):
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
-    d.CHUNK_SIZE = 4
-    d.BUFFER_SIZE = 2
+def test_move_from_storage_service_uploads_chunked_file(
+    put: mock.MagicMock, duracloud: Duracloud, tmp_path: Path
+) -> None:
+    duracloud.CHUNK_SIZE = 4
+    duracloud.BUFFER_SIZE = 2
     src = tmp_path / "src"
     src.mkdir()
     f = src / "file.txt"
     f.write_text("a file")
 
-    d.move_from_storage_service(f.as_posix(), "some/file.txt")
+    duracloud.move_from_storage_service(f.as_posix(), "some/file.txt")
 
     assert put.mock_calls == [
         mock.call(
@@ -603,14 +610,15 @@ def test_move_from_storage_service_uploads_chunked_file(put, space, tmp_path):
         mock.Mock(status_code=201, spec=requests.Response),
     ],
 )
-def test_move_from_storage_service_uploads_folder_contents(put, space, tmp_path):
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+def test_move_from_storage_service_uploads_folder_contents(
+    put: mock.MagicMock, duracloud: Duracloud, tmp_path: Path
+) -> None:
     src = tmp_path / "src"
     src.mkdir()
     (src / "a.txt").write_text("file A")
     (src / "b.txt").write_text("file B")
 
-    d.move_from_storage_service(src.as_posix(), "some/folder")
+    duracloud.move_from_storage_service(src.as_posix(), "some/folder")
 
     put.assert_has_calls(
         [
@@ -641,16 +649,15 @@ def test_move_from_storage_service_uploads_folder_contents(put, space, tmp_path)
     side_effect=mock.Mock(status_code=503, spec=requests.Response),
 )
 def test_move_from_storage_service_fails_uploading_after_exceeding_retries(
-    put, space, tmp_path
-):
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+    put: mock.MagicMock, duracloud: Duracloud, tmp_path: Path
+) -> None:
     src = tmp_path / "src"
     src.mkdir()
     f = src / "file.txt"
     f.write_text("a file")
 
     with pytest.raises(StorageException, match=f"Unable to store {f}"):
-        d.move_from_storage_service(f.as_posix(), "some/file.txt")
+        duracloud.move_from_storage_service(f.as_posix(), "some/file.txt")
 
     # Check session's put method was called with initial attempt plus 3 retries.
     assert len(put.mock_calls) == 4
@@ -661,41 +668,42 @@ def test_move_from_storage_service_fails_uploading_after_exceeding_retries(
     "requests.Session.put",
     side_effect=requests.exceptions.ConnectionError(),
 )
-def test_move_from_storage_service_reraises_requests_exception(put, space, tmp_path):
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+def test_move_from_storage_service_reraises_requests_exception(
+    put: mock.MagicMock, duracloud: Duracloud, tmp_path: Path
+) -> None:
     src = tmp_path / "src"
     src.mkdir()
     f = src / "file.txt"
     f.write_text("a file")
 
     with pytest.raises(requests.exceptions.ConnectionError):
-        d.move_from_storage_service(f.as_posix(), "some/file.txt")
+        duracloud.move_from_storage_service(f.as_posix(), "some/file.txt")
 
     # Check session's put method was called with initial attempt plus 3 retries.
     assert len(put.mock_calls) == 4
 
 
 @pytest.mark.django_db
-def test_move_from_storage_service_fails_if_source_file_does_not_exist(space, tmp_path):
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
+def test_move_from_storage_service_fails_if_source_file_does_not_exist(
+    duracloud: Duracloud, tmp_path: Path
+) -> None:
     src = tmp_path / "src"
     src.mkdir()
     f = src / "file.txt"
 
     with pytest.raises(StorageException, match=f"{f} does not exist."):
-        d.move_from_storage_service(f.as_posix(), "some/file.txt")
+        duracloud.move_from_storage_service(f.as_posix(), "some/file.txt")
 
 
 @pytest.mark.django_db
 @mock.patch("os.path.exists", return_value=True)
 def test_move_from_storage_service_fails_if_source_file_cannot_be_determined(
-    exists, space, tmp_path
-):
+    exists: mock.MagicMock, duracloud: Duracloud, tmp_path: Path
+) -> None:
     # Mocking exists like this forces all move_from_storage_service conditions to fail.
-    d = Duracloud.objects.create(space=space, host="duracloud.org", duraspace="myspace")
     src = tmp_path / "src"
     src.mkdir()
     f = src / "file.txt"
 
     with pytest.raises(StorageException, match=f"{f} is not a file or directory."):
-        d.move_from_storage_service(f.as_posix(), "some/file.txt")
+        duracloud.move_from_storage_service(f.as_posix(), "some/file.txt")

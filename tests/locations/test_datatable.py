@@ -14,19 +14,7 @@ TOTAL_FIXTURE_PACKAGES = 13
 TOTAL_FIXTURE_FIXITY_LOGS = 4
 
 
-@pytest.fixture
-def package_fixtures(base_rows: None, package_rows: list[models.Package]) -> None:
-    """The packages listed by the datatable."""
-
-
-@pytest.fixture
-def fixity_log_fixtures(
-    package_fixtures: None, fixity_log_rows: list[models.FixityLog]
-) -> None:
-    """The packages and their fixity logs."""
-
-
-@pytest.mark.usefixtures("package_fixtures")
+@pytest.mark.usefixtures("package_rows")
 def test_initialization() -> None:
     DISPLAY_LEN = 10
     datatable = datatable_utils.PackageDataTable({})
@@ -43,7 +31,7 @@ def test_initialization() -> None:
     assert len(datatable.records) == DISPLAY_LEN
 
 
-@pytest.mark.usefixtures("package_fixtures")
+@pytest.mark.usefixtures("package_rows")
 def test_search_description() -> None:
     datatable = datatable_utils.PackageDataTable(
         {
@@ -66,7 +54,7 @@ def test_search_description() -> None:
     assert len(datatable.records) == 1
 
 
-@pytest.mark.usefixtures("package_fixtures")
+@pytest.mark.usefixtures("package_rows")
 def test_search_current_path() -> None:
     datatable = datatable_utils.PackageDataTable(
         {
@@ -89,7 +77,7 @@ def test_search_current_path() -> None:
     assert len(datatable.records) == 3
 
 
-@pytest.mark.usefixtures("package_fixtures")
+@pytest.mark.usefixtures("package_rows")
 def test_search_type() -> None:
     datatable = datatable_utils.PackageDataTable(
         {
@@ -112,7 +100,7 @@ def test_search_type() -> None:
     assert len(datatable.records) == 3
 
 
-@pytest.mark.usefixtures("package_fixtures")
+@pytest.mark.usefixtures("package_rows")
 def test_search_status() -> None:
     DISPLAY_LEN = 10
     datatable = datatable_utils.PackageDataTable(
@@ -136,7 +124,7 @@ def test_search_status() -> None:
     assert len(datatable.records) == DISPLAY_LEN
 
 
-@pytest.mark.usefixtures("package_fixtures")
+@pytest.mark.usefixtures("package_rows")
 def test_search_replica_of() -> None:
     package_uuid = uuid.UUID("f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04")
     replicas_uuids = [
@@ -167,7 +155,7 @@ def test_search_replica_of() -> None:
     assert sorted(p.uuid for p in datatable.records) == expected_packages_uuids
 
 
-@pytest.mark.usefixtures("package_fixtures")
+@pytest.mark.usefixtures("package_rows")
 def test_reverse_search_replica_of() -> None:
     package_uuid = uuid.UUID("f0dfdc4c-7ba1-4e3f-a972-f2c55d870d04")
     replicas_uuids = [
@@ -198,7 +186,7 @@ def test_reverse_search_replica_of() -> None:
     assert sorted(p.uuid for p in datatable.records) == expected_packages_uuids
 
 
-@pytest.mark.usefixtures("package_fixtures")
+@pytest.mark.usefixtures("package_rows")
 def test_sorting_uuid_ascending() -> None:
     datatable = datatable_utils.PackageDataTable(
         {
@@ -234,7 +222,7 @@ def test_sorting_uuid_ascending() -> None:
     assert [package.uuid for package in datatable.records] == expected_uuids
 
 
-@pytest.mark.usefixtures("package_fixtures")
+@pytest.mark.usefixtures("package_rows")
 def test_sorting_uuid_descending() -> None:
     datatable = datatable_utils.PackageDataTable(
         {
@@ -270,7 +258,7 @@ def test_sorting_uuid_descending() -> None:
     assert [package.uuid for package in datatable.records] == expected_uuids
 
 
-@pytest.mark.usefixtures("package_fixtures")
+@pytest.mark.usefixtures("package_rows")
 def test_sorting_by_full_path_helper() -> None:
     datatable = datatable_utils.PackageDataTable(
         {
@@ -305,7 +293,7 @@ def test_sorting_by_full_path_helper() -> None:
     assert [package.full_path for package in datatable.records] == expected_paths
 
 
-@pytest.mark.usefixtures("package_fixtures")
+@pytest.mark.usefixtures("package_rows")
 def test_packages_are_filtered_by_location() -> None:
     # count all packages with no filtering
     datatable = datatable_utils.PackageDataTable(
@@ -328,7 +316,7 @@ def test_packages_are_filtered_by_location() -> None:
     assert datatable.total_records == TOTAL_RECORDS_IN_LOCATION
 
 
-@pytest.mark.usefixtures("package_fixtures")
+@pytest.mark.usefixtures("package_rows")
 def test_packages_are_filtered_by_location_and_description() -> None:
     aip_storage_location = models.Location.objects.get(
         uuid="615103f0-0ee0-4a12-ba17-43192d1143ea"
@@ -349,7 +337,7 @@ def test_packages_are_filtered_by_location_and_description() -> None:
     assert package.description == "Broken bag"
 
 
-@pytest.mark.usefixtures("fixity_log_fixtures")
+@pytest.mark.usefixtures("fixity_log_rows")
 def test_fixity_logs_are_filtered_by_package() -> None:
     # count all fixity logs with no filtering
     datatable = datatable_utils.FixityLogDataTable(
@@ -370,7 +358,7 @@ def test_fixity_logs_are_filtered_by_package() -> None:
     assert datatable.total_records == TOTAL_RECORDS_IN_PACKAGE
 
 
-@pytest.mark.usefixtures("fixity_log_fixtures")
+@pytest.mark.usefixtures("fixity_log_rows")
 def test_fixity_logs_are_filtered_by_package_and_error_details() -> None:
     package = models.Package.objects.get(uuid="e0a41934-c1d7-45ba-9a95-a7531c063ed1")
     # count fixity logs only from that package
@@ -391,7 +379,7 @@ def test_fixity_logs_are_filtered_by_package_and_error_details() -> None:
     assert [log.error_details for log in datatable.records] == expected_errors
 
 
-@pytest.mark.usefixtures("fixity_log_fixtures")
+@pytest.mark.usefixtures("fixity_log_rows")
 def test_search_error_details() -> None:
     datatable = datatable_utils.FixityLogDataTable(
         {
@@ -414,7 +402,7 @@ def test_search_error_details() -> None:
     assert len(datatable.records) == 2
 
 
-@pytest.mark.usefixtures("fixity_log_fixtures")
+@pytest.mark.usefixtures("fixity_log_rows")
 def test_sorting_datetime_reported_ascending() -> None:
     datatable = datatable_utils.FixityLogDataTable(
         {
@@ -446,7 +434,7 @@ def test_sorting_datetime_reported_ascending() -> None:
     ] == expected_datetimes
 
 
-@pytest.mark.usefixtures("fixity_log_fixtures")
+@pytest.mark.usefixtures("fixity_log_rows")
 def test_sorting_datetime_reported_descending() -> None:
     datatable = datatable_utils.FixityLogDataTable(
         {

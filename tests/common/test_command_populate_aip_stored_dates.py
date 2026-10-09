@@ -1,108 +1,49 @@
 import datetime
 import pathlib
-from typing import Any
 from unittest import mock
 
 import pytest
+import pytest_django
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
 from archivematica.storage_service.locations import models
+from tests.factories import LocationFactory
+from tests.factories import PackageFactory
+from tests.factories import SpaceFactory
 
 
 @pytest.fixture
-def fs_space(tmp_path: pathlib.Path) -> models.Location:
-    space_dir = tmp_path / "space"
-    space_dir.mkdir()
-
-    staging_dir = tmp_path / "staging"
-    staging_dir.mkdir()
-
-    result = models.Space.objects.create(
-        access_protocol=models.Space.LOCAL_FILESYSTEM,
-        path=str(space_dir),
-        staging_path=str(staging_dir),
-    )
-    models.LocalFilesystem.objects.create(space=result)
-
-    return result
-
-
-@pytest.fixture
-def aip_storage_fs_location(fs_space: models.Space) -> models.Location:
-    return models.Location.objects.create(
-        space=fs_space,
-        purpose=models.Location.AIP_STORAGE,
-        relative_path="fs-aips",
-    )
-
-
-@pytest.fixture
-def aip_deleted_fs_location(aip_storage_fs_location: models.Location) -> models.Package:
-    return models.Package.objects.create(
-        package_type=models.Package.AIP,
-        status=models.Package.DELETED,
-        current_location=aip_storage_fs_location,
-        current_path="deleted.7z",
-    )
-
-
-@pytest.fixture
-def aip_uploaded_fs_location(
-    aip_storage_fs_location: models.Location,
-) -> models.Package:
-    return models.Package.objects.create(
-        package_type=models.Package.AIP,
-        status=models.Package.UPLOADED,
-        current_location=aip_storage_fs_location,
-        current_path="uploaded.7z",
-    )
-
-
-@pytest.fixture
-def secondary_fs_space(tmp_path: pathlib.Path) -> models.Location:
+def secondary_space(make_space: SpaceFactory, tmp_path: pathlib.Path) -> models.Space:
+    """A second local filesystem space in the temporary directory."""
     space_dir = tmp_path / "secondary-space"
     space_dir.mkdir()
-
     staging_dir = tmp_path / "secondary-staging"
     staging_dir.mkdir()
 
-    result = models.Space.objects.create(
-        access_protocol=models.Space.LOCAL_FILESYSTEM,
-        path=str(space_dir),
-        staging_path=str(staging_dir),
-    )
-    models.LocalFilesystem.objects.create(space=result)
-
-    return result
+    return make_space(path=str(space_dir), staging_path=str(staging_dir))
 
 
 @pytest.fixture
-def secondary_aip_storage_fs_location(
-    secondary_fs_space: models.Space,
+def secondary_aip_storage_location(
+    make_location: LocationFactory, secondary_space: models.Space
 ) -> models.Location:
-    return models.Location.objects.create(
-        space=secondary_fs_space,
-        purpose=models.Location.AIP_STORAGE,
-        relative_path="secondary-fs-aips",
+    return make_location(
+        secondary_space, models.Location.AIP_STORAGE, relative_path="secondary-aips"
     )
 
 
 @pytest.fixture
-def secondary_aip_uploaded_fs_location(
-    secondary_aip_storage_fs_location: models.Location,
+def secondary_package(
+    make_package: PackageFactory, secondary_aip_storage_location: models.Location
 ) -> models.Package:
-    return models.Package.objects.create(
-        package_type=models.Package.AIP,
-        status=models.Package.UPLOADED,
-        current_location=secondary_aip_storage_fs_location,
-        current_path="secondary-uploaded.7z",
-    )
+    """An AIP stored in the secondary space."""
+    return make_package(secondary_aip_storage_location, "secondary-uploaded.7z")
 
 
 @pytest.mark.django_db
 def test_command_fails_when_there_are_no_uploaded_aips(
-    aip_deleted_fs_location: models.Package,
+    deleted_package: models.Package,
 ) -> None:
     with pytest.raises(CommandError, match="No AIPs with status UPLOADED found"):
         call_command("populate_aip_stored_dates")
@@ -118,13 +59,13 @@ def test_command_fails_when_there_are_no_uploaded_aips(
 def test_command_completes_when_location_does_not_contain_aips(
     success: mock.Mock,
     error: mock.Mock,
-    aip_uploaded_fs_location: models.Package,
-    secondary_aip_storage_fs_location: models.Location,
+    package: models.Package,
+    secondary_aip_storage_location: models.Location,
 ) -> None:
     call_command(
         "populate_aip_stored_dates",
         "--location-uuid",
-        secondary_aip_storage_fs_location.uuid,
+        secondary_aip_storage_location.uuid,
     )
 
     success.assert_called_once_with("Complete. No matching AIPs found.")
@@ -143,21 +84,21 @@ def test_command_filters_aips_by_location_uuid(
     success: mock.Mock,
     error: mock.Mock,
     stat: mock.Mock,
-    settings: Any,
-    aip_uploaded_fs_location: models.Package,
-    secondary_aip_uploaded_fs_location: models.Package,
-    secondary_aip_storage_fs_location: models.Location,
+    settings: pytest_django.Settings,
+    package: models.Package,
+    secondary_package: models.Package,
+    secondary_aip_storage_location: models.Location,
 ) -> None:
     settings.TIME_ZONE = "UTC"
 
     call_command(
         "populate_aip_stored_dates",
         "--location-uuid",
-        secondary_aip_storage_fs_location.uuid,
+        secondary_aip_storage_location.uuid,
     )
 
     assert models.Package.objects.get(
-        uuid=secondary_aip_uploaded_fs_location.uuid
+        uuid=secondary_package.uuid
     ).stored_date == datetime.datetime(2024, 3, 19, 7, 0, tzinfo=datetime.timezone.utc)
 
     success.assert_called_once_with(
@@ -180,20 +121,20 @@ def test_command_logs_error_when_it_cannot_read_aip_file(
     success: mock.Mock,
     error: mock.Mock,
     stat: mock.Mock,
-    secondary_aip_uploaded_fs_location: models.Package,
-    secondary_aip_storage_fs_location: models.Location,
+    secondary_package: models.Package,
+    secondary_aip_storage_location: models.Location,
 ) -> None:
     call_command(
         "populate_aip_stored_dates",
         "--location-uuid",
-        secondary_aip_storage_fs_location.uuid,
+        secondary_aip_storage_location.uuid,
     )
 
     success.assert_called_once_with(
         "Complete. Datestamps for 0 of 1 identified AIPs added. 0 AIPs that already have stored_dates were skipped."
     )
     error.assert_called_once_with(
-        f"Unable to get timestamp for local AIP {secondary_aip_uploaded_fs_location.uuid}. Details: no such file or directory"
+        f"Unable to get timestamp for local AIP {secondary_package.uuid}. Details: no such file or directory"
     )
 
 
@@ -207,12 +148,12 @@ def test_command_logs_error_when_it_cannot_read_aip_file(
 def test_command_skips_aips_with_stored_dates(
     success: mock.Mock,
     error: mock.Mock,
-    secondary_aip_uploaded_fs_location: models.Package,
+    secondary_package: models.Package,
 ) -> None:
-    secondary_aip_uploaded_fs_location.stored_date = datetime.datetime(
+    secondary_package.stored_date = datetime.datetime(
         2023, 1, 1, 0, 0, tzinfo=datetime.timezone.utc
     )
-    secondary_aip_uploaded_fs_location.save()
+    secondary_package.save()
 
     call_command("populate_aip_stored_dates")
 

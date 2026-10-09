@@ -8,12 +8,13 @@ import swiftclient
 
 from archivematica.storage_service.locations import models
 from archivematica.storage_service.locations.models.swift import Swift
+from tests.factories import SpaceFactory
 
 
 @pytest.fixture
-def swift(db: None) -> Swift:
+def swift(make_space: SpaceFactory) -> Swift:
     """A Swift space of the Toronto region."""
-    space = models.Space.objects.create(
+    space = make_space(
         uuid=uuid.UUID("6fb34c82-4222-425e-b0ea-30acfd31f52e"),
         access_protocol=models.Space.SWIFT,
         path="/",

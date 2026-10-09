@@ -6,49 +6,32 @@ import pytest
 from pytest_django import Settings
 
 from archivematica.storage_service.locations import models
+from archivematica.storage_service.locations.models.s3 import S3
+from tests.factories import SpaceFactory
 
 
 @pytest.fixture
-def space(tmp_path):
+def space(make_space: SpaceFactory, tmp_path: Path) -> models.Space:
+    """An S3 space staging in the temporary directory."""
     space_dir = tmp_path / "space"
     space_dir.mkdir()
 
-    return models.Space.objects.create(
+    return make_space(
         access_protocol=models.Space.S3,
-        path=space_dir,
-        staging_path=space_dir,
+        path=str(space_dir),
+        staging_path=str(space_dir),
     )
 
 
 @pytest.fixture
-def s3_space(space):
-    return models.S3.objects.create(
+def s3_space(space: models.Space) -> S3:
+    return S3.objects.create(
         space=space,
         access_key_id="",
         secret_access_key="",
         endpoint_url="https://s3.amazonaws.com",
         region="us-east-1",
         bucket="test-bucket",
-    )
-
-
-@pytest.fixture
-def aip_storage_location(s3_space):
-    return models.Location.objects.create(
-        description="S3",
-        space=s3_space,
-        relative_path="aips",
-        purpose=models.Location.AIP_STORAGE,
-    )
-
-
-@pytest.fixture
-def package(aip_storage_location):
-    return models.Package.objects.create(
-        current_location=aip_storage_location,
-        current_path="small_compressed_bag.zip",
-        package_type="AIP",
-        status="Uploaded",
     )
 
 
@@ -351,7 +334,7 @@ def test_delete_path_deletes_package(resource, s3_space, caplog):
 @pytest.mark.django_db
 @pytest.mark.parametrize("use_threads", [True, False])
 def test_transfer_config_uses_settings_value(
-    s3_space: models.S3,
+    s3_space: S3,
     settings: Settings,
     use_threads: bool,
 ) -> None:
@@ -363,7 +346,7 @@ def test_transfer_config_uses_settings_value(
 @pytest.mark.django_db
 @pytest.mark.parametrize("use_threads", [True, False])
 def test_upload_object_passes_transfer_config_to_boto3(
-    s3_space: models.S3,
+    s3_space: S3,
     settings: Settings,
     tmp_path: Path,
     use_threads: bool,
@@ -388,7 +371,7 @@ def test_upload_object_passes_transfer_config_to_boto3(
 @mock.patch("boto3.resource")
 def test_move_to_storage_service_passes_transfer_config_to_boto3(
     resource: mock.Mock,
-    s3_space: models.S3,
+    s3_space: S3,
     settings: Settings,
     tmp_path: Path,
     use_threads: bool,

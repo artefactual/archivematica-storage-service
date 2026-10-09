@@ -5,8 +5,6 @@ import pytest
 from django.urls import reverse
 
 from archivematica.storage_service.administration.views import get_git_commit
-from archivematica.storage_service.locations.models import Location
-from archivematica.storage_service.locations.models import Space
 
 
 @pytest.mark.parametrize(
@@ -25,23 +23,6 @@ def test_get_git_commit(check_output, output, expected_result):
     check_output.side_effect = [output]
 
     assert get_git_commit() == expected_result
-
-
-@pytest.fixture
-def space(tmp_path):
-    space_dir = tmp_path / "space"
-    space_dir.mkdir()
-
-    return Space.objects.create(path=str(space_dir))
-
-
-@pytest.fixture
-def ss_internal_location(space):
-    return Location.objects.create(
-        space=space,
-        relative_path="storage_service",
-        purpose=Location.STORAGE_SERVICE_INTERNAL,
-    )
 
 
 @pytest.mark.django_db

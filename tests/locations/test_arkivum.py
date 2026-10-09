@@ -33,12 +33,14 @@ def arkivum(arkivum: Arkivum, tmp_path: pathlib.Path) -> Arkivum:
 
 @pytest.fixture
 def package(
-    arkivum: Arkivum, arkivum_packages: list[models.Package], tmp_path: pathlib.Path
+    arkivum: Arkivum,
+    arkivum_compressed_package: models.Package,
+    tmp_path: pathlib.Path,
 ) -> models.Package:
     """The compressed package of the fixtures, with its pointer file where the
     package expects it in the Arkivum space.
     """
-    result = arkivum_packages[0]
+    result = arkivum_compressed_package
     pointer_file_location = result.pointer_file_location
     assert pointer_file_location is not None
     pointer_file_location.space = arkivum.space
@@ -58,8 +60,10 @@ def package(
 
 
 @pytest.fixture
-def uncompressed_package(arkivum_packages: list[models.Package]) -> models.Package:
-    return arkivum_packages[1]
+def uncompressed_package(
+    arkivum_uncompressed_package: models.Package,
+) -> models.Package:
+    return arkivum_uncompressed_package
 
 
 @pytest.fixture

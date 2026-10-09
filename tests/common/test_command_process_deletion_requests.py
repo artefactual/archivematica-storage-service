@@ -1,9 +1,8 @@
-from pathlib import Path
-from typing import Any
 from unittest import mock
 from uuid import uuid4
 
 import pytest
+from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
@@ -11,67 +10,24 @@ from archivematica.storage_service.common.management.commands import (
     process_deletion_requests,
 )
 from archivematica.storage_service.locations import models
-from archivematica.storage_service.locations.models.local_filesystem import (
-    LocalFilesystem,
-)
+from tests.factories import EventFactory
+from tests.factories import PackageFactory
 
 
 @pytest.fixture
-def aip_storage_location(tmp_path: Path) -> models.Location:
-    space_dir = tmp_path / "space"
-    space_dir.mkdir()
-    staging_dir = tmp_path / "staging"
-    staging_dir.mkdir()
+def package(package: models.Package) -> models.Package:
+    """The AIP whose deletion was requested."""
+    package.status = models.Package.DEL_REQ
+    package.save()
 
-    space = models.Space.objects.create(
-        access_protocol=models.Space.LOCAL_FILESYSTEM,
-        path=str(space_dir),
-        staging_path=str(staging_dir),
-    )
-    LocalFilesystem.objects.create(space=space)
-
-    return models.Location.objects.create(
-        space=space,
-        purpose=models.Location.AIP_STORAGE,
-        relative_path="aips",
-    )
+    return package
 
 
 @pytest.fixture
-def pipeline(db: Any) -> models.Pipeline:
-    return models.Pipeline.objects.create(description="Pipeline")
-
-
-def _create_deletion_event(
-    *,
-    package: models.Package,
-    pipeline: models.Pipeline,
+def deletion_event(
+    make_event: EventFactory, package: models.Package, pipeline: models.Pipeline
 ) -> models.Event:
-    return models.Event.objects.create(
-        package=package,
-        event_type=models.Event.DELETE,
-        event_reason="Requested via tests",
-        pipeline=pipeline,
-        user_id=1,
-        user_email="requester@example.com",
-        status=models.Event.SUBMITTED,
-        store_data=package.status,
-    )
-
-
-@pytest.fixture
-def package(aip_storage_location: models.Location) -> models.Package:
-    return models.Package.objects.create(
-        current_location=aip_storage_location,
-        current_path="package.7z",
-        package_type=models.Package.AIP,
-        status=models.Package.DEL_REQ,
-    )
-
-
-@pytest.fixture
-def deletion_event(package: models.Package, pipeline: models.Pipeline) -> models.Event:
-    return _create_deletion_event(package=package, pipeline=pipeline)
+    return make_event(package, pipeline)
 
 
 @pytest.mark.django_db
@@ -91,12 +47,8 @@ def test_process_deletion_requests_lists_pending_requests(
 def test_process_deletion_requests_approve(
     capsys: pytest.CaptureFixture[str],
     deletion_event: models.Event,
-    django_user_model: Any,
+    admin_user: User,
 ) -> None:
-    admin_user = django_user_model.objects.create_user(
-        username="admin", password="password"
-    )
-
     call_command(
         "process_deletion_requests",
         "--approve",
@@ -117,21 +69,16 @@ def test_process_deletion_requests_approve(
 def test_process_deletion_requests_approve_all(
     capsys: pytest.CaptureFixture[str],
     deletion_event: models.Event,
-    django_user_model: Any,
+    admin_user: User,
+    make_package: PackageFactory,
+    make_event: EventFactory,
 ) -> None:
-    admin_user = django_user_model.objects.create_user(
-        username="admin", password="password"
-    )
-
-    second_package = models.Package.objects.create(
-        current_location=deletion_event.package.current_location,
-        current_path="second-package.7z",
-        package_type=models.Package.AIP,
+    second_package = make_package(
+        deletion_event.package.current_location,
+        "second-package.7z",
         status=models.Package.DEL_REQ,
     )
-    second_event = _create_deletion_event(
-        package=second_package, pipeline=deletion_event.pipeline
-    )
+    second_event = make_event(second_package, deletion_event.pipeline)
 
     with mock.patch.object(
         models.Package, "delete_from_storage", return_value=(True, None)
@@ -174,11 +121,8 @@ def test_process_deletion_requests_approve_all(
 def test_process_deletion_requests_reports_missing_event(
     capsys: pytest.CaptureFixture[str],
     deletion_event: models.Event,
-    django_user_model: Any,
+    admin_user: User,
 ) -> None:
-    admin_user = django_user_model.objects.create_user(
-        username="admin", password="password"
-    )
     nonexistent_uuid = uuid4()
 
     call_command(
