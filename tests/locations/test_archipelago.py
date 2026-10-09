@@ -1,5 +1,6 @@
 import json
 import logging  # Added import
+import uuid
 from unittest.mock import ANY
 from unittest.mock import Mock
 from unittest.mock import call
@@ -171,9 +172,9 @@ def test_upload_file_error(archipelago_space):
         mock_response.raise_for_status.assert_called_once()
 
 
-def test_get_metadata(archipelago_space):
+def test_get_metadata(archipelago_space: Archipelago) -> None:
     input_path = "/path/to/input/file"
-    aip_uuid = "12345678-1234-5678-1234-567812345678"
+    aip_uuid = str(uuid.uuid4())
     package_type = "example_package"
     expected_output = b"<mets/>"
 

@@ -618,13 +618,12 @@ def find_tagmanifest(file_path):
             return file_path / tagmanifest
 
 
-def uuid_to_path(uuid):
+def uuid_to_path(uuid: uuid.UUID) -> str:
     """Converts a UUID into a path.
 
     Every 4 alphanumeric characters of the UUID become a folder name."""
-    uuid = uuid.hex
-    path = [uuid[i : i + 4] for i in range(0, len(uuid), 4)]
-    path = pathlib.Path(*path)
+    hex_digits = uuid.hex
+    path = pathlib.Path(*[hex_digits[i : i + 4] for i in range(0, len(hex_digits), 4)])
     LOGGER.debug("path %s", path)
     return str(path)
 

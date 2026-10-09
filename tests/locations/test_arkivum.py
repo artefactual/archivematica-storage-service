@@ -1,253 +1,301 @@
-import os
 import pathlib
 import shutil
+import uuid
 from unittest import mock
 
+import pytest
 import requests
-from django.test import TestCase
 
+from archivematica.storage_service.common import utils
 from archivematica.storage_service.locations import models
-
-from . import TempDirMixin
+from archivematica.storage_service.locations.models.arkivum import Arkivum
 
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
-
-def get_pkg_uuid_path(package_uuid):
-    tmp = package_uuid.replace("-", "")
-    return os.path.join(*[tmp[i : i + 4] for i in range(0, len(tmp), 4)])
+# Arkivum assigned this identifier to the package it is replicating.
+ARKIVUM_IDENTIFIER = str(uuid.uuid4())
 
 
-class TestArkivum(TempDirMixin, TestCase):
-    fixture_files = ["base.json", "arkivum.json"]
-    fixtures = [FIXTURES_DIR / f for f in fixture_files]
+@pytest.fixture
+def arkivum(arkivum: Arkivum, tmp_path: pathlib.Path) -> Arkivum:
+    """The Arkivum space of the fixtures, with its paths in the temporary
+    directory.
+    """
+    arkivum.space.path = str(tmp_path)
+    arkivum.space.staging_path = str(tmp_path)
+    arkivum.space.save()
+    arkivum.save()
 
-    def setUp(self):
-        super().setUp()
-        self.arkivum_object = models.Arkivum.objects.first()
-        self.arkivum_object.space.path = str(self.tmpdir)
-        self.arkivum_object.space.staging_path = str(self.tmpdir)
-        self.arkivum_object.space.save()
-        self.arkivum_object.save()
-        package_uuid = "c0f8498f-b92e-4a8b-8941-1b34ba062ed8"
-        self.package = models.Package.objects.get(uuid=package_uuid)
-        # Here we make sure that the test pointer file is where the package
-        # expects it to be.
-        self.package.pointer_file_location.space = self.arkivum_object.space
+    return arkivum
 
-        self.package.pointer_file_location.relative_path = "arkivum/storage_service"
 
-        pointer_fname = "pointer." + package_uuid + ".xml"
-        pointer_src_path = os.path.join(FIXTURES_DIR, pointer_fname)
-        pointer_dst_path = os.path.join(
-            self.package.pointer_file_location.space.path,
-            self.package.pointer_file_location.relative_path,
-            get_pkg_uuid_path(package_uuid),
-            pointer_fname,
-        )
-        os.makedirs(os.path.dirname(pointer_dst_path))
-        shutil.copyfile(pointer_src_path, pointer_dst_path)
-        self.uncompressed_package = models.Package.objects.get(
-            uuid="e52c518d-fcf4-46cc-8581-bbc01aff7af3"
-        )
+@pytest.fixture
+def package(
+    arkivum: Arkivum,
+    arkivum_compressed_package: models.Package,
+    tmp_path: pathlib.Path,
+) -> models.Package:
+    """The compressed package of the fixtures, with its pointer file where the
+    package expects it in the Arkivum space.
+    """
+    result = arkivum_compressed_package
+    pointer_file_location = result.pointer_file_location
+    assert pointer_file_location is not None
+    pointer_file_location.space = arkivum.space
+    pointer_file_location.relative_path = "arkivum/storage_service"
 
-        # Create filesystem to interact with
-        shutil.copy(os.path.join(FIXTURES_DIR, "working_bag.zip"), str(self.tmpdir))
-        self.arkivum_dir = self.tmpdir / "arkivum"
-        (self.arkivum_dir / "aips").mkdir()
-        (self.arkivum_dir / "ts").mkdir()
-        (self.arkivum_dir / "test.txt").open("ab").write(b"test.txt contents")
-        self.arkivum_dir = str(self.arkivum_dir)
-
-    def test_has_required_attributes(self):
-        assert self.arkivum_object.host
-        # Both or neither of remote_user/remote_name
-        assert bool(self.arkivum_object.remote_user) == bool(
-            self.arkivum_object.remote_name
-        )
-
-    def test_browse(self):
-        response = self.arkivum_object.browse(self.arkivum_dir)
-        assert response
-        assert set(response["directories"]) == {"aips", "ts", "storage_service"}
-        assert set(response["entries"]) == {"aips", "test.txt", "ts", "storage_service"}
-        assert response["properties"]["test.txt"]["size"] == 17
-        assert response["properties"]["aips"]["object count"] == 0
-        assert response["properties"]["ts"]["object count"] == 0
-
-    @mock.patch(
-        "requests.get",
-        side_effect=[
-            mock.Mock(
-                **{
-                    "status_code": 200,
-                    "json.return_value": {
-                        "files": [
-                            {"name": "test"},
-                            {"name": "test.txt"},
-                            {"name": "unittest.txt"},
-                        ],
-                    },
-                }
-            ),
-            mock.Mock(
-                **{
-                    "status_code": 200,
-                    "json.return_value": {
-                        "files": [{"name": "test"}, {"name": "test.txt"}],
-                    },
-                }
-            ),
-        ],
+    pointer_fname = f"pointer.{result.uuid}.xml"
+    pointer_dst_path = pathlib.Path(
+        pointer_file_location.space.path,
+        pointer_file_location.relative_path,
+        utils.uuid_to_path(result.uuid),
+        pointer_fname,
     )
-    @mock.patch("requests.delete", side_effect=[mock.Mock(status_code=204)])
-    def test_delete(self, requests_delete, requests_get):
-        # Verify exists
-        url = "https://" + self.arkivum_object.host + "/files/ts"
-        response = requests.get(url, verify=False)
-        assert "unittest.txt" in [x["name"] for x in response.json()["files"]]
-        # Delete file
-        self.arkivum_object.delete_path("/ts/unittest.txt")
-        # Verify deleted
-        url = "https://" + self.arkivum_object.host + "/files/ts"
-        response = requests.get(url, verify=False)
-        assert "unittest.txt" not in [x["name"] for x in response.json()["files"]]
+    pointer_dst_path.parent.mkdir(parents=True)
+    shutil.copyfile(FIXTURES_DIR / pointer_fname, pointer_dst_path)
 
-    @mock.patch(
-        "requests.post",
-        side_effect=[
-            mock.Mock(
-                **{
-                    "status_code": 202,
-                    "json.return_value": {"id": "a09f9c18-df2b-474f-8c7f-50eb3dedba2d"},
-                }
-            )
-        ],
-    )
-    def test_post_move_from_ss(self, requests_post):
-        # POST to Arkivum about file
-        self.arkivum_object.post_move_from_storage_service(
-            str(self.tmpdir / "working_bag.zip"), self.package.full_path, self.package
-        )
-        assert self.package.misc_attributes["arkivum_identifier"] == (
-            "a09f9c18-df2b-474f-8c7f-50eb3dedba2d"
-        )
+    return result
 
-    @mock.patch(
-        "requests.get",
-        side_effect=[
-            mock.Mock(
-                **{
-                    "status_code": 200,
-                    "json.return_value": {
-                        "fileInformation": {"replicationState": "yellow"},
-                    },
-                }
-            ),
-            mock.Mock(
-                **{
-                    "status_code": 200,
-                    "json.return_value": {
-                        "fileInformation": {"replicationState": "green"},
-                    },
-                }
-            ),
-            mock.Mock(
-                **{
-                    "status_code": 200,
-                    "json.return_value": {
-                        "fileInformation": {"replicationState": "yellow"},
-                    },
-                }
-            ),
-        ],
-    )
-    def test_update_package_status_compressed(self, requests_get):
-        # Setup request_id
-        self.package.misc_attributes.update(
-            {"arkivum_identifier": "2e75c8ad-cded-4f7e-8ac7-85627a116e39"}
-        )
-        self.package.save()
-        # Verify status is STAGING
-        assert self.package.status == models.Package.STAGING
-        # Test (response yellow)
-        self.arkivum_object.update_package_status(self.package)
-        # Verify is still staged
-        assert self.package.status == models.Package.STAGING
-        # Test (response green)
-        self.arkivum_object.update_package_status(self.package)
-        # Verify UPLOADED
-        assert self.package.status == models.Package.UPLOADED
-        # Test (response yellow)
-        self.arkivum_object.update_package_status(self.package)
-        # Verify what?
 
-    @mock.patch(
-        "requests.get",
-        side_effect=[
-            mock.Mock(
-                **{
-                    "status_code": 200,
-                    "json.return_value": {
-                        "id": "5afe9428-c6d6-4d0f-9196-5e7fd028726d",
-                        "status": "Scheduled",
-                    },
-                }
-            ),
-            mock.Mock(
-                **{
-                    "status_code": 200,
-                    "json.return_value": {},
-                }
-            ),
-            mock.Mock(
-                **{
-                    "status_code": 200,
-                    "json.return_value": {
-                        "processed": 18,
-                        "replicationState": "red",
-                        "fixityLastChecked": "2015-11-24",
-                        "replicationStates": {"red": 18},
-                        "id": "5afe9428-c6d6-4d0f-9196-5e7fd028726d",
-                        "passed": "18",
-                        "status": "Completed",
-                    },
-                }
-            ),
-            mock.Mock(
-                **{
-                    "status_code": 200,
-                    "json.return_value": {
-                        "processed": 18,
-                        "replicationState": "green",
-                        "fixityLastChecked": "2015-11-24",
-                        "replicationStates": {"green": 18},
-                        "id": "5afe9428-c6d6-4d0f-9196-5e7fd028726d",
-                        "passed": "18",
-                        "status": "Completed",
-                    },
-                }
-            ),
-        ],
-    )
-    def test_update_package_status_uncompressed(self, _requests_get):
-        self.uncompressed_package.current_path = str(self.tmpdir)
-        # Setup request_id
-        self.uncompressed_package.misc_attributes.update(
-            {"arkivum_identifier": "5afe9428-c6d6-4d0f-9196-5e7fd028726d"}
+@pytest.fixture
+def uncompressed_package(
+    arkivum_uncompressed_package: models.Package,
+) -> models.Package:
+    return arkivum_uncompressed_package
+
+
+@pytest.fixture
+def compressed_bag_path(tmp_path: pathlib.Path) -> pathlib.Path:
+    """A copy of the compressed bag fixture in the temporary directory."""
+    return pathlib.Path(shutil.copy(FIXTURES_DIR / "working_bag.zip", tmp_path))
+
+
+@pytest.fixture
+def arkivum_dir(package: models.Package, tmp_path: pathlib.Path) -> str:
+    """The directory of the Arkivum space, which holds the pointer file of the
+    package and some content to browse.
+    """
+    result = tmp_path / "arkivum"
+    (result / "aips").mkdir()
+    (result / "ts").mkdir()
+    (result / "test.txt").open("ab").write(b"test.txt contents")
+
+    return str(result)
+
+
+@pytest.mark.django_db
+def test_has_required_attributes(arkivum: Arkivum) -> None:
+    assert arkivum.host
+    # Both or neither of remote_user/remote_name
+    assert bool(arkivum.remote_user) == bool(arkivum.remote_name)
+
+
+@pytest.mark.django_db
+def test_browse(arkivum: Arkivum, arkivum_dir: str) -> None:
+    response = arkivum.browse(arkivum_dir)
+    assert response
+    assert set(response["directories"]) == {"aips", "ts", "storage_service"}
+    assert set(response["entries"]) == {"aips", "test.txt", "ts", "storage_service"}
+    assert response["properties"]["test.txt"]["size"] == 17
+    assert response["properties"]["aips"]["object count"] == 0
+    assert response["properties"]["ts"]["object count"] == 0
+
+
+@pytest.mark.django_db
+@mock.patch(
+    "requests.get",
+    side_effect=[
+        mock.Mock(
+            **{
+                "status_code": 200,
+                "json.return_value": {
+                    "files": [
+                        {"name": "test"},
+                        {"name": "test.txt"},
+                        {"name": "unittest.txt"},
+                    ],
+                },
+            }
+        ),
+        mock.Mock(
+            **{
+                "status_code": 200,
+                "json.return_value": {
+                    "files": [{"name": "test"}, {"name": "test.txt"}],
+                },
+            }
+        ),
+    ],
+)
+@mock.patch("requests.delete", side_effect=[mock.Mock(status_code=204)])
+def test_delete(
+    requests_delete: mock.MagicMock,
+    requests_get: mock.MagicMock,
+    arkivum: Arkivum,
+) -> None:
+    # Verify exists
+    url = "https://" + arkivum.host + "/files/ts"
+    response = requests.get(url, verify=False)
+    assert "unittest.txt" in [x["name"] for x in response.json()["files"]]
+    # Delete file
+    arkivum.delete_path("/ts/unittest.txt")
+    # Verify deleted
+    url = "https://" + arkivum.host + "/files/ts"
+    response = requests.get(url, verify=False)
+    assert "unittest.txt" not in [x["name"] for x in response.json()["files"]]
+
+
+@pytest.mark.django_db
+@mock.patch(
+    "requests.post",
+    side_effect=[
+        mock.Mock(
+            **{
+                "status_code": 202,
+                "json.return_value": {"id": ARKIVUM_IDENTIFIER},
+            }
         )
-        self.uncompressed_package.save()
-        # Verify status is STAGING
-        assert self.uncompressed_package.status == models.Package.STAGING
-        # Test (response Scheduled)
-        self.arkivum_object.update_package_status(self.uncompressed_package)
-        # Verify is still staged
-        assert self.uncompressed_package.status == models.Package.STAGING
-        # Test (response yellow)
-        self.arkivum_object.update_package_status(self.uncompressed_package)
-        # Verify is still staged
-        assert self.uncompressed_package.status == models.Package.STAGING
-        # Test (response green)
-        self.arkivum_object.update_package_status(self.uncompressed_package)
-        # Verify UPLOADED
-        assert self.uncompressed_package.status == models.Package.UPLOADED
+    ],
+)
+def test_post_move_from_ss(
+    requests_post: mock.MagicMock,
+    arkivum: Arkivum,
+    package: models.Package,
+    compressed_bag_path: pathlib.Path,
+) -> None:
+    # POST to Arkivum about file
+    arkivum.post_move_from_storage_service(
+        str(compressed_bag_path), package.full_path, package
+    )
+    assert package.misc_attributes["arkivum_identifier"] == ARKIVUM_IDENTIFIER
+
+
+@pytest.mark.django_db
+@mock.patch(
+    "requests.get",
+    side_effect=[
+        mock.Mock(
+            **{
+                "status_code": 200,
+                "json.return_value": {
+                    "fileInformation": {"replicationState": "yellow"},
+                },
+            }
+        ),
+        mock.Mock(
+            **{
+                "status_code": 200,
+                "json.return_value": {
+                    "fileInformation": {"replicationState": "green"},
+                },
+            }
+        ),
+        mock.Mock(
+            **{
+                "status_code": 200,
+                "json.return_value": {
+                    "fileInformation": {"replicationState": "yellow"},
+                },
+            }
+        ),
+    ],
+)
+def test_update_package_status_compressed(
+    requests_get: mock.MagicMock,
+    arkivum: Arkivum,
+    package: models.Package,
+    compressed_bag_path: pathlib.Path,
+) -> None:
+    # Setup request_id
+    package.misc_attributes.update({"arkivum_identifier": ARKIVUM_IDENTIFIER})
+    package.save()
+    # Verify status is STAGING
+    assert package.status == models.Package.STAGING
+    # Test (response yellow)
+    arkivum.update_package_status(package)
+    # Verify is still staged
+    assert package.status == models.Package.STAGING
+    # Test (response green)
+    arkivum.update_package_status(package)
+    # Verify UPLOADED
+    assert package.status == models.Package.UPLOADED
+    # Test (response yellow)
+    arkivum.update_package_status(package)
+    # Verify what?
+
+
+@pytest.mark.django_db
+@mock.patch(
+    "requests.get",
+    side_effect=[
+        mock.Mock(
+            **{
+                "status_code": 200,
+                "json.return_value": {
+                    "id": ARKIVUM_IDENTIFIER,
+                    "status": "Scheduled",
+                },
+            }
+        ),
+        mock.Mock(
+            **{
+                "status_code": 200,
+                "json.return_value": {},
+            }
+        ),
+        mock.Mock(
+            **{
+                "status_code": 200,
+                "json.return_value": {
+                    "processed": 18,
+                    "replicationState": "red",
+                    "fixityLastChecked": "2015-11-24",
+                    "replicationStates": {"red": 18},
+                    "id": ARKIVUM_IDENTIFIER,
+                    "passed": "18",
+                    "status": "Completed",
+                },
+            }
+        ),
+        mock.Mock(
+            **{
+                "status_code": 200,
+                "json.return_value": {
+                    "processed": 18,
+                    "replicationState": "green",
+                    "fixityLastChecked": "2015-11-24",
+                    "replicationStates": {"green": 18},
+                    "id": ARKIVUM_IDENTIFIER,
+                    "passed": "18",
+                    "status": "Completed",
+                },
+            }
+        ),
+    ],
+)
+def test_update_package_status_uncompressed(
+    _requests_get: mock.MagicMock,
+    arkivum: Arkivum,
+    uncompressed_package: models.Package,
+    tmp_path: pathlib.Path,
+) -> None:
+    uncompressed_package.current_path = str(tmp_path)
+    # Setup request_id
+    uncompressed_package.misc_attributes.update(
+        {"arkivum_identifier": ARKIVUM_IDENTIFIER}
+    )
+    uncompressed_package.save()
+    # Verify status is STAGING
+    assert uncompressed_package.status == models.Package.STAGING
+    # Test (response Scheduled)
+    arkivum.update_package_status(uncompressed_package)
+    # Verify is still staged
+    assert uncompressed_package.status == models.Package.STAGING
+    # Test (response yellow)
+    arkivum.update_package_status(uncompressed_package)
+    # Verify is still staged
+    assert uncompressed_package.status == models.Package.STAGING
+    # Test (response green)
+    arkivum.update_package_status(uncompressed_package)
+    # Verify UPLOADED
+    assert uncompressed_package.status == models.Package.UPLOADED

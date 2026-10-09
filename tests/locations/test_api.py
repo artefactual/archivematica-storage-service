@@ -4,13 +4,16 @@ import os
 import pathlib
 import shutil
 import uuid
+from collections.abc import Iterator
 from unittest import mock
 from urllib.parse import urlparse
 
 import pytest
 from django.contrib.auth.models import User
+from django.http import HttpResponseBase
+from django.http import HttpResponseRedirect
+from django.http import StreamingHttpResponse
 from django.test import Client
-from django.test import TestCase
 from django.urls import reverse
 
 from archivematica.storage_service.administration import roles
@@ -19,1146 +22,1200 @@ from archivematica.storage_service.locations import package_request
 from archivematica.storage_service.locations.api.sword.views import (
     _parse_name_and_content_urls_from_mets_file,
 )
-
-from . import TempDirMixin
+from archivematica.storage_service.locations.models.arkivum import Arkivum
+from archivematica.storage_service.locations.models.s3 import S3
+from tests.factories import EventFactory
+from tests.factories import LocationFactory
+from tests.factories import SpaceFactory
 
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
+# Arkivum assigned this identifier to the compressed package being staged.
+ARKIVUM_IDENTIFIER = str(uuid.uuid4())
 
-class TestSpaceAPI(TempDirMixin, TestCase):
-    fixture_files = ["base.json"]
-    fixtures = [FIXTURES_DIR / f for f in fixture_files]
 
-    def setUp(self):
-        super().setUp()
-        user = User.objects.get(username="test")
-        user.set_password("test")
-        self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
-            b"test:test"
-        ).decode("utf8")
+def _decode_response_content(response: HttpResponseBase) -> str:
+    """Join the streamed content of a file response into a string."""
+    assert isinstance(response, StreamingHttpResponse)
+    chunks = response.streaming_content
+    assert isinstance(chunks, Iterator)
 
-    def test_requires_auth(self):
-        del self.client.defaults["HTTP_AUTHORIZATION"]
-        response = self.client.get(
-            "/api/v2/space/7d20c992-bc92-4f92-a794-7161ff2cc08b/"
-        )
-        assert response.status_code == 401
+    return b"".join(chunks).decode("utf8")
 
-    def test_non_admins_can_read_list(self):
-        user = User.objects.get(username="nonadmin")
-        user.set_password("test")
-        self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
-            b"nonadmin:test"
-        ).decode("utf8")
-        response = self.client.get("/api/v2/space/")
-        assert response.status_code == 200
-        response_content = json.loads(response.text)
-        assert len(response_content["objects"]) != 0
 
-    def test_non_admins_can_read_detail(self):
-        user = User.objects.get(username="nonadmin")
-        user.set_password("test")
-        self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
-            b"nonadmin:test"
-        ).decode("utf8")
-        response = self.client.get(
-            "/api/v2/space/7d20c992-bc92-4f92-a794-7161ff2cc08b/"
-        )
-        assert response.status_code == 200
-        assert response.text
+def _package_files(package: models.Package) -> list[dict[str, str]]:
+    """Two files of the transfer, as the pipeline reports them to the API."""
+    package_name = os.path.basename(package.current_path)
+    origin = str(uuid.uuid4())
 
-    def test_create_space(self):
-        data = {
-            "access_protocol": "S3",
-            "path": "",
-            "staging_path": "/",
-            # Specific to the S3 protocol.
-            "endpoint_url": "http://127.0.0.1:12345",
-            "access_key_id": "Cah4cae1",
-            "secret_access_key": "Thu6Ahqu",
-            "region": "us-west-2",
-            "bucket": "test-bucket",
+    return [
+        {
+            "relative_path": f"{package_name}/{name}",
+            "fileuuid": str(uuid.uuid4()),
+            "accessionid": "",
+            "sipuuid": str(package.uuid),
+            "origin": origin,
         }
-        response = self.client.post(
-            "/api/v2/space/", data=json.dumps(data), content_type="application/json"
-        )
-        response_data = json.loads(response.text)
-        assert response.status_code == 201
-
-        protocol_model = models.S3.objects.get(space_id=response_data["uuid"])
-        assert protocol_model.endpoint_url == data["endpoint_url"]
-
-    def test_browse_doesnt_traverse_up(self):
-        space_uuid = str(uuid.uuid4())
-        models.Space.objects.create(
-            uuid=space_uuid,
-            path="/home/foo",
-        )
-        response = self.client.get(
-            reverse(
-                "browse",
-                kwargs={"api_name": "v2", "resource_name": "space", "uuid": space_uuid},
-            ),
-            {"path": "/home/foo/../../etc"},
-        )
-        assert response.status_code == 400
-        assert "The path parameter must be relative to the space path" in response.text
-
-    def test_browse_follow_symlinks(self):
-        # Create a directory with two subdirectories and a file
-        out_dir = self.tmpdir / "out"
-        out_dir.mkdir()
-        (out_dir / "child_1").mkdir()
-        (out_dir / "child_1" / "file.txt").write_text("hello world")
-        (out_dir / "child_2").mkdir()
-
-        # Create a symlink for the space targetting the "out" directory
-        space_dir = self.tmpdir / "space"
-        space_dir.symlink_to(out_dir)
-
-        # Create the Space model instance
-        space_uuid = str(uuid.uuid4())
-        space = models.Space.objects.create(
-            uuid=space_uuid,
-            path=str(space_dir),
-            access_protocol=models.Space.LOCAL_FILESYSTEM,
-        )
-        models.LocalFilesystem.objects.create(space=space)
-
-        # Browse the space root directory
-        response = self.client.get(
-            reverse(
-                "browse",
-                kwargs={"api_name": "v2", "resource_name": "space", "uuid": space_uuid},
-            ),
-            {"path": str(space_dir)},
-        )
-        assert response.status_code == 200
-
-        # Assert we get the two top level child directories
-        response_content = json.loads(response.text)
-        assert sorted(
-            base64.b64decode(e).decode() for e in response_content["directories"]
-        ) == ["child_1", "child_2"]
-        assert sorted(
-            base64.b64decode(e).decode() for e in response_content["entries"]
-        ) == ["child_1", "child_2"]
-        assert response_content["properties"] == {
-            "child_1": {"object count": 1},
-            "child_2": {"object count": 0},
-        }
-
-        # Browse the child_1 directory
-        response = self.client.get(
-            reverse(
-                "browse",
-                kwargs={"api_name": "v2", "resource_name": "space", "uuid": space_uuid},
-            ),
-            {"path": str(space_dir / "child_1")},
-        )
-        assert response.status_code == 200
-
-        # Assert we get the inner text file
-        response_content = json.loads(response.text)
-        assert response_content["directories"] == []
-        assert sorted(
-            base64.b64decode(e).decode() for e in response_content["entries"]
-        ) == ["file.txt"]
-        assert response_content["properties"] == {
-            "file.txt": {"size": 11},
-        }
-
-    def test_browse_with_symlinks_loop(self):
-        # Create a symlink pointing to itself for the space path
-        space_dir = self.tmpdir / "space"
-        space_dir.symlink_to(space_dir)
-
-        # Create the Space model instance
-        space_uuid = str(uuid.uuid4())
-        space = models.Space.objects.create(
-            uuid=space_uuid,
-            path=str(space_dir),
-            access_protocol=models.Space.LOCAL_FILESYSTEM,
-        )
-        models.LocalFilesystem.objects.create(space=space)
-
-        # Browse the space root directory
-        response = self.client.get(
-            reverse(
-                "browse",
-                kwargs={"api_name": "v2", "resource_name": "space", "uuid": space_uuid},
-            ),
-            {"path": str(space_dir)},
-        )
-        assert response.status_code == 400
-
-
-class TestLocationAPI(TempDirMixin, TestCase):
-    fixture_files = ["base.json", "pipelines.json", "package.json"]
-    fixtures = [FIXTURES_DIR / f for f in fixture_files]
-
-    def setUp(self):
-        super().setUp()
-        self.user = User.objects.get(username="test")
-        self.user.set_password("test")
-        self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
-            b"test:test"
-        ).decode("utf8")
-
-    def as_reader(self):
-        self.user.set_role(roles.USER_ROLE_READER)
-
-    def as_reviewer(self):
-        self.user.set_role(roles.USER_ROLE_REVIEWER)
-
-    def as_manager(self):
-        self.user.set_role(roles.USER_ROLE_MANAGER)
-
-    def test_requires_auth(self):
-        del self.client.defaults["HTTP_AUTHORIZATION"]
-        response = self.client.post(
-            "/api/v2/location/213086c8-232e-4b9e-bb03-98fbc7a7966a/"
-        )
-        assert response.status_code == 401
-
-    def test_non_admins_can_read_list(self):
-        user = User.objects.get(username="nonadmin")
-        user.set_password("test")
-        self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
-            b"nonadmin:test"
-        ).decode("utf8")
-        response = self.client.get("/api/v2/location/")
-        assert response.status_code == 200
-        response_content = json.loads(response.text)
-        assert len(response_content["objects"]) != 0
-
-    def test_non_admins_can_read_detail(self):
-        user = User.objects.get(username="nonadmin")
-        user.set_password("test")
-        self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
-            b"nonadmin:test"
-        ).decode("utf8")
-        response = self.client.get(
-            "/api/v2/location/213086c8-232e-4b9e-bb03-98fbc7a7966a/"
-        )
-        assert response.status_code == 200
-        assert response.text
-
-    def test_non_admins_cannot_create_location(self):
-        self.as_reader()
-        data = {
-            "space": "/api/v2/space/7d20c992-bc92-4f92-a794-7161ff2cc08b/",
-            "description": "automated workflow",
-            "relative_path": "automated-workflow/foo/bar",
-            "purpose": "TS",
-            "pipeline": ["/api/v2/pipeline/b25f6b71-3ebf-4fcc-823c-1feb0a2553dd/"],
-        }
-
-        response = self.client.post(
-            "/api/v2/location/", data=json.dumps(data), content_type="application/json"
-        )
-        assert response.status_code == 401
-
-    def test_create_location(self):
-        space = models.Space.objects.get(uuid="7d20c992-bc92-4f92-a794-7161ff2cc08b")
-        data = {
-            "space": "/api/v2/space/7d20c992-bc92-4f92-a794-7161ff2cc08b/",
-            "description": "automated workflow",
-            "relative_path": "automated-workflow/foo/bar",
-            "purpose": "TS",
-            "pipeline": ["/api/v2/pipeline/b25f6b71-3ebf-4fcc-823c-1feb0a2553dd/"],
-        }
-
-        response = self.client.post(
-            "/api/v2/location/", data=json.dumps(data), content_type="application/json"
-        )
-        assert response.status_code == 201
-
-        # Verify content
-        body = json.loads(response.text)
-        assert body["description"] == data["description"]
-        assert body["purpose"] == data["purpose"]
-        assert body["path"] == "{}{}".format(space.path, data["relative_path"])
-        assert body["enabled"] is True
-        assert data["pipeline"][0] in body["pipeline"]
-
-        # Verify that the record was populated properly
-        location = models.Location.objects.get(uuid=body["uuid"])
-        assert location.purpose == data["purpose"]
-        assert location.relative_path == data["relative_path"]
-        assert location.description == data["description"]
-
-    def test_create_default_location(self):
-        """Test that a new created location can be marked as default.
-
-        Storage Service allows users to define a location the default one for
-        its purpose application-wise.
-
-        In our fixtures we already have a TS added. We're going to add a new
-        one and confirm that it can be marked as the new default.
-        """
-        new_default_ts_location = {
-            "space": "/api/v2/space/7d20c992-bc92-4f92-a794-7161ff2cc08b/",
-            "description": "new location",
-            "relative_path": "new-location/foo/bar",
-            "purpose": "TS",
-            "pipeline": ["/api/v2/pipeline/b25f6b71-3ebf-4fcc-823c-1feb0a2553dd/"],
-            "default": True,
-        }
-
-        def _get_default_ts():
-            return self.client.get(
-                "/api/v2/location/default/TS/", content_type="application/json"
-            )
-
-        response = _get_default_ts()
-        assert response.status_code == 404
-
-        # Create default location.
-        response = self.client.post(
-            "/api/v2/location/",
-            data=json.dumps(new_default_ts_location),
-            content_type="application/json",
-        )
-        body = json.loads(response.text)
-
-        response = _get_default_ts()
-        assert response.status_code == 302
-        assert response.url == "/api/v2/location/{}/".format(body["uuid"])
-
-    def test_cant_move_from_non_existant_locations(self):
-        data = {
-            "origin_location": "/api/v2/location/13ec52e6-773f-4f73-a6a8-043f285f6168/",
-            "files": [{"source": "foo", "destination": "bar"}],
-            "pipeline": "/api/v2/pipeline/b25f6b71-3ebf-4fcc-823c-1feb0a2553dd/",
-        }
-        response = self.client.post(
-            "/api/v2/location/213086c8-232e-4b9e-bb03-98fbc7a7966a/",
-            data=json.dumps(data),
-            content_type="application/json",
-        )
-        # Verify error
-        assert response.status_code == 404
-        assert "not a link to a valid Location" in response.text
-
-    def test_cant_move_to_non_existant_locations(self):
-        data = {
-            "origin_location": "/api/v2/location/6e61aacf-8492-4382-8ef3-262cc5420259/",
-            "files": [{"source": "foo", "destination": "bar"}],
-            "pipeline": "/api/v2/pipeline/b25f6b71-3ebf-4fcc-823c-1feb0a2553dd/",
-        }
-        response = self.client.post(
-            "/api/v2/location/d898b2d0-bd63-4d4e-884b-ea3df9a8f56d/",
-            data=json.dumps(data),
-            content_type="application/json",
-        )
-        # Verify error
-        assert response.status_code == 404
-
-    def test_cant_move_from_disabled_locations(self):
-        # Set origin location disabled
-        models.Location.objects.filter(
-            uuid="6e61aacf-8492-4382-8ef3-262cc5420259"
-        ).update(enabled=False)
-        # Send request
-        data = {
-            "origin_location": "/api/v2/location/6e61aacf-8492-4382-8ef3-262cc5420259/",
-            "files": [{"source": "foo", "destination": "bar"}],
-            "pipeline": "/api/v2/pipeline/b25f6b71-3ebf-4fcc-823c-1feb0a2553dd/",
-        }
-        response = self.client.post(
-            "/api/v2/location/213086c8-232e-4b9e-bb03-98fbc7a7966a/",
-            data=json.dumps(data),
-            content_type="application/json",
-        )
-        # Verify error
-        assert response.status_code == 404
-        assert "not a link to a valid Location" in response.text
-
-    def test_cant_move_to_disabled_locations(self):
-        # Set posting to location disabled
-        models.Location.objects.filter(
-            uuid="213086c8-232e-4b9e-bb03-98fbc7a7966a"
-        ).update(enabled=False)
-        # Send request
-        data = {
-            "origin_location": "/api/v2/location/6e61aacf-8492-4382-8ef3-262cc5420259/",
-            "files": [{"source": "foo", "destination": "bar"}],
-            "pipeline": "/api/v2/pipeline/b25f6b71-3ebf-4fcc-823c-1feb0a2553dd/",
-        }
-        response = self.client.post(
-            "/api/v2/location/213086c8-232e-4b9e-bb03-98fbc7a7966a/",
-            data=json.dumps(data),
-            content_type="application/json",
-        )
-        # Verify error
-        assert response.status_code == 404
-
-    def test_browse_doesnt_traverse_up(self):
-        location_uuid = str(uuid.uuid4())
-        space = models.Space.objects.create(
-            uuid=str(uuid.uuid4()),
-            path="/home",
-        )
-        models.Location.objects.create(
-            uuid=location_uuid,
-            space=space,
-            relative_path="foo",
-        )
-        response = self.client.get(
-            reverse(
-                "browse",
-                kwargs={
-                    "api_name": "v2",
-                    "resource_name": "location",
-                    "uuid": location_uuid,
-                },
-            ),
-            {"path": base64.b64encode(b"/home")},
-        )
-        assert response.status_code == 400
-        assert (
-            "The path parameter must be relative to the location path" in response.text
-        )
-
-    def test_browse_follow_symlinks(self):
-        # Create a directory with two subdirectories and a file
-        out_dir = self.tmpdir / "out"
-        out_dir.mkdir()
-        (out_dir / "child_1").mkdir()
-        (out_dir / "child_1" / "file.txt").write_text("hello world")
-        (out_dir / "child_2").mkdir()
-
-        # Create a directory for the space
-        space_dir = self.tmpdir / "space"
-        space_dir.mkdir()
-
-        # Create a symlink for the location targetting the "out" directory
-        location_dir = space_dir / "location"
-        location_dir.symlink_to(out_dir)
-
-        # Create the Space model instance
-        space = models.Space.objects.create(
-            uuid=str(uuid.uuid4()),
-            path=str(space_dir),
-            access_protocol=models.Space.LOCAL_FILESYSTEM,
-        )
-        models.LocalFilesystem.objects.create(space=space)
-
-        # Create the Location model instance
-        location_uuid = str(uuid.uuid4())
-        models.Location.objects.create(
-            uuid=location_uuid,
-            space=space,
-            relative_path="location",
-        )
-
-        # Browse the location root directory
-        response = self.client.get(
-            reverse(
-                "browse",
-                kwargs={
-                    "api_name": "v2",
-                    "resource_name": "location",
-                    "uuid": location_uuid,
-                },
-            ),
-            {"path": base64.b64encode(str(location_dir).encode())},
-        )
-        assert response.status_code == 200
-
-        # Assert we get the two top level child directories
-        response_content = json.loads(response.text)
-        assert sorted(
-            base64.b64decode(e).decode() for e in response_content["directories"]
-        ) == ["child_1", "child_2"]
-        assert sorted(
-            base64.b64decode(e).decode() for e in response_content["entries"]
-        ) == ["child_1", "child_2"]
-        assert response_content["properties"] == {
-            base64.b64encode(b"child_1").decode(): {"object count": 1},
-            base64.b64encode(b"child_2").decode(): {"object count": 0},
-        }
-
-        # Browse the child_1 directory
-        response = self.client.get(
-            reverse(
-                "browse",
-                kwargs={
-                    "api_name": "v2",
-                    "resource_name": "location",
-                    "uuid": location_uuid,
-                },
-            ),
-            {"path": base64.b64encode(str(location_dir / "child_1").encode())},
-        )
-        assert response.status_code == 200
-
-        # Assert we get the inner text file
-        response_content = json.loads(response.text)
-        assert response_content["directories"] == []
-        assert sorted(
-            base64.b64decode(e).decode() for e in response_content["entries"]
-        ) == ["file.txt"]
-        assert response_content["properties"] == {
-            base64.b64encode(b"file.txt").decode(): {"size": 11},
-        }
-
-    def test_browse_with_symlinks_loop(self):
-        # Create a directory for the space
-        space_dir = self.tmpdir / "space"
-        space_dir.mkdir()
-
-        # Create a symlink pointing to itself for the location path
-        location_dir = space_dir / "location"
-        location_dir.symlink_to(location_dir)
-
-        # Create the Space model instance
-        space = models.Space.objects.create(
-            uuid=str(uuid.uuid4()),
-            path=str(space_dir),
-            access_protocol=models.Space.LOCAL_FILESYSTEM,
-        )
-        models.LocalFilesystem.objects.create(space=space)
-
-        # Create the Location model instance
-        location_uuid = str(uuid.uuid4())
-        models.Location.objects.create(
-            uuid=location_uuid,
-            space=space,
-            relative_path="location",
-        )
-
-        # Browse the location root directory
-        response = self.client.get(
-            reverse(
-                "browse",
-                kwargs={
-                    "api_name": "v2",
-                    "resource_name": "location",
-                    "uuid": location_uuid,
-                },
-            ),
-            {"path": base64.b64encode(str(location_dir).encode())},
-        )
-        assert response.status_code == 400
-
-
-class TestPackageAPI(TempDirMixin, TestCase):
-    fixture_files = ["base.json", "package.json", "arkivum.json"]
-    fixtures = [FIXTURES_DIR / f for f in fixture_files]
-
-    def setUp(self):
-        super().setUp()
-        ss_internal = self.tmpdir / "ss-internal"
-        ss_internal.mkdir()
-        self.test_location = models.Location.objects.get(
-            uuid="615103f0-0ee0-4a12-ba17-43192d1143ea"
-        )
-        # Set up locations with fixtures
-        shutil.copy(os.path.join(FIXTURES_DIR, "working_bag.zip"), str(self.tmpdir))
-        self.test_location.relative_path = str(FIXTURES_DIR.relative_to(os.sep))
-        self.test_location.save()
-        models.Space.objects.filter(uuid="6fb34c82-4222-425e-b0ea-30acfd31f52e").update(
-            path=str(self.tmpdir)
-        )
-        ss_int = models.Location.objects.get(purpose="SS")
-        ss_int.relative_path = str(ss_internal.relative_to(os.sep))
-        ss_int.save()
-        # Set Arkivum package request ID
-        models.Package.objects.filter(
-            uuid="c0f8498f-b92e-4a8b-8941-1b34ba062ed8"
-        ).update(
-            misc_attributes={
-                "arkivum_identifier": "2e75c8ad-cded-4f7e-8ac7-85627a116e39"
-            }
-        )
-        # Update origin_pipeline to avoid 400 response to GET requests.
-        pipeline = models.Pipeline.objects.first()
-        models.Package.objects.all().update(origin_pipeline=pipeline)
-
-        self.user = User.objects.get(username="test")
-        self.user.set_password("test")
-        self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
-            b"test:test"
-        ).decode("utf8")
-
-    def as_reader(self):
-        self.user.set_role(roles.USER_ROLE_READER)
-
-    def as_reviewer(self):
-        self.user.set_role(roles.USER_ROLE_REVIEWER)
-
-    def as_manager(self):
-        self.user.set_role(roles.USER_ROLE_MANAGER)
-
-    def test_requires_auth(self):
-        del self.client.defaults["HTTP_AUTHORIZATION"]
-        urls = [
-            "/api/v2/file/metadata/",
-            "/api/v2/file/e0a41934-c1d7-45ba-9a95-a7531c063ed1/contents/",
-            "/api/v2/file/6aebdb24-1b6b-41ab-b4a3-df9a73726a34/download/",
-            "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/extract_file/",
-        ]
-        # Get metadata
-        for url in urls:
-            response = self.client.get(url)
-            assert response.status_code == 401
-
-    def test_non_admins_can_read_list(self):
-        self.as_reader()
-        response = self.client.get("/api/v2/file/")
-        assert response.status_code == 200
-        response_content = json.loads(response.text)
-        assert len(response_content["objects"]) != 0
-
-    def test_non_admins_can_read_detail(self):
-        self.as_reader()
-        response = self.client.get("/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/")
-        assert response.status_code == 200
-        assert response.text
-
-    def test_non_admins_cant_reindex(self):
-        self.as_reader()
-        response = self.client.post(
-            "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/reindex/"
-        )
-        assert response.status_code == 401
-
-    def test_non_admins_cant_reingest(self):
-        self.as_reader()
-        data = {
-            "pipeline": "0cbf947a-1b19-4a01-a575-454078768fcd",
-            "reingest_type": "FULL",
-        }
-        response = self.client.post(
-            "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/reingest/",
-            data=json.dumps(data),
-            content_type="application/json",
-        )
-        assert response.status_code == 401
-
-    def test_non_admins_cant_move(self):
-        self.as_reader()
-        data = {
-            "location_uuid": "7d20c992-bc92-4f92-a794-7161ff2cc08b",
-        }
-        response = self.client.post(
-            "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/move/",
-            data=json.dumps(data),
-            content_type="application/json",
-        )
-        assert response.status_code == 401
-
-    def test_non_admins_cant_add_file_to_package(self):
-        self.as_reader()
-        data = [
-            {
-                "relative_path": "empty-transfer-79245866-ca80-4f84-b904-a02b3e0ab621/1.txt",
-                "fileuuid": "7bffcce7-63f5-4b2e-af57-d266bfa2e3eb",
-                "accessionid": "",
-                "sipuuid": "79245866-ca80-4f84-b904-a02b3e0ab621",
-                "origin": "36398145-6e49-4b5b-af02-209b127f2726",
-            },
-            {
-                "relative_path": "empty-transfer-79245866-ca80-4f84-b904-a02b3e0ab621/2.txt",
-                "fileuuid": "152be912-819f-49c4-968f-d5ce959c1cb1",
-                "accessionid": "",
-                "sipuuid": "79245866-ca80-4f84-b904-a02b3e0ab621",
-                "origin": "36398145-6e49-4b5b-af02-209b127f2726",
-            },
-        ]
-        response = self.client.put(
-            "/api/v2/file/79245866-ca80-4f84-b904-a02b3e0ab621/contents/",
-            data=json.dumps(data),
-            content_type="application/json",
-        )
-        assert response.status_code == 401
-
-    def test_non_admins_cant_delete_file_from_package(self):
-        self.as_reader()
-        response = self.client.delete(
-            "/api/v2/file/79245866-ca80-4f84-b904-a02b3e0ab621/contents/",
-        )
-        assert response.status_code == 401
-
-    def test_file_data_returns_metadata_given_relative_path(self):
-        path = "test_sip/objects/file.txt"
-        response = self.client.get("/api/v2/file/metadata/", {"relative_path": path})
-        assert response.status_code == 200
-        assert response["content-type"] == "application/json"
-        body = json.loads(response.text)
-        assert body[0]["relative_path"] == path
-        assert body[0]["fileuuid"] == "86bfde11-e2a1-4ee7-b98d-9556b5f05198"
-
-    def test_file_data_returns_bad_response_with_no_accepted_parameters(self):
-        response = self.client.post("/api/v2/file/metadata/")
-        assert response.status_code == 400
-
-    def test_file_data_returns_404_if_no_file_found(self):
-        response = self.client.get("/api/v2/file/metadata/", {"fileuuid": "nosuchfile"})
-        assert response.status_code == 404
-
-    def test_package_contents_returns_metadata(self):
-        response = self.client.get(
-            "/api/v2/file/e0a41934-c1d7-45ba-9a95-a7531c063ed1/contents/"
-        )
-        assert response.status_code == 200
-        assert response["content-type"] == "application/json"
-        body = json.loads(response.text)
-        assert body["success"] is True
-        assert len(body["files"]) == 1
-        assert body["files"][0]["name"] == "test_sip/objects/file.txt"
-
-    def test_adding_package_files_returns_400_with_empty_post_body(self):
-        response = self.client.put(
-            "/api/v2/file/e0a41934-c1d7-45ba-9a95-a7531c063ed1/contents/",
-            data="",
-            content_type="application/json",
-        )
-        assert response.status_code == 400
-
-    def test_adding_package_files_returns_400_if_post_body_is_not_json(self):
-        response = self.client.put(
-            "/api/v2/file/e0a41934-c1d7-45ba-9a95-a7531c063ed1/contents/",
-            data="not json!",
-            content_type="application/json",
-        )
-        assert response.status_code == 400
-
-    def test_adding_package_files_returns_400_if_post_body_is_not_a_list(self):
-        response = self.client.put(
-            "/api/v2/file/e0a41934-c1d7-45ba-9a95-a7531c063ed1/contents/",
-            data="{}",
-            content_type="application/json",
-        )
-        assert response.status_code == 400
-
-    def test_adding_package_files_returns_400_if_expected_fields_are_missing(self):
-        body = [{"relative_path": "/dev/null"}]
-        response = self.client.put(
-            "/api/v2/file/e0a41934-c1d7-45ba-9a95-a7531c063ed1/contents/",
-            data=json.dumps(body),
-            content_type="application/json",
-        )
-        assert response.status_code == 400
-
-    def test_adding_files_to_package_returns_200_for_empty_list(self):
-        response = self.client.put(
-            "/api/v2/file/79245866-ca80-4f84-b904-a02b3e0ab621/contents/",
-            data="[]",
-            content_type="application/json",
-        )
-        assert response.status_code == 200
-
-    def test_adding_files_to_package(self):
-        p = models.Package.objects.get(uuid="79245866-ca80-4f84-b904-a02b3e0ab621")
-        assert p.file_set.count() == 0
-
-        body = [
-            {
-                "relative_path": "empty-transfer-79245866-ca80-4f84-b904-a02b3e0ab621/1.txt",
-                "fileuuid": "7bffcce7-63f5-4b2e-af57-d266bfa2e3eb",
-                "accessionid": "",
-                "sipuuid": "79245866-ca80-4f84-b904-a02b3e0ab621",
-                "origin": "36398145-6e49-4b5b-af02-209b127f2726",
-            },
-            {
-                "relative_path": "empty-transfer-79245866-ca80-4f84-b904-a02b3e0ab621/2.txt",
-                "fileuuid": "152be912-819f-49c4-968f-d5ce959c1cb1",
-                "accessionid": "",
-                "sipuuid": "79245866-ca80-4f84-b904-a02b3e0ab621",
-                "origin": "36398145-6e49-4b5b-af02-209b127f2726",
-            },
-        ]
-
-        response = self.client.put(
-            "/api/v2/file/79245866-ca80-4f84-b904-a02b3e0ab621/contents/",
-            data=json.dumps(body),
-            content_type="application/json",
-        )
-        assert response.status_code == 201
-        assert p.file_set.count() == 2
-
-    def test_removing_file_from_package(self):
-        p = models.Package.objects.get(uuid="a59033c2-7fa7-41e2-9209-136f07174692")
-        assert p.file_set.count() == 1
-
-        response = self.client.delete(
-            "/api/v2/file/a59033c2-7fa7-41e2-9209-136f07174692/contents/"
-        )
-        assert response.status_code == 204
-        assert p.file_set.count() == 0
-
-    def test_download_compressed_package(self):
-        """It should return the package."""
-        response = self.client.get(
-            "/api/v2/file/6aebdb24-1b6b-41ab-b4a3-df9a73726a34/download/"
-        )
-        assert response.status_code == 200
-        assert response["content-type"] == "application/zip"
-        assert (
-            response["content-disposition"] == 'attachment; filename="working_bag.zip"'
-        )
-
-    def _decode_response_content(self, response):
-        result = b"".join(response.streaming_content)  # Convert to one string
-        return result.decode("utf8")
-
-    def test_download_uncompressed_package(self):
-        """It should tar a package before downloading."""
-        response = self.client.get(
-            "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/download/"
-        )
-        assert response.status_code == 200
-        assert response["content-type"] == "application/x-tar"
-        assert (
-            response["content-disposition"] == 'attachment; filename="working_bag.tar"'
-        )
-        content = self._decode_response_content(response)
-        assert "bag-info.txt" in content
-        assert "bagit.txt" in content
-        assert "manifest-md5.txt" in content
-        assert "tagmanifest-md5.txt" in content
-        assert "test.txt" in content
-
-    def test_download_lockss_chunk_incorrect(self):
-        """It should default to the local path if a chunk ID is provided but package isn't in LOCKSS."""
-        response = self.client.get(
-            "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/download/",
-            data={"chunk_number": 1},
-        )
-        assert response.status_code == 200
-        assert response["content-type"] == "application/x-tar"
-        assert (
-            response["content-disposition"] == 'attachment; filename="working_bag.tar"'
-        )
-        content = self._decode_response_content(response)
-        assert "bag-info.txt" in content
-        assert "bagit.txt" in content
-        assert "manifest-md5.txt" in content
-        assert "tagmanifest-md5.txt" in content
-        assert "test.txt" in content
-
-    def test_download_package_not_exist(self):
-        """It should return 404 for a non-existant package."""
-        response = self.client.get(
-            "/api/v2/file/280bf046-ba55-4d44-94b4-685b3fec1770/download/",
-            data={"chunk_number": 1},
-        )
-        assert response.status_code == 404
-
-    @mock.patch(
-        "requests.get",
-        side_effect=[
-            mock.Mock(
-                **{
-                    "status_code": 200,
-                    "json.return_value": {
-                        "id": "2e75c8ad-cded-4f7e-8ac7-85627a116e39",
-                        "status": "Scheduled",
-                        "originalSize": "775702",
-                        "actualSize": "775702",
-                        "originalChecksum": "5a44c7ba5bbe4ec867233d67e4806848",
-                        "originalChecksumAlgorithm": "md5",
-                        "originalCompressionAlgorithm": "",
-                        "fileInformation": {"replicationState": "yellow"},
-                    },
-                }
-            )
-        ],
-    )
-    def test_download_package_arkivum_not_available(self, requests_get):
-        """It should return 202 if the file is in Arkivum but only on tape."""
-        response = self.client.get(
-            "/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/download/"
-        )
-        assert response.status_code == 202
-        j = json.loads(response.text)
-        assert j["error"] is False
-        assert (
-            j["message"]
-            == "File is not locally available.  Contact your storage administrator to fetch it."
-        )
-
-    @mock.patch(
-        "requests.get",
-        side_effect=[mock.Mock(**{"status_code": 404})],
-    )
-    def test_download_package_arkivum_error(self, requests_get):
-        """It should return 502 error from Arkivum."""
-        response = self.client.get(
-            "/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/download/"
-        )
-        assert response.status_code == 502
-        j = json.loads(response.text)
-        assert j["error"] is True
-        assert "Error" in j["message"] and "Arkivum" in j["message"]
-
-    def test_download_file_no_path(self):
-        """It should return 400 Bad Request"""
-        response = self.client.get(
-            "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/extract_file/"
-        )
-        assert response.status_code == 400
-        assert "relative_path_to_file" in response.text
-
-    def test_download_file_from_compressed(self):
-        """It should extract and return the file."""
-        response = self.client.get(
-            "/api/v2/file/6aebdb24-1b6b-41ab-b4a3-df9a73726a34/extract_file/",
-            data={"relative_path_to_file": "working_bag/data/test.txt"},
-        )
-        assert response.status_code == 200
-        assert response["content-type"] == "text/plain"
-        assert response["content-disposition"] == 'attachment; filename="test.txt"'
-        content = self._decode_response_content(response)
-        assert content == "test"
-
-    def test_download_file_from_uncompressed(self):
-        """It should return the file."""
-        response = self.client.get(
-            "/api/v2/file/0d4e739b-bf60-4b87-bc20-67a379b28cea/extract_file/",
-            data={"relative_path_to_file": "working_bag/data/test.txt"},
-        )
-        assert response.status_code == 200
-        assert response["content-type"] == "text/plain"
-        assert response["content-disposition"] == 'attachment; filename="test.txt"'
-        content = self._decode_response_content(response)
-        assert content == "test"
-
-    @mock.patch(
-        "requests.get",
-        side_effect=[
-            mock.Mock(
-                **{
-                    "status_code": 200,
-                    "json.return_value": {
-                        "fileInformation": {"replicationState": "yellow"},
-                    },
-                }
-            )
-        ],
-    )
-    def test_download_file_arkivum_not_available(self, requests_get):
-        """It should return 202 if the file is in Arkivum but only on tape."""
-        response = self.client.get(
-            "/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/extract_file/",
-            data={"relative_path_to_file": "working_bag/data/test.txt"},
-        )
-        assert response.status_code == 202
-        j = json.loads(response.text)
-        assert j["error"] is False
-        assert (
-            j["message"]
-            == "File is not locally available.  Contact your storage administrator to fetch it."
-        )
-
-    @mock.patch(
-        "requests.get",
-        side_effect=[mock.Mock(**{"status_code": 404})],
-    )
-    def test_download_file_arkivum_error(self, requests_get):
-        """It should return 502 error from Arkivum."""
-        response = self.client.get(
-            "/api/v2/file/c0f8498f-b92e-4a8b-8941-1b34ba062ed8/extract_file/",
-            data={"relative_path_to_file": "working_bag/data/test.txt"},
-        )
-        assert response.status_code == 502
-        j = json.loads(response.text)
-        assert j["error"] is True
-        assert "Error" in j["message"] and "Arkivum" in j["message"]
-
-    def _create_aip(self):
-        space = models.Space.objects.create()
-        location = models.Location.objects.create(space=space)
-        aip = models.Package.objects.create(
-            current_location=location, package_type=models.Package.AIP
-        )
-        return aip.uuid
-
-    def _test_request_view_updates_package_status(self, view_name, expected_status):
-        # Create a pipeline and an AIP
-        pipeline = models.Pipeline.objects.create(
-            uuid="7e3ef632-2633-4c7c-820b-a828229e8613"
-        )
-        aip_uuid = self._create_aip()
-        # Call the request view
-        self.client.post(
-            f"/api/v2/file/{aip_uuid}/{view_name}/",
-            data=json.dumps(
-                {
-                    "event_reason": "Some justification",
-                    "pipeline": str(pipeline.uuid),
-                    "user_email": "test@example.com",
-                    "user_id": User.objects.get(username="test").id,
-                }
-            ),
-            content_type="application/json",
-        )
-        # Verify its status was updated
-        assert models.Package.objects.get(uuid=aip_uuid).status == expected_status
-
-    def test_delete_aip_request_updates_package_status(self):
-        self._test_request_view_updates_package_status(
-            "delete_aip", models.Package.DEL_REQ
-        )
-
-    def test_recover_aip_request_updates_package_status(self):
-        self._test_request_view_updates_package_status(
-            "recover_aip", models.Package.RECOVER_REQ
-        )
-
-
-class TestSwordAPI(TestCase):
-    def test_removes_forward_slash_parse_fedora_mets(self):
-        """It should remove forward slashes in the deposit name and all
-        filenames extracted from a Fedora METS file.
-        """
-        fedora_mets_path = os.path.join(FIXTURES_DIR, "fedora_mets_slash.xml")
-        mets_parse = _parse_name_and_content_urls_from_mets_file(fedora_mets_path)
-        fileobjs = mets_parse["objects"]
-        assert "/" not in mets_parse["deposit_name"]
-        assert len(fileobjs) > 0
-        for fileobj in fileobjs:
-            assert "/" not in fileobj["filename"]
-
-
-class TestPipelineAPI(TestCase):
-    fixture_files = ["base.json"]
-    fixtures = [FIXTURES_DIR / f for f in fixture_files]
-
-    def setUp(self):
-        self.user = User.objects.get(username="test")
-        self.user.set_password("test")
-        self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
-            b"test:test"
-        ).decode("utf8")
-
-    def as_reader(self):
-        self.user.set_role(roles.USER_ROLE_READER)
-
-    def as_reviewer(self):
-        self.user.set_role(roles.USER_ROLE_REVIEWER)
-
-    def as_manager(self):
-        self.user.set_role(roles.USER_ROLE_MANAGER)
-
-    def test_non_admins_can_read_list(self):
-        self.as_reader()
-        response = self.client.get("/api/v2/pipeline/")
-        assert response.status_code == 200
-        response_content = json.loads(response.text)
-        assert len(response_content["objects"]) != 0
-
-    def test_non_admins_can_read_detail(self):
-        self.as_reader()
-        user = User.objects.get(username="nonadmin")
-        user.set_password("test")
-        self.client.defaults["HTTP_AUTHORIZATION"] = "Basic " + base64.b64encode(
-            b"nonadmin:test"
-        ).decode("utf8")
-        response = self.client.get(
-            "/api/v2/pipeline/0cbf947a-1b19-4a01-a575-454078768fcd/"
-        )
-        assert response.status_code == 200
-        assert response.text
-
-    def test_pipeline_create(self):
-        data = {
-            "uuid": "34988712-ba32-4a07-a8a8-022e8482b66c",
-            "description": "My pipeline",
-            "remote_name": "https://archivematica-dashboard:8080",
-            "api_key": "test",
-            "api_username": "test",
-        }
-        response = self.client.post(
-            "/api/v2/pipeline/", data=json.dumps(data), content_type="application/json"
-        )
-        assert response.status_code == 201
-
-        pipeline = models.Pipeline.objects.get(uuid=data["uuid"])
-        assert pipeline.parse_and_fix_url(pipeline.remote_name) == urlparse(
-            data["remote_name"]
-        )
-
-        # When undefined the remote_name field should be populated after the
-        # REMOTE_ADDR header.
-        data["uuid"] = "54adc4b8-7f2f-474a-ba22-6e3792a92734"
-        del data["remote_name"]
-        response = self.client.post(
-            "/api/v2/pipeline/",
-            data=json.dumps(data),
-            content_type="application/json",
-            REMOTE_ADDR="192.168.0.10",
-        )
-        assert response.status_code == 201
-        pipeline = models.Pipeline.objects.get(uuid=data["uuid"])
-        assert pipeline.parse_and_fix_url(pipeline.remote_name) == urlparse(
-            "http://192.168.0.10"
-        )
-
-    def test_pipeline_create_without_api_key_stores_empty_string(self):
-        pipeline_uuid = str(uuid.uuid4())
-        data = {
-            "uuid": pipeline_uuid,
-            "description": "My pipeline without api key",
-            "remote_name": "https://archivematica-dashboard:8080",
-            "api_username": "test",
-        }
-
-        response = self.client.post(
-            "/api/v2/pipeline/", data=json.dumps(data), content_type="application/json"
-        )
-        assert response.status_code == 201
-
-        pipeline = models.Pipeline.objects.get(uuid=pipeline_uuid)
-        assert pipeline.api_key == ""
+        for name in ["1.txt", "2.txt"]
+    ]
 
 
 @pytest.fixture
-def internal_processing_location(db, tmp_path):
+def aip_storage_location(
+    make_space: SpaceFactory, make_location: LocationFactory
+) -> models.Location:
+    """The AIP storage location of an S3 space, which replaces the shared one
+    for the whole module: the shared package fixtures store their packages in
+    the S3 space.
+    """
+    space = make_space(access_protocol=models.Space.S3)
+    S3.objects.create(space=space)
+
+    return make_location(space, models.Location.AIP_STORAGE, relative_path="aips")
+
+
+@pytest.fixture
+def package_storage(
+    tmp_path: pathlib.Path,
+    testing_aip_storage: models.Location,
+    transfer_packages: list[models.Package],
+    bag_packages: list[models.Package],
+    arkivum: Arkivum,
+    arkivum_packages: list[models.Package],
+    arkivum_pipeline: models.Pipeline,
+    default_ss_internal: models.Location,
+) -> None:
+    """The packages of the fixtures reachable on disk: the AIP storage location
+    points at the fixtures directory, the Arkivum space and the internal
+    location at the temporary directory, and every package has a pipeline.
+    """
+    ss_internal = tmp_path / "ss-internal"
+    ss_internal.mkdir()
+    shutil.copy(FIXTURES_DIR / "working_bag.zip", tmp_path)
+    testing_aip_storage.relative_path = str(FIXTURES_DIR.relative_to(os.sep))
+    testing_aip_storage.save()
+    arkivum.space.path = str(tmp_path)
+    arkivum.space.save()
+    default_ss_internal.relative_path = str(ss_internal.relative_to(os.sep))
+    default_ss_internal.save()
+    # The compressed Arkivum package has been requested from Arkivum.
+    compressed_package, _ = arkivum_packages
+    compressed_package.misc_attributes = {"arkivum_identifier": ARKIVUM_IDENTIFIER}
+    compressed_package.save()
+    # Packages without a pipeline cannot be read through the API.
+    models.Package.objects.all().update(origin_pipeline=arkivum_pipeline)
+
+
+# The following tests cover the space API.
+
+
+def test_space_requires_auth(client: Client) -> None:
+    response = client.get(f"/api/v2/space/{uuid.uuid4()}/")
+    assert response.status_code == 401
+
+
+@pytest.mark.django_db
+def test_space_non_admins_can_read_list(
+    nonadmin_api_client: Client, default_space: models.Space
+) -> None:
+    response = nonadmin_api_client.get("/api/v2/space/")
+    assert response.status_code == 200
+    response_content = json.loads(response.text)
+    assert len(response_content["objects"]) != 0
+
+
+@pytest.mark.django_db
+def test_space_non_admins_can_read_detail(
+    nonadmin_api_client: Client, default_space: models.Space
+) -> None:
+    response = nonadmin_api_client.get(f"/api/v2/space/{default_space.uuid}/")
+    assert response.status_code == 200
+    assert response.text
+
+
+@pytest.mark.django_db
+def test_create_space(api_client: Client) -> None:
+    data = {
+        "access_protocol": "S3",
+        "path": "",
+        "staging_path": "/",
+        # Specific to the S3 protocol.
+        "endpoint_url": "http://127.0.0.1:12345",
+        "access_key_id": "Cah4cae1",
+        "secret_access_key": "Thu6Ahqu",
+        "region": "us-west-2",
+        "bucket": "test-bucket",
+    }
+    response = api_client.post(
+        "/api/v2/space/", data=json.dumps(data), content_type="application/json"
+    )
+    response_data = json.loads(response.text)
+    assert response.status_code == 201
+
+    protocol_model = S3.objects.get(space_id=response_data["uuid"])
+    assert protocol_model.endpoint_url == data["endpoint_url"]
+
+
+@pytest.mark.django_db
+def test_space_browse_doesnt_traverse_up(
+    api_client: Client, make_space: SpaceFactory
+) -> None:
+    space = make_space(path="/home/foo")
+    response = api_client.get(
+        reverse(
+            "browse",
+            kwargs={"api_name": "v2", "resource_name": "space", "uuid": space.uuid},
+        ),
+        {"path": "/home/foo/../../etc"},
+    )
+    assert response.status_code == 400
+    assert "The path parameter must be relative to the space path" in response.text
+
+
+@pytest.mark.django_db
+def test_space_browse_follow_symlinks(
+    api_client: Client, make_space: SpaceFactory, tmp_path: pathlib.Path
+) -> None:
+    # Create a directory with two subdirectories and a file
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+    (out_dir / "child_1").mkdir()
+    (out_dir / "child_1" / "file.txt").write_text("hello world")
+    (out_dir / "child_2").mkdir()
+
+    # Create a symlink for the space targetting the "out" directory
+    space_dir = tmp_path / "space"
+    space_dir.symlink_to(out_dir)
+
+    space = make_space(path=str(space_dir))
+
+    # Browse the space root directory
+    response = api_client.get(
+        reverse(
+            "browse",
+            kwargs={"api_name": "v2", "resource_name": "space", "uuid": space.uuid},
+        ),
+        {"path": str(space_dir)},
+    )
+    assert response.status_code == 200
+
+    # Assert we get the two top level child directories
+    response_content = json.loads(response.text)
+    assert sorted(
+        base64.b64decode(e).decode() for e in response_content["directories"]
+    ) == ["child_1", "child_2"]
+    assert sorted(
+        base64.b64decode(e).decode() for e in response_content["entries"]
+    ) == ["child_1", "child_2"]
+    assert response_content["properties"] == {
+        "child_1": {"object count": 1},
+        "child_2": {"object count": 0},
+    }
+
+    # Browse the child_1 directory
+    response = api_client.get(
+        reverse(
+            "browse",
+            kwargs={"api_name": "v2", "resource_name": "space", "uuid": space.uuid},
+        ),
+        {"path": str(space_dir / "child_1")},
+    )
+    assert response.status_code == 200
+
+    # Assert we get the inner text file
+    response_content = json.loads(response.text)
+    assert response_content["directories"] == []
+    assert sorted(
+        base64.b64decode(e).decode() for e in response_content["entries"]
+    ) == ["file.txt"]
+    assert response_content["properties"] == {
+        "file.txt": {"size": 11},
+    }
+
+
+@pytest.mark.django_db
+def test_space_browse_with_symlinks_loop(
+    api_client: Client, make_space: SpaceFactory, tmp_path: pathlib.Path
+) -> None:
+    # Create a symlink pointing to itself for the space path
+    space_dir = tmp_path / "space"
+    space_dir.symlink_to(space_dir)
+
+    space = make_space(path=str(space_dir))
+
+    # Browse the space root directory
+    response = api_client.get(
+        reverse(
+            "browse",
+            kwargs={"api_name": "v2", "resource_name": "space", "uuid": space.uuid},
+        ),
+        {"path": str(space_dir)},
+    )
+    assert response.status_code == 400
+
+
+# The following tests cover the location API.
+
+
+def test_location_requires_auth(client: Client) -> None:
+    response = client.post(f"/api/v2/location/{uuid.uuid4()}/")
+    assert response.status_code == 401
+
+
+@pytest.mark.django_db
+def test_location_non_admins_can_read_list(
+    nonadmin_api_client: Client, default_locations: list[models.Location]
+) -> None:
+    response = nonadmin_api_client.get("/api/v2/location/")
+    assert response.status_code == 200
+    response_content = json.loads(response.text)
+    assert len(response_content["objects"]) != 0
+
+
+@pytest.mark.django_db
+def test_location_non_admins_can_read_detail(
+    nonadmin_api_client: Client, default_currently_processing: models.Location
+) -> None:
+    response = nonadmin_api_client.get(
+        f"/api/v2/location/{default_currently_processing.uuid}/"
+    )
+    assert response.status_code == 200
+    assert response.text
+
+
+@pytest.mark.django_db
+def test_non_admins_cannot_create_location(
+    api_client: Client,
+    api_user: User,
+    default_space: models.Space,
+    pipeline_rows: list[models.Pipeline],
+) -> None:
+    api_user.set_role(roles.USER_ROLE_READER)
+    alouette, *_ = pipeline_rows
+    data = {
+        "space": f"/api/v2/space/{default_space.uuid}/",
+        "description": "automated workflow",
+        "relative_path": "automated-workflow/foo/bar",
+        "purpose": "TS",
+        "pipeline": [f"/api/v2/pipeline/{alouette.uuid}/"],
+    }
+
+    response = api_client.post(
+        "/api/v2/location/", data=json.dumps(data), content_type="application/json"
+    )
+    assert response.status_code == 401
+
+
+@pytest.mark.django_db
+def test_create_location(
+    api_client: Client,
+    default_space: models.Space,
+    pipeline_rows: list[models.Pipeline],
+) -> None:
+    alouette, *_ = pipeline_rows
+    data = {
+        "space": f"/api/v2/space/{default_space.uuid}/",
+        "description": "automated workflow",
+        "relative_path": "automated-workflow/foo/bar",
+        "purpose": "TS",
+        "pipeline": [f"/api/v2/pipeline/{alouette.uuid}/"],
+    }
+
+    response = api_client.post(
+        "/api/v2/location/", data=json.dumps(data), content_type="application/json"
+    )
+    assert response.status_code == 201
+
+    # Verify content
+    body = json.loads(response.text)
+    assert body["description"] == data["description"]
+    assert body["purpose"] == data["purpose"]
+    assert body["path"] == "{}{}".format(default_space.path, data["relative_path"])
+    assert body["enabled"] is True
+    assert data["pipeline"][0] in body["pipeline"]
+
+    # Verify that the record was populated properly
+    location = models.Location.objects.get(uuid=body["uuid"])
+    assert location.purpose == data["purpose"]
+    assert location.relative_path == data["relative_path"]
+    assert location.description == data["description"]
+
+
+@pytest.mark.django_db
+def test_create_default_location(
+    api_client: Client,
+    default_space: models.Space,
+    pipeline_rows: list[models.Pipeline],
+) -> None:
+    """Test that a new created location can be marked as default.
+
+    Storage Service allows users to define a location the default one for
+    its purpose application-wise.
+
+    In our fixtures we already have a TS added. We're going to add a new
+    one and confirm that it can be marked as the new default.
+    """
+    alouette, *_ = pipeline_rows
+    new_default_ts_location = {
+        "space": f"/api/v2/space/{default_space.uuid}/",
+        "description": "new location",
+        "relative_path": "new-location/foo/bar",
+        "purpose": "TS",
+        "pipeline": [f"/api/v2/pipeline/{alouette.uuid}/"],
+        "default": True,
+    }
+
+    def _get_default_ts() -> HttpResponseBase:
+        return api_client.get(
+            "/api/v2/location/default/TS/", content_type="application/json"
+        )
+
+    response = _get_default_ts()
+    assert response.status_code == 404
+
+    # Create default location.
+    response = api_client.post(
+        "/api/v2/location/",
+        data=json.dumps(new_default_ts_location),
+        content_type="application/json",
+    )
+    body = json.loads(response.text)
+
+    response = _get_default_ts()
+    assert isinstance(response, HttpResponseRedirect)
+    assert response.status_code == 302
+    assert response.url == "/api/v2/location/{}/".format(body["uuid"])
+
+
+@pytest.fixture
+def move_files_data(
+    default_backlog: models.Location, pipeline_rows: list[models.Pipeline]
+) -> dict[str, object]:
+    """A request to move files from the backlog on behalf of a pipeline."""
+    alouette, *_ = pipeline_rows
+
+    return {
+        "origin_location": f"/api/v2/location/{default_backlog.uuid}/",
+        "files": [{"source": "foo", "destination": "bar"}],
+        "pipeline": f"/api/v2/pipeline/{alouette.uuid}/",
+    }
+
+
+@pytest.mark.django_db
+def test_cant_move_from_non_existant_locations(
+    api_client: Client,
+    default_currently_processing: models.Location,
+    move_files_data: dict[str, object],
+) -> None:
+    move_files_data["origin_location"] = f"/api/v2/location/{uuid.uuid4()}/"
+    response = api_client.post(
+        f"/api/v2/location/{default_currently_processing.uuid}/",
+        data=json.dumps(move_files_data),
+        content_type="application/json",
+    )
+    # Verify error
+    assert response.status_code == 404
+    assert "not a link to a valid Location" in response.text
+
+
+@pytest.mark.django_db
+def test_cant_move_to_non_existant_locations(
+    api_client: Client, move_files_data: dict[str, object]
+) -> None:
+    response = api_client.post(
+        f"/api/v2/location/{uuid.uuid4()}/",
+        data=json.dumps(move_files_data),
+        content_type="application/json",
+    )
+    # Verify error
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_cant_move_from_disabled_locations(
+    api_client: Client,
+    default_backlog: models.Location,
+    default_currently_processing: models.Location,
+    move_files_data: dict[str, object],
+) -> None:
+    # Set origin location disabled
+    default_backlog.enabled = False
+    default_backlog.save()
+    # Send request
+    response = api_client.post(
+        f"/api/v2/location/{default_currently_processing.uuid}/",
+        data=json.dumps(move_files_data),
+        content_type="application/json",
+    )
+    # Verify error
+    assert response.status_code == 404
+    assert "not a link to a valid Location" in response.text
+
+
+@pytest.mark.django_db
+def test_cant_move_to_disabled_locations(
+    api_client: Client,
+    default_currently_processing: models.Location,
+    move_files_data: dict[str, object],
+) -> None:
+    # Set posting to location disabled
+    default_currently_processing.enabled = False
+    default_currently_processing.save()
+    # Send request
+    response = api_client.post(
+        f"/api/v2/location/{default_currently_processing.uuid}/",
+        data=json.dumps(move_files_data),
+        content_type="application/json",
+    )
+    # Verify error
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_location_browse_doesnt_traverse_up(
+    api_client: Client, make_space: SpaceFactory, make_location: LocationFactory
+) -> None:
+    location = make_location(
+        make_space(path="/home"), models.Location.TRANSFER_SOURCE, relative_path="foo"
+    )
+    response = api_client.get(
+        reverse(
+            "browse",
+            kwargs={
+                "api_name": "v2",
+                "resource_name": "location",
+                "uuid": location.uuid,
+            },
+        ),
+        {"path": base64.b64encode(b"/home")},
+    )
+    assert response.status_code == 400
+    assert "The path parameter must be relative to the location path" in response.text
+
+
+@pytest.mark.django_db
+def test_location_browse_follow_symlinks(
+    api_client: Client,
+    make_space: SpaceFactory,
+    make_location: LocationFactory,
+    tmp_path: pathlib.Path,
+) -> None:
+    # Create a directory with two subdirectories and a file
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+    (out_dir / "child_1").mkdir()
+    (out_dir / "child_1" / "file.txt").write_text("hello world")
+    (out_dir / "child_2").mkdir()
+
+    # Create a directory for the space
     space_dir = tmp_path / "space"
     space_dir.mkdir()
 
-    staging_dir = space_dir / "staging"
-    staging_dir.mkdir()
+    # Create a symlink for the location targetting the "out" directory
+    location_dir = space_dir / "location"
+    location_dir.symlink_to(out_dir)
 
-    return models.Location.objects.create(
-        space=models.Space.objects.create(
-            access_protocol=models.Space.LOCAL_FILESYSTEM,
-            path=space_dir,
-            staging_path=staging_dir,
+    location = make_location(
+        make_space(path=str(space_dir)),
+        models.Location.TRANSFER_SOURCE,
+        relative_path="location",
+    )
+
+    # Browse the location root directory
+    response = api_client.get(
+        reverse(
+            "browse",
+            kwargs={
+                "api_name": "v2",
+                "resource_name": "location",
+                "uuid": location.uuid,
+            },
         ),
-        purpose=models.Location.STORAGE_SERVICE_INTERNAL,
-        relative_path=staging_dir.relative_to(space_dir),
+        {"path": base64.b64encode(str(location_dir).encode())},
     )
+    assert response.status_code == 200
+
+    # Assert we get the two top level child directories
+    response_content = json.loads(response.text)
+    assert sorted(
+        base64.b64decode(e).decode() for e in response_content["directories"]
+    ) == ["child_1", "child_2"]
+    assert sorted(
+        base64.b64decode(e).decode() for e in response_content["entries"]
+    ) == ["child_1", "child_2"]
+    assert response_content["properties"] == {
+        base64.b64encode(b"child_1").decode(): {"object count": 1},
+        base64.b64encode(b"child_2").decode(): {"object count": 0},
+    }
+
+    # Browse the child_1 directory
+    response = api_client.get(
+        reverse(
+            "browse",
+            kwargs={
+                "api_name": "v2",
+                "resource_name": "location",
+                "uuid": location.uuid,
+            },
+        ),
+        {"path": base64.b64encode(str(location_dir / "child_1").encode())},
+    )
+    assert response.status_code == 200
+
+    # Assert we get the inner text file
+    response_content = json.loads(response.text)
+    assert response_content["directories"] == []
+    assert sorted(
+        base64.b64decode(e).decode() for e in response_content["entries"]
+    ) == ["file.txt"]
+    assert response_content["properties"] == {
+        base64.b64encode(b"file.txt").decode(): {"size": 11},
+    }
+
+
+@pytest.mark.django_db
+def test_location_browse_with_symlinks_loop(
+    api_client: Client,
+    make_space: SpaceFactory,
+    make_location: LocationFactory,
+    tmp_path: pathlib.Path,
+) -> None:
+    # Create a directory for the space
+    space_dir = tmp_path / "space"
+    space_dir.mkdir()
+
+    # Create a symlink pointing to itself for the location path
+    location_dir = space_dir / "location"
+    location_dir.symlink_to(location_dir)
+
+    location = make_location(
+        make_space(path=str(space_dir)),
+        models.Location.TRANSFER_SOURCE,
+        relative_path="location",
+    )
+
+    # Browse the location root directory
+    response = api_client.get(
+        reverse(
+            "browse",
+            kwargs={
+                "api_name": "v2",
+                "resource_name": "location",
+                "uuid": location.uuid,
+            },
+        ),
+        {"path": base64.b64encode(str(location_dir).encode())},
+    )
+    assert response.status_code == 400
+
+
+# The following tests cover the package API.
+
+
+def test_package_requires_auth(client: Client) -> None:
+    package_uuid = uuid.uuid4()
+    urls = [
+        "/api/v2/file/metadata/",
+        f"/api/v2/file/{package_uuid}/contents/",
+        f"/api/v2/file/{package_uuid}/download/",
+        f"/api/v2/file/{package_uuid}/extract_file/",
+    ]
+    # Get metadata
+    assert [client.get(url).status_code for url in urls] == [401] * len(urls)
+
+
+@pytest.mark.django_db
+def test_package_non_admins_can_read_list(
+    api_client: Client, api_user: User, package_storage: None
+) -> None:
+    api_user.set_role(roles.USER_ROLE_READER)
+    response = api_client.get("/api/v2/file/")
+    assert response.status_code == 200
+    response_content = json.loads(response.text)
+    assert len(response_content["objects"]) != 0
+
+
+@pytest.mark.django_db
+def test_package_non_admins_can_read_detail(
+    api_client: Client,
+    api_user: User,
+    package_storage: None,
+    working_bag: models.Package,
+) -> None:
+    api_user.set_role(roles.USER_ROLE_READER)
+    response = api_client.get(f"/api/v2/file/{working_bag.uuid}/")
+    assert response.status_code == 200
+    assert response.text
+
+
+@pytest.mark.django_db
+def test_non_admins_cant_reindex(
+    api_client: Client,
+    api_user: User,
+    package_storage: None,
+    working_bag: models.Package,
+) -> None:
+    api_user.set_role(roles.USER_ROLE_READER)
+    response = api_client.post(f"/api/v2/file/{working_bag.uuid}/reindex/")
+    assert response.status_code == 401
+
+
+@pytest.mark.django_db
+def test_non_admins_cant_reingest(
+    api_client: Client,
+    api_user: User,
+    package_storage: None,
+    working_bag: models.Package,
+) -> None:
+    api_user.set_role(roles.USER_ROLE_READER)
+    data = {
+        "pipeline": str(uuid.uuid4()),
+        "reingest_type": "FULL",
+    }
+    response = api_client.post(
+        f"/api/v2/file/{working_bag.uuid}/reingest/",
+        data=json.dumps(data),
+        content_type="application/json",
+    )
+    assert response.status_code == 401
+
+
+@pytest.mark.django_db
+def test_non_admins_cant_move(
+    api_client: Client,
+    api_user: User,
+    package_storage: None,
+    working_bag: models.Package,
+) -> None:
+    api_user.set_role(roles.USER_ROLE_READER)
+    data = {
+        "location_uuid": str(uuid.uuid4()),
+    }
+    response = api_client.post(
+        f"/api/v2/file/{working_bag.uuid}/move/",
+        data=json.dumps(data),
+        content_type="application/json",
+    )
+    assert response.status_code == 401
+
+
+@pytest.mark.django_db
+def test_non_admins_cant_add_file_to_package(
+    api_client: Client,
+    api_user: User,
+    package_storage: None,
+    empty_transfer: models.Package,
+) -> None:
+    api_user.set_role(roles.USER_ROLE_READER)
+    data = _package_files(empty_transfer)
+    response = api_client.put(
+        f"/api/v2/file/{empty_transfer.uuid}/contents/",
+        data=json.dumps(data),
+        content_type="application/json",
+    )
+    assert response.status_code == 401
+
+
+@pytest.mark.django_db
+def test_non_admins_cant_delete_file_from_package(
+    api_client: Client,
+    api_user: User,
+    package_storage: None,
+    empty_transfer: models.Package,
+) -> None:
+    api_user.set_role(roles.USER_ROLE_READER)
+    response = api_client.delete(
+        f"/api/v2/file/{empty_transfer.uuid}/contents/",
+    )
+    assert response.status_code == 401
+
+
+@pytest.mark.django_db
+def test_file_data_returns_metadata_given_relative_path(
+    api_client: Client, package_storage: None, images_transfer: models.Package
+) -> None:
+    path = "test_sip/objects/file.txt"
+    response = api_client.get("/api/v2/file/metadata/", {"relative_path": path})
+    assert response.status_code == 200
+    assert response["content-type"] == "application/json"
+    body = json.loads(response.text)
+    assert body[0]["relative_path"] == path
+    assert body[0]["fileuuid"] == images_transfer.file_set.get().source_id
+
+
+@pytest.mark.django_db
+def test_file_data_returns_bad_response_with_no_accepted_parameters(
+    api_client: Client,
+) -> None:
+    response = api_client.post("/api/v2/file/metadata/")
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_file_data_returns_404_if_no_file_found(api_client: Client) -> None:
+    response = api_client.get("/api/v2/file/metadata/", {"fileuuid": "nosuchfile"})
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_package_contents_returns_metadata(
+    api_client: Client, package_storage: None, images_transfer: models.Package
+) -> None:
+    response = api_client.get(f"/api/v2/file/{images_transfer.uuid}/contents/")
+    assert response.status_code == 200
+    assert response["content-type"] == "application/json"
+    body = json.loads(response.text)
+    assert body["success"] is True
+    assert len(body["files"]) == 1
+    assert body["files"][0]["name"] == "test_sip/objects/file.txt"
+
+
+@pytest.mark.django_db
+def test_adding_package_files_returns_400_with_empty_post_body(
+    api_client: Client, package_storage: None, images_transfer: models.Package
+) -> None:
+    response = api_client.put(
+        f"/api/v2/file/{images_transfer.uuid}/contents/",
+        data="",
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_adding_package_files_returns_400_if_post_body_is_not_json(
+    api_client: Client, package_storage: None, images_transfer: models.Package
+) -> None:
+    response = api_client.put(
+        f"/api/v2/file/{images_transfer.uuid}/contents/",
+        data="not json!",
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_adding_package_files_returns_400_if_post_body_is_not_a_list(
+    api_client: Client, package_storage: None, images_transfer: models.Package
+) -> None:
+    response = api_client.put(
+        f"/api/v2/file/{images_transfer.uuid}/contents/",
+        data="{}",
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_adding_package_files_returns_400_if_expected_fields_are_missing(
+    api_client: Client, package_storage: None, images_transfer: models.Package
+) -> None:
+    body = [{"relative_path": "/dev/null"}]
+    response = api_client.put(
+        f"/api/v2/file/{images_transfer.uuid}/contents/",
+        data=json.dumps(body),
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_adding_files_to_package_returns_200_for_empty_list(
+    api_client: Client, package_storage: None, empty_transfer: models.Package
+) -> None:
+    response = api_client.put(
+        f"/api/v2/file/{empty_transfer.uuid}/contents/",
+        data="[]",
+        content_type="application/json",
+    )
+    assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_adding_files_to_package(
+    api_client: Client, package_storage: None, empty_transfer: models.Package
+) -> None:
+    assert empty_transfer.file_set.count() == 0
+
+    body = _package_files(empty_transfer)
+
+    response = api_client.put(
+        f"/api/v2/file/{empty_transfer.uuid}/contents/",
+        data=json.dumps(body),
+        content_type="application/json",
+    )
+    assert response.status_code == 201
+    assert empty_transfer.file_set.count() == 2
+
+
+@pytest.mark.django_db
+def test_removing_file_from_package(
+    api_client: Client, package_storage: None, one_file_transfer: models.Package
+) -> None:
+    assert one_file_transfer.file_set.count() == 1
+
+    response = api_client.delete(f"/api/v2/file/{one_file_transfer.uuid}/contents/")
+    assert response.status_code == 204
+    assert one_file_transfer.file_set.count() == 0
+
+
+@pytest.mark.django_db
+def test_download_compressed_package(
+    api_client: Client, package_storage: None, zipped_bag: models.Package
+) -> None:
+    """It should return the package."""
+    response = api_client.get(f"/api/v2/file/{zipped_bag.uuid}/download/")
+    assert response.status_code == 200
+    assert response["content-type"] == "application/zip"
+    assert response["content-disposition"] == 'attachment; filename="working_bag.zip"'
+
+
+@pytest.mark.django_db
+def test_download_uncompressed_package(
+    api_client: Client, package_storage: None, working_bag: models.Package
+) -> None:
+    """It should tar a package before downloading."""
+    response = api_client.get(f"/api/v2/file/{working_bag.uuid}/download/")
+    assert response.status_code == 200
+    assert response["content-type"] == "application/x-tar"
+    assert response["content-disposition"] == 'attachment; filename="working_bag.tar"'
+    content = _decode_response_content(response)
+    assert "bag-info.txt" in content
+    assert "bagit.txt" in content
+    assert "manifest-md5.txt" in content
+    assert "tagmanifest-md5.txt" in content
+    assert "test.txt" in content
+
+
+@pytest.mark.django_db
+def test_download_lockss_chunk_incorrect(
+    api_client: Client, package_storage: None, working_bag: models.Package
+) -> None:
+    """It should default to the local path if a chunk ID is provided but package isn't in LOCKSS."""
+    response = api_client.get(
+        f"/api/v2/file/{working_bag.uuid}/download/",
+        data={"chunk_number": 1},
+    )
+    assert response.status_code == 200
+    assert response["content-type"] == "application/x-tar"
+    assert response["content-disposition"] == 'attachment; filename="working_bag.tar"'
+    content = _decode_response_content(response)
+    assert "bag-info.txt" in content
+    assert "bagit.txt" in content
+    assert "manifest-md5.txt" in content
+    assert "tagmanifest-md5.txt" in content
+    assert "test.txt" in content
+
+
+@pytest.mark.django_db
+def test_download_package_not_exist(api_client: Client) -> None:
+    """It should return 404 for a non-existant package."""
+    response = api_client.get(
+        f"/api/v2/file/{uuid.uuid4()}/download/",
+        data={"chunk_number": 1},
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+@mock.patch(
+    "requests.get",
+    side_effect=[
+        mock.Mock(
+            **{
+                "status_code": 200,
+                "json.return_value": {
+                    "id": ARKIVUM_IDENTIFIER,
+                    "status": "Scheduled",
+                    "originalSize": "775702",
+                    "actualSize": "775702",
+                    "originalChecksum": "5a44c7ba5bbe4ec867233d67e4806848",
+                    "originalChecksumAlgorithm": "md5",
+                    "originalCompressionAlgorithm": "",
+                    "fileInformation": {"replicationState": "yellow"},
+                },
+            }
+        )
+    ],
+)
+def test_download_package_arkivum_not_available(
+    requests_get: mock.MagicMock,
+    api_client: Client,
+    package_storage: None,
+    arkivum_compressed_package: models.Package,
+) -> None:
+    """It should return 202 if the file is in Arkivum but only on tape."""
+    response = api_client.get(
+        f"/api/v2/file/{arkivum_compressed_package.uuid}/download/"
+    )
+    assert response.status_code == 202
+    j = json.loads(response.text)
+    assert j["error"] is False
+    assert (
+        j["message"]
+        == "File is not locally available.  Contact your storage administrator to fetch it."
+    )
+
+
+@pytest.mark.django_db
+@mock.patch(
+    "requests.get",
+    side_effect=[mock.Mock(**{"status_code": 404})],
+)
+def test_download_package_arkivum_error(
+    requests_get: mock.MagicMock,
+    api_client: Client,
+    package_storage: None,
+    arkivum_compressed_package: models.Package,
+) -> None:
+    """It should return 502 error from Arkivum."""
+    response = api_client.get(
+        f"/api/v2/file/{arkivum_compressed_package.uuid}/download/"
+    )
+    assert response.status_code == 502
+    j = json.loads(response.text)
+    assert j["error"] is True
+    assert "Error" in j["message"] and "Arkivum" in j["message"]
+
+
+@pytest.mark.django_db
+def test_download_file_no_path(
+    api_client: Client, package_storage: None, working_bag: models.Package
+) -> None:
+    """It should return 400 Bad Request"""
+    response = api_client.get(f"/api/v2/file/{working_bag.uuid}/extract_file/")
+    assert response.status_code == 400
+    assert "relative_path_to_file" in response.text
+
+
+@pytest.mark.django_db
+def test_download_file_from_compressed(
+    api_client: Client, package_storage: None, zipped_bag: models.Package
+) -> None:
+    """It should extract and return the file."""
+    response = api_client.get(
+        f"/api/v2/file/{zipped_bag.uuid}/extract_file/",
+        data={"relative_path_to_file": "working_bag/data/test.txt"},
+    )
+    assert response.status_code == 200
+    assert response["content-type"] == "text/plain"
+    assert response["content-disposition"] == 'attachment; filename="test.txt"'
+    content = _decode_response_content(response)
+    assert content == "test"
+
+
+@pytest.mark.django_db
+def test_download_file_from_uncompressed(
+    api_client: Client, package_storage: None, working_bag: models.Package
+) -> None:
+    """It should return the file."""
+    response = api_client.get(
+        f"/api/v2/file/{working_bag.uuid}/extract_file/",
+        data={"relative_path_to_file": "working_bag/data/test.txt"},
+    )
+    assert response.status_code == 200
+    assert response["content-type"] == "text/plain"
+    assert response["content-disposition"] == 'attachment; filename="test.txt"'
+    content = _decode_response_content(response)
+    assert content == "test"
+
+
+@pytest.mark.django_db
+@mock.patch(
+    "requests.get",
+    side_effect=[
+        mock.Mock(
+            **{
+                "status_code": 200,
+                "json.return_value": {
+                    "fileInformation": {"replicationState": "yellow"},
+                },
+            }
+        )
+    ],
+)
+def test_download_file_arkivum_not_available(
+    requests_get: mock.MagicMock,
+    api_client: Client,
+    package_storage: None,
+    arkivum_compressed_package: models.Package,
+) -> None:
+    """It should return 202 if the file is in Arkivum but only on tape."""
+    response = api_client.get(
+        f"/api/v2/file/{arkivum_compressed_package.uuid}/extract_file/",
+        data={"relative_path_to_file": "working_bag/data/test.txt"},
+    )
+    assert response.status_code == 202
+    j = json.loads(response.text)
+    assert j["error"] is False
+    assert (
+        j["message"]
+        == "File is not locally available.  Contact your storage administrator to fetch it."
+    )
+
+
+@pytest.mark.django_db
+@mock.patch(
+    "requests.get",
+    side_effect=[mock.Mock(**{"status_code": 404})],
+)
+def test_download_file_arkivum_error(
+    requests_get: mock.MagicMock,
+    api_client: Client,
+    package_storage: None,
+    arkivum_compressed_package: models.Package,
+) -> None:
+    """It should return 502 error from Arkivum."""
+    response = api_client.get(
+        f"/api/v2/file/{arkivum_compressed_package.uuid}/extract_file/",
+        data={"relative_path_to_file": "working_bag/data/test.txt"},
+    )
+    assert response.status_code == 502
+    j = json.loads(response.text)
+    assert j["error"] is True
+    assert "Error" in j["message"] and "Arkivum" in j["message"]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "view_name, expected_status",
+    [
+        ("delete_aip", models.Package.DEL_REQ),
+        ("recover_aip", models.Package.RECOVER_REQ),
+    ],
+    ids=["delete_aip", "recover_aip"],
+)
+def test_request_view_updates_package_status(
+    api_client: Client,
+    api_user: User,
+    package: models.Package,
+    pipeline: models.Pipeline,
+    view_name: str,
+    expected_status: str,
+) -> None:
+    api_client.post(
+        f"/api/v2/file/{package.uuid}/{view_name}/",
+        data=json.dumps(
+            {
+                "event_reason": "Some justification",
+                "pipeline": str(pipeline.uuid),
+                "user_email": "test@example.com",
+                "user_id": api_user.id,
+            }
+        ),
+        content_type="application/json",
+    )
+    # Verify its status was updated
+    assert models.Package.objects.get(uuid=package.uuid).status == expected_status
+
+
+# The following tests cover the SWORD API.
+
+
+def test_removes_forward_slash_parse_fedora_mets() -> None:
+    """It should remove forward slashes in the deposit name and all
+    filenames extracted from a Fedora METS file.
+    """
+    fedora_mets_path = os.path.join(FIXTURES_DIR, "fedora_mets_slash.xml")
+    mets_parse = _parse_name_and_content_urls_from_mets_file(fedora_mets_path)
+    fileobjs = mets_parse["objects"]
+    assert "/" not in mets_parse["deposit_name"]
+    assert len(fileobjs) > 0
+    assert [fileobj for fileobj in fileobjs if "/" in fileobj["filename"]] == []
+
+
+# The following tests cover the pipeline API.
+
+
+@pytest.mark.django_db
+def test_pipeline_non_admins_can_read_list(
+    api_client: Client, api_user: User, default_pipeline: models.Pipeline
+) -> None:
+    api_user.set_role(roles.USER_ROLE_READER)
+    response = api_client.get("/api/v2/pipeline/")
+    assert response.status_code == 200
+    response_content = json.loads(response.text)
+    assert len(response_content["objects"]) != 0
+
+
+@pytest.mark.django_db
+def test_pipeline_non_admins_can_read_detail(
+    nonadmin_api_client: Client, default_pipeline: models.Pipeline
+) -> None:
+    response = nonadmin_api_client.get(f"/api/v2/pipeline/{default_pipeline.uuid}/")
+    assert response.status_code == 200
+    assert response.text
+
+
+@pytest.mark.django_db
+def test_pipeline_create(api_client: Client) -> None:
+    data = {
+        "uuid": str(uuid.uuid4()),
+        "description": "My pipeline",
+        "remote_name": "https://archivematica-dashboard:8080",
+        "api_key": "test",
+        "api_username": "test",
+    }
+    response = api_client.post(
+        "/api/v2/pipeline/", data=json.dumps(data), content_type="application/json"
+    )
+    assert response.status_code == 201
+
+    pipeline = models.Pipeline.objects.get(uuid=data["uuid"])
+    assert pipeline.parse_and_fix_url(pipeline.remote_name) == urlparse(
+        data["remote_name"]
+    )
+
+    # When undefined the remote_name field should be populated after the
+    # REMOTE_ADDR header.
+    data["uuid"] = str(uuid.uuid4())
+    del data["remote_name"]
+    response = api_client.post(
+        "/api/v2/pipeline/",
+        data=json.dumps(data),
+        content_type="application/json",
+        REMOTE_ADDR="192.168.0.10",
+    )
+    assert response.status_code == 201
+    pipeline = models.Pipeline.objects.get(uuid=data["uuid"])
+    assert pipeline.parse_and_fix_url(pipeline.remote_name) == urlparse(
+        "http://192.168.0.10"
+    )
+
+
+@pytest.mark.django_db
+def test_pipeline_create_without_api_key_stores_empty_string(
+    api_client: Client,
+) -> None:
+    pipeline_uuid = str(uuid.uuid4())
+    data = {
+        "uuid": pipeline_uuid,
+        "description": "My pipeline without api key",
+        "remote_name": "https://archivematica-dashboard:8080",
+        "api_username": "test",
+    }
+
+    response = api_client.post(
+        "/api/v2/pipeline/", data=json.dumps(data), content_type="application/json"
+    )
+    assert response.status_code == 201
+
+    pipeline = models.Pipeline.objects.get(uuid=pipeline_uuid)
+    assert pipeline.api_key == ""
 
 
 @pytest.fixture
-def aip_storage_location(db):
-    space = models.Space.objects.create(
-        access_protocol=models.Space.S3,
-    )
-    models.S3.objects.create(space=space)
-
-    return models.Location.objects.create(
-        space=space,
-        purpose=models.Location.AIP_STORAGE,
-        relative_path="aips",
-    )
-
-
-@pytest.fixture
-def compressed_bag_fixture_path():
+def compressed_bag_fixture_path() -> pathlib.Path:
     return FIXTURES_DIR / "working_bag.zip"
 
 
 @pytest.fixture
-def s3_resource(compressed_bag_fixture_path, aip_storage_location):
+def s3_resource(
+    compressed_bag_fixture_path: pathlib.Path, aip_storage_location: models.Location
+) -> mock.Mock:
     """Mock the S3 bucket interactions in S3.move_to_storage_service."""
 
-    def download_file(_key, dest_file, Config=None):
+    def download_file(_key: str, dest_file: str, Config: object | None = None) -> None:
         shutil.copy(compressed_bag_fixture_path, dest_file)
 
     return mock.Mock(
@@ -1183,24 +1240,17 @@ def s3_resource(compressed_bag_fixture_path, aip_storage_location):
     )
 
 
+@pytest.mark.django_db
 @mock.patch("boto3.resource")
 def test_s3_space_deletes_temporary_files_after_extracting_file(
-    resource,
-    admin_client,
-    compressed_bag_fixture_path,
-    s3_resource,
-    aip_storage_location,
-    internal_processing_location,
-):
+    resource: mock.MagicMock,
+    admin_client: Client,
+    s3_resource: mock.Mock,
+    package: models.Package,
+    ss_internal_location: models.Location,
+) -> None:
     # Mock the S3 bucket interactions.
     resource.side_effect = [s3_resource]
-
-    # Add a compressed AIP to the AIP Storage location.
-    package = models.Package.objects.create(
-        current_location=aip_storage_location,
-        package_type=models.Package.AIP,
-        current_path=compressed_bag_fixture_path.name,
-    )
 
     # Extract a file from the compressed AIP.
     response = admin_client.get(
@@ -1221,40 +1271,28 @@ def test_s3_space_deletes_temporary_files_after_extracting_file(
     assert result.decode() == "test"
 
     # Verify there are no temporary files left in the internal processing location.
-    assert list(pathlib.Path(internal_processing_location.full_path).iterdir()) == []
+    assert list(pathlib.Path(ss_internal_location.full_path).iterdir()) == []
 
 
 @pytest.fixture
-def space(tmp_path: pathlib.Path) -> models.Space:
-    space_path = tmp_path / "space"
-    space_path.mkdir()
+def secondary_aip_location(
+    make_location: LocationFactory, space: models.Space
+) -> models.Location:
+    """An AIP storage location in the local filesystem space, created on
+    disk.
+    """
+    result = make_location(space, models.Location.AIP_STORAGE, relative_path="aips")
+    pathlib.Path(result.full_path).mkdir()
 
-    return models.Space.objects.create(
-        access_protocol=models.Space.LOCAL_FILESYSTEM, path=str(space_path)
-    )
-
-
-@pytest.fixture
-def secondary_aip_location(space: models.Space) -> models.Location:
-    space_path = pathlib.Path(space.path)
-    secondary_aip_location_path = space_path / "aips"
-    secondary_aip_location_path.mkdir()
-
-    return models.Location.objects.create(
-        space=space,
-        purpose=models.Location.AIP_STORAGE,
-        relative_path=str(secondary_aip_location_path.relative_to(space_path)),
-    )
+    return result
 
 
 @pytest.fixture
-def package(aip_storage_location: models.Location) -> models.Package:
-    return models.Package.objects.create(
-        current_location=aip_storage_location,
-        package_type=models.Package.AIP,
-        current_path="bag.zip",
-        status=models.Package.UPLOADED,
-    )
+def deletion_request(
+    make_event: EventFactory, package: models.Package, pipeline: models.Pipeline
+) -> models.Event:
+    """A pending request to delete the package."""
+    return make_event(package, pipeline)
 
 
 @pytest.mark.django_db
@@ -1415,25 +1453,8 @@ def test_move_request_returns_asyncronous_task_url_in_response_headers(
 
 @pytest.mark.django_db
 def test_review_aip_deletion_requires_permission(
-    client: Client, django_user_model: type[User], package: models.Package
+    logged_in_client: Client, package: models.Package, deletion_request: models.Event
 ) -> None:
-    user = django_user_model.objects.create_user(
-        username="limited",
-        password="test-password",
-        email="limited@example.com",
-    )
-    client.force_login(user)
-    pipeline = models.Pipeline.objects.create(description="Pipeline")
-    event = models.Event.objects.create(
-        package=package,
-        event_type=models.Event.DELETE,
-        event_reason="Deletion requested",
-        pipeline=pipeline,
-        user_id=1,
-        user_email="requester@example.com",
-        status=models.Event.SUBMITTED,
-        store_data=package.status,
-    )
     url = reverse(
         "review_aip_deletion_request",
         kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},
@@ -1441,10 +1462,12 @@ def test_review_aip_deletion_requires_permission(
     data = {
         "decision": package_request.PackageRequestDecision.APPROVE.value,
         "reason": "ok",
-        "event_id": event.id,
+        "event_id": deletion_request.id,
     }
 
-    resp = client.post(url, data=json.dumps(data), content_type="application/json")
+    resp = logged_in_client.post(
+        url, data=json.dumps(data), content_type="application/json"
+    )
     assert resp.status_code == 403
 
 
@@ -1472,24 +1495,15 @@ def test_review_aip_deletion_requires_permission(
 def test_review_aip_deletion_request(
     admin_client: Client,
     package: models.Package,
+    deletion_request: models.Event,
     decision: str,
     reason: str,
     expected_status: str,
     expected_message: str,
     expect_delete_call: bool,
 ) -> None:
-    pipeline = models.Pipeline.objects.create(description="Pipeline")
+    event = deletion_request
     original_package_status = package.status
-    event = models.Event.objects.create(
-        package=package,
-        event_type=models.Event.DELETE,
-        event_reason="Deletion requested",
-        pipeline=pipeline,
-        user_id=1,
-        user_email="requester@example.com",
-        status=models.Event.SUBMITTED,
-        store_data=original_package_status,
-    )
     package.status = models.Package.DEL_REQ
     package.save()
     url = reverse(
@@ -1528,20 +1542,9 @@ def test_review_aip_deletion_request(
 
 @pytest.mark.django_db
 def test_review_aip_deletion_request_reports_success_with_warning(
-    admin_client: Client, package: models.Package
+    admin_client: Client, package: models.Package, deletion_request: models.Event
 ) -> None:
-    pipeline = models.Pipeline.objects.create(description="Pipeline")
-    original_package_status = package.status
-    event = models.Event.objects.create(
-        package=package,
-        event_type=models.Event.DELETE,
-        event_reason="Deletion requested",
-        pipeline=pipeline,
-        user_id=1,
-        user_email="requester@example.com",
-        status=models.Event.SUBMITTED,
-        store_data=original_package_status,
-    )
+    event = deletion_request
     package.status = models.Package.DEL_REQ
     package.save()
     url = reverse(
@@ -1578,20 +1581,9 @@ def test_review_aip_deletion_request_reports_success_with_warning(
 
 @pytest.mark.django_db
 def test_review_aip_deletion_request_reports_failure(
-    admin_client: Client, package: models.Package
+    admin_client: Client, package: models.Package, deletion_request: models.Event
 ) -> None:
-    pipeline = models.Pipeline.objects.create(description="Pipeline")
-    original_package_status = package.status
-    event = models.Event.objects.create(
-        package=package,
-        event_type=models.Event.DELETE,
-        event_reason="Deletion requested",
-        pipeline=pipeline,
-        user_id=1,
-        user_email="requester@example.com",
-        status=models.Event.SUBMITTED,
-        store_data=original_package_status,
-    )
+    event = deletion_request
     package.status = models.Package.DEL_REQ
     package.save()
     url = reverse(
@@ -1629,20 +1621,9 @@ def test_review_aip_deletion_request_reports_failure(
 
 @pytest.mark.django_db
 def test_review_aip_deletion_request_allows_retry_after_failure(
-    admin_client: Client, package: models.Package
+    admin_client: Client, package: models.Package, deletion_request: models.Event
 ) -> None:
-    pipeline = models.Pipeline.objects.create(description="Pipeline")
-    original_package_status = package.status
-    event = models.Event.objects.create(
-        package=package,
-        event_type=models.Event.DELETE,
-        event_reason="Deletion requested",
-        pipeline=pipeline,
-        user_id=1,
-        user_email="requester@example.com",
-        status=models.Event.SUBMITTED,
-        store_data=original_package_status,
-    )
+    event = deletion_request
     package.status = models.Package.DEL_REQ
     package.save()
     url = reverse(
@@ -1703,20 +1684,9 @@ def test_review_aip_deletion_request_allows_retry_after_failure(
 
 @pytest.mark.django_db
 def test_review_aip_deletion_request_retry_success_includes_warning(
-    admin_client: Client, package: models.Package
+    admin_client: Client, package: models.Package, deletion_request: models.Event
 ) -> None:
-    pipeline = models.Pipeline.objects.create(description="Pipeline")
-    original_package_status = package.status
-    event = models.Event.objects.create(
-        package=package,
-        event_type=models.Event.DELETE,
-        event_reason="Deletion requested",
-        pipeline=pipeline,
-        user_id=1,
-        user_email="requester@example.com",
-        status=models.Event.SUBMITTED,
-        store_data=original_package_status,
-    )
+    event = deletion_request
     package.status = models.Package.DEL_REQ
     package.save()
     url = reverse(
@@ -1771,20 +1741,10 @@ def test_review_aip_deletion_request_retry_success_includes_warning(
 
 @pytest.mark.django_db
 def test_review_aip_deletion_request_cannot_be_reviewed_twice(
-    admin_client: Client, package: models.Package
+    admin_client: Client, package: models.Package, deletion_request: models.Event
 ) -> None:
-    pipeline = models.Pipeline.objects.create(description="Pipeline")
+    event = deletion_request
     original_package_status = package.status
-    event = models.Event.objects.create(
-        package=package,
-        event_type=models.Event.DELETE,
-        event_reason="Deletion requested",
-        pipeline=pipeline,
-        user_id=1,
-        user_email="requester@example.com",
-        status=models.Event.SUBMITTED,
-        store_data=original_package_status,
-    )
     url = reverse(
         "review_aip_deletion_request",
         kwargs={"api_name": "v2", "resource_name": "file", "uuid": package.uuid},

@@ -1,5 +1,4 @@
 import pathlib
-import uuid
 from unittest import mock
 
 import pytest
@@ -11,87 +10,6 @@ from archivematica.storage_service.locations import models
 TEST_DIR = pathlib.Path(__file__).resolve().parent
 FIXTURES_DIR = TEST_DIR / "fixtures"
 POINTER_FILE_PATH = FIXTURES_DIR / "premis_3_pointer.xml"
-
-
-@pytest.fixture
-def fs_space(tmp_path: pathlib.Path) -> models.Space:
-    space_dir = tmp_path / "space"
-    space_dir.mkdir()
-
-    staging_dir = tmp_path / "staging"
-    staging_dir.mkdir()
-
-    result = models.Space.objects.create(
-        access_protocol=models.Space.LOCAL_FILESYSTEM,
-        path=str(space_dir),
-        staging_path=str(staging_dir),
-    )
-    models.LocalFilesystem.objects.create(space=result)
-
-    return result
-
-
-@pytest.fixture
-def aip_storage_fs_location(fs_space: models.Space) -> models.Location:
-    result = models.Location.objects.create(
-        space=fs_space,
-        purpose=models.Location.AIP_STORAGE,
-        relative_path="fs-aips",
-    )
-    pathlib.Path(result.full_path).mkdir()
-
-    return result
-
-
-@pytest.fixture
-def compressed_package(aip_storage_fs_location: models.Location) -> models.Package:
-    package_uuid = uuid.uuid4()
-    package_current_path = f"compressedaip-{package_uuid}.7z"
-    (pathlib.Path(aip_storage_fs_location.full_path) / package_current_path).touch()
-
-    result = models.Package.objects.create(
-        uuid=package_uuid,
-        status=models.Package.UPLOADED,
-        current_location=aip_storage_fs_location,
-        current_path=package_current_path,
-        package_type=models.Package.AIP,
-    )
-    assert result.is_compressed
-
-    return result
-
-
-@pytest.fixture
-def uncompressed_package(aip_storage_fs_location: models.Location) -> models.Package:
-    package_uuid = uuid.uuid4()
-    package_current_path = f"uncompressedaip-{package_uuid}"
-    package_dir = pathlib.Path(aip_storage_fs_location.full_path) / package_current_path
-    package_dir.mkdir()
-
-    # Add tag manifest to fake a valid bag.
-    (package_dir / "tagmanifest-sha256.txt").touch()
-
-    result = models.Package.objects.create(
-        uuid=package_uuid,
-        status=models.Package.UPLOADED,
-        current_location=aip_storage_fs_location,
-        current_path=package_current_path,
-        package_type=models.Package.AIP,
-    )
-
-    assert not result.is_compressed
-
-    return result
-
-
-@pytest.fixture
-def deleted_package(aip_storage_fs_location: models.Location) -> models.Package:
-    return models.Package.objects.create(
-        package_type=models.Package.AIP,
-        status=models.Package.DELETED,
-        current_location=aip_storage_fs_location,
-        current_path="deleted.7z",
-    )
 
 
 @pytest.mark.django_db
@@ -114,7 +32,7 @@ def test_command_fails_when_checksum_is_missing_for_compressed_aip(
     error: mock.Mock,
     capsys: pytest.CaptureFixture[str],
     compressed_package: models.Package,
-    aip_storage_fs_location: models.Location,
+    aip_storage_location: models.Location,
 ) -> None:
     # The compressed AIP checksum is set to None when it cannot be retrieved from the pointer file.
     get_compressed_package_checksum.return_value = (None, "sha256")
@@ -122,7 +40,7 @@ def test_command_fails_when_checksum_is_missing_for_compressed_aip(
     call_command(
         "populate_aip_checksums",
         "--location-uuid",
-        aip_storage_fs_location.uuid,
+        aip_storage_location.uuid,
     )
 
     error.assert_called_once_with(
@@ -138,13 +56,13 @@ def test_command_fails_when_checksum_is_missing_for_compressed_aip(
 def test_command_updates_checksum_for_compressed_aip(
     capsys: pytest.CaptureFixture[str],
     compressed_package: models.Package,
-    aip_storage_fs_location: models.Location,
+    aip_storage_location: models.Location,
 ) -> None:
     with mock.patch.object(models.Package, "full_pointer_file_path", POINTER_FILE_PATH):
         call_command(
             "populate_aip_checksums",
             "--location-uuid",
-            aip_storage_fs_location.uuid,
+            aip_storage_location.uuid,
         )
 
     captured = capsys.readouterr()
@@ -164,7 +82,7 @@ def test_command_updates_checksum_for_uncompressed_aip(
     generate_checksum: mock.Mock,
     capsys: pytest.CaptureFixture[str],
     uncompressed_package: models.Package,
-    aip_storage_fs_location: models.Location,
+    aip_storage_location: models.Location,
 ) -> None:
     uncompressed_package_checksum = (
         "c2924159fcbbeadf8d7f3962b43ec1bf301e1b4f12dd28a8b89ec819f3714848"
@@ -178,7 +96,7 @@ def test_command_updates_checksum_for_uncompressed_aip(
     call_command(
         "populate_aip_checksums",
         "--location-uuid",
-        aip_storage_fs_location.uuid,
+        aip_storage_location.uuid,
     )
 
     captured = capsys.readouterr()
@@ -195,7 +113,7 @@ def test_command_updates_checksum_for_aip_downloaded_remotely(
     capsys: pytest.CaptureFixture[str],
     compressed_package: models.Package,
     uncompressed_package: models.Package,
-    aip_storage_fs_location: models.Location,
+    aip_storage_location: models.Location,
 ) -> None:
     uncompressed_package_checksum = (
         "c2924159fcbbeadf8d7f3962b43ec1bf301e1b4f12dd28a8b89ec819f3714848"
@@ -210,7 +128,7 @@ def test_command_updates_checksum_for_aip_downloaded_remotely(
         call_command(
             "populate_aip_checksums",
             "--location-uuid",
-            aip_storage_fs_location.uuid,
+            aip_storage_location.uuid,
             "--download",
         )
 
@@ -233,7 +151,7 @@ def test_command_fails_when_checksum_is_missing_for_uncompressed_aip(
     capsys: pytest.CaptureFixture[str],
     compressed_package: models.Package,
     uncompressed_package: models.Package,
-    aip_storage_fs_location: models.Location,
+    aip_storage_location: models.Location,
 ) -> None:
     uncompressed_package_checksum = None
     generate_checksum.return_value = mock.Mock(
@@ -246,7 +164,7 @@ def test_command_fails_when_checksum_is_missing_for_uncompressed_aip(
         call_command(
             "populate_aip_checksums",
             "--location-uuid",
-            aip_storage_fs_location.uuid,
+            aip_storage_location.uuid,
             "--download",
         )
 

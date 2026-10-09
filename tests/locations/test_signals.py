@@ -3,9 +3,9 @@ import json
 from unittest import mock
 
 import pytest
-from django.contrib.auth.models import User
 from django.utils import timezone
 
+from archivematica.storage_service.administration.models import Settings
 from archivematica.storage_service.locations import models
 from archivematica.storage_service.locations import signals
 
@@ -53,13 +53,6 @@ def test_report_failed_fixity_check(_notify_users: mock.Mock):
     )
 
 
-@pytest.fixture
-def user(db):
-    return User.objects.create_user(
-        username="demo", email="demo@example.com", password="Abc.Def.1234"
-    )
-
-
 @pytest.mark.django_db
 def test_notify_users(mailoutbox, user):
     subject = "foo"
@@ -71,3 +64,22 @@ def test_notify_users(mailoutbox, user):
     assert list(result.to) == [user.email]
     assert result.subject == subject
     assert result.body == message
+
+
+@pytest.mark.django_db
+def test_default_location_saved_with_a_new_primary_key() -> None:
+    """A location saved with a primary key the database does not hold yet,
+    like one loaded by a data migration, has no previous purpose to clean
+    up and still records itself as the default of its purpose.
+    """
+    location = models.Location(
+        pk=1234,
+        space=models.Space.objects.create(),
+        purpose=models.Location.AIP_STORAGE,
+        relative_path="aips",
+    )
+    location.default = True
+
+    location.save()
+
+    assert Settings.objects.get(name="default_AS_location").value == str(location.uuid)

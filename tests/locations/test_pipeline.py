@@ -12,17 +12,22 @@ from django.urls import reverse
 
 from archivematica.storage_service.locations import models
 
+# The pipeline reports this transfer.
+TRANSFER_UUID = str(uuid.uuid4())
+
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 
 
 @pytest.fixture
-def pipeline() -> models.Pipeline:
-    return models.Pipeline.objects.create(
-        description="My pipeline",
-        remote_name="127.0.0.1",
-        api_username="user",
-        api_key="key",
-    )
+def pipeline(pipeline: models.Pipeline) -> models.Pipeline:
+    """The pipeline reachable at the local host with API credentials."""
+    pipeline.description = "My pipeline"
+    pipeline.remote_name = "127.0.0.1"
+    pipeline.api_username = "user"
+    pipeline.api_key = "key"
+    pipeline.save()
+
+    return pipeline
 
 
 def test_reingest_annotations_resolve_the_uuid_module() -> None:
@@ -97,7 +102,7 @@ def test_request_api(
                         {
                             "directory": "Foobar1",
                             "type": "standard",
-                            "uuid": "090b7f5b-637b-400b-9014-3eb58986fe8f",
+                            "uuid": TRANSFER_UUID,
                         }
                     ],
                 },
@@ -115,7 +120,7 @@ def test_list_unapproved_transfers(
     assert len(result["results"]) == 1
     assert result["results"][0]["directory"] == "Foobar1"
     assert result["results"][0]["type"] == "standard"
-    assert result["results"][0]["uuid"] == "090b7f5b-637b-400b-9014-3eb58986fe8f"
+    assert result["results"][0]["uuid"] == TRANSFER_UUID
 
 
 @pytest.mark.django_db
@@ -127,7 +132,7 @@ def test_list_unapproved_transfers(
                 "status_code": 200,
                 "json.return_value": {
                     "message": "Approval successful.",
-                    "uuid": "090b7f5b-637b-400b-9014-3eb58986fe8f",
+                    "uuid": TRANSFER_UUID,
                 },
             }
         )
@@ -137,9 +142,10 @@ def test_approve_transfer(request_api: mock.Mock, pipeline: models.Pipeline) -> 
     result = pipeline.approve_transfer("Foobar1", "standard")
 
     assert result["message"] == "Approval successful."
-    assert result["uuid"] == "090b7f5b-637b-400b-9014-3eb58986fe8f"
+    assert result["uuid"] == TRANSFER_UUID
 
 
+@pytest.mark.django_db
 def test_view_create_pipeline(admin_client: Client) -> None:
     url = reverse("locations:pipeline_create")
 
@@ -151,6 +157,7 @@ def test_view_create_pipeline(admin_client: Client) -> None:
     assert form.initial["create_default_locations"] is True
 
 
+@pytest.mark.django_db
 def test_view_create_pipeline_invalid_post(admin_client: Client) -> None:
     url = reverse("locations:pipeline_create")
 
@@ -160,6 +167,7 @@ def test_view_create_pipeline_invalid_post(admin_client: Client) -> None:
     assert form.is_valid() is False
 
 
+@pytest.mark.django_db
 def test_view_create_pipeline_post(admin_client: Client) -> None:
     url = reverse("locations:pipeline_create")
     pipeline_uuid = str(uuid.uuid4())
@@ -172,6 +180,7 @@ def test_view_create_pipeline_post(admin_client: Client) -> None:
     assert str(messages[0]) == "Pipeline saved."
 
 
+@pytest.mark.django_db
 def test_view_create_pipeline_post_with_blank_api_key(admin_client: Client) -> None:
     url = reverse("locations:pipeline_create")
     pipeline_uuid = str(uuid.uuid4())
@@ -200,6 +209,7 @@ def test_view_create_pipeline_post_with_blank_api_key(admin_client: Client) -> N
     assert str(messages[0]) == "Pipeline saved."
 
 
+@pytest.mark.django_db
 def test_view_edit_pipeline(admin_client: Client, pipeline: models.Pipeline) -> None:
     url = reverse("locations:pipeline_edit", args=[pipeline.uuid])
 
@@ -216,6 +226,7 @@ def test_view_edit_pipeline(admin_client: Client, pipeline: models.Pipeline) -> 
     }
 
 
+@pytest.mark.django_db
 def test_view_edit_pipeline_invalid_post(
     admin_client: Client, pipeline: models.Pipeline
 ) -> None:
@@ -227,6 +238,7 @@ def test_view_edit_pipeline_invalid_post(
     assert form.is_valid() is False
 
 
+@pytest.mark.django_db
 def test_view_edit_pipeline_post(
     admin_client: Client, pipeline: models.Pipeline
 ) -> None:
@@ -257,6 +269,7 @@ def test_view_edit_pipeline_post(
     assert str(messages[0]) == "Pipeline saved."
 
 
+@pytest.mark.django_db
 def test_view_edit_pipeline_post_preserves_existing_api_key_when_blank_string_is_submitted(
     admin_client: Client, pipeline: models.Pipeline
 ) -> None:
@@ -289,6 +302,7 @@ def test_view_edit_pipeline_post_preserves_existing_api_key_when_blank_string_is
     assert pipeline.api_key == old_api_key
 
 
+@pytest.mark.django_db
 def test_view_edit_pipeline_post_preserves_existing_api_key_when_api_key_is_omitted(
     admin_client: Client, pipeline: models.Pipeline
 ) -> None:
@@ -320,6 +334,7 @@ def test_view_edit_pipeline_post_preserves_existing_api_key_when_api_key_is_omit
     assert pipeline.api_key == old_api_key
 
 
+@pytest.mark.django_db
 def test_pipeline_detail_view_shows_pipeline_fields(
     admin_client: Client, pipeline: models.Pipeline
 ) -> None:
@@ -336,6 +351,7 @@ def test_pipeline_detail_view_shows_pipeline_fields(
     assert "No locations currently exist" in content
 
 
+@pytest.mark.django_db
 def test_pipeline_detail_view_warns_if_pipeline_does_not_exist(
     admin_client: Client, pipeline: models.Pipeline
 ) -> None:

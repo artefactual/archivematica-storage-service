@@ -1,21 +1,17 @@
-import pathlib
-
-from django.test import TestCase
+import pytest
 
 from archivematica.storage_service.locations import models
 
-FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
+
+@pytest.fixture
+def fixity_log(fixity_log_rows: list[models.FixityLog]) -> models.FixityLog:
+    """The first fixity check of the transfer, a failed one."""
+    return fixity_log_rows[0]
 
 
-class TestFixityLog(TestCase):
-    fixture_files = ["base.json", "package.json", "fixity_log.json"]
-    fixtures = [FIXTURES_DIR / f for f in fixture_files]
-
-    def setUp(self):
-        self.fl_object = models.FixityLog.objects.all()[0]
-
-    def test_has_required_attributes(self):
-        assert self.fl_object.package
-        assert not self.fl_object.success
-        assert self.fl_object.error_details
-        assert self.fl_object.datetime_reported
+@pytest.mark.django_db
+def test_has_required_attributes(fixity_log: models.FixityLog) -> None:
+    assert fixity_log.package
+    assert not fixity_log.success
+    assert fixity_log.error_details
+    assert fixity_log.datetime_reported

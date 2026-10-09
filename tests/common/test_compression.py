@@ -4,6 +4,7 @@ import re
 import shutil
 import subprocess
 import tarfile
+import uuid
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal
@@ -33,7 +34,7 @@ requires_tools = pytest.mark.skipif(
     bool(MISSING_TOOLS), reason=f"missing command line tools: {MISSING_TOOLS}"
 )
 
-PACKAGE_NAME = "package-2b7f4d6e-3c1a-4a2f-9f0e-0f8b7a6c5d4e"
+PACKAGE_NAME = f"package-{uuid.uuid4()}"
 PACKAGE_FILES = {
     "bagit.txt": "BagIt-Version: 0.97\n",
     "data/objects/hello.txt": "hello\n",
