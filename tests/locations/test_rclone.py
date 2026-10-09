@@ -81,6 +81,7 @@ def rclone_aip_no_container(
     return rclone_aip
 
 
+@pytest.mark.django_db
 @mock.patch(
     "archivematica.storage_service.locations.models.rclone.RClone._execute_rclone_subcommand"
 )
@@ -93,8 +94,11 @@ def rclone_aip_no_container(
     "archivematica.storage_service.locations.models.rclone.RClone._ensure_container_exists"
 )
 def test_rclone_delete(
-    _ensure_container_exists, remote_prefix, _execute_rclone_subcommand, rclone_aip
-):
+    _ensure_container_exists: mock.MagicMock,
+    remote_prefix: mock.PropertyMock,
+    _execute_rclone_subcommand: mock.MagicMock,
+    rclone_aip: models.Package,
+) -> None:
     """Mock method call and assert correctness of rclone command."""
     rclone_aip.delete_from_storage()
     _execute_rclone_subcommand.assert_called_with(
@@ -102,6 +106,7 @@ def test_rclone_delete(
     )
 
 
+@pytest.mark.django_db
 @mock.patch(
     "archivematica.storage_service.locations.models.rclone.RClone._execute_rclone_subcommand"
 )
@@ -111,8 +116,10 @@ def test_rclone_delete(
     new_callable=mock.PropertyMock,
 )
 def test_rclone_delete_no_container(
-    remote_prefix, _execute_rclone_subcommand, rclone_aip_no_container
-):
+    remote_prefix: mock.PropertyMock,
+    _execute_rclone_subcommand: mock.MagicMock,
+    rclone_aip_no_container: models.Package,
+) -> None:
     """Mock method call and assert correctness of rclone command."""
 
     rclone_aip_no_container.delete_from_storage()
@@ -121,6 +128,7 @@ def test_rclone_delete_no_container(
     )
 
 
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     "subprocess_return_code, raises_storage_exception",
     [
@@ -137,12 +145,12 @@ def test_rclone_delete_no_container(
 )
 @mock.patch("archivematica.storage_service.locations.models.rclone.subprocess")
 def test_rclone_ensure_container_exists(
-    subprocess,
-    remote_prefix,
-    rclone_space,
-    subprocess_return_code,
-    raises_storage_exception,
-):
+    subprocess: mock.MagicMock,
+    remote_prefix: mock.PropertyMock,
+    rclone_space: RClone,
+    subprocess_return_code: int,
+    raises_storage_exception: bool,
+) -> None:
     subprocess.Popen.return_value.returncode = subprocess_return_code
     subprocess.Popen.return_value.communicate.return_value = ("stdout", "stderr")
 
@@ -154,6 +162,7 @@ def test_rclone_ensure_container_exists(
             subprocess.assert_called_with(["mkdir", "testremote:testcontainer"])
 
 
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     "listremotes_return, expected_return, subprocess_return_code, raises_storage_exception",
     [
@@ -167,13 +176,13 @@ def test_rclone_ensure_container_exists(
 )
 @mock.patch("archivematica.storage_service.locations.models.rclone.subprocess")
 def test_rclone_remote_prefix(
-    subprocess,
-    rclone_space,
-    listremotes_return,
-    expected_return,
-    subprocess_return_code,
-    raises_storage_exception,
-):
+    subprocess: mock.MagicMock,
+    rclone_space: RClone,
+    listremotes_return: str,
+    expected_return: str | None,
+    subprocess_return_code: int,
+    raises_storage_exception: bool,
+) -> None:
     subprocess.Popen.return_value.communicate.return_value = (listremotes_return, "")
     subprocess.Popen.return_value.returncode = subprocess_return_code
 
@@ -185,6 +194,7 @@ def test_rclone_remote_prefix(
             assert rclone_space.remote_prefix is not None
 
 
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     "subprocess_communicate_return, subprocess_return_code, exception_raised",
     [
@@ -196,12 +206,12 @@ def test_rclone_remote_prefix(
 )
 @mock.patch("archivematica.storage_service.locations.models.rclone.subprocess")
 def test_rclone_execute_rclone_subcommand(
-    subprocess,
-    rclone_space,
-    subprocess_communicate_return,
-    subprocess_return_code,
-    exception_raised,
-):
+    subprocess: mock.MagicMock,
+    rclone_space: RClone,
+    subprocess_communicate_return: tuple[str, str],
+    subprocess_return_code: int,
+    exception_raised: bool,
+) -> None:
     subcommand = ["listremotes"]
 
     subprocess.Popen.return_value.communicate.return_value = (
@@ -216,6 +226,7 @@ def test_rclone_execute_rclone_subcommand(
         assert return_value == subprocess_communicate_return[0]
 
 
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     "package_is_file_result, expected_subcommand",
     [
@@ -252,14 +263,14 @@ def test_rclone_execute_rclone_subcommand(
     "archivematica.storage_service.locations.models.rclone.RClone._execute_rclone_subcommand"
 )
 def test_rclone_move_to_storage_service(
-    _execute_rclone_subcommand,
-    remote_prefix,
-    _ensure_container_exists,
-    package_is_file,
-    rclone_space,
-    package_is_file_result,
-    expected_subcommand,
-):
+    _execute_rclone_subcommand: mock.MagicMock,
+    remote_prefix: mock.PropertyMock,
+    _ensure_container_exists: mock.MagicMock,
+    package_is_file: mock.MagicMock,
+    rclone_space: RClone,
+    package_is_file_result: bool,
+    expected_subcommand: list[str],
+) -> None:
     package_is_file.return_value = package_is_file_result
 
     if package_is_file_result:
@@ -273,6 +284,7 @@ def test_rclone_move_to_storage_service(
     _execute_rclone_subcommand.assert_called_with(expected_subcommand)
 
 
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     "package_is_file_result, expected_subcommand",
     [
@@ -306,13 +318,13 @@ def test_rclone_move_to_storage_service(
     "archivematica.storage_service.locations.models.rclone.RClone._execute_rclone_subcommand"
 )
 def test_rclone_move_to_storage_service_no_container(
-    _execute_rclone_subcommand,
-    remote_prefix,
-    package_is_file,
-    rclone_space_no_container,
-    package_is_file_result,
-    expected_subcommand,
-):
+    _execute_rclone_subcommand: mock.MagicMock,
+    remote_prefix: mock.PropertyMock,
+    package_is_file: mock.MagicMock,
+    rclone_space_no_container: RClone,
+    package_is_file_result: bool,
+    expected_subcommand: list[str],
+) -> None:
     package_is_file.return_value = package_is_file_result
 
     if package_is_file_result:
@@ -326,6 +338,7 @@ def test_rclone_move_to_storage_service_no_container(
     _execute_rclone_subcommand.assert_called_with(expected_subcommand)
 
 
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     "package_is_file_result, expected_subcommand",
     [
@@ -367,15 +380,15 @@ def test_rclone_move_to_storage_service_no_container(
     "archivematica.storage_service.locations.models.rclone.RClone._execute_rclone_subcommand"
 )
 def test_rclone_move_from_storage_service(
-    _execute_rclone_subcommand,
-    remote_prefix,
-    _ensure_container_exists,
-    package_is_file,
-    create_local_directory,
-    rclone_space,
-    package_is_file_result,
-    expected_subcommand,
-):
+    _execute_rclone_subcommand: mock.MagicMock,
+    remote_prefix: mock.PropertyMock,
+    _ensure_container_exists: mock.MagicMock,
+    package_is_file: mock.MagicMock,
+    create_local_directory: mock.MagicMock,
+    rclone_space: RClone,
+    package_is_file_result: bool,
+    expected_subcommand: list[str],
+) -> None:
     package_is_file.return_value = package_is_file_result
 
     if package_is_file_result:
@@ -389,6 +402,7 @@ def test_rclone_move_from_storage_service(
     _execute_rclone_subcommand.assert_called_with(expected_subcommand)
 
 
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     "package_is_file_result, expected_subcommand",
     [
@@ -425,14 +439,14 @@ def test_rclone_move_from_storage_service(
     "archivematica.storage_service.locations.models.rclone.RClone._execute_rclone_subcommand"
 )
 def test_rclone_move_from_storage_service_no_container(
-    _execute_rclone_subcommand,
-    remote_prefix,
-    package_is_file,
-    create_local_directory,
-    rclone_space_no_container,
-    package_is_file_result,
-    expected_subcommand,
-):
+    _execute_rclone_subcommand: mock.MagicMock,
+    remote_prefix: mock.PropertyMock,
+    package_is_file: mock.MagicMock,
+    create_local_directory: mock.MagicMock,
+    rclone_space_no_container: RClone,
+    package_is_file_result: bool,
+    expected_subcommand: list[str],
+) -> None:
     package_is_file.return_value = package_is_file_result
 
     if package_is_file_result:
@@ -446,6 +460,7 @@ def test_rclone_move_from_storage_service_no_container(
     _execute_rclone_subcommand.assert_called_with(expected_subcommand)
 
 
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     "subprocess_return, expected_properties, raises_storage_exception",
     [
@@ -484,14 +499,14 @@ def test_rclone_move_from_storage_service_no_container(
     "archivematica.storage_service.locations.models.rclone.RClone._execute_rclone_subcommand"
 )
 def test_rclone_browse(
-    _execute_rclone_subcommand,
-    remote_prefix,
-    _ensure_container_exists,
-    rclone_space,
-    subprocess_return,
-    expected_properties,
-    raises_storage_exception,
-):
+    _execute_rclone_subcommand: mock.MagicMock,
+    remote_prefix: mock.PropertyMock,
+    _ensure_container_exists: mock.MagicMock,
+    rclone_space: RClone,
+    subprocess_return: bytes,
+    expected_properties: dict[str, dict[str, object]] | None,
+    raises_storage_exception: bool,
+) -> None:
     _execute_rclone_subcommand.return_value = subprocess_return
 
     if not raises_storage_exception:
@@ -509,6 +524,7 @@ def test_rclone_browse(
             rclone_space.browse("/")
 
 
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     "subprocess_return, expected_properties, raises_storage_exception",
     [
@@ -544,13 +560,13 @@ def test_rclone_browse(
     "archivematica.storage_service.locations.models.rclone.RClone._execute_rclone_subcommand"
 )
 def test_rclone_browse_no_container(
-    _execute_rclone_subcommand,
-    remote_prefix,
-    rclone_space_no_container,
-    subprocess_return,
-    expected_properties,
-    raises_storage_exception,
-):
+    _execute_rclone_subcommand: mock.MagicMock,
+    remote_prefix: mock.PropertyMock,
+    rclone_space_no_container: RClone,
+    subprocess_return: bytes,
+    expected_properties: dict[str, dict[str, object]] | None,
+    raises_storage_exception: bool,
+) -> None:
     _execute_rclone_subcommand.return_value = subprocess_return
 
     if not raises_storage_exception:

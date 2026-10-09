@@ -61,6 +61,7 @@ def compressed_bag_path(tmp_path: pathlib.Path) -> pathlib.Path:
     )
 
 
+@pytest.mark.django_db
 def test_has_required_attributes(dspace: DSpace) -> None:
     assert dspace.sd_iri
     assert dspace.user
@@ -68,6 +69,7 @@ def test_has_required_attributes(dspace: DSpace) -> None:
     assert dspace.sword_connection is None
 
 
+@pytest.mark.django_db
 @mock.patch(
     "httplib2.Http.request",
     side_effect=[
@@ -98,6 +100,7 @@ def test_get_sword_connection(_request: mock.MagicMock, dspace: DSpace) -> None:
     assert dspace.sword_connection.workspaces[0][1][0].title == "Test collection"
 
 
+@pytest.mark.django_db
 def test_get_metadata(
     dspace: DSpace, dspace_package: models.Package, compressed_bag_path: pathlib.Path
 ) -> None:
@@ -112,6 +115,7 @@ def test_get_metadata(
     assert ret["dcterms_relation.ispartofseries"] == "None"
 
 
+@pytest.mark.django_db
 def test_split_package_zip(
     dspace: DSpace, compressed_bag_path: pathlib.Path, tmp_path: pathlib.Path
 ) -> None:
@@ -125,6 +129,7 @@ def test_split_package_zip(
     assert (tmp_path / "metadata.zip").is_file()
 
 
+@pytest.mark.django_db
 def test_split_package_7z(
     dspace: DSpace, compressed_bag_path: pathlib.Path, tmp_path: pathlib.Path
 ) -> None:
@@ -139,6 +144,7 @@ def test_split_package_7z(
     assert (tmp_path / "metadata.7z").is_file()
 
 
+@pytest.mark.django_db
 @mock.patch(
     "httplib2.Http.request",
     side_effect=[

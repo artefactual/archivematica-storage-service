@@ -20,6 +20,7 @@ def lockssomatic(make_space: SpaceFactory) -> Lockssomatic:
     )
 
 
+@pytest.mark.django_db
 @mock.patch("httplib2.Http.request", side_effect=[(mock.Mock(status=200), "")])
 def test_service_doc_bad_url(
     _connection: mock.MagicMock, lockssomatic: Lockssomatic

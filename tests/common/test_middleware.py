@@ -1,3 +1,4 @@
+import pytest
 import pytest_django
 from django.contrib.auth.models import User
 from django.test import Client
@@ -7,6 +8,7 @@ AUDIT_LOG_MIDDLEWARE = (
 )
 
 
+@pytest.mark.django_db
 def test_audit_log_middleware_adds_username(
     settings: pytest_django.Settings, logged_in_client: Client, user: User
 ) -> None:
@@ -19,6 +21,7 @@ def test_audit_log_middleware_adds_username(
     assert response["X-Username"] == user.username
 
 
+@pytest.mark.django_db
 def test_audit_log_middleware_unauthenticated(
     settings: pytest_django.Settings, logged_in_client: Client
 ) -> None:

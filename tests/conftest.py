@@ -180,27 +180,27 @@ def nonadmin_api_client(nonadmin_user: User) -> Client:
 
 
 @pytest.fixture
-def make_space(db: None) -> SpaceFactory:
+def make_space() -> SpaceFactory:
     return SpaceFactory()
 
 
 @pytest.fixture
-def make_location(db: None) -> LocationFactory:
+def make_location() -> LocationFactory:
     return LocationFactory()
 
 
 @pytest.fixture
-def make_pipeline(db: None) -> PipelineFactory:
+def make_pipeline() -> PipelineFactory:
     return PipelineFactory()
 
 
 @pytest.fixture
-def make_package(db: None) -> PackageFactory:
+def make_package() -> PackageFactory:
     return PackageFactory()
 
 
 @pytest.fixture
-def make_event(db: None) -> EventFactory:
+def make_event() -> EventFactory:
     return EventFactory()
 
 

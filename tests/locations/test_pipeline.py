@@ -145,6 +145,7 @@ def test_approve_transfer(request_api: mock.Mock, pipeline: models.Pipeline) -> 
     assert result["uuid"] == TRANSFER_UUID
 
 
+@pytest.mark.django_db
 def test_view_create_pipeline(admin_client: Client) -> None:
     url = reverse("locations:pipeline_create")
 
@@ -156,6 +157,7 @@ def test_view_create_pipeline(admin_client: Client) -> None:
     assert form.initial["create_default_locations"] is True
 
 
+@pytest.mark.django_db
 def test_view_create_pipeline_invalid_post(admin_client: Client) -> None:
     url = reverse("locations:pipeline_create")
 
@@ -165,6 +167,7 @@ def test_view_create_pipeline_invalid_post(admin_client: Client) -> None:
     assert form.is_valid() is False
 
 
+@pytest.mark.django_db
 def test_view_create_pipeline_post(admin_client: Client) -> None:
     url = reverse("locations:pipeline_create")
     pipeline_uuid = str(uuid.uuid4())
@@ -177,6 +180,7 @@ def test_view_create_pipeline_post(admin_client: Client) -> None:
     assert str(messages[0]) == "Pipeline saved."
 
 
+@pytest.mark.django_db
 def test_view_create_pipeline_post_with_blank_api_key(admin_client: Client) -> None:
     url = reverse("locations:pipeline_create")
     pipeline_uuid = str(uuid.uuid4())
@@ -205,6 +209,7 @@ def test_view_create_pipeline_post_with_blank_api_key(admin_client: Client) -> N
     assert str(messages[0]) == "Pipeline saved."
 
 
+@pytest.mark.django_db
 def test_view_edit_pipeline(admin_client: Client, pipeline: models.Pipeline) -> None:
     url = reverse("locations:pipeline_edit", args=[pipeline.uuid])
 
@@ -221,6 +226,7 @@ def test_view_edit_pipeline(admin_client: Client, pipeline: models.Pipeline) -> 
     }
 
 
+@pytest.mark.django_db
 def test_view_edit_pipeline_invalid_post(
     admin_client: Client, pipeline: models.Pipeline
 ) -> None:
@@ -232,6 +238,7 @@ def test_view_edit_pipeline_invalid_post(
     assert form.is_valid() is False
 
 
+@pytest.mark.django_db
 def test_view_edit_pipeline_post(
     admin_client: Client, pipeline: models.Pipeline
 ) -> None:
@@ -262,6 +269,7 @@ def test_view_edit_pipeline_post(
     assert str(messages[0]) == "Pipeline saved."
 
 
+@pytest.mark.django_db
 def test_view_edit_pipeline_post_preserves_existing_api_key_when_blank_string_is_submitted(
     admin_client: Client, pipeline: models.Pipeline
 ) -> None:
@@ -294,6 +302,7 @@ def test_view_edit_pipeline_post_preserves_existing_api_key_when_blank_string_is
     assert pipeline.api_key == old_api_key
 
 
+@pytest.mark.django_db
 def test_view_edit_pipeline_post_preserves_existing_api_key_when_api_key_is_omitted(
     admin_client: Client, pipeline: models.Pipeline
 ) -> None:
@@ -325,6 +334,7 @@ def test_view_edit_pipeline_post_preserves_existing_api_key_when_api_key_is_omit
     assert pipeline.api_key == old_api_key
 
 
+@pytest.mark.django_db
 def test_pipeline_detail_view_shows_pipeline_fields(
     admin_client: Client, pipeline: models.Pipeline
 ) -> None:
@@ -341,6 +351,7 @@ def test_pipeline_detail_view_shows_pipeline_fields(
     assert "No locations currently exist" in content
 
 
+@pytest.mark.django_db
 def test_pipeline_detail_view_warns_if_pipeline_does_not_exist(
     admin_client: Client, pipeline: models.Pipeline
 ) -> None:

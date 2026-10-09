@@ -73,11 +73,13 @@ def default_space(default_space: models.Space, tmp_path: pathlib.Path) -> models
     return default_space
 
 
+@pytest.mark.django_db
 def test_has_required_attributes(dataverse: Dataverse) -> None:
     assert dataverse.host
     assert dataverse.api_key
 
 
+@pytest.mark.django_db
 @mock.patch(
     "requests.get",
     side_effect=[
@@ -154,6 +156,7 @@ def test_browse_all(_requests_get: mock.MagicMock, dataverse: Dataverse) -> None
     assert resp["properties"]["14"]["verbose name"] == "testjpg"
 
 
+@pytest.mark.django_db
 @mock.patch(
     "requests.get",
     side_effect=[
@@ -421,6 +424,7 @@ def test_browse_datasets(
     assert [resp["properties"][obj]["size"] for obj in ivy_lea_sample] == ivy_lea_sizes
 
 
+@pytest.mark.django_db
 @mock.patch(
     "requests.get",
     side_effect=[
@@ -475,6 +479,7 @@ def test_move_to(
     assert "dataset.json" in os.listdir(os.path.join(dest_path, "metadata"))
 
 
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     "query, expected",
     [

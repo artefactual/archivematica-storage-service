@@ -12,6 +12,7 @@ TOTAL_FIXTURE_PACKAGES = 13
 TOTAL_FIXTURE_FIXITY_LOGS = 4
 
 
+@pytest.mark.django_db
 @pytest.mark.usefixtures("package_rows")
 def test_initialization() -> None:
     DISPLAY_LEN = 10
@@ -29,6 +30,7 @@ def test_initialization() -> None:
     assert len(datatable.records) == DISPLAY_LEN
 
 
+@pytest.mark.django_db
 @pytest.mark.usefixtures("package_rows")
 def test_search_description() -> None:
     datatable = datatable_utils.PackageDataTable(
@@ -52,6 +54,7 @@ def test_search_description() -> None:
     assert len(datatable.records) == 1
 
 
+@pytest.mark.django_db
 @pytest.mark.usefixtures("package_rows")
 def test_search_current_path() -> None:
     datatable = datatable_utils.PackageDataTable(
@@ -75,6 +78,7 @@ def test_search_current_path() -> None:
     assert len(datatable.records) == 3
 
 
+@pytest.mark.django_db
 @pytest.mark.usefixtures("package_rows")
 def test_search_type() -> None:
     datatable = datatable_utils.PackageDataTable(
@@ -98,6 +102,7 @@ def test_search_type() -> None:
     assert len(datatable.records) == 3
 
 
+@pytest.mark.django_db
 @pytest.mark.usefixtures("package_rows")
 def test_search_status() -> None:
     DISPLAY_LEN = 10
@@ -122,6 +127,7 @@ def test_search_status() -> None:
     assert len(datatable.records) == DISPLAY_LEN
 
 
+@pytest.mark.django_db
 @pytest.mark.usefixtures("package_rows")
 def test_search_replica_of(
     replicated_package: models.Package, replicas: list[models.Package]
@@ -152,6 +158,7 @@ def test_search_replica_of(
     assert sorted(p.uuid for p in datatable.records) == expected_packages_uuids
 
 
+@pytest.mark.django_db
 @pytest.mark.usefixtures("package_rows")
 def test_reverse_search_replica_of(
     replicated_package: models.Package, replicas: list[models.Package]
@@ -182,6 +189,7 @@ def test_reverse_search_replica_of(
     assert sorted(p.uuid for p in datatable.records) == expected_packages_uuids
 
 
+@pytest.mark.django_db
 def test_sorting_uuid_ascending(package_rows: list[models.Package]) -> None:
     datatable = datatable_utils.PackageDataTable(
         {
@@ -206,6 +214,7 @@ def test_sorting_uuid_ascending(package_rows: list[models.Package]) -> None:
     assert [package.uuid for package in datatable.records] == expected_uuids
 
 
+@pytest.mark.django_db
 def test_sorting_uuid_descending(package_rows: list[models.Package]) -> None:
     datatable = datatable_utils.PackageDataTable(
         {
@@ -230,6 +239,7 @@ def test_sorting_uuid_descending(package_rows: list[models.Package]) -> None:
     assert [package.uuid for package in datatable.records] == uuids_descending[:10]
 
 
+@pytest.mark.django_db
 def test_sorting_by_full_path_helper(package_rows: list[models.Package]) -> None:
     datatable = datatable_utils.PackageDataTable(
         {
@@ -253,6 +263,7 @@ def test_sorting_by_full_path_helper(package_rows: list[models.Package]) -> None
     assert [package.full_path for package in datatable.records] == expected_paths
 
 
+@pytest.mark.django_db
 @pytest.mark.usefixtures("package_rows")
 def test_packages_are_filtered_by_location(
     testing_aip_storage: models.Location,
@@ -275,6 +286,7 @@ def test_packages_are_filtered_by_location(
     assert datatable.total_records == TOTAL_RECORDS_IN_LOCATION
 
 
+@pytest.mark.django_db
 @pytest.mark.usefixtures("package_rows")
 def test_packages_are_filtered_by_location_and_description(
     testing_aip_storage: models.Location,
@@ -295,6 +307,7 @@ def test_packages_are_filtered_by_location_and_description(
     assert package.description == "Broken bag"
 
 
+@pytest.mark.django_db
 @pytest.mark.usefixtures("fixity_log_rows")
 def test_fixity_logs_are_filtered_by_package(
     images_transfer: models.Package,
@@ -317,6 +330,7 @@ def test_fixity_logs_are_filtered_by_package(
     assert datatable.total_records == TOTAL_RECORDS_IN_PACKAGE
 
 
+@pytest.mark.django_db
 @pytest.mark.usefixtures("fixity_log_rows")
 def test_fixity_logs_are_filtered_by_package_and_error_details(
     images_transfer: models.Package,
@@ -339,6 +353,7 @@ def test_fixity_logs_are_filtered_by_package_and_error_details(
     assert [log.error_details for log in datatable.records] == expected_errors
 
 
+@pytest.mark.django_db
 @pytest.mark.usefixtures("fixity_log_rows")
 def test_search_error_details() -> None:
     datatable = datatable_utils.FixityLogDataTable(
@@ -362,6 +377,7 @@ def test_search_error_details() -> None:
     assert len(datatable.records) == 2
 
 
+@pytest.mark.django_db
 @pytest.mark.usefixtures("fixity_log_rows")
 def test_sorting_datetime_reported_ascending() -> None:
     datatable = datatable_utils.FixityLogDataTable(
@@ -394,6 +410,7 @@ def test_sorting_datetime_reported_ascending() -> None:
     ] == expected_datetimes
 
 
+@pytest.mark.django_db
 @pytest.mark.usefixtures("fixity_log_rows")
 def test_sorting_datetime_reported_descending() -> None:
     datatable = datatable_utils.FixityLogDataTable(

@@ -114,6 +114,7 @@ def test_space_requires_auth(client: Client) -> None:
     assert response.status_code == 401
 
 
+@pytest.mark.django_db
 def test_space_non_admins_can_read_list(
     nonadmin_api_client: Client, default_space: models.Space
 ) -> None:
@@ -123,6 +124,7 @@ def test_space_non_admins_can_read_list(
     assert len(response_content["objects"]) != 0
 
 
+@pytest.mark.django_db
 def test_space_non_admins_can_read_detail(
     nonadmin_api_client: Client, default_space: models.Space
 ) -> None:
@@ -131,6 +133,7 @@ def test_space_non_admins_can_read_detail(
     assert response.text
 
 
+@pytest.mark.django_db
 def test_create_space(api_client: Client) -> None:
     data = {
         "access_protocol": "S3",
@@ -153,6 +156,7 @@ def test_create_space(api_client: Client) -> None:
     assert protocol_model.endpoint_url == data["endpoint_url"]
 
 
+@pytest.mark.django_db
 def test_space_browse_doesnt_traverse_up(
     api_client: Client, make_space: SpaceFactory
 ) -> None:
@@ -168,6 +172,7 @@ def test_space_browse_doesnt_traverse_up(
     assert "The path parameter must be relative to the space path" in response.text
 
 
+@pytest.mark.django_db
 def test_space_browse_follow_symlinks(
     api_client: Client, make_space: SpaceFactory, tmp_path: pathlib.Path
 ) -> None:
@@ -228,6 +233,7 @@ def test_space_browse_follow_symlinks(
     }
 
 
+@pytest.mark.django_db
 def test_space_browse_with_symlinks_loop(
     api_client: Client, make_space: SpaceFactory, tmp_path: pathlib.Path
 ) -> None:
@@ -256,6 +262,7 @@ def test_location_requires_auth(client: Client) -> None:
     assert response.status_code == 401
 
 
+@pytest.mark.django_db
 def test_location_non_admins_can_read_list(
     nonadmin_api_client: Client, default_locations: list[models.Location]
 ) -> None:
@@ -265,6 +272,7 @@ def test_location_non_admins_can_read_list(
     assert len(response_content["objects"]) != 0
 
 
+@pytest.mark.django_db
 def test_location_non_admins_can_read_detail(
     nonadmin_api_client: Client, default_currently_processing: models.Location
 ) -> None:
@@ -275,6 +283,7 @@ def test_location_non_admins_can_read_detail(
     assert response.text
 
 
+@pytest.mark.django_db
 def test_non_admins_cannot_create_location(
     api_client: Client,
     api_user: User,
@@ -297,6 +306,7 @@ def test_non_admins_cannot_create_location(
     assert response.status_code == 401
 
 
+@pytest.mark.django_db
 def test_create_location(
     api_client: Client,
     default_space: models.Space,
@@ -331,6 +341,7 @@ def test_create_location(
     assert location.description == data["description"]
 
 
+@pytest.mark.django_db
 def test_create_default_location(
     api_client: Client,
     default_space: models.Space,
@@ -390,6 +401,7 @@ def move_files_data(
     }
 
 
+@pytest.mark.django_db
 def test_cant_move_from_non_existant_locations(
     api_client: Client,
     default_currently_processing: models.Location,
@@ -406,6 +418,7 @@ def test_cant_move_from_non_existant_locations(
     assert "not a link to a valid Location" in response.text
 
 
+@pytest.mark.django_db
 def test_cant_move_to_non_existant_locations(
     api_client: Client, move_files_data: dict[str, object]
 ) -> None:
@@ -418,6 +431,7 @@ def test_cant_move_to_non_existant_locations(
     assert response.status_code == 404
 
 
+@pytest.mark.django_db
 def test_cant_move_from_disabled_locations(
     api_client: Client,
     default_backlog: models.Location,
@@ -438,6 +452,7 @@ def test_cant_move_from_disabled_locations(
     assert "not a link to a valid Location" in response.text
 
 
+@pytest.mark.django_db
 def test_cant_move_to_disabled_locations(
     api_client: Client,
     default_currently_processing: models.Location,
@@ -456,6 +471,7 @@ def test_cant_move_to_disabled_locations(
     assert response.status_code == 404
 
 
+@pytest.mark.django_db
 def test_location_browse_doesnt_traverse_up(
     api_client: Client, make_space: SpaceFactory, make_location: LocationFactory
 ) -> None:
@@ -477,6 +493,7 @@ def test_location_browse_doesnt_traverse_up(
     assert "The path parameter must be relative to the location path" in response.text
 
 
+@pytest.mark.django_db
 def test_location_browse_follow_symlinks(
     api_client: Client,
     make_space: SpaceFactory,
@@ -556,6 +573,7 @@ def test_location_browse_follow_symlinks(
     }
 
 
+@pytest.mark.django_db
 def test_location_browse_with_symlinks_loop(
     api_client: Client,
     make_space: SpaceFactory,
@@ -606,6 +624,7 @@ def test_package_requires_auth(client: Client) -> None:
     assert [client.get(url).status_code for url in urls] == [401] * len(urls)
 
 
+@pytest.mark.django_db
 def test_package_non_admins_can_read_list(
     api_client: Client, api_user: User, package_storage: None
 ) -> None:
@@ -616,6 +635,7 @@ def test_package_non_admins_can_read_list(
     assert len(response_content["objects"]) != 0
 
 
+@pytest.mark.django_db
 def test_package_non_admins_can_read_detail(
     api_client: Client,
     api_user: User,
@@ -628,6 +648,7 @@ def test_package_non_admins_can_read_detail(
     assert response.text
 
 
+@pytest.mark.django_db
 def test_non_admins_cant_reindex(
     api_client: Client,
     api_user: User,
@@ -639,6 +660,7 @@ def test_non_admins_cant_reindex(
     assert response.status_code == 401
 
 
+@pytest.mark.django_db
 def test_non_admins_cant_reingest(
     api_client: Client,
     api_user: User,
@@ -658,6 +680,7 @@ def test_non_admins_cant_reingest(
     assert response.status_code == 401
 
 
+@pytest.mark.django_db
 def test_non_admins_cant_move(
     api_client: Client,
     api_user: User,
@@ -676,6 +699,7 @@ def test_non_admins_cant_move(
     assert response.status_code == 401
 
 
+@pytest.mark.django_db
 def test_non_admins_cant_add_file_to_package(
     api_client: Client,
     api_user: User,
@@ -692,6 +716,7 @@ def test_non_admins_cant_add_file_to_package(
     assert response.status_code == 401
 
 
+@pytest.mark.django_db
 def test_non_admins_cant_delete_file_from_package(
     api_client: Client,
     api_user: User,
@@ -705,6 +730,7 @@ def test_non_admins_cant_delete_file_from_package(
     assert response.status_code == 401
 
 
+@pytest.mark.django_db
 def test_file_data_returns_metadata_given_relative_path(
     api_client: Client, package_storage: None, images_transfer: models.Package
 ) -> None:
@@ -717,6 +743,7 @@ def test_file_data_returns_metadata_given_relative_path(
     assert body[0]["fileuuid"] == images_transfer.file_set.get().source_id
 
 
+@pytest.mark.django_db
 def test_file_data_returns_bad_response_with_no_accepted_parameters(
     api_client: Client,
 ) -> None:
@@ -724,11 +751,13 @@ def test_file_data_returns_bad_response_with_no_accepted_parameters(
     assert response.status_code == 400
 
 
+@pytest.mark.django_db
 def test_file_data_returns_404_if_no_file_found(api_client: Client) -> None:
     response = api_client.get("/api/v2/file/metadata/", {"fileuuid": "nosuchfile"})
     assert response.status_code == 404
 
 
+@pytest.mark.django_db
 def test_package_contents_returns_metadata(
     api_client: Client, package_storage: None, images_transfer: models.Package
 ) -> None:
@@ -741,6 +770,7 @@ def test_package_contents_returns_metadata(
     assert body["files"][0]["name"] == "test_sip/objects/file.txt"
 
 
+@pytest.mark.django_db
 def test_adding_package_files_returns_400_with_empty_post_body(
     api_client: Client, package_storage: None, images_transfer: models.Package
 ) -> None:
@@ -752,6 +782,7 @@ def test_adding_package_files_returns_400_with_empty_post_body(
     assert response.status_code == 400
 
 
+@pytest.mark.django_db
 def test_adding_package_files_returns_400_if_post_body_is_not_json(
     api_client: Client, package_storage: None, images_transfer: models.Package
 ) -> None:
@@ -763,6 +794,7 @@ def test_adding_package_files_returns_400_if_post_body_is_not_json(
     assert response.status_code == 400
 
 
+@pytest.mark.django_db
 def test_adding_package_files_returns_400_if_post_body_is_not_a_list(
     api_client: Client, package_storage: None, images_transfer: models.Package
 ) -> None:
@@ -774,6 +806,7 @@ def test_adding_package_files_returns_400_if_post_body_is_not_a_list(
     assert response.status_code == 400
 
 
+@pytest.mark.django_db
 def test_adding_package_files_returns_400_if_expected_fields_are_missing(
     api_client: Client, package_storage: None, images_transfer: models.Package
 ) -> None:
@@ -786,6 +819,7 @@ def test_adding_package_files_returns_400_if_expected_fields_are_missing(
     assert response.status_code == 400
 
 
+@pytest.mark.django_db
 def test_adding_files_to_package_returns_200_for_empty_list(
     api_client: Client, package_storage: None, empty_transfer: models.Package
 ) -> None:
@@ -797,6 +831,7 @@ def test_adding_files_to_package_returns_200_for_empty_list(
     assert response.status_code == 200
 
 
+@pytest.mark.django_db
 def test_adding_files_to_package(
     api_client: Client, package_storage: None, empty_transfer: models.Package
 ) -> None:
@@ -813,6 +848,7 @@ def test_adding_files_to_package(
     assert empty_transfer.file_set.count() == 2
 
 
+@pytest.mark.django_db
 def test_removing_file_from_package(
     api_client: Client, package_storage: None, one_file_transfer: models.Package
 ) -> None:
@@ -823,6 +859,7 @@ def test_removing_file_from_package(
     assert one_file_transfer.file_set.count() == 0
 
 
+@pytest.mark.django_db
 def test_download_compressed_package(
     api_client: Client, package_storage: None, zipped_bag: models.Package
 ) -> None:
@@ -833,6 +870,7 @@ def test_download_compressed_package(
     assert response["content-disposition"] == 'attachment; filename="working_bag.zip"'
 
 
+@pytest.mark.django_db
 def test_download_uncompressed_package(
     api_client: Client, package_storage: None, working_bag: models.Package
 ) -> None:
@@ -849,6 +887,7 @@ def test_download_uncompressed_package(
     assert "test.txt" in content
 
 
+@pytest.mark.django_db
 def test_download_lockss_chunk_incorrect(
     api_client: Client, package_storage: None, working_bag: models.Package
 ) -> None:
@@ -868,6 +907,7 @@ def test_download_lockss_chunk_incorrect(
     assert "test.txt" in content
 
 
+@pytest.mark.django_db
 def test_download_package_not_exist(api_client: Client) -> None:
     """It should return 404 for a non-existant package."""
     response = api_client.get(
@@ -877,6 +917,7 @@ def test_download_package_not_exist(api_client: Client) -> None:
     assert response.status_code == 404
 
 
+@pytest.mark.django_db
 @mock.patch(
     "requests.get",
     side_effect=[
@@ -916,6 +957,7 @@ def test_download_package_arkivum_not_available(
     )
 
 
+@pytest.mark.django_db
 @mock.patch(
     "requests.get",
     side_effect=[mock.Mock(**{"status_code": 404})],
@@ -936,6 +978,7 @@ def test_download_package_arkivum_error(
     assert "Error" in j["message"] and "Arkivum" in j["message"]
 
 
+@pytest.mark.django_db
 def test_download_file_no_path(
     api_client: Client, package_storage: None, working_bag: models.Package
 ) -> None:
@@ -945,6 +988,7 @@ def test_download_file_no_path(
     assert "relative_path_to_file" in response.text
 
 
+@pytest.mark.django_db
 def test_download_file_from_compressed(
     api_client: Client, package_storage: None, zipped_bag: models.Package
 ) -> None:
@@ -960,6 +1004,7 @@ def test_download_file_from_compressed(
     assert content == "test"
 
 
+@pytest.mark.django_db
 def test_download_file_from_uncompressed(
     api_client: Client, package_storage: None, working_bag: models.Package
 ) -> None:
@@ -975,6 +1020,7 @@ def test_download_file_from_uncompressed(
     assert content == "test"
 
 
+@pytest.mark.django_db
 @mock.patch(
     "requests.get",
     side_effect=[
@@ -1008,6 +1054,7 @@ def test_download_file_arkivum_not_available(
     )
 
 
+@pytest.mark.django_db
 @mock.patch(
     "requests.get",
     side_effect=[mock.Mock(**{"status_code": 404})],
@@ -1029,6 +1076,7 @@ def test_download_file_arkivum_error(
     assert "Error" in j["message"] and "Arkivum" in j["message"]
 
 
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     "view_name, expected_status",
     [
@@ -1079,6 +1127,7 @@ def test_removes_forward_slash_parse_fedora_mets() -> None:
 # The following tests cover the pipeline API.
 
 
+@pytest.mark.django_db
 def test_pipeline_non_admins_can_read_list(
     api_client: Client, api_user: User, default_pipeline: models.Pipeline
 ) -> None:
@@ -1089,6 +1138,7 @@ def test_pipeline_non_admins_can_read_list(
     assert len(response_content["objects"]) != 0
 
 
+@pytest.mark.django_db
 def test_pipeline_non_admins_can_read_detail(
     nonadmin_api_client: Client, default_pipeline: models.Pipeline
 ) -> None:
@@ -1097,6 +1147,7 @@ def test_pipeline_non_admins_can_read_detail(
     assert response.text
 
 
+@pytest.mark.django_db
 def test_pipeline_create(api_client: Client) -> None:
     data = {
         "uuid": str(uuid.uuid4()),
@@ -1132,6 +1183,7 @@ def test_pipeline_create(api_client: Client) -> None:
     )
 
 
+@pytest.mark.django_db
 def test_pipeline_create_without_api_key_stores_empty_string(
     api_client: Client,
 ) -> None:
@@ -1188,6 +1240,7 @@ def s3_resource(
     )
 
 
+@pytest.mark.django_db
 @mock.patch("boto3.resource")
 def test_s3_space_deletes_temporary_files_after_extracting_file(
     resource: mock.MagicMock,

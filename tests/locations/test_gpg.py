@@ -529,6 +529,7 @@ def encrypted_package(
     )
 
 
+@pytest.mark.django_db
 def test__encr_path2key_fingerprint(encrypted_package: Package) -> None:
     package = encrypted_package
     exp_curr_path = ENCRYPTED_TRANSFER_PATH

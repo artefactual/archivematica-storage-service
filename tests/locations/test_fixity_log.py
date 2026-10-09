@@ -9,6 +9,7 @@ def fixity_log(fixity_log_rows: list[models.FixityLog]) -> models.FixityLog:
     return fixity_log_rows[0]
 
 
+@pytest.mark.django_db
 def test_has_required_attributes(fixity_log: models.FixityLog) -> None:
     assert fixity_log.package
     assert not fixity_log.success

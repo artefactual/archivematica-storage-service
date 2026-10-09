@@ -160,6 +160,7 @@ def package(images_transfer: models.Package) -> models.Package:
     return images_transfer
 
 
+@pytest.mark.django_db
 def test_create_pointer_file(package: models.Package) -> None:
     """It should be able to create a pointer file."""
     pointer_file = package.create_pointer_file(

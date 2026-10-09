@@ -470,7 +470,7 @@ def package_rows(
 
 
 @pytest.fixture
-def callback_rows(db: None) -> list[models.Callback]:
+def callback_rows() -> list[models.Callback]:
     """The callbacks of every event, one of them disabled."""
     return [
         models.Callback.objects.create(

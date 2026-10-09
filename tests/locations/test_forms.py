@@ -10,6 +10,7 @@ def callback(callback_rows: list[models.Callback]) -> models.Callback:
     return callback_rows[4]
 
 
+@pytest.mark.django_db
 def test_headers_added(callback: models.Callback) -> None:
     form = forms.CallbackForm(None, instance=callback)
     # Existing headers should be added in order
@@ -22,6 +23,7 @@ def test_headers_added(callback: models.Callback) -> None:
     assert form.fields["header_2"]
 
 
+@pytest.mark.django_db
 def test_headers_processed(callback: models.Callback) -> None:
     post_data = {
         "event": "post_store_dip",

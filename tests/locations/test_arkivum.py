@@ -83,12 +83,14 @@ def arkivum_dir(package: models.Package, tmp_path: pathlib.Path) -> str:
     return str(result)
 
 
+@pytest.mark.django_db
 def test_has_required_attributes(arkivum: Arkivum) -> None:
     assert arkivum.host
     # Both or neither of remote_user/remote_name
     assert bool(arkivum.remote_user) == bool(arkivum.remote_name)
 
 
+@pytest.mark.django_db
 def test_browse(arkivum: Arkivum, arkivum_dir: str) -> None:
     response = arkivum.browse(arkivum_dir)
     assert response
@@ -99,6 +101,7 @@ def test_browse(arkivum: Arkivum, arkivum_dir: str) -> None:
     assert response["properties"]["ts"]["object count"] == 0
 
 
+@pytest.mark.django_db
 @mock.patch(
     "requests.get",
     side_effect=[
@@ -142,6 +145,7 @@ def test_delete(
     assert "unittest.txt" not in [x["name"] for x in response.json()["files"]]
 
 
+@pytest.mark.django_db
 @mock.patch(
     "requests.post",
     side_effect=[
@@ -166,6 +170,7 @@ def test_post_move_from_ss(
     assert package.misc_attributes["arkivum_identifier"] == ARKIVUM_IDENTIFIER
 
 
+@pytest.mark.django_db
 @mock.patch(
     "requests.get",
     side_effect=[
@@ -219,6 +224,7 @@ def test_update_package_status_compressed(
     # Verify what?
 
 
+@pytest.mark.django_db
 @mock.patch(
     "requests.get",
     side_effect=[

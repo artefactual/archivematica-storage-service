@@ -31,6 +31,7 @@ def swift(make_space: SpaceFactory) -> Swift:
     )
 
 
+@pytest.mark.django_db
 def test_has_required_attributes(swift: Swift) -> None:
     assert swift.auth_url
     assert swift.auth_version
@@ -41,6 +42,7 @@ def test_has_required_attributes(swift: Swift) -> None:
         assert swift.tenant
 
 
+@pytest.mark.django_db
 @mock.patch(
     "swiftclient.client.Connection.get_container",
     side_effect=[
@@ -72,6 +74,7 @@ def test_browse(_get_container: mock.MagicMock, swift: Swift) -> None:
     )
 
 
+@pytest.mark.django_db
 @mock.patch(
     "swiftclient.client.Connection.get_container",
     side_effect=[
@@ -169,6 +172,7 @@ def test_browse_unicode(_get_container: mock.MagicMock, swift: Swift) -> None:
     )
 
 
+@pytest.mark.django_db
 @mock.patch(
     "swiftclient.client.Connection.get_object", side_effect=[({}, b"%percent\n")]
 )
@@ -189,6 +193,7 @@ def test_move_to_ss(
     assert test_file.open().read() == "%percent\n"
 
 
+@pytest.mark.django_db
 @mock.patch(
     "swiftclient.client.Connection.get_object",
     side_effect=[swiftclient.exceptions.ClientException("error")],
@@ -212,6 +217,7 @@ def test_move_to_ss_not_exist(
     assert not os.path.exists(test_file)
 
 
+@pytest.mark.django_db
 @mock.patch(
     "swiftclient.client.Connection.get_object",
     side_effect=[
@@ -265,6 +271,7 @@ def test_move_to_ss_folder(
     assert (test_dir / "control.txt").open().read() == "test file\n"
 
 
+@pytest.mark.django_db
 @mock.patch(
     "swiftclient.client.Connection.get_object",
     side_effect=[
@@ -285,6 +292,7 @@ def test_move_to_ss_bad_etag(
         )
 
 
+@pytest.mark.django_db
 @mock.patch("swiftclient.client.Connection.put_object")
 @mock.patch(
     "swiftclient.client.Connection.get_container",
@@ -335,6 +343,7 @@ def test_move_from_ss(
     swift.delete_path("transfers/SampleTransfers/test.txt")
 
 
+@pytest.mark.django_db
 @mock.patch(
     "swiftclient.client.Connection.get_container",
     side_effect=[
@@ -390,6 +399,7 @@ def test_delete_path(
     assert "test.txt" not in resp["entries"]
 
 
+@pytest.mark.django_db
 @mock.patch(
     "swiftclient.client.Connection.get_container",
     side_effect=[

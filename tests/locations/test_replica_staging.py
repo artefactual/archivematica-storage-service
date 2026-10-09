@@ -53,6 +53,7 @@ def replica(
     )
 
 
+@pytest.mark.django_db
 def test_delete(replica: models.Package) -> None:
     """Test that package in Space isn't deleted."""
     success, err = replica.delete_from_storage()
@@ -60,18 +61,21 @@ def test_delete(replica: models.Package) -> None:
     assert err == "Write-Only Offline Staging does not implement deletion"
 
 
+@pytest.mark.django_db
 def test_check_fixity(replica: models.Package) -> None:
     """Test that fixity check raises NotImplementedError."""
     with pytest.raises(NotImplementedError):
         replica.check_fixity()
 
 
+@pytest.mark.django_db
 def test_browse(replica: models.Package) -> None:
     """Test that browse raises NotImplementedError."""
     with pytest.raises(NotImplementedError):
         replica.current_location.space.browse("/test/path")
 
 
+@pytest.mark.django_db
 def test_move_to_storage_service(replica: models.Package) -> None:
     """Test that move_to_storage_service raises NotImplementedError."""
     with pytest.raises(NotImplementedError):
@@ -204,6 +208,7 @@ PREMIS_AGENT_DATA = (
 )
 
 
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     "package_fixture,premis_events,premis_agents",
     [
@@ -228,14 +233,14 @@ PREMIS_AGENT_DATA = (
     ],
 )
 def test_package_is_replicated_to_offline_space(
-    request,
-    ss_internal_location,
-    aip_storage_location,
-    replicator_location,
-    package_fixture,
-    premis_events,
-    premis_agents,
-):
+    request: pytest.FixtureRequest,
+    ss_internal_location: models.Location,
+    aip_storage_location: models.Location,
+    replicator_location: models.Location,
+    package_fixture: str,
+    premis_events: list[tuple[object, ...]] | None,
+    premis_agents: list[tuple[object, ...]] | None,
+) -> None:
     package = request.getfixturevalue(package_fixture)
     package.store_aip(
         origin_location=aip_storage_location,

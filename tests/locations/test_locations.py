@@ -1,7 +1,10 @@
+import pytest
+
 from archivematica.storage_service.locations import forms
 from archivematica.storage_service.locations import models
 
 
+@pytest.mark.django_db
 def test_clean_works(pipeline_rows: list[models.Pipeline]) -> None:
     pipelines = models.Pipeline.objects.all()
     form_data = {
@@ -16,6 +19,7 @@ def test_clean_works(pipeline_rows: list[models.Pipeline]) -> None:
     assert form.is_valid()
 
 
+@pytest.mark.django_db
 def test_clean_aip_recovery_fine(pipeline_rows: list[models.Pipeline]) -> None:
     _, pipeline_without_ar, _ = pipeline_rows
     form_data = {
@@ -30,6 +34,7 @@ def test_clean_aip_recovery_fine(pipeline_rows: list[models.Pipeline]) -> None:
     assert form.is_valid()
 
 
+@pytest.mark.django_db
 def test_clean_aip_recovery_error(pipeline_rows: list[models.Pipeline]) -> None:
     pipeline_with_ar, _, _ = pipeline_rows
     form_data = {

@@ -218,6 +218,7 @@ def offline_replicator(
     )
 
 
+@pytest.mark.django_db
 def test_model_delete_from_storage(sevenzipped_bag: models.Package) -> None:
     """Test that the Space delete method is called once for the
     deletion of an AIP from the storage service.
@@ -247,6 +248,7 @@ def test_model_delete_from_storage(sevenzipped_bag: models.Package) -> None:
     assert package.status == models.Package.DELETED
 
 
+@pytest.mark.django_db
 def test_model_delete_from_storage_and_replicas(
     replicated_package: models.Package,
 ) -> None:
@@ -287,6 +289,7 @@ def test_model_delete_from_storage_and_replicas(
     assert replicas[1].status == models.Package.DELETED
 
 
+@pytest.mark.django_db
 def test_model_delete_failure_with_replicas(
     replicated_package: models.Package,
 ) -> None:
@@ -330,6 +333,7 @@ def test_model_delete_failure_with_replicas(
     assert replicas[1].status == models.Package.UPLOADED
 
 
+@pytest.mark.django_db
 def test_view_package_delete(
     client: Client, api_user: User, images_transfer: models.Package
 ) -> None:
@@ -398,6 +402,7 @@ def test_view_package_delete(
         )
 
 
+@pytest.mark.django_db
 def test_parsing_mets_data(images_transfer: models.Package) -> None:
     mets_data = images_transfer._parse_mets(prefix=str(FIXTURES_DIR))
     assert mets_data["transfer_uuid"] == "de1b31fa-97dd-48e0-8417-03be78359531"
@@ -415,6 +420,7 @@ def test_parsing_mets_data(images_transfer: models.Package) -> None:
     ]
 
 
+@pytest.mark.django_db
 def test_files_are_added_to_database(images_transfer: models.Package) -> None:
     images_transfer.index_file_data_from_transfer_mets(prefix=str(FIXTURES_DIR))
     assert (
@@ -454,6 +460,7 @@ def _store_aip_to_uploaded(
     )
 
 
+@pytest.mark.django_db
 @mock.patch(
     "archivematica.storage_service.common.utils.generate_checksum",
     return_value=_test_checksum(),
@@ -479,6 +486,7 @@ def test_stored_checksum(
             )
 
 
+@pytest.mark.django_db
 @mock.patch("archivematica.storage_service.locations.models.Package._update_quotas")
 @mock.patch(
     "archivematica.storage_service.locations.models.Space.move_to_storage_service"
@@ -517,6 +525,7 @@ def test_stored_checksum_posix_exception(
         )
 
 
+@pytest.mark.django_db
 @mock.patch(
     "archivematica.storage_service.common.utils.generate_checksum",
     return_value=_test_checksum(),
@@ -539,6 +548,7 @@ def test_stored_date(
             )
 
 
+@pytest.mark.django_db
 @mock.patch("archivematica.storage_service.locations.models.Package._update_quotas")
 @mock.patch(
     "archivematica.storage_service.locations.models.Space.move_to_storage_service"
@@ -575,6 +585,7 @@ def test_stored_date_posix_exception(
         )
 
 
+@pytest.mark.django_db
 def test_fixity_success(working_bag: models.Package) -> None:
     """
     It should return success.
@@ -588,6 +599,7 @@ def test_fixity_success(working_bag: models.Package) -> None:
     assert timestamp is None
 
 
+@pytest.mark.django_db
 def test_fixity_failure(broken_bag: models.Package) -> None:
     """
     It should return error.
@@ -602,6 +614,7 @@ def test_fixity_failure(broken_bag: models.Package) -> None:
     assert timestamp is None
 
 
+@pytest.mark.django_db
 def test_fixity_package_type(empty_transfer: models.Package) -> None:
     """It should only fixity bags."""
     success, failures, message, timestamp = empty_transfer.check_fixity()
@@ -611,6 +624,7 @@ def test_fixity_package_type(empty_transfer: models.Package) -> None:
     assert timestamp is None
 
 
+@pytest.mark.django_db
 def test_fixity_success_package_checksum(working_bag: models.Package) -> None:
     """
     It should return success.
@@ -629,6 +643,7 @@ def test_fixity_success_package_checksum(working_bag: models.Package) -> None:
     assert timestamp is None
 
 
+@pytest.mark.django_db
 def test_fixity_success_compressed_package_checksum(
     sevenzipped_bag: models.Package, default_ss_internal: models.Location
 ) -> None:
@@ -648,6 +663,7 @@ def test_fixity_success_compressed_package_checksum(
     assert timestamp is None
 
 
+@pytest.mark.django_db
 def test_fixity_failure_package_checksum(broken_bag: models.Package) -> None:
     """
     It should return error.
@@ -679,6 +695,7 @@ def arkivum_checked_package(
     return arkivum_uncompressed_package
 
 
+@pytest.mark.django_db
 @mock.patch(
     "requests.get",
     side_effect=[
@@ -706,6 +723,7 @@ def test_fixity_scheduled_arkivum(
     assert timestamp is None
 
 
+@pytest.mark.django_db
 @mock.patch(
     "requests.get",
     side_effect=[
@@ -738,6 +756,7 @@ def test_fixity_amber_arkivum(
     assert timestamp == "2015-11-24T00:00:00"
 
 
+@pytest.mark.django_db
 @mock.patch(
     "requests.get",
     side_effect=[
@@ -770,6 +789,7 @@ def test_fixity_success_arkivum(
     assert timestamp == "2015-11-24T00:00:00"
 
 
+@pytest.mark.django_db
 @mock.patch(
     "requests.get",
     side_effect=[
@@ -815,6 +835,7 @@ def test_fixity_failure_arkivum(
     assert timestamp is None
 
 
+@pytest.mark.django_db
 def test_fixity_force_local(arkivum_uncompressed_package: models.Package) -> None:
     """It should do checksum locally if required."""
     success, failures, message, timestamp = arkivum_uncompressed_package.check_fixity(
@@ -826,6 +847,7 @@ def test_fixity_force_local(arkivum_uncompressed_package: models.Package) -> Non
     assert timestamp is None
 
 
+@pytest.mark.django_db
 def test_extract_file_aip_from_uncompressed_aip(
     working_bag: models.Package,
     default_ss_internal: models.Location,
@@ -838,6 +860,7 @@ def test_extract_file_aip_from_uncompressed_aip(
     assert os.path.join(output_path, "manifest-md5.txt")
 
 
+@pytest.mark.django_db
 def test_extract_file_file_from_uncompressed_aip(
     working_bag: models.Package,
     default_ss_internal: models.Location,
@@ -852,6 +875,7 @@ def test_extract_file_file_from_uncompressed_aip(
     assert os.path.isfile(output_path)
 
 
+@pytest.mark.django_db
 def test_extract_file_nested_file_from_uncompressed_aip(
     working_bag: models.Package,
     default_ss_internal: models.Location,
@@ -866,6 +890,7 @@ def test_extract_file_nested_file_from_uncompressed_aip(
     assert os.path.isfile(output_path)
 
 
+@pytest.mark.django_db
 def test_extract_file_file_from_compressed_aip(
     sevenzipped_bag: models.Package,
     default_ss_internal: models.Location,
@@ -880,6 +905,7 @@ def test_extract_file_file_from_compressed_aip(
     assert os.path.isfile(output_path)
 
 
+@pytest.mark.django_db
 def test_extract_file_file_does_not_exist_compressed(
     sevenzipped_bag: models.Package,
     default_ss_internal: models.Location,
@@ -894,6 +920,7 @@ def test_extract_file_file_does_not_exist_compressed(
     assert e_info.value.args[0] == "Extraction error"
 
 
+@pytest.mark.django_db
 def test_extract_file_aip_from_compressed_aip(
     sevenzipped_bag: models.Package,
     default_ss_internal: models.Location,
@@ -906,6 +933,7 @@ def test_extract_file_aip_from_compressed_aip(
     assert os.path.join(output_path, "manifest-md5.txt")
 
 
+@pytest.mark.django_db
 @pytest.mark.usefixtures("callback_rows")
 def test_run_post_store_callbacks_aip(tar_gz_package: models.Package) -> None:
     uuid = str(tar_gz_package.uuid)
@@ -921,6 +949,7 @@ def test_run_post_store_callbacks_aip(tar_gz_package: models.Package) -> None:
         mocked_execute.assert_called_with(url, body)
 
 
+@pytest.mark.django_db
 @pytest.mark.usefixtures("callback_rows")
 def test_run_post_store_callbacks_aip_tricky_name(
     tricky_7z_package: models.Package,
@@ -938,6 +967,7 @@ def test_run_post_store_callbacks_aip_tricky_name(
         mocked_execute.assert_called_with(url, body)
 
 
+@pytest.mark.django_db
 @pytest.mark.usefixtures("callback_rows")
 def test_run_post_store_callbacks_aic(working_bag: models.Package) -> None:
     working_bag.package_type = models.Package.AIC
@@ -950,6 +980,7 @@ def test_run_post_store_callbacks_aic(working_bag: models.Package) -> None:
         assert mocked_execute.call_count == 1
 
 
+@pytest.mark.django_db
 @pytest.mark.usefixtures("callback_rows")
 def test_run_post_store_callbacks_dip(working_bag: models.Package) -> None:
     uuid = str(working_bag.uuid)
@@ -996,6 +1027,7 @@ def _found_bagit_structure(replica: models.Package) -> set[str]:
     }
 
 
+@pytest.mark.django_db
 def test_replicate_aip_when_file(
     sevenzipped_bag: models.Package,
     replicator: models.Location,
@@ -1021,6 +1053,7 @@ def test_replicate_aip_when_file(
     assert os.path.isfile(repl_file_path)
 
 
+@pytest.mark.django_db
 def test_replicate_aip(
     working_bag: models.Package,
     replicator: models.Location,
@@ -1045,6 +1078,7 @@ def test_replicate_aip(
     )
 
 
+@pytest.mark.django_db
 def test_replicate_aic(
     small_aic: models.Package,
     replicator: models.Location,
@@ -1069,6 +1103,7 @@ def test_replicate_aic(
         assert replica.replicas.count() == 0
 
 
+@pytest.mark.django_db
 def test_replicate_aip_twice(
     make_location: LocationFactory,
     working_bag: models.Package,
@@ -1110,6 +1145,7 @@ def test_replicate_aip_twice(
     )
 
 
+@pytest.mark.django_db
 @mock.patch("archivematica.storage_service.locations.models.gpg._gpg_encrypt")
 def test_replicate_aip_gpg_encrypted(
     mock_encrypt: mock.MagicMock,
@@ -1152,6 +1188,7 @@ def test_replicate_aip_gpg_encrypted(
     )
 
 
+@pytest.mark.django_db
 def test_replicate_aip_offline_staging_uncompressed(
     working_bag: models.Package,
     offline_replicator: models.Location,
@@ -1180,6 +1217,7 @@ def test_replicate_aip_offline_staging_uncompressed(
     assert staging_dirs_count_initial == recursive_dir_count(staging_dir)
 
 
+@pytest.mark.django_db
 def test_replicate_aip_offline_staging_compressed(
     sevenzipped_bag: models.Package,
     offline_replicator: models.Location,
@@ -1206,6 +1244,7 @@ def test_replicate_aip_offline_staging_compressed(
     assert staging_dirs_count_initial == recursive_dir_count(staging_dir)
 
 
+@pytest.mark.django_db
 def test_deletion_and_creation_of_replicas_compressed(
     replicated_packages: list[models.Package],
     replicator: models.Location,
@@ -1283,6 +1322,7 @@ def _create_mutable_fixture_for_replication(
     return tmp_dir
 
 
+@pytest.mark.django_db
 def test_deletion_and_creation_of_replicas_uncompressed(
     working_bag: models.Package,
     testing_aip_storage: models.Location,
@@ -1384,6 +1424,7 @@ def test_deletion_and_creation_of_replicas_uncompressed(
     assert os.path.getsize(new_replicated_file) == len(DATA_TO_ADD)
 
 
+@pytest.mark.django_db
 def test_clear_local_tempdirs(
     working_bag: models.Package,
     zipped_bag: models.Package,
@@ -1441,6 +1482,7 @@ def move_locations(
     return source, destination
 
 
+@pytest.mark.django_db
 def test_move_compressed_aip(
     make_package: PackageFactory,
     move_locations: tuple[models.Location, models.Location],
@@ -1462,6 +1504,7 @@ def test_move_compressed_aip(
     assert pkg.current_location == dst_location
 
 
+@pytest.mark.django_db
 def test_move_uncompressed_aip(
     make_package: PackageFactory,
     move_locations: tuple[models.Location, models.Location],
@@ -1518,6 +1561,7 @@ def disabled_replicator(
     )
 
 
+@pytest.mark.django_db
 def test_create_replicas_uses_only_enabled_replicators(
     package: models.Package,
     enabled_replicator: models.Location,
@@ -1529,6 +1573,7 @@ def test_create_replicas_uses_only_enabled_replicators(
     replicate.assert_called_once_with(package, enabled_replicator)
 
 
+@pytest.mark.django_db
 def test_create_replicas_skips_disabled_replicator_when_uuid_requested(
     package: models.Package, disabled_replicator: models.Location
 ) -> None:
@@ -1538,6 +1583,7 @@ def test_create_replicas_skips_disabled_replicator_when_uuid_requested(
     replicate.assert_not_called()
 
 
+@pytest.mark.django_db
 @mock.patch(
     "archivematica.storage_service.common.utils.generate_checksum",
     return_value=mock.Mock(
@@ -1573,6 +1619,7 @@ def _failing_archiver() -> CommandLineArchiver:
     return CommandLineArchiver(run=run)
 
 
+@pytest.mark.django_db
 def test_get_base_directory_raises_storage_exception_when_listing_fails(
     package: models.Package,
 ) -> None:
@@ -1583,6 +1630,7 @@ def test_get_base_directory_raises_storage_exception_when_listing_fails(
         package.get_base_directory()
 
 
+@pytest.mark.django_db
 def test_compress_package_raises_storage_exception_when_the_tool_fails(
     package: models.Package, ss_internal_location: models.Location
 ) -> None:
@@ -1607,6 +1655,7 @@ def _archiver_failing_to_extract(partial_output: pathlib.Path) -> CommandLineArc
     return CommandLineArchiver(run=run)
 
 
+@pytest.mark.django_db
 def test_extract_rein_aip_raises_storage_exception_when_listing_fails(
     ss_internal_location: models.Location, tmp_path: pathlib.Path
 ) -> None:
@@ -1622,6 +1671,7 @@ def test_extract_rein_aip_raises_storage_exception_when_listing_fails(
     assert archive.exists()
 
 
+@pytest.mark.django_db
 def test_extract_rein_aip_keeps_the_archive_when_extraction_fails(
     ss_internal_location: models.Location, tmp_path: pathlib.Path
 ) -> None:
@@ -1643,6 +1693,7 @@ def test_extract_rein_aip_keeps_the_archive_when_extraction_fails(
     assert (partial_output / "partial.txt").exists()
 
 
+@pytest.mark.django_db
 def test_extract_rein_aip_extracts_with_the_tool_of_the_compression(
     ss_internal_location: models.Location, tmp_path: pathlib.Path
 ) -> None:
@@ -1672,6 +1723,7 @@ def test_extract_rein_aip_extracts_with_the_tool_of_the_compression(
     assert not archive.exists()
 
 
+@pytest.mark.django_db
 def test_compress_package_accepts_a_directory_with_a_trailing_slash(
     package: models.Package,
     ss_internal_location: models.Location,
@@ -1687,6 +1739,7 @@ def test_compress_package_accepts_a_directory_with_a_trailing_slash(
     assert os.path.isfile(compressed_path)
 
 
+@pytest.mark.django_db
 def test_extract_file_accepts_a_directory_with_a_trailing_slash(
     package: models.Package,
     ss_internal_location: models.Location,
@@ -1729,6 +1782,7 @@ def _create_transfer_package(
     return models.Package.objects.create(current_location=location, current_path=dst)
 
 
+@pytest.mark.django_db
 def test_transfer_indexing(
     transfer_backlog_location: models.Location, tmp_path: pathlib.Path
 ) -> None:
@@ -1748,6 +1802,7 @@ def test_transfer_indexing(
     assert files[0].name == "test1/objects/foobar.bmp"
 
 
+@pytest.mark.django_db
 def test_transfer_bagit_indexing(
     transfer_backlog_location: models.Location, tmp_path: pathlib.Path
 ) -> None:
