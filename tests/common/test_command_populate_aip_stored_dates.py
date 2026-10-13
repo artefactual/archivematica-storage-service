@@ -99,7 +99,7 @@ def test_command_filters_aips_by_location_uuid(
 
     assert models.Package.objects.get(
         uuid=secondary_package.uuid
-    ).stored_date == datetime.datetime(2024, 3, 19, 7, 0, tzinfo=datetime.timezone.utc)
+    ).stored_date == datetime.datetime(2024, 3, 19, 7, 0, tzinfo=datetime.UTC)
 
     success.assert_called_once_with(
         "Complete. Datestamps for 1 of 1 identified AIPs added. 0 AIPs that already have stored_dates were skipped."
@@ -151,7 +151,7 @@ def test_command_skips_aips_with_stored_dates(
     secondary_package: models.Package,
 ) -> None:
     secondary_package.stored_date = datetime.datetime(
-        2023, 1, 1, 0, 0, tzinfo=datetime.timezone.utc
+        2023, 1, 1, 0, 0, tzinfo=datetime.UTC
     )
     secondary_package.save()
 

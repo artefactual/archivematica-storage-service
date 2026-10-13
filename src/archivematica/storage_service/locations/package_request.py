@@ -13,7 +13,7 @@ import os
 import pprint
 from collections.abc import Mapping
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 from typing import Literal
 
@@ -99,7 +99,7 @@ class PackageRecoveryRequestHandlerConfig(PackageRequestHandlerConfig):
         return (bool(success), message)
 
 
-class PackageRequestDecision(str, Enum):
+class PackageRequestDecision(StrEnum):
     APPROVE = "approve"
     REJECT = "reject"
 
