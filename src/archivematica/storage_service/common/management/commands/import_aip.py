@@ -208,17 +208,36 @@ def _decompress(aip_path, temp_dir):
         return _decompress_7z(aip_path, temp_dir)
 
 
-def _decompress_tar_gz(aip_path, temp_dir):
+def _decompress_tar_gz(aip_path: pathlib.Path, temp_dir: pathlib.Path) -> pathlib.Path:
     with tarfile.open(aip_path) as tar:
-        aip_root_dir = os.path.commonprefix(tar.getnames())
-        tar.extractall(path=temp_dir)
-    return temp_dir / aip_root_dir
+        try:
+            tar.extractall(path=temp_dir, filter="data")
+        except tarfile.FilterError as err:
+            raise ImportAIPException(
+                f"Unable to decompress the AIP at {aip_path}: {err}"
+            ) from err
+    return _extracted_aip_dir(aip_path, temp_dir)
 
 
-def _decompress_7z(aip_path, temp_dir):
+def _decompress_7z(aip_path: pathlib.Path, temp_dir: pathlib.Path) -> pathlib.Path:
     cmd = shlex.split(f"7z x {aip_path} -o{temp_dir}")
     subprocess.check_output(cmd)
-    return temp_dir / next(temp_dir.iterdir())
+    return _extracted_aip_dir(aip_path, temp_dir)
+
+
+def _extracted_aip_dir(aip_path: pathlib.Path, temp_dir: pathlib.Path) -> pathlib.Path:
+    """Return the AIP directory extracted from ``aip_path`` into ``temp_dir``.
+
+    The archive must hold the AIP as its single top-level directory.
+    """
+    entries = sorted(temp_dir.iterdir())
+    if len(entries) != 1 or not entries[0].is_dir():
+        found = [entry.name for entry in entries]
+        raise ImportAIPException(
+            f"Unable to decompress the AIP at {aip_path}: expected a single "
+            f"top-level directory in the archive, found {found}"
+        )
+    return entries[0]
 
 
 def confirm_aip_exists(aip_path):
