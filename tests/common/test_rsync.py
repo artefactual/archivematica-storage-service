@@ -67,3 +67,13 @@ def test_run_rsync_times_out_and_kills_process(popen, kill_process_group, settin
 
     kill_process_group.assert_called_once_with(process)
     os.close(write_fd)
+
+
+@mock.patch("subprocess.Popen")
+def test_run_rsync_closes_the_output_pipe(popen: mock.MagicMock) -> None:
+    stdout, _ = _pipe_with_output(b"rsync output")
+    popen.return_value = FakeProcess(stdout, returncode=0)
+
+    rsync_module.run_rsync(["rsync"], source="source", destination="destination")
+
+    assert stdout.closed

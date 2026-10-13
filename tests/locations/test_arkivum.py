@@ -78,7 +78,7 @@ def arkivum_dir(package: models.Package, tmp_path: pathlib.Path) -> str:
     result = tmp_path / "arkivum"
     (result / "aips").mkdir()
     (result / "ts").mkdir()
-    (result / "test.txt").open("ab").write(b"test.txt contents")
+    (result / "test.txt").write_bytes(b"test.txt contents")
 
     return str(result)
 

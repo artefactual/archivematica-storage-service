@@ -609,6 +609,8 @@ class StorageScenario:
         if self.compressed:
             resp = self.client.get_pointer_file(self.PACKAGE_UUID)
             assert resp.status_code == 200
+            assert isinstance(resp, StreamingHttpResponse)
+            assert b"<mets:mets" in b"".join(resp.streaming_content)
 
 
 @pytest.mark.parametrize(
@@ -875,7 +877,8 @@ class AIPRecoveryScenario(StorageScenario):
         else:
             assert tarfile.is_tarfile(download_path)
             extracted_path = tmp_path / "extracted"
-            tarfile.TarFile(download_path).extractall(extracted_path)
+            with tarfile.TarFile(download_path) as tar:
+                tar.extractall(extracted_path, filter="data")
             assert (
                 utils.generate_checksum(extracted_path / self.pkg_name).hexdigest()
                 == utils.generate_checksum(self.pkg).hexdigest()

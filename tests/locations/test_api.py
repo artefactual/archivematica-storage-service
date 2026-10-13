@@ -868,6 +868,10 @@ def test_download_compressed_package(
     assert response.status_code == 200
     assert response["content-type"] == "application/zip"
     assert response["content-disposition"] == 'attachment; filename="working_bag.zip"'
+    assert (
+        b"".join(response.streaming_content)
+        == (FIXTURES_DIR / "working_bag.zip").read_bytes()
+    )
 
 
 @pytest.mark.django_db

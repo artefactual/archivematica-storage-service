@@ -163,6 +163,9 @@ def run_rsync(
         )
         LOGGER.warning(message)
         raise RsyncError(message) from err
+    finally:
+        if process.stdout is not None:
+            process.stdout.close()
 
     if process.returncode != 0:
         message = (

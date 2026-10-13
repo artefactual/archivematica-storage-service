@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import codecs
 import copy
 import importlib.resources
 import json
@@ -2854,14 +2853,11 @@ def _replace_old_pres_ders_with_reingested(
     return removed_pres_der_paths
 
 
-def _update_bag_payload_and_verify(old_aip_internal_path):
+def _update_bag_payload_and_verify(old_aip_internal_path: str) -> None:
     """Create a new bag from the AIP at ``old_aip_internal_path`` and validate it."""
     # Use BagIt v0.97 to ensure that optional tag manifests are updated too.
-    with codecs.open(
-        os.path.join(old_aip_internal_path, "bagit.txt"),
-        "w",
-        encoding="utf-8",
-        errors="strict",
+    with open(
+        os.path.join(old_aip_internal_path, "bagit.txt"), "w", encoding="utf-8"
     ) as bagit_file:
         bagit_file.write("BagIt-Version: 0.97\nTag-File-Character-Encoding: UTF-8\n")
     bag = bagit.Bag(old_aip_internal_path)
