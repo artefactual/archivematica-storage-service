@@ -190,7 +190,7 @@ def test_move_to_ss(
     # Verify
     assert test_file.parent.is_dir()
     assert test_file.is_file()
-    assert test_file.open().read() == "%percent\n"
+    assert test_file.read_text() == "%percent\n"
 
 
 @pytest.mark.django_db
@@ -266,9 +266,9 @@ def test_move_to_ss_folder(
     # Verify
     assert test_dir.is_dir()
     assert (test_dir / "@at.txt").is_file()
-    assert (test_dir / "@at.txt").open().read() == "data\n"
+    assert (test_dir / "@at.txt").read_text() == "data\n"
     assert (test_dir / "control.txt").is_file()
-    assert (test_dir / "control.txt").open().read() == "test file\n"
+    assert (test_dir / "control.txt").read_text() == "test file\n"
 
 
 @pytest.mark.django_db
@@ -330,7 +330,7 @@ def test_move_from_ss(
 ) -> None:
     # create test.txt
     test_file = tmp_path / "test.txt"
-    test_file.open("w").write("test file\n")
+    test_file.write_text("test file\n")
     # Test
     swift.move_from_storage_service(
         str(test_file), "transfers/SampleTransfers/test.txt"

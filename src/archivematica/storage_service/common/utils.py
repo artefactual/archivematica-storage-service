@@ -26,27 +26,13 @@ from archivematica.storage_service.administration import models
 # The compression constants moved to the compression module. They are still
 # importable from here so that existing imports keep working, which is why
 # the unused import warnings are ignored.
-from archivematica.storage_service.common.compression import (
-    COMPRESSION_7Z_BZIP,  # noqa: F401
-)
-from archivematica.storage_service.common.compression import (
-    COMPRESSION_7Z_COPY,  # noqa: F401
-)
-from archivematica.storage_service.common.compression import (
-    COMPRESSION_7Z_LZMA,  # noqa: F401
-)
-from archivematica.storage_service.common.compression import (
-    COMPRESSION_ALGORITHMS,  # noqa: F401
-)
-from archivematica.storage_service.common.compression import (
-    COMPRESSION_TAR,  # noqa: F401
-)
-from archivematica.storage_service.common.compression import (
-    COMPRESSION_TAR_BZIP2,  # noqa: F401
-)
-from archivematica.storage_service.common.compression import (
-    COMPRESSION_TAR_GZIP,  # noqa: F401
-)
+from archivematica.storage_service.common.compression import COMPRESSION_7Z_BZIP  # noqa: F401
+from archivematica.storage_service.common.compression import COMPRESSION_7Z_COPY  # noqa: F401
+from archivematica.storage_service.common.compression import COMPRESSION_7Z_LZMA  # noqa: F401
+from archivematica.storage_service.common.compression import COMPRESSION_ALGORITHMS  # noqa: F401
+from archivematica.storage_service.common.compression import COMPRESSION_TAR  # noqa: F401
+from archivematica.storage_service.common.compression import COMPRESSION_TAR_BZIP2  # noqa: F401
+from archivematica.storage_service.common.compression import COMPRESSION_TAR_GZIP  # noqa: F401
 from archivematica.storage_service.storage_service import __version__ as ss_version
 
 LOGGER = logging.getLogger(__name__)

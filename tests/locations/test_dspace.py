@@ -203,7 +203,7 @@ def test_move_from_ss(
     tmp_path: pathlib.Path,
 ) -> None:
     # Create test.txt
-    (tmp_path / "test.txt").open("w").write("test file\n")
+    (tmp_path / "test.txt").write_text("test file\n")
     package = dspace_package
 
     # Upload

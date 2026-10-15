@@ -1,5 +1,6 @@
 import pathlib
 import subprocess
+import tarfile
 from collections.abc import Sequence
 from unittest import mock
 
@@ -30,6 +31,21 @@ def aip_storage_location(
     aip_storage_location.pipeline.add(pipeline)
 
     return aip_storage_location
+
+
+@pytest.fixture
+def tar_gz_aip_path(tmp_path: pathlib.Path) -> pathlib.Path:
+    """The uncompressed AIP of the 7z fixture, packed in a tar.gz file."""
+    extract_dir = tmp_path / "extract"
+    subprocess.run(
+        ["7z", "x", str(AIP_PATH), f"-o{extract_dir}"], check=True, capture_output=True
+    )
+    (aip_dir,) = extract_dir.iterdir()
+    result = tmp_path / "aip.tar.gz"
+    with tarfile.open(result, "w:gz") as tar:
+        tar.add(aip_dir, arcname=aip_dir.name)
+
+    return result
 
 
 @pytest.mark.django_db
@@ -165,3 +181,122 @@ def test_import_aip_command_sets_unix_owner(
     assert {(call.args[1], call.args[2]) for call in chown.mock_calls} == {
         (user_id, user_group_id)
     }
+
+
+@pytest.mark.django_db
+@mock.patch("os.chown")
+@mock.patch(
+    "archivematica.storage_service.common.management.commands.import_aip.getpwnam"
+)
+def test_import_aip_command_decompresses_tar_gz_aips(
+    getpwnam: mock.MagicMock,
+    chown: mock.MagicMock,
+    capsys: pytest.CaptureFixture[str],
+    aip_storage_location: models.Location,
+    tar_gz_aip_path: pathlib.Path,
+) -> None:
+    call_command(
+        "import_aip",
+        "--decompress-source",
+        "--aip-storage-location",
+        aip_storage_location.uuid,
+        tar_gz_aip_path,
+    )
+
+    captured = capsys.readouterr()
+    assert "Successfully imported AIP" in captured.out
+    assert models.Package.objects.count() == 1
+
+
+@pytest.mark.parametrize(
+    "member_name,member_type,member_linkname,expected_error",
+    [
+        (
+            "../outside.txt",
+            tarfile.REGTYPE,
+            "",
+            "'../outside.txt' would be extracted to",
+        ),
+        (
+            "aip/passwd",
+            tarfile.SYMTYPE,
+            "/etc/passwd",
+            "'aip/passwd' is a link to an absolute path",
+        ),
+    ],
+    ids=["outside-destination", "absolute-link"],
+)
+@pytest.mark.django_db
+def test_import_aip_command_rejects_tar_gz_members_the_data_filter_refuses(
+    capsys: pytest.CaptureFixture[str],
+    aip_storage_location: models.Location,
+    tmp_path: pathlib.Path,
+    member_name: str,
+    member_type: bytes,
+    member_linkname: str,
+    expected_error: str,
+) -> None:
+    member = tarfile.TarInfo(member_name)
+    member.type = member_type
+    member.linkname = member_linkname
+    aip_path = tmp_path / "aip.tar.gz"
+    with tarfile.open(aip_path, "w:gz") as tar:
+        tar.addfile(member)
+    work_dir = tmp_path / "work"
+    work_dir.mkdir()
+
+    call_command(
+        "import_aip",
+        "--decompress-source",
+        "--aip-storage-location",
+        aip_storage_location.uuid,
+        "--tmp-dir",
+        work_dir,
+        aip_path,
+    )
+
+    captured = capsys.readouterr()
+    assert (
+        f"Unable to decompress the AIP at {aip_path}: {expected_error}" in captured.out
+    )
+    assert models.Package.objects.count() == 0
+    assert [path for path in work_dir.rglob("*") if not path.is_dir()] == []
+
+
+@pytest.mark.parametrize(
+    "member_names,expected_entries",
+    [
+        ([], []),
+        (["bagit.txt", "bag-info.txt"], ["bag-info.txt", "bagit.txt"]),
+    ],
+    ids=["empty", "flat"],
+)
+@pytest.mark.django_db
+def test_import_aip_command_rejects_tar_gz_files_without_a_single_top_level_directory(
+    capsys: pytest.CaptureFixture[str],
+    aip_storage_location: models.Location,
+    tmp_path: pathlib.Path,
+    member_names: list[str],
+    expected_entries: list[str],
+) -> None:
+    aip_path = tmp_path / "aip.tar.gz"
+    with tarfile.open(aip_path, "w:gz") as tar:
+        for member_name in member_names:
+            tar.addfile(tarfile.TarInfo(member_name))
+
+    call_command(
+        "import_aip",
+        "--decompress-source",
+        "--aip-storage-location",
+        aip_storage_location.uuid,
+        "--tmp-dir",
+        tmp_path,
+        aip_path,
+    )
+
+    captured = capsys.readouterr()
+    assert (
+        f"Unable to decompress the AIP at {aip_path}: expected a single top-level "
+        f"directory in the archive, found {expected_entries}" in captured.out
+    )
+    assert models.Package.objects.count() == 0

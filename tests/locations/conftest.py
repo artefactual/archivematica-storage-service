@@ -530,7 +530,7 @@ def fixity_log_rows(transfer_packages: list[models.Package]) -> list[models.Fixi
         # The reporting time is set on every save, so it is written directly.
         models.FixityLog.objects.filter(pk=log.pk).update(
             datetime_reported=datetime.datetime(
-                year, 12, 15, 3, 0, 5, 20871, tzinfo=datetime.timezone.utc
+                year, 12, 15, 3, 0, 5, 20871, tzinfo=datetime.UTC
             )
         )
         log.refresh_from_db()

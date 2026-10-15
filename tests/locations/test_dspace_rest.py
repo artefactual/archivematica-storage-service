@@ -195,11 +195,18 @@ class MoveFromCaseDIP(MoveFromCaseAIP):
 class MockPackage:
     """Class to mock models.Package."""
 
-    def __init__(self, **kwargs):
-        self.uuid = kwargs.get("uuid", PACKAGE_UUID)
-        self.package_type = kwargs.get("package_type", Package.AIP)
-        self.isfile = kwargs.get("isfile", True)
-        self.fake_mets_file = kwargs.get("fake_mets_file", open(METS_1_PATH))
+    def __init__(
+        self,
+        *,
+        uuid: str = PACKAGE_UUID,
+        package_type: str = Package.AIP,
+        isfile: bool = True,
+        fake_mets_path: str = METS_1_PATH,
+    ) -> None:
+        self.uuid = uuid
+        self.package_type = package_type
+        self.isfile = isfile
+        self.fake_mets_path = fake_mets_path
 
 
 class MockProcess:
@@ -279,7 +286,7 @@ class FakeArchivesSpaceClient:
         # Compressed AIP with NO DSpace metadata in the METS should work and
         # use metadata from DSpaceREST model attributes
         MoveFromCaseAIP(
-            package=MockPackage(fake_mets_file=open(METS_2_PATH)),
+            package=MockPackage(fake_mets_path=METS_2_PATH),
             ds_aip_collection=DFLT_DSPACE_AIP_COLLECTION,
             metadata=DSPACE_SPACE_EXTRACTABLE_METADATA,
         ),
@@ -415,7 +422,7 @@ def test_move_from_storage_service(
         )
 
     with mock.patch(
-        "lxml.etree.parse", return_value=etree.parse(package.fake_mets_file)
+        "lxml.etree.parse", return_value=etree.parse(package.fake_mets_path)
     ) as parse:
         # Simulate AS request-related failure
         if not as_credentials_valid.is_valid:
