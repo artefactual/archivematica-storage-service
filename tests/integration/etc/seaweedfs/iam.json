@@ -1,0 +1,17 @@
+{
+  "identities": [
+    {
+      "name": "ss",
+      "credentials": [
+        {
+          "accessKey": "ss",
+          "secretKey": "ss123",
+          "status": "Active"
+        }
+      ],
+      "policyNames": [
+        "AdminAccess"
+      ]
+    }
+  ]
+}
