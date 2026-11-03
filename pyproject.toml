@@ -30,7 +30,7 @@ dependencies = [
   "gunicorn",
   "jsonfield",
   "lxml",
-  "metsrw",
+  "metsrw @ git+https://github.com/artefactual-labs/mets-reader-writer.git@ed38aa868d6a03d21a9a5b47cc55053108c45c56",
   "python-gnupg",
   "python-keystoneclient",
   "python-swiftclient",
