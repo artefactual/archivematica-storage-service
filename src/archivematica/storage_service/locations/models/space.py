@@ -623,7 +623,9 @@ class Space(models.Model):
         except OSError as e:
             LOGGER.warning(e)
 
-    def create_rsync_directory(self, destination_path, user, host):
+    def create_rsync_directory(
+        self, destination_path: str, user: str, host: str
+    ) -> None:
         """
         Creates a remote directory structure for destination_path.
 
@@ -635,8 +637,10 @@ class Space(models.Model):
         """
         # Assemble a set of directories to create on the remote server;
         # these will be created one at a time
-        directories = []
-        path = destination_path
+        directories: list[str] = []
+        path = os.path.dirname(destination_path)
+        # Stop before the root directory: it always exists, and rsync can fail
+        # there when the remote user cannot change its permissions.
         while path != "" and path != "/":
             directories.insert(0, path)
             path = os.path.dirname(path)
@@ -647,7 +651,7 @@ class Space(models.Model):
         # Creates the destination_path directory without copying any files
         # Dir must end in a / for rsync to create it
         for directory in directories:
-            path = os.path.join(os.path.dirname(directory), "")
+            path = os.path.join(directory, "")
             path = f"{user}@{host}:{path}"
             cmd = [
                 "rsync",

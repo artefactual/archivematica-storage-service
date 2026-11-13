@@ -602,7 +602,9 @@ def test_move_rsync_try_mv_local_returns_after_successful_rename(
 
 @mock.patch("tempfile.mkdtemp")
 @mock.patch("subprocess.check_call")
-def test_create_rsync_directory_commands_decode_paths(check_call, mkdtemp, tmp_path):
+def test_create_rsync_directory_commands_decode_paths(
+    check_call: mock.MagicMock, mkdtemp: mock.MagicMock, tmp_path: Path
+) -> None:
     temp_dir = tmp_path / "tmp"
     temp_dir.mkdir()
     dest_dir = "/a/mock/path/"
@@ -614,17 +616,6 @@ def test_create_rsync_directory_commands_decode_paths(check_call, mkdtemp, tmp_p
 
     check_call.assert_has_calls(
         [
-            mock.call(
-                [
-                    "rsync",
-                    "-vv",
-                    "--protect-args",
-                    "--chmod=ug=rwx,o=rx",
-                    "--recursive",
-                    os.path.join(str(temp_dir), ""),
-                    "user@host:/",
-                ]
-            ),
             mock.call(
                 [
                     "rsync",
@@ -660,6 +651,42 @@ def test_create_rsync_directory_commands_decode_paths(check_call, mkdtemp, tmp_p
             ),
         ]
     )
+
+
+@pytest.mark.parametrize(
+    "destination_path, expected_targets",
+    [
+        (
+            "/a/mock/path/",
+            ["user@host:/a/", "user@host:/a/mock/", "user@host:/a/mock/path/"],
+        ),
+        ("/a/mock/file.7z", ["user@host:/a/", "user@host:/a/mock/"]),
+        ("/file.7z", []),
+    ],
+    ids=["directory", "file", "file in the root"],
+)
+@mock.patch("subprocess.check_call")
+def test_create_rsync_directory_does_not_sync_to_the_remote_root(
+    check_call: mock.MagicMock, destination_path: str, expected_targets: list[str]
+) -> None:
+    """Syncing to the remote root creates nothing and rsync can fail there."""
+    Space().create_rsync_directory(destination_path, "user", "host")
+
+    remote_targets: list[str] = [call.args[0][-1] for call in check_call.call_args_list]
+
+    assert remote_targets == expected_targets
+
+
+@mock.patch("subprocess.check_call")
+def test_create_rsync_directory_does_not_sync_to_the_remote_home_directory(
+    check_call: mock.MagicMock,
+) -> None:
+    """Syncing to the remote home directory creates nothing."""
+    Space().create_rsync_directory("a/mock/file.7z", "user", "host")
+
+    remote_targets: list[str] = [call.args[0][-1] for call in check_call.call_args_list]
+
+    assert remote_targets == ["user@host:a/", "user@host:a/mock/"]
 
 
 @pytest.mark.django_db
